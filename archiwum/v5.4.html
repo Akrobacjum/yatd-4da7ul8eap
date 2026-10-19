@@ -1,0 +1,2390 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><style>html,body{margin:0;padding:0}</style><script>(function(){try{var P='yatd-archiwum-v5.4:',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;S.getItem=function(k){return g.call(this,P+k)};S.setItem=function(k,x){return s.call(this,P+k,x)};S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();</script></head><body>
+<title>You are the dungeon</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Grenze+Gotisch:wght@600;700&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+/* Layout: one-screen phone game. HUD on top, pannable dungeon map in the middle, item tray and action bar under the thumb.
+   Deliberately a single dark world (a dungeon at night), so there is no light theme. */
+:root {
+  --bg: #0c0a12;
+  --panel: #17131f;
+  --panel2: #221c2e;
+  --line: #2f2842;
+  --ink: #f1e7d3;
+  --muted: #a69bbb;
+  --gold: #f2b94b;
+  --blood: #c93745;
+  --violet: #8a6fe0;
+  --font-display: "Grenze Gotisch", Georgia, serif;
+  --font-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --font-num: "Pixelify Sans", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px;
+  overflow: hidden; touch-action: manipulation; -webkit-user-select: none; user-select: none;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+#app {
+  height: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 7px;
+  padding-block: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.hud { display: grid; gap: 5px; }
+.hud-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.hud .lbl { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+#h-score { font-size: 22px; color: var(--gold); }
+#h-thr { color: var(--muted); }
+#h-time { font-size: 17px; text-align: right; }
+.hud-row > * { white-space: nowrap; }
+@media (max-width: 380px) {
+  #h-score { font-size: 19px; }
+  #h-time { font-size: 15px; }
+  .hud .lbl { font-size: 11px; letter-spacing: 0.04em; }
+  .card h1 { font-size: 34px; }
+}
+.bar { height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width 0.2s; }
+.bar i.ok { background: #6fd38a; }
+.small { font-size: 13px; color: var(--muted); }
+.small b { color: var(--ink); font-weight: 500; }
+.btns { display: flex; gap: 6px; }
+#h-ess { display: inline-block; }
+#h-ess.pulse { animation: pop 0.4s ease-out; }
+@keyframes pop { 0% { transform: scale(1.4); color: #c3b2ff; } 100% { transform: scale(1); } }
+.regen { color: #b9a4ff; font-size: 12px; }
+.iconbtn {
+  background: var(--panel); border: 1px solid var(--line); color: var(--ink); border-radius: 8px;
+  width: 36px; height: 32px; display: grid; place-items: center; cursor: pointer; flex: none;
+}
+.iconbtn svg { width: 18px; height: 18px; }
+#stage { flex: 1; min-height: 0; position: relative; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 8px; box-shadow: 0 0 0 1px var(--line); touch-action: none; cursor: grab; }
+.hint { min-height: 2.7em; font-size: 13.5px; color: var(--muted); line-height: 1.35; }
+.tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.tab { font: inherit; font-size: 12.5px; padding: 6px 2px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; overflow: hidden; }
+.tab[aria-selected="true"] { background: var(--panel2); color: var(--ink); border-color: #4a3f63; }
+.tray { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.item {
+  position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
+  padding: 5px 2px 4px; display: grid; justify-items: center; gap: 1px; font: inherit; cursor: pointer; min-width: 0;
+}
+.item svg.ic { width: 22px; height: 22px; }
+.item .nm { font-size: 12.5px; line-height: 1.15; white-space: nowrap; overflow: hidden; max-width: 100%; }
+.item .top { display: flex; align-items: center; gap: 4px; }
+.item .sl { font-size: 10.5px; line-height: 1.1; color: var(--muted); white-space: nowrap; overflow: hidden; max-width: 100%; }
+.item .cost { font-family: var(--font-num); color: var(--gold); font-size: 12px; display: inline-flex; align-items: center; gap: 3px; }
+.item .cost::before { content: ""; width: 6px; height: 6px; background: var(--violet); transform: rotate(45deg); border-radius: 1px; }
+.item .lock { position: absolute; top: 3px; right: 4px; width: 11px; height: 11px; color: var(--muted); }
+.item[aria-pressed="true"] { border-color: var(--gold); background: #2b2238; box-shadow: inset 0 0 0 1px var(--gold); }
+.item.off { opacity: 0.4; }
+.actions { display: flex; gap: 10px; align-items: center; }
+#btn-action {
+  flex: 1; font: inherit; font-weight: 700; font-size: 16px; padding: 12px; border-radius: 10px; border: 0;
+  background: var(--blood); color: #fff; cursor: pointer;
+}
+#btn-action.focus-on { background: var(--violet); }
+#btn-action:disabled { background: var(--panel2); color: var(--muted); cursor: default; }
+.focus { width: 70px; display: grid; gap: 3px; }
+.focus span { font-size: 11px; color: var(--muted); text-align: center; }
+.focus .meter { height: 8px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
+.focus .meter i { display: block; height: 100%; width: 100%; background: var(--violet); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.overlay {
+  position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 6, 12, 0.84);
+  padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px;
+  width: min(440px, 100%); max-height: 100%; overflow: auto; display: grid; gap: 12px;
+  -webkit-user-select: text; user-select: text;
+}
+.card h1, .card h2 { font-family: var(--font-display); margin: 0; line-height: 1.05; text-wrap: balance; }
+.card h1 { font-size: 40px; }
+.card h2 { font-size: 28px; }
+.card p { margin: 0; line-height: 1.4; }
+.card .sub { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
+.card ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; line-height: 1.35; }
+.modes, .choices { display: grid; gap: 8px; }
+.btn {
+  font: inherit; text-align: left; background: var(--panel2); border: 1px solid var(--line); color: var(--ink);
+  border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px;
+}
+.btn b { font-size: 16px; }
+.btn span { color: var(--muted); font-size: 13.5px; }
+.btn.primary { background: var(--blood); border-color: var(--blood); color: #fff; text-align: center; font-weight: 700; }
+.btn.primary span { color: #ffd9dc; }
+.btn.gold { border-color: var(--gold); }
+.btn.unlock { border-color: var(--violet); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row .btn { flex: 1; min-width: 140px; text-align: center; }
+.field { display: grid; gap: 4px; font-size: 13.5px; color: var(--muted); }
+.field input[type="text"] { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.link { background: none; border: 0; color: var(--gold); font: inherit; text-decoration: underline; cursor: pointer; padding: 0; justify-self: start; text-align: left; }
+.stats { width: 100%; border-collapse: collapse; font-size: 14px; }
+.stats td { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.stats td:last-child { text-align: right; font-family: var(--font-num); }
+.slider { display: grid; gap: 2px; }
+.slider label { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; color: var(--muted); }
+.slider label b { color: var(--ink); font-family: var(--font-num); font-weight: 500; }
+.slider input { width: 100%; accent-color: var(--gold); }
+.score-big { font-family: var(--font-num); font-size: 30px; color: var(--gold); }
+.note { font-size: 12.5px; color: var(--muted); }
+</style>
+
+<div id="app">
+  <header class="hud">
+    <div class="hud-row">
+      <div><span class="lbl">Piętro</span> <b class="num" id="h-floor">1/3</b></div>
+      <div><b class="num" id="h-score">0</b> <span class="num" id="h-thr">/ ★★ 14000</span></div>
+      <div class="num" id="h-time">budowa</div>
+      <div class="btns">
+        <button class="iconbtn" id="btn-zoom" type="button" aria-label="Przybliż"></button>
+        <button class="iconbtn" id="btn-settings" type="button" aria-label="Ustawienia testowe">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="bar"><i id="h-bar"></i></div>
+    <div class="hud-row small">
+      <span id="h-mult">Chciwość <b>×1,00</b> · Combo <b>×1,00</b></span>
+      <span>Esencja <b class="num" id="h-ess">10</b> <span class="num regen" id="h-regen">+0,12/s</span></span>
+    </div>
+  </header>
+  <div id="stage"><canvas id="cv" aria-label="Mapa lochu"></canvas></div>
+  <div class="hint" id="hint" aria-live="polite"></div>
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <div class="tray" id="tray"></div>
+  <div class="actions">
+    <button id="btn-action" type="button">Start najazdu</button>
+    <div class="focus" id="focus-box" hidden><span>Fokus</span><div class="meter"><i id="focus-fill"></i></div></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" hidden><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ================= config ================= */
+  const RCW = 3, RCH = 3, RS = 4;                 // room grid 3x3, each room 4x4 floor tiles: fits one phone screen
+  const WW = RCW * (RS + 1) + 1, WH = RCH * (RS + 1) + 1;
+  const ROCK = 0, WALL = 1, FLOOR = 2, DOOR = 3;
+  const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const DIRS8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  const ZOOM_TAP = 0;                             // below this tile size a build tap zooms in instead of placing
+  const LOOT_REGEN_MAX = 5;                        // at most this many lying loot piles speed up Esencja
+
+  const DEFAULTS = {
+    star2: 14000, star3: 21000, waveTime: 75, heroHp: 100, heroSpeed: 100, essence: 8, regenBase: 1.2, fearRate: 1, essenceCap: 30, checkDiff: 1, volume: 0.6,
+    upgradeLimit: 3, depthMax: 2.6, infamy: 0, bossHp: 200, focusCap: 5, focusRegen: 0.5
+  };
+  const SLIDERS = [
+    { k: 'star2', label: 'Wynik runu na 2 gwiazdki', min: 1000, max: 30000, step: 500 },
+    { k: 'star3', label: 'Wynik runu na 3 gwiazdki', min: 1500, max: 40000, step: 500 },
+    { k: 'waveTime', label: 'Czas do utraty cierpliwości (s)', min: 30, max: 180, step: 5 },
+    { k: 'heroHp', label: 'HP bohaterów (%)', min: 50, max: 200, step: 10 },
+    { k: 'heroSpeed', label: 'Szybkość bohaterów (%)', min: 50, max: 200, step: 10 },
+    { k: 'essence', label: 'Esencja na start piętra', min: 0, max: 30, step: 1 },
+    { k: 'regenBase', label: 'Odnawianie bazowe (na 10 s najazdu)', min: 0, max: 5, step: 0.1, fmt: v => v.toFixed(1).replace('.', ',') },
+    { k: 'fearRate', label: 'Esencja ze strachu (za 100 HP ran)', min: 0, max: 6, step: 0.5, fmt: v => v.toFixed(1).replace('.', ',') },
+    { k: 'checkDiff', label: 'Trudność skill checków', min: 0.6, max: 1.8, step: 0.1, fmt: v => '×' + v.toFixed(1).replace('.', ',') },
+    { k: 'volume', label: 'Głośność', min: 0, max: 1, step: 0.1, fmt: v => Math.round(v * 100) + '%' },
+    { k: 'essenceCap', label: 'Pojemność Esencji', min: 10, max: 60, step: 5 },
+    { k: 'upgradeLimit', label: 'Limit wyborów ulepszeń na piętro', min: 0, max: 10, step: 1 },
+    { k: 'depthMax', label: 'Mnożnik pokoju z sercem', min: 1, max: 5, step: 0.1, fmt: v => '×' + v.toFixed(1) },
+    { k: 'infamy', label: 'Infamia', min: 0, max: 3, step: 1 },
+    { k: 'bossHp', label: 'HP bossa na piętrze 3', min: 100, max: 1000, step: 25 },
+    { k: 'focusCap', label: 'Zapas fokusu (s)', min: 1, max: 15, step: 1 },
+    { k: 'focusRegen', label: 'Odnowa fokusu (s na sekundę)', min: 0, max: 2, step: 0.1, fmt: v => v.toFixed(1) }
+  ];
+  const MODES = {
+    check: { name: 'Skill checki', desc: 'Gdy bohater wejdzie w zasięg pułapki, czas zwalnia i pojawia się pasek. Stuknij na zielonym albo czerwonym.' },
+    none: { name: 'Ręcznie', desc: 'Sam stukasz pułapki, wszystko na żywo (jak w poprzednich wersjach).' }
+  };
+  const SLOT_LABEL = { floor: 'podłoga', wall: 'ściana', door: 'drzwi', object: 'obiekt' };
+  const ITEMS = {
+    spikes: { name: 'Kolce', cost: 2, slot: 'floor', tag: 'nie zabijają', cd: 1.5, desc: 'Kolce (podłoga): 35 obrażeń na jednym polu, szybkie odnowienie. Na piętrach 1-2 nigdy nie zabijają (zostawiają 1 HP). +50% gdy bohater stoi: walczy z potworem, czeka pod kratą, odpoczywa, jest w sieci. Najlepsze tuż za drzwiami, tam nie da się ich obejść.' },
+    web: { name: 'Sieć', cost: 2, slot: 'floor', tag: '+30% obr.', cd: 7, desc: 'Sieć (podłoga): spowalnia bohaterów w kwadracie 3×3 przez 3 s. Bohater w sieci dostaje +30% obrażeń od wszystkich pułapek i potworów na skill checku.' },
+    arrows: { name: 'Strzały', cost: 2, slot: 'wall', tag: 'linia', cd: 3, desc: 'Strzały (ściana): stuknij, strzała przelatuje przez pokój w linii prostej, 25 obrażeń każdemu. Mebel ją zatrzymuje. Ściana między pokojami strzela w obie strony.' },
+    fire: { name: 'Ogień', cost: 3, slot: 'wall', tag: 'bez leczenia', cd: 5, desc: 'Ogień (ściana): płomień na 2×3 pola przed ścianą, 20 obrażeń i podpalenie na 3 s. Podpalonego nie leczy kapłan ani odpoczynek.' },
+    gate: { name: 'Krata', cost: 2, slot: 'door', tag: 'zamyka', cd: 8, desc: 'Krata (drzwi): zamyka przejście na 4 s (krytyk dłużej). Bohater w progu dostaje 60 obrażeń. Wytrzymuje 3 zamknięcia na piętro, potem drużyna ją wyważa.' },
+    powder: { name: 'Proch', cost: 2, slot: 'object', tag: 'wybuch', cd: 0, desc: 'Proch (obiekt): stuknij, wybuch 3×3, 60 obrażeń. Mebel znika i otwiera nowe przejście. Jednorazowy.' },
+    mimic: { name: 'Mimik', cost: 3, slot: 'object', tag: 'gryzie', cd: 4, desc: 'Mimik (obiekt): stuknij, mebel gryzie wszystkich dookoła, 40 obrażeń. Odnowienie 4 s.' },
+    goblin: { name: 'Goblin', cost: 3, slot: 'floor', cd: 3, hp: 100, melee: 12, ko: 6, tag: 'blokuje', desc: 'Goblin (potwór): blokuje przejście i walczy sam. Pokonany pada na 6 s i wstaje. Na piętrach 1-2 sam nie zbije nikogo poniżej 30% HP. Skill check: Dźgnięcie, 35 obrażeń.' },
+    archer: { name: 'Łucznik', cost: 3, slot: 'floor', cd: 4, hp: 50, melee: 4, ko: 6, tag: 'strzela', desc: 'Szkielet łucznik (potwór): sam strzela do bohaterów w swoim pokoju. Pokonany rozsypuje się na 6 s i wstaje. Skill check: Salwa, 22 obrażeń każdemu w zasięgu 4.' },
+    ogre: { name: 'Ogr', cost: 5, slot: 'floor', cd: 6, hp: 240, melee: 18, ko: 8, tag: 'HP 240', desc: 'Ogr (potwór): bardzo dużo życia, bije wszystkich, którzy z nim walczą. Pokonany pada na 8 s i wstaje. Skill check: Uderzenie, 45 obrażeń w kwadracie 3×3.' },
+    shaman: { name: 'Szaman', cost: 4, slot: 'floor', cd: 8, hp: 60, melee: 3, ko: 6, tag: 'leczy', desc: 'Szaman goblinów (potwór): sam leczy potwory w promieniu 2. Skill check: Wielkie leczenie, +40 HP potworom w pokoju i od razu podnosi pokonane.' },
+    loot: { name: 'Łup', cost: 1, slot: 'floor', tag: 'przynęta', cd: 0, desc: 'Łup (podłoga): przynęta. Wabi bohaterów, złodziej biegnie po niego z daleka. Podniesiony: chciwość +0,25 i wybór ulepszenia, a bohater z łupem sypie więcej Esencji, gdy go ranisz. Krytyk wybija mu łup: +2 Esencji.' }
+  };
+  const TABS = [
+    { id: 'floor', label: 'Podłoga', items: ['spikes', 'web', 'loot'] },
+    { id: 'wall', label: 'Ściany', items: ['arrows', 'fire'] },
+    { id: 'door', label: 'Drzwi', items: ['gate'] },
+    { id: 'object', label: 'Obiekty', items: ['powder', 'mimic'] },
+    { id: 'monster', label: 'Potwory', items: ['goblin', 'archer', 'ogre', 'shaman'] }
+  ];
+  const ITEM_ORDER = TABS.flatMap(t => t.items);
+  const START_UNLOCKED = ['spikes', 'arrows', 'gate', 'powder', 'goblin', 'archer', 'loot'];
+  const TRAPS = { spikes: 1, web: 1, arrows: 1, fire: 1, gate: 1, powder: 1, mimic: 1 };
+  const MONSTERS = { goblin: 1, archer: 1, ogre: 1, shaman: 1 };
+  const ACTIVE = Object.assign({}, TRAPS, MONSTERS);   // everything a tap can trigger
+  const HEROES = {
+    warrior: { name: 'Wojownik', hp: 120, speed: 1.6, dps: 18, color: '#cdd6ea', letter: 'W' },
+    thief: { name: 'Złodziej', hp: 70, speed: 2.1, dps: 10, color: '#9be37a', letter: 'Z' },
+    priest: { name: 'Kapłan', hp: 80, speed: 1.4, dps: 6, color: '#ffe9a8', letter: 'K' },
+    mage: { name: 'Mag', hp: 65, speed: 1.4, dps: 8, color: '#b9a4ff', letter: 'M' }
+  };
+  const SEAL_HP = [220, 300];   // seals on floors 1-2; the final boss uses the bossHp setting
+  // Final floor: heroes drink potions before the boss (blue shield = max HP), the boss itself barely fights back
+  let BOSS_DPS = 6, RUSH3 = true, ASSAULT3 = true, SHIELD3 = 1;   // final boss only; seals on floors 1-2 hit for 8 and never kill
+  const PARTY = ['warrior', 'thief', 'priest', 'mage'];   // one party walks the whole dungeon
+  const UPGRADES = [
+    { id: 'u-web', unlock: 'web', name: 'Nowa pułapka: Sieć', text: 'Na podłogę. Spowalnia bohaterów w kwadracie 3×3.' },
+    { id: 'u-fire', unlock: 'fire', name: 'Nowa pułapka: Ogień', text: 'Na ścianę. Płomień 2×3 pola i podpalenie.' },
+    { id: 'u-mimic', unlock: 'mimic', name: 'Nowa pułapka: Mimik', text: 'Na obiekt. Mebel gryzie wszystkich dookoła.' },
+    { id: 'u-ogre', unlock: 'ogre', name: 'Nowy potwór: Ogr', text: 'Dużo życia, stuknięty uderza w kwadrat 3×3.' },
+    { id: 'u-shaman', unlock: 'shaman', name: 'Nowy potwór: Szaman', text: 'Leczy potwory dookoła, stuknięty leczy cały pokój.' },
+    { id: 'spikes', name: 'Ostrzejsze kolce', text: 'Kolce zadają +50% obrażeń.', apply: m => { m.spikeDmg *= 1.5; } },
+    { id: 'cooldown', name: 'Szybkie przeładowanie', text: 'Odnowienie wszystkich pułapek krótsze o 25%.', apply: m => { m.cooldown *= 0.75; } },
+    { id: 'powder', name: 'Więcej prochu', text: 'Wybuch prochu sięga o 1 pole dalej.', apply: m => { m.powderR += 1; } },
+    { id: 'arrows', once: true, name: 'Płonące groty', text: 'Strzały podpalają trafionych.', apply: m => { m.arrowBurn = true; } },
+    { id: 'gate', name: 'Ciężka krata', text: 'Każda krata wytrzymuje 2 zamknięcia więcej i miażdży o 50% mocniej.', apply: m => { m.gateUses += 2; m.gateCrush *= 1.5; } },
+    { id: 'web', req: 'web', name: 'Lepka sieć', text: 'Sieć trzyma 2 razy dłużej.', apply: m => { m.webDur *= 2; } },
+    { id: 'fire', req: 'fire', name: 'Smocza smoła', text: 'Ogień zadaje +50% obrażeń.', apply: m => { m.fireDmg *= 1.5; } },
+    { id: 'mimic', req: 'mimic', name: 'Wygłodniały mimik', text: 'Mimik gryzie o 50% mocniej.', apply: m => { m.mimicDmg *= 1.5; } },
+    { id: 'greed', once: true, name: 'Złote runo', text: 'Każdy łup podbija chciwość o 0,5 zamiast 0,25.', apply: m => { m.greedStep = 0.5; } },
+    { id: 'depth', once: true, name: 'Głębia mroku', text: 'Mnożnik pokoju z sercem i pokoi tuż przed nim +0,5.', apply: m => { m.depthBonus += 0.5; } },
+    { id: 'essence', name: 'Żyła esencji', text: 'Cała Esencja (bazowa i ze strachu) +30%.', apply: m => { m.regen *= 1.3; } },
+    { id: 'loottrap', name: 'Zatruty łup', text: 'Podniesienie łupu zadaje 20 obrażeń.', apply: m => { m.lootTrap += 20; } },
+    { id: 'monster', name: 'Weterani', text: 'Nowe potwory mają +40% HP i biją o 40% mocniej.', apply: m => { m.monster *= 1.4; } },
+    { id: 'disarm', name: 'Zardzewiałe zamki', text: 'Złodziej rozbraja pułapki 2 razy wolniej (masz więcej czasu, żeby go przyłapać).', apply: m => { m.disarm *= 2; } },
+    { id: 'boss', name: 'Furia serca', text: 'Boss i pieczęcie zadają +40% obrażeń (pieczęcie dalej nie zabijają).', apply: m => { m.bossDmg *= 1.4; } }
+  ];
+  const ROOM_TINT = ['#233056', '#2d2b5c', '#40285c', '#57254f', '#6b2235'];
+  const OBJ_KINDS = ['barrel', 'crate', 'statue', 'shelf'];
+  const BOSS = { kind: 'boss' }, LOOTTRAP = { kind: 'loot' }, BURN = { kind: 'burn' };
+  const MON_FACTOR = 0.4;   // monsters acting on their own score and feed fear at half rate
+  const DMG_FACTOR = { trap: 1, loot: 1, burn: 1, monster: MON_FACTOR, boss: 0, other: 0 };
+  const ACT = { kind: 'trap' };   // a tapped monster ability scores like a trap
+  const ACTS = {};
+  const actSrc = type => ACTS[type] || (ACTS[type] = { kind: 'trap', type });   // ...and heroes get used to it by type
+  const webbed = h => fl.time < h.slowUntil;
+  const held = h => h.state === 'fight' || h.state === 'wait' || h.state === 'rest' || h.state === 'disarm' || h.state === 'boss' || webbed(h);
+  function trapMult(h, type) { return (type === 'spikes' && held(h) ? 1.5 : 1) * (webbed(h) ? 1.3 : 1); }
+  // Heroes learn where traps are: a trap that went off in front of them, or one the thief spotted, is known.
+  // They walk around a known, loaded trap if they can, dash through it while it reloads, and the thief disarms
+  // known traps that still sit on their way (standing in the trap's reach, so you can catch him at it).
+  const DISARMABLE = { spikes: 1, web: 1, gate: 1, arrows: 1, fire: 1, powder: 1 };
+  let ARM_TIME = 2;   // a trap built during the raid needs a moment to arm: no dropping it right under a hero's feet
+  function learnTrap(it, how) {
+    if (it.detected) return;
+    it.detected = true; fl.threatDirty = true;
+    if (how === 'seen') { fl.stats.learned++; floatTile(it.x, it.y, 'Zapamiętali', '#ffe066', 12, -0.5); }
+  }
+  // Path cost of known traps: loaded ones are avoided hard, reloading ones barely.
+  function rebuildThreat() {
+    fl.threatDirty = false;
+    fl.danger.fill(0);
+    fl.items.forEach(it => {
+      if (!TRAPS[it.type] || !it.detected || it.disabled) return;
+      const w = it.cd > 0.3 ? 0.4 : 4;
+      areaOf(it).forEach(t => { const i = t[1] * WW + t[0]; fl.danger[i] = Math.min(6, fl.danger[i] + w); });
+    });
+    replanAll();
+  }
+  // Where the thief stands to disarm: on a floor trap, in the door, in front of a wall trap, next to a barrel.
+  function disarmSpots(it) {
+    const x = it.x, y = it.y;
+    if (it.type === 'spikes' || it.type === 'web' || it.type === 'gate') return [[x, y]];
+    if (it.type === 'arrows' || it.type === 'fire') return wallDirs(x, y).map(d => [x + d[0], y + d[1]]);
+    return DIRS.map(d => [x + d[0], y + d[1]]).filter(t => walkable(t[0], t[1]));
+  }
+  // Per-type numbers for the floor summary and the run log.
+  function bt(type) { return fl.byType[type] || (fl.byType[type] = { placed: 0, spent: 0, checks: 0, crit: 0, ok: 0, miss: 0, skip: 0, fires: 0, hits: 0, dmg: 0, pts: 0, kills: 0, disarmed: 0, ko: 0, passiveDmg: 0, passivePts: 0 }); }
+
+  /* ================= state ================= */
+  let S = Object.assign({}, DEFAULTS);
+  try {
+    const saved = JSON.parse(localStorage.getItem('yatd54-settings') || 'null');
+    if (saved) { for (const k in DEFAULTS) if (typeof saved[k] === 'number') S[k] = saved[k]; }
+    else {   // balance changed: from older saves keep only personal settings
+      const old = JSON.parse(localStorage.getItem('yatd53-settings') || localStorage.getItem('yatd52-settings') || 'null');
+      if (old) ['volume', 'checkDiff'].forEach(k => { if (typeof old[k] === 'number') S[k] = old[k]; });
+    }
+  } catch (e) {}
+  let playerName = '';
+  try { playerName = localStorage.getItem('yatd-name') || ''; } catch (e) {}
+  let lastMode = 'none';
+  try { lastMode = localStorage.getItem('yatd-mode') || 'check'; } catch (e) {}
+  if (!MODES[lastMode]) lastMode = 'check';
+
+  let run = null, fl = null, mods = null;
+  let selected = null, focusOn = false, focus = 0;
+  let modalOpen = false, modalQueue = [], modalKind = null;
+  let floats = [], particles = [], shake = 0, realNow = 0;
+  const cam = { s: 30, ox: 0, oy: 0 };
+  let cw = 0, ch = 0, DPR = 1;
+
+  const $ = s => document.querySelector(s);
+  const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+
+  const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const key = (x, y) => x + ',' + y;
+  const fmt2 = v => v.toFixed(2).replace('.', ',');
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  function saveSettings() { try { localStorage.setItem('yatd54-settings', JSON.stringify(S)); } catch (e) {} }
+
+  /* ================= database (test log) ================= */
+  let dbPromise = null;
+  function getDb() {
+    if (!dbPromise) {
+      dbPromise = (window.claude && typeof window.claude.use === 'function')
+        ? Promise.resolve(window.claude.use('db')).catch(() => null)
+        : Promise.resolve(null);
+    }
+    return dbPromise;
+  }
+  getDb();
+
+  /* ================= map generation ================= */
+  function genLayout() {
+    for (let attempt = 0; attempt < 3000; attempt++) {
+      const minD = attempt < 1500 ? 3 : 2;
+      const N = rand(5, 6);
+      const cells = [[rand(0, RCW - 1), 0]], id = {}, edges = [];
+      id[cells[0].join(',')] = 0;
+      let guard = 0;
+      while (cells.length < N && guard++ < 1000) {
+        const from = cells[rand(0, cells.length - 1)], d = DIRS[rand(0, 3)];
+        const tx = from[0] + d[0], ty = from[1] + d[1];
+        if (tx < 0 || tx >= RCW || ty < 0 || ty >= RCH) continue;
+        const k = tx + ',' + ty;
+        if (id[k] !== undefined) continue;
+        id[k] = cells.length; cells.push([tx, ty]);
+        edges.push([id[from.join(',')], id[k]]);
+      }
+      if (cells.length < N) continue;
+      const has = {};
+      edges.forEach(e => { has[Math.min(e[0], e[1]) + '-' + Math.max(e[0], e[1])] = 1; });
+      const cand = [];
+      cells.forEach((c, i) => [[1, 0], [0, 1]].forEach(d => {
+        const j = id[(c[0] + d[0]) + ',' + (c[1] + d[1])];
+        if (j !== undefined && !has[Math.min(i, j) + '-' + Math.max(i, j)]) cand.push([i, j]);
+      }));
+      shuffle(cand);
+      const extra = rand(1, 2);
+      for (let e = 0; e < cand.length && e < extra; e++) edges.push(cand[e]);
+      const adj = cells.map(() => []);
+      edges.forEach(e => { adj[e[0]].push(e[1]); adj[e[1]].push(e[0]); });
+      const dist = cells.map(() => -1); dist[0] = 0;
+      const q = [0];
+      while (q.length) { const c = q.shift(); adj[c].forEach(n => { if (dist[n] < 0) { dist[n] = dist[c] + 1; q.push(n); } }); }
+      const maxD = Math.max(...dist);
+      if (maxD < minD) continue;
+      const far = []; dist.forEach((v, i) => { if (v === maxD) far.push(i); });
+      return { cells, edges, dist, maxD, heart: far[rand(0, far.length - 1)] };
+    }
+    throw new Error('map generation failed');
+  }
+
+  function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+  function tint(t) {
+    const f = clamp(t, 0, 1) * (ROOM_TINT.length - 1), i = Math.min(ROOM_TINT.length - 2, Math.floor(f)), u = f - i;
+    const a = hexToRgb(ROOM_TINT[i]), b = hexToRgb(ROOM_TINT[i + 1]);
+    return 'rgb(' + a.map((v, k) => Math.round(v + (b[k] - v) * u)).join(',') + ')';
+  }
+
+  function buildMap(L) {
+    const tiles = new Uint8Array(WW * WH), roomAt = new Int8Array(WW * WH).fill(-1);
+    const rooms = L.cells.map((c, i) => ({
+      id: i, cx: c[0], cy: c[1], x0: c[0] * (RS + 1) + 1, y0: c[1] * (RS + 1) + 1,
+      dist: L.dist[i], discovered: false, doors: [], color: tint(L.dist[i] / L.maxD)
+    }));
+    rooms.forEach(r => {
+      for (let y = r.y0 - 1; y <= r.y0 + RS; y++) for (let x = r.x0 - 1; x <= r.x0 + RS; x++) {
+        const i = y * WW + x;
+        if (x >= r.x0 && x < r.x0 + RS && y >= r.y0 && y < r.y0 + RS) { tiles[i] = FLOOR; roomAt[i] = r.id; }
+        else if (tiles[i] === ROCK) tiles[i] = WALL;
+      }
+    });
+    const doors = new Map();
+    L.edges.forEach(e => {
+      const a = rooms[e[0]], b = rooms[e[1]];
+      let x, y, horiz;
+      if (a.cy === b.cy) { x = Math.max(a.x0, b.x0) - 1; y = a.y0 + rand(1, RS - 2); horiz = true; }
+      else { y = Math.max(a.y0, b.y0) - 1; x = a.x0 + rand(1, RS - 2); horiz = false; }
+      tiles[y * WW + x] = DOOR;
+      const d = { x, y, a: a.id, b: b.id, closedUntil: -1, wasClosed: false, entrance: false, horiz };
+      doors.set(key(x, y), d); a.doors.push(d); b.doors.push(d);
+    });
+    const r0 = rooms[0], ent = { x: r0.x0 + 2, y: r0.y0 - 1 };
+    tiles[ent.y * WW + ent.x] = DOOR;
+    const entDoor = { x: ent.x, y: ent.y, a: 0, b: -1, closedUntil: -1, wasClosed: false, entrance: true, horiz: false };
+    doors.set(key(ent.x, ent.y), entDoor); r0.doors.push(entDoor);
+    const hr = rooms[L.heart], heart = { x: hr.x0 + 2, y: hr.y0 + 2, room: hr.id };
+    const heartAdj = DIRS.map(d => [heart.x + d[0], heart.y + d[1]]);
+
+    // furniture: random objects that block walking and offer "object" slots
+    const objects = new Map();
+    const blockedSpot = (x, y) => {
+      for (const d of DIRS) if (tiles[(y + d[1]) * WW + x + d[0]] === DOOR) return true;
+      return Math.abs(x - heart.x) + Math.abs(y - heart.y) <= 1;
+    };
+    const roomOk = r => {
+      const free = [];
+      for (let y = r.y0; y < r.y0 + RS; y++) for (let x = r.x0; x < r.x0 + RS; x++) {
+        if (!objects.has(key(x, y)) && !(x === heart.x && y === heart.y)) free.push(key(x, y));
+      }
+      const set = new Set(free), seen = new Set([free[0]]), q = [free[0]];
+      while (q.length) {
+        const [x, y] = q.pop().split(',').map(Number);
+        for (const d of DIRS) { const k = key(x + d[0], y + d[1]); if (set.has(k) && !seen.has(k)) { seen.add(k); q.push(k); } }
+      }
+      return seen.size === free.length;
+    };
+    rooms.forEach(r => {
+      const n = (r.id === 0 || r.id === heart.room) ? rand(0, 1) : rand(0, 2);
+      let placed = 0, tries = 0;
+      while (placed < n && tries++ < 30) {
+        const x = r.x0 + rand(0, RS - 1), y = r.y0 + rand(0, RS - 1), k = key(x, y);
+        if (objects.has(k) || blockedSpot(x, y)) continue;
+        objects.set(k, { kind: OBJ_KINDS[rand(0, OBJ_KINDS.length - 1)], x, y });
+        if (!roomOk(r)) { objects.delete(k); continue; }
+        placed++;
+      }
+    });
+    return { tiles, roomAt, rooms, doors, ent, heart, heartAdj, objects, maxD: L.maxD };
+  }
+
+  /* ================= map queries ================= */
+  const tileAt = (x, y) => (x < 0 || y < 0 || x >= WW || y >= WH) ? ROCK : fl.tiles[y * WW + x];
+  const isHeart = (x, y) => x === fl.heart.x && y === fl.heart.y;
+  const doorClosed = d => d.closedUntil > fl.time;
+  function wallDirs(x, y) { return DIRS.filter(d => tileAt(x + d[0], y + d[1]) === FLOOR); }
+  function slotOf(x, y) {
+    const t = tileAt(x, y);
+    if (t === FLOOR) { if (isHeart(x, y)) return null; return fl.objects.has(key(x, y)) ? 'object' : 'floor'; }
+    if (t === DOOR) { const d = fl.doors.get(key(x, y)); return d && !d.entrance ? 'door' : null; }
+    if (t === WALL) return wallDirs(x, y).length ? 'wall' : null;
+    return null;
+  }
+  const walkable = (x, y) => tileAt(x, y) === FLOOR && !isHeart(x, y) && !fl.objects.has(key(x, y));
+  function areaOf(it) {
+    const out = [], x = it.x, y = it.y;
+    const addIf = (tx, ty, doorsToo) => {
+      const t = tileAt(tx, ty);
+      if (t === FLOOR || (doorsToo && t === DOOR)) out.push([tx, ty]);
+    };
+    switch (it.type) {
+      case 'spikes': case 'gate': out.push([x, y]); break;
+      case 'web': for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) addIf(x + dx, y + dy, true); break;
+      case 'arrows':
+        wallDirs(x, y).forEach(d => {
+          for (let k = 1; k < 12; k++) { const tx = x + d[0] * k, ty = y + d[1] * k; if (!walkable(tx, ty)) break; out.push([tx, ty]); }
+        });
+        break;
+      case 'fire':
+        wallDirs(x, y).forEach(d => {
+          const px = d[1], py = d[0];
+          for (let k = 1; k <= 2; k++) for (let p = -1; p <= 1; p++) { const tx = x + d[0] * k + px * p, ty = y + d[1] * k + py * p; if (walkable(tx, ty)) out.push([tx, ty]); }
+        });
+        break;
+      case 'powder': { const R = mods.powderR; for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) addIf(x + dx, y + dy, true); break; }
+      case 'mimic': DIRS8.forEach(d => addIf(x + d[0], y + d[1], true)); break;
+      case 'goblin': case 'ogre': for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) addIf(x + dx, y + dy, true); break;
+      case 'archer': case 'shaman': {
+        const r = fl.roomAt[y * WW + x], R = it.type === 'archer' ? 4 : 99;
+        for (let ty = y - 5; ty <= y + 5; ty++) for (let tx = x - 5; tx <= x + 5; tx++) {
+          if (tileAt(tx, ty) === FLOOR && fl.roomAt[ty * WW + tx] === r && Math.hypot(tx - x, ty - y) <= R) out.push([tx, ty]);
+        }
+        break;
+      }
+    }
+    return out;
+  }
+  function passable(x, y) {
+    const t = tileAt(x, y);
+    if (t === FLOOR) return !isHeart(x, y) && !fl.objects.has(key(x, y));
+    if (t === DOOR) { const d = fl.doors.get(key(x, y)); return !d || !doorClosed(d); }
+    return false;
+  }
+  // Dijkstra over walkable tiles. Remembered danger makes a tile cost more, so heroes go around if they can.
+  function bfs(sx, sy) {
+    const N = WW * WH, dist = new Float32Array(N).fill(-1), prev = new Int32Array(N).fill(-1), done = new Uint8Array(N);
+    const heap = [];
+    const push = (c, i) => {
+      heap.push([c, i]); let k = heap.length - 1;
+      while (k > 0) { const p = (k - 1) >> 1; if (heap[p][0] <= heap[k][0]) break; [heap[p], heap[k]] = [heap[k], heap[p]]; k = p; }
+    };
+    const pop = () => {
+      const top = heap[0], last = heap.pop();
+      if (heap.length) {
+        heap[0] = last; let k = 0;
+        for (;;) { const l = 2 * k + 1, r = l + 1; let m = k; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === k) break; [heap[m], heap[k]] = [heap[k], heap[m]]; k = m; }
+      }
+      return top;
+    };
+    const s0 = sy * WW + sx; dist[s0] = 0; push(0, s0);
+    while (heap.length) {
+      const [c, i] = pop();
+      if (done[i]) continue; done[i] = 1;
+      const cx = i % WW, cy = (i / WW) | 0;
+      for (const d of DIRS) {
+        const nx = cx + d[0], ny = cy + d[1];
+        if (nx < 0 || ny < 0 || nx >= WW || ny >= WH || !passable(nx, ny)) continue;
+        const ni = ny * WW + nx, nc = c + 1 + (fl.danger && !fl.fearless ? Math.min(12, fl.danger[ni] * 3) : 0);
+        if (dist[ni] < 0 || nc < dist[ni]) { dist[ni] = nc; prev[ni] = i; push(nc, ni); }
+      }
+    }
+    return { dist, prev };
+  }
+  function addDanger(tiles, amount) { tiles.forEach(t => { const i = t[1] * WW + t[0]; fl.danger[i] = Math.min(6, fl.danger[i] + amount); }); }
+  function pathFrom(b, target) {
+    const p = [];
+    let c = target;
+    while (c >= 0 && b.prev[c] >= 0) { p.push([c % WW, (c / WW) | 0]); c = b.prev[c]; }
+    return p.reverse();
+  }
+  function shortestPath() {
+    const b = bfs(fl.ent.x, fl.ent.y);
+    let best = -1;
+    fl.heartAdj.forEach(t => { const i = t[1] * WW + t[0]; if (b.dist[i] >= 0 && (best < 0 || b.dist[i] < b.dist[best])) best = i; });
+    return best < 0 ? [] : pathFrom(b, best);
+  }
+  function lootVisible(it) {
+    const r = fl.roomAt[it.y * WW + it.x];
+    if (r < 0) return false;
+    if (fl.rooms[r].discovered) return true;
+    return fl.rooms[r].doors.some(d => { const o = d.a === r ? d.b : d.a; return o >= 0 && fl.rooms[o].discovered; });
+  }
+
+  /* ================= scoring helpers ================= */
+  function isEdgeRoom(r) { return fl.rooms[r].dist >= fl.maxD - 1; }
+  function depthMult(r) { const R = fl.rooms[r]; return 1 + (S.depthMax - 1) * R.dist / fl.maxD + (isEdgeRoom(r) ? mods.depthBonus : 0); }
+  const infMult = () => 1 + 0.15 * S.infamy;
+  const comboNow = () => (fl && fl.time - fl.lastTrapAt < 2.5) ? fl.combo : 1;
+  const alive = () => fl.heroes.filter(h => !h.dead && !h.fled);
+
+  /* ================= floats, particles, effects (tile units) ================= */
+  function addFloat(x, y, text, color, size, dy) { floats.push({ x, y: y + (dy || 0), text, color, size: size || 15, life: 1.2 }); }
+  function floatTile(x, y, text, color, size, dy) { addFloat(x + 0.5, y + 0.5, text, color, size, dy); }
+  function heroPos(h) {
+    const off = (h.id % 3 - 1) * 0.14;
+    const moving = h.nx !== null;
+    const fx = moving ? h.x + (h.nx - h.x) * h.prog : h.x, fy = moving ? h.y + (h.ny - h.y) * h.prog : h.y;
+    return { x: fx + 0.5 + off, y: fy + 0.5 + off * 0.5 };
+  }
+  function floatHero(h, text, color, size, dy) { const p = heroPos(h); addFloat(p.x, p.y - 0.3, text, color, size, dy); }
+  function burst(x, y, color, n) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, s = (0.6 + Math.random()) * 2.2;
+      particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5 + Math.random() * 0.3, color });
+    }
+  }
+  function fxTiles(tiles, rgb, life) { fl.fx.push({ kind: 'tiles', tiles, rgb, life, max: life }); }
+  function fxLine(x0, y0, x1, y1, life, rgb) { fl.fx.push({ kind: 'line', x0, y0, x1, y1, life, max: life, rgb: rgb || '255,240,200' }); }
+
+  /* ================= run / floor flow ================= */
+  function freshMods() {
+    return { spikeDmg: 1, cooldown: 1, powderR: 1, webDur: 1, greedStep: 0.25, depthBonus: 0, lootTrap: 0, monster: 1,
+      disarm: 1, bossDmg: 1, arrowBurn: false, gateDur: 1, gateUses: 3, gateCrush: 1, mimicDmg: 1, fireDmg: 1, regen: 1 };
+  }
+  function heroMaxHp(t) { return Math.round(HEROES[t].hp * (S.heroHp / 100) * (1 + 0.2 * S.infamy)); }
+  function makeParty() { return PARTY.map(t => ({ type: t, hp: heroMaxHp(t), max: heroMaxHp(t), loot: 0, dead: false })); }
+  function newRun(mode) {
+    lastMode = mode;
+    try { localStorage.setItem('yatd-mode', mode); } catch (e) {}
+    run = { mode, floor: 0, total: 0, floors: [], reviveUsed: false, startedAt: Date.now(), fires: 0, focusUsed: 0,
+      upgrades: [], unlocked: new Set(START_UNLOCKED), result: null, reason: '', hintsLeft: 3, checkHints: 3, party: makeParty(), greed: 1, stars: 0 };
+    mods = freshMods();
+    floats = []; particles = [];
+    startFloor(1, 0);
+  }
+  function startFloor(f, carry) {
+    run.floor = f;
+    if (!run.party) run.party = makeParty();
+    if (!run.greed) run.greed = 1;
+    if (f > 1) run.party.forEach(e => { if (!e.dead) e.hp = Math.min(e.max, e.hp + 0.3 * e.max); });   // a short rest between floors
+    const map = buildMap(genLayout());
+    fl = Object.assign(map, {
+      items: new Map(), heroes: [], queue: run.party.filter(e => !e.dead), spawnTimer: 0, time: 0, phase: 'build',
+      essence: Math.min(S.essenceCap, S.essence + 2 * (f - 1) + carry), greed: run.greed, combo: 1, lastTrapAt: -99, lastTrapSrc: null, lastTrapType: null, fearless: false, byType: {},
+      score: 0, boss: (() => { const m = f === 3 ? S.bossHp : SEAL_HP[f - 1]; return { hp: m, max: m, hit: 0, down: false }; })(),
+      choices: 0, rerolled: false, ending: null, endReason: null, fx: [], zones: [], danger: new Float32Array(WW * WH), hintT: 0, check: null, checkGap: 0,
+      stats: { dmgPts: 0, kills: 0, killPts: 0, loot: 0, lootPts: 0, edgePts: 0, maxCombo: 1, fled: 0, disarmed: 0, otherPts: 0, bossKills: 0, rooms: 0, essBase: 0, essFear: 0, essConf: 0, essDrop: 0, built: 0, healPts: 0, healed: 0, monstersLost: 0, survPts: 0, survivors: 0, detected: 0, retreats: 0, confPts: 0, checks: 0, checkOk: 0, checkCrit: 0, checkMiss: 0, checkSkip: 0, earlyDeaths: 0, finalKills: 0, finalPts: 0, killsMon: 0, killsTrap: 0, learned: 0 }
+    });
+    selected = null; focusOn = false; focus = S.focusCap;
+    resize();
+    cam.s = fitScale(); clampCam();
+    updateTray(); updateAction(); updateZoomBtn();
+    setHint(f === 1
+      ? 'Piętro 1: drużyna 4 bohaterów ma rozbić pieczęć (serce). Rań ich po drodze dla punktów, ale nie zabijaj. Wybierz element na dole i postaw go.'
+      : f === 2
+      ? 'Piętro 2: ta sama drużyna, odpoczęła o 30% HP. Znowu mają rozbić pieczęć, a Ty ich doisz z punktów.'
+      : 'Piętro 3: boss. Drużyna wypije eliksiry (tarcza = max HP) i ruszy prosto na bossa, bez strachu. Postaw pułapki na tej drodze.');
+  }
+  function startRaid() {
+    if (!fl || fl.phase !== 'build') return;
+    fl.phase = 'raid'; fl.time = 0; fl.spawnTimer = 0; fl.threatDirty = true;
+    if (run.floor === 3 && ASSAULT3) fl.fearless = true;   // last assault: no retreats, no getting lost, straight at the boss
+    selected = null; updateTray(); updateAction();
+    setHint(run.floor === 3 ? 'Ostatni szturm! Drużyna wypiła eliksiry (niebieska tarcza), nie boi się i biegnie prosto na bossa. Zabij wszystkich.' : 'Najazd! Rań i blokuj, ale nie zabijaj: drużyna ma rozbić pieczęć.');
+  }
+  function spawnHero(e) {
+    const type = e.type, T = HEROES[type], hp = Math.max(1, Math.round(e.hp)), max = e.max;
+    fl.heroes.push({ entry: e, id: fl.heroes.length, type, T, hp, max, x: fl.ent.x, y: fl.ent.y, nx: null, ny: null, prog: 0,
+      tx: fl.ent.x, ty: fl.ent.y, path: [], goal: null, goalRoom: -1, needPlan: true, room: 0, state: 'walk', timer: 0, dur: 1,
+      slowUntil: -1, burnUntil: -1, foe: null, item: null, dead: false, fled: false, flash: 0, acc: 0, accT: 0,
+      cast: type === 'priest' ? 1.5 : type === 'mage' ? 2 : 0, mode: 'normal', retreatRoom: -1, deepRoom: 0, scan: 0.5, hurtAt: -9, edgeAt: -9, playerDmg: 0, visited: new Set(), progressAt: fl.time, confused: false, confAcc: 0, loot: e.loot, orbAcc: 0, retreatLock: 0, burnBy: null, disarmT: null, shield: run.floor === 3 ? Math.round(SHIELD3 * max) : 0 });
+  }
+  // When patience runs out the heroes stop being afraid: no retreats, no getting lost, straight for the heart.
+  function becomeFearless() {
+    fl.fearless = true;
+    alive().forEach(h => {
+      if (h.mode !== 'normal') { h.mode = 'normal'; if (h.state === 'rest') h.state = 'walk'; }
+      h.needPlan = true; floatHero(h, 'Dość tego!', '#ffb35c', 14, -0.6);
+    });
+    setHint('Bohaterowie stracili cierpliwość: nie boją się już pułapek i idą prosto na serce.');
+  }
+  function saveParty() { fl.heroes.forEach(h => { h.entry.hp = h.dead ? 0 : h.hp; h.entry.dead = h.dead; h.entry.loot = h.loot; }); }
+  // Floors 1-2: the party broke the seal. Everyone who made it pays out, more if YOU wounded him on the way.
+  function sealBroken() {
+    floatTile(fl.heart.x, fl.heart.y, 'Pieczęć złamana!', '#ffd27a', 20, -1.2);
+    alive().forEach(h => {
+      const wound = Math.min(1, h.playerDmg / h.max);
+      const pts = (20 + 100 * wound) * depthMult(fl.heart.room) * fl.greed * infMult();
+      fl.score += pts; fl.stats.survPts += pts; fl.stats.survivors++;
+      floatHero(h, 'Przeszedł +' + Math.round(pts), '#8be3d8', 15);
+    });
+    saveParty();
+    fl.ending = 1.4; fl.endReason = 'seal';
+  }
+  function finishWave() {
+    if (fl.endReason === 'alldead') loseRun('Zabiłeś całą drużynę przed finałem. Nikt nie doszedł do bossa.');
+    else if (fl.endReason === 'victory') winRun();
+    else endFloor();
+  }
+  function roundStats(s) { const o = {}; for (const k in s) o[k] = Math.round(s[k]); return o; }
+  function recordFloor(pass) {
+    const items = {};
+    for (const k in fl.byType) { const r = roundStats(fl.byType[k]); if (r.placed || r.fires || r.dmg || r.passiveDmg) items[k] = r; }
+    run.floors.push({ floor: run.floor, score: Math.round(fl.score), pass, rooms: fl.rooms.length, alive: alive().length, stats: roundStats(fl.stats), items });
+    run.total += fl.score;
+  }
+  function endFloor() {
+    fl.check = null;
+    fl.phase = 'end'; focusOn = false; updateAction();
+    recordFloor(true);
+    queueModal({ type: 'floor' });
+  }
+  function starsFor(total) { return 1 + (total >= S.star2 ? 1 : 0) + (total >= S.star3 ? 1 : 0); }
+  function winRun() {
+    fl.check = null;
+    fl.phase = 'over'; focusOn = false; updateAction();
+    recordFloor(true);
+    run.result = 'win'; run.stars = starsFor(run.total); run.reason = 'Cała drużyna poległa na piętrze 3. Loch zwycięża.';
+    queueModal({ type: 'end' });
+  }
+  function loseRun(reason) {
+    fl.check = null;
+    fl.phase = 'over'; focusOn = false; updateAction();
+    recordFloor(false);
+    run.result = 'lose'; run.stars = 0; run.reason = reason;
+    queueModal({ type: 'end' });
+  }
+
+  /* ================= scoring ================= */
+  // Where damage comes from decides what it is worth: your tap or your bait = full points,
+  // a monster acting alone = a little, the heart guardian = nothing.
+  function srcKind(src) {
+    if (src.kind) return src.kind;
+    if (TRAPS[src.type]) return 'trap';
+    if (MONSTERS[src.type]) return 'monster';
+    return 'other';
+  }
+  function damage(h, amt, src, comboMult, rep) {
+    if (h.dead || h.fled || amt <= 0 || fl.ending !== null) return;
+    const sk = srcKind(src);
+    if (sk === 'boss' && run.floor < 3) { amt = Math.min(amt, h.hp - 1); if (amt <= 0) return; }   // a seal hurts but never kills
+    if (sk === 'monster' && run.floor < 3) { amt = Math.min(amt, h.hp - 0.3 * h.max); if (amt <= 0) return; }   // monsters acting alone stop at 30% HP: finishing is your call
+    comboMult = comboMult || 1; rep = rep || 1;
+    const kind = srcKind(src);
+    const tkey = kind === 'trap' && src.type ? src.type : null;
+    if (tkey) amt *= trapMult(h, tkey);
+    if (tkey === 'spikes' && run.floor < 3) { amt = Math.min(amt, h.hp + h.shield - 1); if (amt <= 0) return; }   // spikes wound but never kill before the finale
+    const attr = tkey || (kind === 'monster' ? src.type : kind === 'burn' ? (h.burnBy || 'fire') : kind === 'loot' ? 'loot' : null);
+    const real = Math.min(h.hp + h.shield, amt);   // a shield soaks damage first; hitting it still scores
+    let rest = amt;
+    if (h.shield > 0) { const ab = Math.min(h.shield, rest); h.shield -= ab; rest -= ab; }
+    h.hp -= rest; h.flash = 0.12; h.hurtAt = fl.time;
+    if (kind !== 'boss') h.playerDmg += real * (kind === 'monster' ? MON_FACTOR : 1);   // monsters acting alone count less, as with points
+    if (attr) { const b = bt(attr); if (kind === 'monster') b.passiveDmg += real; else b.dmg += real; }
+    if (h.hp <= 0) { h.hp = 0; h.dead = true; kill(h, kind, attr); return; }   // the killing blow is worth nothing
+    if (kind !== 'boss') gainEssence(h, real * S.fearRate / 100 * (kind === 'monster' ? MON_FACTOR : 1) * lootMult(h), 'essFear');
+    let pts = real * DMG_FACTOR[kind] * depthMult(h.room) * fl.greed * (kind === 'trap' ? comboMult * rep : 1) * infMult();
+    if (pts > 0 && h.hp < 0.3 * h.max && (kind === 'trap' || kind === 'loot' || kind === 'burn')) {
+      fl.stats.edgePts += pts * 0.5; pts *= 1.5;
+      if (fl.time - h.edgeAt > 1.5) { h.edgeAt = fl.time; floatHero(h, 'Na skraju!', '#ff9a3c', 15, -0.9); }
+    }
+    if (pts > 0) {
+      fl.score += pts;
+      if (attr) { const b = bt(attr); if (kind === 'monster') b.passivePts += pts; else b.pts += pts; }
+      if (kind === 'trap' || kind === 'loot') { fl.stats.dmgPts += pts; floatHero(h, '+' + Math.round(pts), '#ffd27a', 16); }
+      else if (kind === 'burn') { fl.stats.dmgPts += pts; h.acc += pts; }
+      else { fl.stats.otherPts += pts; h.acc += pts; }
+    }
+  }
+  // Floors 1-2: a dead hero is a lost source of points for the rest of the run.
+  // Floor 3: killing them is the goal, and pays.
+  function kill(h, kind, attr) {
+    const p = heroPos(h);
+    h.acc = 0; h.foe = null;
+    if (h.entry) h.entry.dead = true;
+    fl.stats.kills++;
+    if (kind === 'boss') fl.stats.bossKills++; else if (kind === 'monster') fl.stats.killsMon++; else fl.stats.killsTrap++;
+    if (attr) bt(attr).kills++;
+    burst(p.x, p.y, '#d8434f', 16);
+    if (run.floor === 3) {
+      const pts = (kind === 'boss' ? 100 : 200) * fl.greed * infMult();
+      fl.score += pts; fl.stats.finalKills++; fl.stats.finalPts += pts;
+      addFloat(p.x, p.y - 0.1, 'Pokonany! +' + Math.round(pts), '#ff9a3c', 17, -0.4);
+    } else {
+      fl.stats.earlyDeaths++;
+      addFloat(p.x, p.y - 0.1, 'Poległ za wcześnie', '#d9a3ad', 15, -0.4);
+    }
+  }
+  function pickup(h, it) {
+    h.progressAt = fl.time;
+    h.loot++;
+    fl.items.delete(key(it.x, it.y));
+    const r = fl.roomAt[it.y * WW + it.x];
+    fl.greed = Math.min(3, fl.greed + mods.greedStep); run.greed = fl.greed;
+    const pts = 25 * depthMult(r) * infMult();
+    fl.score += pts; fl.stats.loot++; fl.stats.lootPts += pts;
+    floatTile(it.x, it.y, '+' + Math.round(pts) + ' łup', '#f2b94b', 16);
+    floatHero(h, 'Chciwość ×' + fmt2(fl.greed), '#f2b94b', 14, -0.6);
+    if (mods.lootTrap > 0) damage(h, mods.lootTrap, LOOTTRAP);
+    if (fl.choices < S.upgradeLimit) { fl.choices++; queueModal({ type: 'upgrade' }); }
+    replanAll();
+  }
+
+  /* ================= traps ================= */
+  function fire(it, pw) {
+    pw = pw || 1;
+    if (!fl || fl.phase !== 'raid' || !ACTIVE[it.type] || it.disabled || it.cd > 0 || (MONSTERS[it.type] && it.hp <= 0)) return false;
+    if (fl.time - fl.lastTrapAt < 2.5) { if (fl.lastTrapType !== it.type) fl.combo = Math.min(5, fl.combo + 1); }   // only a different trap type builds combo
+    else fl.combo = 1;
+    fl.lastTrapAt = fl.time; fl.lastTrapSrc = it; fl.lastTrapType = it.type;
+    bt(it.type).fires++;
+    fl.stats.maxCombo = Math.max(fl.stats.maxCombo, fl.combo);
+    const comboMult = 1 + 0.25 * (fl.combo - 1);
+    run.fires++;
+    fl.heroes.forEach(h => { if (h.item === it && h.state === 'disarm') { h.state = 'walk'; h.item = null; } });
+    const area = areaOf(it), keys = new Set(area.map(t => key(t[0], t[1])));
+    const list = alive().filter(h => keys.has(key(h.tx, h.ty)));
+    if (TRAPS[it.type]) {
+      const rooms = new Set(area.map(t => fl.roomAt[t[1] * WW + t[0]]));
+      if (alive().some(h => rooms.has(h.room))) learnTrap(it, 'seen');   // someone saw it go off: now they know where it is
+      if (it.detected) fl.threatDirty = true;
+    }
+    const rep = 1, cdBase = ITEMS[it.type].cd * mods.cooldown;
+    let hit = 0;
+    switch (it.type) {
+      case 'spikes':
+        it.cd = cdBase; it.anim = 0.45;
+        list.forEach(h => { damage(h, 35 * mods.spikeDmg * pw, it, comboMult, rep); hit++; });
+        break;
+      case 'web': {
+        it.cd = cdBase;
+        const dur = 3 * mods.webDur * pw;
+        fl.zones.push({ keys, tiles: area, until: fl.time + dur });
+        list.forEach(h => {
+          h.slowUntil = fl.time + dur;
+          const pts = 15 * depthMult(h.room) * fl.greed * comboMult * rep * infMult();
+          fl.score += pts; fl.stats.dmgPts += pts;
+          floatHero(h, '+' + Math.round(pts) + ' sieć', '#a9c6ff', 14); hit++;
+        });
+        break;
+      }
+      case 'arrows':
+        it.cd = cdBase;
+        wallDirs(it.x, it.y).forEach(d => {
+          let k = 1; while (walkable(it.x + d[0] * k, it.y + d[1] * k)) k++;
+          if (k > 1) fxLine(it.x + 0.5, it.y + 0.5, it.x + d[0] * (k - 1) + 0.5, it.y + d[1] * (k - 1) + 0.5, 0.28);
+        });
+        list.forEach(h => { damage(h, 25 * pw, it, comboMult, rep); if (mods.arrowBurn && !h.dead) { h.burnUntil = fl.time + 3; h.burnBy = 'arrows'; } hit++; });
+        break;
+      case 'fire':
+        it.cd = cdBase;
+        fxTiles(area, '255,140,50', 0.5);
+        list.forEach(h => { damage(h, 20 * mods.fireDmg * pw, it, comboMult, rep); if (!h.dead) { h.burnUntil = fl.time + 3; h.burnBy = 'fire'; } hit++; });
+        break;
+      case 'gate': {
+        it.cd = cdBase;
+        const d = fl.doors.get(key(it.x, it.y));
+        d.closedUntil = fl.time + 4 * mods.gateDur * Math.max(1, pw); d.wasClosed = true;
+        it.uses = (it.uses || 0) + 1;
+        if (it.uses >= mods.gateUses) { it.disabled = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Ostatnie zamknięcie', '#c9c2d8', 13, -0.6); }   // next time it opens, it stays open
+        fl.heroes.forEach(h => {
+          if (h.dead || h.fled) return;
+          if (h.nx === it.x && h.ny === it.y && h.prog < 0.5) { h.nx = null; h.ny = null; h.prog = 0; }
+        });
+        list.forEach(h => { damage(h, 60 * mods.gateCrush * pw, it, comboMult, rep); hit++; });
+        replanAll();
+        shake = Math.max(shake, 0.12);
+        break;
+      }
+      case 'powder': {
+        fl.items.delete(key(it.x, it.y));
+        fl.objects.delete(key(it.x, it.y)); fl.threatDirty = true;
+        list.forEach(h => { damage(h, 60 * pw, it, comboMult, rep); hit++; });
+        burst(it.x + 0.5, it.y + 0.5, '#ff9a3c', 26); burst(it.x + 0.5, it.y + 0.5, '#ffd27a', 12);
+        particles.push({ ring: true, x: it.x + 0.5, y: it.y + 0.5, r: 0.3, maxR: mods.powderR + 0.5, life: 0.35, color: '#ffb35c' });
+        shake = 0.35;
+        replanAll();
+        break;
+      }
+      case 'mimic':
+        it.cd = cdBase; it.anim = 0.35;
+        fxTiles(area, '216,67,79', 0.3);
+        list.forEach(h => { damage(h, 40 * mods.mimicDmg * pw, it, comboMult, rep); hit++; });
+        break;
+      case 'goblin': {
+        it.cd = cdBase; it.anim = 0.3;
+        const near = alive().filter(h => Math.max(Math.abs(h.tx - it.x), Math.abs(h.ty - it.y)) <= 1);
+        const tgt = near.find(h => h.foe === it) || near[0];
+        if (tgt) { damage(tgt, 35 * it.power * pw, actSrc(it.type), comboMult, rep); hit++; }
+        break;
+      }
+      case 'archer':
+        it.cd = cdBase;
+        list.forEach(h => { const p = heroPos(h); fxLine(it.x + 0.5, it.y + 0.5, p.x, p.y, 0.25); damage(h, 22 * it.power * pw, actSrc(it.type), comboMult, rep); hit++; });
+        break;
+      case 'ogre':
+        it.cd = cdBase; it.anim = 0.35; shake = Math.max(shake, 0.2);
+        fxTiles(area, '200,180,140', 0.35);
+        list.forEach(h => { damage(h, 45 * it.power * pw, actSrc(it.type), comboMult, rep); hit++; });
+        break;
+      case 'shaman': {
+        it.cd = cdBase;
+        const r = fl.roomAt[it.y * WW + it.x];
+        fl.items.forEach(m => {
+          if (!MONSTERS[m.type] || fl.roomAt[m.y * WW + m.x] !== r) return;
+          if (m.hp <= 0) { if (m !== it) { m.downUntil = fl.time; } return; }   // raised on the next tick
+          m.hp = Math.min(m.max, m.hp + 40 * pw);
+        });
+        fxTiles(area, '120,220,130', 0.4);
+        floatTile(it.x, it.y, 'Leczenie potworów', '#8be38f', 13, -0.6);
+        hit = -1;
+        break;
+      }
+    }
+    if (hit > 0) {
+      bt(it.type).hits += hit;
+      if (fl.combo > 1) floatTile(it.x, it.y, 'Combo ×' + fmt2(comboMult), '#cbb0ff', 14, -0.75);
+    } else if (hit === 0 && it.type !== 'gate') {
+      floatTile(it.x, it.y, 'pudło', '#857a99', 13);
+    }
+    return true;
+  }
+
+  /* ================= heroes ================= */
+  function replanAll() { if (fl) fl.heroes.forEach(h => { h.needPlan = true; }); }
+  // Wounded heroes fall back to the quietest room they know and rest there.
+  function pickSafeRoom(h, b) {
+    let best = -1, bestScore = 1e9;
+    fl.rooms.forEach(r => {
+      if (!r.discovered || r.id === fl.heart.room) return;
+      let danger = 0, near = 1e9;
+      for (let y = r.y0; y < r.y0 + RS; y++) for (let x = r.x0; x < r.x0 + RS; x++) {
+        const i = y * WW + x; danger += fl.danger[i];
+        if (b.dist[i] >= 0 && b.dist[i] < near) near = b.dist[i];
+      }
+      if (near >= 1e9) return;
+      let threats = 0; fl.items.forEach(it => { if (ACTIVE[it.type] && !it.disabled && fl.roomAt[it.y * WW + it.x] === r.id) threats++; });
+      const sc = danger + threats * 3 + near * 0.15;
+      if (sc < bestScore) { bestScore = sc; best = r.id; }
+    });
+    return best;
+  }
+  function startRetreat(h) {
+    if (fl.fearless || fl.time < h.retreatLock) return;      // at most one retreat decision every 3 s; none once fearless
+    h.retreatLock = fl.time + 3;
+    const b = bfs(h.x, h.y), r = pickSafeRoom(h, b);
+    if (r < 0) return;
+    if (h.mode === 'rest' && r === h.retreatRoom) return;   // already resting in the safest place
+    if (h.mode !== 'rest') h.restTarget = Math.min(0.8 * h.max, h.hp + 0.25 * h.max);   // a rest patches up a quarter of HP, not everything
+    h.mode = 'retreat'; h.retreatRoom = r; h.state = 'walk'; h.foe = null; h.item = null; h.needPlan = true;
+    fl.stats.retreats++;
+    floatHero(h, 'Wycofuje się', '#c9c2d8', 13, -0.6);
+  }
+  function plan(h) {
+    h.needPlan = false;
+    const b = bfs(h.x, h.y);
+    let best = -1, bestCost = 1e9, kind = null, goalRoom = -1;
+    if (h.mode === 'retreat') {
+      if (fl.roomAt[h.y * WW + h.x] === h.retreatRoom) { h.mode = 'rest'; h.state = 'rest'; h.path = []; return; }
+      const R = fl.rooms[h.retreatRoom];
+      for (let y = R.y0; y < R.y0 + RS; y++) for (let x = R.x0; x < R.x0 + RS; x++) {
+        const i = y * WW + x, dd = b.dist[i];
+        if (dd >= 0 && dd + fl.danger[i] * 2 < bestCost) { bestCost = dd + fl.danger[i] * 2; best = i; }
+      }
+      h.goal = 'retreat'; h.goalRoom = -1;
+      h.path = best < 0 ? [] : pathFrom(b, best);
+      return;
+    }
+    // 0) warriors charge monsters standing in their room
+    if (h.type === 'warrior' && !fl.fearless) {
+      fl.items.forEach(m => {
+        if (!MONSTERS[m.type] || m.hp <= 0) return;
+        const i = m.y * WW + m.x, dd = b.dist[i];
+        if (fl.roomAt[i] === h.room && dd > 0 && dd <= 6 && dd < bestCost) { bestCost = dd; best = i; kind = 'monster'; }
+      });
+    }
+    // 1) loot: thieves chase any loot they can see, priests grab loot in their room, warriors and mages ignore it
+    if ((h.type === 'thief' || h.type === 'priest') && !fl.fearless) fl.items.forEach(it => {
+      if (it.type !== 'loot' || !lootVisible(it)) return;
+      const i = it.y * WW + it.x, dd = b.dist[i];
+      if (dd < 0) return;
+      const inRoom = fl.roomAt[i] === h.room && fl.rooms[h.room].discovered;
+      if (h.type === 'priest' && !inRoom) return;
+      if (dd < bestCost) { bestCost = dd; best = i; kind = 'loot'; }
+    });
+    // 2) heart, once its room has been seen; on floor 3 the party hears the boss and goes straight for it
+    if (best < 0 && (fl.rooms[fl.heart.room].discovered || (run.floor === 3 && RUSH3))) {
+      fl.heartAdj.forEach(t => { const i = t[1] * WW + t[0], dd = b.dist[i]; if (dd >= 0 && dd < bestCost) { bestCost = dd; best = i; kind = 'heart'; } });
+    }
+    // 3) explore the nearest unseen room; glittering loot pulls everyone, thieves avoid rooms someone else is heading to
+    if (best < 0) {
+      const near = {};
+      for (let i = 0; i < WW * WH; i++) {
+        const r = fl.roomAt[i];
+        if (r < 0 || fl.rooms[r].discovered || b.dist[i] < 0) continue;
+        if (!(r in near) || b.dist[i] < b.dist[near[r]]) near[r] = i;
+      }
+      Object.keys(near).forEach(rk => {
+        const r = +rk, i = near[r];
+        let cost = b.dist[i];
+        if ((h.type === 'thief' || h.type === 'priest') && [...fl.items.values()].some(it => it.type === 'loot' && fl.roomAt[it.y * WW + it.x] === r && lootVisible(it))) cost -= 6;
+        if (h.type === 'thief' && fl.heroes.some(o => o !== h && !o.dead && !o.fled && o.goalRoom === r)) cost += 3;
+        if (cost < bestCost) { bestCost = cost; best = i; kind = 'explore'; goalRoom = r; }
+      });
+    }
+    h.goal = kind; h.goalRoom = goalRoom;
+    h.path = best < 0 ? [] : pathFrom(b, best);
+    h.disarmT = null;
+    if (h.type === 'thief' && h.mode === 'normal' && !fl.fearless && h.path.length && (kind === 'heart' || kind === 'explore')) {
+      const onWay = new Set(h.path.map(p => key(p[0], p[1])));
+      let tBest = null, tSpot = -1, tCost = 1e9;
+      fl.items.forEach(it => {
+        if (!DISARMABLE[it.type] || !it.detected || it.disabled) return;
+        if (!areaOf(it).some(t => onWay.has(key(t[0], t[1])))) return;   // only what they could not walk around
+        if (fl.heroes.some(o => o !== h && o.disarmT === it)) return;
+        disarmSpots(it).forEach(t => { const i = t[1] * WW + t[0], d = b.dist[i]; if (d >= 0 && d < tCost) { tCost = d; tBest = it; tSpot = i; } });
+      });
+      if (tBest) {
+        h.disarmT = tBest; h.goal = 'disarm';
+        if (tCost === 0) { h.state = 'disarm'; h.timer = (tBest.type === 'arrows' || tBest.type === 'fire' || tBest.type === 'powder' ? 1.5 : 1.0) * mods.disarm; h.dur = h.timer; h.item = tBest; h.path = []; floatHero(h, 'Rozbraja', '#ffe066', 13, -0.6); return; }
+        h.path = pathFrom(b, tSpot);
+      }
+    }
+  }
+  // Priest heals the party (healing scores: GDD counts it as spectacle); mage burns monsters with an area fireball.
+  function heroAbilities(h, dt) {
+    if (h.type !== 'priest' && h.type !== 'mage') return;
+    h.cast -= dt;
+    if (h.cast > 0) return;
+    const p = heroPos(h);
+    if (h.type === 'priest') {
+      h.cast = 3;
+      let healed = 0;
+      alive().forEach(o => {
+        const q = heroPos(o);
+        if (o.hp < o.max && fl.time >= o.burnUntil && Math.hypot(q.x - p.x, q.y - p.y) <= 3) { const a = Math.min(18, o.max - o.hp); o.hp += a; healed += a; }
+      });
+      if (healed > 0) {
+        const pts = healed * 0.3 * depthMult(h.room) * fl.greed * infMult();
+        fl.score += pts; fl.stats.healPts += pts; fl.stats.healed += healed;
+        floatHero(h, 'Leczenie +' + Math.round(pts), '#8be38f', 14, -0.5);
+        particles.push({ ring: true, x: p.x, y: p.y, r: 0.3, maxR: 3, life: 0.45, color: '#8be38f' });
+      }
+      return;
+    }
+    let target = null, bd = 4.5;
+    fl.items.forEach(m => {
+      if (!MONSTERS[m.type] || m.hp <= 0 || fl.roomAt[m.y * WW + m.x] !== h.room) return;
+      const d = Math.hypot(m.x + 0.5 - p.x, m.y + 0.5 - p.y);
+      if (d < bd) { bd = d; target = m; }
+    });
+    if (!target) { h.cast = 0.5; return; }
+    h.cast = 4;
+    fxLine(p.x, p.y, target.x + 0.5, target.y + 0.5, 0.3, '255,150,60');
+    const area = [];
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (tileAt(target.x + dx, target.y + dy) === FLOOR) area.push([target.x + dx, target.y + dy]);
+    fxTiles(area, '255,140,50', 0.45);
+    floatHero(h, 'Kula ognia', '#ffb35c', 13, -0.5);
+    area.forEach(t => { const m = fl.items.get(key(t[0], t[1])); if (m && MONSTERS[m.type]) hurtMonster(m, 30); });
+  }
+  function hurtMonster(m, dmg) {
+    if (m.hp <= 0) return;
+    m.hp -= dmg; m.flash = 0.12;
+    if (m.hp <= 0) {
+      m.hp = 0; m.downUntil = fl.time + (ITEMS[m.type].ko || 6); fl.stats.monstersLost++; bt(m.type).ko++;
+      floatTile(m.x, m.y, ITEMS[m.type].name + ' pada', '#9be37a', 14);
+      burst(m.x + 0.5, m.y + 0.5, '#7fbf5a', 10);
+      fl.heroes.forEach(h => { if (h.foe === m) { h.state = 'walk'; h.foe = null; h.needPlan = true; } });
+    }
+  }
+  function heroTile(h) { return (h.nx !== null && h.prog >= 0.5) ? [h.nx, h.ny] : [h.x, h.y]; }
+  function onEnter(h) {
+    const r = fl.roomAt[h.y * WW + h.x];
+    if (r >= 0) {
+      h.room = r;
+      if (fl.rooms[r].dist > fl.rooms[h.deepRoom].dist) h.deepRoom = r;
+      if (!h.visited.has(r)) { h.visited.add(r); h.progressAt = fl.time; }
+      if (!fl.rooms[r].discovered) {
+        fl.rooms[r].discovered = true; fl.stats.rooms++;
+        replanAll();
+      }
+    }
+    const it = fl.items.get(key(h.x, h.y));
+    if (it && it.type === 'loot') pickup(h, it);
+    // the thief disarms standing ON the trap: that second is the player's chance to catch him
+    if (h.type === 'thief' && it && (it.type === 'spikes' || it.type === 'web' || it.type === 'gate') && !it.disabled && it.cd <= 0) {
+      h.state = 'disarm'; h.timer = 1.0 * mods.disarm; h.dur = h.timer; h.item = it; h.path = []; return;
+    }
+    if (h.mode === 'retreat' && r === h.retreatRoom) { h.mode = 'rest'; h.state = 'rest'; h.path = []; return; }
+    if (Math.abs(h.x - fl.heart.x) + Math.abs(h.y - fl.heart.y) === 1) { h.state = 'boss'; h.path = []; return; }
+    h.needPlan = true;
+  }
+  // A hero with no way forward, or one walking only through rooms he has already seen for a while, is lost.
+  // Lost heroes are a show too: they give points every second.
+  function confusionTick(h, dt) {
+    if (fl.fearless) { h.confused = false; return; }
+    if (h.state === 'fight' || h.state === 'boss' || h.state === 'rest' || h.state === 'disarm' || h.mode !== 'normal') { h.progressAt = fl.time; h.confused = false; return; }
+    h.confused = fl.time - h.progressAt > 10;
+    if (!h.confused) return;
+    const pts = 8 * dt * depthMult(h.room) * fl.greed * infMult();
+    fl.score += pts; fl.stats.confPts += pts; h.confAcc += pts;
+    gainEssence(h, 0.15 * dt * lootMult(h), 'essConf');
+    if (h.confAcc >= 8) { floatHero(h, '? +' + Math.round(h.confAcc), '#ffe066', 14, -0.5); h.confAcc = 0; }
+  }
+  function inZone(x, y) { const k = key(x, y); return fl.zones.some(z => z.keys.has(k)); }
+  function updateHero(h, dt) {
+    if (h.flash > 0) h.flash -= dt;
+    h.accT += dt;
+    if (h.accT >= 0.6) { if (h.acc >= 1) floatHero(h, '+' + Math.round(h.acc), '#e8c27a', 13); h.acc = 0; h.accT = 0; }
+    const ot = heroTile(h); h.tx = ot[0]; h.ty = ot[1];
+    const rr = fl.roomAt[h.ty * WW + h.tx]; if (rr >= 0) h.room = rr;
+    if (fl.time < h.burnUntil) { damage(h, 6 * dt, BURN); if (h.dead) return; }
+    heroAbilities(h, dt);
+    confusionTick(h, dt);
+    if (inZone(h.tx, h.ty)) h.slowUntil = Math.max(h.slowUntil, fl.time + 0.15);
+    if (h.type === 'thief') {
+      h.scan -= dt;
+      if (h.scan <= 0) {
+        h.scan = 0.5;
+        fl.items.forEach(it => {
+          if (!TRAPS[it.type] || it.detected || it.disabled) return;
+          if (Math.max(Math.abs(it.x - h.tx), Math.abs(it.y - h.ty)) > 2) return;
+          learnTrap(it, 'thief'); fl.stats.detected++;
+          floatTile(it.x, it.y, 'Wykryta!', '#ffe066', 13, -0.6);
+        });
+      }
+    }
+    if (h.mode === 'normal' && h.hp < 0.35 * h.max && h.state !== 'disarm') startRetreat(h);
+    if (h.state === 'rest') {
+      if (fl.time >= h.burnUntil) h.hp = Math.min(h.max, h.hp + 5 * dt);
+      if (h.hp >= (h.restTarget || 0.8 * h.max)) { h.mode = 'normal'; h.state = 'walk'; h.needPlan = true; }
+      else if (fl.time - h.hurtAt < 0.2 && h.hp < 0.25 * h.max) startRetreat(h);
+      return;
+    }
+    if (h.state === 'disarm') {
+      h.timer -= dt;
+      if (h.timer <= 0) {
+        const it = h.item;
+        if (it && fl.items.get(key(it.x, it.y)) === it) { it.disabled = true; fl.threatDirty = true; fl.stats.disarmed++; bt(it.type).disarmed++; floatTile(it.x, it.y, 'Rozbrojone', '#a69bbb', 14); }
+        h.state = 'walk'; h.item = null; h.needPlan = true;
+      }
+      return;
+    }
+    if (h.state === 'fight') {
+      const g = h.foe;
+      if (!g || g.hp <= 0 || fl.items.get(key(g.x, g.y)) !== g) { h.state = 'walk'; h.foe = null; h.needPlan = true; }
+      else return;
+    }
+    if (h.state === 'boss') { if (h.mode === 'normal' && h.hp < 0.35 * h.max) startRetreat(h); return; }
+    if (h.state === 'wait') { h.timer -= dt; if (h.timer > 0) return; h.state = 'walk'; h.needPlan = true; }
+    if (h.nx === null) {
+      if (h.needPlan || !h.path.length) plan(h);
+      if (h.state === 'rest' || h.state === 'disarm') return;
+      if (h.path.length && !passable(h.path[0][0], h.path[0][1])) plan(h);
+      if (!h.path.length || !passable(h.path[0][0], h.path[0][1])) { h.state = 'wait'; h.timer = 0.4; return; }
+      const n = h.path[0], g = fl.items.get(key(n[0], n[1]));
+      if (g && MONSTERS[g.type] && g.hp > 0) { h.state = 'fight'; h.foe = g; return; }
+      if (h.type !== 'thief' && !fl.fearless && fl.disarmKeys && fl.disarmKeys.has(key(n[0], n[1])) && !fl.disarmKeys.has(key(h.x, h.y))) { h.state = 'wait'; h.timer = 0.4; return; }   // wait for the thief
+      h.path.shift(); h.nx = n[0]; h.ny = n[1]; h.prog = 0;
+    }
+    const slow = fl.time < h.slowUntil ? 0.35 : 1;
+    const dash = !fl.fearless && fl.danger[h.ny * WW + h.nx] > 0 ? 1.3 : 1;   // hurry through a trap they know about
+    h.prog += h.T.speed * (S.heroSpeed / 100) * slow * (fl.fearless ? 1.3 : 1) * dash * dt;
+    if (h.prog >= 1) { h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); }
+  }
+
+  /* ================= Esencja: starting pool + regeneration during the raid ================= */
+  // Loot lying in the dungeon works as a treasury: it speeds up regeneration until a hero takes it.
+  function reachFrom(sx, sy) {
+    const seen = new Uint8Array(WW * WH), q = [sy * WW + sx];
+    seen[q[0]] = 1;
+    while (q.length) {
+      const c = q.pop(), cx = c % WW, cy = (c / WW) | 0;
+      for (const d of DIRS) {
+        const nx = cx + d[0], ny = cy + d[1];
+        if (nx < 0 || ny < 0 || nx >= WW || ny >= WH) continue;
+        const ni = ny * WW + nx;
+        if (seen[ni] || !passable(nx, ny)) continue;
+        seen[ni] = 1; q.push(ni);
+      }
+    }
+    return seen;
+  }
+  // only loot the heroes could actually walk to counts: a treasury locked behind a gate earns nothing
+  function lootLying() { const seen = reachFrom(fl.ent.x, fl.ent.y); let n = 0; fl.items.forEach(it => { if (it.type === 'loot' && seen[it.y * WW + it.x]) n++; }); return n; }
+  function regenParts() { const base = S.regenBase / 10 * mods.regen; return { base, total: base }; }
+  // The dungeon feeds on fear: hurting and confusing heroes produces Esencja that flies out of them to the heart.
+  // A hero carrying loot is a fatter target and sheds more.
+  let orbs = [];
+  function gainEssence(h, amt, stat) {
+    if (amt <= 0) return;
+    const before = Math.floor(fl.essence);
+    const add = Math.max(0, Math.min(S.essenceCap - fl.essence, amt * mods.regen));
+    fl.essence += add; fl.stats[stat] += add;
+    if (h && add > 0) {
+      h.orbAcc += add;
+      const p = heroPos(h), T = cam.s;
+      while (h.orbAcc >= 0.25) {
+        h.orbAcc -= 0.25;
+        if (orbs.length < 60) orbs.push({ x: p.x * T - cam.ox + (Math.random() - 0.5) * 12, y: p.y * T - cam.oy + (Math.random() - 0.5) * 12, t: 0, dur: 0.5 + Math.random() * 0.25 });
+      }
+    }
+    if (Math.floor(fl.essence) !== before) { updateTray(); essPulse(); }
+  }
+  const lootMult = h => 1 + 0.5 * Math.min(4, h.loot);
+  function regenTick(dt) {
+    if (fl.essence >= S.essenceCap) return;
+    const r = regenParts();
+    if (r.total <= 0) return;
+    const before = Math.floor(fl.essence);
+    const gain = Math.min(S.essenceCap - fl.essence, r.total * dt);
+    fl.essence += gain;
+    fl.stats.essBase += gain;
+    if (Math.floor(fl.essence) !== before) { updateTray(); essPulse(); }
+  }
+  function essPulse() { const e = $('#h-ess'); e.classList.remove('pulse'); void e.offsetWidth; e.classList.add('pulse'); }
+
+  /* ================= sound ================= */
+  let actx = null;
+  function sfx(type) {
+    if (!(S.volume > 0)) return;
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const cfg = { warn: [880, 'triangle', 0.12, 1320], go: [1480, 'square', 0.04], crit: [220, 'square', 0.22, 55], ok: [620, 'sine', 0.14, 520], miss: [150, 'sawtooth', 0.18, 70] }[type];
+      if (!cfg) return;
+      const t = actx.currentTime, g = actx.createGain(), o = actx.createOscillator();
+      o.type = cfg[1]; o.frequency.setValueAtTime(cfg[0], t);
+      if (cfg[3]) o.frequency.exponentialRampToValueAtTime(cfg[3], t + cfg[2]);
+      g.gain.setValueAtTime(S.volume * (type === 'go' ? 0.08 : 0.2), t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + cfg[2]);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t); o.stop(t + cfg[2] + 0.02);
+    } catch (e) {}
+  }
+
+  /* ================= skill checks ================= */
+  // A hero walks into a ready trap: time slows and a bar appears at the trap.
+  // Green = graze (70%, safer), red = critical (180%, may kill). No tap = the trap waits.
+  const CHECK_DUR = 1.15;
+  const CHECK_PREP = 0.5;      // real seconds of "Uwaga!" before the needle starts
+  const BASE_DMG = { spikes: 35, arrows: 25, fire: 38, gate: 60, powder: 60, mimic: 40, goblin: 35, archer: 22, ogre: 45, web: 0, shaman: 0 };
+  function predictedDmg(it, pw) {
+    const m = { spikes: mods.spikeDmg, fire: mods.fireDmg, gate: mods.gateCrush, mimic: mods.mimicDmg }[it.type] || 1;
+    return BASE_DMG[it.type] * m * (MONSTERS[it.type] ? it.power : 1) * pw;
+  }
+  function heroesInArea(it) { const keys = new Set(areaOf(it).map(t => key(t[0], t[1]))); return alive().filter(h => keys.has(key(h.tx, h.ty))); }
+  function checkWanted(it) {
+    if (!ACTIVE[it.type] || it.disabled || it.cd > 0 || (it.skipUntil || 0) > fl.time || (MONSTERS[it.type] && it.hp <= 0)) return false;
+    if (it.type === 'gate') return alive().some(h => (h.tx === it.x && h.ty === it.y) || h.path.slice(0, 2).some(p => p[0] === it.x && p[1] === it.y));
+    if (it.type === 'shaman') {
+      const r = fl.roomAt[it.y * WW + it.x]; let need = false;
+      fl.items.forEach(m => { if (MONSTERS[m.type] && m !== it && m.hp < 0.6 * m.max && fl.roomAt[m.y * WW + m.x] === r) need = true; });
+      return need;
+    }
+    return heroesInArea(it).length > 0;
+  }
+  function checkTick() {
+    if (run.mode !== 'check' || fl.check || fl.time < fl.checkGap || fl.ending !== null) return;
+    for (const it of fl.items.values()) {
+      if (!checkWanted(it)) continue;
+      const k = S.checkDiff * (1 + 0.08 * (run.floor - 1)), gw = 0.4 / k, rw = 0.09 / k;
+      const g0 = 0.15 + Math.random() * Math.max(0, 0.85 - gw - rw - 0.15), g1 = g0 + gw, r1 = g1 + rw;
+      const inA = heroesInArea(it);
+      const lethal = pw => it.type !== 'web' && it.type !== 'shaman' &&
+        !(it.type === 'spikes' && run.floor < 3) &&
+        inA.some(h => (it.type !== 'gate' || (h.tx === it.x && h.ty === it.y)) && h.hp + h.shield <= predictedDmg(it, pw) * trapMult(h, it.type));
+      fl.check = { it, t0: realNow + CHECK_PREP, prepT0: realNow, go: false, dur: CHECK_DUR / Math.sqrt(k), g0, g1, r0: g1, r1, lethalOk: lethal(0.7), lethalCrit: lethal(1.8), result: null, resT: 0 };
+      fl.stats.checks++; bt(it.type).checks++;
+      fl.check.note = (inA.some(h => h.state === 'disarm' && h.item === it) ? 'rozbraja ją!' : '') +
+        (it.type === 'spikes' && inA.some(held) ? ' · stoi: ×1,5' : '') +
+        (inA.some(webbed) && it.type !== 'web' ? ' · w sieci +30%' : '');
+      sfx('warn');
+      if (run.checkHints > 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" rusza wskazówka. Stuknij gdziekolwiek (spacja na komputerze). Zielone = draśnięcie, czerwone = krytyk, czaszka = ktoś zginie.'); }
+      return;
+    }
+  }
+  function resolveCheck(p) {
+    const c = fl.check;
+    if (!c || c.result) return;
+    if (p === undefined) { if (realNow < c.t0) return; p = (realNow - c.t0) / c.dur; }
+    let res = 'miss', pw = 0;
+    if (p >= c.r0 && p <= c.r1) { res = 'crit'; pw = 1.8; }
+    else if (p >= c.g0 && p < c.g1) { res = 'ok'; pw = 0.7; }
+    c.result = res; c.resT = realNow; c.p = p;
+    sfx(res);
+    bt(c.it.type)[res === 'crit' ? 'crit' : res === 'ok' ? 'ok' : 'miss']++;
+    if (res === 'miss') {
+      c.it.cd = ITEMS[c.it.type].cd * mods.cooldown * 0.5 || 1;
+      floatTile(c.it.x, c.it.y, 'Pudło', '#a69bbb', 15, -0.8); fl.stats.checkMiss++;
+      return;
+    }
+    const victims = heroesInArea(c.it);
+    fire(c.it, pw);
+    if (res === 'crit') {
+      fl.stats.checkCrit++; shake = Math.max(shake, 0.22); floatTile(c.it.x, c.it.y, 'KRYTYK!', '#ff6b6b', 19, -1.2);
+      victims.forEach(h => {
+        if (h.dead || h.loot <= 0) return;
+        h.loot--; gainEssence(h, 2, 'essDrop');
+        const q = heroPos(h); burst(q.x, q.y, '#f2b94b', 10);
+        floatHero(h, 'Wypadł łup! +2', '#c3b2ff', 15, -1.0);
+      });
+    }
+    else { fl.stats.checkOk++; floatTile(c.it.x, c.it.y, 'Draśnięcie', '#8be38f', 14, -1.2); }
+  }
+  function skipCheck() {
+    const c = fl.check; if (!c || c.result) return;
+    c.result = 'skip'; c.resT = realNow; c.it.skipUntil = fl.time + 1.2; fl.stats.checkSkip++; bt(c.it.type).skip++;
+  }
+  function clearCheck() { fl.check = null; fl.checkGap = fl.time + 0.25; }
+  function updateCheck() {   // runs on real time, so the bar speed does not depend on the slow motion
+    const c = fl.check;
+    if (!c) return;
+    if (c.result) { if (realNow - c.resT > 0.35) clearCheck(); return; }
+    if (!c.go && realNow >= c.t0) { c.go = true; sfx('go'); }
+    if ((realNow - c.t0) / c.dur >= 1) skipCheck();
+  }
+
+  /* ================= simulation step (game time) ================= */
+  function step(dt) {
+    fl.time += dt;
+    if (fl.queue.length) {
+      fl.spawnTimer -= dt;
+      if (fl.spawnTimer <= 0) { spawnHero(fl.queue.shift()); fl.spawnTimer = 1.0; }
+    }
+    fl.items.forEach(it => {
+      if (it.cd > 0) { it.cd = Math.max(0, it.cd - dt); if (it.detected && it.cd <= 0.3 && it.cd + dt > 0.3) fl.threatDirty = true; }   // loaded again: avoid it again
+      if (it.anim > 0) it.anim = Math.max(0, it.anim - dt);
+    });
+    if (fl.zones.length) fl.zones = fl.zones.filter(z => z.until > fl.time);
+    regenTick(dt);
+    if (fl.threatDirty) rebuildThreat();
+    if (run.mode !== 'check' && run.hintsLeft > 0) {
+      fl.hintT -= dt;
+      if (fl.hintT <= 0) {
+        fl.hintT = 0.25;
+        for (const it of fl.items.values()) {
+          if (!ACTIVE[it.type] || it.hinted || it.disabled || it.cd > 0) continue;
+          const keys = new Set(areaOf(it).map(t => key(t[0], t[1])));
+          if (!alive().some(h => keys.has(key(h.tx, h.ty)))) continue;
+          it.hinted = true; run.hintsLeft--;
+          floatTile(it.x, it.y, 'Stuknij!', '#ffffff', 17, -0.7);
+          const ACC = { spikes: 'kolce', web: 'sieć', arrows: 'strzały', fire: 'ogień', gate: 'kratę', powder: 'proch', mimic: 'mimika', goblin: 'goblina', archer: 'łucznika', ogre: 'ogra', shaman: 'szamana' };
+          setHint('Bohater w zasięgu: stuknij ' + (ACC[it.type] || ITEMS[it.type].name.toLowerCase()) + '. Uważaj, żeby nie zabić wszystkich.');
+          break;
+        }
+      }
+    }
+    fl.doors.forEach(d => { if (d.wasClosed && d.closedUntil <= fl.time) { d.wasClosed = false; replanAll(); } });
+    fl.disarmKeys = null;
+    fl.heroes.forEach(h => { if (h.state === 'disarm' && h.item && !h.dead && h.item.detected) { fl.disarmKeys = fl.disarmKeys || new Set(); areaOf(h.item).forEach(t => fl.disarmKeys.add(key(t[0], t[1]))); } });
+    fl.heroes.forEach(h => { if (!h.dead && !h.fled) updateHero(h, dt); });
+    checkTick();
+
+    fl.items.forEach(m => {
+      if (!MONSTERS[m.type]) return;
+      if (m.hp <= 0) {   // the dungeon raises its own: a beaten monster gets back up
+        if (m.downUntil && fl.time >= m.downUntil) { m.hp = m.max; m.downUntil = 0; floatTile(m.x, m.y, 'Wstaje!', '#9be37a', 13, -0.6); replanAll(); }
+        return;
+      }
+      if (m.flash > 0) m.flash -= dt;
+      if (m.type === 'shaman') fl.items.forEach(o => {
+        if (MONSTERS[o.type] && o.hp > 0 && o.hp < o.max && Math.max(Math.abs(o.x - m.x), Math.abs(o.y - m.y)) <= 2) o.hp = Math.min(o.max, o.hp + 8 * dt);
+      });
+      if (m.type === 'archer') {
+        m.shot -= dt;
+        if (m.shot <= 0) {
+          const r = fl.roomAt[m.y * WW + m.x];
+          let tgt = null, bd = 4.01;
+          alive().forEach(h => { if (fl.roomAt[h.ty * WW + h.tx] !== r) return; const d = Math.hypot(h.tx - m.x, h.ty - m.y); if (d < bd) { bd = d; tgt = h; } });
+          if (tgt) { m.shot = 1.2; const p = heroPos(tgt); fxLine(m.x + 0.5, m.y + 0.5, p.x, p.y, 0.15); damage(tgt, 9 * m.power, m); }
+          else m.shot = 0.3;
+        }
+      }
+      const fighters = fl.heroes.filter(h => !h.dead && !h.fled && h.state === 'fight' && h.foe === m);
+      if (!fighters.length) return;
+      (m.type === 'ogre' ? fighters : fighters.slice(0, 1)).forEach(h => damage(h, ITEMS[m.type].melee * m.power * dt, m));   // the ogre cleaves
+      let dmgIn = 0;
+      fighters.forEach(h => { dmgIn += h.T.dps * (h.type === 'warrior' ? 1.4 : 1) * dt; });
+      hurtMonster(m, dmgIn);
+    });
+
+    const atBoss = fl.heroes.filter(h => !h.dead && !h.fled && h.state === 'boss');
+    if (atBoss.length && !fl.boss.down && fl.ending === null) {
+      atBoss.forEach(h => { fl.boss.hp -= h.T.dps * dt; });
+      fl.boss.hit = 0.12;
+      damage(atBoss[0], (run.floor === 3 ? BOSS_DPS : 8) * mods.bossDmg * dt, BOSS);
+      if (fl.boss.hp <= 0) {
+        fl.boss.hp = 0; fl.boss.down = true;
+        if (run.floor < 3) { sealBroken(); return; }
+        if (!run.reviveUsed) queueModal({ type: 'revive' });
+        else loseRun('Bohaterowie pokonali bossa. Loch upadł.');
+        return;
+      }
+    }
+    if (fl.boss.hit > 0) fl.boss.hit -= dt;
+    if (!fl.fearless && fl.ending === null && fl.time >= S.waveTime) becomeFearless();
+    if (fl.ending === null && fl.queue.length === 0 && fl.heroes.length && fl.heroes.every(h => h.dead)) { fl.ending = 1.2; fl.endReason = run.floor === 3 ? 'victory' : 'alldead'; }
+  }
+
+  /* ================= main loop (real time) ================= */
+  function timeScale() {
+    if (!fl || modalOpen || fl.phase !== 'raid') return 0;
+    if (fl.check && !fl.check.result) return 0.06;
+    if (focusOn) return run.mode === 'pause' ? 0 : run.mode === 'slow' ? 0.3 : 1;
+    return 1;
+  }
+  let lastT = performance.now();
+  function frame(now) {
+    const rdt = Math.min(0.05, (now - lastT) / 1000); lastT = now; realNow += rdt;
+    if (run && fl) {
+      if (fl.phase === 'raid' && !modalOpen) {
+        if (focusOn) { focus -= rdt; run.focusUsed += rdt; if (focus <= 0) { focus = 0; focusOn = false; updateAction(); } }
+        else focus = Math.min(S.focusCap, focus + S.focusRegen * rdt);
+      }
+      if (fl.check) { if (modalOpen) { fl.check.t0 += rdt; fl.check.prepT0 += rdt; fl.check.resT += rdt; } else updateCheck(); }
+      const dt = rdt * timeScale();
+      if (dt > 0) step(dt);
+      if (fl.phase === 'raid' && fl.ending !== null && !modalOpen) {
+        fl.ending -= rdt;
+        if (fl.ending <= 0) { fl.ending = null; finishWave(); }
+      }
+      fl.items.forEach(it => { if (it.preview > 0) it.preview -= rdt; });
+      fl.fx.forEach(f => { f.life -= rdt; });
+      fl.fx = fl.fx.filter(f => f.life > 0);
+      updateHud();
+    }
+    orbs.forEach(o => { o.t += rdt; });
+    orbs = orbs.filter(o => o.t < o.dur);
+    floats.forEach(f => { f.life -= rdt; f.y -= 0.9 * rdt; });
+    floats = floats.filter(f => f.life > 0);
+    particles.forEach(p => {
+      p.life -= rdt;
+      if (p.ring) p.r += (p.maxR - p.r) * Math.min(1, rdt * 12);
+      else { p.x += p.vx * rdt; p.y += p.vy * rdt; p.vx *= 0.9; p.vy *= 0.9; }
+    });
+    particles = particles.filter(p => p.life > 0);
+    if (shake > 0) shake = Math.max(0, shake - rdt);
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  /* ================= camera ================= */
+  const fitScale = () => Math.min(cw / WW, ch / WH);
+  const closeScale = () => Math.max(fitScale() * 1.05, Math.min(52, cw / 7.6));
+  function clampCam() {
+    const mw = WW * cam.s, mh = WH * cam.s;
+    cam.ox = mw <= cw ? (mw - cw) / 2 : clamp(cam.ox, -cw * 0.25, mw - cw * 0.75);
+    cam.oy = mh <= ch ? (mh - ch) / 2 : clamp(cam.oy, -ch * 0.25, mh - ch * 0.75);
+  }
+  function centerOn(tx, ty) { cam.ox = tx * cam.s - cw / 2; cam.oy = ty * cam.s - ch / 2; clampCam(); }
+  function zoomAt(ns, sx, sy) {
+    const wx = (sx + cam.ox) / cam.s, wy = (sy + cam.oy) / cam.s;
+    cam.s = clamp(ns, fitScale() * 0.95, 72);
+    cam.ox = wx * cam.s - sx; cam.oy = wy * cam.s - sy; clampCam(); updateZoomBtn();
+  }
+  const toWorld = (sx, sy) => ({ x: (sx + cam.ox) / cam.s, y: (sy + cam.oy) / cam.s });
+  function resize() {
+    DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    const rect = stage.getBoundingClientRect();
+    const had = cw > 0, cx = had ? (cam.ox + cw / 2) / cam.s : 0, cy = had ? (cam.oy + ch / 2) / cam.s : 0;
+    cw = Math.max(60, Math.floor(rect.width)); ch = Math.max(60, Math.floor(rect.height));
+    cv.width = Math.round(cw * DPR); cv.height = Math.round(ch * DPR);
+    if (had) { cam.s = clamp(cam.s, fitScale() * 0.95, 72); centerOn(cx, cy); }
+  }
+  function updateZoomBtn() {
+    const b = $('#btn-zoom'), zoomedOut = cam.s < closeScale() * 0.92;
+    b.setAttribute('aria-label', zoomedOut ? 'Przybliż' : 'Pokaż cały loch');
+    b.innerHTML = zoomedOut
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';
+  }
+
+  /* ================= drawing ================= */
+  const numFont = (px, bold) => (bold ? '700 ' : '500 ') + Math.round(px) + 'px "Pixelify Sans", ui-monospace, monospace';
+  function rr(x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+  }
+  function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = '#08070c'; ctx.fillRect(0, 0, cw, ch);
+    if (!fl) return;
+    const T = cam.s;
+    ctx.save();
+    let sx = 0, sy = 0;
+    if (shake > 0) { sx = (Math.random() - 0.5) * shake * 18; sy = (Math.random() - 0.5) * shake * 18; }
+    ctx.translate(-cam.ox + sx, -cam.oy + sy);
+    const x0 = clamp(Math.floor(cam.ox / T) - 1, 0, WW - 1), x1 = clamp(Math.ceil((cam.ox + cw) / T) + 1, 0, WW - 1);
+    const y0 = clamp(Math.floor(cam.oy / T) - 1, 0, WH - 1), y1 = clamp(Math.ceil((cam.oy + ch) / T) + 1, 0, WH - 1);
+    drawTiles(x0, y0, x1, y1, T);
+    drawZones(T);
+    if (fl.phase === 'raid') drawDanger(x0, y0, x1, y1, T);
+    if (fl.phase === 'build') drawAreas(T);
+    fl.objects.forEach(o => drawObject(o, T));
+    fl.items.forEach(it => drawItem(it, T));
+    drawHeart(T);
+    drawRoomLabels(T);
+    if (fl.phase === 'raid' || fl.phase === 'end' || fl.phase === 'over') drawFog(T);
+    drawSlots(x0, y0, x1, y1, T);
+    drawFx(T);
+    fl.heroes.forEach(h => { if (!h.dead && !h.fled) drawHero(h, T); });
+    drawParticles(T); drawFloats(T);
+    ctx.restore();
+    drawOffscreen(T);
+    drawOrbs();
+    drawCheck(T);
+  }
+  function drawTiles(x0, y0, x1, y1, T) {
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const i = y * WW + x, t = fl.tiles[i], px = x * T, py = y * T;
+      if (t === ROCK) {
+        ctx.fillStyle = ((x * 7 + y * 13) % 5 === 0) ? '#110e17' : '#0d0b12'; ctx.fillRect(px, py, T + 0.5, T + 0.5);
+        continue;
+      }
+      if (t === WALL) {
+        ctx.fillStyle = '#2a2334'; ctx.fillRect(px, py, T + 0.5, T + 0.5);
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; ctx.beginPath();
+        ctx.moveTo(px, py + T / 2); ctx.lineTo(px + T, py + T / 2);
+        ctx.moveTo(px + T / 2, py); ctx.lineTo(px + T / 2, py + T / 2);
+        ctx.moveTo(px + T / 4, py + T / 2); ctx.lineTo(px + T / 4, py + T);
+        ctx.moveTo(px + T * 3 / 4, py + T / 2); ctx.lineTo(px + T * 3 / 4, py + T);
+        ctx.stroke();
+        if (tileAt(x, y + 1) === FLOOR) { ctx.fillStyle = '#3d334b'; ctx.fillRect(px, py + T * 0.8, T + 0.5, T * 0.2); }
+        continue;
+      }
+      if (t === FLOOR) {
+        ctx.fillStyle = fl.rooms[fl.roomAt[i]].color; ctx.fillRect(px, py, T + 0.5, T + 0.5);
+        ctx.fillStyle = 'rgba(255,255,255,0.045)';
+        ctx.fillRect(px + T * 0.1, py + T * 0.12, T * 0.34, T * 0.24);
+        ctx.fillRect(px + T * 0.52, py + T * 0.56, T * 0.34, T * 0.24);
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.strokeRect(px + 0.5, py + 0.5, T - 1, T - 1);
+        continue;
+      }
+      const d = fl.doors.get(key(x, y));
+      ctx.fillStyle = '#1a141f'; ctx.fillRect(px, py, T + 0.5, T + 0.5);
+      ctx.fillStyle = d.entrance ? '#6a5844' : '#4a3424';
+      ctx.fillRect(px + T * 0.08, py + T * 0.08, T * 0.84, T * 0.84);
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = Math.max(1, T * 0.03); ctx.beginPath();
+      for (let k = 1; k < 4; k++) {
+        if (d.horiz) { ctx.moveTo(px + T * 0.08, py + T * (0.08 + 0.21 * k)); ctx.lineTo(px + T * 0.92, py + T * (0.08 + 0.21 * k)); }
+        else { ctx.moveTo(px + T * (0.08 + 0.21 * k), py + T * 0.08); ctx.lineTo(px + T * (0.08 + 0.21 * k), py + T * 0.92); }
+      }
+      ctx.stroke();
+      if (d.entrance) {
+        const g = ctx.createLinearGradient(0, py, 0, py + T * 1.6);
+        g.addColorStop(0, 'rgba(255,220,160,0.35)'); g.addColorStop(1, 'rgba(255,220,160,0)');
+        ctx.fillStyle = g; ctx.fillRect(px - T * 0.5, py, T * 2, T * 1.6);
+        ctx.fillStyle = 'rgba(255,236,200,0.95)'; ctx.beginPath();
+        ctx.moveTo(px + T * 0.28, py + T * 0.3); ctx.lineTo(px + T * 0.72, py + T * 0.3); ctx.lineTo(px + T * 0.5, py + T * 0.72); ctx.closePath(); ctx.fill();
+      }
+    }
+  }
+  function drawZones(T) {
+    fl.zones.forEach(z => z.tiles.forEach(t => { ctx.fillStyle = 'rgba(160,190,255,0.18)'; ctx.fillRect(t[0] * T, t[1] * T, T, T); }));
+  }
+  function drawDanger(x0, y0, x1, y1, T) {
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const d = fl.danger[y * WW + x];
+      if (d < 0.4) continue;
+      ctx.fillStyle = 'rgba(255,80,80,' + Math.min(0.22, d * 0.05).toFixed(3) + ')';
+      ctx.fillRect(x * T, y * T, T, T);
+    }
+  }
+  function drawAreas(T) {
+    fl.items.forEach(it => {
+      if (!ACTIVE[it.type]) return;
+      const a = it.preview > 0 ? 0.32 : 0.11;
+      ctx.fillStyle = 'rgba(242,185,75,' + a + ')';
+      areaOf(it).forEach(t => ctx.fillRect(t[0] * T + 1, t[1] * T + 1, T - 2, T - 2));
+    });
+  }
+  function drawObject(o, T) {
+    const px = o.x * T, py = o.y * T;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(px + T / 2, py + T * 0.84, T * 0.34, T * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+    if (o.kind === 'barrel') {
+      ctx.fillStyle = '#8a5a2b'; rr(px + T * 0.25, py + T * 0.16, T * 0.5, T * 0.68, T * 0.12); ctx.fill();
+      ctx.fillStyle = '#4a2f18'; ctx.fillRect(px + T * 0.25, py + T * 0.32, T * 0.5, T * 0.07); ctx.fillRect(px + T * 0.25, py + T * 0.62, T * 0.5, T * 0.07);
+    } else if (o.kind === 'crate') {
+      ctx.fillStyle = '#7a5a34'; ctx.fillRect(px + T * 0.16, py + T * 0.18, T * 0.68, T * 0.64);
+      ctx.strokeStyle = '#4a3420'; ctx.lineWidth = Math.max(1, T * 0.05);
+      ctx.strokeRect(px + T * 0.16, py + T * 0.18, T * 0.68, T * 0.64);
+      ctx.beginPath(); ctx.moveTo(px + T * 0.16, py + T * 0.18); ctx.lineTo(px + T * 0.84, py + T * 0.82); ctx.moveTo(px + T * 0.84, py + T * 0.18); ctx.lineTo(px + T * 0.16, py + T * 0.82); ctx.stroke();
+    } else if (o.kind === 'statue') {
+      ctx.fillStyle = '#55505e'; ctx.fillRect(px + T * 0.22, py + T * 0.66, T * 0.56, T * 0.18);
+      ctx.fillStyle = '#8a8496'; ctx.fillRect(px + T * 0.36, py + T * 0.36, T * 0.28, T * 0.32);
+      ctx.beginPath(); ctx.arc(px + T * 0.5, py + T * 0.27, T * 0.12, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = '#4a3020'; ctx.fillRect(px + T * 0.12, py + T * 0.14, T * 0.76, T * 0.72);
+      const cols = ['#8a3a3a', '#3a5a8a', '#6a8a3a', '#b08a3a'];
+      for (let row = 0; row < 3; row++) for (let b = 0; b < 4; b++) {
+        ctx.fillStyle = cols[(b + row + o.x) % 4];
+        ctx.fillRect(px + T * (0.17 + b * 0.17), py + T * (0.19 + row * 0.22), T * 0.12, T * 0.16);
+      }
+    }
+  }
+  function drawItem(it, T) {
+    const px = it.x * T, py = it.y * T, cx = px + T / 2, cy = py + T / 2, s = T;
+    switch (it.type) {
+      case 'spikes': {
+        ctx.fillStyle = '#2a2433'; ctx.fillRect(cx - s * 0.34, cy + s * 0.12, s * 0.68, s * 0.12);
+        const hgt = it.anim > 0 ? s * 0.38 : s * 0.14;
+        ctx.fillStyle = it.anim > 0 ? '#ffffff' : '#c9d1e3';
+        for (let n = -1; n <= 1; n++) { ctx.beginPath(); ctx.moveTo(cx + n * s * 0.22 - s * 0.09, cy + s * 0.13); ctx.lineTo(cx + n * s * 0.22, cy + s * 0.13 - hgt); ctx.lineTo(cx + n * s * 0.22 + s * 0.09, cy + s * 0.13); ctx.closePath(); ctx.fill(); }
+        break;
+      }
+      case 'web': {
+        ctx.strokeStyle = 'rgba(220,230,255,0.75)'; ctx.lineWidth = Math.max(1, s * 0.025); ctx.beginPath();
+        for (let a = 0; a < 6; a++) { const an = a * Math.PI / 3; ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(an) * s * 0.36, cy + Math.sin(an) * s * 0.36); }
+        [0.14, 0.27].forEach(r0 => { for (let b = 0; b <= 6; b++) { const an = b * Math.PI / 3, x = cx + Math.cos(an) * s * r0, y = cy + Math.sin(an) * s * r0; if (b === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } });
+        ctx.stroke();
+        break;
+      }
+      case 'arrows':
+        wallDirs(it.x, it.y).forEach(d => {
+          const fx = cx + d[0] * s * 0.36, fy = cy + d[1] * s * 0.36;
+          ctx.fillStyle = '#0d0a12';
+          for (let k = -1; k <= 1; k++) {
+            if (d[0] !== 0) ctx.fillRect(fx - s * 0.05, fy + k * s * 0.22 - s * 0.05, s * 0.1, s * 0.1);
+            else ctx.fillRect(fx + k * s * 0.22 - s * 0.05, fy - s * 0.05, s * 0.1, s * 0.1);
+          }
+          ctx.fillStyle = '#d9dbe6'; ctx.beginPath();
+          const tx = cx + d[0] * s * 0.48, ty = cy + d[1] * s * 0.48, bx = cx + d[0] * s * 0.22, by = cy + d[1] * s * 0.22;
+          ctx.moveTo(tx, ty); ctx.lineTo(bx + d[1] * s * 0.1, by + d[0] * s * 0.1); ctx.lineTo(bx - d[1] * s * 0.1, by - d[0] * s * 0.1); ctx.closePath(); ctx.fill();
+        });
+        break;
+      case 'fire':
+        wallDirs(it.x, it.y).forEach(d => {
+          const fx = cx + d[0] * s * 0.3, fy = cy + d[1] * s * 0.3, fl2 = 0.75 + 0.25 * Math.sin(realNow * 9 + it.x);
+          ctx.fillStyle = '#3a2a2a'; ctx.beginPath(); ctx.arc(fx, fy, s * 0.17, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ff9a3c'; ctx.beginPath(); ctx.arc(fx + d[0] * s * 0.05, fy + d[1] * s * 0.05, s * 0.09 * fl2, 0, Math.PI * 2); ctx.fill();
+        });
+        break;
+      case 'gate': {
+        const d = fl.doors.get(key(it.x, it.y)), closed = doorClosed(d);
+        ctx.strokeStyle = '#a9adbd'; ctx.lineWidth = Math.max(1.5, s * 0.06); ctx.beginPath();
+        const len = closed ? 0.84 : 0.22;
+        for (let k = 0; k < 4; k++) {
+          const o = 0.2 + k * 0.2;
+          if (d.horiz) { ctx.moveTo(px + s * 0.08, py + s * o); ctx.lineTo(px + s * (0.08 + len), py + s * o); }
+          else { ctx.moveTo(px + s * o, py + s * 0.08); ctx.lineTo(px + s * o, py + s * (0.08 + len)); }
+        }
+        ctx.stroke();
+        if (closed) { ctx.fillStyle = 'rgba(169,173,189,0.18)'; ctx.fillRect(px, py, s, s); }
+        const left = Math.max(0, mods.gateUses - (it.uses || 0));
+        if (s >= 14) for (let k = 0; k < left; k++) { ctx.fillStyle = '#f2b94b'; ctx.beginPath(); ctx.arc(px + s * (0.2 + k * 0.15), py + s * 0.9, Math.max(1.5, s * 0.05), 0, Math.PI * 2); ctx.fill(); }
+        break;
+      }
+      case 'powder':
+        ctx.fillStyle = '#1e1e26'; ctx.beginPath(); ctx.arc(px + s * 0.72, py + s * 0.3, s * 0.15, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#b08a5a'; ctx.lineWidth = Math.max(1, s * 0.04); ctx.beginPath(); ctx.moveTo(px + s * 0.8, py + s * 0.2); ctx.lineTo(px + s * 0.88, py + s * 0.1); ctx.stroke();
+        ctx.fillStyle = Math.sin(realNow * 14) > 0 ? '#ffd27a' : '#ff7a3c'; ctx.beginPath(); ctx.arc(px + s * 0.89, py + s * 0.09, s * 0.05, 0, Math.PI * 2); ctx.fill();
+        break;
+      case 'mimic': {
+        const open = it.anim > 0 ? s * 0.06 : 0;
+        ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.arc(cx - s * 0.12, cy - s * 0.12, s * 0.05, 0, Math.PI * 2); ctx.arc(cx + s * 0.12, cy - s * 0.12, s * 0.05, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f1e7d3'; ctx.beginPath();
+        for (let k = 0; k < 5; k++) { const x = cx - s * 0.25 + k * s * 0.1; ctx.moveTo(x, cy + s * 0.05 - open); ctx.lineTo(x + s * 0.05, cy + s * 0.15); ctx.lineTo(x + s * 0.1, cy + s * 0.05 - open); }
+        ctx.fill();
+        break;
+      }
+      case 'goblin':
+        ctx.fillStyle = '#5fa84a';
+        ctx.beginPath(); ctx.moveTo(cx - s * 0.3, cy - s * 0.12); ctx.lineTo(cx - s * 0.16, cy - s * 0.06); ctx.lineTo(cx - s * 0.2, cy + s * 0.02); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(cx + s * 0.3, cy - s * 0.12); ctx.lineTo(cx + s * 0.16, cy - s * 0.06); ctx.lineTo(cx + s * 0.2, cy + s * 0.02); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy, s * 0.22, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.arc(cx - s * 0.08, cy - s * 0.03, s * 0.04, 0, Math.PI * 2); ctx.arc(cx + s * 0.08, cy - s * 0.03, s * 0.04, 0, Math.PI * 2); ctx.fill();
+        if (it.anim > 0) { ctx.strokeStyle = '#d9dbe6'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.beginPath(); ctx.moveTo(cx + s * 0.2, cy + s * 0.05); ctx.lineTo(cx + s * 0.45, cy - s * 0.05); ctx.stroke(); }
+        break;
+      case 'archer':
+        ctx.fillStyle = '#e8e4d8'; ctx.beginPath(); ctx.arc(cx - s * 0.04, cy - s * 0.1, s * 0.15, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#1a1424'; ctx.fillRect(cx - s * 0.12, cy - s * 0.13, s * 0.06, s * 0.06); ctx.fillRect(cx + s * 0.0, cy - s * 0.13, s * 0.06, s * 0.06);
+        ctx.strokeStyle = '#e8e4d8'; ctx.lineWidth = Math.max(1, s * 0.05); ctx.beginPath();
+        ctx.moveTo(cx - s * 0.04, cy + s * 0.05); ctx.lineTo(cx - s * 0.04, cy + s * 0.28); ctx.moveTo(cx - s * 0.16, cy + s * 0.13); ctx.lineTo(cx + s * 0.08, cy + s * 0.13); ctx.stroke();
+        ctx.strokeStyle = '#a0703a'; ctx.lineWidth = Math.max(1, s * 0.045); ctx.beginPath(); ctx.arc(cx + s * 0.08, cy + s * 0.06, s * 0.22, -Math.PI / 2.4, Math.PI / 2.4); ctx.stroke();
+        break;
+      case 'ogre':
+        ctx.fillStyle = '#7d8a5a'; ctx.beginPath(); ctx.arc(cx, cy + s * 0.02, s * (it.anim > 0 ? 0.37 : 0.33), 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ff6b6b'; ctx.beginPath(); ctx.arc(cx - s * 0.11, cy - s * 0.06, s * 0.045, 0, Math.PI * 2); ctx.arc(cx + s * 0.11, cy - s * 0.06, s * 0.045, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f1e7d3'; ctx.beginPath();
+        ctx.moveTo(cx - s * 0.13, cy + s * 0.1); ctx.lineTo(cx - s * 0.09, cy + s * 0.22); ctx.lineTo(cx - s * 0.05, cy + s * 0.1);
+        ctx.moveTo(cx + s * 0.13, cy + s * 0.1); ctx.lineTo(cx + s * 0.09, cy + s * 0.22); ctx.lineTo(cx + s * 0.05, cy + s * 0.1); ctx.fill();
+        break;
+      case 'shaman':
+        ctx.fillStyle = '#d94a4a'; ctx.fillRect(cx - s * 0.12, cy - s * 0.36, s * 0.05, s * 0.14);
+        ctx.fillStyle = '#4a8ad9'; ctx.fillRect(cx - s * 0.03, cy - s * 0.4, s * 0.05, s * 0.18);
+        ctx.fillStyle = '#e8c04a'; ctx.fillRect(cx + s * 0.06, cy - s * 0.36, s * 0.05, s * 0.14);
+        ctx.fillStyle = '#5fa84a'; ctx.beginPath(); ctx.arc(cx - s * 0.03, cy + s * 0.02, s * 0.19, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.arc(cx - s * 0.1, cy - s * 0.01, s * 0.035, 0, Math.PI * 2); ctx.arc(cx + s * 0.04, cy - s * 0.01, s * 0.035, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = Math.max(1, s * 0.04); ctx.beginPath(); ctx.moveTo(cx + s * 0.25, cy - s * 0.2); ctx.lineTo(cx + s * 0.25, cy + s * 0.3); ctx.stroke();
+        ctx.fillStyle = 'rgba(139,227,143,' + (0.7 + 0.3 * Math.sin(realNow * 5)).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(cx + s * 0.25, cy - s * 0.24, s * 0.07, 0, Math.PI * 2); ctx.fill();
+        break;
+      case 'loot': {
+        ctx.fillStyle = '#b07a24'; ctx.beginPath(); ctx.ellipse(cx, cy + s * 0.18, s * 0.3, s * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f2b94b';
+        [[-0.12, 0.08], [0.12, 0.06], [0, -0.06]].forEach(p => { ctx.beginPath(); ctx.arc(cx + p[0] * s, cy + p[1] * s, s * 0.12, 0, Math.PI * 2); ctx.fill(); });
+        const gl = 0.5 + 0.5 * Math.sin(realNow * 4 + it.x);
+        ctx.fillStyle = 'rgba(255,240,180,' + (0.7 * gl).toFixed(2) + ')';
+        ctx.fillRect(cx + s * 0.16, cy - s * 0.3, s * 0.06, s * 0.06); ctx.fillRect(cx - s * 0.24, cy - s * 0.18, s * 0.04, s * 0.04);
+        break;
+      }
+    }
+    if (MONSTERS[it.type]) {
+      if (it.hp <= 0 && fl.phase === 'raid') {   // knocked out: dimmed, with a ring showing when it gets back up
+        ctx.fillStyle = 'rgba(20,16,28,0.55)'; ctx.fillRect(px, py, s, s);
+        const left = clamp((it.downUntil - fl.time) / (ITEMS[it.type].ko || 6), 0, 1);
+        ctx.strokeStyle = '#9be37a'; ctx.lineWidth = Math.max(1.5, s * 0.05);
+        ctx.beginPath(); ctx.arc(cx, cy, s * 0.38, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - left)); ctx.stroke();
+        ctx.fillStyle = '#c9c2d8'; ctx.font = numFont(Math.max(9, s * 0.26), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('zZ', cx + s * 0.2, cy - s * 0.25);
+      } else {
+        if (it.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2); ctx.fill(); }
+        hpBar(cx, cy - s * 0.4, s * 0.6, it.hp / it.max, '#9be37a', T);
+      }
+    }
+    if (ACTIVE[it.type] && fl.phase === 'raid') {
+      if (it.disabled) {
+        ctx.fillStyle = 'rgba(20,16,28,0.6)'; ctx.fillRect(px, py, s, s);
+        ctx.strokeStyle = '#857a99'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.beginPath();
+        ctx.moveTo(cx - s * 0.18, cy - s * 0.18); ctx.lineTo(cx + s * 0.18, cy + s * 0.18); ctx.moveTo(cx + s * 0.18, cy - s * 0.18); ctx.lineTo(cx - s * 0.18, cy + s * 0.18); ctx.stroke();
+      } else if (it.cd > 0) {
+        const max = ITEMS[it.type].cd * mods.cooldown;
+        ctx.strokeStyle = 'rgba(166,155,187,0.85)'; ctx.lineWidth = Math.max(1.5, s * 0.05);
+        ctx.beginPath(); ctx.arc(cx, cy, s * 0.42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - it.cd / max)); ctx.stroke();
+      } else {
+        const pulse = 0.5 + 0.35 * Math.sin(realNow * 6);
+        ctx.strokeStyle = 'rgba(242,185,75,' + pulse.toFixed(2) + ')'; ctx.lineWidth = Math.max(1.5, s * 0.05);
+        ctx.strokeRect(px + s * 0.06, py + s * 0.06, s * 0.88, s * 0.88);
+      }
+      if (it.detected && !it.disabled) {
+        ctx.fillStyle = '#ffe066'; ctx.font = numFont(Math.max(10, s * 0.3), true); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillText('!', px + s * 0.08, py + s * 0.02);
+      }
+      if (it.rep < 0.999 && T >= 26) {
+        ctx.fillStyle = 'rgba(241,231,211,0.75)'; ctx.font = numFont(s * 0.2); ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+        ctx.fillText(Math.round(it.rep * 100) + '%', px + s * 0.95, py + s * 0.99);
+      }
+    }
+  }
+  function hpBar(cx, y, w, frac, color, T) {
+    ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(cx - w / 2, y, w, Math.max(2, T * 0.07));
+    ctx.fillStyle = color; ctx.fillRect(cx - w / 2, y, w * clamp(frac, 0, 1), Math.max(2, T * 0.07));
+  }
+  function heartPath(x, y, s) {
+    ctx.beginPath(); ctx.moveTo(x, y + s * 0.4);
+    ctx.bezierCurveTo(x - s * 0.95, y - s * 0.2, x - s * 0.45, y - s * 0.9, x, y - s * 0.35);
+    ctx.bezierCurveTo(x + s * 0.45, y - s * 0.9, x + s * 0.95, y - s * 0.2, x, y + s * 0.4);
+    ctx.closePath();
+  }
+  function drawHeart(T) {
+    const x = (fl.heart.x + 0.5) * T, y = (fl.heart.y + 0.5) * T;
+    const beat = 1 + 0.07 * Math.max(0, Math.sin(realNow * 6)) + (fl.boss.hit > 0 ? 0.08 : 0);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, T * 1.4);
+    g.addColorStop(0, 'rgba(216,67,79,0.45)'); g.addColorStop(1, 'rgba(216,67,79,0)');
+    ctx.fillStyle = g; ctx.fillRect(x - T * 1.4, y - T * 1.4, T * 2.8, T * 2.8);
+    heartPath(x, y + T * 0.04, T * 0.42 * beat);
+    ctx.fillStyle = fl.boss.down ? '#4a2a30' : '#c93745'; ctx.fill();
+    ctx.strokeStyle = '#ff8a8a'; ctx.lineWidth = Math.max(1, T * 0.03); ctx.stroke();
+    hpBar(x, y + T * 0.36, T * 0.84, fl.boss.hp / fl.boss.max, '#ff6b6b', T);
+    if (T >= 14) {
+      ctx.fillStyle = 'rgba(255,214,170,0.9)'; ctx.font = numFont(Math.max(9, T * 0.24), true); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(run.floor === 3 ? 'BOSS' : 'PIECZĘĆ', x, y - T * 0.42);
+    }
+  }
+  function drawRoomLabels(T) {
+    if (T < 14) return;
+    ctx.font = numFont(Math.max(10, T * 0.24), true); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    fl.rooms.forEach(r => {
+      const m = depthMult(r.id);
+      ctx.fillStyle = isEdgeRoom(r.id) ? 'rgba(255,170,140,0.9)' : 'rgba(255,214,170,0.75)';
+      ctx.fillText('×' + m.toFixed(1).replace('.', ','), r.x0 * T + T * 0.08, r.y0 * T + T * 0.06);
+    });
+  }
+  function drawFog(T) {
+    fl.rooms.forEach(r => {
+      if (r.discovered) return;
+      ctx.fillStyle = 'rgba(6,5,10,0.42)';
+      ctx.fillRect(r.x0 * T, r.y0 * T, RS * T, RS * T);
+    });
+  }
+  function canPlace(type, x, y) {
+    const T = ITEMS[type];
+    if (!run.unlocked.has(type)) return false;
+    if (fl.items.has(key(x, y))) return false;
+    if (slotOf(x, y) !== T.slot) return false;
+    if (MONSTERS[type] && fl.phase === 'raid' && alive().some(h => h.tx === x && h.ty === y)) return false;
+    return true;
+  }
+  function drawSlots(x0, y0, x1, y1, T) {
+    if (!selected || (fl.phase !== 'build' && fl.phase !== 'raid')) return;
+    ctx.setLineDash([T * 0.12, T * 0.1]); ctx.lineWidth = Math.max(1, T * 0.04);
+    ctx.strokeStyle = 'rgba(242,185,75,0.7)';
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      if (canPlace(selected, x, y)) ctx.strokeRect(x * T + T * 0.12, y * T + T * 0.12, T * 0.76, T * 0.76);
+    }
+    ctx.setLineDash([]);
+  }
+  function drawFx(T) {
+    fl.fx.forEach(f => {
+      const a = clamp(f.life / f.max, 0, 1);
+      if (f.kind === 'tiles') {
+        ctx.fillStyle = 'rgba(' + f.rgb + ',' + (0.55 * a * (0.8 + 0.2 * Math.sin(realNow * 40))).toFixed(3) + ')';
+        f.tiles.forEach(t => ctx.fillRect(t[0] * T, t[1] * T, T, T));
+      } else if (f.kind === 'line') {
+        ctx.strokeStyle = 'rgba(' + f.rgb + ',' + a.toFixed(2) + ')'; ctx.lineWidth = Math.max(2, T * 0.09);
+        ctx.beginPath(); ctx.moveTo(f.x0 * T, f.y0 * T); ctx.lineTo(f.x1 * T, f.y1 * T); ctx.stroke();
+      }
+    });
+  }
+  function drawHero(h, T) {
+    const p = heroPos(h), x = p.x * T, y = p.y * T, rad = T * 0.24;
+    if (h.path.length && h.state !== 'boss') {
+      ctx.fillStyle = h.T.color; ctx.globalAlpha = 0.45;
+      h.path.slice(0, 6).forEach((t, k) => { ctx.beginPath(); ctx.arc((t[0] + 0.5) * T, (t[1] + 0.5) * T, Math.max(1.5, T * (0.07 - k * 0.007)), 0, Math.PI * 2); ctx.fill(); });
+      ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(x, y + rad * 0.9, rad, rad * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = h.flash > 0 ? '#ffffff' : h.T.color;
+    ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = Math.max(1, T * 0.03); ctx.strokeStyle = '#1a1424'; ctx.stroke();
+    if (fl.time < h.slowUntil) { ctx.strokeStyle = '#a9c6ff'; ctx.lineWidth = Math.max(1.5, T * 0.04); ctx.beginPath(); ctx.arc(x, y, rad + T * 0.05, 0, Math.PI * 2); ctx.stroke(); }
+    if (fl.time < h.burnUntil) { ctx.fillStyle = Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x + rad * 0.7, y - rad * 0.7, T * 0.07, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#1a1424'; ctx.font = numFont(Math.max(9, T * 0.26), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(h.T.letter, x, y + T * 0.01);
+    hpBar(x, y - rad - T * 0.14, T * 0.56, h.hp / h.max, h.hp / h.max > 0.35 ? '#6fd38a' : '#ff6b6b', T);
+    if (h.shield > 0) hpBar(x, y - rad - T * 0.14 - Math.max(3, T * 0.1), T * 0.56, h.shield / h.max, '#7fb8ff', T);
+    if (h.loot > 0) {
+      ctx.fillStyle = '#f2b94b'; ctx.beginPath(); ctx.arc(x + rad * 0.85, y + rad * 0.6, Math.max(3, T * 0.1), 0, Math.PI * 2); ctx.fill();
+      if (h.loot > 1) { ctx.fillStyle = '#1a1424'; ctx.font = numFont(Math.max(7, T * 0.14), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(h.loot), x + rad * 0.85, y + rad * 0.62); }
+    }
+    if (h.hp / h.max < 0.3 && h.state !== 'rest') {
+      ctx.strokeStyle = 'rgba(255,90,90,' + (0.55 + 0.4 * Math.sin(realNow * 12)).toFixed(2) + ')'; ctx.lineWidth = Math.max(1.5, T * 0.05);
+      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.16, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (h.confused) {
+      ctx.fillStyle = '#ffe066'; ctx.font = numFont(Math.max(10, T * 0.34), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('?', x, y - rad - T * 0.42 + Math.sin(realNow * 5) * T * 0.04);
+    }
+    if (h.state === 'rest') {
+      ctx.fillStyle = '#c9c2d8'; ctx.font = numFont(Math.max(9, T * 0.24), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('z', x + rad * 0.9, y - rad - T * 0.3 + Math.sin(realNow * 3) * T * 0.05);
+    }
+    if (h.state === 'disarm') {
+      ctx.strokeStyle = '#ffe066'; ctx.lineWidth = Math.max(2, T * 0.06);
+      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.1, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur)); ctx.stroke();
+    }
+  }
+  function drawParticles(T) {
+    particles.forEach(p => {
+      ctx.globalAlpha = clamp(p.life * 2.2, 0, 1);
+      if (p.ring) { ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(2, T * 0.08); ctx.beginPath(); ctx.arc(p.x * T, p.y * T, p.r * T, 0, Math.PI * 2); ctx.stroke(); }
+      else { ctx.fillStyle = p.color; ctx.fillRect(p.x * T - T * 0.04, p.y * T - T * 0.04, T * 0.08, T * 0.08); }
+    });
+    ctx.globalAlpha = 1;
+  }
+  function drawFloats(T) {
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    floats.forEach(f => {
+      ctx.globalAlpha = clamp(f.life / 0.5, 0, 1);
+      ctx.font = numFont(Math.max(11, f.size * T / 52), true);
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(12,10,18,0.9)'; ctx.strokeText(f.text, f.x * T, f.y * T);
+      ctx.fillStyle = f.color; ctx.fillText(f.text, f.x * T, f.y * T);
+    });
+    ctx.globalAlpha = 1;
+  }
+  // Party panel in screen space: who is alive, how hurt, who is resting. Keeping them alive is the whole game now.
+  function drawParty() {
+    const list = fl.heroes.concat(fl.queue.map(e => ({ T: HEROES[e.type], queued: true, hp: e.hp, max: e.max })))
+      .concat(run.party.filter(e => e.dead && !fl.heroes.some(h => h.entry === e)).map(e => ({ T: HEROES[e.type], dead: true, hp: 0, max: 1 })));
+    if (!list.length) return;
+    const w = 92, rowH = 15, h = list.length * rowH + 8;
+    ctx.fillStyle = 'rgba(12,10,18,0.78)'; rr(6, 6, w, h, 6); ctx.fill();
+    list.forEach((hh, k) => {
+      const y = 10 + k * rowH;
+      ctx.globalAlpha = hh.queued ? 0.4 : (hh.dead ? 0.55 : 1);
+      ctx.fillStyle = hh.T.color; ctx.beginPath(); ctx.arc(16, y + 5.5, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a1424'; ctx.font = numFont(8, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(hh.T.letter, 16, y + 6);
+      const frac = clamp(hh.hp / hh.max, 0, 1);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(25, y + 3, 48, 5);
+      ctx.fillStyle = hh.dead ? '#6b5560' : frac > 0.35 ? '#6fd38a' : '#ff6b6b'; ctx.fillRect(25, y + 3, 48 * frac, 5);
+      if (hh.shield > 0) { ctx.fillStyle = '#7fb8ff'; ctx.fillRect(25, y + 1, 48 * clamp(hh.shield / hh.max, 0, 1), 2); }
+      ctx.fillStyle = '#c9c2d8'; ctx.font = numFont(9); ctx.textAlign = 'left';
+      ctx.fillText(hh.dead ? '†' : hh.fled ? '✓' : hh.state === 'rest' ? 'z' : hh.mode === 'retreat' ? '←' : hh.confused ? '?' : '', 78, y + 6);
+      ctx.globalAlpha = 1;
+    });
+  }
+  function drawOrbs() {
+    const tx = cw - 26, ty = -16;
+    orbs.forEach(o => {
+      const u = clamp(o.t / o.dur, 0, 1), e = u * u * (3 - 2 * u);
+      const cx = o.x + (tx - o.x) * 0.25, cy = Math.min(o.y, ty) - 70;
+      const x = (1 - e) * (1 - e) * o.x + 2 * (1 - e) * e * cx + e * e * tx;
+      const y = (1 - e) * (1 - e) * o.y + 2 * (1 - e) * e * cy + e * e * ty;
+      ctx.fillStyle = 'rgba(160,130,255,0.35)'; ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#d6c8ff'; ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+  function drawCheck(T) {
+    const c = fl && fl.check;
+    if (!c || fl.phase !== 'raid') return;
+    const it = c.it;
+    const sx = clamp((it.x + 0.5) * T - cam.ox, 10, cw - 10), sy = clamp((it.y + 0.5) * T - cam.oy, 10, ch - 10);
+    if (!c.result) { ctx.fillStyle = 'rgba(8,6,12,0.32)'; ctx.fillRect(0, 0, cw, ch); }
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(sx, sy, Math.max(14, T * 0.75), 0, Math.PI * 2); ctx.stroke();
+    const w = Math.min(250, cw - 28), h = 20, legend = run.checkHints >= 0 && fl.stats.checks <= 3;
+    const boxH = h + 30 + (legend ? 14 : 0);
+    const bx = clamp(sx - w / 2, 14, cw - w - 14);
+    let by = sy - Math.max(14, T * 0.75) - boxH - 6 + 22;
+    if (by - 22 < 4) by = sy + Math.max(14, T * 0.75) + 28;
+    c.box = { x: bx - 8, y: by - 22, w: w + 16, h: boxH };
+    ctx.fillStyle = 'rgba(12,10,18,0.94)'; rr(bx - 8, by - 22, w + 16, boxH, 9); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; rr(bx - 8, by - 22, w + 16, boxH, 9); ctx.stroke();
+    ctx.fillStyle = '#f1e7d3'; ctx.font = '700 13px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const label = { crit: 'KRYTYK!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
+    const prep = !c.result && realNow < c.t0;
+    if (prep) ctx.fillStyle = '#ffe066';
+    ctx.fillText(prep ? 'Uwaga: ' + ITEMS[it.type].name.toLowerCase() + '!' : ITEMS[it.type].name + (label ? ': ' + label : ': stuknij!'), bx, by - 11);
+    if (c.note) { ctx.fillStyle = '#c3b2ff'; ctx.font = '600 11px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.fillText(c.note.replace(/^ · /, ''), bx + w, by - 11); ctx.textAlign = 'left'; }
+    if (prep) {   // shrinking line = time left before the needle starts
+      const left = clamp((c.t0 - realNow) / CHECK_PREP, 0, 1);
+      ctx.fillStyle = '#ffe066'; ctx.fillRect(bx + w - 70 * left, by - 13, 70 * left, 3);
+    }
+    ctx.fillStyle = '#2a2236'; ctx.fillRect(bx, by, w, h);
+    ctx.fillStyle = '#3f9d5a'; ctx.fillRect(bx + w * c.g0, by, w * (c.g1 - c.g0), h);
+    ctx.fillStyle = '#d23b4a'; ctx.fillRect(bx + w * c.r0, by, w * (c.r1 - c.r0), h);
+    ctx.font = '700 14px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
+    if (c.lethalOk) ctx.fillText('☠', bx + w * (c.g0 + c.g1) / 2, by + h / 2 + 1);
+    if (c.lethalCrit) ctx.fillText('☠', bx + w * (c.r0 + c.r1) / 2, by + h / 2 + 1);
+    const p = clamp(c.result ? (c.p !== undefined ? c.p : 1) : (realNow - c.t0) / c.dur, 0, 1);
+    ctx.fillStyle = prep ? 'rgba(255,255,255,0.35)' : '#ffffff'; ctx.fillRect(bx + w * p - 2, by - 5, 4, h + 10);
+    if (legend) {
+      ctx.fillStyle = '#a69bbb'; ctx.font = '500 11px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('zielone: draśnięcie · czerwone: krytyk · ☠ zabije', bx, by + h + 12, w);
+    }
+  }
+  function drawOffscreen(T) {
+    if (!fl || fl.phase !== 'raid') return;
+    drawParty();
+    alive().forEach(h => {
+      const p = heroPos(h), sx = p.x * T - cam.ox, sy = p.y * T - cam.oy;
+      if (sx >= 0 && sx <= cw && sy >= 0 && sy <= ch) return;
+      const cx = clamp(sx, 12, cw - 12), cy = clamp(sy, 12, ch - 12), a = Math.atan2(sy - cy, sx - cx);
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(a);
+      ctx.fillStyle = h.T.color; ctx.strokeStyle = '#0c0a12'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-7, -7); ctx.lineTo(-7, 7); ctx.closePath(); ctx.stroke(); ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  /* ================= UI ================= */
+  const ICONS = {
+    spikes: '<svg class="ic" viewBox="0 0 24 24" fill="#c9d1e3" aria-hidden="true"><path d="M3 20h18v2H3z"/><path d="M5 20l2.5-8 2.5 8zM9.5 20L12 7l2.5 13zM14 20l2.5-8 2.5 8z"/></svg>',
+    web: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#dce4ff" stroke-width="1.4" aria-hidden="true"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/><path d="M12 7.5l3.2 1.3 1.3 3.2-1.3 3.2-3.2 1.3-3.2-1.3-1.3-3.2 1.3-3.2z"/></svg>',
+    arrows: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="3" width="4" height="18" fill="#6b6178"/><path d="M6 12h13M15 8l4 4-4 4" fill="none" stroke="#d9dbe6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    fire: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="3" width="4" height="18" fill="#6b6178"/><path d="M14 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1 1 2 2 2 3 1-2 1-4 1-7z" fill="#ff9a3c"/></svg>',
+    gate: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#b9bccb" stroke-width="2" aria-hidden="true"><path d="M6 4v16M10 4v16M14 4v16M18 4v16M4 9h16M4 15h16"/></svg>',
+    powder: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="14" r="7" fill="#2b2b33" stroke="#77727f"/><path d="M15 8l3-3" stroke="#b08a5a" stroke-width="2"/><circle cx="19" cy="4" r="1.8" fill="#ff9a3c"/></svg>',
+    mimic: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="9" width="18" height="11" rx="1" fill="#7a5a34"/><path d="M3 9h18l-2 3-2-3-2 3-2-3-2 3-2-3-2 3-2-3z" fill="#f1e7d3"/><circle cx="8" cy="5.5" r="1.6" fill="#ffe066"/><circle cx="16" cy="5.5" r="1.6" fill="#ffe066"/></svg>',
+    goblin: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l5 2-1 3zM22 9l-5 2 1 3z" fill="#5fa84a"/><circle cx="12" cy="13" r="7" fill="#5fa84a"/><circle cx="9.5" cy="12" r="1.3" fill="#ffe066"/><circle cx="14.5" cy="12" r="1.3" fill="#ffe066"/></svg>',
+    archer: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="7" r="4" fill="#e8e4d8"/><rect x="8" y="6" width="1.6" height="1.6" fill="#1a1424"/><rect x="10.6" y="6" width="1.6" height="1.6" fill="#1a1424"/><path d="M10 11v9M6 14h8" stroke="#e8e4d8" stroke-width="1.6"/><path d="M16 5a9 9 0 0 1 0 14" fill="none" stroke="#a0703a" stroke-width="1.8"/></svg>',
+    ogre: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="9" fill="#7d8a5a"/><circle cx="9" cy="11" r="1.3" fill="#ff6b6b"/><circle cx="15" cy="11" r="1.3" fill="#ff6b6b"/><path d="M8 16l1.5 3 1-3zM16 16l-1.5 3-1-3z" fill="#f1e7d3"/></svg>',
+    shaman: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7l1.5-5 1.5 5zM9.5 6l1.5-5 1.5 5zM13 7l1.5-5 1.5 5z" fill="#d94a4a"/><circle cx="11" cy="14" r="6" fill="#5fa84a"/><circle cx="9" cy="13" r="1.1" fill="#ffe066"/><circle cx="13" cy="13" r="1.1" fill="#ffe066"/><path d="M20 7v15" stroke="#8a5a2b" stroke-width="1.6"/><circle cx="20" cy="5.5" r="2.2" fill="#8be38f"/></svg>',
+    loot: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="17" rx="8" ry="3.5" fill="#b07a24"/><circle cx="8.5" cy="14" r="3" fill="#f2b94b"/><circle cx="15" cy="13.5" r="3" fill="#f2b94b"/><circle cx="12" cy="10" r="3" fill="#ffd27a"/></svg>'
+  };
+  const LOCK = '<svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>';
+  let tab = 'floor';
+  try { tab = localStorage.getItem('yatd-tab') || 'floor'; } catch (e) {}
+  function updateTray() {
+    const tray = $('#tray'), tabs = $('#tabs');
+    if (!tabs.children.length) {
+      TABS.forEach(tb => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'tab'; b.id = 'tab-' + tb.id; b.setAttribute('role', 'tab'); b.textContent = tb.label;
+        b.addEventListener('click', () => { tab = tb.id; try { localStorage.setItem('yatd-tab', tab); } catch (e) {} updateTray(); });
+        tabs.appendChild(b);
+      });
+      ITEM_ORDER.forEach(t => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'item'; b.id = 'item-' + t;
+        b.innerHTML = '<span class="top">' + ICONS[t] + '<span class="cost"></span></span><span class="nm"></span><span class="sl"></span>';
+        b.querySelector('.nm').textContent = ITEMS[t].name;
+        b.querySelector('.cost').textContent = String(ITEMS[t].cost);
+        b.querySelector('.sl').textContent = ITEMS[t].tag;
+        b.addEventListener('click', () => {
+          if (!fl || !run || (fl.phase !== 'build' && fl.phase !== 'raid')) return;
+          if (!run.unlocked.has(t)) { setHint(ITEMS[t].name + ' jest zablokowany. Odblokujesz go, wybierając ulepszenie po podniesieniu łupu.'); return; }
+          if (fl.essence < ITEMS[t].cost) { setHint('Za mało Esencji na: ' + ITEMS[t].name + '.'); return; }
+          selected = selected === t ? null : t;
+          updateTray();
+          setHint(selected ? ITEMS[t].desc : (fl.phase === 'build' ? 'Wybierz element i stuknij pasujące miejsce.' : 'Stukaj pułapki i potwory, żeby użyć ich umiejętności.'));
+        });
+        tray.appendChild(b);
+      });
+    }
+    const cur = TABS.find(tb => tb.id === tab) || TABS[0];
+    TABS.forEach(tb => $('#tab-' + tb.id).setAttribute('aria-selected', String(tb === cur)));
+    ITEM_ORDER.forEach(t => {
+      const b = $('#item-' + t);
+      b.hidden = !cur.items.includes(t);
+      const locked = !run || !run.unlocked.has(t);
+      const playable = fl && (fl.phase === 'build' || fl.phase === 'raid');
+      const off = locked || !playable || fl.essence < ITEMS[t].cost;
+      if (off && selected === t) selected = null;
+      b.classList.toggle('off', off);
+      b.setAttribute('aria-pressed', String(selected === t));
+      b.setAttribute('aria-label', ITEMS[t].name + ', ' + (MONSTERS[t] ? 'potwór' : SLOT_LABEL[ITEMS[t].slot]) + ', koszt ' + ITEMS[t].cost + ' Esencji' + (locked ? ', zablokowany' : ''));
+      const lk = b.querySelector('.lock');
+      if (locked && !lk) b.insertAdjacentHTML('beforeend', LOCK);
+      if (!locked && lk) lk.remove();
+    });
+    if (fl) $('#h-ess').textContent = Math.floor(fl.essence);
+  }
+  function updateAction() {
+    const b = $('#btn-action'), box = $('#focus-box');
+    b.classList.remove('focus-on');
+    if (!fl || !run) { b.disabled = true; box.hidden = true; return; }
+    if (fl.phase === 'build') { b.disabled = false; b.textContent = 'Start najazdu'; box.hidden = true; return; }
+    if (fl.phase === 'raid') {
+      if (run.mode === 'check') { b.disabled = false; b.textContent = 'Skill checki włączone'; box.hidden = true; return; }
+      if (run.mode === 'none') { b.disabled = true; b.textContent = 'Na żywo, bez zwalniania'; box.hidden = true; return; }
+      box.hidden = false; b.disabled = false;
+      b.textContent = focusOn ? (run.mode === 'slow' ? 'Fokus: zwolnione' : 'Fokus: pauza') : 'Fokus';
+      if (focusOn) b.classList.add('focus-on');
+      return;
+    }
+    b.disabled = true; b.textContent = 'Koniec piętra'; box.hidden = true;
+  }
+  const hudCache = {};
+  function setText(id, v) { if (hudCache[id] !== v) { hudCache[id] = v; $('#' + id).textContent = v; } }
+  function updateHud() {
+    setText('h-floor', run.floor + '/3');
+    const tot = run.total + (fl.phase === 'end' || fl.phase === 'over' ? 0 : fl.score), next = tot < S.star2 ? S.star2 : tot < S.star3 ? S.star3 : 0, prev = next === S.star3 ? S.star2 : 0;
+    setText('h-score', String(Math.floor(tot)));
+    setText('h-thr', next ? (next === S.star2 ? '/ ★★ ' : '/ ★★★ ') + next : '★★★');
+    setText('h-time', fl.phase === 'build' ? 'budowa' : fl.phase === 'raid' ? (fl.fearless ? 'szarża!' : Math.max(0, Math.ceil(S.waveTime - fl.time)) + ' s') : 'koniec');
+    const bar = $('#h-bar'); bar.style.width = (next ? Math.min(1, (tot - prev) / (next - prev)) * 100 : 100).toFixed(1) + '%'; bar.classList.toggle('ok', !next);
+    const cm = 1 + 0.25 * (comboNow() - 1), txt = fmt2(fl.greed) + '|' + fmt2(cm);
+    if (hudCache.mult !== txt) { hudCache.mult = txt; $('#h-mult').innerHTML = 'Chciwość <b>×' + fmt2(fl.greed) + '</b> · Combo <b>×' + fmt2(cm) + '</b>'; }
+    setText('h-ess', String(Math.floor(fl.essence)));
+    setText('h-regen', fl.essence >= S.essenceCap ? 'pełno' : '+' + regenParts().total.toFixed(2).replace('.', ',') + '/s');
+    if (run.mode === 'check' && fl.phase === 'raid') {
+      const b = $('#btn-action'), open = !!(fl.check && !fl.check.result), t = open ? (realNow < fl.check.t0 ? 'Uwaga...' : 'STUKNIJ!') : 'Skill checki włączone';
+      if (b.textContent !== t) { b.textContent = t; b.classList.toggle('focus-on', open); }
+    }
+    $('#focus-fill').style.width = (S.focusCap > 0 ? focus / S.focusCap * 100 : 0).toFixed(1) + '%';
+  }
+  function setHint(t) { $('#hint').textContent = t; }
+
+  /* ================= modals ================= */
+  function queueModal(m) { if (modalOpen) modalQueue.push(m); else openModal(m); }
+  function closeModal() {
+    modalOpen = false; modalKind = null; $('#overlay').hidden = true;
+    if (modalQueue.length) openModal(modalQueue.shift());
+  }
+  function openModal(m) {
+    modalOpen = true; modalKind = m.type; focusOn = false; updateAction();
+    const card = $('#card'); card.innerHTML = '';
+    ({ start: renderStart, settings: renderSettings, upgrade: renderUpgrade, revive: renderRevive, floor: renderFloor, end: renderEnd })[m.type](card, m);
+    $('#overlay').hidden = false;
+  }
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function btn(cls, title, sub, onClick) {
+    const b = el('button', 'btn ' + (cls || '')); b.type = 'button';
+    b.appendChild(el('b', null, title)); if (sub) b.appendChild(el('span', null, sub));
+    b.addEventListener('click', onClick); return b;
+  }
+  function renderStart(card) {
+    card.appendChild(el('div', 'sub', 'Prototyp · wersja 5.4 · bohaterowie się uczą'));
+    card.appendChild(el('h1', null, 'You are the dungeon'));
+    card.appendChild(el('p', null, 'Zbuduj loch, zwab bohaterów i pozwól im prawie wygrać.'));
+    const ol = el('ol');
+    ['Drużyna 4 bohaterów przechodzi przez 3 piętra. Na piętrach 1-2 ma rozbić pieczęć (serce). Ty ranisz ich po drodze dla punktów, ale nie zabijasz.',
+     'Piętro 3 to boss i ostatni szturm: drużyna pije eliksiry (tarcza = max HP) i biegnie prosto na bossa, bez strachu. Wygrywasz, gdy padną wszyscy, przegrywasz, gdy pokonają bossa.',
+     'Kto zginie wcześniej, nie wraca. HP przechodzi dalej (30% odpoczynku między piętrami), więc osłabianie ich ułatwia finał.',
+     'Skill check: po "Uwaga!" stuknij gdziekolwiek na zielonym (draśnięcie) albo czerwonym (krytyk). Esencja bierze się ze strachu bohaterów.',
+     'Bohaterowie się uczą: pułapkę, która odpaliła przy nich albo którą wykrył złodziej, omijają, przebiegają w czasie przeładowania, a złodziej rozbraja to, czego nie da się obejść. Nowe pułapki ich zaskakują, potworów nie rozbroją, a różne typy po kolei budują combo.',
+     'Wynik runu daje 1-3 gwiazdki. Po ' + S.waveTime + ' s piętra bohaterowie tracą cierpliwość i idą prosto na serce.'
+    ].forEach(t => ol.appendChild(el('li', null, t)));
+    card.appendChild(ol);
+    const lab = el('label', 'field'); lab.textContent = 'Kto testuje (opcjonalnie)';
+    const inp = el('input'); inp.type = 'text'; inp.id = 'player-name'; inp.maxLength = 40; inp.value = playerName; inp.placeholder = 'np. imię znajomego';
+    inp.addEventListener('input', () => { playerName = inp.value; try { localStorage.setItem('yatd-name', playerName); } catch (e) {} });
+    lab.appendChild(inp); card.appendChild(lab);
+    card.appendChild(el('div', 'sub', 'Wybierz tryb reakcji i graj'));
+    const modes = el('div', 'modes');
+    ['check', 'none'].forEach(k => {
+      const b = btn(k === lastMode ? 'gold' : '', MODES[k].name, MODES[k].desc, () => { closeModal(); newRun(k); });
+      b.id = 'mode-' + k; modes.appendChild(b);
+    });
+    card.appendChild(modes);
+    const s = el('button', 'link', 'Ustawienia testowe (suwaki balansu)'); s.type = 'button';
+    s.addEventListener('click', () => { closeModal(); openModal({ type: 'settings', back: 'start' }); });
+    card.appendChild(s);
+  }
+  function renderSettings(card, m) {
+    card.appendChild(el('h2', null, 'Ustawienia testowe'));
+    card.appendChild(el('p', 'note', 'Zmiany działają od razu i zapisują się w tej przeglądarce. Esencja liczy się na nowo od następnego piętra.'));
+    SLIDERS.forEach(sd => {
+      const wrap = el('div', 'slider'), lab = el('label'); lab.setAttribute('for', 'sl-' + sd.k);
+      const val = el('b'), show = () => { val.textContent = sd.fmt ? sd.fmt(S[sd.k]) : String(S[sd.k]); };
+      show(); lab.appendChild(el('span', null, sd.label)); lab.appendChild(val);
+      const inp = el('input'); inp.type = 'range'; inp.id = 'sl-' + sd.k; inp.min = sd.min; inp.max = sd.max; inp.step = sd.step; inp.value = S[sd.k];
+      inp.addEventListener('input', () => { S[sd.k] = parseFloat(inp.value); show(); saveSettings(); });
+      wrap.appendChild(lab); wrap.appendChild(inp); card.appendChild(wrap);
+    });
+    const row = el('div', 'row');
+    row.appendChild(btn('', 'Przywróć domyślne', null, () => { S = Object.assign({}, DEFAULTS); saveSettings(); closeModal(); openModal(m); }));
+    row.appendChild(btn('primary', 'Gotowe', null, () => {
+      closeModal();
+      if (m.back === 'start') openModal({ type: 'start' });
+    }));
+    card.appendChild(row);
+  }
+  function upgradePicks() {
+    const locked = shuffle(UPGRADES.filter(u => u.unlock && !run.unlocked.has(u.unlock)));
+    const pool = shuffle(UPGRADES.filter(u => !u.unlock && (!u.req || run.unlocked.has(u.req)) && !(u.once && run.upgrades.includes(u.id))));
+    const picks = [];
+    if (locked.length) picks.push(locked[0]);
+    while (picks.length < 3 && pool.length) picks.push(pool.shift());
+    return shuffle(picks);
+  }
+  function applyUpgrade(u) {
+    if (u.unlock) { run.unlocked.add(u.unlock); updateTray(); } else u.apply(mods);
+    run.upgrades.push(u.id);
+  }
+  function renderUpgrade(card) {
+    card.appendChild(el('div', 'sub', 'Bohater podniósł łup'));
+    card.appendChild(el('h2', null, 'Wybierz ulepszenie'));
+    const box = el('div', 'choices');
+    upgradePicks().forEach(u => box.appendChild(btn(u.unlock ? 'unlock' : '', u.name, u.text, () => {
+      applyUpgrade(u); closeModal(); setHint('Ulepszenie: ' + u.name + '.');
+    })));
+    card.appendChild(box);
+    if (!fl.rerolled) {
+      const r = el('button', 'link', 'Losuj ponownie (symulacja reklamy, raz na piętro)'); r.type = 'button';
+      r.addEventListener('click', () => { fl.rerolled = true; card.innerHTML = ''; renderUpgrade(card); });
+      card.appendChild(r);
+    }
+    card.appendChild(el('p', 'note', 'Gra stoi, dopóki wybierasz. Wybory na tym piętrze: ' + fl.choices + ' z ' + S.upgradeLimit + '.'));
+  }
+  function renderRevive(card) {
+    card.appendChild(el('div', 'sub', 'Serce lochu w niebezpieczeństwie'));
+    card.appendChild(el('h2', null, 'Boss padł'));
+    card.appendChild(el('p', null, 'Możesz go raz na run wskrzesić z 60% życia. W grze to miejsce na reklamę nagradzaną, a drugie wskrzeszenie za Dusze.'));
+    const row = el('div', 'row');
+    let gu = null;
+    const rv = btn('primary', 'Wskrześ (symulacja reklamy)', null, () => {
+      rv.disabled = true; gu.disabled = true;
+      let n = 3; rv.querySelector('b').textContent = 'Reklama... ' + n;
+      const timer = setInterval(() => {
+        n--;
+        if (n > 0) { rv.querySelector('b').textContent = 'Reklama... ' + n; return; }
+        clearInterval(timer);
+        run.reviveUsed = true; fl.boss.hp = fl.boss.max * 0.6; fl.boss.down = false;
+        closeModal(); setHint('Strażnik wstał. Nie zmarnuj tego.');
+      }, 700);
+    });
+    gu = btn('', 'Poddaj się', null, () => { closeModal(); loseRun('Bohaterowie pokonali bossa. Loch upadł.'); });
+    row.appendChild(rv); row.appendChild(gu); card.appendChild(row);
+  }
+  function itemsTable(byType) {
+    const rows = Object.keys(byType).map(k => ({ k, b: byType[k], pts: byType[k].pts + byType[k].passivePts })).filter(r => r.b.placed > 0 || r.pts > 0).sort((a, b) => b.pts - a.pts);
+    const wrap = el('div');
+    if (!rows.length) return wrap;
+    wrap.appendChild(el('p', 'note', 'Co zadziałało na tym piętrze (postawione · trafienia · punkty):'));
+    const t = el('table', 'stats');
+    rows.forEach(r => {
+      const tr = el('tr');
+      tr.appendChild(el('td', null, ITEMS[r.k].name + ' ×' + Math.max(0, r.b.placed)));
+      tr.appendChild(el('td', null, r.b.hits + ' traf. · ' + Math.round(r.pts) + ' pkt'));
+      t.appendChild(tr);
+    });
+    wrap.appendChild(t);
+    return wrap;
+  }
+  function statsTable(s) {
+    const t = el('table', 'stats');
+    [['Punkty za pułapki', Math.round(s.dmgPts)], ['w tym premia Na skraju', Math.round(s.edgePts)],
+     ['Przeszli przez pieczęć', s.survivors + ' (' + Math.round(s.survPts) + ' pkt)'], ['Zagubieni bohaterowie', Math.round(s.confPts) + ' pkt'],
+     ['Skill checki: krytyk / draśnięcie / pudło / odpuszczone', s.checkCrit + ' / ' + s.checkOk + ' / ' + s.checkMiss + ' / ' + s.checkSkip], ['Leczenie kapłana', Math.round(s.healed) + ' HP (' + Math.round(s.healPts) + ' pkt)'],
+     ['Łup podniesiony', s.loot + ' (' + Math.round(s.lootPts) + ' pkt)'], ['Potwory (pasywnie)', Math.round(s.otherPts)],
+     ['Polegli za wcześnie (0 pkt)', s.earlyDeaths], ['Wycofania rannych', s.retreats],
+     ['Najwyższe combo', '×' + fmt2(1 + 0.25 * (s.maxCombo - 1))], ['Odkryte pokoje', s.rooms + ' z ' + fl.rooms.length],
+     ['Pułapki zapamiętane / wykryte przez złodzieja / rozbrojone', s.learned + ' / ' + s.detected + ' / ' + s.disarmed], ['Potwory powalone (wstają)', s.monstersLost],
+     ['Esencja', Math.round(s.essBase) + ' bazowo + ' + Math.round(s.essFear + s.essConf) + ' ze strachu + ' + Math.round(s.essDrop) + ' z wybitego łupu'], ['Postawione w trakcie najazdu', s.built]
+    ].forEach(r => { const tr = el('tr'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, String(r[1]))); t.appendChild(tr); });
+    return t;
+  }
+  function renderFloor(card) {
+    card.appendChild(el('div', 'sub', 'Piętro ' + run.floor + ' z 3'));
+    card.appendChild(el('h2', null, 'Pieczęć złamana'));
+    card.appendChild(el('div', 'score-big', '+' + Math.round(fl.score) + ' pkt'));
+    const left = run.party.filter(e => !e.dead);
+    card.appendChild(el('p', null, 'Na piętro ' + (run.floor + 1) + ' schodzi ' + left.length + ' z 4: ' +
+      left.map(e => HEROES[e.type].name + ' ' + Math.round(e.hp / e.max * 100) + '% HP').join(', ') + '. Po drodze odpoczną o 30% HP.' +
+      (run.floor === 2 ? ' Przed bossem wypiją eliksiry: każdy dostanie tarczę równą swojemu max HP, więc każde HP zabrane teraz ułatwi finał.' : '')));
+    card.appendChild(itemsTable(fl.byType));
+    card.appendChild(statsTable(fl.stats));
+    card.appendChild(el('p', 'note', 'Na następne piętro przechodzi ' + Math.floor(fl.essence) + ' Esencji. Ulepszenia, odblokowane pułapki i chciwość zostają, układ losuje się od nowa.'));
+    card.appendChild(btn('primary', run.floor + 1 === 3 ? 'Zejdź do bossa: piętro 3' : 'Zejdź niżej: piętro ' + (run.floor + 1), null, () => { const carry = Math.floor(fl.essence); closeModal(); startFloor(run.floor + 1, carry); }));
+  }
+  function renderEnd(card) {
+    const win = run.result === 'win';
+    card.appendChild(el('div', 'sub', MODES[run.mode].name + ' · koniec runu'));
+    card.appendChild(el('h2', null, win ? 'Drużyna rozbita' : 'Loch upadł'));
+    card.appendChild(el('p', null, run.reason));
+    if (win) card.appendChild(el('div', 'score-big', '★'.repeat(run.stars) + '☆'.repeat(3 - run.stars)));
+    card.appendChild(el('div', 'score-big', 'Razem: ' + Math.round(run.total)));
+    const t = el('table', 'stats');
+    run.floors.forEach(f => {
+      const tr = el('tr'); tr.appendChild(el('td', null, 'Piętro ' + f.floor + ' · żywych na koniec: ' + f.alive));
+      tr.appendChild(el('td', null, String(f.score))); t.appendChild(tr);
+    });
+    card.appendChild(t);
+    const f3 = run.floors.find(f => f.floor === 3);
+    if (f3) card.appendChild(el('p', 'note', 'Finał: pokonani ' + f3.stats.finalKills + ' (' + f3.stats.finalPts + ' pkt), polegli wcześniej w całym runie: ' + run.floors.reduce((a, f) => a + (f.stats.earlyDeaths || 0), 0) + '.'));
+    if (win) card.appendChild(el('p', 'note', 'Gwiazdki: ★ za wygraną, ★★ od ' + S.star2 + ' pkt, ★★★ od ' + S.star3 + ' pkt.'));
+    const st = el('p', 'note', 'Zapisuję wynik do analizy...'); card.appendChild(st);
+    saveRun().then(res => {
+      st.textContent = res === 'ok' ? 'Wynik zapisany. Claude może go przeanalizować przy balansie.'
+        : res === 'off' ? 'Zapis wyników jest niedostępny w tym widoku.'
+        : res === 'denied' ? 'Ten widok nie ma prawa zapisu wyników. Gra działa normalnie.' : 'Nie udało się zapisać wyniku.';
+    });
+    const row = el('div', 'row');
+    row.appendChild(btn('primary', 'Jeszcze raz', MODES[run.mode].name, () => { closeModal(); newRun(run.mode); }));
+    row.appendChild(btn('', 'Zmień tryb', null, () => { closeModal(); openModal({ type: 'start' }); }));
+    card.appendChild(row);
+  }
+  function saveRun() {
+    return getDb().then(db => {
+      if (!db) return 'off';
+      const doc = {
+        at: new Date().toISOString(), version: 13, player: (playerName || '').slice(0, 40), mode: run.mode, result: run.result,
+        floorsCleared: run.floors.filter(f => f.pass).length, stars: run.stars || 0, total: Math.round(run.total), floors: run.floors,
+        upgrades: run.upgrades, fires: run.fires, focusUsedSec: Math.round(run.focusUsed * 10) / 10, reviveUsed: run.reviveUsed,
+        durationSec: Math.round((Date.now() - run.startedAt) / 1000), settings: Object.assign({}, S)
+      };
+      return db.collection('runs').add(doc).then(() => 'ok', err => (err && err.code === 'invalid_argument') ? 'denied' : 'fail');
+    }).catch(() => 'fail');
+  }
+
+  /* ================= input ================= */
+  function trapNear(wx, wy) {
+    const tx = Math.floor(wx), ty = Math.floor(wy);
+    const direct = fl.items.get(key(tx, ty));
+    if (direct && ACTIVE[direct.type]) return direct;
+    let best = null, bd = 0.85;
+    for (const d of DIRS8) {
+      const it = fl.items.get(key(tx + d[0], ty + d[1]));
+      if (!it || !ACTIVE[it.type]) continue;
+      const dist = Math.hypot(wx - (it.x + 0.5), wy - (it.y + 0.5));
+      if (dist < bd) { bd = dist; best = it; }
+    }
+    return best;
+  }
+  function snapTile(type, wx, wy) {
+    let best = null, bd = 1.0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const x = Math.floor(wx) + dx, y = Math.floor(wy) + dy;
+      if (!canPlace(type, x, y)) continue;
+      const d = Math.hypot(wx - (x + 0.5), wy - (y + 0.5));
+      if (d < bd) { bd = d; best = [x, y]; }
+    }
+    return best;
+  }
+  function handleTap(wx, wy) {
+    if (!fl || !run) return;
+    if (fl.phase === 'build' && cam.s < ZOOM_TAP) {
+      cam.s = closeScale(); centerOn(wx, wy); updateZoomBtn();
+      setHint(selected ? 'Przybliżono. Stuknij pasujące miejsce jeszcze raz.' : 'Przybliżono. Przycisk mapy u góry wraca do całości.');
+      return;
+    }
+    const x = Math.floor(wx), y = Math.floor(wy);
+    if (x < 0 || y < 0 || x >= WW || y >= WH) return;
+    const k = key(x, y), it = fl.items.get(k);
+    if (fl.phase === 'build') {
+      if (it) { fl.items.delete(k); fl.essence += ITEMS[it.type].cost; bt(it.type).placed--; bt(it.type).spent -= ITEMS[it.type].cost; updateTray(); setHint(ITEMS[it.type].name + ' zdjęte, Esencja wraca.'); return; }
+      if (selected) { const t = snapTile(selected, wx, wy) || [x, y]; tryPlace(selected, t[0], t[1]); return; }
+      const s = slotOf(x, y);
+      setHint(s ? 'To miejsce: ' + SLOT_LABEL[s] + '. Wybierz na dole element, który tu pasuje.' : 'Wybierz element na dole, pasujące miejsca się podświetlą.');
+      return;
+    }
+    if (fl.phase === 'raid' && selected) { const t = snapTile(selected, wx, wy) || [x, y]; tryPlace(selected, t[0], t[1]); }
+  }
+  function tryPlace(type, x, y) {
+    const T = ITEMS[type];
+    if (!run.unlocked.has(type)) { setHint(T.name + ' jest zablokowany.'); return false; }
+    if (fl.essence < T.cost) { setHint('Za mało Esencji.'); return false; }
+    if (!canPlace(type, x, y)) { setHint(T.name + ' pasuje tylko na: ' + SLOT_LABEL[T.slot] + '. Pasujące wolne miejsca są podświetlone.'); return false; }
+    const hp = MONSTERS[type] ? ITEMS[type].hp * mods.monster : 0;
+    fl.items.set(key(x, y), { type, x, y, cd: fl.phase === 'raid' && TRAPS[type] ? ARM_TIME : 0, anim: 0, rep: 1, disabled: false, hp, max: hp, power: mods.monster, shot: 0.5, flash: 0, preview: 1.4 });
+    fl.essence -= T.cost; bt(type).placed++; bt(type).spent += T.cost;
+    if (fl.phase === 'raid') fl.stats.built++;
+    updateTray();
+    if (fl.phase === 'raid' && type === 'loot') replanAll();
+    if (ACTIVE[type]) setHint(T.name + ': podświetlony obszar to zasięg umiejętności. Stuknięcie elementu w budowie zwraca Esencję.');
+    return true;
+  }
+  const pointers = new Map();
+  let gesture = null;
+  const localXY = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  cv.addEventListener('pointerdown', e => {
+    if (!fl || modalOpen) return;
+    e.preventDefault();
+    if (fl.check && !fl.check.result && fl.check.box) {
+      const q = localXY(e), b = fl.check.box;
+      if (q.x >= b.x - 10 && q.x <= b.x + b.w + 10 && q.y >= b.y - 10 && q.y <= b.y + b.h + 10) { resolveCheck(); return; }
+    }
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    const p = localXY(e); pointers.set(e.pointerId, p);
+    if (pointers.size === 1) {
+      gesture = { type: 'pan', sx: p.x, sy: p.y, ox: cam.ox, oy: cam.oy, moved: false, handled: false };
+      if (fl.phase === 'raid' && run.mode !== 'check') {
+        const w = toWorld(p.x, p.y);
+        let it = trapNear(w.x, w.y);
+        if (selected) { const d = fl.items.get(key(Math.floor(w.x), Math.floor(w.y))); it = d && ACTIVE[d.type] ? d : null; }
+        if (it) { fire(it); gesture.handled = true; }
+      }
+    } else if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      gesture = { type: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, s0: cam.s };
+    }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!pointers.has(e.pointerId)) return;
+    const p = localXY(e); pointers.set(e.pointerId, p);
+    if (!gesture) return;
+    if (gesture.type === 'pinch' && pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      zoomAt(gesture.s0 * (Math.hypot(a.x - b.x, a.y - b.y) || 1) / gesture.d0, (a.x + b.x) / 2, (a.y + b.y) / 2);
+    } else if (gesture.type === 'pan') {
+      const dx = p.x - gesture.sx, dy = p.y - gesture.sy;
+      if (!gesture.moved && Math.hypot(dx, dy) > 8) gesture.moved = true;
+      if (gesture.moved) { cam.ox = gesture.ox - dx; cam.oy = gesture.oy - dy; clampCam(); }
+    }
+  });
+  function endPointer(e) {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    if (!gesture) return;
+    if (gesture.type === 'pinch') { if (!pointers.size) gesture = null; return; }
+    if (!gesture.moved && !gesture.handled && e.type === 'pointerup') { const w = toWorld(gesture.sx, gesture.sy); handleTap(w.x, w.y); }
+    gesture = null;
+  }
+  cv.addEventListener('pointerup', endPointer);
+  cv.addEventListener('pointercancel', endPointer);
+  cv.addEventListener('wheel', e => {
+    if (!fl) return;
+    e.preventDefault();
+    const p = localXY(e);
+    zoomAt(cam.s * (e.deltaY < 0 ? 1.15 : 1 / 1.15), p.x, p.y);
+  }, { passive: false });
+  $('#btn-action').addEventListener('click', () => {
+    if (!fl) return;
+    if (fl.phase === 'build') { startRaid(); return; }
+    if (fl.phase === 'raid' && fl.check && !fl.check.result) { resolveCheck(); return; }
+    if (fl.phase === 'raid' && (run.mode === 'slow' || run.mode === 'pause')) toggleFocus();
+  });
+  function toggleFocus() {
+    if (focusOn) focusOn = false;
+    else if (focus > 0.2) focusOn = true;
+    updateAction();
+  }
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && fl && fl.phase === 'raid' && !modalOpen) {
+      e.preventDefault();
+      if (fl.check && !fl.check.result) resolveCheck();
+      else if (run.mode === 'slow' || run.mode === 'pause') toggleFocus();
+    }
+  });
+  // While a skill check is up, a tap ANYWHERE on the screen answers it and does nothing else.
+  // During the "Uwaga!" warning taps are swallowed, so an early tap neither answers nor places anything.
+  let swallowClickUntil = 0;
+  document.addEventListener('pointerdown', e => {
+    if (!fl || modalOpen || fl.phase !== 'raid' || !fl.check || fl.check.result) return;
+    e.preventDefault(); e.stopPropagation();
+    swallowClickUntil = performance.now() + 450;
+    resolveCheck();
+  }, true);
+  document.addEventListener('click', e => {
+    if (performance.now() < swallowClickUntil) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+  $('#btn-zoom').addEventListener('click', () => {
+    if (!fl) return;
+    if (cam.s < closeScale() * 0.92) zoomAt(closeScale(), cw / 2, ch / 2);
+    else { cam.s = fitScale(); clampCam(); updateZoomBtn(); }
+  });
+  $('#btn-settings').addEventListener('click', () => { if (!modalOpen) openModal({ type: 'settings' }); });
+  window.addEventListener('resize', () => { if (fl) resize(); });
+
+  /* ================= boot ================= */
+  // An example floor sits behind the start screen so the page is never empty.
+  run = { mode: lastMode, floor: 1, total: 0, floors: [], reviveUsed: false, startedAt: Date.now(), fires: 0, focusUsed: 0, upgrades: [], unlocked: new Set(START_UNLOCKED) };
+  mods = freshMods();
+  startFloor(1, 0);
+  openModal({ type: 'start' });
+  requestAnimationFrame(frame);
+
+  // Hook for automated checks; no effect on normal play.
+  window.__yatd = { setArm: v => { ARM_TIME = v; }, costs: () => Object.fromEntries(Object.keys(ITEMS).map(k => [k, ITEMS[k].cost])), setBossDps: v => { BOSS_DPS = v; }, setRush: v => { RUSH3 = v; }, setAssault: v => { ASSAULT3 = v; }, setShield: v => { SHIELD3 = v; },
+    get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
+    step, fire, tryPlace, canPlace, startRaid, newRun, closeModal, endFloor: () => endFloor(), finishWave: () => finishWave(), resolveCheck: p => resolveCheck(p), skipCheck: () => skipCheck(), clearCheck: () => clearCheck(), areaOf, slotOf, depthMult, shortestPath, WW, WH
+  };
+})();
+</script>
+
+</body></html>

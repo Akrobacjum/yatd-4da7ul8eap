@@ -1,0 +1,42 @@
+# Archiwum wersji prototypu
+
+Stare wersje prototypu "You are the dungeon" z czasu, gdy żył jako artefakt w Claude (15-19.10.2026). Każdy plik to cała gra w jednym HTML-u, zachowana bez zmian w kodzie gry.
+
+Dodane tylko opakowanie strony: nagłówek dla telefonu, prośba do wyszukiwarek o pominięcie i osobny zapis w przeglądarce dla każdej wersji (klucze z przedrostkiem `yatd-archiwum-<wersja>:`). Dzięki temu stara wersja nie nadpisze zapisu aktualnej gry.
+
+Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8eap/archiwum/v8.html`. Nie wysyłają wyników na Dysk; zapis do bazy artefaktu działał tylko w Claude. Prototype 1.0 i nowsze są w historii repo (`git log`).
+
+| Wersja | Data | Co nowego |
+|---|---|---|
+| [v1](v1.html) | 15.10 | pierwszy prototyp: liniowa ścieżka, 3 piętra, ręczne odpalanie pułapek |
+| [v2](v2.html) | 16.10 | losowy nieliniowy loch z meblami, kamera |
+| [v2.1](v2.1.html) | 16.10 | Esencja: pula na start i odnawianie |
+| [v2.2](v2.2.html) | 16.10 | potwory z umiejętnościami, 4 role bohaterów |
+| [v3](v3.html) | 16.10 | zmiana celu: bohaterowie mają przeżyć i dać punkty |
+| [v4](v4.html) | 16.10 | skill checki, loch na jednym ekranie |
+| [v4.1](v4.1.html) | 16.10 | check rozstrzygany dużym przyciskiem |
+| [v4.2](v4.2.html) | 16.10 | Esencja ze strachu i ran, trudniejsze checki |
+| [v4.3](v4.3.html) | 16.10 | faza "Uwaga!", dźwięki |
+| [v4.4](v4.4.html) | 16.10 | check stuknięciem w dowolne miejsce |
+| [v5](v5.html) | 16.10 | jedna drużyna przez 3 piętra, boss w finale |
+| [v5.1](v5.1.html) | 16.10 | krata z limitem zamknięć, finał "Ostatni szturm" |
+| [v5.1a](v5.1a.html) | 16.10 | wariant v5.1 |
+| [v5.2](v5.2.html) | 16.10 | potwory wstają po powaleniu |
+| [v5.3](v5.3.html) | 16.10 | różnorodność pułapek, statystyki według typu |
+| [v5.4](v5.4.html) | 16.10 | bohaterowie uczą się pułapek |
+| [v5.5](v5.5.html) | 17.10 | poprawki czaszki w skill checku |
+| [v6](v6.html) | 17.10 | żywa drużyna: duża mapa, mgła, lider, łup z rzadkością |
+| [v6.1](v6.1.html) | 17.10 | przyciski na dole ekranu |
+| [v7](v7.html) | 17.10 | fale bez końca, strach jako waluta, kopanie pokoi |
+| [v8](v8.html) | 17.10 | 10 fal i finał, poziomy bez limitu, skrzynia |
+| [v9](v9.html) | 17.10 | droga rozbudowa, taktyka drużyny, wyłomy |
+| [v10](v10.html) | 17.10 | talia kart |
+| [v11](v11.html) | 18.10 | Sława, ulepszenia, budowle-kontry, gildia |
+| [v12](v12.html) | 18.10 | Groza × Chciwość, łup do wyboru, typy pokoi, kształty checków |
+| [v12.1](v12.1.html) | 19.10 | wygładzenie: wahadło, fala 7 |
+| [v13](v13.html) | 19.10 | głód serca |
+| [v14](v14.html) | 19.10 | sklep, typy obrażeń, fobie, powracający |
+| [v14.1](v14.1.html) | 19.10 | kryształ upuszczany ze strachu, klatka zabija, poziomy pasek |
+| [v15](v15.html) | 19.10 | jedna waluta: Groza × Chciwość × Combo = Esencja |
+| [v15.1](v15.1.html) | 19.10 | zakładka Strach i nowe elementy straszące |
+| [v15.2](v15.2.html) | 19.10 | gesty (stuknij = przenieś), ekrany bez przewijania |
