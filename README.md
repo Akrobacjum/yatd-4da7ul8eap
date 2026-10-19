@@ -22,7 +22,7 @@ node --check dist/check.js
 git add -A && git commit -m "..." && git push
 ```
 
-Publikację robi workflow `.github/workflows/pages.yml` przy każdym pushu na `main` (w ustawieniach repo: Settings → Pages → Source: **GitHub Actions**). Po pushu nowa wersja jest na stronie po ok. minucie; postęp widać w zakładce Actions.
+Strona odświeża się przy każdym pushu na `main`: robi to wbudowane publikowanie GitHub Pages z gałęzi `main`, a workflow `.github/workflows/pages.yml` jest zapasem (gdyby w Settings → Pages ustawiono źródło "GitHub Actions"). Oba publikują te same pliki. Nowa wersja jest na stronie po ok. minucie; postęp widać w zakładce Actions.
 
 ## Gdzie lądują wyniki
 
