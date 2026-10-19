@@ -1,0 +1,48 @@
+
+<div id="app">
+  <header class="hud">
+    <div class="hud-row">
+      <div class="num" id="h-wave">Fala 1</div>
+      <div id="h-mid"><b class="num" id="h-score">0</b> <span class="num" id="h-best"></span></div>
+      <div class="num" id="h-right"><span id="h-cry" title="Kryształy w sercu">◆◆◆</span></div>
+    </div>
+    <div class="hud-row barrow"><div class="bar" id="h-barwrap"><i id="h-bar"></i></div><div class="pips" id="h-pips" hidden aria-label="Postęp runu"></div><div class="num" id="h-time">budowa</div></div>
+    <div class="hud-row hungerrow" id="h-hrow" title="Głód serca: po fali serce zje tyle Esencji (najpierw ze swojego zapasu), inaczej zje kryształ"><span class="heart" id="h-heart">♥</span><div class="hbar"><i id="h-hfill"></i><b id="h-hmark"></b></div><span class="num" id="h-hlabel">serce</span></div>
+    <div class="hud-row eqrow idle" id="h-eq" role="button" tabindex="0" aria-label="Skąd Esencja: Groza razy Chciwość razy Combo">
+      <span class="eq" id="eq-g"><i>Groza</i><b>0</b></span><span class="op">×</span><span class="eq" id="eq-c"><i>Chciwość</i><b>1</b></span><span class="op">×</span><span class="eq" id="eq-k"><i>Combo</i><b>1</b></span><span class="op" id="eq-rop" hidden>×</span><span class="eq" id="eq-r" hidden><i>Żyła</i><b>1</b></span><span class="op">=</span><span class="eq res" id="eq-e"><i>Esencja</i><b>+0</b></span>
+    </div>
+    <div class="hud-row small" id="h-rankrow">
+      <span id="h-mult"></span>
+      <span class="num" id="h-rank"></span>
+    </div>
+  </header>
+  <div id="stage"><canvas id="cv" aria-label="Mapa lochu"></canvas><div id="banner" aria-hidden="true" hidden><b></b><span></span></div><div id="coach" role="status" hidden></div></div>
+  <div class="drawer" id="drawer">
+    <button class="handle" id="tray-toggle" type="button" aria-expanded="true" aria-controls="drawer-body"><span class="grip" aria-hidden="true"></span><span id="tray-label">Schowaj pasek</span></button>
+    <div id="drawer-body">
+      <div class="tabs" id="tabs" role="tablist"></div>
+      <div class="tray" id="tray"></div>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="iconbtn" id="btn-settings" type="button" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <button class="iconbtn" id="btn-undo" type="button" aria-label="Cofnij">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/></svg><span class="badge" id="undo-n" hidden></span>
+    </button>
+    <button class="iconbtn" id="btn-pause" type="button" aria-label="Pauza">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+    <button id="btn-action" type="button">Wypuść falę</button>
+  </div>
+</div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="tip" hidden></div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<div class="overlay" id="overlay" hidden><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
+
+<script>
+(() => {
+  'use strict';

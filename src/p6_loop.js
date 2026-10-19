@@ -1,0 +1,413 @@
+
+  /* ================= Esencja ================= */
+  // Carried over between waves, refilled after each wave, and during a wave fed by pain, fear and souls.
+  let orbs = [];
+  function regenParts() { const base = S.regenBase / 10 * mods.regen; return { base, total: base }; }
+  function gainEssence(h, amt, stat) {
+    if (amt <= 0 || !fl) return;
+    const before = Math.floor(fl.essence);
+    const add = Math.max(0, Math.min(essCap() - fl.essence, amt));
+    fl.essence += add; fl.stats[stat] = (fl.stats[stat] || 0) + amt;
+    if (amt - add > 0) overflowToHeart(amt - add);   // v15: what does not fit in the purse goes to the heart's store
+    if (h && add > 0) {
+      h.orbAcc += add;
+      const p = heroPos(h), T = cam.s;
+      while (h.orbAcc >= 0.25) {
+        h.orbAcc -= 0.25;
+        if (orbs.length < 60) orbs.push({ x: p.x * T - cam.ox + (Math.random() - 0.5) * 12, y: p.y * T - cam.oy + (Math.random() - 0.5) * 12, t: 0, dur: 0.6 + Math.random() * 0.3 });
+      }
+    }
+    if (Math.floor(fl.essence) !== before) { updateTray(); essPulse(); }
+  }
+  // v15: the heart's store takes what does not fit in the purse (at most 3 hungers of this wave; Obżarstwo: x1,5); the rest is lost
+  const storeCap = () => 3 * Math.max(hungerNeed(run.wave), hungerNeed(2) || 1);
+  function overflowToHeart(x) {
+    if (!run || run.tutorial) { if (fl) fl.stats.essLost = (fl.stats.essLost || 0) + x; return; }
+    const room = Math.max(0, storeCap() - (run.hungerStore || 0)), put = Math.min(room, x * (mods.storeK || 1));
+    run.hungerStore = (run.hungerStore || 0) + put;
+    fl.stats.essStored = (fl.stats.essStored || 0) + put; fl.stats.essLost = (fl.stats.essLost || 0) + Math.max(0, x - put / (mods.storeK || 1));
+  }
+  const lootMult = h => 1 + 0.25 * Math.min(4, h.inv.length);   // a hero carrying gear sheds more when hurt
+  function regenTick(dt) {
+    if (fl.essence >= essCap()) return;
+    const r = regenParts();
+    if (r.total <= 0) return;
+    const before = Math.floor(fl.essence);
+    const gain = Math.min(essCap() - fl.essence, r.total * dt);
+    fl.essence += gain; fl.stats.essBase += gain;
+    if (Math.floor(fl.essence) !== before) { updateTray(); essPulse(); }
+  }
+  function essPulse() {}   // Prototype 1.0: the big number counts up by itself (tickScore); an orb landing in it gives it a knock (scoreHit)
+  function scoreHit() { const e = $('#h-score'); if (!e || realNow - (scoreHit.t || -1) < 0.1) return; scoreHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
+
+  /* ================= sound ================= */
+  let actx = null;
+  function sfx(type) {
+    if (!(S.volume > 0)) return;
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const cfg = { warn: [880, 'triangle', 0.12, 1320], go: [1480, 'square', 0.04], crit: [220, 'square', 0.22, 55], ok: [620, 'sine', 0.14, 520], miss: [150, 'sawtooth', 0.18, 70] }[type];
+      if (!cfg) return;
+      const t = actx.currentTime, g = actx.createGain(), o = actx.createOscillator();
+      o.type = cfg[1]; o.frequency.setValueAtTime(cfg[0], t);
+      if (cfg[3]) o.frequency.exponentialRampToValueAtTime(cfg[3], t + cfg[2]);
+      g.gain.setValueAtTime(S.volume * (type === 'go' ? 0.08 : 0.2), t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + cfg[2]);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t); o.stop(t + cfg[2] + 0.02);
+    } catch (e) {}
+  }
+
+  // Vibration on phones that have it (Android); a game setting turns it off.
+  function buzz(ms) { if (!S.haptics || !navigator.vibrate) return; try { navigator.vibrate(ms); } catch (e) {} }
+
+  /* ================= skill checks ================= */
+  // A hero walks into a ready trap: time slows and a bar appears at the trap. Tap the MAP on green (graze 70%)
+  // or red (critical 180%, may kill). Taps on buttons and the tray never answer a check. No tap = the trap waits.
+  const CHECK_DUR = 1.15;
+  const CHECK_PREP = 0.5;
+  const BASE_DMG = { spikes: 35, arrows: 25, fire: 20, gate: 60, powder: 60, mimic: 40, trapdoor: 20, goblin: 35, archer: 22, spider: 30, ogre: 45, ghost: 5, web: 0, cage: 0, portrait: 0, shaman: 0,
+    eyes: 0, bones: 0, mirror: 0, creak: 0, coffin: 0, musicbox: 0, shade: 0, bats: 6 };
+  function predictedDmg(it, pw) {
+    const D = S.dmg, burn = 18 * D;   // the skull counts the burn too
+    pw *= lvlPow(it) * mods.pactPower;   // the skull knows about upgrades too
+    if (it.type === 'fire') return 20 * D * mods.fireDmg * pw * trapBoost(it) + burn * (it.lvl >= 3 ? 2 : 1);
+    if (it.type === 'arrows') return 25 * D * pw * trapBoost(it) + (mods.arrowBurn ? burn : 0);
+    if (it.type === 'spikes') return 35 * D * mods.spikeDmg * (1 + 0.04 * (run.stacks.hunger || 0) * mods.hunger) * pw * trapBoost(it) + (it.lvl >= 3 ? burn : 0);
+    const m = { spikes: mods.spikeDmg, gate: mods.gateCrush, mimic: mods.mimicDmg, trapdoor: mods.fallDmg }[it.type] || 1;
+    return BASE_DMG[it.type] * D * m * (MONSTERS[it.type] ? it.power : 1) * pw * trapBoost(it);
+  }
+  function heroesInArea(it) {
+    if (it.type === 'ghost') { const r = roomOf(it.x, it.y); return alive().filter(h => h.room === r); }
+    const keys = new Set(areaOf(it).map(t => key(t[0], t[1]))); return alive().filter(h => keys.has(key(h.tx, h.ty)));
+  }
+  function checkWanted(it) {
+    if (!ACTIVE[it.type] || it.disabled || it.cd > 0 || it.jamUntil > fl.time || (it.skipUntil || 0) > fl.time || (MONSTERS[it.type] && it.hp <= 0)) return false;
+    if (it.type === 'gate') return alive().some(h => (h.tx === it.x && h.ty === it.y) || h.path.slice(0, 2).some(p => p[0] === it.x && p[1] === it.y));
+    if (it.type === 'shaman') {
+      const r = roomOf(it.x, it.y); let need = false;
+      fl.items.forEach(m => { if (MONSTERS[m.type] && m !== it && m.hp > 0 && m.hp < 0.6 * m.max && roomOf(m.x, m.y) === r) need = true; });
+      return need;
+    }
+    if (it.type === 'ghost') return alive().some(h => { const p = heroPos(h); return h.room === roomOf(it.x, it.y) && Math.hypot(p.x - it.gx, p.y - it.gy) <= 3; });
+    if (it.type === 'trapdoor') return heroesInArea(it).some(h => !(h.fellFrom && h.fellFrom.has(it)));
+    if (it.type === 'cage') return heroesInArea(it).some(h => !caged(h));   // v14.1: the one inside does not trigger it again
+    return heroesInArea(it).length > 0;
+  }
+  const NO_KILL = { web: 1, shaman: 1, cage: 1, portrait: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1, shade: 1 };
+  // what reaches the hero after his own protection: a talisman's ward, armour (acid halves both), a curse (+30%)
+  function takenK(h, it) {
+    const acid = inB('acid', h.room) ? 0.5 : 1, ar = gearR(h, 'armor');
+    return (fl.time < h.wardUntil && !(it.type === 'arrows' && it.lvl >= 3) ? 1 - h.wardK * acid : 1) * (ar ? 1 - (1 - Math.pow(0.92, ar * itemPow(h))) * acid : 1) * (h.cursed ? 1.3 : 1);
+  }
+  const lethalFor = (it, pw) => !NO_KILL[it.type] && heroesInArea(it).some(h => (it.type !== 'gate' || (h.tx === it.x && h.ty === it.y)) && h.hp + h.shield <= predictedDmg(it, pw) * trapMult(h, it.type, it) * takenK(h, it));
+  const SERIES_MAX = 6;
+  // Shapes: a bar (blades and mechanisms), a ring (fire, the portrait, webs), a pulse closing in (falls and cages), a swinging
+  // needle (monsters, three passes). The zones sit at a random spot of the shape. The needle is faster against stronger heroes
+  // (the strongest one in the area); an upgraded trap gets wider zones (level 2: +15%, level 3: +30%).
+  // v14: seven shapes, every kind of element has its own: bar (blades and bars), dial (fire), fuse (powder: the spark speeds up),
+  // double dial (scares: two chances), spiral (webs and spiders), closing ring (falls and cages), pendulum (monsters).
+  const CHECK_SHAPE = { spikes: 'bar', arrows: 'bar', gate: 'bar', mimic: 'bar', powder: 'fuse', fire: 'ring', portrait: 'double', ghost: 'double', web: 'spiral', spider: 'spiral',
+    trapdoor: 'pulse', cage: 'pulse', goblin: 'swing', archer: 'swing', ogre: 'swing', shaman: 'swing',
+    eyes: 'double', bones: 'pulse', mirror: 'ring', creak: 'bar', coffin: 'fuse', musicbox: 'spiral', shade: 'double', bats: 'swing' };   // v15.1
+  const SHAPE_NAME = { bar: 'pasek', ring: 'tarcza', fuse: 'lont', double: 'podwójna tarcza', spiral: 'spirala', pulse: 'krąg', swing: 'wahadło' };
+  const SHAPE_DUR = { bar: 1, ring: 1.15, pulse: 0.95, swing: 1.55, fuse: 1.25, double: 1.2, spiral: 1.25 }, LVL_ZONE = [1, 1, 1.15, 1.3];
+  // Swing: there and back (two passes). It speeds up towards the middle and slows near the ends (±35%), a pendulum.
+  // v12 had three passes of a full pendulum (20% crits in the real run), v12.1 two slow ones (86%, "too slow").
+  const SWING_PASSES = 2, SWING_EASE = 0.35;
+  const checkPos = (c, u) => {
+    u = clamp(u, 0, 1);
+    if (c.shape === 'fuse') return Math.pow(u, 1.7);   // the spark crawls, then races
+    if (c.shape !== 'swing') return u;
+    const k = Math.min(SWING_PASSES - 1, Math.floor(u * SWING_PASSES)), s = u * SWING_PASSES - k;
+    const q = s - SWING_EASE * Math.sin(2 * Math.PI * s) / (2 * Math.PI);
+    return k % 2 ? 1 - q : q;
+  };
+  // A stronger hero makes the needle quicker: +1.5% "difficulty" a level, the needle by its square root (level 11 +7%, level 21 +14%).
+  const CHECK_LV_SPEED = 0.015;
+  function checkTick() {
+    if (fl.check || fl.ending !== null) return;
+    if (ff) {   // v14: a finger held on the map speeds the game up: no checks, ready traps fire by themselves at graze strength
+      for (const it of fl.items.values()) if (checkWanted(it) && fire(it, mods.okPw)) { fl.stats.autoFires = (fl.stats.autoFires || 0) + 1; bt(it.type).ok++; }
+      return;
+    }
+    if (fl.time < fl.checkGap) return;
+    for (const it of fl.items.values()) {
+      if (!checkWanted(it)) continue;
+      const inA = heroesInArea(it), shape = CHECK_SHAPE[it.type] || 'bar';
+      const maxL = inA.reduce((a, h) => Math.max(a, h.lvl), 1);
+      const kz = S.checkDiff * (1 + 0.02 * Math.min(10, run.wave - 1)) / LVL_ZONE[it.lvl || 1], ks = S.checkDiff * (1 + CHECK_LV_SPEED * Math.min(20, maxL - 1));
+      const gw = 0.4 / kz, rw = 0.09 / kz;
+      // where the zones sit: anywhere on the shape (the critical strip before or after the green one; in a pulse always inside)
+      const lo = shape === 'swing' ? 0.08 : 0.12, start = lo + Math.random() * Math.max(0, 0.96 - lo - gw - rw);
+      let g0, g1, r0, r1, z2 = null;
+      if (shape === 'double') {   // two smaller windows, one in each half of the dial: two chances, less room
+        const g = gw * 0.7, r = rw * 0.85, a = 0.08 + Math.random() * Math.max(0, 0.46 - 0.08 - g - r), b = 0.52 + Math.random() * Math.max(0, 0.94 - 0.52 - g - r);
+        g0 = a; g1 = a + g; r0 = g1; r1 = r0 + r; z2 = { g0: b, g1: b + g, r0: b + g, r1: b + g + r };
+      } else if (shape !== 'pulse' && Math.random() < 0.5) { r0 = start; r1 = r0 + rw; g0 = r1; g1 = g0 + gw; }
+      else { g0 = start; g1 = g0 + gw; r0 = g1; r1 = r0 + rw; }
+      // Seria: everything else that is ready to fire right now joins this check, so one tap answers the whole volley
+      const extra = [];
+      if (S.series) for (const o of fl.items.values()) { if (o !== it && extra.length < SERIES_MAX && checkWanted(o)) extra.push(o); }
+      const all = [it].concat(extra);
+      fl.check = { it, extra, shape, maxL, t0: realNow + CHECK_PREP, prepT0: realNow, go: false, dur: CHECK_DUR / Math.sqrt(ks) * SHAPE_DUR[shape], g0, g1, r0, r1, z2, rot: Math.random() * Math.PI * 2,
+        lethalOk: all.some(o => lethalFor(o, mods.okPw)), lethalCrit: all.some(o => lethalFor(o, mods.critPw)), result: null, resT: 0 };
+      fl.stats.checks++; all.forEach(o => { bt(o.type).checks++; });
+      if (extra.length) { fl.stats.volleys = (fl.stats.volleys || 0) + 1; fl.stats.volleyTraps = (fl.stats.volleyTraps || 0) + extra.length; }
+      fl.check.note = [inA.some(h => h.state === 'disarm' && h.item === it) ? 'rozbraja ją!' : '',
+        inA.some(h => h.crystal) ? 'niesie kryształ!' : '',
+        it.type === 'spikes' && inA.some(held) ? 'stoi: ×1,5' : '',
+        inA.some(caged) ? 'w klatce +50%' : '',
+        inA.some(webbed) && it.type !== 'web' ? 'w sieci +30%' : '',
+        it.type === 'spikes' && mods.stickySpikes && inA.some(webbed) ? 'lepkie kolce ×' + (1 + mods.stickySpikes) : '',
+        calmReady(it) ? 'cisza ×' + (1 + mods.calmStorm) : '',
+        TRAPS[it.type] && mods.bloodRite && fl.stats.kills ? 'krew ×' + fmt2(1 + mods.bloodRite * fl.stats.kills) : '',
+        inA.some(h => h.type === 'warrior' && fl.time < h.shieldUpUntil) ? 'tarcza -' + Math.round((1 - Math.min(...inA.filter(h => h.type === 'warrior' && fl.time < h.shieldUpUntil).map(h => h.R.shield))) * 100) + '%' : '',
+        inA.some(h => h.fear >= 0.6 * h.courage) ? 'blisko ucieczki' : '',
+        inA.some(h => fl.time < h.wardUntil) ? 'talizman' : '',
+        maxL >= 12 ? 'poz. ' + maxL + ': szybciej' : ''].filter(Boolean).join(' · ');
+      sfx('warn');
+      if (run.checkHints > 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" stuknij w MAPĘ. Zielone = draśnięcie, czerwone = krytyk, czaszka = ktoś zginie. Przytrzymasz palec na mapie: gra przyspiesza, a pułapki biją same (jak draśnięcie).'); }
+      if (run.tut >= 0) tutEvent('check');
+      return;
+    }
+  }
+  function resolveCheck(p) {   // p (tests): a position on the shape; a tap: where the needle is right now
+    const c = fl.check;
+    if (!c || c.result) return;
+    if (p === undefined) { if (realNow < c.t0) return; p = checkPos(c, (realNow - c.t0) / c.dur); }
+    let res = 'miss', pw = 0;
+    const z = c.z2;
+    if ((p >= c.r0 && p <= c.r1) || (z && p >= z.r0 && p <= z.r1)) { res = 'crit'; pw = mods.critPw; }
+    else if ((p >= c.g0 && p <= c.g1) || (z && p >= z.g0 && p <= z.g1)) { res = 'ok'; pw = mods.okPw; }
+    c.result = res; c.resT = realNow; c.p = p;
+    const all = [c.it].concat(c.extra || []);
+    tl('ch', c.it.type, c.it.x, c.it.y, res, heroesInArea(c.it).length, all.length - 1, c.maxL || 1, Math.round((p - (c.r0 + c.r1) / 2) * 100));   // v36: the strongest level near it and how far from the red strip the tap landed (in % of the shape)
+    sfx(res); if (res === 'crit') buzz(25);
+    all.forEach(o => { bt(o.type)[res === 'crit' ? 'crit' : res === 'ok' ? 'ok' : 'miss']++; });
+    if (run.tut >= 0) tutEvent('resolved');
+    if (res === 'miss') {
+      all.forEach(o => { o.cd = cdOf(o.type) * 0.5 || 1; });
+      floatTile(c.it.x, c.it.y, 'Pudło', '#a69bbb', 15, -0.8); fl.stats.checkMiss++;
+      return;
+    }
+    const victims = new Set();
+    all.forEach(o => heroesInArea(o).forEach(h => victims.add(h)));
+    fire(c.it, pw);
+    (c.extra || []).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o && !o.disabled && !(o.jamUntil > fl.time) && !(MONSTERS[o.type] && o.hp <= 0)) fire(o, pw); });
+    if (res === 'crit') {
+      fl.stats.checkCrit++; shake = Math.max(shake, 0.22); floatTile(c.it.x, c.it.y, all.length > 1 ? 'SERIA: KRYTYK!' : 'KRYTYK!', '#ff6b6b', 19, -1.2);
+      victims.forEach(h => {   // a critical knocks a piece of gear out of the hero's pack (v13: no Esencja for it, so loot is a risk again)
+        if (h.dead || !h.inv.length) return;
+        const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0];
+        const q = heroPos(h); burst(q.x, q.y, rarColor(lost.r), 10);
+        floatHero(h, G3(HITEMS[lost.type].g, 'Wypadł', 'Wypadła', 'Wypadły') + ' ' + HITEMS[lost.type].name + '!', '#c3b2ff', 14, -1.0);
+      });
+    }
+    else { fl.stats.checkOk++; floatTile(c.it.x, c.it.y, 'Draśnięcie', '#8be38f', 14, -1.2); }
+  }
+  function skipCheck() {
+    const c = fl.check; if (!c || c.result) return;
+    c.result = 'skip'; c.resT = realNow; fl.stats.checkSkip++;
+    [c.it].concat(c.extra || []).forEach(o => { o.skipUntil = fl.time + 1.2; bt(o.type).skip++; });
+    tl('ch', c.it.type, c.it.x, c.it.y, 'skip', heroesInArea(c.it).length);
+    if (c.lethalOk && c.lethalCrit) { fl.stats.skipLethal++; bt(c.it.type).skipLethal++; }
+  }
+  function clearCheck() { fl.check = null; fl.checkGap = fl.time + 0.25; }
+  function updateCheck() {
+    const c = fl.check;
+    if (!c) return;
+    if (c.result) { if (realNow - c.resT > 0.35) clearCheck(); return; }
+    if (!c.go && realNow >= c.t0) { c.go = true; sfx('go'); }
+    if ((realNow - c.t0) / c.dur >= 1) skipCheck();
+  }
+
+  /* ================= simulation step (game time) ================= */
+  const heroCode = h => h.gone ? 'g' : h.state === 'caged' ? 'c' : h.crystal ? 'k' : h.fleeing ? 'f' : h.state === 'rest' ? 'r' : h.state === 'fight' ? 'b' : h.state === 'disarm' ? 'x' : h.state === 'boss' ? 'h' : h.lost ? 'l' : fl.time < h.panicUntil ? 'p' : 'w';
+  function takeCrystal(atHeart) {
+    const P = fl.party, carrier = atHeart.slice().sort((a, b) => b.hp - a.hp)[0];
+    carrier.crystal = true; carrier.fleeing = false; P.carrierId = carrier.id; P.plan = 'escape'; P.steal = 0;
+    fl.stats.crystalTaken++; tl('ct', carrier.id); buzz(70);
+    floatTile(fl.heart.x, fl.heart.y, 'Kryształ skradziony!', '#ff6b6b', 18, -1.2); shake = Math.max(shake, 0.2);
+    say(carrier, pick(SAY.steal), 4, 2.2);
+    alive().forEach(h => { if (h.state === 'boss' || h.state === 'rest' || h.state === 'talk') h.state = 'walk'; h.needPlan = true; if (h !== carrier && Math.random() < 0.4) say(h, pick(SAY.escape), 2); });
+    setHint('Kryształ skradziony! Zabij niosącego, zanim dojdzie do wyjścia, a kryształ wróci do serca.');
+  }
+  const stealNeed = () => 4 / Math.pow(2, mods.glass);   // Szklane serce: the crystal comes loose 2 times faster per copy
+  function step(dt) {
+    fl.time += dt;
+    fl.cardMult = cardMultNow();
+    fl.quietCheckT = (fl.quietCheckT || 0) - dt;
+    if (fl.quietCheckT <= 0) { fl.quietCheckT = 0.1; fl.quiet = quietNow(); }   // v15.1: checked 10 times a second (was 5)
+    if (fl.quiet) { fl.quietT += dt; if (autoFFOn()) fl.autoFFTime += dt; } else { fl.quietT = 0; fl.cclock += dt; }   // the combo clock waits while nothing happens
+    if (mods.hauntedGallery) fl.portraitRooms = portraitRooms();
+    if (fl.echoQ && fl.echoQ.length) {   // Echo mechanizmów
+      const due = fl.echoQ.filter(e => e.at <= fl.time);
+      fl.echoQ = fl.echoQ.filter(e => e.at > fl.time);
+      due.forEach(e => { if (fl.items.get(key(e.it.x, e.it.y)) === e.it && fire(e.it, e.pw, { echo: true })) { floatTile(e.it.x, e.it.y, 'Echo!', '#ffd27a', 14, -1.1); fl.stats.echoes = (fl.stats.echoes || 0) + 1; } });
+    }
+    if (ff) fl.stats.ffTime += dt;
+    if ((UI.speed || 1) > 1) fl.stats.speedTime = (fl.stats.speedTime || 0) + dt;
+    if (fl.queue.length) {
+      // the rest of the party waits at the door while the ones inside run out; then they go in as a new group
+      const routed = fl.party.plan === 'flee' && fl.heroes.length > 0;
+      if (routed && alive().length && (fl.holdT = (fl.holdT || 0) + dt) < 8) { /* waiting outside */ }
+      else {
+        if (routed) regroupAtDoor();
+        fl.spawnTimer -= dt;
+        if (fl.spawnTimer <= 0) { spawnHero(fl.queue.shift()); fl.spawnTimer = 0.3; }   // they come in together
+      }
+    }
+    fl.items.forEach(it => {
+      if (it.cd > 0) { it.cd = Math.max(0, it.cd - dt); if (it.detected && it.cd <= 0.3 && it.cd + dt > 0.3) fl.threatDirty = true; }
+      if (it.jamUntil && it.jamUntil <= fl.time && it.jamUntil > fl.time - dt - 1e-6) fl.threatDirty = true;
+      if (it.anim > 0) it.anim = Math.max(0, it.anim - dt);
+    });
+    if (fl.zones.length) fl.zones = fl.zones.filter(z => z.until > fl.time);
+    regenTick(dt);
+    if (fl.silence) fl.stats.silenceTime += dt;
+    if (fl.threatDirty) rebuildThreat();
+    fl.doors.forEach(d => { if (d.wasClosed && d.closedUntil <= fl.time) { d.wasClosed = false; replanAll(); } });
+    fl.party.thinkT -= dt;
+    if (fl.party.thinkT <= 0) { partyThink(0.25 - fl.party.thinkT); fl.party.thinkT = 0.25; checkThresholds(run.total + fl.score); }
+    if (fl.tl) {   // once a second: where everyone is, how hurt and how scared (for the test log)
+      fl.tl.smpT -= dt;
+      if (fl.tl.smpT <= 0 && fl.tl.smp.length < 1200) {
+        fl.tl.smpT = 1;
+        const row = [Math.round(fl.time)];
+        fl.heroes.forEach(h => { if (!h.dead && !h.fled) row.push(h.id, h.tx, h.ty, Math.round(h.hp), Math.round(h.fear), heroCode(h)); });
+        fl.tl.smp.push(row);
+      }
+    }
+    fl.disarmKeys = null;
+    fl.heroes.forEach(h => { if (h.state === 'disarm' && h.item && !h.dead && h.item.detected) { fl.disarmKeys = fl.disarmKeys || new Set(); areaOf(h.item).forEach(t => fl.disarmKeys.add(key(t[0], t[1]))); } });
+    fl.heroes.forEach(h => { if (!h.dead && !h.fled) updateHero(h, dt); });
+    checkTick();
+    monstersTick(dt);
+    // at the heart: they pry a crystal loose while the heart burns them
+    const P = fl.party, atHeart = alive().filter(h => h.state === 'boss');
+    if (atHeart.length && P.plan === 'assault' && fl.ending === null) {
+      P.steal += dt * (1 + 0.5 * (atHeart.length - 1));
+      fl.heartHit = 0.12;
+      damage(atHeart[0], 5 * dt, HEART);
+      if (P.steal >= stealNeed()) takeCrystal(alive().filter(h => h.state === 'boss'));
+    }
+    if (fl.heartHit > 0) fl.heartHit -= dt;
+    if (!fl.fearless && fl.ending === null && fl.time >= S.waveTime) becomeImpatient();
+    if (fl.ending === null && fl.time >= S.waveTime + 60) {   // safety net: nobody stays forever
+      fl.heroes.forEach(h => { if (!h.dead && !h.fled) { h.gone = false; heroExit(h); } });
+    }
+    if (fl.ending === null && fl.queue.length === 0 && fl.heroes.length && fl.heroes.every(h => h.dead || h.fled)) fl.ending = 1.2;
+    fl.heroes.forEach(h => { if (h.bubble && h.bubble.until <= fl.time) h.bubble = null; });
+  }
+
+  /* ================= main loop (real time) ================= */
+  function timeScale() {
+    if (!fl || modalOpen || fl.phase !== 'raid' || paused) return 0;
+    if (fl.check && !fl.check.result) return 0.06;
+    const sp = 1;   // v14: no speed button; holding the finger speeds up
+    if (ff) return Math.max(S.ffSpeed, sp);
+    return Math.max(sp, autoFFOn() ? S.autoFF : 1);   // nothing happening: the game hurries on by itself
+  }
+  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check;   // v15.1: after 0,3 s of quiet (was 0,8)
+  // "Quiet" = nobody near anything of yours: no hero in a room or corridor with a working trap, monster, loot or building,
+  // nobody fighting, caged, disarming, at the heart or about to rush a room. Resting after a retreat counts as quiet.
+  function quietNow() {
+    if (fl.ending !== null || fl.party.prep) return false;   // v15.1: the walk in from the entrance counts too (heroes still queuing used to block it)   // a crystal carrier on an empty stretch is dead time too: trap rooms still slow it down
+    const crew = alive();
+    if (!crew.length) return false;
+    const busyRooms = new Set();
+    fl.items.forEach(it => { if ((ACTIVE[it.type] && !it.disabled && !(MONSTERS[it.type] && it.hp <= 0)) || isLoot(it.type)) { busyRooms.add(slotRoom(it.type, it.x, it.y)); areaOf(it).forEach(t => busyRooms.add(roomOf(t[0], t[1]))); } });
+    return !crew.some(h => h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || caged(h) || busyRooms.has(roomOf(h.tx, h.ty)) || (h.nx !== null && busyRooms.has(roomOf(h.nx, h.ny))));
+  }
+  let lastT = performance.now();
+  function frame(now) {
+    const rdt = Math.min(0.05, (now - lastT) / 1000); lastT = now; realNow += rdt;
+    if (run && fl) {
+      if (fl.check) { if (modalOpen || paused) { fl.check.t0 += rdt; fl.check.prepT0 += rdt; fl.check.resT += rdt; } else updateCheck(); }
+      if (paused && fl.phase === 'raid') fl.stats.pauseTime += rdt;
+      const dt = rdt * timeScale();
+      if (dt > 0) {   // fast-forward runs in small steps so nothing tunnels through
+        const n = Math.ceil(dt / 0.05);
+        for (let i = 0; i < n && fl.phase === 'raid'; i++) step(dt / n);
+      }
+      if (fl.phase === 'raid' && fl.ending !== null && !modalOpen && !paused) {
+        fl.ending -= rdt;
+        if (fl.ending <= 0) { fl.ending = null; finishWave(); }
+      }
+      fl.items.forEach(it => { if (it.preview > 0) it.preview -= rdt; });
+      fl.fx.forEach(f => { f.life -= rdt; });
+      fl.fx = fl.fx.filter(f => f.life > 0);
+      autoCam(rdt);
+      updateHud();
+      if (run.tut >= 0) tutTick();
+    }
+    orbs.forEach(o => { o.t += rdt; });
+    if (orbs.some(o => o.t >= o.dur)) scoreHit();
+    orbs = orbs.filter(o => o.t < o.dur);
+    floats.forEach(f => { f.life -= rdt; f.y -= 0.9 * rdt; });
+    floats = floats.filter(f => f.life > 0);
+    particles.forEach(p => {
+      p.life -= rdt;
+      if (p.ring) p.r += (p.maxR - p.r) * Math.min(1, rdt * 12);
+      else { p.x += p.vx * rdt; p.y += p.vy * rdt; p.vx *= 0.9; p.vy *= 0.9; }
+    });
+    particles = particles.filter(p => p.life > 0);
+    if (shake > 0) shake = Math.max(0, shake - rdt);
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  /* ================= camera ================= */
+  // Building: you move it. Raid: it follows the party and zooms out as they spread; a drag takes over for a few seconds.
+  const fitScale = () => Math.min(cw / WW, ch / WH);
+  const buildScale = () => clamp(cw / 12.5, fitScale(), 44);
+  const MAX_S = 56;
+  function clampCam() {
+    const mw = WW * cam.s, mh = WH * cam.s;
+    cam.ox = mw <= cw ? (mw - cw) / 2 : clamp(cam.ox, -cw * 0.3, mw - cw * 0.7);
+    cam.oy = mh <= ch ? (mh - ch) / 2 : clamp(cam.oy, -ch * 0.3, mh - ch * 0.7);
+  }
+  function centerOn(tx, ty) { cam.ox = tx * cam.s - cw / 2; cam.oy = ty * cam.s - ch / 2; clampCam(); }
+  function zoomAt(ns, sx, sy) {
+    const wx = (sx + cam.ox) / cam.s, wy = (sy + cam.oy) / cam.s;
+    cam.s = clamp(ns, fitScale() * 0.95, MAX_S);
+    cam.ox = wx * cam.s - sx; cam.oy = wy * cam.s - sy; clampCam(); updateZoomBtn();
+  }
+  const toWorld = (sx, sy) => ({ x: (sx + cam.ox) / cam.s, y: (sy + cam.oy) / cam.s });
+  function autoCam(rdt) {
+    if (!fl || fl.phase !== 'raid' || paused || realNow < cam.manualUntil) return;
+    const pts = alive().map(heroPos);
+    if (fl.check && fl.check.it) pts.push({ x: fl.check.it.x + 0.5, y: fl.check.it.y + 0.5 });
+    if (!pts.length) { pts.push({ x: fl.ent.x + 0.5, y: fl.ent.y + 0.5 }); }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    pts.forEach(p => { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); });
+    const m = 3.2, bw = x1 - x0 + 2 * m, bh = y1 - y0 + 2 * m;
+    const ts = clamp(Math.min(cw / bw, ch / bh), fitScale(), 34);
+    const k = 1 - Math.exp(-rdt * 2.6);
+    const cx = (cam.ox + cw / 2) / cam.s, cy = (cam.oy + ch / 2) / cam.s;
+    const tx = (x0 + x1) / 2, ty = (y0 + y1) / 2;
+    cam.s += (ts - cam.s) * k;
+    const nx = cx + (tx - cx) * k, ny = cy + (ty - cy) * k;
+    cam.ox = nx * cam.s - cw / 2; cam.oy = ny * cam.s - ch / 2; clampCam();
+    // the automatic camera keeps the dungeon in frame instead of showing the void around it
+    const mw = WW * cam.s, mh = WH * cam.s, pad = cam.s * 0.6;
+    if (mw > cw) cam.ox = clamp(cam.ox, -pad, mw - cw + pad);
+    if (mh > ch) cam.oy = clamp(cam.oy, -pad, mh - ch + pad);
+  }
+  function resize() {
+    DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    const rect = stage.getBoundingClientRect();
+    const had = cw > 0, cx = had ? (cam.ox + cw / 2) / cam.s : 0, cy = had ? (cam.oy + ch / 2) / cam.s : 0;
+    cw = Math.max(60, Math.floor(rect.width)); ch = Math.max(60, Math.floor(rect.height));
+    cv.width = Math.round(cw * DPR); cv.height = Math.round(ch * DPR);
+    if (had) { cam.s = clamp(cam.s, fitScale() * 0.95, MAX_S); centerOn(cx, cy); }
+  }
+  function updateZoomBtn() {
+    const b = $('#btn-zoom'); if (!b) return; const zoomedOut = cam.s < buildScale() * 0.92;
+    b.setAttribute('aria-label', zoomedOut ? 'Przybliż' : 'Pokaż cały loch');
+    b.innerHTML = zoomedOut
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';
+  }
