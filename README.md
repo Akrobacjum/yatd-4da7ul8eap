@@ -22,7 +22,7 @@ node --check dist/check.js
 git add -A && git commit -m "..." && git push
 ```
 
-GitHub Pages serwuje gałąź `main` z katalogu głównego. Po pushu nowa wersja jest na stronie po ok. minucie.
+Publikację robi workflow `.github/workflows/pages.yml` przy każdym pushu na `main` (w ustawieniach repo: Settings → Pages → Source: **GitHub Actions**). Po pushu nowa wersja jest na stronie po ok. minucie; postęp widać w zakładce Actions.
 
 ## Gdzie lądują wyniki
 
@@ -32,4 +32,4 @@ Po każdej fali gra wysyła przebieg do skryptu z `apps-script/Code.gs`, a ten z
 - `waves_<run>_<nr>.json`: jedna fala (bohaterowie, układ lochu, oś czasu),
 - `survey_<telefon>_<run>.json`: ankieta po pierwszym ukończonym runie (raz na telefon).
 
-Pole `version` (obecnie 43) rozdziela dane z różnych wersji gry.
+Pole `version` (obecnie 43) rozdziela dane z różnych wersji gry. Pliki z testu instalacji (19.10) do pominięcia: `ping.json`, `test_post_check.json` oraz run `mvey7v7bgnbt` (gracz "TEST Claude").
