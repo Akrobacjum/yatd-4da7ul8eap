@@ -63,15 +63,16 @@ async def main():
             st = await state(page)
             if st['modal'] == 'upgrade': await page.evaluate("document.querySelector('#card .choices .btn').click()")
             if st['check'] and not got_check:
+                if await page.evaluate("__yatd.tutPopNow"): await page.screenshot(path=OUT+'05p_check.png'); await page.click('#coach .next'); await page.clock.run_for(200)
                 await page.clock.run_for(600); await page.screenshot(path=OUT+'05_check.png')
                 await page.mouse.click(W/2, 400); got_check = True; await page.clock.run_for(300); print('after check', await state(page))
             elif st['check']:
                 await page.evaluate("__yatd.skipCheck(); __yatd.clearCheck()")
-            if st['tut'] == 11 and not held:
+            if await page.evaluate("__yatd.tutPopNow"):   # 1.04: a card that stops the game
+                await page.screenshot(path=OUT+'05p_' + await page.evaluate("__yatd.tutPopNow") + '.png'); await page.click('#coach .next'); await page.clock.run_for(200); continue
+            if st['tut'] == 10 and not held:
                 await page.mouse.move(W/2, 420); await page.mouse.down(); await page.clock.run_for(1500)
                 print('ff', await page.evaluate("__yatd.ff")); await page.screenshot(path=OUT+'06_ff.png'); await page.mouse.up(); held = True
-            if st['tut'] == 10:
-                await page.screenshot(path=OUT+'07_tut9.png'); await page.click('#coach .next'); await page.clock.run_for(200)
             if st['modal'] in ('wave', 'settle'): break
         RUNW = r'''() => { const G = __yatd; let g = 0; while (g++ < 20000) { const f = G.fl; if (G.modalKind) return G.modalKind;
             if (f.check) { if (!f.check.result) G.skipCheck(); G.clearCheck(); continue; } if (f.phase !== 'raid') return f.phase; G.step(0.05); if (f.ending !== null) { f.ending -= 0.05; if (f.ending <= 0) { f.ending = null; G.finishWave(); } } } return 'guard'; }'''
@@ -106,6 +107,8 @@ async def main():
         await page.click('#coach .next'); await page.clock.run_for(200)
         print('types step', await state(page))
         await page.screenshot(path=OUT+'12c_types.png')
+        await page.click('#coach .next'); await page.clock.run_for(200)
+        print('tales step', await state(page))
         await page.click('#coach .next'); await page.clock.run_for(200)
         print('last step', await state(page))
         await page.screenshot(path=OUT+'13_tut12.png')

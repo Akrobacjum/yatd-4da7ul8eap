@@ -178,7 +178,7 @@
         inA.some(h => fl.time < h.wardUntil) ? 'talizman' : '',
         maxL >= 12 ? 'poz. ' + maxL + ': szybciej' : ''].filter(Boolean).join(' · ');
       sfx('warn');
-      if (run.checkHints > 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" stuknij w MAPĘ. Zielone = draśnięcie, czerwone = krytyk, czaszka = ktoś zginie. Przytrzymasz palec na mapie: gra przyspiesza, a pułapki biją same (jak draśnięcie).'); }
+      if (run.checkHints > 0 && run.tut < 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" stuknij w MAPĘ. Obwódka = draśnięcie, pełne pole = krytyk (najmocniej), czaszka = ktoś zginie. Przytrzymasz palec na mapie: gra przyspiesza, a pułapki biją same (jak draśnięcie).'); }
       if (run.tut >= 0) tutEvent('check');
       return;
     }
@@ -197,6 +197,9 @@
     sfx(res); if (res === 'crit') buzz(25);
     all.forEach(o => { bt(o.type)[res === 'crit' ? 'crit' : res === 'ok' ? 'ok' : 'miss']++; });
     if (run.tut >= 0) tutEvent('resolved');
+    // 1.04: a tester grazed 37 times in a row and never aimed at the crit: after 6 checks without one, say it once a run
+    if (res === 'crit') run.noCrit = 0; else run.noCrit = (run.noCrit || 0) + 1;
+    if (run.noCrit >= 6 && !run.critHinted) { run.critHinted = true; setHint('Celuj w pełne pole: krytyk bije ok. 2,5 raza mocniej niż draśnięcie (obwódka).'); }
     if (res === 'miss') {
       all.forEach(o => { o.cd = cdOf(o.type) * 0.5 || 1; });
       floatTile(c.it.x, c.it.y, 'Pudło', '#a69bbb', 15, -0.8); fl.stats.checkMiss++;
@@ -237,12 +240,13 @@
   const heroCode = h => h.gone ? 'g' : h.state === 'caged' ? 'c' : h.crystal ? 'k' : h.fleeing ? 'f' : h.state === 'rest' ? 'r' : h.state === 'fight' ? 'b' : h.state === 'disarm' ? 'x' : h.state === 'boss' ? 'h' : h.lost ? 'l' : fl.time < h.panicUntil ? 'p' : 'w';
   function takeCrystal(atHeart) {
     const P = fl.party, carrier = atHeart.slice().sort((a, b) => b.hp - a.hp)[0];
+    if (!carrier) return;
     carrier.crystal = true; carrier.fleeing = false; P.carrierId = carrier.id; P.plan = 'escape'; P.steal = 0;
     fl.stats.crystalTaken++; tl('ct', carrier.id); buzz(70);
     floatTile(fl.heart.x, fl.heart.y, 'Kryształ skradziony!', '#ff6b6b', 18, -1.2); shake = Math.max(shake, 0.2);
     say(carrier, pick(SAY.steal), 4, 2.2);
     alive().forEach(h => { if (h.state === 'boss' || h.state === 'rest' || h.state === 'talk') h.state = 'walk'; h.needPlan = true; if (h !== carrier && Math.random() < 0.4) say(h, pick(SAY.escape), 2); });
-    setHint('Kryształ skradziony! Zabij niosącego, zanim dojdzie do wyjścia, a kryształ wróci do serca.');
+    if (!tutPop('theft')) setHint('Kryształ skradziony! Zabij niosącego, zanim dojdzie do wyjścia, a kryształ wróci do serca.');
   }
   const stealNeed = () => 4 / Math.pow(2, mods.glass);   // Szklane serce: the crystal comes loose 2 times faster per copy
   function step(dt) {
@@ -293,8 +297,13 @@
     }
     fl.disarmKeys = null;
     fl.heroes.forEach(h => { if (h.state === 'disarm' && h.item && !h.dead && h.item.detected) { fl.disarmKeys = fl.disarmKeys || new Set(); areaOf(h.item).forEach(t => fl.disarmKeys.add(key(t[0], t[1]))); } });
-    fl.heroes.forEach(h => { if (!h.dead && !h.fled) updateHero(h, dt); });
-    checkTick();
+    // 1.04: the party gathers at the door while "Fala N" shows, then goes in (testers met the first check 0,1-0,9 s after
+    // the start and often missed it): no hero moves and no trap fires until then
+    if (!fl.gateOpen && fl.time >= GATE_T) { fl.gateOpen = true; const L = alive()[0]; if (L) say(L, pick(SAY.gate), 2, 1.6); }
+    if (fl.gateOpen) {
+      fl.heroes.forEach(h => { if (!h.dead && !h.fled) updateHero(h, dt); });
+      checkTick();
+    }
     monstersTick(dt);
     // at the heart: they pry a crystal loose while the heart burns them
     const P = fl.party, atHeart = alive().filter(h => h.state === 'boss');
@@ -302,7 +311,8 @@
       P.steal += dt * (1 + 0.5 * (atHeart.length - 1));
       fl.heartHit = 0.12;
       damage(atHeart[0], 5 * dt, HEART);
-      if (P.steal >= stealNeed()) takeCrystal(alive().filter(h => h.state === 'boss'));
+      // 1.04: the heart's burn can kill the last one prying in this very tick (a bot found it: the step threw, the game froze)
+      if (P.steal >= stealNeed()) { const by = alive().filter(h => h.state === 'boss'); if (by.length) takeCrystal(by); }
     }
     if (fl.heartHit > 0) fl.heartHit -= dt;
     if (!fl.fearless && fl.ending === null && fl.time >= S.waveTime) becomeImpatient();
@@ -322,7 +332,8 @@
     return Math.max(sp, ffAuto);   // nothing happening: the game hurries on by itself (1.02: speeds up smoothly, slows down at once)
   }
   let ffAuto = 1;
-  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check;   // v15.1: after 0,3 s of quiet (was 0,8)
+  const GATE_T = 1.8;   // s at the door before a wave goes in
+  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check && fl.gateOpen;   // v15.1: after 0,3 s of quiet (was 0,8)
   // "Quiet" = nobody near anything of yours: no hero within a step of the tiles a ready trap, a monster or loot reaches
   // (1.02; up to 1.01 the whole room counted), nobody fighting, caged, disarming, at the heart or about to rush a room.
   // Resting after a retreat counts as quiet.
@@ -368,7 +379,41 @@
   }
   let lastT = performance.now(), lastInputAt = 0, frameNo = 0;
   ['pointerdown', 'pointermove', 'wheel', 'keydown'].forEach(ev => window.addEventListener(ev, () => { lastInputAt = realNow; }, { capture: true, passive: true }));
+  // 1.04: how smoothly the wave runs on the player's device goes to the wave log (a lag was reported in wave 1 only and could not
+  // be reproduced here): the gaps between frames and the time the game's own code takes, counted only while the wave is on screen
+  // and running (no pause, no card open). An error in a frame no longer stops the game (the next frame is always asked for) and
+  // the first few go to the log too.
+  const PERF = { gaps: [], js: [], last: 0, made0: 0, direct: 0, split: 0, errs: [] };
+  function perfReset() { PERF.gaps = []; PERF.js = []; PERF.last = 0; PERF.made0 = TC.made || 0; PERF.direct = 0; PERF.split = 0; }
+  const perfErr = e => {   // the message and where: the function and the line of the built file
+    if (PERF.errs.length >= 8) return;
+    const at = /at (?:(\S+) \()?.*?:(\d+):\d+\)?/.exec(String((e && e.stack) || '').split('\n')[1] || '');
+    PERF.errs.push(String((e && e.message) || e).slice(0, 160) + (at ? ' @' + (at[1] || '?') + ':' + at[2] : ''));
+  };
+  window.addEventListener('error', ev => { if (!(ev.error && ev.error.seen)) perfErr(ev.error || ev.message); });
+  function perfNote(now, js) {
+    const on = !!(fl && fl.phase === 'raid' && !paused && !modalOpen && document.visibilityState !== 'hidden');
+    if (on && PERF.last && PERF.gaps.length < 40000) {
+      PERF.gaps.push(Math.round((now - PERF.last) * 10) / 10); PERF.js.push(Math.round(js * 10) / 10);
+      if (TC.direct) PERF.direct++;
+      if (SPLIT.k > 0.5) PERF.split++;
+    }
+    PERF.last = on ? now : 0;
+  }
+  function perfSummary() {
+    const n = PERF.gaps.length; if (n < 20) return null;
+    const g = PERF.gaps.slice().sort((a, b) => a - b), j = PERF.js.slice().sort((a, b) => a - b), q = (a, k) => a[Math.min(a.length - 1, Math.floor(a.length * k))];
+    let sum = 0; PERF.gaps.forEach(x => { sum += x; });
+    return { frames: n, fps: Math.round(n / sum * 10000) / 10, gapMed: q(g, 0.5), gapP90: q(g, 0.9), gapMax: g[n - 1], slow: Math.round(g.filter(x => x > 50).length / n * 1000) / 10,
+      jsMed: q(j, 0.5), jsP90: q(j, 0.9), jsMax: j[n - 1], dpr: DPR, w: Math.round(cw), h: Math.round(ch), direct: Math.round(PERF.direct / n * 100), split: Math.round(PERF.split / n * 100), chunks: (TC.made || 0) - PERF.made0 };
+  }
   function frame(now) {
+    const t0 = performance.now();
+    try { frameBody(now); } catch (e) { perfErr(e); try { e.seen = 1; } catch (_) { } setTimeout(() => { throw e; }); }   // thrown again outside the loop: the console (and the tests) still see it
+    perfNote(now, performance.now() - t0);
+    requestAnimationFrame(frame);
+  }
+  function frameBody(now) {
     const rdt = Math.min(0.05, (now - lastT) / 1000); lastT = now; realNow += rdt;
     if (run && fl) {
       if (fl.check) { if (modalOpen || paused) { fl.check.t0 += rdt; fl.check.prepT0 += rdt; fl.check.resT += rdt; } else updateCheck(); }
@@ -407,7 +452,6 @@
     // 1.03: building with nothing touched for 2 s: every other frame is enough (torches and treasure still move)
     const idle = fl && fl.phase === 'build' && realNow - lastInputAt > 2 && !movingKey && !holdInfo;
     if (!idle || (frameNo++ & 1)) draw();
-    requestAnimationFrame(frame);
   }
 
   /* ================= camera ================= */
@@ -437,17 +481,19 @@
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     pts.forEach(p => { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); });
     const m = 3.2, bw = x1 - x0 + 2 * m, bh = y1 - y0 + 2 * m;
-    const ts = clamp(Math.min(cw / bw, ch / bh), fitScale(), 34);
+    // 1.04: with the tutorial coach at the top of the map the party is framed in the space below it (the door is at the top)
+    const ins = coachInset, hc = ins + (ch - ins) / 2;
+    const ts = clamp(Math.min(cw / bw, (ch - ins) / bh), fitScale(), 34);
     const k = 1 - Math.exp(-rdt * 2.6);
-    const cx = (cam.ox + cw / 2) / cam.s, cy = (cam.oy + ch / 2) / cam.s;
+    const cx = (cam.ox + cw / 2) / cam.s, cy = (cam.oy + hc) / cam.s;
     const tx = (x0 + x1) / 2, ty = (y0 + y1) / 2;
     cam.s += (ts - cam.s) * k;
     const nx = cx + (tx - cx) * k, ny = cy + (ty - cy) * k;
-    cam.ox = nx * cam.s - cw / 2; cam.oy = ny * cam.s - ch / 2; clampCam();
+    cam.ox = nx * cam.s - cw / 2; cam.oy = ny * cam.s - hc; clampCam();
     // the automatic camera keeps the dungeon in frame instead of showing the void around it
     const mw = WW * cam.s, mh = WH * cam.s, pad = cam.s * 0.6;
     if (mw > cw) cam.ox = clamp(cam.ox, -pad, mw - cw + pad);
-    if (mh > ch) cam.oy = clamp(cam.oy, -pad, mh - ch + pad);
+    if (mh > ch) cam.oy = clamp(cam.oy, -pad - ins, mh - ch + pad);
     splitCam(rdt, Math.min(cw / bw, ch / bh));
   }
   // 1.03 (author's idea, like the LEGO games): when the party is in two places too far apart to fit on one screen at a

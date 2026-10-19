@@ -22,7 +22,7 @@ async def main():
             if not mk: break
             seen.append(mk); await page.evaluate("__yatd.closeModal()"); await page.wait_for_timeout(300)
         s = await page.evaluate(ST); print('modals', seen, 'then', s)
-        ok = s['phase'] == 'build' and s['wave'] == 2 and s['coach'] and 'kop' in s['coach'].lower() or (s['coach'] and 'przebudujesz' in s['coach'])
+        ok = s['phase'] == 'build' and s['wave'] == 2 and s['coach'] and ('kop' in s['coach'].lower() or 'pokój mieści' in s['coach'].lower()) or (s['coach'] and 'przebudujesz' in s['coach'])   # 1.04: the dig step starts with the room limit
         print('FAILS', [] if ok else ['after a saved summary the coach goes on at the dig step']); print('errs', errs[:3])
         await b.close()
 asyncio.run(main())

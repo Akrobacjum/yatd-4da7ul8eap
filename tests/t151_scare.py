@@ -15,7 +15,7 @@ JS = r'''() => {
     if (extra) extra();
     return G.fl;
   };
-  const spawn = () => { G.startWave(); let g = 0; while (G.fl.queue.length || G.fl.heroes.some(h => h.gone && !h.dead && !h.fled)) { G.step(0.05); if (++g > 600) break; } return G.fl; };
+  const spawn = () => { G.startWave(); let g = 0; while (G.fl.queue.length || !G.fl.gateOpen || G.fl.heroes.some(h => h.gone && !h.dead && !h.fled)) { G.step(0.05); if (++g > 600) break; } return G.fl; };   // 1.04: and the party through the gate
   const spotsFor = t => { const r = []; for (let y = 0; y < G.WH; y++) for (let x = 0; x < G.WW; x++) if (G.canPlace(t, x, y)) r.push([x, y]); return r; };
   // 1. the Strach tab
   out.tab = G.TABS.find(t => t.id === 'traps').items.concat(G.TABS.find(t => t.id === 'monster').items);   // 1.01: the scare ones live with the traps and the monsters

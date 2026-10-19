@@ -55,6 +55,7 @@
     fl.lastPay = { g: C.g, greed: C.greed, cm: C.cm, e, t: fl.time, n: ++payN };
     if (C.cm > 1 || e >= 1) tl('cp', Math.round(C.g * 100) / 100, Math.round(C.cm * 100) / 100, Math.round(e * 10) / 10);
     essIn(e, C.who);
+    if (e >= 1) tutPop('pay');
     return e;
   }
   // Esencja comes in: the hungry heart takes its share first, the rest goes to the purse (Obżarstwo: x1,25 once it is fed)
@@ -220,25 +221,36 @@
     if (run.tut >= 0) tutStart();
   }
   // v15.1: the first wave starts with two traps on the heroes' way, paid from the starting Esencja (1.01: 30 - 6 = 24; taken down,
-  // they give it back). On their own they do not hold the wave: a bot with only these lost the crystal in 55 of 60 tries,
-  // with the rest of the Esencja spent along the way in 1 of 60 (three traps: lost only in 40 of 60, too safe). They save the first taps.
-  const START_TRAPS = ['spikes', 'arrows'];
+  // they give it back). On their own they do not hold the wave (a bot with only these: the crystal is lost nearly every time).
+  // 1.04 (author: they should be set so that the heroes do not carry the crystal out): both stand on the last stretch of the way,
+  // which the thief walks twice: the spikes at 70-95 % of it, the arrows on the wall that covers most of 60-100 %. Tutorial wave 1
+  // (2 rookies), a player who hits every check on the outline only (never a crit, like a tester), plus what the tutorial makes him
+  // add: the crystal went out in 3-5 of 20 tries (at 20 % and 45 % of the way: 5-9 of 20); with some crits, about never.
+  const START_TRAPS = [['spikes', 0.7, 0.95], ['arrows', 0.6, 1]];
+  function startTrapSpot(type, P, f0, f1) {
+    if (ITEMS[type].slot === 'wall') {   // the wall that covers most of this stretch of the way (any stretch, if none does)
+      for (const on of [new Set(P.slice(Math.floor(P.length * f0), Math.ceil(P.length * f1)).map(p => key(p[0], p[1]))), new Set(P.map(p => key(p[0], p[1])))]) {
+        let t = null, bs = 0;
+        for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) if (canPlace(type, x, y)) { const s = areaOf({ type, x, y }).filter(a => on.has(key(a[0], a[1]))).length; if (s > bs) { bs = s; t = [x, y]; } }
+        if (t) return t;
+      }
+      return null;
+    }
+    for (let k = Math.min(P.length - 1, Math.floor(P.length * f1)); k >= 0; k--) if (canPlace(type, P[k][0], P[k][1])) return P[k];   // the last free tile before f1
+    return null;
+  }
   function seedStartTraps() {
     const P = shortestPath(); if (!P.length) return;
     let n = 0;
-    START_TRAPS.forEach((type, i) => {
+    START_TRAPS.forEach(([type, f0, f1]) => {
       const cost = ITEMS[type].cost; if (fl.essence < cost) return;
-      const frac = 0.2 + 0.25 * i; let t = null;
-      if (ITEMS[type].slot === 'wall') {   // a wall facing this stretch of the way
-        const on = new Set(P.slice(Math.floor(P.length * frac), Math.ceil(P.length * Math.min(1, frac + 0.4))).map(p => key(p[0], p[1])));
-        for (let y = 0; y < WH && !t; y++) for (let x = 0; x < WW; x++) if (canPlace(type, x, y) && areaOf({ type, x, y }).some(a => on.has(key(a[0], a[1])))) { t = [x, y]; break; }
-      } else for (let k = Math.floor(P.length * frac); k < P.length; k++) if (canPlace(type, P[k][0], P[k][1])) { t = P[k]; break; }
+      const t = startTrapSpot(type, P, f0, f1);
       if (!t) return;
       fl.items.set(key(t[0], t[1]), { type, x: t[0], y: t[1], cd: 0, anim: 0, disabled: false, hp: 0, max: 0, power: mods.monster, shot: 0.5, flash: 0, preview: 0, gx: t[0] + 0.5, gy: t[1] + 0.5, lvl: 1, spent: cost, sys: true });
       fl.essence -= cost; bt(type).placed++; bt(type).spent += cost; n++;
     });
     run.essence = fl.essence; updateTray(); updateAction();
-    if (n && run.tut < 0) setHint(waveHint() + ' Loch postawił ' + (n === 1 ? 'pułapkę' : n + ' pułapki') + ' (z Twojej Esencji): dostaw więcej. Stuknij element, żeby go przenieść; przytrzymaj, żeby zdjąć.');
+    if (n && run.tut < 0) setHint(waveHint() + ' Loch postawił ' + (n === 1 ? 'pułapkę' : n + ' pułapki') + ' blisko serca (z Twojej Esencji): dostaw więcej. Stuknij element, żeby go przenieść; przytrzymaj, żeby zdjąć.');
     saveRun('build');
   }
   function freshParty() {
@@ -486,7 +498,8 @@
     if (!fl || fl.phase !== 'build') return;
     run.buildSec += Math.max(0, realNow - fl.buildStart); fl.buildSec = Math.round(realNow - fl.buildStart);
     saveRun('build');   // a tab closed during the wave comes back to this build
-    fl.phase = 'raid'; fl.time = 0; fl.spawnTimer = 0; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
+    perfReset();
+    fl.phase = 'raid'; fl.time = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
     { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał
     if (run.returners) run.returners = run.returners.filter(r => r.used !== run.wave);   // the returners of this wave are in
@@ -500,7 +513,7 @@
     { const bossE = fl.queue.find(e => e.boss), n = fl.queue.length;   // Prototype 1.0: a banner over the map says who is coming
       showBanner('Fala ' + run.wave, (bossE ? 'prowadzi ich ' + (bossE.boss === 'final' ? 'bohater z przepowiedni' : 'czempion') : n === 1 ? '1 bohater' : n + ' bohaterów') +
         (fl.spawnAt === 'breach' ? ' · wchodzą przez wyłom!' : fl.breach ? ' · wchodzą drzwiami' : ''));
-      if (run.wave === 1) setHint('Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.'); }
+      if (run.wave === 1 && run.tut < 0) setHint('Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.'); }
     fl.tl = { ev: [], smp: [], smpT: 0 };
     run.waveStart = snapshotLayout();
     if (fl.breach) { fl.stats.breachOpen = 1; if (fl.spawnAt === 'breach') { tl('br', fl.breach.x, fl.breach.y); fl.stats.breach = 1; } }
@@ -740,7 +753,7 @@
       heroes: fl.heroes.map(h => ({ type: h.type, lvl: h.lvl, boss: h.boss, rank: h.rank, trait: h.trait, out: h.dead ? 'dead' : h.fleeing ? 'scared' : h.crystal ? 'crystal' : 'left', fear: Math.round(h.fear), hp: Math.round(h.hp) })),
       hunger: fl.hunger || null, groza: Math.round(fl.base), grozaTotal: Math.round(run.grozaTotal || 0), greedRep: Math.round((run.greedRep || 1) * 100) / 100, guild: run.guild ? run.guild.kind : null,
       autoFF: Math.round(fl.autoFFTime || 0), crystals: run.crystals, greed: Math.round(fl.greed * 100) / 100, rumorRooms: rr, rumorTraps: rt, rooms: run.layout.cells.size,
-      essence: Math.round(fl.essence), stats: roundStats(fl.stats), items, partial: !!partial });
+      essence: Math.round(fl.essence), stats: roundStats(fl.stats), items, partial: !!partial, perf: perfSummary(), errors: PERF.errs.length ? PERF.errs.splice(0) : undefined });
   }
   // after the wave summary: game over, or upgrades and the next build phase
   function afterSummary() {
@@ -1018,7 +1031,7 @@
   }
   function startFlee(h) {
     if (caged(h)) { freeCaged(h, false, 'panic'); say(h, pick(SAY.cageBreak), 4); }
-    h.fleeing = true; h.needPlan = true; fl.stats.flees++; tl('fl', h.id);
+    h.fleeing = true; h.needPlan = true; fl.stats.flees++; tl('fl', h.id); tutPop('flee');
     if (mods.fleeShock) alive().forEach(o => { if (o !== h && !o.fleeing) addFear(o, mods.fleeShock * o.courage, null, 'screams'); });   // Krzyki w ścianach
     if (h.state === 'rest' || h.state === 'talk' || h.state === 'wait' || h.state === 'boss' || h.state === 'disarm' || h.state === 'free') { h.state = 'walk'; h.item = null; }
     say(h, pick(h.trait === 'coward' ? SAY.cowardRun : SAY.flee), 4, 2);

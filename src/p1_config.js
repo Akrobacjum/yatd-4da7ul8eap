@@ -437,6 +437,7 @@
   // What the heroes say. Each decision shows up as a bubble. {m|f} picks the masculine or feminine form.
   const SAY = {
     enter: ['Wchodzimy. Trzymajcie się razem.', 'Gdzieś tu są kryształy.', 'Cicho, idziemy.'],
+    gate: ['Wchodzimy!', 'Za mną!', 'Do środka!', 'Naprzód!'],   // 1.04: when the party steps in from the door
     champion: ['Za mną! Ten loch padnie!', 'Pokażę wam, jak to się robi.', 'Kryształ będzie nasz.'],
     explore: ['Idziemy tędy.', 'Sprawdźmy te drzwi.', 'Dalej, w głąb!', 'Tędy chyba prowadzi dalej.'],
     rookieLead: ['Za mną!', 'Tędy, na pewno tędy!', 'Ja prowadzę!'],

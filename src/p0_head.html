@@ -366,6 +366,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
   border-left: 3px solid var(--gold); border-radius: var(--r); padding: 10px 12px; font-size: 14px; line-height: 1.38; display: grid; gap: 8px;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.7), inset 0 1px 0 var(--edge); animation: rise 0.25s ease-out;
 }
+/* 1.04: in a wave the coach sits at the top of the map, under the party chips; a card that stops the game has a brighter edge */
+#coach.top { top: 42px; bottom: auto; }
+#coach.pop { border-left-color: var(--gold-hi); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(196, 160, 82, 0.35), inset 0 1px 0 var(--edge); }
 #coach .crow { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
 #coach .step { color: var(--muted); font-size: 12px; }
 #coach button { font: inherit; font-size: 14px; border-radius: var(--r); padding: 6px 12px; cursor: pointer; }

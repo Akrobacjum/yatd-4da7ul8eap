@@ -136,6 +136,7 @@
   function tileChunk(cx, cy, b) {
     const k = cx + ',' + cy + ',' + b, e = TC.map.get(k);
     if (e) { e.t = TC.tick; return e.c; }
+    TC.made = (TC.made || 0) + 1;   // (counted for the tests)
     const CH = TC.CH, n = CH + 1, c = document.createElement('canvas');
     c.width = c.height = n * b;
     const g = c.getContext('2d');
@@ -147,8 +148,16 @@
     }
     return c;
   }
+  // 1.04: zoomed in, with few tiles on screen (wave 1: two rookies walk together and the camera comes closest), the tiles are drawn
+  // directly again, as in 1.02: there the chunks save little, and they are the one thing 1.03 draws differently at that zoom (a lag
+  // was reported in wave 1 only; not reproduced here). Going direct frees the chunks; a gap between the two limits keeps it from
+  // flipping back and forth at the edge.
+  const TC_DIRECT = [600, 760];
   function drawTileLayer(x0, y0, x1, y1, T) {
     if (TC.tiles !== fl.tiles || TC.dpr !== DPR) { TC.map.clear(); TC.px = 0; TC.tiles = fl.tiles; TC.dpr = DPR; }
+    const nT = (x1 - x0 + 1) * (y1 - y0 + 1);
+    if (TC.direct ? nT > TC_DIRECT[1] : nT < TC_DIRECT[0]) { TC.direct = !TC.direct; if (TC.direct) { TC.map.clear(); TC.px = 0; } }
+    if (TC.direct) { drawTiles(x0, y0, x1, y1, T, ctx); return; }
     TC.tick++;
     const b = tileBucket(T), CH = TC.CH, n = CH + 1;
     for (let cy = Math.floor(y0 / CH); cy <= Math.floor(y1 / CH); cy++) for (let cx = Math.floor(x0 / CH); cx <= Math.floor(x1 / CH); cx++)
@@ -998,8 +1007,8 @@
   }
   // Prototype 1.02: the skill check in the game's own look: a stone slab with an iron edge, cut corners and rivets, a gothic
   // title, a bone bead, a moss-green graze, a blood-red crit that glows, brass for the "Uwaga!" moment. Logic unchanged.
-  const CK = { slab0: '#1d1f24', slab1: '#111216', iron: '#464b53', mortar: '#2b2e34', edge: 'rgba(210,220,235,0.07)', rivet: '#5d6168',
-    track: '#0a0b0d', trackEdge: '#2b2e34', g0: '#86ad62', g1: '#4c6b34', r0: '#ef5a66', r1: '#8c1a24', glow: 'rgba(255,70,85,0.65)',
+  const CK = { zone: '#ece6da', blood: '#d23a48', slab0: '#1d1f24', slab1: '#111216', iron: '#464b53', mortar: '#2b2e34', edge: 'rgba(210,220,235,0.07)', rivet: '#5d6168',
+    track: '#0a0b0d', trackEdge: '#2b2e34', g0: '#86ad62', g1: '#4c6b34', r0: '#ef5a66', r1: '#8c1a24', glow: 'rgba(255,244,225,0.75)',
     bone: '#e6e1d6', ash: '#8e939a', brass: '#c4a052', brassHi: '#e6cf94', violet: '#d9ccff', ember: '#e0643c' };
   const ckGrad = (x0, y0, x1, y1, a, b) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, a); g.addColorStop(1, b); return g; };
   function ckCut(x, y, w, h, k) {   // a rectangle with the corners cut off, like the slabs in the interface
@@ -1028,13 +1037,13 @@
     }));
     // the check sits at the bottom of the map (above the tutorial panel if it is open), so it never covers the party or their lines
     const legend = run.checkHints >= 0 && fl.stats.checks <= 3, coach = $('#coach');
-    const bottom = coach && !coach.hidden ? ch - coach.offsetHeight - 14 : ch - 10;
+    const bottom = coach && !coach.hidden && !coach.classList.contains('top') ? ch - coach.offsetHeight - 14 : ch - 10;
     const label = { crit: 'Krytyk!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
-    const labelCol = { crit: CK.r0, ok: CK.g0, miss: CK.ash, skip: CK.ash }[c.result];
+    const labelCol = { crit: CK.zone, ok: '#b9b3a6', miss: CK.ash, skip: CK.ash }[c.result];
     const prep = !c.result && realNow < c.t0;
     const nm = ITEMS[it.type].name + (all.length > 1 ? ' + ' + (all.length - 1) : '');
     const head = prep ? 'Uwaga: ' + (all.length > 1 ? 'seria (' + all.length + ')' : ITEMS[it.type].name.toLowerCase()) + '!' : nm + (label ? ': ' : ': stuknij!');
-    const LEG = 'stuknij w mapę · zielone: draśnięcie · czerwone: krytyk · ☠ zabije';
+    const LEG = 'obwódka: draśnięcie · pełne pole: krytyk (najmocniej) · ☠ zabije';
     const TF = '700 17px "Grenze Gotisch", Georgia, serif', SF = w8 => w8 + ' 11px "Alegreya Sans", system-ui, sans-serif';
     const title = (x, y, align, maxW) => {   // the gothic title; a result gets its own colour after the name
       ctx.font = TF; ctx.textBaseline = 'middle';
@@ -1065,17 +1074,17 @@
     }
     const p = clamp(c.result ? (c.p !== undefined ? c.p : 1) : checkPos(c, (realNow - c.t0) / c.dur), 0, 1);
     const Z = [{ g0: c.g0, g1: c.g1, r0: c.r0, r1: c.r1 }].concat(c.z2 ? [c.z2] : []);
-    const HI = 0.42;   // the lighter core of a zone, as a share of the groove
+    // 1.04 (author: like Dead by Daylight; a tester never once aimed at the red): a graze is a pale OUTLINE, a crit a pale
+    // FILLED strip that glows. No colour has to be learnt, and it reads the same for colour-blind players.
+    const ZC = CK.zone, critGlow = f => { ctx.save(); ctx.shadowColor = 'rgba(255,244,225,0.8)'; ctx.shadowBlur = 10; f(); ctx.restore(); };
     ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
-    if (pulse) {   // the groove is a disc; zones are rings; the bead sits on a bone ring that closes in
+    if (pulse) {   // the groove is a disc; zones are rings; the bead sits on a ring that closes in
       const [cx, cy] = P(1), RM = DR + TW / 2 - 1, rad = q => RM * (1 - q);
-      const band = (q0, q1, col, core) => {
-        let ro = rad(q0), ri = rad(q1); if (core) { const m = (ro - ri) * (1 - core) / 2; ro -= m; ri += m; }
-        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, ro), 0, Math.PI * 2); ctx.arc(cx, cy, Math.max(0, ri), 0, Math.PI * 2, true); ctx.fill();
-      };
+      const band = (q0, q1, col) => { const ro = rad(q0), ri = rad(q1); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, ro), 0, Math.PI * 2); ctx.arc(cx, cy, Math.max(0, ri), 0, Math.PI * 2, true); ctx.fill(); };
+      const rim = q => { ctx.strokeStyle = ZC; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, rad(q) + (q < 0.5 ? -1 : 1)), 0, Math.PI * 2); ctx.stroke(); };
       ctx.fillStyle = CK.track; ctx.beginPath(); ctx.arc(cx, cy, RM, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = CK.trackEdge; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, RM + 1, 0, Math.PI * 2); ctx.stroke();
-      Z.forEach(z => { band(z.g0, z.g1, CK.g1); band(z.g0, z.g1, CK.g0, HI); ckGlow(() => { band(z.r0, z.r1, CK.r1); band(z.r0, z.r1, CK.r0, HI); }); });
+      Z.forEach(z => { rim(z.g0); rim(z.g1); critGlow(() => band(z.r0, z.r1, ZC)); });
     } else {
       const N = c.shape === 'bar' ? 2 : 180;
       const run = (q0, q1, col, lw) => {
@@ -1084,16 +1093,24 @@
         for (let k = 0; k <= n; k++) { const q = P(q0 + (q1 - q0) * k / n); if (k) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }
         ctx.stroke();
       };
+      const cap = q => {   // the end of an outlined strip: a short line across the groove
+        const a = P(Math.max(0, q - 0.002)), b = P(Math.min(1, q + 0.002)), m = P(q), L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+        const nx = -(b[1] - a[1]) / L * TW / 2, ny = (b[0] - a[0]) / L * TW / 2;
+        ctx.strokeStyle = ZC; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(m[0] + nx, m[1] + ny); ctx.lineTo(m[0] - nx, m[1] - ny); ctx.stroke();
+      };
       run(0, 1, CK.trackEdge, TW + 2); run(0, 1, CK.track, TW);
-      Z.forEach(z => { run(z.g0, z.g1, CK.g1, TW); run(z.g0, z.g1, CK.g0, TW * HI); ckGlow(() => { run(z.r0, z.r1, CK.r1, TW); run(z.r0, z.r1, CK.r0, TW * HI); }); });
+      Z.forEach(z => {
+        run(z.g0, z.g1, ZC, TW); run(z.g0, z.g1, CK.track, TW - 4); cap(z.g0 + 0.0005); cap(z.g1 - 0.0005);
+        critGlow(() => run(z.r0, z.r1, ZC, TW));
+      });
     }
     // the skull on the zone it kills in (on the groove, the same for every shape)
     ctx.font = '700 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const skull = q => { const a = P(q); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.strokeText('☠', a[0], a[1] + 0.5); ctx.fillStyle = CK.bone; ctx.fillText('☠', a[0], a[1] + 0.5); };
+    const skull = q => { const a = P(q); ctx.lineWidth = 2.5; ctx.strokeStyle = CK.zone; ctx.strokeText('☠', a[0], a[1] + 0.5); ctx.fillStyle = '#0b0c0e'; ctx.fillText('☠', a[0], a[1] + 0.5); };   // dark with a pale rim: seen on the filled strip and on the groove
     Z.forEach(z => { if (c.lethalOk) skull((z.g0 + z.g1) / 2); if (c.lethalCrit) skull((z.r0 + z.r1) / 2); });
-    // the bone bead (dim while "Uwaga!" counts down); the pulse also draws the ring it rides on
-    const bead = P(p), col = prep ? 'rgba(230,225,214,0.4)' : CK.bone;
-    ctx.save(); if (!prep) { ctx.shadowColor = 'rgba(255,240,215,0.6)'; ctx.shadowBlur = 9; }
+    // the blood-red bead (dim while "Uwaga!" counts down) stands out on the pale strips; the pulse also draws its ring
+    const bead = P(p), col = prep ? 'rgba(210,58,72,0.45)' : CK.blood;
+    ctx.save(); if (!prep) { ctx.shadowColor = 'rgba(255,60,75,0.7)'; ctx.shadowBlur = 9; }
     if (pulse) {
       const [cx, cy] = P(1), r = Math.max(1, cy - bead[1]);
       ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
@@ -1102,7 +1119,7 @@
     ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.beginPath(); ctx.arc(bead[0], bead[1], TW / 2 + 2.5, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = col; ctx.beginPath(); ctx.arc(bead[0], bead[1], TW / 2 + 0.5, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    ctx.fillStyle = 'rgba(40,36,30,0.85)'; ctx.beginPath(); ctx.arc(bead[0], bead[1], 1.6, 0, Math.PI * 2); ctx.fill();   // its centre: the exact spot
+    ctx.fillStyle = 'rgba(255,225,228,0.9)'; ctx.beginPath(); ctx.arc(bead[0], bead[1], 1.6, 0, Math.PI * 2); ctx.fill();   // its centre: the exact spot
     ctx.lineJoin = 'miter';
     if (legend) {
       ctx.fillStyle = CK.ash; ctx.font = SF('500'); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
@@ -1204,8 +1221,10 @@
   }
   function drawPause() {
     if (!paused || !fl || fl.phase !== 'raid') return;
+    if (tutPopNow) return;   // 1.04: a tutorial card says it (and the check under it stays clear)
     ctx.fillStyle = 'rgba(5,6,8,0.35)'; ctx.fillRect(0, 0, cw, ch);
-    if (run.tut >= 0) return;   // the tutorial coach sits where the plate would be
+    const co = $('#coach');
+    if (run.tut >= 0 && !co.hidden && !co.classList.contains('top')) return;   // the tutorial coach sits where the plate would be
     // a plate at the bottom, clear of the party panel (top left) and of most bubbles
     const w = Math.min(cw - 16, 300), x0 = (cw - w) / 2, y0 = fl.check && fl.check.box ? Math.max(8, fl.check.box.y - 62) : ch - 62;
     ctx.fillStyle = 'rgba(16,17,20,0.88)'; ctx.strokeStyle = '#3a3f46'; ctx.lineWidth = 1;

@@ -11,7 +11,10 @@ OUT = SC + 'shots103/'
 FAILS = []
 def ok(c, m):
     if not c: FAILS.append(m)
+# 1.04: the heroes are held on their spots (re-placed every 50 ms): the camera is what is tested, not where the party walks
 TELE = """(spots) => { const G = __yatd, f = G.fl; const hs = f.heroes.filter(h => !h.dead && !h.fled && !h.gone);
+  window.__hold = spots; if (!window.__holdOn) window.__holdOn = setInterval(() => { const sp = window.__hold; if (!sp) return;
+    __yatd.fl.heroes.filter(h => !h.dead && !h.fled && !h.gone).forEach((h, i) => { const s = sp[i % sp.length]; h.x = h.tx = s[0]; h.y = h.ty = s[1]; h.nx = null; h.ny = null; h.prog = 0; h.path = []; }); }, 50);
   hs.forEach((h, i) => { const s = spots[i % spots.length]; h.x = h.tx = s[0]; h.y = h.ty = s[1]; h.nx = null; h.ny = null; h.prog = 0; h.path = []; h.needPlan = true; h.state = 'rest'; h.restUntil = f.time + 60; });
   return hs.length; }"""
 async def main():

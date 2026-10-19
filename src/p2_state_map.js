@@ -20,7 +20,7 @@
   let modalOpen = false, modalQueue = [], modalKind = null, curModal = null;
   let floats = [], particles = [], shake = 0, realNow = 0;
   const cam = { s: 24, ox: 0, oy: 0, manualUntil: 0 };
-  let cw = 0, ch = 0, DPR = 1;
+  let cw = 0, ch = 0, DPR = 1, coachInset = 0;   // 1.04: coachInset = how much of the map's top the tutorial coach covers
 
   const $ = s => document.querySelector(s);
   const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
