@@ -6482,10 +6482,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const box = el('div', 'startbtns');
     const sv = loadSave();
     if (sv) {
-      const c = btn('primary big', 'Kontynuuj run', 'fala ' + sv.run.wave + (sv.stage === 'summary' ? ' zakończona' : '') + ' · zebrane ' + Math.round(sv.run.total) + ' Esencji · zapisano ' + new Date(sv.at).toLocaleString('pl-PL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }), () => { closeModal(); userStarted = true; if (!resumeRun()) { setHint('Nie udało się wczytać zapisu.'); openModal({ type: 'start' }); } });
+      const c = btn('primary big', sv.run.tutorial && sv.run.tut >= 0 ? 'Kontynuuj samouczek' : 'Kontynuuj run', 'fala ' + sv.run.wave + (sv.stage === 'summary' ? ' zakończona' : '') + ' · zebrane ' + Math.round(sv.run.total) + ' Esencji · zapisano ' + new Date(sv.at).toLocaleString('pl-PL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }), () => { closeModal(); userStarted = true; if (!resumeRun()) { setHint('Nie udało się wczytać zapisu.'); openModal({ type: 'start' }); } });
       c.id = 'start-continue'; box.appendChild(c);
     }
-    const a = btn((sv ? '' : 'primary ') + 'big', 'Samouczek', 'Pierwsza fala krok po kroku', () => { closeModal(); userStarted = true; newRun(true); }); a.id = 'start-tut';
+    const a = btn((sv ? '' : 'primary ') + 'big', 'Samouczek', sv ? 'od nowa · zapisany run przepadnie' : 'Pierwsza fala krok po kroku', () => { closeModal(); userStarted = true; newRun(true); }); a.id = 'start-tut';
     const b = btn('big', sv ? 'Nowy run' : 'Pomiń samouczek', sv ? 'zapisany run przepadnie' : 'Od razu do gry', () => { closeModal(); userStarted = true; newRun(false); }); b.id = 'start-play';
     box.appendChild(a); box.appendChild(b); card.appendChild(box);
     webStartRow(card);
@@ -6507,6 +6507,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     ['1.0: nowa oprawa dark fantasy: zimny szary kamień, czarne żelazo, kość i krew, pochodnie na ścianach, gotyckie nagłówki. Esencja ma wszędzie ten sam czerwony kolor: licznik, ceny, kulki, liczby nad bohaterami, wykres fal. Fiolet to teraz groza i strach.',
      '1.0: animacje: Esencja nabija się u góry ekranu (licznik rośnie, wyskakuje +N), kulki dusz lecą z mapy prosto do licznika, baner na start fali, alarm, gdy znika kryształ, wjazd ekranów i wykresów.',
      '1.0: opis pod mapą zniknął: przytrzymaj kafelek w pasku, żeby przeczytać, co robi. Krótkie komunikaty wyskakują na chwilę i same znikają (stuknięcie zamyka). Stuknięcie w Fala X/10 pokazuje wieści o fali jeszcze raz.',
+     '1.0: run z samouczkiem też się zapisuje: po zamknięciu strony wrócisz do niego razem z podpowiedziami.',
      '1.0: ulepszanie: dwa szybkie stuknięcia w pułapkę albo potwora (kafelek Ulepsz zniknął). Koszt widać nad podniesionym elementem.',
      '1.0: budowle stoją jak skrzynia i blokują przejście (nie przy drzwiach ani sercu, nie mogą przeciąć pokoju) i są teraz w zakładce Obiekty. Proch i Mimik przeszły do zakładki Pułapki. Zakładki: 7 zamiast 8.',
      '1.0: w sklepie cały opis karty zawsze mieści się w kafelku, a każda karta ma własny przycisk kupna. Kartę z talii albo schowka otwierasz stuknięciem, na miejscu ofert.',
@@ -6540,7 +6541,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       const full = isFull(); box.appendChild(btn('', full ? 'Wyjdź z pełnego ekranu' : 'Pełny ekran', full ? 'wróci pasek przeglądarki' : 'bez paska przeglądarki', () => { UI.noFull = full; saveUI(); if (full) leaveFullscreen(); else goFullscreen(); back(); }));
     }
     const note = el('p', 'note', run && run.logState ? logText(run.logState) : '');
-    if (live && !run.tutorial) box.appendChild(btn('', 'Zapisz i wyjdź', fl.phase === 'raid' ? 'wrócisz do budowy przed tą falą' : 'wrócisz w tym miejscu', () => { if (fl.phase === 'build') saveRun('build'); closeModal(); openModal({ type: 'start' }); }));
+    if (live) box.appendChild(btn('', 'Zapisz i wyjdź', fl.phase === 'raid' ? 'wrócisz do budowy przed tą falą' : 'wrócisz w tym miejscu', () => { if (fl.phase === 'build') saveRun('build'); closeModal(); openModal({ type: 'start' }); }));
     if (live && run.waves.length + (fl.phase === 'raid' ? 1 : 0) > 0) {
       box.appendChild(btn('', 'Pobierz wyniki', 'plik .json do analizy', () => downloadRun(note)));
       const q = btn('', 'Zakończ run', 'zapisze to, co już jest', () => {
@@ -6797,7 +6798,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     }
     const mr = el('div', 'minirow'), dn = el('p', 'note', '');
     const dl = el('button', 'mini', 'Pobierz wyniki'); dl.type = 'button'; dl.addEventListener('click', () => downloadRun(dn)); mr.appendChild(dl);
-    if (run.crystals > 0 && !run.tutorial && !won) { const sq = el('button', 'mini', 'Zapisz i wyjdź'); sq.type = 'button'; sq.addEventListener('click', () => { saveRun('summary'); closeModal(); openModal({ type: 'start' }); }); mr.appendChild(sq); }
+    if (run.crystals > 0 && !won) { const sq = el('button', 'mini', 'Zapisz i wyjdź'); sq.type = 'button'; sq.addEventListener('click', () => { saveRun('summary'); closeModal(); openModal({ type: 'start' }); }); mr.appendChild(sq); }
     if (run.crystals > 0 && !won) {
       const q = el('button', 'mini', 'Zakończ run'); q.type = 'button';
       q.addEventListener('click', () => { if (!q.dataset.sure) { q.dataset.sure = '1'; q.textContent = 'Na pewno?'; return; } closeModal(); endRun('Run zakończony przez gracza po fali ' + run.wave + '.', 'quit'); });
@@ -7366,7 +7367,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function saveRunSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveRun('build'), 700); }
   function saveRunSoonSummary() { if (fl && fl.phase === 'summary') { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveRun('summary'), 300); } }
   function saveRun(stage) {
-    if (!userStarted || !run || run.over || run.tutorial) return false;
+    if (!userStarted || !run || run.over) return false;   // Prototype 1.0: the tutorial run is saved too (it goes on as a full run)
     try {
       if (fl && fl.phase === 'build' && stage === 'build') run.essence = fl.essence;
       const prim = o => { const c = {}; for (const k in o) { const v = o[k]; if (v === null || typeof v !== 'object' && typeof v !== 'function') c[k] = v; } if (o.item) c.item = Object.assign({}, o.item); return c; };   // loot left by a hero keeps its exact item
@@ -7416,7 +7417,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       afterSummary();
     } else {
       startBuild(true);
-      if (!sv.gv || sv.gv < 38) { run.next = makeWave(run.wave); setHint(waveHint()); saveRun('build'); }   // a run saved before v14: the next party by the new rules (bodies, phobias, returners)
+      if (!sv.gv || sv.gv < 38) { run.next = makeWave(run.wave); setHint(waveHint()); saveRun('build'); }
+      tutResume();   // a run saved before v14: the next party by the new rules (bodies, phobias, returners)
     }
     return true;
   }
@@ -7896,7 +7898,16 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (ev === 'resolved') tutFlags.resolved = true;
     if (ev === 'tool') tutFlags.tool = true;
   }
-  function tutOnBuild() { const dig = TUT.findIndex(s => s.id === 'dig'); if (run.tut >= 0 && run.tut < dig) { run.tut = dig; tutShow(); } }
+  function tutOnBuild() { const dig = TUT.findIndex(s => s.id === 'dig'); if (run.tut >= 0 && run.tut < dig) { run.tut = dig; tutShow(); } else if (run.tut >= 0 && $('#coach').hidden) tutShow(); }
+  // Prototype 1.0: a tutorial run comes back from a save with its coach where it was. A step of the wave itself waits for the
+  // next wave, so it goes back to "release the wave"; the "place more" steps count from what stands now.
+  function tutResume() {
+    if (!run || !run.tutorial || run.tut < 0) return;
+    tutFlags = { sp0: countType('spikes'), ar0: countType('arrows') };
+    const st = TUT[run.tut];
+    if (st && st.raid && run.wave === 1) { const go = TUT.findIndex(s => s.hl && s.hl.includes('#btn-action')); if (go >= 0) run.tut = go; }
+    if (fl && fl.phase === 'build') tutShow();
+  }
   // Is there still a free spot the player can afford for spikes or arrows? (cached until the dungeon or the purse changes)
   let tutSpotKey = '', tutSpotVal = true;
   function tutAnySpot() {
