@@ -25,6 +25,7 @@ async def main():
             await page.clock.install(); await page.goto(BASE); await page.clock.run_for(500)
             await page.evaluate("(() => { const G = __yatd; while (G.modalKind) G.closeModal(); G.setUser(true); G.newRun(false); while (G.modalKind) G.closeModal(); G.run.crystals = 9; G.run.maxCrystals = 9; })()")
             r = await page.evaluate(PLAY, 4)
+            await page.evaluate("if (__yatd.modalKind === 'settle') __yatd.closeModal()")   # 1.01: the reckoning first
             await page.clock.run_for(1200)
             print(W, H, 'modals', r, 'now', await page.evaluate("__yatd.modalKind"))
             if await page.evaluate("__yatd.modalKind") == 'wave':

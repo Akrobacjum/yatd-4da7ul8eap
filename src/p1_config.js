@@ -11,8 +11,8 @@
   const DIRS8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
 
   const DEFAULTS = {
-    waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 22, deckSize: 7, waveIncome: 5, regenBase: 0, fearRate: 1,
-    essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 6, hungerGrowth: 1.32, greedW: 1.0, autoFF: 2.5, earlyHp: 1,
+    waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
+    essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 20, hungerGrowth: 1.25, greedW: 1.0, autoFF: 2.5, earlyHp: 1,
     haptics: 1, trayAuto: 1, series: 1   // game settings (0/1): vibration, tray folds during a wave, one check for a volley
   };
   const RUN_WAVES = 10;   // wave 5: a champion, wave 10: the hero of the prophecy. Survive it and the run is won (you may play on).
@@ -29,8 +29,7 @@
     { k: 'waveIncome', label: 'Esencja po każdej fali', min: 0, max: 30, step: 1 },
     { k: 'regenBase', label: 'Odnawianie w trakcie fali (na 10 s)', min: 0, max: 6, step: 0.1, fmt: f1 },
     { k: 'fearRate', label: 'Esencja z ran i strachu', min: 0, max: 6, step: 0.5, fmt: f1 },
-    { k: 'essenceCap', label: 'Pojemność Esencji na start (+10 na falę)', min: 20, max: 150, step: 5 },
-    { k: 'hungerBase', label: 'Głód serca: Esencja w fali 2', min: 0, max: 40, step: 1 },
+    { k: 'hungerBase', label: 'Głód serca: Esencja z fali 2', min: 0, max: 80, step: 1 },
     { k: 'hungerGrowth', label: 'Głód serca: wzrost progu na falę', min: 1.2, max: 2, step: 0.05, fmt: x2 },
     { k: 'greedW', label: 'Chciwość: poziomy przywódcy za każde +1 chciwości', min: 0, max: 3, step: 0.1, fmt: v => v.toFixed(1).replace('.', ',') },
     { k: 'crystals', label: 'Kryształy w sercu (od nowego runu)', min: 1, max: 6, step: 1 },
@@ -51,65 +50,66 @@
   // Points are the measure of HOW WELL a run went (surviving the waves is the measure of success): the rank at the end.
   const RANKS = [[0, 'Nora'], [150, 'Piwnica'], [400, 'Loch'], [1000, 'Labirynt'], [2500, 'Twierdza grozy'], [6000, 'Legenda']];   // v15: Esencja harvested in the run
   const rankOf = pts => { let i = 0; RANKS.forEach((r, k) => { if (pts >= r[0]) i = k; }); return { i, name: RANKS[i][1], next: RANKS[i + 1] || null }; };
-  const SLOT_LABEL = { floor: 'podłoga', wall: 'ściana', door: 'drzwi', object: 'obiekt', dig: 'skała przy lochu', tunnel: 'dwa sąsiednie pokoje', demolish: 'pokój albo przejście', expand: 'pokój albo korytarz', roomtype: 'cały pokój' };
+  const SLOT_LABEL = { floor: 'podłoga', wall: 'ściana', door: 'drzwi', object: 'mebel', dig: 'skała przy lochu', tunnel: 'dwa sąsiednie pokoje', demolish: 'pokój albo przejście', expand: 'pokój albo korytarz', roomtype: 'cały pokój' };
   const ITEMS = {
-    spikes: { name: 'Kolce', cost: 2, slot: 'floor', tag: 'szybkie', cd: 1.5, desc: 'Kolce (podłoga, kłute): jedno pole, szybkie odnowienie. +50%, gdy bohater stoi: walczy, czeka, w sieci albo w klatce. Najlepsze tuż za drzwiami.' },
-    web: { name: 'Sieć', cost: 2, slot: 'floor', tag: 'spowalnia', cd: 7, desc: 'Sieć (podłoga): spowalnia w kwadracie 3×3 na 3 s, a bohater w sieci dostaje +30% obrażeń. Mag potrafi ją rozproszyć.' },
-    trapdoor: { name: 'Zapadnia', cost: 3, slot: 'floor', tag: 'rozdziela', cd: 8, desc: 'Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony. Złodziej ją rozbroi.' },
-    cage: { name: 'Klatka', cost: 3, slot: 'floor', tag: 'więzi', cd: 10, desc: 'Klatka (podłoga): więzi bohatera na 6 s, uwięziony dostaje +50% obrażeń. Jeśli drużyna go nie uwolni, umiera w klatce (boss wyłamie kraty).' },
-    arrows: { name: 'Strzały', cost: 2, slot: 'wall', tag: 'linia', cd: 3, desc: 'Strzały (ściana, kłute): strzała leci przez cały pokój w linii prostej i trafia każdego. Mebel ją zatrzymuje.' },
-    fire: { name: 'Ogień', cost: 3, slot: 'wall', tag: 'podpala', cd: 5, desc: 'Ogień (ściana, ogień): płomień 2×3 przed ścianą i podpalenie na 3 s. Podpalonego nie leczy odpoczynek, kapłan musi go ugasić.' },
-    portrait: { name: 'Portret', cost: 3, slot: 'wall', tag: 'strach', cd: 6, desc: 'Portret (ściana): nie rani, tylko straszy wszystkich w zasięgu 4 pól. Doświadczony kapłan potrafi go odczynić.' },
-    gate: { name: 'Krata', cost: 2, slot: 'door', tag: 'rozdziela', cd: 8, desc: 'Krata (drzwi, obuchowe): zamyka przejście na 4 s i rozdziela drużynę. Odcięty bohater jest sam i może się zgubić. 3 zamknięcia na falę.' },
-    crate: { name: 'Skrzynia', cost: 2, slot: 'floor', tag: 'blokuje', build: true, desc: 'Skrzynia (podłoga pokoju, między falami): blokuje przejście i jest meblem pod proch albo mimika. Stuknięcie w budowie zwraca Esencję.' },
-    powder: { name: 'Proch', cost: 2, slot: 'object', tag: 'wybuch', cd: 0, desc: 'Proch (obiekt, ogień): wybuch 3×3, mebel znika i otwiera nowe przejście. Jednorazowy.' },
-    mimic: { name: 'Mimik', cost: 3, slot: 'object', tag: 'gryzie', cd: 4, desc: 'Mimik (obiekt, kłute): mebel gryzie wszystkich dookoła. Złodziej go nie rozbroi.' },
-    goblin: { name: 'Goblin', cost: 3, slot: 'floor', cd: 3, hp: 110, melee: 14, tag: 'blokuje', desc: 'Goblin (potwór, kłute): blokuje przejście i mocno bije tego, kto z nim walczy. Ginie na dobre. Skill check: Dźgnięcie.' },
-    archer: { name: 'Łucznik', cost: 3, slot: 'floor', cd: 4, hp: 50, melee: 4, tag: 'strzela', desc: 'Łucznik (potwór, kłute): sam strzela do bohaterów w swoim pokoju (zasięg 4). Ginie na dobre. Skill check: Salwa.' },
-    spider: { name: 'Pająk', cost: 4, slot: 'floor', cd: 5, hp: 90, melee: 12, tag: 'oplata', desc: 'Pająk (potwór, trucizna): blokuje przejście, gryzie i oplata siecią. Skill check: Oplątanie 3×3 z ugryzieniem.' },
-    ogre: { name: 'Ogr', cost: 5, slot: 'floor', cd: 6, hp: 240, melee: 18, tag: 'tank', desc: 'Ogr (potwór, obuchowe): bardzo dużo życia, bije wszystkich, którzy z nim walczą. Skill check: Uderzenie 3×3.' },
-    shaman: { name: 'Szaman', cost: 4, slot: 'floor', cd: 8, hp: 60, melee: 3, tag: 'leczy', desc: 'Szaman (potwór): leczy potwory w promieniu 2 pól. Skill check: Wielkie leczenie wszystkich potworów w pokoju.' },
-    ghost: { name: 'Duch', cost: 4, slot: 'floor', cd: 7, hp: 60, melee: 5, tag: 'straszy', desc: 'Duch (potwór): krąży przy bohaterach i straszy, nie blokuje przejścia. Ranią go tylko kapłan i mag. Skill check: Wrzask.' },
+    spikes: { name: 'Kolce', cost: 3, slot: 'floor', tag: 'szybkie', cd: 1.5, desc: 'Kolce (podłoga, kłute): jedno pole, szybkie odnowienie. +50%, gdy bohater stoi: walczy, czeka, w sieci albo w klatce. Najlepsze tuż za drzwiami.' },
+    web: { name: 'Sieć', cost: 3, slot: 'floor', tag: 'spowalnia', cd: 7, desc: 'Sieć (podłoga): spowalnia w kwadracie 3×3 na 3 s, a bohater w sieci dostaje +30% obrażeń. Mag potrafi ją rozproszyć.' },
+    trapdoor: { name: 'Zapadnia', cost: 4, slot: 'floor', tag: 'rozdziela', cd: 8, desc: 'Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony. Złodziej ją rozbroi.' },
+    cage: { name: 'Klatka', cost: 4, slot: 'floor', tag: 'więzi', cd: 10, desc: 'Klatka (podłoga): więzi bohatera na 6 s, uwięziony dostaje +50% obrażeń. Jeśli drużyna go nie uwolni, umiera w klatce (boss wyłamie kraty).' },
+    arrows: { name: 'Strzały', cost: 3, slot: 'wall', tag: 'linia', cd: 3, desc: 'Strzały (ściana, kłute): strzała leci przez cały pokój w linii prostej i trafia każdego. Mebel ją zatrzymuje.' },
+    fire: { name: 'Ogień', cost: 4, slot: 'wall', tag: 'podpala', cd: 5, desc: 'Ogień (ściana, ogień): płomień 2×3 przed ścianą i podpalenie na 3 s. Podpalonego nie leczy odpoczynek, kapłan musi go ugasić.' },
+    portrait: { name: 'Portret', cost: 4, slot: 'wall', tag: 'strach', cd: 6, desc: 'Portret (ściana): nie rani, tylko straszy wszystkich w zasięgu 4 pól. Doświadczony kapłan potrafi go odczynić.' },
+    gate: { name: 'Krata', cost: 4, slot: 'door', tag: 'rozdziela', cd: 8, desc: 'Krata (drzwi, obuchowe): zamyka przejście na 4 s i rozdziela drużynę. Odcięci szukają innej drogi albo się gubią. Odnawia się 8 s po otwarciu, 3 zamknięcia na falę.' },
+    crate: { name: 'Skrzynia', cost: 3, slot: 'floor', tag: 'blokuje', build: true, desc: 'Skrzynia (podłoga pokoju, między falami): blokuje przejście i jest meblem pod proch, mimika albo pozytywkę. Przytrzymanie w budowie zwraca Esencję.' },
+    powder: { name: 'Proch', cost: 3, slot: 'object', tag: 'wybuch', cd: 0, desc: 'Proch (mebel, ogień): wybuch 3×3, mebel znika i otwiera nowe przejście. Jednorazowy.' },
+    mimic: { name: 'Mimik', cost: 4, slot: 'object', tag: 'gryzie', cd: 4, desc: 'Mimik (mebel, kłute): mebel gryzie wszystkich dookoła. Złodziej go nie rozbroi.' },
+    goblin: { name: 'Goblin', cost: 4, slot: 'floor', cd: 3, hp: 110, melee: 14, tag: 'blokuje', desc: 'Goblin (potwór, kłute): blokuje przejście i mocno bije tego, kto z nim walczy. Ginie na dobre. Skill check: Dźgnięcie.' },
+    archer: { name: 'Łucznik', cost: 4, slot: 'floor', cd: 4, hp: 50, melee: 4, tag: 'strzela', desc: 'Łucznik (potwór, kłute): sam strzela do bohaterów w swoim pokoju (zasięg 4). Ginie na dobre. Skill check: Salwa.' },
+    spider: { name: 'Pająk', cost: 5, slot: 'floor', cd: 5, hp: 90, melee: 12, tag: 'oplata', desc: 'Pająk (potwór, trucizna): blokuje przejście, gryzie i oplata siecią. Skill check: Oplątanie 3×3 z ugryzieniem.' },
+    ogre: { name: 'Ogr', cost: 7, slot: 'floor', cd: 6, hp: 240, melee: 18, tag: 'tank', desc: 'Ogr (potwór, obuchowe): bardzo dużo życia, bije wszystkich, którzy z nim walczą. Skill check: Uderzenie 3×3.' },
+    shaman: { name: 'Szaman', cost: 5, slot: 'floor', cd: 8, hp: 60, melee: 3, tag: 'leczy', desc: 'Szaman (potwór): leczy potwory w promieniu 2 pól. Skill check: Wielkie leczenie wszystkich potworów w pokoju.' },
+    ghost: { name: 'Duch', cost: 5, slot: 'floor', cd: 7, hp: 60, melee: 5, tag: 'straszy', desc: 'Duch (potwór): krąży przy bohaterach i straszy, nie blokuje przejścia. Ranią go tylko kapłan i mag. Skill check: Wrzask.' },
     // v15.1: more things that only scare (as many as the things that wound)
-    eyes: { name: 'Oczy', cost: 2, slot: 'wall', tag: 'samotni ×2', cd: 3, desc: 'Oczy (ściana): patrzą w linii przez cały pokój i straszą każdego na tej linii. Samotny albo zgubiony boi się 2 razy bardziej. Kapłan je odczyni.' },
-    bones: { name: 'Kości', cost: 2, slot: 'floor', tag: 'nowicjusze', cd: 4, desc: 'Kości (podłoga): grzechoczą i straszą w kwadracie 3×3. Nowicjusze boją się 1,5 raza bardziej. Kapłan je odczyni.' },
-    mirror: { name: 'Lustro', cost: 3, slot: 'wall', tag: 'dobija', cd: 6, desc: 'Lustro (ściana): straszy w zasięgu 3 pól, tym mocniej, im bardziej bohater już się boi (do 2,5 raza). Kapłan je odczyni.' },
-    creak: { name: 'Zawiasy', cost: 2, slot: 'door', tag: 'próg', cd: 4, desc: 'Skrzypiące zawiasy (drzwi): mocno straszą tego, kto jest w drzwiach albo tuż przy nich, słabiej każdego do 2 pól. Złodziej je rozbroi.' },
-    coffin: { name: 'Trumna', cost: 4, slot: 'floor', tag: 'mocny strach', cd: 9, desc: 'Trumna (podłoga): wieko się uchyla. Najbliższy bohater bardzo się boi, inni do 2 pól trochę. W Krypcie +50%. Złodziej zabije ją gwoździami.' },
-    musicbox: { name: 'Pozytywka', cost: 3, slot: 'object', tag: 'cały pokój', cd: 9, desc: 'Pozytywka (obiekt): gra kołysankę w całym pokoju i przez 4 s każdy, kto tam jest, boi się coraz bardziej. Złodziej ją rozbroi.' },
-    shade: { name: 'Cień', cost: 4, slot: 'floor', cd: 8, hp: 50, melee: 0, tag: 'samotni', desc: 'Cień (potwór): sunie za samotnym albo ostatnim w szyku i szepcze mu do ucha. Samotny boi się 2 razy bardziej. Rani go tylko kapłan. Skill check: Szept.' },
-    bats: { name: 'Nietoperze', cost: 3, slot: 'floor', cd: 6, hp: 40, melee: 0, tag: 'płoszą', desc: 'Nietoperze (potwór, kłute): szybki rój krąży między bohaterami, gryzie i straszy. Ranią go tylko mag i kapłan. Skill check: rój płoszy bohaterów (uciekają na oślep).' },
-    loot: { name: 'Monety', cost: 2, slot: 'floor', tag: 'chciwość', cd: 0, rarity: 1, desc: 'Monety (łup): widać je dopiero z pokoju. Tanio i mocno podbijają chciwość, kuszą chciwych i złodziei. Połowa chciwości zostaje do końca runu.' },
-    lpotion: { name: 'Mikstura', cost: 3, slot: 'floor', tag: 'wabi rannych', cd: 0, rarity: 1, desc: 'Mikstura (łup): prawie bez chciwości, ale ranny bohater pójdzie po nią nawet przez pułapki. Postaw ją w pokoju śmierci.' },
-    loot2: { name: 'Ekwipunek', cost: 4, slot: 'floor', tag: 'rzadki', cd: 0, rarity: 2, desc: 'Ekwipunek (łup): widać go z sąsiedniego pokoju, mocno podbija chciwość. Zabrany daje rzadki przedmiot, gorszy zostaje na podłodze.' },
-    loot3: { name: 'Relikwia', cost: 8, slot: 'floor', tag: 'legendarny', cd: 0, rarity: 3, desc: 'Relikwia (łup): lśni przez kilka pokoi, bardzo podbija chciwość i rozdziela drużynę. Zabrana: 4 Esencji i legendarny przedmiot.' },
-    lcursed: { name: 'Przeklęty', cost: 4, slot: 'floor', tag: 'klątwa', cd: 0, rarity: 2, desc: 'Przeklęty skarb (łup, trucizna): wygląda jak ekwipunek. Kto go weźmie: +30% obrażeń, słabsze przedmioty, rosnący strach. Kapłan zdejmie klątwę.' },
-    rune: { name: 'Runa', cost: 6, slot: 'floor', tag: 'magowie', build: true, desc: 'Runa (budowla, blokuje przejście jak skrzynia): magowie nie zakłócą ani nie wyczują pułapek w tym pokoju. Kontra na gildię z magami. Jedna na pokój.' },
-    altar: { name: 'Ołtarz', cost: 6, slot: 'floor', tag: 'kapłani', build: true, desc: 'Ołtarz (budowla, blokuje przejście jak skrzynia): moce kapłana i amulety działają tu o połowę słabiej. Kontra na kapłanów i leczenie. Jeden na pokój.' },
-    decoy: { name: 'Wabik', cost: 4, slot: 'floor', tag: 'złodzieje', build: true, desc: 'Wabik (budowla, blokuje przejście jak skrzynia): wygląda jak pułapka. Złodziej rozbraja go najpierw i podnosi alarm: odpalają wszystkie gotowe pułapki w pokoju.' },
-    acid: { name: 'Kwas', cost: 5, slot: 'floor', tag: 'tarcze', build: true, desc: 'Kwas (budowla, blokuje przejście jak skrzynia): tarcza wojownika, osłona kapłana i talizmany chronią tu o połowę słabiej. Kontra na wojowników. Jeden na pokój.' },
-    veil: { name: 'Zasłona', cost: 5, slot: 'floor', tag: 'plotki', build: true, desc: 'Zasłona (budowla, blokuje przejście jak skrzynia): uciekinierzy nie zapamiętają tego pokoju ani jego pułapek. Jedna na pokój.' },
-    fortify: { name: 'Bastion', cost: 4, slot: 'floor', tag: 'wyłomy', build: true, desc: 'Bastion (budowla, blokuje przejście jak skrzynia): przez ściany tego pokoju gildia nie przebije wyłomu. Jeden na pokój.' },
+    eyes: { name: 'Oczy', cost: 3, slot: 'wall', tag: 'samotni ×2', cd: 3, desc: 'Oczy (ściana): patrzą w linii przez cały pokój i straszą każdego na tej linii. Samotny albo zgubiony boi się 2 razy bardziej. Kapłan je odczyni.' },
+    bones: { name: 'Kości', cost: 3, slot: 'floor', tag: 'nowicjusze', cd: 4, desc: 'Kości (podłoga): grzechoczą i straszą w kwadracie 3×3. Nowicjusze boją się 1,5 raza bardziej. Kapłan je odczyni.' },
+    mirror: { name: 'Lustro', cost: 4, slot: 'wall', tag: 'dobija', cd: 6, desc: 'Lustro (ściana): straszy w zasięgu 3 pól, tym mocniej, im bardziej bohater już się boi (do 2,5 raza). Kapłan je odczyni.' },
+    creak: { name: 'Zawiasy', cost: 3, slot: 'door', tag: 'próg', cd: 4, desc: 'Skrzypiące zawiasy (drzwi): mocno straszą tego, kto jest w drzwiach albo tuż przy nich, słabiej każdego do 2 pól. Złodziej je rozbroi.' },
+    coffin: { name: 'Trumna', cost: 5, slot: 'floor', tag: 'mocny strach', cd: 9, desc: 'Trumna (podłoga): wieko się uchyla. Najbliższy bohater bardzo się boi, inni do 2 pól trochę. W Krypcie +50%. Złodziej zabije ją gwoździami.' },
+    musicbox: { name: 'Pozytywka', cost: 4, slot: 'object', tag: 'cały pokój', cd: 9, desc: 'Pozytywka (mebel): gra kołysankę w całym pokoju i przez 4 s każdy, kto tam jest, boi się coraz bardziej. Złodziej ją rozbroi.' },
+    shade: { name: 'Cień', cost: 5, slot: 'floor', cd: 8, hp: 50, melee: 0, tag: 'samotni', desc: 'Cień (potwór): sunie za samotnym albo ostatnim w szyku i szepcze mu do ucha. Samotny boi się 2 razy bardziej. Rani go tylko kapłan. Skill check: Szept.' },
+    bats: { name: 'Nietoperze', cost: 4, slot: 'floor', cd: 6, hp: 40, melee: 0, tag: 'płoszą', desc: 'Nietoperze (potwór, kłute): szybki rój krąży między bohaterami, gryzie i straszy. Ranią go tylko mag i kapłan. Skill check: rój płoszy bohaterów (uciekają na oślep).' },
+    loot: { name: 'Monety', cost: 3, slot: 'floor', tag: 'chciwość', cd: 0, rarity: 1, desc: 'Monety (łup): widać je dopiero z pokoju. Tanio i mocno podbijają chciwość, kuszą chciwych i złodziei. Połowa chciwości zostaje do końca runu.' },
+    lpotion: { name: 'Mikstura', cost: 4, slot: 'floor', tag: 'wabi rannych', cd: 0, rarity: 1, desc: 'Mikstura (łup): prawie bez chciwości, ale ranny bohater pójdzie po nią nawet przez pułapki. Postaw ją w pokoju śmierci.' },
+    loot2: { name: 'Ekwipunek', cost: 5, slot: 'floor', tag: 'rzadki', cd: 0, rarity: 2, desc: 'Ekwipunek (łup): widać go z sąsiedniego pokoju, mocno podbija chciwość. Zabrany daje rzadki przedmiot, gorszy zostaje na podłodze.' },
+    loot3: { name: 'Relikwia', cost: 10, slot: 'floor', tag: 'legendarny', cd: 0, rarity: 3, desc: 'Relikwia (łup): lśni przez kilka pokoi, bardzo podbija chciwość i rozdziela drużynę. Zabrana: 4 Esencji i legendarny przedmiot.' },
+    lcursed: { name: 'Przeklęty', cost: 5, slot: 'floor', tag: 'klątwa', cd: 0, rarity: 2, desc: 'Przeklęty skarb (łup, trucizna): wygląda jak ekwipunek. Kto go weźmie: +30% obrażeń, słabsze przedmioty, rosnący strach. Kapłan zdejmie klątwę.' },
+    rune: { name: 'Runa', cost: 14, slot: 'floor', tag: 'magowie', build: true, desc: 'Runa (budowla, blokuje przejście jak skrzynia): magowie nie zakłócą ani nie wyczują pułapek w tym pokoju. Kontra na gildię z magami. Jedna na pokój.' },
+    altar: { name: 'Ołtarz', cost: 14, slot: 'floor', tag: 'kapłani', build: true, desc: 'Ołtarz (budowla, blokuje przejście jak skrzynia): moce kapłana i amulety działają tu o połowę słabiej. Kontra na kapłanów i leczenie. Jeden na pokój.' },
+    decoy: { name: 'Wabik', cost: 10, slot: 'floor', tag: 'złodzieje', build: true, desc: 'Wabik (budowla, blokuje przejście jak skrzynia): wygląda jak pułapka. Złodziej rozbraja go najpierw i podnosi alarm: odpalają wszystkie gotowe pułapki w pokoju.' },
+    acid: { name: 'Kwas', cost: 12, slot: 'floor', tag: 'tarcze', build: true, desc: 'Kwas (budowla, blokuje przejście jak skrzynia): tarcza wojownika, osłona kapłana i talizmany chronią tu o połowę słabiej. Kontra na wojowników. Jeden na pokój.' },
+    veil: { name: 'Zasłona', cost: 12, slot: 'floor', tag: 'plotki', build: true, desc: 'Zasłona (budowla, blokuje przejście jak skrzynia): uciekinierzy nie zapamiętają tego pokoju ani jego pułapek. Jedna na pokój.' },
+    fortify: { name: 'Bastion', cost: 10, slot: 'floor', tag: 'wyłomy', build: true, desc: 'Bastion (budowla, blokuje przejście jak skrzynia): przez ściany tego pokoju gildia nie przebije wyłomu. Jeden na pokój.' },
     upgrade: { name: 'Ulepsz', cost: 0, slot: null, tag: 'poziom +1', mode: true, desc: 'Ulepsz: stuknij pułapkę albo potwora (koszt nad elementem). Poziom 2 i 3 to więcej mocy, poziom 3 dodaje cechę. Stuknij Ulepsz znowu, żeby wyjść.' },
     move: { name: 'Przenieś', cost: 0, slot: null, tag: 'za darmo', mode: true, desc: 'Przenieś: stuknij element, potem nowe miejsce. Za darmo, poziom zostaje. Tak przestawisz pułapki znane z plotek.' },
-    dig: { name: 'Pokój', cost: 6, slot: 'dig', tag: 'kopanie', tool: true, desc: 'Pokój: stuknij plus przy krawędzi lochu. Nowego pokoju nie znają plotki, więc bohaterowie muszą go odkryć.' },
-    tunnel: { name: 'Przejście', cost: 3, slot: 'tunnel', tag: 'pętla', tool: true, desc: 'Przejście między dwoma sąsiednimi pokojami. Więcej dróg to więcej wyborów i więcej błędów bohaterów.' },
-    expand: { name: 'Rozbuduj', cost: 3, slot: 'expand', tag: '+1 miejsce', tool: true, desc: 'Rozbuduj pokój albo korytarz: +1 miejsce na element. Każda kolejna rozbudowa tego miejsca kosztuje 2 razy więcej.' },
-    demolish: { name: 'Wyburz', cost: 0, slot: 'demolish', tag: 'zwrot', tool: true, desc: 'Wyburz pokój albo przejście. Elementy wracają jako Esencja, pokój zwraca jeszcze 3. Serca nie odetniesz od wejścia.' },
+    dig: { name: 'Nowy pokój', cost: 8, slot: 'dig', tag: 'kopanie', tool: true, desc: 'Nowy pokój: stuknij plus przy krawędzi lochu. Nowego pokoju nie znają plotki, więc bohaterowie muszą go odkryć.' },
+    tunnel: { name: 'Przejście', cost: 4, slot: 'tunnel', tag: 'pętla', tool: true, desc: 'Przejście między dwoma sąsiednimi pokojami. Więcej dróg to więcej wyborów i więcej błędów bohaterów.' },
+    expand: { name: 'Rozbuduj', cost: 4, slot: 'expand', tag: '+1 miejsce', tool: true, desc: 'Rozbuduj pokój albo korytarz: +1 miejsce na element. Każda kolejna rozbudowa tego miejsca kosztuje 2 razy więcej.' },
+    demolish: { name: 'Wyburz', cost: 0, slot: 'demolish', tag: 'zwrot', tool: true, desc: 'Wyburz pokój albo przejście. Elementy wracają jako Esencja, pokój zwraca jeszcze 5. Serca nie odetniesz od wejścia.' },
     // room types: a whole room gets a character (one type per room, tap it again with the same type to take it off for half back)
-    r_fog: { name: 'Mgła', cost: 4, slot: 'roomtype', tag: 'gubią się', tool: true, rt: 'fog', desc: 'Mgła (pokój): nikt nie wykrywa tu pułapek, łatwiej skręcić nie tam i się zgubić, strach +15%. Stuknij znacznik pokoju.' },
-    r_swamp: { name: 'Bagno', cost: 4, slot: 'roomtype', tag: 'spowalnia', tool: true, rt: 'swamp', desc: 'Bagno (pokój): ruch o 35% wolniej, bez odpoczynku, rozbrajanie trwa o połowę dłużej. Stuknij znacznik pokoju.' },
-    r_grotto: { name: 'Grota', cost: 5, slot: 'roomtype', tag: 'echo strachu', tool: true, rt: 'grotto', desc: 'Grota (pokój): 40% strachu słychać w sąsiednich pokojach, combo z groty czeka o połowę dłużej. Stuknij znacznik pokoju.' },
-    r_crypt: { name: 'Krypta', cost: 5, slot: 'roomtype', tag: 'śmierć ×2', tool: true, rt: 'crypt', desc: 'Krypta (pokój): śmierć straszy 2 razy mocniej i daje +50% Grozy, potwory mają +25% HP. Stuknij znacznik pokoju.' },
-    r_vault: { name: 'Sezam', cost: 4, slot: 'roomtype', tag: 'łup ×2', tool: true, rt: 'vault', desc: 'Sezam (pokój): łup podbija chciwość 2 razy mocniej i kusi 1,5 raza bardziej, mnożnik pokoju +0,15. Stuknij znacznik pokoju.' }
+    r_fog: { name: 'Mgła', cost: 10, slot: 'roomtype', tag: 'gubią się', tool: true, rt: 'fog', desc: 'Mgła (pokój): widać na 2 pola, drużyna się rozłazi i każdy łatwo się gubi, nikt nie wykrywa pułapek, strach +15%. Stuknij znacznik pokoju.' },
+    r_swamp: { name: 'Bagno', cost: 8, slot: 'roomtype', tag: 'spowalnia', tool: true, rt: 'swamp', desc: 'Bagno (pokój): ruch o 35% wolniej, bez odpoczynku, rozbrajanie trwa o połowę dłużej. Stuknij znacznik pokoju.' },
+    r_grotto: { name: 'Grota', cost: 10, slot: 'roomtype', tag: 'echo strachu', tool: true, rt: 'grotto', desc: 'Grota (pokój): 40% strachu słychać w sąsiednich pokojach, combo z groty czeka o połowę dłużej. Stuknij znacznik pokoju.' },
+    r_crypt: { name: 'Krypta', cost: 10, slot: 'roomtype', tag: 'śmierć ×2', tool: true, rt: 'crypt', desc: 'Krypta (pokój): śmierć straszy 2 razy mocniej i daje +50% Grozy, potwory mają +25% HP. Stuknij znacznik pokoju.' },
+    r_vault: { name: 'Sezam', cost: 10, slot: 'roomtype', tag: 'łup ×2', tool: true, rt: 'vault', desc: 'Sezam (pokój): łup podbija chciwość 2 razy mocniej i kusi 1,5 raza bardziej, mnożnik pokoju +0,15. Stuknij znacznik pokoju.' }
   };
   const TABS = [
-    { id: 'traps', label: 'Pułapki', items: ['spikes', 'web', 'trapdoor', 'cage', 'arrows', 'fire', 'gate', 'powder', 'mimic'] },   // Prototype 1.0: the traps that sit on furniture came over from Obiekty
-    { id: 'fear', label: 'Strach', items: ['portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox', 'ghost', 'shade', 'bats'] },   // v15.1: everything that only scares
-    { id: 'object', label: 'Obiekty', items: ['crate', 'loot', 'lpotion', 'loot2', 'loot3', 'lcursed', 'rune', 'altar', 'decoy', 'acid', 'veil', 'fortify'] },   // Prototype 1.0: buildings stand like a crate, so they live here
-    { id: 'monster', label: 'Potwory', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman'] },
-    { id: 'rooms', label: 'Pokoje', items: ['r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault'] },
-    { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish'] },   // v15.1: no Przenieś button (a tap moves things); Prototype 1.0: no Ulepsz button (a double tap upgrades)
+    // Prototype 1.01 (author's layout): what wounds and what scares together, every monster in one tab, loot apart,
+    // Obiekty = what stands in a room like a crate (the crate and the counter-buildings), Loch = digging and room types.
+    { id: 'traps', label: 'Pułapki', items: ['spikes', 'arrows', 'web', 'trapdoor', 'cage', 'fire', 'gate', 'powder', 'mimic', 'portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox'] },
+    { id: 'monster', label: 'Potwory', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman', 'ghost', 'shade', 'bats'] },
+    { id: 'loot', label: 'Łup', items: ['loot', 'lpotion', 'loot2', 'loot3', 'lcursed'] },
+    { id: 'object', label: 'Obiekty', items: ['crate', 'rune', 'altar', 'decoy', 'acid', 'veil', 'fortify'] },
+    { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish', 'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault'] },   // no Przenieś (a tap moves), no Ulepsz (a double tap upgrades)
     { id: 'deck', label: 'Talia', items: [] }
   ];
   const ITEM_ORDER = TABS.flatMap(t => t.items).concat(['upgrade']);   // Ulepsz stays as a mode the code knows, with no tile in any tab
@@ -152,7 +152,7 @@
     arrows: ['Przebijające groty', 'strzały przebijają tarczę wojownika i talizmany'],
     fire: ['Napalm', 'podpalenie trwa 6 s zamiast 3'],
     portrait: ['Całun grozy', 'portret straszy cały pokój'],
-    gate: ['Żelazna krata', 'krata nigdy się nie zużywa'],
+    gate: ['Żelazna krata', '+2 zamknięcia na falę'],
     powder: ['Ognisty proch', 'wybuch sięga o pole dalej i podpala'],
     mimic: ['Pożeracz', 'ugryziony traci jeden przedmiot'],
     goblin: ['Podcięcie', 'trafiony zwalnia na 1,5 s'],
@@ -329,7 +329,7 @@
     // cards: economy
     { id: 'essence', kind: 'card', rar: 'c', tag: 'Esencja +30%', name: 'Żyła esencji', text: 'Esencja z Grozy +30% (Groza × Chciwość × Combo × 1,3).', apply: m => { m.regen *= 1.3; } },
     { id: 'income', kind: 'card', rar: 'c', tag: '+4 po fali', name: 'Mroczny dochód', text: '+4 Esencji po każdej fali.', apply: m => { m.income += 4; } },
-    { id: 'usurer', kind: 'card', rar: 'c', tag: 'odsetki', name: 'Lichwiarz', text: 'Po fali dostajesz 15% niewydanej Esencji.', apply: m => { m.usurer += 0.15; } },
+    { id: 'usurer', kind: 'card', rar: 'c', tag: 'odsetki', name: 'Lichwiarz', text: 'Po fali dostajesz 15% niewydanej Esencji (najwyżej 12).', apply: m => { m.usurer += 0.15; } },
     { id: 'dig', kind: 'card', rar: 'c', tag: 'kopanie -2', name: 'Kopacze', text: 'Pokój i przejście kosztują o 2 Esencji mniej.', apply: m => { m.digDiscount += 2; } },
     { id: 'mole', kind: 'card', rar: 'c', tag: 'pokój za 0', name: 'Kret', text: 'Co drugą falę jedno kopanie pokoju za darmo.', apply: m => { m.mole += 1; } },
     { id: 'harvest', kind: 'card', rar: 'c', tag: 'żniwa +2', name: 'Żniwa strachu', text: 'Każdy bohater, który ucieknie ze strachu, daje dodatkowo 2 Esencji (bez mnożników).', apply: m => { m.fearHarvest += 2; } },
@@ -366,7 +366,7 @@
     // cards that grow during the run (they count only while the card is in the deck; selling the last copy resets the count)
     { id: 'hunger', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Głodne kolce', text: 'Kolce zadają do końca runu +4% obrażeń za każde zabójstwo kolcami (licznik rośnie przez cały run).', apply: m => { m.hunger += 1; } },
     { id: 'chronicle', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Kronika grozy', text: 'Strach jest o 3% silniejszy za każdego bohatera, który w tym runie uciekł ze strachu (do końca runu).', apply: m => { m.chronicle += 1; } },
-    { id: 'granary', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Spichlerz dusz', text: 'Każdy zabity bohater podnosi limit Esencji o 1 do końca runu.', apply: m => { m.granary += 1; } },
+    { id: 'granary', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Spichlerz dusz', text: 'Każdy zabity bohater zmniejsza głód serca o 1 do końca runu.', apply: m => { m.granary += 1; } },
     { id: 'bank', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Skarbiec', text: 'Każda fala bez utraty kryształu dodaje +2 Esencji do przychodu po każdej kolejnej fali (do końca runu).', apply: m => { m.bank += 1; } },
     { id: 'tempered', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Zaprawione mechanizmy', text: 'Pułapki działają o 1% mocniej za każde 4 trafienia pułapek w tym runie (do końca runu).', apply: m => { m.tempered += 1; } },
     // cards with a price
@@ -405,9 +405,9 @@
     { id: 'hoard', kind: 'card', rar: 'r', tag: 'schowek = chciwość', name: 'Kolekcja w schowku', text: 'Każda karta w schowku daje +0,1 chciwości.', apply: m => { m.stashGreed += 0.1; } },
     // v14: the heart's hunger
     { id: 'wager', kind: 'card', rar: 'l', tag: 'chciwość +0,8, głód +30%', name: 'Zakład z sercem', text: 'Chciwość +0,8, ale serce chce o 30% więcej.', apply: m => { m.greedFlat += 0.8; m.hungerK *= 1.3; } },
-    { id: 'gluttony', kind: 'card', rar: 'r', tag: 'nadwyżka ×1,5', name: 'Obżarstwo', text: 'Esencja ponad limit trafia do zapasu serca 1,5 raza.', apply: m => { m.storeK *= 1.5; } },
+    { id: 'gluttony', kind: 'card', rar: 'r', tag: 'po sytości ×1,25', name: 'Obżarstwo', text: 'Gdy serce jest już syte, Esencja z fali wpada o 25% większa.', apply: m => { m.storeK *= 1.25; } },
     { id: 'fasting', kind: 'card', rar: 'c', tag: 'głód -15%', name: 'Post', text: 'Serce chce o 15% mniej, ale chciwość -0,2.', apply: m => { m.hungerK *= 0.85; m.greedFlat -= 0.2; } },
-    { id: 'heartbeat', kind: 'card', rar: 'r', tag: 'pełne serce +20%', name: 'Bijące serce', text: 'Dopóki masz (w puli i w zapasie serca) dość Esencji, żeby nakarmić serce po fali, pułapki i potwory działają o 20% mocniej.', apply: m => { m.heartbeat += 0.2; } },
+    { id: 'heartbeat', kind: 'card', rar: 'r', tag: 'pełne serce +20%', name: 'Bijące serce', text: 'Gdy serce jest już syte w tej fali, pułapki i potwory działają o 20% mocniej.', apply: m => { m.heartbeat += 0.2; } },
     // v14: greed and loot
     { id: 'gilded', kind: 'card', rar: 'c', tag: 'ulepszone = chciwość', name: 'Pozłacane pułapki', text: '+0,05 chciwości za każdą pułapkę i potwora na poziomie 2 lub 3.', apply: m => { m.gilded += 0.05; } },
     { id: 'golddust', kind: 'card', rar: 'c', tag: 'monety ×1,5', name: 'Złoty pył', text: 'Monety podbijają chciwość o połowę mocniej.', apply: m => { m.goldDust += 0.5; } },

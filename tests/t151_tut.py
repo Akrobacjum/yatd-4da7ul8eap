@@ -40,7 +40,7 @@ async def main():
         if t:
             xy = await tile_xy(page, t); await page.mouse.click(xy['x'], xy['y']); await page.clock.run_for(300)
         print(await state(page))
-        await page.click('#tab-object'); await page.click('#item-loot'); await page.clock.run_for(200)
+        await page.click('#tab-loot'); await page.click('#item-loot'); await page.clock.run_for(200)
         lt = await page.evaluate("(() => { const G=__yatd, P=G.shortestPath(); for (let k=Math.floor(P.length*0.5);k<P.length;k++){ if (G.canPlace('loot',P[k][0],P[k][1])) return P[k]; } return null; })()")
         if lt:
             await page.evaluate("t => { const G=__yatd; const c=document.querySelector('canvas').getBoundingClientRect(); G.cam.ox = (t[0]+0.5)*G.cam.s - c.width/2; G.cam.oy = (t[1]+0.5)*G.cam.s - c.height/2; }", lt)
@@ -72,7 +72,7 @@ async def main():
                 print('ff', await page.evaluate("__yatd.ff")); await page.screenshot(path=OUT+'06_ff.png'); await page.mouse.up(); held = True
             if st['tut'] == 10:
                 await page.screenshot(path=OUT+'07_tut9.png'); await page.click('#coach .next'); await page.clock.run_for(200)
-            if st['modal'] == 'wave': break
+            if st['modal'] in ('wave', 'settle'): break
         RUNW = r'''() => { const G = __yatd; let g = 0; while (g++ < 20000) { const f = G.fl; if (G.modalKind) return G.modalKind;
             if (f.check) { if (!f.check.result) G.skipCheck(); G.clearCheck(); continue; } if (f.phase !== 'raid') return f.phase; G.step(0.05); if (f.ending !== null) { f.ending -= 0.05; if (f.ending <= 0) { f.ending = null; G.finishWave(); } } } return 'guard'; }'''
         for i in range(4):

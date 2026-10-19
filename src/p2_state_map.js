@@ -17,7 +17,7 @@
   let run = null, fl = null, mods = null;
   let selected = null, paused = false, ff = false, movingKey = null, movingObj = null, holdInfo = null, carryCache = null;   // v15.1: movingKey / movingObj = the element / piece of furniture in hand (a tap picks it up); holdInfo = a finger held on something (taking it down)
   const uiRects = { list: null };   // canvas areas that react to a tap (the folding hero list)
-  let modalOpen = false, modalQueue = [], modalKind = null;
+  let modalOpen = false, modalQueue = [], modalKind = null, curModal = null;
   let floats = [], particles = [], shake = 0, realNow = 0;
   const cam = { s: 24, ox: 0, oy: 0, manualUntil: 0 };
   let cw = 0, ch = 0, DPR = 1;

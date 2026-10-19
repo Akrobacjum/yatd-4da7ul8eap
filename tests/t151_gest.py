@@ -41,7 +41,7 @@ async def main():
         gone = await page.evaluate("(t => !__yatd.fl.items.get(t[0]+','+t[1]))", tgt)
         e1 = await page.evaluate("__yatd.fl.essence")
         print('hold removed', gone, 'refund', e1 - e0)
-        if not gone or abs(e1 - e0 - 2) > 0.01: fails.append('hold remove/refund')
+        if not gone or abs(e1 - e0 - await page.evaluate('__yatd.ITEMS.spikes.cost')) > 0.01: fails.append('hold remove/refund')
         # furniture: a system piece and a crate with powder on it
         ob = await page.evaluate("(() => { const G=__yatd; for (const o of G.fl.objects.values()) if (!o.built) return [o.x, o.y]; return null; })()")
         print('furniture', ob)

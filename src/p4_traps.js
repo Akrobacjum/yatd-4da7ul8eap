@@ -39,7 +39,7 @@
   const cdOf = type => ITEMS[type].cd * mods.cooldown * (WALL_TRAP[type] ? mods.wallCd : 1);
   // Card boosts on a trap's power: Cisza przed burzą (idle 20 s or not fired yet this wave) and Krwawy rytuał (kills this wave).
   const calmReady = it => mods.calmStorm > 0 && TRAPS[it.type] && (it.lastFire == null || fl.time - it.lastFire >= 20);
-  const heartFed = () => { if (!mods.heartbeat) return false; const n = hungerNeed(run.wave); return n > 0 && (run.hungerStore || 0) + fl.essence >= n; };   // Bijące serce (v15: you hold enough to feed the heart)
+  const heartFed = () => { if (!mods.heartbeat) return false; const n = hungerNeed(run.wave); return n > 0 && fl.fed >= n; };   // Bijące serce (1.01: the heart is fed in this wave)   // Bijące serce (v15: you hold enough to feed the heart)
   const trapBoost = it => !TRAPS[it.type] ? 1 : (heartFed() ? 1 + mods.heartbeat : 1) * (calmReady(it) ? 1 + mods.calmStorm : 1) * (1 + mods.bloodRite * fl.stats.kills) * (1 + 0.01 * Math.floor((run.stacks.tempered || 0) / 4) * mods.tempered);
   const lvlPow = it => TRAPS[it.type] ? LVL_POW[it.lvl || 1] : 1;   // monsters grow through HP and power instead
   // Setting a hero on fire; with Pożoga the flames jump to the heroes right next to him (one hop).
@@ -87,7 +87,7 @@
     const chorus = [];
     // combo: a different trap within the window (on the combo clock, which waits while the party walks through empty rooms)
     if (fl.cclock - fl.lastTrapC < (fl.comboWinNow || S.comboWin)) { if (fl.lastTrapType !== it.type) fl.combo = Math.min(7, fl.combo + 1); }   // only a different type builds combo
-    else fl.combo = 1;
+    else { if (fl.chain && fl.chain.trap) payChain(); fl.combo = 1; }   // 1.01: the old chain is cashed in before a new one starts
     fl.lastTrapAt = fl.time; fl.lastTrapC = fl.cclock; fl.lastTrapType = it.type;
     fl.comboWinNow = S.comboWin * (isRt(slotRoom(it.type, it.x, it.y), 'grotto') ? 1.5 : 1);   // Grota: the echo holds the combo longer
     bt(it.type).fires++;
@@ -206,11 +206,14 @@
         break;
       }
       case 'gate': {
-        it.cd = cdBase;
+        // Prototype 1.01: shut for a fixed time (power crushes harder, it does not hold longer) and the cooldown starts when it
+        // opens again, so there is always a gap. Level 3 (Żelazna krata) gives 2 more closings instead of endless ones.
+        const shut = 4 * mods.gateDur;
+        it.cd = shut + cdBase;
         const d = fl.doors.get(key(it.x, it.y));
-        d.closedUntil = fl.time + 4 * mods.gateDur * Math.max(1, pw); d.wasClosed = true;
+        d.closedUntil = fl.time + shut; d.wasClosed = true;
         it.uses = (it.uses || 0) + 1;
-        if (it.uses >= mods.gateUses && !(it.lvl >= 3)) { it.disabled = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Ostatnie zamknięcie', '#c9c2d8', 13, -0.6); }
+        if (it.uses >= mods.gateUses + (it.lvl >= 3 ? 2 : 0)) { it.disabled = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Ostatnie zamknięcie', '#c9c2d8', 13, -0.6); }
         fl.heroes.forEach(h => { if (!h.dead && !h.fled && h.nx === it.x && h.ny === it.y && h.prog < 0.5) { h.nx = null; h.ny = null; h.prog = 0; } });
         list.forEach(h => { damage(h, 60 * D * mods.gateCrush * pw, it, comboMult); hit++; });
         const near = alive().find(h => Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 2);

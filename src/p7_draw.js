@@ -918,12 +918,15 @@
     if (!fxc) fxc = c.getContext('2d');
     fxc.setTransform(DPR, 0, 0, DPR, 0, 0); fxc.clearRect(0, 0, W, H); fxDirty = orbs.length > 0;
     if (!orbs.length) return;
-    const cr = cv.getBoundingClientRect(), sr = $('#h-score').getBoundingClientRect(), tx = sr.left + sr.width / 2, ty = sr.top + sr.height / 2;
+    const cr = cv.getBoundingClientRect(), sr = $('#h-score').getBoundingClientRect(), hr = $('#h-heart').getBoundingClientRect();
+    const TG = { score: [sr.left + sr.width / 2, sr.top + sr.height / 2], heart: [hr.left + hr.width / 2, hr.top + hr.height / 2] };
     const at = (o, u) => {
+      const [tx, ty] = TG[o.to === 'heart' && hr.width ? 'heart' : 'score'];
       const e = u * u * (3 - 2 * u), ox = o.x + cr.left, oy = o.y + cr.top, cx = ox + (tx - ox) * 0.2, cy = Math.min(oy, ty) - 40;
       return [(1 - e) * (1 - e) * ox + 2 * (1 - e) * e * cx + e * e * tx, (1 - e) * (1 - e) * oy + 2 * (1 - e) * e * cy + e * e * ty];
     };
     orbs.forEach(o => {
+      if (o.t < 0) return;   // a cashed-in chain lets its orbs go one after another
       const u = clamp(o.t / o.dur, 0, 1), [x, y] = at(o, u), [x2, y2] = at(o, Math.max(0, u - 0.08));
       fxc.strokeStyle = 'rgba(255,90,100,0.38)'; fxc.lineWidth = 3; fxc.lineCap = 'round'; fxc.beginPath(); fxc.moveTo(x2, y2); fxc.lineTo(x, y); fxc.stroke();
       fxc.fillStyle = 'rgba(255,70,85,0.32)'; fxc.beginPath(); fxc.arc(x, y, 7, 0, Math.PI * 2); fxc.fill();
@@ -1188,6 +1191,8 @@
     const b = fl.breach, x = (b.x + 0.5) * T, y = (b.y + 0.5) * T, pulse = 0.55 + 0.45 * Math.sin(realNow * 5);
     ctx.strokeStyle = 'rgba(255,90,90,' + pulse.toFixed(2) + ')'; ctx.lineWidth = Math.max(2, T * 0.09);
     ctx.beginPath(); ctx.arc(x, y, T * (0.75 + 0.1 * pulse), 0, Math.PI * 2); ctx.stroke();
+    const pg = realNow - (fl.breachPing || -99);   // 1.01: shown from the breach sheet: rings run out from it for a few seconds
+    if (pg >= 0 && pg < 4) for (let k = 0; k < 2; k++) { const u = ((pg + k * 0.6) % 1.2) / 1.2; ctx.strokeStyle = 'rgba(255,110,110,' + (0.7 * (1 - u)).toFixed(2) + ')'; ctx.lineWidth = Math.max(1.5, T * 0.06); ctx.beginPath(); ctx.arc(x, y, T * (0.8 + 2.2 * u), 0, Math.PI * 2); ctx.stroke(); }
     if (T >= 12) {
       ctx.font = numFont(Math.max(10, T * 0.26), true); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,11,13,0.9)'; ctx.strokeText('WYŁOM', x, y - T * 0.85); ctx.fillStyle = '#ff8a8a'; ctx.fillText('WYŁOM', x, y - T * 0.85);

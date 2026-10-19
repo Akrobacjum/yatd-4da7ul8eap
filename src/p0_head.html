@@ -106,6 +106,8 @@ body {
 .hungerrow { gap: 8px; margin-top: 2px; }
 .hungerrow .heart { color: #e0485a; font-size: 15px; line-height: 1; display: inline-block; animation: beat 1.2s ease-in-out infinite; text-shadow: 0 0 8px rgba(255, 60, 80, 0.55); }
 .hungerrow.hungry .heart { animation-duration: 0.55s; }
+.hungerrow .heart.hit { animation: heartHit 0.32s ease-out; }
+@keyframes heartHit { 0% { transform: scale(1); } 40% { transform: scale(1.55); filter: brightness(1.6); } 100% { transform: scale(1); } }
 .hungerrow.fed .heart { color: var(--bile); animation-duration: 1.8s; text-shadow: 0 0 8px rgba(156, 196, 111, 0.45); }
 .hungerrow.off .heart { color: var(--dim); animation: none; text-shadow: none; }
 @keyframes beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.3); } 30% { transform: scale(1); } 45% { transform: scale(1.18); } }
@@ -114,7 +116,7 @@ body {
 .hbar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255, 210, 210, 0.3) 50%, transparent 70%); background-size: 220% 100%; animation: sheen 2.8s linear infinite; }
 @keyframes sheen { from { background-position: 120% 0; } to { background-position: -120% 0; } }
 .hungerrow.fed .hbar i { background: linear-gradient(180deg, #b4dc84, #557a33 70%, #34501f); }
-.hbar b { position: absolute; top: -3px; bottom: -3px; width: 2px; left: 80%; background: var(--ink); border-radius: 1px; box-shadow: 0 0 4px rgba(255, 240, 210, 0.7); }
+.hbar b { display: none; position: absolute; top: -3px; bottom: -3px; width: 2px; left: 80%; background: var(--ink); border-radius: 1px; box-shadow: 0 0 4px rgba(255, 240, 210, 0.7); }
 .hungerrow.off .hbar b { display: none; }
 #h-hlabel { font-size: 12.5px; color: var(--muted); font-family: var(--font-body); }
 .hungerrow.hungry #h-hlabel { color: #ff9aa6; }
@@ -170,7 +172,29 @@ body {
 .eqrow.idle #eq-g b, .eqrow.idle #eq-e b { opacity: 0.45; }
 .eqrow .eq.pop b { animation: eqpop 0.3s ease-out; }
 .eqrow .eq.pop { border-color: var(--line2); }
+/* 1.01: a combo chain piling up (Groza glows) and the moment it is cashed in (Esencja glows) */
+.eqrow.chain #eq-g { border-color: var(--violet-lo); box-shadow: 0 0 10px rgba(160, 140, 232, 0.25); }
+.eqrow.paid .res { box-shadow: 0 0 14px rgba(255, 70, 85, 0.45); border-color: #a3263a; }
 @keyframes eqpop { 0% { transform: scale(1.3); } 100% { transform: scale(1); } }
+/* 1.01: the reckoning at the end of a wave */
+.card.settle { text-align: center; max-width: 360px; }
+.card.settle .stl { display: flex; flex-direction: column; gap: 10px; margin: 10px 0 6px; }
+.stl-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 12px; border: 1px solid var(--line); background: var(--panel2);
+  opacity: 0; transform: translateY(8px); transition: opacity 0.3s, transform 0.3s; }
+.stl-row.on { opacity: 1; transform: none; }
+.stl-row.still { transition: none; }
+.stl-l { color: var(--muted); font-size: 13px; text-align: left; } .stl-l small { color: var(--dim); font-size: 11px; } .stl-l i { font-style: normal; color: #e0485a; }
+.stl-v { font-family: var(--font-num); font-size: 24px; font-variant-numeric: tabular-nums; }
+.stl-row.g .stl-v { color: var(--violet-hi); text-shadow: 0 0 10px rgba(160, 140, 232, 0.5); }
+.stl-row.g.fly .stl-v { opacity: 0.55; }
+.stl-row.e .stl-v { color: var(--ess); text-shadow: 0 0 12px rgba(255, 60, 80, 0.6); }
+.stl-row.h .stl-v { color: #ff9aa6; } .stl-row.h.fed { border-color: #3d5229; } .stl-row.h.ate { border-color: var(--blood); background: #1f0d10; }
+.stl-row.h.on i { display: inline-block; animation: heartHit 0.5s ease-out 2; }
+.stl-row.m .stl-v { color: var(--ink); }
+.card.settle.ate .stl-row.m .stl-v { color: var(--dim); }
+.stl-note { min-height: 2.6em; }
+.card.settle #settle-next { opacity: 0.6; } .card.settle #settle-next.ready { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .stl-row { transition: none; } .stl-row.h.on i { animation: none; } }
 @media (max-width: 380px) { .eqrow { gap: 2px; } .eqrow .eq { padding: 2px 5px 3px; min-width: 44px; } .eqrow .eq b { font-size: 14px; } .eqrow .eq i { font-size: 8.5px; letter-spacing: 0.03em; } }
 
 /* ---------- buttons with an icon ---------- */
@@ -392,6 +416,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
               radial-gradient(circle at 2px 4px, #59606a 1.5px, transparent 2px) bottom left / 6px 6px no-repeat,
               radial-gradient(circle at 4px 4px, #59606a 1.5px, transparent 2px) bottom right / 6px 6px no-repeat;
 }
+/* 1.01: the breach sheet at the top; the map below stays visible (taps on it are ignored while the sheet is open) */
+.overlay.top { align-items: flex-start; background: linear-gradient(180deg, rgba(2, 2, 3, 0.88) 0%, rgba(2, 2, 3, 0.55) 34%, transparent 52%); pointer-events: none; }
+.overlay.top .card { pointer-events: auto; max-height: 48vh; gap: 8px; padding: 14px; }
+.overlay.top .card .lead { font-size: 14px; } .overlay.top .card h2 { font-size: 20px; }
 .overlay.screenbg { background: var(--bg); padding: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
 .card.screen { width: min(520px, 100%); height: 100%; max-height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 14px 14px 12px; }
 /* the screens between waves: one screen, no scrolling, a layout that stays put; the parts come in one after another */

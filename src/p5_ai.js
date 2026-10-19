@@ -195,6 +195,15 @@
     if (!crew.length) return;
     const L = leader();
     P.morale = Math.min(1, P.morale + 0.012 * dt);
+    // Prototype 1.01, Mgła: the leader walks into the fog and gropes for the way for a few seconds (once per fog room per wave)
+    if (L && !goingOut() && !fl.fearless && L.room >= 0 && isRt(L.room, 'fog') && !P.detour) {
+      P.fogDone = P.fogDone || new Set();
+      if (!P.fogDone.has(L.room)) {
+        P.fogDone.add(L.room);
+        const R = fl.rooms[L.room], spots = R.tiles.filter(t => walkable(t[0], t[1]) && Math.hypot(t[0] - L.tx, t[1] - L.ty) >= 2);
+        if (spots.length) { const t = pick(spots); P.detour = { goal: t[1] * WW + t[0], until: fl.time + 3 + 0.25 * Math.max(0, 8 - L.lvl / 2) }; fl.stats.fogGrope = (fl.stats.fogGrope || 0) + 1; tl('fg', L.room); say(L, pick(['Nic nie widać... gdzie są drzwi?', 'Trzymajcie się blisko, ta mgła...', 'Którędy? Nie widzę ściany!']), 3); }
+      }
+    }
     crew.forEach(h => {
       const others = crew.filter(o => o !== h);
       const nearest = others.length ? Math.min(...others.map(o => hdist(h, o))) : 0;
@@ -218,7 +227,7 @@
       if (fl.time < (h.lullUntil || 0) && h.room === h.lullRoom) addFear(h, h.lullK * dt, 'musicbox', 'lull');   // v15.1: the music box's lullaby, while he stays in that room
       if (h === L) { h.lost = false; h.sepT = 0; return; }
       const d = L ? hdist(h, L) : 0;
-      if (h.lost) { if (d < 4.5) { h.lost = false; h.noPathT = 0; h.sepT = 0; h.sepRolled = false; say(h, pick(SAY.found), 3); h.needPlan = true; if (P.searchId === h.id) P.searchId = -1; } }
+      if (h.lost) { if (d < (isRt(h.room, 'fog') || isRt(L ? L.room : -1, 'fog') ? 1.6 : 4.5)) { h.lost = false; h.noPathT = 0; h.sepT = 0; h.sepRolled = false; say(h, pick(SAY.found), 3); h.needPlan = true; if (P.searchId === h.id) P.searchId = -1; } }
       else if (!fl.fearless && !exiting(h) && h.id !== P.scoutId && !caged(h) && !(h.wanderUntil > fl.time)) {
         // cut off from the leader (another room, far away): in a big dungeon, or in the fog, he may lose his way
         const apart = !!L && d > 7 && h.room !== L.room;
@@ -226,6 +235,7 @@
         if (!apart) h.sepRolled = false;
         if (h.noPathT > 3 && d > 6) getLost(h, 'nopath');
         else if (h.sepT > 3 && !h.sepRolled) { h.sepRolled = true; if (Math.random() < lostChance(h)) getLost(h, 'sep'); }
+        else if (h.room >= 0 && isRt(h.room, 'fog') && d > 1.5 && Math.random() < dt * 0.22 * Math.max(0.35, 1 - 0.03 * h.lvl) * (h.type === 'thief' ? 0.6 : 1)) getLost(h, 'fog');   // 1.01: in the fog anyone a step away from the leader can lose the party
       }
       if (h.lost) {
         addFear(h, 4 * dt, null, 'lost');
@@ -284,28 +294,48 @@
     if (fl.heartKnown && !P.heartSaid && !goingOut()) { P.heartSaid = true; say(L, pick(seenShare < 0.65 && L.rank > 0 ? SAY.heartLater : SAY.heartSeen), 3); }
     const need = Math.min(0.85, (L.rank === 0 ? 0.5 : 0.6) + 0.1 * clamp(fl.greed - 1, 0, 2) - (L.rank >= 2 ? 0.1 : 0));
     const tLimit = S.waveTime * Math.min(0.6, 0.45 + 0.01 * Math.max(0, roomsAll.length - 6));   // a big dungeon takes longer to search
-    const wasSearch = P.wantSearch; P.wantSearch = seenShare < need && fl.time < tLimit;   // still searching the rooms they know of (for treasure)
+    const detourG = P.gateDetourUntil > fl.time;   // 1.01: sent round by a closed gate, they search what they have not seen
+    const wasSearch = P.wantSearch; P.wantSearch = (seenShare < need && fl.time < tLimit) || detourG;   // still searching the rooms they know of (for treasure)
     if (wasSearch !== P.wantSearch) fl.knowDirty = true;
-    if (P.plan === 'explore' && fl.heartKnown && avgHp >= 0.5 && (seenShare >= need || fl.time > tLimit)) { P.plan = 'assault'; P.detour = null; partySay('assault', 3, L); replanAll(); }
+    if (P.plan === 'explore' && !detourG && fl.heartKnown && avgHp >= 0.5 && (seenShare >= need || fl.time > tLimit)) { P.plan = 'assault'; P.detour = null; partySay('assault', 3, L); replanAll(); }
     if (P.searchId >= 0) { const c = byId(P.searchId); if (!c || !c.lost || c.dead || c.fled || fl.time > P.searchUntil || goingOut()) P.searchId = -1; }
     if (P.plan === 'explore') {
       const valid = P.target >= 0 && (isFrontierTile(P.target) || (P.targetRoom >= 0 && !fl.rooms[P.targetRoom].visited));
       if (!valid || (fl.knowDirty && fl.time - fl.newKnowAt < 0.5)) { chooseTarget(L); fl.knowDirty = false; replanAll(); }
       if (P.target < 0 && fl.heartKnown) { P.plan = 'assault'; partySay('assault', 3, L); replanAll(); }   // nothing left to explore: go for it
     }
-    // a closed gate between the leader and where he wants to go: look for another way, or wait and say so
+    // A closed gate between the leader and where he wants to go. Prototype 1.01: even on the way to the heart they go and search
+    // the rooms they have not been to in this wave (that is what a gate is for: it sends them through the rest of your dungeon).
+    // Nothing left to search: they wait, and a thief tries to lever the gate up.
     const gateShut = [...fl.doors.values()].some(d => d.closedUntil > fl.time);
     if (gateShut && L.blocked >= 0 && !goingOut()) {
       P.blockT = (P.blockT || 0) + dt;
       if (P.blockT > 1.2 && !P.blockSaid) {
         P.blockSaid = true;
-        const before = P.target;
+        const before = P.target, wasPlan = P.plan;
+        if (P.plan === 'assault') { P.plan = 'explore'; P.gateDetourUntil = fl.time + 18; P.wantSearch = true; }
         if (P.plan === 'explore') { chooseTarget(L); replanAll(); }
-        const moved = P.plan === 'explore' && P.target >= 0 && P.target !== before;
+        const moved = P.plan === 'explore' && P.target >= 0 && (P.target !== before || wasPlan !== 'explore');
+        if (!moved && wasPlan === 'assault') { P.plan = 'assault'; P.gateDetourUntil = 0; }
         if (moved) fl.stats.reroutes = (fl.stats.reroutes || 0) + 1;
         say(L, pick(moved ? SAY.gateReroute : SAY.gateWait), 3, 2.2);
+        if (!moved) P.liftT = 0;
       }
-    } else { P.blockT = 0; if (!gateShut) P.blockSaid = false; }
+      if (P.blockSaid && P.plan !== 'explore') {   // waiting at the gate: a thief next to it levers it up in 3 s
+        const door = [...fl.doors.values()].filter(d => d.closedUntil > fl.time).sort((a, b) => Math.hypot(a.x - L.tx, a.y - L.ty) - Math.hypot(b.x - L.tx, b.y - L.ty))[0];
+        const it = door && fl.items.get(key(door.x, door.y)), th = door && alive().find(h => h.type === 'thief' && !panicking(h) && !h.fleeing && Math.hypot(h.tx - door.x, h.ty - door.y) <= 1.6);
+        if (it && it.type === 'gate' && th) {
+          if (!P.liftT) say(th, 'Podważę ją, osłaniajcie mnie!', 3, 2);
+          P.liftT = (P.liftT || 0) + dt * (th.lvl >= 6 ? 1.5 : 1);
+          if (P.liftT >= 3) {
+            door.closedUntil = fl.time; it.disabled = true; it.detected = true; fl.threatDirty = true; P.liftT = 0;
+            bt('gate').disarmed++; fl.stats.disarmed++; tl('lg', th.id, door.x, door.y);
+            floatTile(door.x, door.y, 'Krata podważona', '#c9c2d8', 13, -0.6); replanAll();
+          }
+        }
+      }
+    } else { P.blockT = 0; P.liftT = 0; if (!gateShut) P.blockSaid = false; }
+    if (P.gateDetourUntil && P.plan === 'explore' && (fl.time > P.gateDetourUntil || P.target < 0) && fl.heartKnown && !gateShut) { P.gateDetourUntil = 0; P.plan = 'assault'; replanAll(); }
     if (P.ambushN >= 3 && fl.time - P.ambushT < 0.6 && fl.time - (P.ambushSaid || -99) > 12) { P.ambushN = 0; P.ambushSaid = fl.time; talk(1.0, [pick(SAY.ambush)]); crew.forEach(h => addFear(h, 6, null, 'ambush')); }
     // small talk, flavoured by experience
     P.chatT -= dt;
@@ -341,7 +371,7 @@
   /* ----- getting lost, wrong turns ----- */
   // The chance to lose the way once cut off from the leader: bigger dungeon and fog = more, experience and a thief's sense = less.
   function lostChance(h) {
-    const p = 0.12 + 0.03 * Math.max(0, roomCount() - 6) + (isRt(h.room, 'fog') ? 0.3 : 0) - 0.01 * h.lvl - (h.type === 'thief' ? 0.1 : 0);
+    const p = 0.12 + 0.03 * Math.max(0, roomCount() - 6) + (isRt(h.room, 'fog') ? 0.45 : 0) - 0.01 * h.lvl - (h.type === 'thief' ? 0.1 : 0);
     return clamp(p, 0.02, 0.6);
   }
   function getLost(h, why) {
@@ -830,7 +860,7 @@
     if (h.gone) { if (fl.time >= h.fallUntil) landFallen(h); return; }
     if (h.flash > 0) h.flash -= dt;
     h.accT += dt;
-    if (h.accT >= 0.6) { if (h.acc >= 0.3) floatHero(h, '+' + fmtE(h.acc), '#ff7a86', 13); h.acc = 0; h.accT = 0; }
+    if (h.accT >= 0.6) { if ((h.accG || 0) >= 0.1) floatHero(h, '+' + fmtG(h.accG), '#c3b2ff', 13); h.acc = 0; h.accG = 0; h.accT = 0; }   // 1.01: Groza (violet)
     const ot = heroTile(h); h.tx = ot[0]; h.ty = ot[1];
     const rr = roomOf(h.tx, h.ty); if (rr >= 0) h.room = rr;
     if (fl.time < h.burnUntil) { damage(h, 6 * S.dmg * dt, BURN); if (h.dead) return; }

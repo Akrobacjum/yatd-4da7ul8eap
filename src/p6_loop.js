@@ -3,42 +3,41 @@
   // Carried over between waves, refilled after each wave, and during a wave fed by pain, fear and souls.
   let orbs = [];
   function regenParts() { const base = S.regenBase / 10 * mods.regen; return { base, total: base }; }
-  function gainEssence(h, amt, stat) {
-    if (amt <= 0 || !fl) return;
+  // Prototype 1.01: no purse limit. who = a hero, or a Map hero id -> Groza share (a cashed-in combo chain); heart = the part
+  // the hungry heart took first. Red orbs fly from the heroes: to the big number for the purse, to the ♥ for the heart.
+  function gainEssence(who, amt, stat, heart) {
+    if (!fl || !((amt || 0) + (heart || 0) > 0)) return;
     const before = Math.floor(fl.essence);
-    const add = Math.max(0, Math.min(essCap() - fl.essence, amt));
-    fl.essence += add; fl.stats[stat] = (fl.stats[stat] || 0) + amt;
-    if (amt - add > 0) overflowToHeart(amt - add);   // v15: what does not fit in the purse goes to the heart's store
-    if (h && add > 0) {
-      h.orbAcc += add;
-      const p = heroPos(h), T = cam.s;
-      while (h.orbAcc >= 0.25) {
-        h.orbAcc -= 0.25;
-        if (orbs.length < 60) orbs.push({ x: p.x * T - cam.ox + (Math.random() - 0.5) * 12, y: p.y * T - cam.oy + (Math.random() - 0.5) * 12, t: 0, dur: 0.6 + Math.random() * 0.3 });
-      }
+    if (amt > 0) { fl.essence += amt; fl.stats[stat] = (fl.stats[stat] || 0) + amt; }
+    const src = [];
+    if (who instanceof Map) { let tot = 0; who.forEach(v => { tot += v; }); who.forEach((v, id) => { const h = fl.heroes.find(x => x.id === id); if (h && tot > 0) src.push([h, v / tot]); }); }
+    else if (who) src.push([who, 1]);
+    if (src.length) {
+      const T = cam.s, put = (n, to) => {
+        for (let i = 0; i < n && orbs.length < 60; i++) {
+          const r = Math.random(); let acc = 0, h = src[0][0];
+          for (const [x, w] of src) { acc += w; if (r <= acc) { h = x; break; } }
+          const p = heroPos(h);
+          orbs.push({ x: p.x * T - cam.ox + (Math.random() - 0.5) * 14, y: p.y * T - cam.oy + (Math.random() - 0.5) * 14, t: -Math.random() * 0.25, dur: 0.6 + Math.random() * 0.3, to });
+        }
+      };
+      put(Math.min(30, Math.round((heart || 0) / 0.5)), 'heart');
+      put(Math.min(40, Math.round((amt || 0) / 0.25)), 'score');
     }
     if (Math.floor(fl.essence) !== before) { updateTray(); essPulse(); }
   }
-  // v15: the heart's store takes what does not fit in the purse (at most 3 hungers of this wave; Obżarstwo: x1,5); the rest is lost
-  const storeCap = () => 3 * Math.max(hungerNeed(run.wave), hungerNeed(2) || 1);
-  function overflowToHeart(x) {
-    if (!run || run.tutorial) { if (fl) fl.stats.essLost = (fl.stats.essLost || 0) + x; return; }
-    const room = Math.max(0, storeCap() - (run.hungerStore || 0)), put = Math.min(room, x * (mods.storeK || 1));
-    run.hungerStore = (run.hungerStore || 0) + put;
-    fl.stats.essStored = (fl.stats.essStored || 0) + put; fl.stats.essLost = (fl.stats.essLost || 0) + Math.max(0, x - put / (mods.storeK || 1));
-  }
   const lootMult = h => 1 + 0.25 * Math.min(4, h.inv.length);   // a hero carrying gear sheds more when hurt
   function regenTick(dt) {
-    if (fl.essence >= essCap()) return;
     const r = regenParts();
     if (r.total <= 0) return;
     const before = Math.floor(fl.essence);
-    const gain = Math.min(essCap() - fl.essence, r.total * dt);
+    const gain = r.total * dt;
     fl.essence += gain; fl.stats.essBase += gain;
     if (Math.floor(fl.essence) !== before) { updateTray(); essPulse(); }
   }
   function essPulse() {}   // Prototype 1.0: the big number counts up by itself (tickScore); an orb landing in it gives it a knock (scoreHit)
   function scoreHit() { const e = $('#h-score'); if (!e || realNow - (scoreHit.t || -1) < 0.1) return; scoreHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
+  function heartHit() { const e = $('#h-heart'); if (!e || realNow - (heartHit.t || -1) < 0.12) return; heartHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
 
   /* ================= sound ================= */
   let actx = null;
@@ -241,6 +240,7 @@
     fl.quietCheckT = (fl.quietCheckT || 0) - dt;
     if (fl.quietCheckT <= 0) { fl.quietCheckT = 0.1; fl.quiet = quietNow(); }   // v15.1: checked 10 times a second (was 5)
     if (fl.quiet) { fl.quietT += dt; if (autoFFOn()) fl.autoFFTime += dt; } else { fl.quietT = 0; fl.cclock += dt; }   // the combo clock waits while nothing happens
+    chainTick();   // Prototype 1.01: a combo chain that ran out is cashed in
     if (mods.hauntedGallery) fl.portraitRooms = portraitRooms();
     if (fl.echoQ && fl.echoQ.length) {   // Echo mechanizmów
       const due = fl.echoQ.filter(e => e.at <= fl.time);
@@ -344,7 +344,8 @@
       if (run.tut >= 0) tutTick();
     }
     orbs.forEach(o => { o.t += rdt; });
-    if (orbs.some(o => o.t >= o.dur)) scoreHit();
+    if (orbs.some(o => o.t >= o.dur && o.to !== 'heart')) scoreHit();
+    if (orbs.some(o => o.t >= o.dur && o.to === 'heart')) heartHit();
     orbs = orbs.filter(o => o.t < o.dur);
     floats.forEach(f => { f.life -= rdt; f.y -= 0.9 * rdt; });
     floats = floats.filter(f => f.life > 0);

@@ -18,9 +18,9 @@ JS = r'''() => {
   const spawn = () => { G.startWave(); let g = 0; while (G.fl.queue.length || G.fl.heroes.some(h => h.gone && !h.dead && !h.fled)) { G.step(0.05); if (++g > 600) break; } return G.fl; };
   const spotsFor = t => { const r = []; for (let y = 0; y < G.WH; y++) for (let x = 0; x < G.WW; x++) if (G.canPlace(t, x, y)) r.push([x, y]); return r; };
   // 1. the Strach tab
-  out.tab = G.TABS.find(t => t.id === 'fear').items;
-  ok(out.tab.length === 10, 'fear tab has 10');
-  ok(!G.TABS.find(t => t.id === 'traps').items.includes('portrait') && !G.TABS.find(t => t.id === 'monster').items.includes('ghost'), 'moved out of old tabs');
+  out.tab = G.TABS.find(t => t.id === 'traps').items.concat(G.TABS.find(t => t.id === 'monster').items);   // 1.01: the scare ones live with the traps and the monsters
+  ok(['portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox', 'ghost', 'shade', 'bats'].every(t => out.tab.includes(t)), 'scare elements in Pułapki / Potwory');
+  ok(!G.TABS.some(t => t.id === 'fear' || t.id === 'rooms'), 'no Strach / Pokoje tabs');
   ok(G.run === null || true, '');
   // 2. every new element fires and scares (hero teleported into its area)
   out.fire = {};
