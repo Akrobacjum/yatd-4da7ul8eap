@@ -13,7 +13,7 @@
   const DEFAULTS = {
     waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
     essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 20, hungerGrowth: 1.25, greedW: 1.0, autoFF: 2.5, earlyHp: 1,
-    haptics: 1, trayAuto: 1, series: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley
+    haptics: 1, trayAuto: 1, series: 1, split: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley, split screen (1.03)
     topPad: 0   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
   };
   const RUN_WAVES = 10;   // wave 5: a champion, wave 10: the hero of the prophecy. Survive it and the run is won (you may play on).
@@ -44,6 +44,7 @@
     { k: 'haptics', label: 'Wibracje (telefony z Androidem)', toggle: true },
     { k: 'series', label: 'Seria: jeden skill check na kilka pułapek naraz', toggle: true },
     { k: 'trayAuto', label: 'Chowaj pasek elementów w trakcie fali', toggle: true },
+    { k: 'split', label: 'Dziel ekran, gdy drużyna rozejdzie się za daleko', toggle: true },
     { k: 'checkDiff', label: 'Trudność skill checków', min: 0.6, max: 1.8, step: 0.1, fmt: x1 },
     { k: 'autoFF', label: 'Auto-przyspieszenie, gdy nic się nie dzieje (1 = wyłączone)', min: 1, max: 4, step: 0.5, fmt: x1 },
     { k: 'ffSpeed', label: 'Przyspieszenie (przytrzymanie palca)', min: 2, max: 6, step: 0.5, fmt: x1 },
@@ -362,7 +363,7 @@
     { id: 'well', kind: 'card', rar: 'r', unique: true, tag: 'studnia', name: 'Bezdenna studnia', text: 'Bohater z kryształem, który spadnie w zapadnię, gubi go w ciemności: kryształ wraca do serca.', apply: m => { m.bottomless = true; } },
     { id: 'echofire', kind: 'card', rar: 'r', tag: 'echo ×2', name: 'Echo mechanizmów', text: 'Co 5. odpalenie pułapki odpala ją drugi raz (kolejna kopia: co 4., co 3...).', apply: m => { m.echoFire += 1; } },
     { id: 'glass', kind: 'card', rar: 'l', tag: 'chciwość +1', name: 'Szklane serce', text: 'Chciwość +1, ale bohaterowie wyważają kryształ 2 razy szybciej.', apply: m => { m.glass += 1; } },
-    { id: 'nopick', kind: 'card', rar: 'l', unique: true, tag: 'chciwość ×2,5', name: 'Odwrotna chciwość', text: 'Bohaterowie nigdy nie zabierają łupu, a zobaczony łup podbija chciwość 2,5 raza mocniej.', apply: m => { m.noPickup = true; } },
+    { id: 'nopick', kind: 'card', rar: 'l', unique: true, tag: 'zabrany łup ×3', name: 'Odwrotna chciwość', text: 'Bohaterowie zabierają łup jak zwykle, ale zabrany łup podbija chciwość 3 razy mocniej. Opłaca się dać im coś ukraść.', apply: m => { m.pickGreed *= 3; } },   // 1.03 (author: loot is fun because they can take it; up to 1.02 they never took it and seen loot was x2,5)
     { id: 'gambler', kind: 'card', rar: 'l', tag: 'krytyk ×2,4', name: 'Hazardzista', text: 'Krytyk w skill checku uderza ×1,35 mocniej (×2,4 zamiast ×1,8), ale draśnięcie tylko ×0,4 zamiast ×0,7.', apply: m => { m.critPw *= 1.35; m.okPw *= 0.57; } },
     { id: 'choir', kind: 'card', rar: 'l', req: 'portrait', tag: 'chór', name: 'Chór potępionych', text: 'Odpalony portret odpala też wszystkie gotowe portrety w tym samym pokoju (z 60% mocy, każda kolejna kopia +40%).', apply: m => { m.choir += 1; } },
     // cards that grow during the run (they count only while the card is in the deck; selling the last copy resets the count)

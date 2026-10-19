@@ -9,21 +9,50 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.fillStyle = '#060709'; ctx.fillRect(0, 0, cw, ch);
     if (!fl) return;
-    const T = cam.s;
+    const V = splitViews();   // 1.03: one screen, or two halves with a camera each
+    withViews(V, T => { drawWorld(T); if (!V) drawOffscreen(T); drawBubbles(T); });
+    if (V) drawDivider(V);
+    drawOrbs();
+    drawCheck(cam.s);
+    drawPause();
+    drawFF();
+  }
+  function withViews(V, fn) {   // draw fn once, or once per half (clipped to it, with its camera)
+    if (!V) { fn(cam.s); return; }
+    const keep = { s: cam.s, ox: cam.ox, oy: cam.oy };
+    V.forEach(v => {
+      ctx.save(); ctx.beginPath(); v.poly.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.clip();
+      cam.s = v.s; cam.ox = v.ox; cam.oy = v.oy; fn(cam.s);
+      ctx.restore();
+    });
+    cam.s = keep.s; cam.ox = keep.ox; cam.oy = keep.oy;
+  }
+  function drawDivider(V) {   // an iron bar along the cut, fading in as the halves part
+    const n = [Math.cos(SPLIT.ang), Math.sin(SPLIT.ang)], d = [-n[1], n[0]], c = [cw / 2, ch / 2], L = Math.hypot(cw, ch);
+    const line = () => { ctx.beginPath(); ctx.moveTo(c[0] - d[0] * L, c[1] - d[1] * L); ctx.lineTo(c[0] + d[0] * L, c[1] + d[1] * L); ctx.stroke(); };
+    ctx.save(); ctx.globalAlpha = V[0].e; ctx.lineCap = 'butt';
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 10; line();
+    ctx.strokeStyle = '#464b53'; ctx.lineWidth = 6; line();
+    ctx.strokeStyle = '#1d1f24'; ctx.lineWidth = 4; line();
+    ctx.strokeStyle = 'rgba(230,225,214,0.35)'; ctx.lineWidth = 1; line();
+    ctx.restore();
+  }
+  function drawWorld(T) {
     ctx.save();
     let sx = 0, sy = 0;
     if (shake > 0) { sx = (Math.random() - 0.5) * shake * 18; sy = (Math.random() - 0.5) * shake * 18; }
     ctx.translate(-cam.ox + sx, -cam.oy + sy);
     const x0 = clamp(Math.floor(cam.ox / T) - 1, 0, WW - 1), x1 = clamp(Math.ceil((cam.ox + cw) / T) + 1, 0, WW - 1);
     const y0 = clamp(Math.floor(cam.oy / T) - 1, 0, WH - 1), y1 = clamp(Math.ceil((cam.oy + ch) / T) + 1, 0, WH - 1);
-    drawTiles(x0, y0, x1, y1, T);
+    drawTileLayer(x0, y0, x1, y1, T);
     drawTorches(x0, y0, x1, y1, T);
     drawRoomTypes(T);
     drawZones(T);
     if (fl.phase === 'raid') drawDanger(x0, y0, x1, y1, T);
-    if (fl.phase === 'build') { drawAreas(T); drawRumorTiles(x0, y0, x1, y1, T); }
-    fl.objects.forEach(o => drawObject(o, T));
-    fl.items.forEach(it => { if (!DRIFT[it.type]) drawItem(it, T); });
+    if (fl.phase === 'build') { drawAreas(T, x0, y0, x1, y1); drawRumorTiles(x0, y0, x1, y1, T); }
+    const seen = (x, y) => x >= x0 - 2 && x <= x1 + 2 && y >= y0 - 2 && y <= y1 + 2;   // 1.03: what is off the screen is not drawn
+    fl.objects.forEach(o => { if (seen(o.x, o.y)) drawObject(o, T); });
+    fl.items.forEach(it => { if (!DRIFT[it.type] && seen(it.x, it.y)) drawItem(it, T); });
     drawHeart(T);
     drawRoomLabels(T);
     if (fl.phase === 'raid' || fl.phase === 'summary' || fl.phase === 'over') drawFog(x0, y0, x1, y1, T);
@@ -36,73 +65,103 @@
     if (run.tut >= 0) drawTutTarget(T);
     drawFx(T);
     fl.heroes.forEach(h => { if (!h.dead && !h.fled && !h.gone) drawHero(h, T); });
-    fl.items.forEach(it => { if (DRIFT[it.type]) drawItem(it, T); });   // ghosts, shades and bats float above everything
+    fl.items.forEach(it => { if (DRIFT[it.type] && seen(Math.floor(it.gx !== undefined ? it.gx : it.x), Math.floor(it.gy !== undefined ? it.gy : it.y))) drawItem(it, T); });   // ghosts, shades and bats float above everything
     drawParticles(T); drawFloats(T);
     ctx.restore();
-    drawOffscreen(T);
-    drawBubbles(T);
-    drawOrbs();
-    drawCheck(T);
-    drawPause();
-    drawFF();
   }
-  function drawTiles(x0, y0, x1, y1, T) {
+  function drawTiles(x0, y0, x1, y1, T, g) {   // 1.03: g = the context to draw on (a cached chunk)
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const i = y * WW + x, t = fl.tiles[i], px = x * T, py = y * T;
       if (t === ROCK) {
-        ctx.fillStyle = ((x * 7 + y * 13) % 5 === 0) ? '#0f1013' : '#0b0c0e'; ctx.fillRect(px, py, T + 0.5, T + 0.5);
+        g.fillStyle = ((x * 7 + y * 13) % 5 === 0) ? '#0f1013' : '#0b0c0e'; g.fillRect(px, py, T + 0.5, T + 0.5);
         continue;
       }
       if (t === WALL) {
         const hw = tileHash(x, y);
-        ctx.fillStyle = '#1e2024'; ctx.fillRect(px, py, T + 0.5, T + 0.5);
-        if (hw % 3 === 0) { ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(px, py + (hw % 2 ? 0 : T / 2), T + 0.5, T / 2); }   // bricks of uneven colour
-        ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 1; ctx.beginPath();
-        ctx.moveTo(px, py + T / 2); ctx.lineTo(px + T, py + T / 2);
-        ctx.moveTo(px + T / 2, py); ctx.lineTo(px + T / 2, py + T / 2);
-        ctx.moveTo(px + T / 4, py + T / 2); ctx.lineTo(px + T / 4, py + T);
-        ctx.moveTo(px + T * 3 / 4, py + T / 2); ctx.lineTo(px + T * 3 / 4, py + T);
-        ctx.stroke();
-        if (tileAt(x, y + 1) === FLOOR) { ctx.fillStyle = '#464a51'; ctx.fillRect(px, py + T * 0.8, T + 0.5, T * 0.2); ctx.fillStyle = 'rgba(220,230,245,0.12)'; ctx.fillRect(px, py + T * 0.8, T + 0.5, Math.max(1, T * 0.03)); }
+        g.fillStyle = '#1e2024'; g.fillRect(px, py, T + 0.5, T + 0.5);
+        if (hw % 3 === 0) { g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(px, py + (hw % 2 ? 0 : T / 2), T + 0.5, T / 2); }   // bricks of uneven colour
+        g.strokeStyle = 'rgba(0,0,0,0.45)'; g.lineWidth = 1; g.beginPath();
+        g.moveTo(px, py + T / 2); g.lineTo(px + T, py + T / 2);
+        g.moveTo(px + T / 2, py); g.lineTo(px + T / 2, py + T / 2);
+        g.moveTo(px + T / 4, py + T / 2); g.lineTo(px + T / 4, py + T);
+        g.moveTo(px + T * 3 / 4, py + T / 2); g.lineTo(px + T * 3 / 4, py + T);
+        g.stroke();
+        if (tileAt(x, y + 1) === FLOOR) { g.fillStyle = '#464a51'; g.fillRect(px, py + T * 0.8, T + 0.5, T * 0.2); g.fillStyle = 'rgba(220,230,245,0.12)'; g.fillRect(px, py + T * 0.8, T + 0.5, Math.max(1, T * 0.03)); }
         continue;
       }
       if (t === FLOOR) {
         const hf = tileHash(x, y), v = hf % 7;
-        ctx.fillStyle = fl.rooms[fl.roomAt[i]].color; ctx.fillRect(px, py, T + 0.5, T + 0.5);
-        if (v < 3) { ctx.fillStyle = 'rgba(0,0,0,' + (0.05 + v * 0.04).toFixed(2) + ')'; ctx.fillRect(px, py, T + 0.5, T + 0.5); }   // flagstones of uneven colour
-        else if (v === 6) { ctx.fillStyle = 'rgba(215,225,240,0.04)'; ctx.fillRect(px, py, T + 0.5, T + 0.5); }
-        ctx.fillStyle = 'rgba(220,230,245,0.04)';
-        ctx.fillRect(px + T * 0.1, py + T * 0.12, T * 0.34, T * 0.24);
-        ctx.fillRect(px + T * 0.52, py + T * 0.56, T * 0.34, T * 0.24);
-        ctx.strokeStyle = 'rgba(0,0,0,0.38)'; ctx.lineWidth = 1; ctx.strokeRect(px + 0.5, py + 0.5, T - 1, T - 1);
-        if (T >= 16 && (hf >>> 4) % 9 === 0) { ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.moveTo(px + T * 0.2, py + T * 0.3); ctx.lineTo(px + T * 0.45, py + T * 0.5); ctx.lineTo(px + T * 0.4, py + T * 0.8); ctx.stroke(); }   // a crack
+        g.fillStyle = fl.rooms[fl.roomAt[i]].color; g.fillRect(px, py, T + 0.5, T + 0.5);
+        if (v < 3) { g.fillStyle = 'rgba(0,0,0,' + (0.05 + v * 0.04).toFixed(2) + ')'; g.fillRect(px, py, T + 0.5, T + 0.5); }   // flagstones of uneven colour
+        else if (v === 6) { g.fillStyle = 'rgba(215,225,240,0.04)'; g.fillRect(px, py, T + 0.5, T + 0.5); }
+        g.fillStyle = 'rgba(220,230,245,0.04)';
+        g.fillRect(px + T * 0.1, py + T * 0.12, T * 0.34, T * 0.24);
+        g.fillRect(px + T * 0.52, py + T * 0.56, T * 0.34, T * 0.24);
+        g.strokeStyle = 'rgba(0,0,0,0.38)'; g.lineWidth = 1; g.strokeRect(px + 0.5, py + 0.5, T - 1, T - 1);
+        if (T >= 16 && (hf >>> 4) % 9 === 0) { g.strokeStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.moveTo(px + T * 0.2, py + T * 0.3); g.lineTo(px + T * 0.45, py + T * 0.5); g.lineTo(px + T * 0.4, py + T * 0.8); g.stroke(); }   // a crack
         continue;
       }
       const d = fl.doors.get(key(x, y));
-      ctx.fillStyle = '#131418'; ctx.fillRect(px, py, T + 0.5, T + 0.5);
+      g.fillStyle = '#131418'; g.fillRect(px, py, T + 0.5, T + 0.5);
       if (d.breach) {   // a freshly dug tunnel: broken stone and a red glow
-        ctx.fillStyle = '#2a0f14'; ctx.fillRect(px + T * 0.06, py + T * 0.06, T * 0.88, T * 0.88);
-        ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = Math.max(1, T * 0.05); ctx.beginPath();
-        ctx.moveTo(px + T * 0.15, py + T * 0.2); ctx.lineTo(px + T * 0.45, py + T * 0.45); ctx.lineTo(px + T * 0.3, py + T * 0.8);
-        ctx.moveTo(px + T * 0.85, py + T * 0.15); ctx.lineTo(px + T * 0.55, py + T * 0.5); ctx.lineTo(px + T * 0.8, py + T * 0.85); ctx.stroke();
+        g.fillStyle = '#2a0f14'; g.fillRect(px + T * 0.06, py + T * 0.06, T * 0.88, T * 0.88);
+        g.strokeStyle = '#ff6b6b'; g.lineWidth = Math.max(1, T * 0.05); g.beginPath();
+        g.moveTo(px + T * 0.15, py + T * 0.2); g.lineTo(px + T * 0.45, py + T * 0.45); g.lineTo(px + T * 0.3, py + T * 0.8);
+        g.moveTo(px + T * 0.85, py + T * 0.15); g.lineTo(px + T * 0.55, py + T * 0.5); g.lineTo(px + T * 0.8, py + T * 0.85); g.stroke();
         continue;
       }
-      ctx.fillStyle = d.entrance ? '#5c544c' : '#3b2f28';
-      ctx.fillRect(px + T * 0.08, py + T * 0.08, T * 0.84, T * 0.84);
-      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = Math.max(1, T * 0.03); ctx.beginPath();
+      g.fillStyle = d.entrance ? '#5c544c' : '#3b2f28';
+      g.fillRect(px + T * 0.08, py + T * 0.08, T * 0.84, T * 0.84);
+      g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = Math.max(1, T * 0.03); g.beginPath();
       for (let k = 1; k < 4; k++) {
-        if (d.horiz) { ctx.moveTo(px + T * 0.08, py + T * (0.08 + 0.21 * k)); ctx.lineTo(px + T * 0.92, py + T * (0.08 + 0.21 * k)); }
-        else { ctx.moveTo(px + T * (0.08 + 0.21 * k), py + T * 0.08); ctx.lineTo(px + T * (0.08 + 0.21 * k), py + T * 0.92); }
+        if (d.horiz) { g.moveTo(px + T * 0.08, py + T * (0.08 + 0.21 * k)); g.lineTo(px + T * 0.92, py + T * (0.08 + 0.21 * k)); }
+        else { g.moveTo(px + T * (0.08 + 0.21 * k), py + T * 0.08); g.lineTo(px + T * (0.08 + 0.21 * k), py + T * 0.92); }
       }
-      ctx.stroke();
+      g.stroke();
       if (d.entrance) {
-        const g = ctx.createLinearGradient(0, py, 0, py + T * 1.6);
-        g.addColorStop(0, 'rgba(255,220,160,0.35)'); g.addColorStop(1, 'rgba(255,220,160,0)');
-        ctx.fillStyle = g; ctx.fillRect(px - T * 0.5, py, T * 2, T * 1.6);
-        ctx.fillStyle = 'rgba(255,236,200,0.95)'; ctx.beginPath();
-        ctx.moveTo(px + T * 0.28, py + T * 0.3); ctx.lineTo(px + T * 0.72, py + T * 0.3); ctx.lineTo(px + T * 0.5, py + T * 0.72); ctx.closePath(); ctx.fill();
+        const gr = g.createLinearGradient(0, py, 0, py + T * 1.6);
+        gr.addColorStop(0, 'rgba(255,220,160,0.35)'); gr.addColorStop(1, 'rgba(255,220,160,0)');
+        g.fillStyle = gr; g.fillRect(px - T * 0.5, py, T * 2, T * 1.6);
+        g.fillStyle = 'rgba(255,236,200,0.95)'; g.beginPath();
+        g.moveTo(px + T * 0.28, py + T * 0.3); g.lineTo(px + T * 0.72, py + T * 0.3); g.lineTo(px + T * 0.5, py + T * 0.72); g.closePath(); g.fill();
       }
     }
+  }
+  // 1.03: floors, walls and doors do not change during a wave, yet they were drawn tile by tile 60 times a second (about 2 000
+  // rectangles a frame in the author's 73x41 dungeon). Now they are drawn once into chunks of 8x8 tiles at the nearest zoom
+  // step and only pasted. A chunk also holds the first row and column of the next one, so no seam shows between them.
+  const TC = { CH: 8, tiles: null, dpr: 0, map: new Map(), px: 0, tick: 0, MAXPX: 7e6 };
+  const TC_B = [6, 8, 12, 16, 24, 32, 48, 64];
+  const tileBucket = T => { const d = T * DPR * 0.95; for (const b of TC_B) if (b >= d) return b; return TC_B[TC_B.length - 1]; };
+  function tileChunk(cx, cy, b) {
+    const k = cx + ',' + cy + ',' + b, e = TC.map.get(k);
+    if (e) { e.t = TC.tick; return e.c; }
+    const CH = TC.CH, n = CH + 1, c = document.createElement('canvas');
+    c.width = c.height = n * b;
+    const g = c.getContext('2d');
+    g.setTransform(DPR, 0, 0, DPR, -cx * CH * b, -cy * CH * b);   // world in css px at T = b / DPR, like the main canvas
+    drawTiles(cx * CH, cy * CH, Math.min(WW - 1, cx * CH + CH), Math.min(WH - 1, cy * CH + CH), b / DPR, g);
+    TC.map.set(k, { c, t: TC.tick, px: c.width * c.height }); TC.px += c.width * c.height;
+    if (TC.px > TC.MAXPX) {   // the least recently used chunks go first
+      [...TC.map.entries()].sort((p, q) => p[1].t - q[1].t).forEach(([kk, ee]) => { if (TC.px > TC.MAXPX * 0.75 && ee.t !== TC.tick) { TC.map.delete(kk); TC.px -= ee.px; } });
+    }
+    return c;
+  }
+  function drawTileLayer(x0, y0, x1, y1, T) {
+    if (TC.tiles !== fl.tiles || TC.dpr !== DPR) { TC.map.clear(); TC.px = 0; TC.tiles = fl.tiles; TC.dpr = DPR; }
+    TC.tick++;
+    const b = tileBucket(T), CH = TC.CH, n = CH + 1;
+    for (let cy = Math.floor(y0 / CH); cy <= Math.floor(y1 / CH); cy++) for (let cx = Math.floor(x0 / CH); cx <= Math.floor(x1 / CH); cx++)
+      ctx.drawImage(tileChunk(cx, cy, b), cx * CH * T, cy * CH * T, n * T, n * T);
+  }
+  // 1.03: soft lights are drawn once as a picture and pasted (a torch flickers by its size, a treasure pulses by its strength)
+  const GLOW = {};
+  function glowSprite(name, stops) {
+    if (GLOW[name]) return GLOW[name];
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    stops.forEach(st => gr.addColorStop(st[0], st[1])); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    return (GLOW[name] = c);
   }
   // Prototype 1.0: the same stone always looks the same (a cheap hash of the tile)
   function tileHash(x, y) { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return (h ^ (h >>> 16)) >>> 0; }
@@ -113,9 +172,8 @@
       if (fl.tiles[y * WW + x] !== WALL || tileAt(x, y + 1) !== FLOOR || fl.items.has(key(x, y))) continue;
       const h = tileHash(x + 101, y + 37); if (h % 5 !== 0) continue;
       const cx = (x + 0.5) * T, cy = (y + 0.42) * T, f = 0.86 + 0.14 * Math.sin(realNow * 8.3 + x * 1.7) * Math.sin(realNow * 5.1 + y * 2.3);
-      const g = ctx.createRadialGradient(cx, cy + T * 0.5, 0, cx, cy + T * 0.5, T * 2.3 * f);
-      g.addColorStop(0, 'rgba(255,150,70,0.17)'); g.addColorStop(0.5, 'rgba(255,120,50,0.05)'); g.addColorStop(1, 'rgba(255,120,40,0)');
-      ctx.fillStyle = g; ctx.fillRect(cx - T * 2.4, cy - T * 1.9, T * 4.8, T * 4.8);
+      const gr = T * 2.3 * f;
+      ctx.drawImage(glowSprite('torch', [[0, 'rgba(255,150,70,0.17)'], [0.5, 'rgba(255,120,50,0.05)'], [1, 'rgba(255,120,40,0)']]), cx - gr, cy + T * 0.5 - gr, gr * 2, gr * 2);
       ctx.fillStyle = '#0c0d0f'; ctx.fillRect(cx - T * 0.05, cy + T * 0.02, T * 0.1, T * 0.3);
       ctx.fillStyle = '#3c4048'; ctx.fillRect(cx - T * 0.11, cy - T * 0.02, T * 0.22, T * 0.08);
       ctx.fillStyle = 'rgba(255,110,30,0.92)'; ctx.beginPath(); ctx.ellipse(cx, cy - T * 0.13, T * 0.09, T * 0.15 * f, 0, 0, Math.PI * 2); ctx.fill();
@@ -133,12 +191,12 @@
       ctx.fillRect(x * T, y * T, T, T);
     }
   }
-  function drawAreas(T) {
+  function drawAreas(T, x0, y0, x1, y1) {
     fl.items.forEach(it => {
       if (!ACTIVE[it.type]) return;
       const a = it.preview > 0 ? 0.26 : 0.08;
       ctx.fillStyle = 'rgba(225,220,205,' + a + ')';   // Prototype 1.0: what a trap reaches, pale bone (red is Esencja's)
-      areaOf(it).forEach(t => ctx.fillRect(t[0] * T + 1, t[1] * T + 1, T - 2, T - 2));
+      areaOf(it).forEach(t => { if (t[0] >= x0 && t[0] <= x1 && t[1] >= y0 && t[1] <= y1) ctx.fillRect(t[0] * T + 1, t[1] * T + 1, T - 2, T - 2); });
     });
   }
   function drawObject(o, T) {
@@ -462,10 +520,10 @@
     const kind = LOOT_KIND[it.type], lr = ITEMS[it.type].rarity;
     if (lr >= 2) {
       const pulse = 0.5 + 0.5 * Math.sin(realNow * (lr === 3 ? 5 : 3) + it.x);
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, s * (lr === 3 ? 0.9 : 0.6));
-      g.addColorStop(0, lr === 3 ? 'rgba(255,140,60,' + (0.45 + 0.3 * pulse).toFixed(2) + ')' : 'rgba(110,180,255,' + (0.35 + 0.25 * pulse).toFixed(2) + ')');
-      g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g; ctx.fillRect(cx - s, cy - s, s * 2, s * 2);
+      const R = s * (lr === 3 ? 0.9 : 0.6);
+      ctx.globalAlpha = lr === 3 ? 0.45 + 0.3 * pulse : 0.35 + 0.25 * pulse;
+      ctx.drawImage(lr === 3 ? glowSprite('relic', [[0, 'rgba(255,140,60,1)'], [1, 'rgba(0,0,0,0)']]) : glowSprite('gear', [[0, 'rgba(110,180,255,1)'], [1, 'rgba(0,0,0,0)']]), cx - R, cy - R, R * 2, R * 2);
+      ctx.globalAlpha = 1;
     }
     if (kind === 'gold') {
       const big = (it.gold || 1) > 1;
@@ -592,11 +650,15 @@
     });
   }
   // What the heroes have not seen yet is dimmed: you see everything, they do not.
-  function drawFog(x0, y0, x1, y1, T) {
+  function drawFog(x0, y0, x1, y1, T) {   // 1.03: one rectangle per run of unknown tiles in a row, not one per tile
     ctx.fillStyle = 'rgba(5,6,8,0.52)';
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-      const i = y * WW + x, t = fl.tiles[i];
-      if ((t === FLOOR || t === DOOR) && !fl.known[i]) ctx.fillRect(x * T, y * T, T + 0.5, T + 0.5);
+    for (let y = y0; y <= y1; y++) {
+      let run0 = -1;
+      for (let x = x0; x <= x1 + 1; x++) {
+        const i = y * WW + x, t = x <= x1 ? fl.tiles[i] : -1, fog = (t === FLOOR || t === DOOR) && !fl.known[i];
+        if (fog && run0 < 0) run0 = x;
+        else if (!fog && run0 >= 0) { ctx.fillRect(run0 * T, y * T, (x - run0) * T + 0.5, T + 0.5); run0 = -1; }
+      }
     }
   }
   // Every room holds only so many traps and monsters (corridors 1, rooms 2-3 by size, +1 per expansion): to build more, dig or expand.
@@ -958,12 +1020,12 @@
     if (!c || fl.phase !== 'raid') return;
     const it = c.it, all = [it].concat(c.extra || []);
     if (!c.result) { ctx.fillStyle = 'rgba(4,5,7,0.36)'; ctx.fillRect(0, 0, cw, ch); }
-    all.forEach((o, k) => {   // the main trap gets a bone ring, the rest of the volley a dashed brass one
+    withViews(splitViews(), T => all.forEach((o, k) => {   // the main trap gets a bone ring, the rest of the volley a dashed brass one
       const ox = clamp((o.x + 0.5) * T - cam.ox, 10, cw - 10), oy = clamp((o.y + 0.5) * T - cam.oy, 10, ch - 10), R = Math.max(12, T * (k ? 0.6 : 0.75));
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.arc(ox, oy, R, 0, Math.PI * 2); ctx.stroke();
       ctx.strokeStyle = k ? 'rgba(196,160,82,0.9)' : 'rgba(230,225,214,0.95)'; ctx.lineWidth = 1.6; if (k) ctx.setLineDash([5, 4]);
       ctx.beginPath(); ctx.arc(ox, oy, R, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-    });
+    }));
     // the check sits at the bottom of the map (above the tutorial panel if it is open), so it never covers the party or their lines
     const legend = run.checkHints >= 0 && fl.stats.checks <= 3, coach = $('#coach');
     const bottom = coach && !coach.hidden ? ch - coach.offsetHeight - 14 : ch - 10;

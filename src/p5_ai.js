@@ -62,7 +62,7 @@
   // Worth it? What the loot is worth to THIS hero (gold to the greedy, a potion to the wounded, gear he can use)
   // against the danger they know about on the way and around it.
   function lootDecision(h, it, b, idx) {
-    if (mods.noPickup || it.cursedKnown) return false;   // Odwrotna chciwość: they look, they want, they never take
+    if (it.cursedKnown) return false;
     const k = key(it.x, it.y), memo = h.lootMemo.get(k);
     if (memo && fl.time - memo.t < 8) return memo.go;
     const r = lootLevel(it), kind = LOOT_KIND[it.type], hurt = h.hp < 0.4 * h.max;
@@ -825,7 +825,7 @@
     }
     if (isExitTile(h.x, h.y) && exiting(h)) { heroExit(h); return; }
     const it = fl.items.get(key(h.x, h.y));
-    if (it && isLoot(it.type) && !h.crystal && !h.fleeing && !mods.noPickup) pickup(h, it);
+    if (it && isLoot(it.type) && !h.crystal && !h.fleeing) pickup(h, it);
     if (P.plan === 'retreat' && !h.lost && r === P.retreatRoom && !panicking(h) && !exiting(h)) { h.state = 'rest'; h.path = []; return; }
     if (P.plan === 'assault' && !exiting(h) && Math.abs(h.x - fl.heart.x) + Math.abs(h.y - fl.heart.y) === 1 && !panicking(h)) { h.state = 'boss'; h.path = []; return; }
     // veterans time their run through a known trap while it reloads

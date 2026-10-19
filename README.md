@@ -1,4 +1,4 @@
-# You are the dungeon: Prototype 1.02 (test)
+# You are the dungeon: Prototype 1.03 (test)
 
 Prototyp gry mobilnej (roguelite: jesteś lochem). Ta strona służy do testów ze znajomymi. Link nie jest reklamowany, a strona prosi wyszukiwarki o pominięcie.
 
@@ -33,4 +33,4 @@ Po każdej fali gra wysyła przebieg do skryptu z `apps-script/Code.gs`, a ten z
 - `waves_<run>_<nr>.json`: jedna fala (bohaterowie, układ lochu, oś czasu),
 - `survey_<telefon>_<run>.json`: ankieta po pierwszym ukończonym runie (raz na telefon).
 
-Pole `version` rozdziela dane z różnych wersji gry: 43 = Prototype 1.0, 44 = Prototype 1.01, 45 = Prototype 1.02. Pliki z testu instalacji (19.10) do pominięcia: `ping.json`, `test_post_check.json` oraz run `mvey7v7bgnbt` (gracz "TEST Claude").
+Pole `version` rozdziela dane z różnych wersji gry: 43 = Prototype 1.0, 44 = Prototype 1.01, 45 = Prototype 1.02, 46 = Prototype 1.03. Pliki z testu instalacji (19.10) do pominięcia: `ping.json`, `test_post_check.json` oraz run `mvey7v7bgnbt` (gracz "TEST Claude").

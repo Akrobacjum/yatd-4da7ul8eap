@@ -5,7 +5,11 @@
   // Small preferences of this browser: which panels are open, and the speed button.
   const UI = (() => { const d = { hintOpen: false, trayBuild: true, listOpen: false, speed: 1 }; try { return Object.assign(d, JSON.parse(localStorage.getItem('yatd12-ui') || '{}')); } catch (e) { return d; } })();
   function saveUI() { try { localStorage.setItem('yatd12-ui', JSON.stringify(UI)); } catch (e) {} }
-  const costOf = t => MODES[t] ? 0 : TOOLS[t] ? toolCost(t) : BUILDINGS[t] ? Math.ceil(ITEMS[t].cost * mods.buildingCost) : ITEMS[t].cost;
+  // 1.03: every further loot of the same kind already lying in the dungeon makes the next one 25% dearer (author's run: 223
+  // Relikwie at 10 each). Loot the heroes dropped does not count; what you paid comes back when you take it off.
+  const LOOT_STEP = 1.25;
+  const lootCount = t => { let n = 0; if (fl) fl.items.forEach(it => { if (it.type === t && !it.dropped) n++; }); return n; };
+  const costOf = t => MODES[t] ? 0 : TOOLS[t] ? toolCost(t) : BUILDINGS[t] ? Math.ceil(ITEMS[t].cost * mods.buildingCost) : LOOT_KIND[t] ? Math.ceil(ITEMS[t].cost * Math.pow(LOOT_STEP, lootCount(t)) - 1e-9) : ITEMS[t].cost;
   const upgCost = it => Math.ceil(ITEMS[it.type].cost * UPG_COST[(it.lvl || 1) + 1]);
   // v14.1: the tray is one row scrolled sideways; each tab remembers where it was scrolled to
   const trayScroll = {}; let trayTab = null;
@@ -89,6 +93,7 @@
     const h = el('div', 'th'); h.appendChild(el('b', null, I.name)); if (!MODES[t]) h.appendChild(el('span', null, costOf(t) + ' Esencji')); box.appendChild(h);
     if (I.tag) box.appendChild(el('div', 'tg', I.tag));
     box.appendChild(el('p', null, I.desc));
+    if (LOOT_KIND[t]) { const n = lootCount(t); box.appendChild(el('div', 'tg', 'Każdy kolejny taki łup w lochu: +25% ceny' + (n ? ' (leży już: ' + n + ', bazowo ' + I.cost + ')' : '') + '.')); }
     if (run && !MODES[t] && !run.unlocked.has(t)) box.appendChild(el('div', 'tw', 'Zablokowany: odblokujesz go kartą ze sklepu.'));
     box.hidden = false; box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
     box.style.bottom = Math.round(innerHeight - $('#drawer').getBoundingClientRect().top + 6) + 'px';
@@ -441,7 +446,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.02 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.03 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -466,6 +471,7 @@
      'Stuknięcie postawionego elementu albo mebla podnosi go (stuknij nowe miejsce, żeby przenieść), dwa szybkie stuknięcia ulepszają pułapkę albo potwora, przytrzymanie zdejmuje i oddaje Esencję. Przytrzymanie kafelka w pasku pokazuje, co robi. Działa też na pułapki, z którymi loch startuje (meble lochu nic nie oddają).',
      'W fali stukasz w mapę przy skill checku: zielone to draśnięcie, czerwone to krytyk, czaszka znaczy, że ktoś zginie. Każda pułapka ma swój kształt checku, a im silniejszy bohater, tym szybszy koralik.',
      'Przytrzymaj palec na mapie: gra przyspiesza, checków nie ma, a pułapki biją same jak draśnięcie. Puścisz palec i checki wracają.',
+     'Gdy drużyna rozejdzie się po dużym lochu za daleko, ekran dzieli się na dwie części, po jednej dla każdej grupy (wyłączysz to w Ustawieniach). Przeciągnięcie mapy w fali daje na chwilę jeden ekran i wolną kamerę.',
      'Strach wypędza bohaterów; rany i śmierć towarzyszy też straszą, a strach powoli opada. Niosący kryształ rzuca go ze strachu. Uciekinier opowie innym o Twoich pułapkach i może wrócić z blizną. Uwięzionego w klatce, którego nikt nie uwolni, klatka zabija.',
      'Część pułapek nie rani, tylko straszy: portret, oczy, kości, lustro, zawiasy, trumna, pozytywka (w zakładce Pułapki, za raniącymi), a w zakładce Potwory duch, cień i nietoperze. Przestraszony uciekinier, który widział łup, opowie o nim i następna fala przyjdzie bardziej chciwa.',
      'Rany mają typ: kłute, obuchowe, ogień i trucizna. Klasa i ciało bohatera zmieniają obrażenia, a fobie podwajają strach. Stuknij bohatera (w fali albo na liście u góry), żeby zobaczyć jego kartę.',
@@ -474,9 +480,14 @@
      'Za każdą przetrwaną falę (nawet z utratą kryształu) dostajesz darmową kartę, po bossie legendarną w ofercie. Wybierasz ją w sklepie po fali; tam też kupisz karty za Esencję, odświeżysz ofertę, sprzedasz kartę, odłożysz ją do schowka albo odkupisz kryształ.',
      'Gildia czyta raporty z fal i przysyła odpowiedź: kontruj ją budowlami. Od fali 6 może przebić wyłom.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.02'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.03'));
     const ul2 = el('ul', 'conseq');
-    ['1.02: na pełnym ekranie telefonu góra nie jest już ucięta (aparat w ekranie, zaokrąglone rogi): gra zostawia u góry odstęp. Gdyby wciąż coś było ucięte, w Ustawieniach jest suwak "Odstęp od góry ekranu".',
+    ['1.03: dzielony ekran: gdy drużyna rozejdzie się po dużym lochu tak daleko, że nie mieści się już na ekranie, linia przez środek (pozioma, pionowa albo ukośna, prostopadła do kierunku między grupami) dzieli go na dwie części, a każda pokazuje swoją grupę. Gdy grupy się zejdą, połówki znów się łączą. Wyłączysz to w Ustawieniach.',
+     '1.03: Chciwość ma koszt bez sufitu: z chciwego lochu przychodzą coraz silniejsi bohaterowie (wcześniej najwyżej +3 poziomy przywódcy i 2 łowców skarbów). Rośnie to powoli: przy chciwości 8 przywódca ma ok. +4,2 poziomu, przy 23 ok. +6,1, od chciwości 9 przychodzi trzeci łowca.',
+     '1.03: każdy kolejny łup tego samego rodzaju w lochu kosztuje o 25% więcej (Relikwie: 10, 13, 16, 20, 25...). Zdjęty oddaje tyle, ile za niego zapłaciłeś.',
+     '1.03: Odwrotna chciwość po nowemu: bohaterowie zabierają łup jak zwykle, a zabrany łup podbija chciwość 3 razy mocniej. Każdy kolejny zabrany łup podbija ją trochę słabiej, tak jak zobaczony.',
+     '1.03: mniej grzania telefonu: podłogi i ściany rysują się raz i potem są tylko wklejane, poświaty to gotowe obrazki, nie rysuje się tego, czego nie widać, ekran ma najwyżej podwójną gęstość, a w budowie bez dotykania gra rysuje co drugą klatkę.',
+     '1.02: na pełnym ekranie telefonu góra nie jest już ucięta (aparat w ekranie, zaokrąglone rogi): gra zostawia u góry odstęp. Gdyby wciąż coś było ucięte, w Ustawieniach jest suwak "Odstęp od góry ekranu".',
      '1.02: skill checki w stylu reszty gry i wszystkie w jednej oprawie: ta sama kamienna płyta z gotyckim tytułem, ten sam tor z żelazną krawędzią, zielona strefa jak mech, krwista strefa krytyku, która się żarzy, czaszka na strefie, która zabija, i jeden kościany koralik. Różnią się tylko kształtem toru: prosty pasek, falisty lont, zwisający łuk, okrąg, spirala, zamykający się pierścień.',
      '1.02: ekran rozliczenia po fali czeka na przycisk Dalej (stuknięcie w ekran tylko przyspiesza liczenie).',
      '1.02: w trakcie combo fioletowe kule Grozy lecą od bohatera do okienka Groza i liczba rośnie, gdy dolatują. Gdy combo się zamyka, wynik równania osobno zamienia się w Esencję: czerwone kule wylatują z okienka wyniku do serca i do sakiewki.',
@@ -740,7 +751,7 @@
       frow(list, m.out ? 'Plotki: uciekinierzy opowiedzą o ' + m.rr + ' pokojach i ' + m.rt + ' pułapkach. Przestaw je albo postaw Zasłonę.' : 'Nikt nie wyszedł żywy: Twoje sekrety są bezpieczne.');
       if (s.treasureTale) frow(list, 'Opowieści o skarbach: chciwość na start następnej fali +' + fmt2(s.treasureTale) + '.', 'ess');
       if (s.greedKept) frow(list, 'Zabrany łup: chciwość +' + fmt2(s.greedKept) + ' do końca runu (razem +' + fmt2(run.greedKeep) + ').', 'ess');
-      frow(list, 'Gildia słyszy o chciwości ×' + fmt2(run.greedRep || 1) + ': przywódca +' + f1(huntersLv()) + ' poziomu' + ((run.greedRep || 1) >= 3 ? ', przyjdą łowcy skarbów' : '') + '.');
+      frow(list, 'Gildia słyszy o chciwości ×' + fmt2(run.greedRep || 1) + ': przywódca +' + f1(huntersLv()) + ' poziomu' + (huntersN(run.greedRep || 1) ? ', przyjdą łowcy skarbów (' + huntersN(run.greedRep || 1) + ')' : '') + '.');
       if (s.breach || s.breachOpen) frow(list, s.breach ? 'Ta fala weszła przez wyłom. Załatasz go stuknięciem w budowie.' : 'Wyłom wciąż otwarty (stuknij go w budowie, żeby załatać).', 'wave');
       if (s.preps) frow(list, 'Drużyna szykowała się ' + s.preps + '× przed groźnym pokojem. Kontry: Runa, Ołtarz, Wabik.');
       if (s.runeBlocks || s.altarBlocks || s.alarms) frow(list, 'Budowle zadziałały: ' + [s.runeBlocks ? 'runa ' + s.runeBlocks + '×' : '', s.altarBlocks ? 'ołtarz ' + s.altarBlocks + '×' : '', s.alarms ? 'wabik ' + s.alarms + '×' : ''].filter(Boolean).join(', ') + '.');
@@ -1459,7 +1470,7 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 45;   // 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
+  const LOG_VERSION = 46;   // 46: Prototype 1.03: greed risk without a ceiling (leader levels, hunters), loot dearer per copy, Odwrotna chciwość reworked (taken loot x3), split screen; 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
   function snapshotLayout() {
     const L = run.layout;
     return { WW, WH, entrance: L.entrance, heart: L.heartKey, entX: L.entX, essence: Math.round(fl.essence), breach: L.breach ? Object.assign({}, L.breach) : null, greedKeep: Math.round(run.greedKeep * 100) / 100,
@@ -1960,7 +1971,7 @@
   requestAnimationFrame(frame);
 
   // Hook for automated checks; no effect on normal play.
-  window.__yatd = { quietWhy, QUIET, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  window.__yatd = { quietWhy, QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

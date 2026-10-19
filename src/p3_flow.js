@@ -14,7 +14,12 @@
   // the goal, so you want the heroes to stay in the dungeon, not to throw them out at once.
   const hungerNeed = n => (run && run.tutorial) || n < 2 || !(S.hungerBase > 0) ? 0 :
     Math.max(1, Math.round(S.hungerBase * Math.pow(S.hungerGrowth, n - 2) * ((mods && mods.hungerK) || 1) - (run.stacks.granary || 0) * ((mods && mods.granary) || 0)));   // Spichlerz dusz: every kill feeds it for good
-  const huntersLv = () => Math.min(3, S.greedW * Math.max(0, (run.greedRep || 1) - 1));   // extra levels of the leader from greed (at most 3)
+  // extra levels of the leader from greed. Up to 1.02 at most 3, so greed 23 was as safe as greed 4 (the author's run: 42 798
+  // Esencja). 1.03: no ceiling, but past 4 it creeps up slowly (6: +3,7, 8: +4,2, 12: +5,0, 23: +6,1).
+  const greedLv = g => g <= 4 ? Math.max(0, g - 1) : 3 + 1.8 * Math.log(g / 4);
+  const huntersLv = () => S.greedW * greedLv(run.greedRep || 1);
+  // treasure hunters replacing ordinary heroes: 1 from greed 3, 2 from 4,5, then one more each time greed doubles (9, 18...)
+  const huntersN = g => g < 3 ? 0 : g < 4.5 ? 1 : 2 + Math.max(0, Math.floor(Math.log2(g / 4.5)));
   // g = the Groza of one event. Prototype 1.01, the combo like Balatro: Groza piles up while the combo lasts (the CHAIN) and is
   // cashed in when it ends: chain Groza x Chciwość x the chain's final Combo (Żyła esencji on top). A chain with no trap behind
   // it (a lost hero, a ghost's aura) closes after 1,2 s of quiet. fl.base = Groza of the wave, fl.score = Esencja the wave
@@ -151,7 +156,7 @@
       fearMult: 1, scareMult: 1, rumorKeep: 1, falseTrails: false, crystalPts: 0, carrierSlow: 1, carrierFear: 0, income: 0, digDiscount: 0,
       greedStart: 0, fallTime: 5, fallDmg: 1, cageTime: 1, cageFear: 1, spiderNest: false, ghostAura: 1, ghostPriestOnly: false, portraitR: 4, portraitFear: 1,
       wallCd: 1, suicideMech: 0, usurer: 0, mole: 0, fearHarvest: 0, labyrinth: 0, collector: 0, miser: 0, panic: 0, hauntedGallery: 0, stickySpikes: 0,
-      wildfire: 0, bloodRite: 0, calmStorm: 0, echoFire: 0, glass: 0, noPickup: false, critPw: 1.8, okPw: 0.7, choir: 0, bottomless: false,
+      wildfire: 0, bloodRite: 0, calmStorm: 0, echoFire: 0, glass: 0, pickGreed: 1, critPw: 1.8, okPw: 0.7, choir: 0, bottomless: false,
       hunger: 0, chronicle: 0, granary: 0, bank: 0, tempered: 0, pactPower: 1, pactLevels: 0, overload: 0, expandCost: 1, buildingCost: 1, firepit: 0, cageHaunt: 0, monsterFear: 0,
       // v14
       dmgType: { pierce: 1, blunt: 1, fire: 1, poison: 1 }, weakK: 0, revealAll: false, arsenal: 0, phobiaK: 0, oddBodies: 0, traumaK: 0, badMemories: 0, moreReturn: 0, returnGreed: 0,
@@ -436,7 +441,7 @@
   function makeWave(n) {
     const size = partySize(n);
     // v12.1: treasure hunters TAKE THE PLACE of ordinary heroes (greed brings stronger and greedier people, not more of them)
-    const hunters = n >= 3 ? Math.min(size - 2, (run.greedRep || 1) >= 4.5 ? 2 : (run.greedRep || 1) >= 3 ? 1 : 0) : 0;
+    const hunters = n >= 3 ? Math.min(size - 2, huntersN(run.greedRep || 1)) : 0;
     const recruit = n >= 4 && size > partySize(n - 1) && !bossOf(n);   // the newest member is a rookie for one wave: the step in numbers is softer (not in boss waves)
     const classes = shuffle(PARTY.slice()); while (classes.length < size) classes.push(pick(PARTY));
     const g = run.guild = guildAdapt(n);
@@ -1163,7 +1168,7 @@
     it.seenWave = run.wave;
     if (it.noGreed) return;   // their own old gear, just put down
     const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1;
-    const g = LOOT_GREED[kind][0] * mods.greedMult * (mods.noPickup ? 2.5 : 1) * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
+    const g = LOOT_GREED[kind][0] * mods.greedMult * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
     setGreed(fl.greed + g); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
     floatTile(it.x, it.y, 'Chciwość ×' + fmt2(fl.greed), '#f2b94b', 14, -0.6, 'greed');
     if (by) say(by, kind === 'potion' ? pick(['Mikstura!', 'Tam leży mikstura.', 'Lekarstwo!']) : pick(SAY['loot' + Math.min(3, r)]), r >= 2 ? 3 : 2);
@@ -1181,14 +1186,17 @@
     fl.items.delete(key(it.x, it.y));
     h.loot++;
     const kg = LOOT_GREED[kind];
-    setGreed(fl.greed + kg[1] * mods.greedMult); tl('lp', h.id, r, kind);
-    if (!it.dropped) { const keep = 0.5 * kg[0] * mods.greedMult; run.greedKeep += keep; fl.stats.greedKept = (fl.stats.greedKept || 0) + keep; }   // half of its pull stays for good
+    // 1.03: taking it pulls less each time, like seeing it (Odwrotna chciwość x3 on top), and the greed that stays for good
+    // grows ever slower: in replays of the author's 223-relic run both kept climbing without end
+    setGreed(fl.greed + kg[1] * mods.greedMult * mods.pickGreed / (1 + 0.15 * fl.stats.loot)); tl('lp', h.id, r, kind);
+    if (!it.dropped) { const keep = 0.5 * kg[0] * mods.greedMult / (1 + 0.5 * run.greedKeep); run.greedKeep += keep; fl.stats.greedKept = (fl.stats.greedKept || 0) + keep; }   // part of its pull stays for good
     const pts = addPts(GZ.loot * r * depthMult(roomOf(it.x, it.y)), 'lootPts', h); fl.stats.loot++;
     floatTile(it.x, it.y, '+' + fmtE(pts) + ' łup', '#ff7a86', 16);
     if (kind === 'gold') { const n = Math.max(1, it.gold || 1); h.gold += n; fl.stats.goldPicked += n; say(h, pick(h.gold >= 3 ? SAY.goldHeavy : SAY.gold), 2); }
     if (kind === 'cursed') curse(h, item);
     if (mods.lootTrap > 0) damage(h, mods.lootTrap * r, LOOTTRAP);
     if (kind === 'relic' && !it.dropped) gainEssence(null, 4, 'essDrop');
+    updateTray();   // 1.03: the price of that loot drops again
     replanAll();
     return true;
   }

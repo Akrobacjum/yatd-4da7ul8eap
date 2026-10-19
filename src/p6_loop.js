@@ -29,10 +29,10 @@
     h.gOrb = (h.gOrb || 0) + g;
     const n = Math.min(5, Math.floor(h.gOrb / 0.08)); if (!n) return;
     const v = h.gOrb / n; h.gOrb = 0;
-    const T = cam.s, p = heroPos(h), C = fl.chain;
+    const p = heroScreen(h), C = fl.chain;
     for (let i = 0; i < n; i++) {
       if (orbs.length >= ORB_MAX) { break; }
-      orbs.push({ x: p.x * T - cam.ox + (Math.random() - 0.5) * 12, y: p.y * T - cam.oy + (Math.random() - 0.5) * 12, t: -i * 0.06, dur: 0.45 + Math.random() * 0.2, to: 'groza', v, c: C });
+      orbs.push({ x: p.x + (Math.random() - 0.5) * 12, y: p.y + (Math.random() - 0.5) * 12, t: -i * 0.06, dur: 0.45 + Math.random() * 0.2, to: 'groza', v, c: C });
       if (C) C.fly = (C.fly || 0) + v;   // counted per chain, so orbs still flying from a cashed-in chain never dent the next one
     }
   }
@@ -366,7 +366,8 @@
     }
     return null;
   }
-  let lastT = performance.now();
+  let lastT = performance.now(), lastInputAt = 0, frameNo = 0;
+  ['pointerdown', 'pointermove', 'wheel', 'keydown'].forEach(ev => window.addEventListener(ev, () => { lastInputAt = realNow; }, { capture: true, passive: true }));
   function frame(now) {
     const rdt = Math.min(0.05, (now - lastT) / 1000); lastT = now; realNow += rdt;
     if (run && fl) {
@@ -403,7 +404,9 @@
     });
     particles = particles.filter(p => p.life > 0);
     if (shake > 0) shake = Math.max(0, shake - rdt);
-    draw();
+    // 1.03: building with nothing touched for 2 s: every other frame is enough (torches and treasure still move)
+    const idle = fl && fl.phase === 'build' && realNow - lastInputAt > 2 && !movingKey && !holdInfo;
+    if (!idle || (frameNo++ & 1)) draw();
     requestAnimationFrame(frame);
   }
 
@@ -423,9 +426,11 @@
     cam.s = clamp(ns, fitScale() * 0.95, MAX_S);
     cam.ox = wx * cam.s - sx; cam.oy = wy * cam.s - sy; clampCam(); updateZoomBtn();
   }
-  const toWorld = (sx, sy) => ({ x: (sx + cam.ox) / cam.s, y: (sy + cam.oy) / cam.s });
+  const toWorld = (sx, sy) => { const V = splitViews(), c = V ? V[splitSide(sx, sy)] : cam; return { x: (sx + c.ox) / c.s, y: (sy + c.oy) / c.s }; };
   function autoCam(rdt) {
-    if (!fl || fl.phase !== 'raid' || paused || realNow < cam.manualUntil) return;
+    if (!fl || fl.phase !== 'raid') { SPLIT.k = 0; SPLIT.want = false; SPLIT.c = null; return; }
+    if (paused) return;
+    if (realNow < cam.manualUntil) { SPLIT.want = false; SPLIT.k = Math.max(0, SPLIT.k - rdt * 3); return; }   // a drag takes the camera: one screen
     const pts = alive().map(heroPos);
     if (fl.check && fl.check.it) pts.push({ x: fl.check.it.x + 0.5, y: fl.check.it.y + 0.5 });
     if (!pts.length) { pts.push({ x: fl.ent.x + 0.5, y: fl.ent.y + 0.5 }); }
@@ -443,9 +448,110 @@
     const mw = WW * cam.s, mh = WH * cam.s, pad = cam.s * 0.6;
     if (mw > cw) cam.ox = clamp(cam.ox, -pad, mw - cw + pad);
     if (mh > ch) cam.oy = clamp(cam.oy, -pad, mh - ch + pad);
+    splitCam(rdt, Math.min(cw / bw, ch / bh));
+  }
+  // 1.03 (author's idea, like the LEGO games): when the party is in two places too far apart to fit on one screen at a
+  // readable size (16 px a tile), a line through the middle of the screen, square to the line between the two groups, splits
+  // it. Each half follows its group, one zoom fits both groups, and the halves slide back into one when the groups meet.
+  const SPLIT = { k: 0, want: false, ang: 0, c: null, gid: new Map(), polys: null, tg: [null, null], cams: [null, null] };
+  const SPLIT_T = 16;
+  const splitSide = (sx, sy) => ((sx - cw / 2) * Math.cos(SPLIT.ang) + (sy - ch / 2) * Math.sin(SPLIT.ang)) > 0 ? 1 : 0;
+  function splitPolys(ang) {   // the screen cut in two: [the side away from the direction, the side towards it]
+    const n = [Math.cos(ang), Math.sin(ang)], c = [cw / 2, ch / 2], R = [[0, 0], [cw, 0], [cw, ch], [0, ch]];
+    const cut = sg => {
+      const out = [];
+      for (let i = 0; i < 4; i++) {
+        const p = R[i], q = R[(i + 1) % 4], dp = sg * ((p[0] - c[0]) * n[0] + (p[1] - c[1]) * n[1]), dq = sg * ((q[0] - c[0]) * n[0] + (q[1] - c[1]) * n[1]);
+        if (dp <= 0) out.push(p);
+        if ((dp < 0 && dq > 0) || (dp > 0 && dq < 0)) { const t = dp / (dp - dq); out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]); }
+      }
+      return out;
+    };
+    return [cut(1), cut(-1)];
+  }
+  function polyCentroid(P) {
+    let a = 0, x = 0, y = 0;
+    for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length], f = p[0] * q[1] - q[0] * p[1]; a += f; x += (p[0] + q[0]) * f; y += (p[1] + q[1]) * f; }
+    return Math.abs(a) < 1e-6 ? [cw / 2, ch / 2] : [x / (3 * a), y / (3 * a)];
+  }
+  function rayOut(P, o, d) {   // how far from o along d until the polygon's edge
+    let best = 1e9;
+    for (let i = 0; i < P.length; i++) {
+      const p = P[i], q = P[(i + 1) % P.length], ex = q[0] - p[0], ey = q[1] - p[1], den = d[0] * ey - d[1] * ex;
+      if (Math.abs(den) < 1e-9) continue;
+      const t = ((p[0] - o[0]) * ey - (p[1] - o[1]) * ex) / den, u = ((p[0] - o[0]) * d[1] - (p[1] - o[1]) * d[0]) / den;
+      if (t > 0 && u >= 0 && u <= 1) best = Math.min(best, t);
+    }
+    return best;
+  }
+  function splitCam(rdt, sMerge) {
+    const crew = alive().filter(h => !h.gone);
+    let want = S.split !== 0 && crew.length >= 2 && fitScale() < SPLIT_T && sMerge < SPLIT_T * (SPLIT.want ? 1.12 : 1);
+    if (crew.length >= 2 && (want || SPLIT.k > 0)) {
+      const P = crew.map(h => { const p = heroPos(h); return { x: p.x, y: p.y, id: h.id }; });
+      const mean = g => ({ x: g.reduce((s, p) => s + p.x, 0) / g.length, y: g.reduce((s, p) => s + p.y, 0) / g.length });
+      const group = (a, b) => {   // two groups by k-means, a few rounds
+        let ga = [], gb = [];
+        for (let r = 0; r < 4; r++) {
+          ga = []; gb = [];
+          P.forEach(p => ((p.x - a.x) ** 2 + (p.y - a.y) ** 2 <= (p.x - b.x) ** 2 + (p.y - b.y) ** 2 ? ga : gb).push(p));
+          if (!ga.length || !gb.length) break;
+          a = mean(ga); b = mean(gb);
+        }
+        return [ga, gb];
+      };
+      let G = SPLIT.c ? group(SPLIT.c[0], SPLIT.c[1]) : null;
+      if (!G || !G[0].length || !G[1].length) {   // the two heroes farthest apart start it
+        let best = -1, a = P[0], b = P[1];
+        P.forEach(p => P.forEach(q => { const d = (p.x - q.x) ** 2 + (p.y - q.y) ** 2; if (d > best) { best = d; a = p; b = q; } }));
+        G = group({ x: a.x, y: a.y }, { x: b.x, y: b.y });
+      }
+      if (G[0].length && G[1].length) {
+        const ca = mean(G[0]), cb = mean(G[1]);
+        SPLIT.c = [ca, cb]; SPLIT.gid = new Map(); G[0].forEach(p => SPLIT.gid.set(p.id, 0)); G[1].forEach(p => SPLIT.gid.set(p.id, 1));
+        const box = G.map(g => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; g.forEach(p => { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }); return [x0, y0, x1, y1]; });
+        if (fl.check && fl.check.it) {   // the trap of a running check belongs on the screen of the group it is closest to
+          const t = { x: fl.check.it.x + 0.5, y: fl.check.it.y + 0.5 }, i = (t.x - ca.x) ** 2 + (t.y - ca.y) ** 2 <= (t.x - cb.x) ** 2 + (t.y - cb.y) ** 2 ? 0 : 1, B = box[i];
+          box[i] = [Math.min(B[0], t.x), Math.min(B[1], t.y), Math.max(B[2], t.x), Math.max(B[3], t.y)];
+        }
+        const ta = Math.atan2(cb.y - ca.y, cb.x - ca.x);
+        if (SPLIT.k <= 0) SPLIT.ang = ta;
+        else { let d = ta - SPLIT.ang; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; SPLIT.ang += clamp(d, -2.4 * rdt, 2.4 * rdt); }
+        SPLIT.polys = splitPolys(SPLIT.ang);
+        const m = 2.2, fit = [0, 1].map(i => {
+          const B = box[i], P2 = SPLIT.polys[i], o = polyCentroid(P2);
+          const ex = Math.min(rayOut(P2, o, [1, 0]), rayOut(P2, o, [-1, 0])), ey = Math.min(rayOut(P2, o, [0, 1]), rayOut(P2, o, [0, -1]));
+          return { o, cx: (B[0] + B[2]) / 2, cy: (B[1] + B[3]) / 2, s: 0.9 * Math.min(ex / ((B[2] - B[0]) / 2 + m), ey / ((B[3] - B[1]) / 2 + m)) };
+        });
+        const s = clamp(Math.min(fit[0].s, fit[1].s), fitScale(), 34), kk = 1 - Math.exp(-rdt * 3);
+        fit.forEach((f, i) => {
+          const tg = { s, wx: f.cx, wy: f.cy, ax: f.o[0], ay: f.o[1] };
+          const cur = SPLIT.k <= 0 || !SPLIT.cams[i] ? { s: cam.s, wx: (f.o[0] + cam.ox) / cam.s, wy: (f.o[1] + cam.oy) / cam.s, ax: f.o[0], ay: f.o[1] } : SPLIT.cams[i];
+          SPLIT.cams[i] = { s: cur.s + (tg.s - cur.s) * kk, wx: cur.wx + (tg.wx - cur.wx) * kk, wy: cur.wy + (tg.wy - cur.wy) * kk, ax: cur.ax + (tg.ax - cur.ax) * kk, ay: cur.ay + (tg.ay - cur.ay) * kk };
+        });
+      } else want = false;
+    } else want = false;
+    SPLIT.want = want;
+    SPLIT.k = clamp(SPLIT.k + (want ? 1 : -1) * rdt * 2, 0, 1);
+    if (SPLIT.k <= 0) { SPLIT.c = null; SPLIT.cams = [null, null]; }
+  }
+  // the camera(s) to draw with: null = one screen; else for each half its outline and a camera blended in from the main one
+  function splitViews() {
+    if (!(SPLIT.k > 0.01) || !SPLIT.polys || !SPLIT.cams[0] || !SPLIT.cams[1]) return null;
+    const e = SPLIT.k * SPLIT.k * (3 - 2 * SPLIT.k);
+    return [0, 1].map(i => {
+      const c = SPLIT.cams[i], mx = (c.ax + cam.ox) / cam.s, my = (c.ay + cam.oy) / cam.s;   // where the main camera has this half's anchor
+      const s = cam.s + (c.s - cam.s) * e, wx = mx + (c.wx - mx) * e, wy = my + (c.wy - my) * e;
+      return { poly: SPLIT.polys[i], s, ox: wx * s - c.ax, oy: wy * s - c.ay, e };
+    });
+  }
+  // a hero's place on the screen (in a split screen: in the half of his group)
+  function heroScreen(h) {
+    const p = heroPos(h), V = splitViews(), c = V ? V[SPLIT.gid.get(h.id) || 0] : cam;
+    return { x: p.x * c.s - c.ox, y: p.y * c.s - c.oy };
   }
   function resize() {
-    DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));   // 1.03: at most 2x (3x is 2,25 times the pixels for little to see)
     const rect = stage.getBoundingClientRect();
     const had = cw > 0, cx = had ? (cam.ox + cw / 2) / cam.s : 0, cy = had ? (cam.oy + ch / 2) / cam.s : 0;
     cw = Math.max(60, Math.floor(rect.width)); ch = Math.max(60, Math.floor(rect.height));

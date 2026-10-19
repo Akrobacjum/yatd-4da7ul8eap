@@ -331,13 +331,26 @@
     return R.nbrs;
   }
   function roomTilesNear(x, y, R, rid) {
+    const Rm = fl.rooms && rid >= 0 ? fl.rooms[rid] : null;
+    if (Rm && Rm.tiles) return Rm.tiles.filter(t => Math.hypot(t[0] - x, t[1] - y) <= R && tileAt(t[0], t[1]) === FLOOR);   // 1.03: walk the room, not a 200x200 square (R 99 = the whole room)
     const out = [];
     for (let ty = y - R - 1; ty <= y + R + 1; ty++) for (let tx = x - R - 1; tx <= x + R + 1; tx++) {
       if (tileAt(tx, ty) === FLOOR && roomOf(tx, ty) === rid && Math.hypot(tx - x, ty - y) <= R) out.push([tx, ty]);
     }
     return out;
   }
+  // 1.03: an item's area is remembered until the map, the item or the deck changes (the author's 300-item dungeon spent a
+  // quarter of every frame here). Arrows, eyes and fire stop at whatever stands in the way: those are always worked out.
+  const AREA_MEMO = new WeakMap();
   function areaOf(it) {
+    if (it.type === 'arrows' || it.type === 'eyes' || it.type === 'fire') return areaOfRaw(it);   // these stop at anything standing in the way
+    const k = it.type + '|' + it.x + '|' + it.y + '|' + (it.lvl || 1) + '|' + mods.portraitR + '|' + mods.powderR + (DRIFT[it.type] ? '|' + Math.floor(it.gx) + '|' + Math.floor(it.gy) : '');
+    const m = AREA_MEMO.get(it);
+    if (m && m.tiles === fl.tiles && m.k === k) return m.out;
+    const out = areaOfRaw(it); AREA_MEMO.set(it, { tiles: fl.tiles, k, out });
+    return out;
+  }
+  function areaOfRaw(it) {
     const out = [], x = it.x, y = it.y;
     const addIf = (tx, ty, doorsToo) => {
       const t = tileAt(tx, ty);
