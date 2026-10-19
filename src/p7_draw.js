@@ -935,7 +935,7 @@
     });
   }
   // Prototype 1.02: the skill check in the game's own look: a stone slab with an iron edge, cut corners and rivets, a gothic
-  // title, bone needle, a moss-green graze, a blood-red crit that glows, brass for the "Uwaga!" moment. Logic unchanged.
+  // title, a bone bead, a moss-green graze, a blood-red crit that glows, brass for the "Uwaga!" moment. Logic unchanged.
   const CK = { slab0: '#1d1f24', slab1: '#111216', iron: '#464b53', mortar: '#2b2e34', edge: 'rgba(210,220,235,0.07)', rivet: '#5d6168',
     track: '#0a0b0d', trackEdge: '#2b2e34', g0: '#86ad62', g1: '#4c6b34', r0: '#ef5a66', r1: '#8c1a24', glow: 'rgba(255,70,85,0.65)',
     bone: '#e6e1d6', ash: '#8e939a', brass: '#c4a052', brassHi: '#e6cf94', violet: '#d9ccff', ember: '#e0643c' };
@@ -951,15 +951,7 @@
     ctx.strokeStyle = CK.edge; ctx.beginPath(); ctx.moveTo(x + 6, y + 1.5); ctx.lineTo(x + w - 6, y + 1.5); ctx.stroke();
     ctx.fillStyle = CK.rivet; [[x + 6, y + 6], [x + w - 6, y + 6], [x + 6, y + h - 6], [x + w - 6, y + h - 6]].forEach(q => { ctx.beginPath(); ctx.arc(q[0], q[1], 1.4, 0, Math.PI * 2); ctx.fill(); });
   }
-  function ckDisc(cx, cy, R) {   // the round backdrop of a dial: dark stone, an iron rim and four rivets on it
-    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4;
-    const g = ctx.createRadialGradient(cx, cy - R * 0.3, R * 0.1, cx, cy, R); g.addColorStop(0, CK.slab0); g.addColorStop(1, '#0c0d10');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    ctx.strokeStyle = CK.iron; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, R - 0.75, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = CK.rivet; for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + k * Math.PI / 2; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * (R - 5), cy + Math.sin(a) * (R - 5), 1.5, 0, Math.PI * 2); ctx.fill(); }
-  }
-  // zone colours along a stroke: graze = moss, crit = blood with a glow
-  const ckGraze = (x0, y0, x1, y1) => ckGrad(x0, y0, x1, y1, CK.g0, CK.g1), ckCrit = (x0, y0, x1, y1) => ckGrad(x0, y0, x1, y1, CK.r0, CK.r1);
+  // graze = moss, crit = blood with a glow
   function ckGlow(f) { ctx.save(); ctx.shadowColor = CK.glow; ctx.shadowBlur = 9; f(); ctx.restore(); }
   function drawCheck(T) {
     const c = fl && fl.check;
@@ -973,8 +965,6 @@
       ctx.beginPath(); ctx.arc(ox, oy, R, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     });
     // the check sits at the bottom of the map (above the tutorial panel if it is open), so it never covers the party or their lines
-    // round shapes get a big dial on a round backdrop with the title on a slab above
-    const round = c.shape === 'ring' || c.shape === 'pulse' || c.shape === 'double' || c.shape === 'spiral', tall = c.shape === 'swing';
     const legend = run.checkHints >= 0 && fl.stats.checks <= 3, coach = $('#coach');
     const bottom = coach && !coach.hidden ? ch - coach.offsetHeight - 14 : ch - 10;
     const label = { crit: 'Krytyk!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
@@ -991,128 +981,80 @@
       ctx.textAlign = 'left'; ctx.fillStyle = prep ? CK.brassHi : CK.bone; ctx.fillText(head, x0, y, label ? maxW * (w1 / tot) : maxW);
       if (label) { ctx.fillStyle = labelCol; if (c.result === 'crit') ckGlow(() => ctx.fillText(label, x0 + Math.min(w1, maxW * (w1 / tot)), y)); else ctx.fillText(label, x0 + Math.min(w1, maxW * (w1 / tot)), y); }
     };
-    let w = Math.min(320, cw - 28), h = tall ? 74 : c.shape === 'fuse' ? 26 : 22, bx = 0, by = 0, K = 1, rcx = 0, rcy = 0;
-    if (round) {
-      K = clamp(Math.min(cw, ch) * 0.14, 38, 64) / 25;   // dial radius 25 in the old box, now 38-64 px
-      const Rb = 37 * K, note = c.note ? c.note.replace(/^ · /, '') : '';
-      rcx = cw / 2; rcy = bottom - Rb;
-      ctx.font = TF; const tW = ctx.measureText(head + (label || '')).width;
-      ctx.font = SF('500');
-      const sub = [note, legend ? LEG : ''].filter(Boolean), sW = sub.reduce((m, t) => Math.max(m, ctx.measureText(t).width), 0);
-      const pw = Math.min(cw - 16, Math.max(tW, sW) + 30), ph = 30 + sub.length * 14, px = rcx - pw / 2, py = rcy - Rb - 8 - ph;
-      c.box = { x: Math.min(px, rcx - Rb), y: py, w: Math.max(pw, 2 * Rb), h: bottom - py };
-      ckDisc(rcx, rcy, Rb);
-      ckSlab(px, py, pw, ph);
-      title(rcx, py + 15, 'center', pw - 16);
-      ctx.textAlign = 'center';
-      sub.forEach((t, k) => { ctx.fillStyle = t === note ? CK.violet : CK.ash; ctx.font = SF(t === note ? '600' : '500'); ctx.fillText(t, rcx, py + 31 + k * 14, pw - 14); });
-      if (prep) { const left = clamp((c.t0 - realNow) / CHECK_PREP, 0, 1); ctx.fillStyle = CK.brass; ctx.fillRect(rcx - 35 * left, py + ph - 5, 70 * left, 2); }
-    } else {
-      const boxH = h + 34 + (legend ? 14 : 0) + (tall ? 14 : 0);   // the pendulum's skulls hang below the arc: the legend goes lower
-      bx = (cw - w) / 2; by = bottom - boxH + 26;
-      c.box = { x: bx - 10, y: by - 26, w: w + 20, h: boxH };
-      ckSlab(bx - 10, by - 26, w + 20, boxH);
-      title(bx, by - 13, 'left', c.note ? w - 90 : w);
-      if (c.note) { ctx.fillStyle = CK.violet; ctx.font = SF('600'); ctx.textAlign = 'right'; ctx.fillText(c.note.replace(/^ · /, ''), bx + w, by - 13); ctx.textAlign = 'left'; }
-      if (prep) {   // shrinking brass line = time left before the needle starts
-        const left = clamp((c.t0 - realNow) / CHECK_PREP, 0, 1);
-        ctx.fillStyle = CK.brass; ctx.fillRect(bx + w - 70 * left, by - 4, 70 * left, 2);
-      }
+    // 1.02 (author: "pretty, but not consistent: they should look the same and differ only in shape"): every shape uses the
+    // same parts. One slab, the title on the left and the party on the right, the legend under it; one groove TW wide with an
+    // iron edge; moss graze and blood crit drawn the same way; the skull sits on the zone it kills in; one bone bead rides
+    // the groove. Only the groove's path differs: a line, a wavy fuse, a hanging arc, a circle, a spiral, a closing pulse.
+    const TW = 14, w = Math.min(320, cw - 28), DR = clamp(Math.min(cw, ch) * 0.12, 40, 52), pulse = c.shape === 'pulse';
+    const path = ckPath(c.shape, c.rot || 0, w, DR, TW);   // q in 0..1 -> [x, y] in local coordinates
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    if (pulse) { x0 = y0 = -DR - TW / 2; x1 = y1 = DR + TW / 2; }
+    else for (let k = 0; k <= 96; k++) { const q = path(k / 96); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
+    const pad = pulse ? 3 : TW / 2, headH = 26, stageH = (y1 - y0) + 2 * pad + 12, footH = legend ? 18 : 6, boxH = headH + stageH + footH;
+    const bx = (cw - w) / 2, top = bottom - boxH, ox = cw / 2 - (x0 + x1) / 2, oy = top + headH + 6 + pad - y0;
+    const P = q => { const a = path(q); return [a[0] + ox, a[1] + oy]; };
+    c.box = { x: bx - 10, y: top, w: w + 20, h: boxH };
+    ckSlab(bx - 10, top, w + 20, boxH);
+    title(bx, top + 14, 'left', c.note ? w - 90 : w);
+    if (c.note) { ctx.fillStyle = CK.violet; ctx.font = SF('600'); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(c.note.replace(/^ · /, ''), bx + w, top + 14); ctx.textAlign = 'left'; }
+    if (prep) {   // shrinking brass line = time left before the bead starts
+      const left = clamp((c.t0 - realNow) / CHECK_PREP, 0, 1);
+      ctx.fillStyle = CK.brass; ctx.fillRect(bx + w - 70 * left, top + 24, 70 * left, 2);
     }
     const p = clamp(c.result ? (c.p !== undefined ? c.p : 1) : checkPos(c, (realNow - c.t0) / c.dur), 0, 1);
-    const needle = prep ? 'rgba(230,225,214,0.35)' : CK.bone;
     const Z = [{ g0: c.g0, g1: c.g1, r0: c.r0, r1: c.r1 }].concat(c.z2 ? [c.z2] : []);
-    const skulls = (posOf) => {
-      ctx.font = '700 ' + Math.round(14 * Math.sqrt(K)) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const one = q => { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText('☠', q[0], q[1]); ctx.fillStyle = CK.bone; ctx.fillText('☠', q[0], q[1]); };
-      Z.forEach(z => { if (c.lethalOk) one(posOf((z.g0 + z.g1) / 2)); if (c.lethalCrit) one(posOf((z.r0 + z.r1) / 2)); });
-    };
-    const needleGlow = f => { ctx.save(); if (!prep) { ctx.shadowColor = 'rgba(255,240,215,0.55)'; ctx.shadowBlur = 8; } f(); ctx.restore(); };
-    if (c.shape === 'bar') {   // one pass, left to right
-      ctx.fillStyle = CK.track; ctx.fillRect(bx, by, w, h); ctx.strokeStyle = CK.trackEdge; ctx.lineWidth = 1; ctx.strokeRect(bx - 0.5, by - 0.5, w + 1, h + 1);
-      Z.forEach(z => {
-        ctx.fillStyle = ckGraze(0, by, 0, by + h); ctx.fillRect(bx + w * z.g0, by, w * (z.g1 - z.g0), h);
-        ckGlow(() => { ctx.fillStyle = ckCrit(0, by, 0, by + h); ctx.fillRect(bx + w * z.r0, by, w * (z.r1 - z.r0), h); });
-      });
-      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(bx, by + h - 4, w, 4);   // a little depth at the bottom of the groove
-      skulls(q => [bx + w * q, by + h / 2 + 1]);
-      const nx = bx + w * p;
-      ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(nx - 3, by - 6, 6, h + 12);
-      needleGlow(() => { ctx.fillStyle = needle; ctx.fillRect(nx - 1.5, by - 5, 3, h + 10); });
-    } else if (c.shape === 'fuse') {   // powder: a fuse burning towards the keg, the spark speeds up
-      const ry = by + h / 2, x0 = bx + 4, x1 = bx + w - 32;
-      ctx.lineCap = 'round'; ctx.lineWidth = 7; ctx.strokeStyle = '#2e241a'; ctx.beginPath(); ctx.moveTo(x0, ry); ctx.lineTo(x1, ry); ctx.stroke();
-      ctx.lineWidth = 5; ctx.strokeStyle = '#4a3a28'; ctx.beginPath(); ctx.moveTo(x0, ry); ctx.lineTo(x1, ry); ctx.stroke();
-      Z.forEach(z => {
-        ctx.strokeStyle = ckGraze(0, ry - 3, 0, ry + 3); ctx.beginPath(); ctx.moveTo(x0 + (x1 - x0) * z.g0, ry); ctx.lineTo(x0 + (x1 - x0) * z.g1, ry); ctx.stroke();
-        ckGlow(() => { ctx.strokeStyle = ckCrit(0, ry - 3, 0, ry + 3); ctx.beginPath(); ctx.moveTo(x0 + (x1 - x0) * z.r0, ry); ctx.lineTo(x0 + (x1 - x0) * z.r1, ry); ctx.stroke(); });
-      });
-      ctx.lineCap = 'butt';
-      const kx = bx + w - 15;   // the keg: dark wood, two iron bands
-      ctx.fillStyle = ckGrad(kx - 12, 0, kx + 12, 0, '#4a3324', '#2a1c13'); ckCut(kx - 11, ry - 12, 22, 24, 4); ctx.fill();
-      ctx.strokeStyle = CK.iron; ctx.lineWidth = 1; ckCut(kx - 10.5, ry - 11.5, 21, 23, 4); ctx.stroke();
-      ctx.fillStyle = '#2b2e34'; ctx.fillRect(kx - 11, ry - 6, 22, 2); ctx.fillRect(kx - 11, ry + 4, 22, 2);
-      skulls(q => [x0 + (x1 - x0) * q, ry - 12]);
-      const sx = x0 + (x1 - x0) * p;
-      ctx.save(); if (!prep) { ctx.shadowColor = 'rgba(255,140,60,0.9)'; ctx.shadowBlur = 12; }
-      ctx.fillStyle = prep ? 'rgba(224,100,60,0.4)' : CK.ember; ctx.beginPath(); ctx.arc(sx, ry, 6 + (prep ? 0 : 2 * Math.random()), 0, Math.PI * 2); ctx.fill(); ctx.restore();
-      ctx.fillStyle = prep ? 'rgba(255,230,180,0.5)' : '#ffe2b0'; ctx.beginPath(); ctx.arc(sx, ry, 2.5, 0, Math.PI * 2); ctx.fill();
-    } else if (c.shape === 'swing') {   // monsters: a pendulum hanging from a brass pivot, swinging there and back
-      const cx = bx + w / 2, cy = by - 6, R = h + 2, A = Math.PI / 3, ang = q => Math.PI / 2 + A - q * 2 * A;
-      ctx.lineCap = 'butt';
-      ctx.lineWidth = 14; ctx.strokeStyle = CK.trackEdge; ctx.beginPath(); ctx.arc(cx, cy, R, ang(1), ang(0)); ctx.stroke();
-      ctx.lineWidth = 12; ctx.strokeStyle = CK.track; ctx.beginPath(); ctx.arc(cx, cy, R, ang(1), ang(0)); ctx.stroke();
-      Z.forEach(z => {
-        ctx.strokeStyle = CK.g1; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.g1), ang(z.g0)); ctx.stroke();
-        ctx.lineWidth = 6; ctx.strokeStyle = CK.g0; ctx.beginPath(); ctx.arc(cx, cy, R - 2, ang(z.g1), ang(z.g0)); ctx.stroke(); ctx.lineWidth = 12;
-        ckGlow(() => { ctx.strokeStyle = CK.r1; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.r1), ang(z.r0)); ctx.stroke(); ctx.lineWidth = 6; ctx.strokeStyle = CK.r0; ctx.beginPath(); ctx.arc(cx, cy, R - 2, ang(z.r1), ang(z.r0)); ctx.stroke(); ctx.lineWidth = 12; });
-      });
-      skulls(q => { const a = ang(q); return [cx + Math.cos(a) * (R + 15), cy + Math.sin(a) * (R + 15)]; });
-      const a = ang(p), ex = cx + Math.cos(a) * R, ey = cy + Math.sin(a) * R;
-      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 4.5; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 6), cy + Math.sin(a) * (R + 6)); ctx.stroke();
-      needleGlow(() => { ctx.strokeStyle = needle; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 6), cy + Math.sin(a) * (R + 6)); ctx.stroke();
-        ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(ex, ey, 6.5, 0, Math.PI * 2); ctx.fill(); });
-      ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(ex, ey, 6.5, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = CK.brass; ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#6b5528'; ctx.stroke();
-    } else if (c.shape === 'ring' || c.shape === 'double') {   // a dial: the needle sweeps once around (double: two windows)
-      const cx = rcx, cy = rcy, R = 25 * K, ang = q => c.rot - Math.PI / 2 + q * Math.PI * 2;
-      ctx.lineCap = 'butt';
-      ctx.lineWidth = 12 * K; ctx.strokeStyle = CK.trackEdge; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
-      ctx.lineWidth = 10 * K; ctx.strokeStyle = CK.track; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
-      Z.forEach(z => {
-        ctx.strokeStyle = ckGraze(cx, cy - R, cx, cy + R); ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.g0), ang(z.g1)); ctx.stroke();
-        ckGlow(() => { ctx.strokeStyle = ckCrit(cx, cy - R, cx, cy + R); ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.r0), ang(z.r1)); ctx.stroke(); });
-      });
-      if (c.shape === 'double') { ctx.strokeStyle = 'rgba(160,140,232,0.45)'; ctx.lineWidth = 1.2 * K; ctx.setLineDash([3 * K, 3 * K]); ctx.beginPath(); ctx.arc(cx, cy, R + 8 * K, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
-      skulls(q => { const a = ang(q); return [cx + Math.cos(a) * (R + 9 * K), cy + Math.sin(a) * (R + 9 * K)]; });
-      const a = ang(p), L = R + 7 * K;
-      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 5.5 * Math.sqrt(K); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * L, cy + Math.sin(a) * L); ctx.stroke();
-      needleGlow(() => { ctx.strokeStyle = needle; ctx.lineWidth = 3 * Math.sqrt(K); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * L, cy + Math.sin(a) * L); ctx.stroke(); });
-      ctx.fillStyle = CK.brass; ctx.beginPath(); ctx.arc(cx, cy, 4 * Math.sqrt(K), 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#6b5528'; ctx.lineWidth = 1; ctx.stroke();
-    } else if (c.shape === 'spiral') {   // webs and spiders: the needle runs inward along a spiral (two turns)
-      const cx = rcx, cy = rcy, pt = q => { const a = c.rot + q * Math.PI * 4, r = (31 - 23 * q) * K; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; };
-      const seg = (q0, q1, col, lw) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); const n = Math.max(2, Math.ceil((q1 - q0) * 120)); for (let k = 0; k <= n; k++) { const q = pt(q0 + (q1 - q0) * k / n); if (k) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.stroke(); };
-      ctx.lineCap = 'round';
-      seg(0, 1, CK.trackEdge, 9 * K); seg(0, 1, CK.track, 7 * K);
-      Z.forEach(z => { seg(z.g0, z.g1, CK.g1, 7 * K); seg(z.g0, z.g1, CK.g0, 4 * K); ckGlow(() => { seg(z.r0, z.r1, CK.r1, 7 * K); seg(z.r0, z.r1, CK.r0, 4 * K); }); });
-      ctx.lineCap = 'butt';
-      skulls(q => { const a = pt(q); return [a[0], a[1] - 10 * K]; });
-      const q = pt(p);
-      ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.beginPath(); ctx.arc(q[0], q[1], 6.5 * K, 0, Math.PI * 2); ctx.fill();
-      needleGlow(() => { ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(q[0], q[1], 5 * K, 0, Math.PI * 2); ctx.fill(); });
-    } else {   // a pulse: the bone ring closes in; tap when it lies on the green (or the red, further in)
-      const cx = rcx, cy = rcy, RM = 31 * K, rad = q => RM * (1 - q);
-      const band = (q0, q1, col) => { const ro = rad(q0), ri = Math.max(0, Math.min(rad(q1), ro - 3.5 * K)); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, ro, 0, Math.PI * 2); ctx.arc(cx, cy, ri, 0, Math.PI * 2, true); ctx.fill(); };
-      band(0, 1, CK.track); ctx.strokeStyle = CK.trackEdge; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, RM, 0, Math.PI * 2); ctx.stroke();
-      band(c.g0, c.g1, ckGraze(cx, cy - RM, cx, cy + RM)); ckGlow(() => band(c.r0, c.r1, ckCrit(cx, cy - RM, cx, cy + RM)));
-      skulls(q => q === (c.g0 + c.g1) / 2 ? [cx + RM * 0.72, cy - RM * 0.72] : [cx + RM * 0.72, cy + RM * 0.72]);
-      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 5 * Math.sqrt(K); ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, rad(p)), 0, Math.PI * 2); ctx.stroke();
-      needleGlow(() => { ctx.strokeStyle = needle; ctx.lineWidth = 2.6 * Math.sqrt(K); ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, rad(p)), 0, Math.PI * 2); ctx.stroke(); });
+    const HI = 0.42;   // the lighter core of a zone, as a share of the groove
+    ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+    if (pulse) {   // the groove is a disc; zones are rings; the bead sits on a bone ring that closes in
+      const [cx, cy] = P(1), RM = DR + TW / 2 - 1, rad = q => RM * (1 - q);
+      const band = (q0, q1, col, core) => {
+        let ro = rad(q0), ri = rad(q1); if (core) { const m = (ro - ri) * (1 - core) / 2; ro -= m; ri += m; }
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, ro), 0, Math.PI * 2); ctx.arc(cx, cy, Math.max(0, ri), 0, Math.PI * 2, true); ctx.fill();
+      };
+      ctx.fillStyle = CK.track; ctx.beginPath(); ctx.arc(cx, cy, RM, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = CK.trackEdge; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, RM + 1, 0, Math.PI * 2); ctx.stroke();
+      Z.forEach(z => { band(z.g0, z.g1, CK.g1); band(z.g0, z.g1, CK.g0, HI); ckGlow(() => { band(z.r0, z.r1, CK.r1); band(z.r0, z.r1, CK.r0, HI); }); });
+    } else {
+      const N = c.shape === 'bar' ? 2 : 180;
+      const run = (q0, q1, col, lw) => {
+        ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
+        const n = Math.max(2, Math.ceil((q1 - q0) * N));
+        for (let k = 0; k <= n; k++) { const q = P(q0 + (q1 - q0) * k / n); if (k) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }
+        ctx.stroke();
+      };
+      run(0, 1, CK.trackEdge, TW + 2); run(0, 1, CK.track, TW);
+      Z.forEach(z => { run(z.g0, z.g1, CK.g1, TW); run(z.g0, z.g1, CK.g0, TW * HI); ckGlow(() => { run(z.r0, z.r1, CK.r1, TW); run(z.r0, z.r1, CK.r0, TW * HI); }); });
     }
-    if (legend && !round) {
+    // the skull on the zone it kills in (on the groove, the same for every shape)
+    ctx.font = '700 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const skull = q => { const a = P(q); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.strokeText('☠', a[0], a[1] + 0.5); ctx.fillStyle = CK.bone; ctx.fillText('☠', a[0], a[1] + 0.5); };
+    Z.forEach(z => { if (c.lethalOk) skull((z.g0 + z.g1) / 2); if (c.lethalCrit) skull((z.r0 + z.r1) / 2); });
+    // the bone bead (dim while "Uwaga!" counts down); the pulse also draws the ring it rides on
+    const bead = P(p), col = prep ? 'rgba(230,225,214,0.4)' : CK.bone;
+    ctx.save(); if (!prep) { ctx.shadowColor = 'rgba(255,240,215,0.6)'; ctx.shadowBlur = 9; }
+    if (pulse) {
+      const [cx, cy] = P(1), r = Math.max(1, cy - bead[1]);
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.beginPath(); ctx.arc(bead[0], bead[1], TW / 2 + 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(bead[0], bead[1], TW / 2 + 0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = 'rgba(40,36,30,0.85)'; ctx.beginPath(); ctx.arc(bead[0], bead[1], 1.6, 0, Math.PI * 2); ctx.fill();   // its centre: the exact spot
+    ctx.lineJoin = 'miter';
+    if (legend) {
       ctx.fillStyle = CK.ash; ctx.font = SF('500'); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText(LEG, bx, by + h + (tall ? 27 : 13), w);
+      ctx.fillText(LEG, bx, top + boxH - 11, w);
     }
+  }
+  // the groove of each check shape, q in 0..1 along it (local coordinates; drawCheck centres it)
+  function ckPath(shape, rot, w, R, TW) {
+    if (shape === 'bar') return q => [-w / 2 + TW / 2 + (w - TW) * q, 0];   // one pass, left to right
+    if (shape === 'fuse') { const L = w - TW; return q => [-L / 2 + L * q, 7 * Math.sin(q * Math.PI * 4)]; }   // a wavy fuse; the bead speeds up
+    if (shape === 'swing') { const RS = R * 1.45, A = 1.1; return q => { const a = Math.PI / 2 + A - 2 * A * q; return [Math.cos(a) * RS, Math.sin(a) * RS]; }; }   // a hanging arc, there and back
+    if (shape === 'spiral') return q => { const a = rot + q * Math.PI * 4, r = R * 1.2 * (1 - 0.74 * q); return [Math.cos(a) * r, Math.sin(a) * r]; };   // inward, two turns
+    if (shape === 'pulse') return q => [0, -(R + TW / 2 - 1) * (1 - q)];   // the top of the closing ring
+    return q => { const a = rot - Math.PI / 2 + q * Math.PI * 2; return [Math.cos(a) * R, Math.sin(a) * R]; };   // ring and double: once around
   }
 
   function drawNextWave() {
