@@ -1382,8 +1382,8 @@
       afterSummary();
     } else {
       startBuild(true);
-      if (!sv.gv || sv.gv < 38) { run.next = makeWave(run.wave); setHint(waveHint()); saveRun('build'); }
-      tutResume();   // a run saved before v14: the next party by the new rules (bodies, phobias, returners)
+      if (!sv.gv || sv.gv < 38) { run.next = makeWave(run.wave); setHint(waveHint()); saveRun('build'); }   // a run saved before v14: the next party by the new rules (bodies, phobias, returners)
+      tutResume();   // a tutorial run: the coach comes back at its step
     }
     return true;
   }
