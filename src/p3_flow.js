@@ -31,7 +31,7 @@
     if (!C) C = fl.chain = { g: 0, prov: 0, cm: 1, greed: fl.greed, t0: fl.time, last: fl.time, trap: false, who: new Map(), n: 0 };
     C.g += g; C.prov += e; C.last = fl.time; C.n++; C.cm = Math.max(C.cm, cm); C.greed = Math.max(C.greed, fl.greed);
     if (comboLive()) C.trap = true;
-    if (h && h.id != null) { C.who.set(h.id, (C.who.get(h.id) || 0) + g); h.accG = (h.accG || 0) + g; }   // the numbers over the heroes show Groza now (violet)
+    if (h && h.id != null) { C.who.set(h.id, (C.who.get(h.id) || 0) + g); h.accG = (h.accG || 0) + g; grozaOrbs(h, g); }   // the numbers over the heroes show Groza now (violet); 1.02: violet orbs fly to the equation
     if (stat) fl.stats[stat] = (fl.stats[stat] || 0) + e;
     return e;
   }
@@ -64,7 +64,7 @@
     let rest = e - heart;
     if (rest > 0 && need > 0 && fl.fed >= need && mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
     fl.stats.essHeart = (fl.stats.essHeart || 0) + heart;
-    gainEssence(who, rest, 'essWave', heart);
+    gainEssence('eq', rest, 'essWave', heart);   // 1.02: the Esencja leaves the equation's result box
   }
   function setGreed(v) { fl.greed = v; }
   const infMult = () => 1;   // v14: no hidden multipliers on Groza; everything global became greed (greedBonusNow)

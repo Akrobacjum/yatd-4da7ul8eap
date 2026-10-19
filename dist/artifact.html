@@ -44,7 +44,16 @@
   --font-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
   --font-num: "Pixelify Sans", ui-monospace, Consolas, monospace;
   color-scheme: dark;
+  /* Prototype 1.02: the top inset. On some Android phones in full screen the page runs under the camera hole and the rounded
+     corners while env(safe-area-inset-top) says 0, so full screen keeps at least 28px at the top; the player can add more
+     in the settings (Odstęp od góry ekranu, --top-extra). */
+  --top-min: 0px;
+  --top-extra: 0px;
+  --safe-top: calc(max(env(safe-area-inset-top, 0px), var(--top-min)) + var(--top-extra));
 }
+@media (display-mode: fullscreen) { :root { --top-min: 28px; } }
+:root:fullscreen { --top-min: 28px; }
+:root:-webkit-full-screen { --top-min: 28px; }
 html, body { height: 100%; overscroll-behavior: none; }   /* no pull-to-refresh, no rubber band */
 * { -webkit-tap-highlight-color: transparent; }
 body {
@@ -58,7 +67,7 @@ body {
 [hidden] { display: none !important; }
 #app {
   height: 100%; height: 100dvh; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 7px;
-  padding-top: max(8px, env(safe-area-inset-top, 0px));
+  padding-top: max(8px, var(--safe-top));
   padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -175,6 +184,9 @@ body {
 /* 1.01: a combo chain piling up (Groza glows) and the moment it is cashed in (Esencja glows) */
 .eqrow.chain #eq-g { border-color: var(--violet-lo); box-shadow: 0 0 10px rgba(160, 140, 232, 0.25); }
 .eqrow.paid .res { box-shadow: 0 0 14px rgba(255, 70, 85, 0.45); border-color: #a3263a; }
+/* 1.02: a violet orb lands in the Groza box */
+.eqrow #eq-g.hit { animation: gHit 0.22s ease-out; }
+@keyframes gHit { 0% { box-shadow: 0 0 0 rgba(160, 140, 232, 0); } 40% { box-shadow: 0 0 12px rgba(160, 140, 232, 0.7); border-color: var(--violet); } 100% { box-shadow: 0 0 0 rgba(160, 140, 232, 0); } }
 @keyframes eqpop { 0% { transform: scale(1.3); } 100% { transform: scale(1); } }
 /* 1.01: the reckoning at the end of a wave */
 .card.settle { text-align: center; max-width: 360px; }
@@ -394,7 +406,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .overlay {
   position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
   background: radial-gradient(120% 80% at 50% 40%, rgba(12, 13, 16, 0.84), rgba(2, 2, 3, 0.95));
-  padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+  padding-block: max(16px, var(--safe-top)) max(16px, env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   animation: fadein 0.2s ease-out;
@@ -420,7 +432,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .overlay.top { align-items: flex-start; background: linear-gradient(180deg, rgba(2, 2, 3, 0.88) 0%, rgba(2, 2, 3, 0.55) 34%, transparent 52%); pointer-events: none; }
 .overlay.top .card { pointer-events: auto; max-height: 48vh; gap: 8px; padding: 14px; }
 .overlay.top .card .lead { font-size: 14px; } .overlay.top .card h2 { font-size: 20px; }
-.overlay.screenbg { background: var(--bg); padding: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+.overlay.screenbg { background: var(--bg); padding: max(8px, var(--safe-top)) max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
 .card.screen { width: min(520px, 100%); height: 100%; max-height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 14px 14px 12px; }
 /* the screens between waves: one screen, no scrolling, a layout that stays put; the parts come in one after another */
 .card.screen.enter { animation: none; }
@@ -705,7 +717,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   const DEFAULTS = {
     waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
     essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 20, hungerGrowth: 1.25, greedW: 1.0, autoFF: 2.5, earlyHp: 1,
-    haptics: 1, trayAuto: 1, series: 1   // game settings (0/1): vibration, tray folds during a wave, one check for a volley
+    haptics: 1, trayAuto: 1, series: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley
+    topPad: 0   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
   };
   const RUN_WAVES = 10;   // wave 5: a champion, wave 10: the hero of the prophecy. Survive it and the run is won (you may play on).
   const f1 = v => v.toFixed(1).replace('.', ','), x1 = v => '×' + f1(v), x2 = v => '×' + v.toFixed(2).replace('.', ',');
@@ -737,7 +750,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     { k: 'trayAuto', label: 'Chowaj pasek elementów w trakcie fali', toggle: true },
     { k: 'checkDiff', label: 'Trudność skill checków', min: 0.6, max: 1.8, step: 0.1, fmt: x1 },
     { k: 'autoFF', label: 'Auto-przyspieszenie, gdy nic się nie dzieje (1 = wyłączone)', min: 1, max: 4, step: 0.5, fmt: x1 },
-    { k: 'ffSpeed', label: 'Przyspieszenie (przytrzymanie palca)', min: 2, max: 6, step: 0.5, fmt: x1 }
+    { k: 'ffSpeed', label: 'Przyspieszenie (przytrzymanie palca)', min: 2, max: 6, step: 0.5, fmt: x1 },
+    { k: 'topPad', label: 'Odstęp od góry ekranu (gdy aparat albo róg ucina górę)', min: 0, max: 48, step: 4, fmt: v => v ? '+' + v + ' px' : 'auto' }
   ];
   // Points are the measure of HOW WELL a run went (surviving the waves is the measure of success): the rank at the end.
   const RANKS = [[0, 'Nora'], [150, 'Piwnica'], [400, 'Loch'], [1000, 'Labirynt'], [2500, 'Twierdza grozy'], [6000, 'Legenda']];   // v15: Esencja harvested in the run
@@ -1834,7 +1848,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (!C) C = fl.chain = { g: 0, prov: 0, cm: 1, greed: fl.greed, t0: fl.time, last: fl.time, trap: false, who: new Map(), n: 0 };
     C.g += g; C.prov += e; C.last = fl.time; C.n++; C.cm = Math.max(C.cm, cm); C.greed = Math.max(C.greed, fl.greed);
     if (comboLive()) C.trap = true;
-    if (h && h.id != null) { C.who.set(h.id, (C.who.get(h.id) || 0) + g); h.accG = (h.accG || 0) + g; }   // the numbers over the heroes show Groza now (violet)
+    if (h && h.id != null) { C.who.set(h.id, (C.who.get(h.id) || 0) + g); h.accG = (h.accG || 0) + g; grozaOrbs(h, g); }   // the numbers over the heroes show Groza now (violet); 1.02: violet orbs fly to the equation
     if (stat) fl.stats[stat] = (fl.stats[stat] || 0) + e;
     return e;
   }
@@ -1867,7 +1881,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     let rest = e - heart;
     if (rest > 0 && need > 0 && fl.fed >= need && mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
     fl.stats.essHeart = (fl.stats.essHeart || 0) + heart;
-    gainEssence(who, rest, 'essWave', heart);
+    gainEssence('eq', rest, 'essWave', heart);   // 1.02: the Esencja leaves the equation's result box
   }
   function setGreed(v) { fl.greed = v; }
   const infMult = () => 1;   // v14: no hidden multipliers on Groza; everything global became greed (greedBonusNow)
@@ -4465,28 +4479,38 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Carried over between waves, refilled after each wave, and during a wave fed by pain, fear and souls.
   let orbs = [];
   function regenParts() { const base = S.regenBase / 10 * mods.regen; return { base, total: base }; }
-  // Prototype 1.01: no purse limit. who = a hero, or a Map hero id -> Groza share (a cashed-in combo chain); heart = the part
-  // the hungry heart took first. Red orbs fly from the heroes: to the big number for the purse, to the ♥ for the heart.
-  function gainEssence(who, amt, stat, heart) {
+  // Prototype 1.01: no purse limit. heart = the part the hungry heart took first.
+  // 1.02 (author): two separate flights. While a combo lasts, violet Groza orbs fly from the heroes into the Groza box of the
+  // equation, in real time (grozaOrbs); when the chain is cashed in, red Esencja orbs leave the result box (from = 'eq') for
+  // the big number (the purse) and the ♥ (the heart's share).
+  const ORB_MAX = 90;
+  function gainEssence(from, amt, stat, heart) {
     if (!fl || !((amt || 0) + (heart || 0) > 0)) return;
     const before = Math.floor(fl.essence);
     if (amt > 0) { fl.essence += amt; fl.stats[stat] = (fl.stats[stat] || 0) + amt; }
-    const src = [];
-    if (who instanceof Map) { let tot = 0; who.forEach(v => { tot += v; }); who.forEach((v, id) => { const h = fl.heroes.find(x => x.id === id); if (h && tot > 0) src.push([h, v / tot]); }); }
-    else if (who) src.push([who, 1]);
-    if (src.length) {
-      const T = cam.s, put = (n, to) => {
-        for (let i = 0; i < n && orbs.length < 60; i++) {
-          const r = Math.random(); let acc = 0, h = src[0][0];
-          for (const [x, w] of src) { acc += w; if (r <= acc) { h = x; break; } }
-          const p = heroPos(h);
-          orbs.push({ x: p.x * T - cam.ox + (Math.random() - 0.5) * 14, y: p.y * T - cam.oy + (Math.random() - 0.5) * 14, t: -Math.random() * 0.25, dur: 0.6 + Math.random() * 0.3, to });
-        }
-      };
-      put(Math.min(30, Math.round((heart || 0) / 0.5)), 'heart');
-      put(Math.min(40, Math.round((amt || 0) / 0.25)), 'score');
+    if (from === 'eq') {
+      const e = $('#eq-e'), r = e && e.getBoundingClientRect();
+      if (r && r.width) {
+        const put = (n, to) => { for (let i = 0; i < n && orbs.length < ORB_MAX; i++) orbs.push({ ax: r.left + r.width * (0.25 + 0.5 * Math.random()), ay: r.top + r.height * (0.3 + 0.4 * Math.random()), t: -i * 0.035 - Math.random() * 0.05, dur: 0.5 + Math.random() * 0.2, to }); };
+        put(Math.min(24, Math.max(heart > 0 ? 1 : 0, Math.round((heart || 0) / 0.6))), 'heart');
+        put(Math.min(30, Math.max(amt > 0 ? 1 : 0, Math.round((amt || 0) / 0.4))), 'score');
+      }
     }
     if (Math.floor(fl.essence) !== before) { updateTray(); essPulse(); }
+  }
+  // violet orbs carrying Groza from a hero to the equation (the Groza number there grows as they land)
+  function grozaOrbs(h, g) {
+    if (!fl || !h || !(g > 0) || reduceMotion) return;
+    if (h.gOrbC !== fl.chain) { h.gOrb = 0; h.gOrbC = fl.chain; }   // a crumb left from the last chain stays there
+    h.gOrb = (h.gOrb || 0) + g;
+    const n = Math.min(5, Math.floor(h.gOrb / 0.08)); if (!n) return;
+    const v = h.gOrb / n; h.gOrb = 0;
+    const T = cam.s, p = heroPos(h), C = fl.chain;
+    for (let i = 0; i < n; i++) {
+      if (orbs.length >= ORB_MAX) { break; }
+      orbs.push({ x: p.x * T - cam.ox + (Math.random() - 0.5) * 12, y: p.y * T - cam.oy + (Math.random() - 0.5) * 12, t: -i * 0.06, dur: 0.45 + Math.random() * 0.2, to: 'groza', v, c: C });
+      if (C) C.fly = (C.fly || 0) + v;   // counted per chain, so orbs still flying from a cashed-in chain never dent the next one
+    }
   }
   const lootMult = h => 1 + 0.25 * Math.min(4, h.inv.length);   // a hero carrying gear sheds more when hurt
   function regenTick(dt) {
@@ -4499,6 +4523,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   }
   function essPulse() {}   // Prototype 1.0: the big number counts up by itself (tickScore); an orb landing in it gives it a knock (scoreHit)
   function scoreHit() { const e = $('#h-score'); if (!e || realNow - (scoreHit.t || -1) < 0.1) return; scoreHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
+  function grozaHit() { const e = $('#eq-g'); if (!e || realNow - (grozaHit.t || -1) < 0.09) return; grozaHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
   function heartHit() { const e = $('#h-heart'); if (!e || realNow - (heartHit.t || -1) < 0.12) return; heartHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
 
   /* ================= sound ================= */
@@ -4770,18 +4795,52 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (fl.check && !fl.check.result) return 0.06;
     const sp = 1;   // v14: no speed button; holding the finger speeds up
     if (ff) return Math.max(S.ffSpeed, sp);
-    return Math.max(sp, autoFFOn() ? S.autoFF : 1);   // nothing happening: the game hurries on by itself
+    return Math.max(sp, ffAuto);   // nothing happening: the game hurries on by itself (1.02: speeds up smoothly, slows down at once)
   }
+  let ffAuto = 1;
   const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check;   // v15.1: after 0,3 s of quiet (was 0,8)
-  // "Quiet" = nobody near anything of yours: no hero in a room or corridor with a working trap, monster, loot or building,
-  // nobody fighting, caged, disarming, at the heart or about to rush a room. Resting after a retreat counts as quiet.
-  function quietNow() {
-    if (fl.ending !== null || fl.party.prep) return false;   // v15.1: the walk in from the entrance counts too (heroes still queuing used to block it)   // a crystal carrier on an empty stretch is dead time too: trap rooms still slow it down
+  // "Quiet" = nobody near anything of yours: no hero within a step of the tiles a ready trap, a monster or loot reaches
+  // (1.02; up to 1.01 the whole room counted), nobody fighting, caged, disarming, at the heart or about to rush a room.
+  // Resting after a retreat counts as quiet.
+  const QUIET = { r: 1, cd: 1 };   // 1.02: steps from a hero to anything of yours that still count as quiet (0 = the old room rule)
+  const quietNow = () => !quietWhy();
+  function quietWhy() {   // 1.02: names what keeps it from being quiet (null = quiet); the tests read it
+    if (fl.ending !== null) return 'ending';
+    if (fl.party.prep) return 'prep';
     const crew = alive();
-    if (!crew.length) return false;
-    const busyRooms = new Set();
-    fl.items.forEach(it => { if ((ACTIVE[it.type] && !it.disabled && !(MONSTERS[it.type] && it.hp <= 0)) || isLoot(it.type)) { busyRooms.add(slotRoom(it.type, it.x, it.y)); areaOf(it).forEach(t => busyRooms.add(roomOf(t[0], t[1]))); } });
-    return !crew.some(h => h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || caged(h) || busyRooms.has(roomOf(h.tx, h.ty)) || (h.nx !== null && busyRooms.has(roomOf(h.nx, h.ny))));
+    if (!crew.length) return 'empty';
+    for (const h of crew) {
+      if (h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free') return h.state;
+      if (caged(h)) return 'caged';
+    }
+    const live = it => (ACTIVE[it.type] && !it.disabled && !(MONSTERS[it.type] && it.hp <= 0)) || isLoot(it.type);
+    if (!QUIET.r) {   // the old rule (up to 1.01): a whole room is busy if anything of yours is in it or reaches into it
+      const busyRooms = new Set();
+      fl.items.forEach(it => { if (live(it)) { busyRooms.add(slotRoom(it.type, it.x, it.y)); areaOf(it).forEach(t => busyRooms.add(roomOf(t[0], t[1]))); } });
+      for (const h of crew) {
+        if (busyRooms.has(roomOf(h.tx, h.ty))) return 'room';
+        if (h.nx !== null && busyRooms.has(roomOf(h.nx, h.ny))) return 'next';
+      }
+      return null;
+    }
+    // 1.02: busy only when a hero is a few steps from the tiles a trap, monster or loot actually reaches
+    const hot = new Set();
+    fl.items.forEach(it => { if (live(it) && !((it.cd || 0) > QUIET.cd)) { hot.add(it.y * WW + it.x); areaOf(it).forEach(t => hot.add(t[1] * WW + t[0])); } });   // a trap still reloading can't surprise anyone
+    for (const h of crew) {
+      let front = [[h.tx, h.ty]]; const seen = new Set([h.ty * WW + h.tx]);
+      if (hot.has(h.ty * WW + h.tx)) return 'near';
+      for (let d = 0; d < QUIET.r && front.length; d++) {
+        const nxt = [];
+        for (const [x, y] of front) for (const [dx, dy] of DIRS) {
+          const tx = x + dx, ty = y + dy, k = ty * WW + tx;
+          if (seen.has(k)) continue; seen.add(k);
+          if (hot.has(k)) return 'near';
+          if (passable(tx, ty)) nxt.push([tx, ty]);
+        }
+        front = nxt;
+      }
+    }
+    return null;
   }
   let lastT = performance.now();
   function frame(now) {
@@ -4789,6 +4848,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (run && fl) {
       if (fl.check) { if (modalOpen || paused) { fl.check.t0 += rdt; fl.check.prepT0 += rdt; fl.check.resT += rdt; } else updateCheck(); }
       if (paused && fl.phase === 'raid') fl.stats.pauseTime += rdt;
+      const ffWant = autoFFOn() ? S.autoFF : 1; ffAuto = ffWant > ffAuto ? Math.min(ffWant, ffAuto + rdt * 4) : ffWant;
       const dt = rdt * timeScale();
       if (dt > 0) {   // fast-forward runs in small steps so nothing tunnels through
         const n = Math.ceil(dt / 0.05);
@@ -4806,8 +4866,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (run.tut >= 0) tutTick();
     }
     orbs.forEach(o => { o.t += rdt; });
-    if (orbs.some(o => o.t >= o.dur && o.to !== 'heart')) scoreHit();
+    if (orbs.some(o => o.t >= o.dur && o.to === 'score')) scoreHit();
     if (orbs.some(o => o.t >= o.dur && o.to === 'heart')) heartHit();
+    if (orbs.some(o => o.t >= o.dur && o.to === 'groza')) { grozaHit(); orbs.forEach(o => { if (o.t >= o.dur && o.to === 'groza' && o.c) { o.c.fly = (o.c.fly || 0) - o.v; if (o.c.fly < 1e-6) o.c.fly = 0; } }); }
     orbs = orbs.filter(o => o.t < o.dur);
     floats.forEach(f => { f.life -= rdt; f.y -= 0.9 * rdt; });
     floats = floats.filter(f => f.life > 0);
@@ -5794,136 +5855,203 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (!fxc) fxc = c.getContext('2d');
     fxc.setTransform(DPR, 0, 0, DPR, 0, 0); fxc.clearRect(0, 0, W, H); fxDirty = orbs.length > 0;
     if (!orbs.length) return;
-    const cr = cv.getBoundingClientRect(), sr = $('#h-score').getBoundingClientRect(), hr = $('#h-heart').getBoundingClientRect();
-    const TG = { score: [sr.left + sr.width / 2, sr.top + sr.height / 2], heart: [hr.left + hr.width / 2, hr.top + hr.height / 2] };
+    const cr = cv.getBoundingClientRect(), sr = $('#h-score').getBoundingClientRect(), hr = $('#h-heart').getBoundingClientRect(), gr = $('#eq-g').getBoundingClientRect();
+    const TG = { score: [sr.left + sr.width / 2, sr.top + sr.height / 2], heart: [hr.left + hr.width / 2, hr.top + hr.height / 2], groza: [gr.left + gr.width / 2, gr.top + gr.height / 2] };
     const at = (o, u) => {
-      const [tx, ty] = TG[o.to === 'heart' && hr.width ? 'heart' : 'score'];
-      const e = u * u * (3 - 2 * u), ox = o.x + cr.left, oy = o.y + cr.top, cx = ox + (tx - ox) * 0.2, cy = Math.min(oy, ty) - 40;
+      const [tx, ty] = TG[o.to === 'heart' && hr.width ? 'heart' : o.to === 'groza' && gr.width ? 'groza' : 'score'];
+      const ox = o.ax != null ? o.ax : o.x + cr.left, oy = o.ay != null ? o.ay : o.y + cr.top;
+      const e = u * u * (3 - 2 * u), cx = ox + (tx - ox) * 0.2, cy = Math.min(oy, ty) - (o.ax != null ? 18 : 40);
       return [(1 - e) * (1 - e) * ox + 2 * (1 - e) * e * cx + e * e * tx, (1 - e) * (1 - e) * oy + 2 * (1 - e) * e * cy + e * e * ty];
     };
     orbs.forEach(o => {
       if (o.t < 0) return;   // a cashed-in chain lets its orbs go one after another
-      const u = clamp(o.t / o.dur, 0, 1), [x, y] = at(o, u), [x2, y2] = at(o, Math.max(0, u - 0.08));
-      fxc.strokeStyle = 'rgba(255,90,100,0.38)'; fxc.lineWidth = 3; fxc.lineCap = 'round'; fxc.beginPath(); fxc.moveTo(x2, y2); fxc.lineTo(x, y); fxc.stroke();
-      fxc.fillStyle = 'rgba(255,70,85,0.32)'; fxc.beginPath(); fxc.arc(x, y, 7, 0, Math.PI * 2); fxc.fill();
-      fxc.fillStyle = '#ffe0e3'; fxc.beginPath(); fxc.arc(x, y, 2.6, 0, Math.PI * 2); fxc.fill();
+      const u = clamp(o.t / o.dur, 0, 1), [x, y] = at(o, u), [x2, y2] = at(o, Math.max(0, u - 0.08)), vi = o.to === 'groza';
+      fxc.strokeStyle = vi ? 'rgba(170,150,245,0.55)' : 'rgba(255,90,100,0.38)'; fxc.lineWidth = 3; fxc.lineCap = 'round'; fxc.beginPath(); fxc.moveTo(x2, y2); fxc.lineTo(x, y); fxc.stroke();
+      fxc.fillStyle = vi ? 'rgba(160,135,245,0.42)' : 'rgba(255,70,85,0.32)'; fxc.beginPath(); fxc.arc(x, y, 7, 0, Math.PI * 2); fxc.fill();
+      fxc.fillStyle = vi ? '#ece6ff' : '#ffe0e3'; fxc.beginPath(); fxc.arc(x, y, 2.6, 0, Math.PI * 2); fxc.fill();
     });
   }
+  // Prototype 1.02: the skill check in the game's own look: a stone slab with an iron edge, cut corners and rivets, a gothic
+  // title, bone needle, a moss-green graze, a blood-red crit that glows, brass for the "Uwaga!" moment. Logic unchanged.
+  const CK = { slab0: '#1d1f24', slab1: '#111216', iron: '#464b53', mortar: '#2b2e34', edge: 'rgba(210,220,235,0.07)', rivet: '#5d6168',
+    track: '#0a0b0d', trackEdge: '#2b2e34', g0: '#86ad62', g1: '#4c6b34', r0: '#ef5a66', r1: '#8c1a24', glow: 'rgba(255,70,85,0.65)',
+    bone: '#e6e1d6', ash: '#8e939a', brass: '#c4a052', brassHi: '#e6cf94', violet: '#d9ccff', ember: '#e0643c' };
+  const ckGrad = (x0, y0, x1, y1, a, b) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, a); g.addColorStop(1, b); return g; };
+  function ckCut(x, y, w, h, k) {   // a rectangle with the corners cut off, like the slabs in the interface
+    ctx.beginPath(); ctx.moveTo(x + k, y); ctx.lineTo(x + w - k, y); ctx.lineTo(x + w, y + k); ctx.lineTo(x + w, y + h - k); ctx.lineTo(x + w - k, y + h);
+    ctx.lineTo(x + k, y + h); ctx.lineTo(x, y + h - k); ctx.lineTo(x, y + k); ctx.closePath();
+  }
+  function ckSlab(x, y, w, h) {
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4;
+    ctx.fillStyle = ckGrad(0, y, 0, y + h, CK.slab0, CK.slab1); ckCut(x, y, w, h, 5); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = CK.iron; ctx.lineWidth = 1; ckCut(x + 0.5, y + 0.5, w - 1, h - 1, 5); ctx.stroke();
+    ctx.strokeStyle = CK.edge; ctx.beginPath(); ctx.moveTo(x + 6, y + 1.5); ctx.lineTo(x + w - 6, y + 1.5); ctx.stroke();
+    ctx.fillStyle = CK.rivet; [[x + 6, y + 6], [x + w - 6, y + 6], [x + 6, y + h - 6], [x + w - 6, y + h - 6]].forEach(q => { ctx.beginPath(); ctx.arc(q[0], q[1], 1.4, 0, Math.PI * 2); ctx.fill(); });
+  }
+  function ckDisc(cx, cy, R) {   // the round backdrop of a dial: dark stone, an iron rim and four rivets on it
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4;
+    const g = ctx.createRadialGradient(cx, cy - R * 0.3, R * 0.1, cx, cy, R); g.addColorStop(0, CK.slab0); g.addColorStop(1, '#0c0d10');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = CK.iron; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, R - 0.75, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = CK.rivet; for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + k * Math.PI / 2; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * (R - 5), cy + Math.sin(a) * (R - 5), 1.5, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // zone colours along a stroke: graze = moss, crit = blood with a glow
+  const ckGraze = (x0, y0, x1, y1) => ckGrad(x0, y0, x1, y1, CK.g0, CK.g1), ckCrit = (x0, y0, x1, y1) => ckGrad(x0, y0, x1, y1, CK.r0, CK.r1);
+  function ckGlow(f) { ctx.save(); ctx.shadowColor = CK.glow; ctx.shadowBlur = 9; f(); ctx.restore(); }
   function drawCheck(T) {
     const c = fl && fl.check;
     if (!c || fl.phase !== 'raid') return;
     const it = c.it, all = [it].concat(c.extra || []);
-    if (!c.result) { ctx.fillStyle = 'rgba(5,6,8,0.32)'; ctx.fillRect(0, 0, cw, ch); }
-    all.forEach((o, k) => {   // the main trap gets the bright ring, the rest of the volley a dashed one
-      const ox = clamp((o.x + 0.5) * T - cam.ox, 10, cw - 10), oy = clamp((o.y + 0.5) * T - cam.oy, 10, ch - 10);
-      ctx.strokeStyle = k ? 'rgba(255,224,102,0.85)' : 'rgba(255,255,255,0.95)'; ctx.lineWidth = 2; if (k) ctx.setLineDash([5, 4]);
-      ctx.beginPath(); ctx.arc(ox, oy, Math.max(12, T * (k ? 0.6 : 0.75)), 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    if (!c.result) { ctx.fillStyle = 'rgba(4,5,7,0.36)'; ctx.fillRect(0, 0, cw, ch); }
+    all.forEach((o, k) => {   // the main trap gets a bone ring, the rest of the volley a dashed brass one
+      const ox = clamp((o.x + 0.5) * T - cam.ox, 10, cw - 10), oy = clamp((o.y + 0.5) * T - cam.oy, 10, ch - 10), R = Math.max(12, T * (k ? 0.6 : 0.75));
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.arc(ox, oy, R, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = k ? 'rgba(196,160,82,0.9)' : 'rgba(230,225,214,0.95)'; ctx.lineWidth = 1.6; if (k) ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.arc(ox, oy, R, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     });
     // the check sits at the bottom of the map (above the tutorial panel if it is open), so it never covers the party or their lines
-    // v15.1: round shapes get a big dial on a round backdrop with the title in a pill above (they were tiny inside the long box)
+    // round shapes get a big dial on a round backdrop with the title on a slab above
     const round = c.shape === 'ring' || c.shape === 'pulse' || c.shape === 'double' || c.shape === 'spiral', tall = c.shape === 'swing';
     const legend = run.checkHints >= 0 && fl.stats.checks <= 3, coach = $('#coach');
     const bottom = coach && !coach.hidden ? ch - coach.offsetHeight - 14 : ch - 10;
-    const label = { crit: 'KRYTYK!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
+    const label = { crit: 'Krytyk!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
+    const labelCol = { crit: CK.r0, ok: CK.g0, miss: CK.ash, skip: CK.ash }[c.result];
     const prep = !c.result && realNow < c.t0;
     const nm = ITEMS[it.type].name + (all.length > 1 ? ' + ' + (all.length - 1) : '');
-    const title = prep ? 'Uwaga: ' + (all.length > 1 ? 'seria (' + all.length + ')' : ITEMS[it.type].name.toLowerCase()) + '!' : nm + (label ? ': ' + label : ': stuknij!');
+    const head = prep ? 'Uwaga: ' + (all.length > 1 ? 'seria (' + all.length + ')' : ITEMS[it.type].name.toLowerCase()) + '!' : nm + (label ? ': ' : ': stuknij!');
     const LEG = 'stuknij w mapę · zielone: draśnięcie · czerwone: krytyk · ☠ zabije';
+    const TF = '700 17px "Grenze Gotisch", Georgia, serif', SF = w8 => w8 + ' 11px "Alegreya Sans", system-ui, sans-serif';
+    const title = (x, y, align, maxW) => {   // the gothic title; a result gets its own colour after the name
+      ctx.font = TF; ctx.textBaseline = 'middle';
+      const w1 = ctx.measureText(head).width, w2 = label ? ctx.measureText(label).width : 0, tot = w1 + w2;
+      let x0 = align === 'center' ? x - Math.min(tot, maxW) / 2 : x;
+      ctx.textAlign = 'left'; ctx.fillStyle = prep ? CK.brassHi : CK.bone; ctx.fillText(head, x0, y, label ? maxW * (w1 / tot) : maxW);
+      if (label) { ctx.fillStyle = labelCol; if (c.result === 'crit') ckGlow(() => ctx.fillText(label, x0 + Math.min(w1, maxW * (w1 / tot)), y)); else ctx.fillText(label, x0 + Math.min(w1, maxW * (w1 / tot)), y); }
+    };
     let w = Math.min(320, cw - 28), h = tall ? 74 : c.shape === 'fuse' ? 26 : 22, bx = 0, by = 0, K = 1, rcx = 0, rcy = 0;
     if (round) {
       K = clamp(Math.min(cw, ch) * 0.14, 38, 64) / 25;   // dial radius 25 in the old box, now 38-64 px
       const Rb = 37 * K, note = c.note ? c.note.replace(/^ · /, '') : '';
       rcx = cw / 2; rcy = bottom - Rb;
-      ctx.font = '700 14px "Alegreya Sans", system-ui, sans-serif';
-      const tW = ctx.measureText(title).width;
-      ctx.font = '500 11px "Alegreya Sans", system-ui, sans-serif';
+      ctx.font = TF; const tW = ctx.measureText(head + (label || '')).width;
+      ctx.font = SF('500');
       const sub = [note, legend ? LEG : ''].filter(Boolean), sW = sub.reduce((m, t) => Math.max(m, ctx.measureText(t).width), 0);
-      const pw = Math.min(cw - 16, Math.max(tW, sW) + 26), ph = 26 + sub.length * 14, px = rcx - pw / 2, py = rcy - Rb - 6 - ph;
+      const pw = Math.min(cw - 16, Math.max(tW, sW) + 30), ph = 30 + sub.length * 14, px = rcx - pw / 2, py = rcy - Rb - 8 - ph;
       c.box = { x: Math.min(px, rcx - Rb), y: py, w: Math.max(pw, 2 * Rb), h: bottom - py };
-      ctx.fillStyle = 'rgba(10,11,13,0.92)'; ctx.beginPath(); ctx.arc(rcx, rcy, Rb, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = 'rgba(10,11,13,0.94)'; rr(px, py, pw, ph, 4); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.15)'; rr(px, py, pw, ph, 4); ctx.stroke();
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = prep ? '#ffe066' : '#f1e7d3'; ctx.font = '700 14px "Alegreya Sans", system-ui, sans-serif'; ctx.fillText(title, rcx, py + 13, pw - 12);
-      sub.forEach((t, k) => { ctx.fillStyle = t === note ? '#c3b2ff' : '#8e939a'; ctx.font = (t === note ? '600 ' : '500 ') + '11px "Alegreya Sans", system-ui, sans-serif'; ctx.fillText(t, rcx, py + 27 + k * 14, pw - 12); });
-      if (prep) { const left = clamp((c.t0 - realNow) / CHECK_PREP, 0, 1); ctx.fillStyle = '#ffe066'; ctx.fillRect(rcx - 35 * left, py + ph - 4, 70 * left, 3); }
+      ckDisc(rcx, rcy, Rb);
+      ckSlab(px, py, pw, ph);
+      title(rcx, py + 15, 'center', pw - 16);
+      ctx.textAlign = 'center';
+      sub.forEach((t, k) => { ctx.fillStyle = t === note ? CK.violet : CK.ash; ctx.font = SF(t === note ? '600' : '500'); ctx.fillText(t, rcx, py + 31 + k * 14, pw - 14); });
+      if (prep) { const left = clamp((c.t0 - realNow) / CHECK_PREP, 0, 1); ctx.fillStyle = CK.brass; ctx.fillRect(rcx - 35 * left, py + ph - 5, 70 * left, 2); }
     } else {
-      const boxH = h + 30 + (legend ? 14 : 0);
-      bx = (cw - w) / 2; by = bottom - boxH + 22;
-      c.box = { x: bx - 8, y: by - 22, w: w + 16, h: boxH };
-      ctx.fillStyle = 'rgba(10,11,13,0.94)'; rr(bx - 8, by - 22, w + 16, boxH, 4); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; rr(bx - 8, by - 22, w + 16, boxH, 4); ctx.stroke();
-      ctx.fillStyle = prep ? '#ffe066' : '#f1e7d3'; ctx.font = '700 13px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText(title, bx, by - 11);
-      if (c.note) { ctx.fillStyle = '#c3b2ff'; ctx.font = '600 11px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.fillText(c.note.replace(/^ · /, ''), bx + w, by - 11); ctx.textAlign = 'left'; }
-      if (prep) {   // shrinking line = time left before the needle starts
+      const boxH = h + 34 + (legend ? 14 : 0) + (tall ? 14 : 0);   // the pendulum's skulls hang below the arc: the legend goes lower
+      bx = (cw - w) / 2; by = bottom - boxH + 26;
+      c.box = { x: bx - 10, y: by - 26, w: w + 20, h: boxH };
+      ckSlab(bx - 10, by - 26, w + 20, boxH);
+      title(bx, by - 13, 'left', c.note ? w - 90 : w);
+      if (c.note) { ctx.fillStyle = CK.violet; ctx.font = SF('600'); ctx.textAlign = 'right'; ctx.fillText(c.note.replace(/^ · /, ''), bx + w, by - 13); ctx.textAlign = 'left'; }
+      if (prep) {   // shrinking brass line = time left before the needle starts
         const left = clamp((c.t0 - realNow) / CHECK_PREP, 0, 1);
-        ctx.fillStyle = '#ffe066'; ctx.fillRect(bx + w - 70 * left, by - 13, 70 * left, 3);
+        ctx.fillStyle = CK.brass; ctx.fillRect(bx + w - 70 * left, by - 4, 70 * left, 2);
       }
     }
     const p = clamp(c.result ? (c.p !== undefined ? c.p : 1) : checkPos(c, (realNow - c.t0) / c.dur), 0, 1);
-    const needle = prep ? 'rgba(255,255,255,0.35)' : '#ffffff';
-    ctx.font = '700 ' + Math.round(14 * Math.sqrt(K)) + 'px system-ui, sans-serif'; ctx.textAlign = 'center';
+    const needle = prep ? 'rgba(230,225,214,0.35)' : CK.bone;
     const Z = [{ g0: c.g0, g1: c.g1, r0: c.r0, r1: c.r1 }].concat(c.z2 ? [c.z2] : []);
-    const skulls = (posOf) => { ctx.fillStyle = '#ffffff'; Z.forEach(z => { if (c.lethalOk) { const q = posOf((z.g0 + z.g1) / 2); ctx.fillText('☠', q[0], q[1]); } if (c.lethalCrit) { const q = posOf((z.r0 + z.r1) / 2); ctx.fillText('☠', q[0], q[1]); } }); };
+    const skulls = (posOf) => {
+      ctx.font = '700 ' + Math.round(14 * Math.sqrt(K)) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const one = q => { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText('☠', q[0], q[1]); ctx.fillStyle = CK.bone; ctx.fillText('☠', q[0], q[1]); };
+      Z.forEach(z => { if (c.lethalOk) one(posOf((z.g0 + z.g1) / 2)); if (c.lethalCrit) one(posOf((z.r0 + z.r1) / 2)); });
+    };
+    const needleGlow = f => { ctx.save(); if (!prep) { ctx.shadowColor = 'rgba(255,240,215,0.55)'; ctx.shadowBlur = 8; } f(); ctx.restore(); };
     if (c.shape === 'bar') {   // one pass, left to right
-      ctx.fillStyle = '#1e2126'; ctx.fillRect(bx, by, w, h);
-      Z.forEach(z => { ctx.fillStyle = '#3f9d5a'; ctx.fillRect(bx + w * z.g0, by, w * (z.g1 - z.g0), h); ctx.fillStyle = '#d23b4a'; ctx.fillRect(bx + w * z.r0, by, w * (z.r1 - z.r0), h); });
+      ctx.fillStyle = CK.track; ctx.fillRect(bx, by, w, h); ctx.strokeStyle = CK.trackEdge; ctx.lineWidth = 1; ctx.strokeRect(bx - 0.5, by - 0.5, w + 1, h + 1);
+      Z.forEach(z => {
+        ctx.fillStyle = ckGraze(0, by, 0, by + h); ctx.fillRect(bx + w * z.g0, by, w * (z.g1 - z.g0), h);
+        ckGlow(() => { ctx.fillStyle = ckCrit(0, by, 0, by + h); ctx.fillRect(bx + w * z.r0, by, w * (z.r1 - z.r0), h); });
+      });
+      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(bx, by + h - 4, w, 4);   // a little depth at the bottom of the groove
       skulls(q => [bx + w * q, by + h / 2 + 1]);
-      ctx.fillStyle = needle; ctx.fillRect(bx + w * p - 2, by - 5, 4, h + 10);
-    } else if (c.shape === 'fuse') {   // powder: a fuse burning towards the barrel, the spark speeds up
-      const ry = by + h / 2, x0 = bx + 4, x1 = bx + w - 30;
-      ctx.lineCap = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = '#4a3b2a'; ctx.beginPath(); ctx.moveTo(x0, ry); ctx.lineTo(x1, ry); ctx.stroke();
-      Z.forEach(z => { ctx.strokeStyle = '#3f9d5a'; ctx.beginPath(); ctx.moveTo(x0 + (x1 - x0) * z.g0, ry); ctx.lineTo(x0 + (x1 - x0) * z.g1, ry); ctx.stroke(); ctx.strokeStyle = '#d23b4a'; ctx.beginPath(); ctx.moveTo(x0 + (x1 - x0) * z.r0, ry); ctx.lineTo(x0 + (x1 - x0) * z.r1, ry); ctx.stroke(); });
+      const nx = bx + w * p;
+      ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(nx - 3, by - 6, 6, h + 12);
+      needleGlow(() => { ctx.fillStyle = needle; ctx.fillRect(nx - 1.5, by - 5, 3, h + 10); });
+    } else if (c.shape === 'fuse') {   // powder: a fuse burning towards the keg, the spark speeds up
+      const ry = by + h / 2, x0 = bx + 4, x1 = bx + w - 32;
+      ctx.lineCap = 'round'; ctx.lineWidth = 7; ctx.strokeStyle = '#2e241a'; ctx.beginPath(); ctx.moveTo(x0, ry); ctx.lineTo(x1, ry); ctx.stroke();
+      ctx.lineWidth = 5; ctx.strokeStyle = '#4a3a28'; ctx.beginPath(); ctx.moveTo(x0, ry); ctx.lineTo(x1, ry); ctx.stroke();
+      Z.forEach(z => {
+        ctx.strokeStyle = ckGraze(0, ry - 3, 0, ry + 3); ctx.beginPath(); ctx.moveTo(x0 + (x1 - x0) * z.g0, ry); ctx.lineTo(x0 + (x1 - x0) * z.g1, ry); ctx.stroke();
+        ckGlow(() => { ctx.strokeStyle = ckCrit(0, ry - 3, 0, ry + 3); ctx.beginPath(); ctx.moveTo(x0 + (x1 - x0) * z.r0, ry); ctx.lineTo(x0 + (x1 - x0) * z.r1, ry); ctx.stroke(); });
+      });
       ctx.lineCap = 'butt';
-      ctx.fillStyle = '#5a3a24'; ctx.beginPath(); ctx.arc(bx + w - 14, ry, 11, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#8a6a44'; ctx.lineWidth = 2; ctx.stroke();
-      skulls(q => [x0 + (x1 - x0) * q, ry - 10]);
+      const kx = bx + w - 15;   // the keg: dark wood, two iron bands
+      ctx.fillStyle = ckGrad(kx - 12, 0, kx + 12, 0, '#4a3324', '#2a1c13'); ckCut(kx - 11, ry - 12, 22, 24, 4); ctx.fill();
+      ctx.strokeStyle = CK.iron; ctx.lineWidth = 1; ckCut(kx - 10.5, ry - 11.5, 21, 23, 4); ctx.stroke();
+      ctx.fillStyle = '#2b2e34'; ctx.fillRect(kx - 11, ry - 6, 22, 2); ctx.fillRect(kx - 11, ry + 4, 22, 2);
+      skulls(q => [x0 + (x1 - x0) * q, ry - 12]);
       const sx = x0 + (x1 - x0) * p;
-      ctx.fillStyle = prep ? 'rgba(255,224,102,0.4)' : '#ffe066'; ctx.beginPath(); ctx.arc(sx, ry, 6 + (prep ? 0 : 2 * Math.random()), 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(sx, ry, 2.5, 0, Math.PI * 2); ctx.fill();
-    } else if (c.shape === 'swing') {   // monsters: a real pendulum hanging from the top, swinging there and back
+      ctx.save(); if (!prep) { ctx.shadowColor = 'rgba(255,140,60,0.9)'; ctx.shadowBlur = 12; }
+      ctx.fillStyle = prep ? 'rgba(224,100,60,0.4)' : CK.ember; ctx.beginPath(); ctx.arc(sx, ry, 6 + (prep ? 0 : 2 * Math.random()), 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      ctx.fillStyle = prep ? 'rgba(255,230,180,0.5)' : '#ffe2b0'; ctx.beginPath(); ctx.arc(sx, ry, 2.5, 0, Math.PI * 2); ctx.fill();
+    } else if (c.shape === 'swing') {   // monsters: a pendulum hanging from a brass pivot, swinging there and back
       const cx = bx + w / 2, cy = by - 6, R = h + 2, A = Math.PI / 3, ang = q => Math.PI / 2 + A - q * 2 * A;
-      ctx.lineCap = 'butt'; ctx.lineWidth = 12;
-      ctx.strokeStyle = '#1e2126'; ctx.beginPath(); ctx.arc(cx, cy, R, ang(1), ang(0)); ctx.stroke();
-      Z.forEach(z => { ctx.strokeStyle = '#3f9d5a'; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.g1), ang(z.g0)); ctx.stroke(); ctx.strokeStyle = '#d23b4a'; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.r1), ang(z.r0)); ctx.stroke(); });
-      skulls(q => { const a = ang(q); return [cx + Math.cos(a) * (R + 14), cy + Math.sin(a) * (R + 14)]; });
-      const a = ang(p);
-      ctx.strokeStyle = needle; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 6), cy + Math.sin(a) * (R + 6)); ctx.stroke();
-      ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * R, cy + Math.sin(a) * R, 6, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#8a7fa0'; ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.lineCap = 'butt';
+      ctx.lineWidth = 14; ctx.strokeStyle = CK.trackEdge; ctx.beginPath(); ctx.arc(cx, cy, R, ang(1), ang(0)); ctx.stroke();
+      ctx.lineWidth = 12; ctx.strokeStyle = CK.track; ctx.beginPath(); ctx.arc(cx, cy, R, ang(1), ang(0)); ctx.stroke();
+      Z.forEach(z => {
+        ctx.strokeStyle = CK.g1; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.g1), ang(z.g0)); ctx.stroke();
+        ctx.lineWidth = 6; ctx.strokeStyle = CK.g0; ctx.beginPath(); ctx.arc(cx, cy, R - 2, ang(z.g1), ang(z.g0)); ctx.stroke(); ctx.lineWidth = 12;
+        ckGlow(() => { ctx.strokeStyle = CK.r1; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.r1), ang(z.r0)); ctx.stroke(); ctx.lineWidth = 6; ctx.strokeStyle = CK.r0; ctx.beginPath(); ctx.arc(cx, cy, R - 2, ang(z.r1), ang(z.r0)); ctx.stroke(); ctx.lineWidth = 12; });
+      });
+      skulls(q => { const a = ang(q); return [cx + Math.cos(a) * (R + 15), cy + Math.sin(a) * (R + 15)]; });
+      const a = ang(p), ex = cx + Math.cos(a) * R, ey = cy + Math.sin(a) * R;
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 4.5; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 6), cy + Math.sin(a) * (R + 6)); ctx.stroke();
+      needleGlow(() => { ctx.strokeStyle = needle; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 6), cy + Math.sin(a) * (R + 6)); ctx.stroke();
+        ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(ex, ey, 6.5, 0, Math.PI * 2); ctx.fill(); });
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(ex, ey, 6.5, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = CK.brass; ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#6b5528'; ctx.stroke();
     } else if (c.shape === 'ring' || c.shape === 'double') {   // a dial: the needle sweeps once around (double: two windows)
       const cx = rcx, cy = rcy, R = 25 * K, ang = q => c.rot - Math.PI / 2 + q * Math.PI * 2;
       ctx.lineCap = 'butt';
-      ctx.lineWidth = 10 * K; ctx.strokeStyle = '#1e2126'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
-      Z.forEach(z => { ctx.strokeStyle = '#3f9d5a'; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.g0), ang(z.g1)); ctx.stroke(); ctx.strokeStyle = '#d23b4a'; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.r0), ang(z.r1)); ctx.stroke(); });
-      if (c.shape === 'double') { ctx.strokeStyle = 'rgba(195,178,255,0.5)'; ctx.lineWidth = 1.5 * K; ctx.beginPath(); ctx.arc(cx, cy, R + 8 * K, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.lineWidth = 12 * K; ctx.strokeStyle = CK.trackEdge; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 10 * K; ctx.strokeStyle = CK.track; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+      Z.forEach(z => {
+        ctx.strokeStyle = ckGraze(cx, cy - R, cx, cy + R); ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.g0), ang(z.g1)); ctx.stroke();
+        ckGlow(() => { ctx.strokeStyle = ckCrit(cx, cy - R, cx, cy + R); ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.r0), ang(z.r1)); ctx.stroke(); });
+      });
+      if (c.shape === 'double') { ctx.strokeStyle = 'rgba(160,140,232,0.45)'; ctx.lineWidth = 1.2 * K; ctx.setLineDash([3 * K, 3 * K]); ctx.beginPath(); ctx.arc(cx, cy, R + 8 * K, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
       skulls(q => { const a = ang(q); return [cx + Math.cos(a) * (R + 9 * K), cy + Math.sin(a) * (R + 9 * K)]; });
-      const a = ang(p);
-      ctx.strokeStyle = needle; ctx.lineWidth = 3.5 * Math.sqrt(K); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 7 * K), cy + Math.sin(a) * (R + 7 * K)); ctx.stroke();
-      ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(cx, cy, 3.5 * Math.sqrt(K), 0, Math.PI * 2); ctx.fill();
+      const a = ang(p), L = R + 7 * K;
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 5.5 * Math.sqrt(K); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * L, cy + Math.sin(a) * L); ctx.stroke();
+      needleGlow(() => { ctx.strokeStyle = needle; ctx.lineWidth = 3 * Math.sqrt(K); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * L, cy + Math.sin(a) * L); ctx.stroke(); });
+      ctx.fillStyle = CK.brass; ctx.beginPath(); ctx.arc(cx, cy, 4 * Math.sqrt(K), 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#6b5528'; ctx.lineWidth = 1; ctx.stroke();
     } else if (c.shape === 'spiral') {   // webs and spiders: the needle runs inward along a spiral (two turns)
       const cx = rcx, cy = rcy, pt = q => { const a = c.rot + q * Math.PI * 4, r = (31 - 23 * q) * K; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; };
       const seg = (q0, q1, col, lw) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); const n = Math.max(2, Math.ceil((q1 - q0) * 120)); for (let k = 0; k <= n; k++) { const q = pt(q0 + (q1 - q0) * k / n); if (k) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.stroke(); };
       ctx.lineCap = 'round';
-      seg(0, 1, '#1e2126', 7 * K);
-      Z.forEach(z => { seg(z.g0, z.g1, '#3f9d5a', 7 * K); seg(z.r0, z.r1, '#d23b4a', 7 * K); });
+      seg(0, 1, CK.trackEdge, 9 * K); seg(0, 1, CK.track, 7 * K);
+      Z.forEach(z => { seg(z.g0, z.g1, CK.g1, 7 * K); seg(z.g0, z.g1, CK.g0, 4 * K); ckGlow(() => { seg(z.r0, z.r1, CK.r1, 7 * K); seg(z.r0, z.r1, CK.r0, 4 * K); }); });
       ctx.lineCap = 'butt';
       skulls(q => { const a = pt(q); return [a[0], a[1] - 10 * K]; });
-      const q = pt(p); ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(q[0], q[1], 5 * K, 0, Math.PI * 2); ctx.fill();
-    } else {   // a pulse: the white ring closes in; tap when it lies on the green (or the red, further in)
+      const q = pt(p);
+      ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.beginPath(); ctx.arc(q[0], q[1], 6.5 * K, 0, Math.PI * 2); ctx.fill();
+      needleGlow(() => { ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(q[0], q[1], 5 * K, 0, Math.PI * 2); ctx.fill(); });
+    } else {   // a pulse: the bone ring closes in; tap when it lies on the green (or the red, further in)
       const cx = rcx, cy = rcy, RM = 31 * K, rad = q => RM * (1 - q);
       const band = (q0, q1, col) => { const ro = rad(q0), ri = Math.max(0, Math.min(rad(q1), ro - 3.5 * K)); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, ro, 0, Math.PI * 2); ctx.arc(cx, cy, ri, 0, Math.PI * 2, true); ctx.fill(); };
-      band(0, 1, '#1e2126'); band(c.g0, c.g1, '#3f9d5a'); band(c.r0, c.r1, '#d23b4a');
-      ctx.fillStyle = '#ffffff';
-      if (c.lethalOk) ctx.fillText('☠', cx + RM * 0.72, cy - RM * 0.72);
-      if (c.lethalCrit) ctx.fillText('☠', cx + RM * 0.72, cy + RM * 0.72);
-      ctx.strokeStyle = needle; ctx.lineWidth = 3 * Math.sqrt(K); ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, rad(p)), 0, Math.PI * 2); ctx.stroke();
+      band(0, 1, CK.track); ctx.strokeStyle = CK.trackEdge; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, RM, 0, Math.PI * 2); ctx.stroke();
+      band(c.g0, c.g1, ckGraze(cx, cy - RM, cx, cy + RM)); ckGlow(() => band(c.r0, c.r1, ckCrit(cx, cy - RM, cx, cy + RM)));
+      skulls(q => q === (c.g0 + c.g1) / 2 ? [cx + RM * 0.72, cy - RM * 0.72] : [cx + RM * 0.72, cy + RM * 0.72]);
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 5 * Math.sqrt(K); ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, rad(p)), 0, Math.PI * 2); ctx.stroke();
+      needleGlow(() => { ctx.strokeStyle = needle; ctx.lineWidth = 2.6 * Math.sqrt(K); ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, rad(p)), 0, Math.PI * 2); ctx.stroke(); });
     }
     if (legend && !round) {
-      ctx.fillStyle = '#8e939a'; ctx.font = '500 11px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText(LEG, bx, by + h + 12, w);
+      ctx.fillStyle = CK.ash; ctx.font = SF('500'); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(LEG, bx, by + h + (tall ? 27 : 13), w);
     }
   }
+
   function drawNextWave() {
     const list = run.next || [];
     if (!list.length) { uiRects.list = null; return; }
@@ -6384,8 +6512,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // Nothing going on: Groza 0 and the multipliers as they stand now (dim). Between waves: the greed a wave starts with.
     const cm = 1 + 0.25 * (comboNow() - 1), raid = fl.phase === 'raid', wait = raid && cm > 1 && !!fl.quiet;   // the combo waits while nothing happens
     const C = raid ? fl.chain : null, PY = raid && !C && fl.lastPay && fl.time - fl.lastPay.t <= 1.6 ? fl.lastPay : null, B = C || PY;
-    const eqG = C ? '+' + fmtG(C.g) : PY ? fmtG(PY.g) : '0', eqC = fmt2(B ? B.greed : raid ? fl.greed : greedStartNow()), eqK = fmt2(B ? B.cm : raid ? cm : 1);
-    const eqE = C ? '+' + fmtE(C.g * C.greed * C.cm * mods.regen) : PY ? '+' + fmtE(PY.e) : '+0';
+    const gNow = C ? Math.max(0, C.g - (C.fly || 0)) : 0;   // 1.02: the Groza box grows as the violet orbs land in it
+    const eqG = C ? '+' + fmtG(gNow) : PY ? fmtG(PY.g) : '0', eqC = fmt2(B ? B.greed : raid ? fl.greed : greedStartNow()), eqK = fmt2(B ? B.cm : raid ? cm : 1);
+    const eqE = C ? '+' + fmtE(gNow * C.greed * C.cm * mods.regen) : PY ? '+' + fmtE(PY.e) : '+0';
     const txt = [eqG, eqC, eqK, eqE, C ? 1 : PY ? 2 : 0, wait ? 1 : 0, raid ? 1 : 0, mods.regen].join('|');
     const eq = $('#h-eq');
     if (!eq.dataset.hook) { eq.dataset.hook = '1'; const open = () => { if (!run || !fl || modalOpen) return; const un = fl.phase === 'raid' && !paused; if (un) setPaused(true); openModal({ type: 'esencja', unpause: un }); };
@@ -6437,7 +6566,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const box = $('#toast'), foot = modalOpen ? document.querySelector('#card .scr-foot') : null, fr = foot && foot.getBoundingClientRect();
     box.style.top = ''; box.style.bottom = '';
     if (fr && fr.height) box.style.bottom = Math.round(innerHeight - fr.top + 8) + 'px';
-    else if (modalOpen) box.style.top = 'max(12px, env(safe-area-inset-top, 0px))';
+    else if (modalOpen) box.style.top = 'max(12px, var(--safe-top))';
     else box.style.top = Math.round(stage.getBoundingClientRect().top + 8) + 'px';
   }
   $('#toast').addEventListener('click', hideToast);
@@ -6589,7 +6718,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.01 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.02 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -6622,10 +6751,15 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Za każdą przetrwaną falę (nawet z utratą kryształu) dostajesz darmową kartę, po bossie legendarną w ofercie. Wybierasz ją w sklepie po fali; tam też kupisz karty za Esencję, odświeżysz ofertę, sprzedasz kartę, odłożysz ją do schowka albo odkupisz kryształ.',
      'Gildia czyta raporty z fal i przysyła odpowiedź: kontruj ją budowlami. Od fali 6 może przebić wyłom.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.01'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.02'));
     const ul2 = el('ul', 'conseq');
-    ['1.01: combo jak w Balatro: Groza zbiera się, dopóki trwa combo (widać to w linii u góry), i wypłaca się na końcu po końcowym combo, więc combo działa wstecz na całą serię. Liczby nad bohaterami pokazują teraz Grozę (fiolet), a czerwona Esencja wpada przy wypłacie.',
-     '1.01: serce bierze pierwsze porcje Esencji z każdej fali, aż się naje, i chce dużo więcej niż wcześniej. Fala da za mało: zje to, co dostało, i kryształ. Nie ma już zapasu serca ani limitu Esencji. Na koniec fali rozliczenie: Groza, Esencja, porcja serca, reszta dla Ciebie.',
+    ['1.02: na pełnym ekranie telefonu góra nie jest już ucięta (aparat w ekranie, zaokrąglone rogi): gra zostawia u góry odstęp. Gdyby wciąż coś było ucięte, w Ustawieniach jest suwak "Odstęp od góry ekranu".',
+     '1.02: skill checki w stylu reszty gry: kamienna płyta z żelazną krawędzią i nitami, gotycki tytuł, kościana wskazówka, zielona strefa jak mech, krwista strefa krytyku, która się żarzy.',
+     '1.02: ekran rozliczenia po fali czeka na przycisk Dalej (stuknięcie w ekran tylko przyspiesza liczenie).',
+     '1.02: w trakcie combo fioletowe kule Grozy lecą od bohatera do okienka Groza i liczba rośnie, gdy dolatują. Gdy combo się zamyka, wynik równania osobno zamienia się w Esencję: czerwone kule wylatują z okienka wyniku do serca i do sakiewki.',
+     '1.02: autoprzyspieszenie (▶▶ spokój) działa częściej i dłużej. Gra zwalnia dopiero, gdy bohater jest krok od pola, w które sięga gotowa pułapka, potwór albo łup, a nie od razu po wejściu do pokoju, w którym cokolwiek stoi. Pułapka, która się jeszcze przeładowuje, nie przerywa spokoju. Przyspieszenie rośnie płynnie, a zwalnia od razu.',
+     '1.01: combo jak w Balatro: Groza zbiera się, dopóki trwa combo (widać to w linii u góry), i wypłaca się na końcu po końcowym combo, więc combo działa wstecz na całą serię. Liczby nad bohaterami pokazują teraz Grozę (fiolet), a czerwona Esencja wpada przy wypłacie.',
+     '1.01: serce bierze pierwsze porcje Esencji z każdej fali, aż się naje, i chce dużo więcej niż wcześniej. Fala da za mało: zje to, co dostało, i kryształ. Nie ma już zapasu serca ani limitu Esencji. Na koniec fali rozliczenie: Groza, Esencja, porcja serca, reszta dla Ciebie (od 1.02 czeka na Dalej).',
      '1.01: po końcu cierpliwości bohaterowie robią odwrót i wracają do domu (tylko bohater z przepowiedni szturmuje serce).',
      '1.01: wyższe, stałe ceny: pułapki, potwory i łup ok. 1,4 raza, budowle i typy pokoi 2-2,5 raza (np. Runa 14, Mgła 10), łatanie wyłomu 20, kryształ 40. Na start 30 Esencji, po fali +8.',
      '1.01: krata zamyka zawsze na 4 s i odnawia się dopiero 8 s po otwarciu; poziom 3 daje 2 zamknięcia więcej (zamiast bez limitu). Zablokowani przez kratę idą szukać w innych pokojach, a złodziej potrafi ją podważyć.',
@@ -6693,9 +6827,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const val = el('b'), show = () => { val.textContent = sd.fmt ? sd.fmt(S[sd.k]) : String(S[sd.k]); };
     show(); lab.appendChild(el('span', null, sd.label)); lab.appendChild(val);
     const inp = el('input'); inp.type = 'range'; inp.id = 'sl-' + sd.k; inp.min = sd.min; inp.max = sd.max; inp.step = sd.step; inp.value = S[sd.k];
-    inp.addEventListener('input', () => { S[sd.k] = parseFloat(inp.value); show(); saveSettings(); });
+    inp.addEventListener('input', () => { S[sd.k] = parseFloat(inp.value); show(); saveSettings(); applyLook(); });
     wrap.appendChild(lab); wrap.appendChild(inp); return wrap;
   }
+  // 1.02: settings that change the page itself (the extra gap at the top of the screen)
+  function applyLook() { try { document.documentElement.style.setProperty('--top-extra', Math.max(0, S.topPad || 0) + 'px'); } catch (e) {} }
+  applyLook();
   // Player settings: what a player of the finished game would see.
   function renderSettings(card, m) {
     card.appendChild(el('h2', null, 'Ustawienia'));
@@ -7363,8 +7500,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(btn('primary', 'Zamknij', null, () => { closeModal(); if (m.unpause) setPaused(false); }));
   }
   // Prototype 1.01: the end of a wave reckons itself up before the summary: the wave's Groza, times the multipliers it was paid at
-  // = Esencja, the heart's share taken off (or the crystal it eats), and what is left for you. A tap jumps to the end; then it
-  // goes on to the summary by itself (or with Dalej).
+  // = Esencja, the heart's share taken off (or the crystal it eats), and what is left for you. A tap jumps to the end.
+  // 1.02 (author: it closed before he could read it): it waits for Dalej.
   function renderSettle(card, m) {
     card.classList.add('settle');
     const H = fl.hunger, need = H ? H.need : 0, E = fl.score, G = fl.base, mult = G > 0 ? E / G : 1, heart = H ? Math.min(need, fl.fed || 0) : 0, mine = Math.max(0, E - heart);
@@ -7384,10 +7521,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       rG.v.textContent = fG(G); rE.v.textContent = fE(E); if (rH) rH.v.textContent = H.fed ? '−' + fE(need) : '−' + fE(heart) + ' · ◆'; rM.v.textContent = '+' + fE(H && !H.fed ? 0 : mine);
       note.textContent = H && !H.fed ? 'Fala dała za mało: serce zjadło całą Esencję z fali i kryształ.' : (H ? 'Serce syte. ' : '') + 'Po fali dostajesz jeszcze +' + run.lastIncome + ' Esencji.';
       go.classList.add('ready');
-      timers.push(setTimeout(next, 1400));
     };
     const next = () => { if (left) return; left = true; done = true; timers.forEach(clearTimeout); if (modalKind === 'settle') openModal(m.next); };
-    card.addEventListener('click', e => { if (e.target.closest('#settle-next')) return; if (!done) finalState(); else next(); });
+    card.addEventListener('click', e => { if (e.target.closest('#settle-next')) return; if (!done) finalState(); });   // a tap only skips the counting
     if (reduceMotion) { finalState(); return; }
     show(rG); tween(rG.v, 0, G, 650, fG);
     timers.push(setTimeout(() => { show(rE); rG.r.classList.add('fly'); tween(rE.v, 0, E, 750, fE); }, 750));
@@ -7600,7 +7736,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 44;   // 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
+  const LOG_VERSION = 45;   // 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
   function snapshotLayout() {
     const L = run.layout;
     return { WW, WH, entrance: L.entrance, heart: L.heartKey, entX: L.entX, essence: Math.round(fl.essence), breach: L.breach ? Object.assign({}, L.breach) : null, greedKeep: Math.round(run.greedKeep * 100) / 100,
@@ -8101,7 +8237,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   requestAnimationFrame(frame);
 
   // Hook for automated checks; no effect on normal play.
-  window.__yatd = { walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  window.__yatd = { quietWhy, QUIET, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

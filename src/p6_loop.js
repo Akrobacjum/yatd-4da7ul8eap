@@ -3,28 +3,38 @@
   // Carried over between waves, refilled after each wave, and during a wave fed by pain, fear and souls.
   let orbs = [];
   function regenParts() { const base = S.regenBase / 10 * mods.regen; return { base, total: base }; }
-  // Prototype 1.01: no purse limit. who = a hero, or a Map hero id -> Groza share (a cashed-in combo chain); heart = the part
-  // the hungry heart took first. Red orbs fly from the heroes: to the big number for the purse, to the ♥ for the heart.
-  function gainEssence(who, amt, stat, heart) {
+  // Prototype 1.01: no purse limit. heart = the part the hungry heart took first.
+  // 1.02 (author): two separate flights. While a combo lasts, violet Groza orbs fly from the heroes into the Groza box of the
+  // equation, in real time (grozaOrbs); when the chain is cashed in, red Esencja orbs leave the result box (from = 'eq') for
+  // the big number (the purse) and the ♥ (the heart's share).
+  const ORB_MAX = 90;
+  function gainEssence(from, amt, stat, heart) {
     if (!fl || !((amt || 0) + (heart || 0) > 0)) return;
     const before = Math.floor(fl.essence);
     if (amt > 0) { fl.essence += amt; fl.stats[stat] = (fl.stats[stat] || 0) + amt; }
-    const src = [];
-    if (who instanceof Map) { let tot = 0; who.forEach(v => { tot += v; }); who.forEach((v, id) => { const h = fl.heroes.find(x => x.id === id); if (h && tot > 0) src.push([h, v / tot]); }); }
-    else if (who) src.push([who, 1]);
-    if (src.length) {
-      const T = cam.s, put = (n, to) => {
-        for (let i = 0; i < n && orbs.length < 60; i++) {
-          const r = Math.random(); let acc = 0, h = src[0][0];
-          for (const [x, w] of src) { acc += w; if (r <= acc) { h = x; break; } }
-          const p = heroPos(h);
-          orbs.push({ x: p.x * T - cam.ox + (Math.random() - 0.5) * 14, y: p.y * T - cam.oy + (Math.random() - 0.5) * 14, t: -Math.random() * 0.25, dur: 0.6 + Math.random() * 0.3, to });
-        }
-      };
-      put(Math.min(30, Math.round((heart || 0) / 0.5)), 'heart');
-      put(Math.min(40, Math.round((amt || 0) / 0.25)), 'score');
+    if (from === 'eq') {
+      const e = $('#eq-e'), r = e && e.getBoundingClientRect();
+      if (r && r.width) {
+        const put = (n, to) => { for (let i = 0; i < n && orbs.length < ORB_MAX; i++) orbs.push({ ax: r.left + r.width * (0.25 + 0.5 * Math.random()), ay: r.top + r.height * (0.3 + 0.4 * Math.random()), t: -i * 0.035 - Math.random() * 0.05, dur: 0.5 + Math.random() * 0.2, to }); };
+        put(Math.min(24, Math.max(heart > 0 ? 1 : 0, Math.round((heart || 0) / 0.6))), 'heart');
+        put(Math.min(30, Math.max(amt > 0 ? 1 : 0, Math.round((amt || 0) / 0.4))), 'score');
+      }
     }
     if (Math.floor(fl.essence) !== before) { updateTray(); essPulse(); }
+  }
+  // violet orbs carrying Groza from a hero to the equation (the Groza number there grows as they land)
+  function grozaOrbs(h, g) {
+    if (!fl || !h || !(g > 0) || reduceMotion) return;
+    if (h.gOrbC !== fl.chain) { h.gOrb = 0; h.gOrbC = fl.chain; }   // a crumb left from the last chain stays there
+    h.gOrb = (h.gOrb || 0) + g;
+    const n = Math.min(5, Math.floor(h.gOrb / 0.08)); if (!n) return;
+    const v = h.gOrb / n; h.gOrb = 0;
+    const T = cam.s, p = heroPos(h), C = fl.chain;
+    for (let i = 0; i < n; i++) {
+      if (orbs.length >= ORB_MAX) { break; }
+      orbs.push({ x: p.x * T - cam.ox + (Math.random() - 0.5) * 12, y: p.y * T - cam.oy + (Math.random() - 0.5) * 12, t: -i * 0.06, dur: 0.45 + Math.random() * 0.2, to: 'groza', v, c: C });
+      if (C) C.fly = (C.fly || 0) + v;   // counted per chain, so orbs still flying from a cashed-in chain never dent the next one
+    }
   }
   const lootMult = h => 1 + 0.25 * Math.min(4, h.inv.length);   // a hero carrying gear sheds more when hurt
   function regenTick(dt) {
@@ -37,6 +47,7 @@
   }
   function essPulse() {}   // Prototype 1.0: the big number counts up by itself (tickScore); an orb landing in it gives it a knock (scoreHit)
   function scoreHit() { const e = $('#h-score'); if (!e || realNow - (scoreHit.t || -1) < 0.1) return; scoreHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
+  function grozaHit() { const e = $('#eq-g'); if (!e || realNow - (grozaHit.t || -1) < 0.09) return; grozaHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
   function heartHit() { const e = $('#h-heart'); if (!e || realNow - (heartHit.t || -1) < 0.12) return; heartHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
 
   /* ================= sound ================= */
@@ -308,18 +319,52 @@
     if (fl.check && !fl.check.result) return 0.06;
     const sp = 1;   // v14: no speed button; holding the finger speeds up
     if (ff) return Math.max(S.ffSpeed, sp);
-    return Math.max(sp, autoFFOn() ? S.autoFF : 1);   // nothing happening: the game hurries on by itself
+    return Math.max(sp, ffAuto);   // nothing happening: the game hurries on by itself (1.02: speeds up smoothly, slows down at once)
   }
+  let ffAuto = 1;
   const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check;   // v15.1: after 0,3 s of quiet (was 0,8)
-  // "Quiet" = nobody near anything of yours: no hero in a room or corridor with a working trap, monster, loot or building,
-  // nobody fighting, caged, disarming, at the heart or about to rush a room. Resting after a retreat counts as quiet.
-  function quietNow() {
-    if (fl.ending !== null || fl.party.prep) return false;   // v15.1: the walk in from the entrance counts too (heroes still queuing used to block it)   // a crystal carrier on an empty stretch is dead time too: trap rooms still slow it down
+  // "Quiet" = nobody near anything of yours: no hero within a step of the tiles a ready trap, a monster or loot reaches
+  // (1.02; up to 1.01 the whole room counted), nobody fighting, caged, disarming, at the heart or about to rush a room.
+  // Resting after a retreat counts as quiet.
+  const QUIET = { r: 1, cd: 1 };   // 1.02: steps from a hero to anything of yours that still count as quiet (0 = the old room rule)
+  const quietNow = () => !quietWhy();
+  function quietWhy() {   // 1.02: names what keeps it from being quiet (null = quiet); the tests read it
+    if (fl.ending !== null) return 'ending';
+    if (fl.party.prep) return 'prep';
     const crew = alive();
-    if (!crew.length) return false;
-    const busyRooms = new Set();
-    fl.items.forEach(it => { if ((ACTIVE[it.type] && !it.disabled && !(MONSTERS[it.type] && it.hp <= 0)) || isLoot(it.type)) { busyRooms.add(slotRoom(it.type, it.x, it.y)); areaOf(it).forEach(t => busyRooms.add(roomOf(t[0], t[1]))); } });
-    return !crew.some(h => h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || caged(h) || busyRooms.has(roomOf(h.tx, h.ty)) || (h.nx !== null && busyRooms.has(roomOf(h.nx, h.ny))));
+    if (!crew.length) return 'empty';
+    for (const h of crew) {
+      if (h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free') return h.state;
+      if (caged(h)) return 'caged';
+    }
+    const live = it => (ACTIVE[it.type] && !it.disabled && !(MONSTERS[it.type] && it.hp <= 0)) || isLoot(it.type);
+    if (!QUIET.r) {   // the old rule (up to 1.01): a whole room is busy if anything of yours is in it or reaches into it
+      const busyRooms = new Set();
+      fl.items.forEach(it => { if (live(it)) { busyRooms.add(slotRoom(it.type, it.x, it.y)); areaOf(it).forEach(t => busyRooms.add(roomOf(t[0], t[1]))); } });
+      for (const h of crew) {
+        if (busyRooms.has(roomOf(h.tx, h.ty))) return 'room';
+        if (h.nx !== null && busyRooms.has(roomOf(h.nx, h.ny))) return 'next';
+      }
+      return null;
+    }
+    // 1.02: busy only when a hero is a few steps from the tiles a trap, monster or loot actually reaches
+    const hot = new Set();
+    fl.items.forEach(it => { if (live(it) && !((it.cd || 0) > QUIET.cd)) { hot.add(it.y * WW + it.x); areaOf(it).forEach(t => hot.add(t[1] * WW + t[0])); } });   // a trap still reloading can't surprise anyone
+    for (const h of crew) {
+      let front = [[h.tx, h.ty]]; const seen = new Set([h.ty * WW + h.tx]);
+      if (hot.has(h.ty * WW + h.tx)) return 'near';
+      for (let d = 0; d < QUIET.r && front.length; d++) {
+        const nxt = [];
+        for (const [x, y] of front) for (const [dx, dy] of DIRS) {
+          const tx = x + dx, ty = y + dy, k = ty * WW + tx;
+          if (seen.has(k)) continue; seen.add(k);
+          if (hot.has(k)) return 'near';
+          if (passable(tx, ty)) nxt.push([tx, ty]);
+        }
+        front = nxt;
+      }
+    }
+    return null;
   }
   let lastT = performance.now();
   function frame(now) {
@@ -327,6 +372,7 @@
     if (run && fl) {
       if (fl.check) { if (modalOpen || paused) { fl.check.t0 += rdt; fl.check.prepT0 += rdt; fl.check.resT += rdt; } else updateCheck(); }
       if (paused && fl.phase === 'raid') fl.stats.pauseTime += rdt;
+      const ffWant = autoFFOn() ? S.autoFF : 1; ffAuto = ffWant > ffAuto ? Math.min(ffWant, ffAuto + rdt * 4) : ffWant;
       const dt = rdt * timeScale();
       if (dt > 0) {   // fast-forward runs in small steps so nothing tunnels through
         const n = Math.ceil(dt / 0.05);
@@ -344,8 +390,9 @@
       if (run.tut >= 0) tutTick();
     }
     orbs.forEach(o => { o.t += rdt; });
-    if (orbs.some(o => o.t >= o.dur && o.to !== 'heart')) scoreHit();
+    if (orbs.some(o => o.t >= o.dur && o.to === 'score')) scoreHit();
     if (orbs.some(o => o.t >= o.dur && o.to === 'heart')) heartHit();
+    if (orbs.some(o => o.t >= o.dur && o.to === 'groza')) { grozaHit(); orbs.forEach(o => { if (o.t >= o.dur && o.to === 'groza' && o.c) { o.c.fly = (o.c.fly || 0) - o.v; if (o.c.fly < 1e-6) o.c.fly = 0; } }); }
     orbs = orbs.filter(o => o.t < o.dur);
     floats.forEach(f => { f.life -= rdt; f.y -= 0.9 * rdt; });
     floats = floats.filter(f => f.life > 0);

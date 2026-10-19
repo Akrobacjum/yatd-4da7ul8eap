@@ -13,7 +13,8 @@
   const DEFAULTS = {
     waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
     essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 20, hungerGrowth: 1.25, greedW: 1.0, autoFF: 2.5, earlyHp: 1,
-    haptics: 1, trayAuto: 1, series: 1   // game settings (0/1): vibration, tray folds during a wave, one check for a volley
+    haptics: 1, trayAuto: 1, series: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley
+    topPad: 0   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
   };
   const RUN_WAVES = 10;   // wave 5: a champion, wave 10: the hero of the prophecy. Survive it and the run is won (you may play on).
   const f1 = v => v.toFixed(1).replace('.', ','), x1 = v => '×' + f1(v), x2 = v => '×' + v.toFixed(2).replace('.', ',');
@@ -45,7 +46,8 @@
     { k: 'trayAuto', label: 'Chowaj pasek elementów w trakcie fali', toggle: true },
     { k: 'checkDiff', label: 'Trudność skill checków', min: 0.6, max: 1.8, step: 0.1, fmt: x1 },
     { k: 'autoFF', label: 'Auto-przyspieszenie, gdy nic się nie dzieje (1 = wyłączone)', min: 1, max: 4, step: 0.5, fmt: x1 },
-    { k: 'ffSpeed', label: 'Przyspieszenie (przytrzymanie palca)', min: 2, max: 6, step: 0.5, fmt: x1 }
+    { k: 'ffSpeed', label: 'Przyspieszenie (przytrzymanie palca)', min: 2, max: 6, step: 0.5, fmt: x1 },
+    { k: 'topPad', label: 'Odstęp od góry ekranu (gdy aparat albo róg ucina górę)', min: 0, max: 48, step: 4, fmt: v => v ? '+' + v + ' px' : 'auto' }
   ];
   // Points are the measure of HOW WELL a run went (surviving the waves is the measure of success): the rank at the end.
   const RANKS = [[0, 'Nora'], [150, 'Piwnica'], [400, 'Loch'], [1000, 'Labirynt'], [2500, 'Twierdza grozy'], [6000, 'Legenda']];   // v15: Esencja harvested in the run

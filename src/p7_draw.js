@@ -918,136 +918,203 @@
     if (!fxc) fxc = c.getContext('2d');
     fxc.setTransform(DPR, 0, 0, DPR, 0, 0); fxc.clearRect(0, 0, W, H); fxDirty = orbs.length > 0;
     if (!orbs.length) return;
-    const cr = cv.getBoundingClientRect(), sr = $('#h-score').getBoundingClientRect(), hr = $('#h-heart').getBoundingClientRect();
-    const TG = { score: [sr.left + sr.width / 2, sr.top + sr.height / 2], heart: [hr.left + hr.width / 2, hr.top + hr.height / 2] };
+    const cr = cv.getBoundingClientRect(), sr = $('#h-score').getBoundingClientRect(), hr = $('#h-heart').getBoundingClientRect(), gr = $('#eq-g').getBoundingClientRect();
+    const TG = { score: [sr.left + sr.width / 2, sr.top + sr.height / 2], heart: [hr.left + hr.width / 2, hr.top + hr.height / 2], groza: [gr.left + gr.width / 2, gr.top + gr.height / 2] };
     const at = (o, u) => {
-      const [tx, ty] = TG[o.to === 'heart' && hr.width ? 'heart' : 'score'];
-      const e = u * u * (3 - 2 * u), ox = o.x + cr.left, oy = o.y + cr.top, cx = ox + (tx - ox) * 0.2, cy = Math.min(oy, ty) - 40;
+      const [tx, ty] = TG[o.to === 'heart' && hr.width ? 'heart' : o.to === 'groza' && gr.width ? 'groza' : 'score'];
+      const ox = o.ax != null ? o.ax : o.x + cr.left, oy = o.ay != null ? o.ay : o.y + cr.top;
+      const e = u * u * (3 - 2 * u), cx = ox + (tx - ox) * 0.2, cy = Math.min(oy, ty) - (o.ax != null ? 18 : 40);
       return [(1 - e) * (1 - e) * ox + 2 * (1 - e) * e * cx + e * e * tx, (1 - e) * (1 - e) * oy + 2 * (1 - e) * e * cy + e * e * ty];
     };
     orbs.forEach(o => {
       if (o.t < 0) return;   // a cashed-in chain lets its orbs go one after another
-      const u = clamp(o.t / o.dur, 0, 1), [x, y] = at(o, u), [x2, y2] = at(o, Math.max(0, u - 0.08));
-      fxc.strokeStyle = 'rgba(255,90,100,0.38)'; fxc.lineWidth = 3; fxc.lineCap = 'round'; fxc.beginPath(); fxc.moveTo(x2, y2); fxc.lineTo(x, y); fxc.stroke();
-      fxc.fillStyle = 'rgba(255,70,85,0.32)'; fxc.beginPath(); fxc.arc(x, y, 7, 0, Math.PI * 2); fxc.fill();
-      fxc.fillStyle = '#ffe0e3'; fxc.beginPath(); fxc.arc(x, y, 2.6, 0, Math.PI * 2); fxc.fill();
+      const u = clamp(o.t / o.dur, 0, 1), [x, y] = at(o, u), [x2, y2] = at(o, Math.max(0, u - 0.08)), vi = o.to === 'groza';
+      fxc.strokeStyle = vi ? 'rgba(170,150,245,0.55)' : 'rgba(255,90,100,0.38)'; fxc.lineWidth = 3; fxc.lineCap = 'round'; fxc.beginPath(); fxc.moveTo(x2, y2); fxc.lineTo(x, y); fxc.stroke();
+      fxc.fillStyle = vi ? 'rgba(160,135,245,0.42)' : 'rgba(255,70,85,0.32)'; fxc.beginPath(); fxc.arc(x, y, 7, 0, Math.PI * 2); fxc.fill();
+      fxc.fillStyle = vi ? '#ece6ff' : '#ffe0e3'; fxc.beginPath(); fxc.arc(x, y, 2.6, 0, Math.PI * 2); fxc.fill();
     });
   }
+  // Prototype 1.02: the skill check in the game's own look: a stone slab with an iron edge, cut corners and rivets, a gothic
+  // title, bone needle, a moss-green graze, a blood-red crit that glows, brass for the "Uwaga!" moment. Logic unchanged.
+  const CK = { slab0: '#1d1f24', slab1: '#111216', iron: '#464b53', mortar: '#2b2e34', edge: 'rgba(210,220,235,0.07)', rivet: '#5d6168',
+    track: '#0a0b0d', trackEdge: '#2b2e34', g0: '#86ad62', g1: '#4c6b34', r0: '#ef5a66', r1: '#8c1a24', glow: 'rgba(255,70,85,0.65)',
+    bone: '#e6e1d6', ash: '#8e939a', brass: '#c4a052', brassHi: '#e6cf94', violet: '#d9ccff', ember: '#e0643c' };
+  const ckGrad = (x0, y0, x1, y1, a, b) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, a); g.addColorStop(1, b); return g; };
+  function ckCut(x, y, w, h, k) {   // a rectangle with the corners cut off, like the slabs in the interface
+    ctx.beginPath(); ctx.moveTo(x + k, y); ctx.lineTo(x + w - k, y); ctx.lineTo(x + w, y + k); ctx.lineTo(x + w, y + h - k); ctx.lineTo(x + w - k, y + h);
+    ctx.lineTo(x + k, y + h); ctx.lineTo(x, y + h - k); ctx.lineTo(x, y + k); ctx.closePath();
+  }
+  function ckSlab(x, y, w, h) {
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4;
+    ctx.fillStyle = ckGrad(0, y, 0, y + h, CK.slab0, CK.slab1); ckCut(x, y, w, h, 5); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = CK.iron; ctx.lineWidth = 1; ckCut(x + 0.5, y + 0.5, w - 1, h - 1, 5); ctx.stroke();
+    ctx.strokeStyle = CK.edge; ctx.beginPath(); ctx.moveTo(x + 6, y + 1.5); ctx.lineTo(x + w - 6, y + 1.5); ctx.stroke();
+    ctx.fillStyle = CK.rivet; [[x + 6, y + 6], [x + w - 6, y + 6], [x + 6, y + h - 6], [x + w - 6, y + h - 6]].forEach(q => { ctx.beginPath(); ctx.arc(q[0], q[1], 1.4, 0, Math.PI * 2); ctx.fill(); });
+  }
+  function ckDisc(cx, cy, R) {   // the round backdrop of a dial: dark stone, an iron rim and four rivets on it
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4;
+    const g = ctx.createRadialGradient(cx, cy - R * 0.3, R * 0.1, cx, cy, R); g.addColorStop(0, CK.slab0); g.addColorStop(1, '#0c0d10');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = CK.iron; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, R - 0.75, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = CK.rivet; for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + k * Math.PI / 2; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * (R - 5), cy + Math.sin(a) * (R - 5), 1.5, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // zone colours along a stroke: graze = moss, crit = blood with a glow
+  const ckGraze = (x0, y0, x1, y1) => ckGrad(x0, y0, x1, y1, CK.g0, CK.g1), ckCrit = (x0, y0, x1, y1) => ckGrad(x0, y0, x1, y1, CK.r0, CK.r1);
+  function ckGlow(f) { ctx.save(); ctx.shadowColor = CK.glow; ctx.shadowBlur = 9; f(); ctx.restore(); }
   function drawCheck(T) {
     const c = fl && fl.check;
     if (!c || fl.phase !== 'raid') return;
     const it = c.it, all = [it].concat(c.extra || []);
-    if (!c.result) { ctx.fillStyle = 'rgba(5,6,8,0.32)'; ctx.fillRect(0, 0, cw, ch); }
-    all.forEach((o, k) => {   // the main trap gets the bright ring, the rest of the volley a dashed one
-      const ox = clamp((o.x + 0.5) * T - cam.ox, 10, cw - 10), oy = clamp((o.y + 0.5) * T - cam.oy, 10, ch - 10);
-      ctx.strokeStyle = k ? 'rgba(255,224,102,0.85)' : 'rgba(255,255,255,0.95)'; ctx.lineWidth = 2; if (k) ctx.setLineDash([5, 4]);
-      ctx.beginPath(); ctx.arc(ox, oy, Math.max(12, T * (k ? 0.6 : 0.75)), 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    if (!c.result) { ctx.fillStyle = 'rgba(4,5,7,0.36)'; ctx.fillRect(0, 0, cw, ch); }
+    all.forEach((o, k) => {   // the main trap gets a bone ring, the rest of the volley a dashed brass one
+      const ox = clamp((o.x + 0.5) * T - cam.ox, 10, cw - 10), oy = clamp((o.y + 0.5) * T - cam.oy, 10, ch - 10), R = Math.max(12, T * (k ? 0.6 : 0.75));
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.arc(ox, oy, R, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = k ? 'rgba(196,160,82,0.9)' : 'rgba(230,225,214,0.95)'; ctx.lineWidth = 1.6; if (k) ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.arc(ox, oy, R, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     });
     // the check sits at the bottom of the map (above the tutorial panel if it is open), so it never covers the party or their lines
-    // v15.1: round shapes get a big dial on a round backdrop with the title in a pill above (they were tiny inside the long box)
+    // round shapes get a big dial on a round backdrop with the title on a slab above
     const round = c.shape === 'ring' || c.shape === 'pulse' || c.shape === 'double' || c.shape === 'spiral', tall = c.shape === 'swing';
     const legend = run.checkHints >= 0 && fl.stats.checks <= 3, coach = $('#coach');
     const bottom = coach && !coach.hidden ? ch - coach.offsetHeight - 14 : ch - 10;
-    const label = { crit: 'KRYTYK!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
+    const label = { crit: 'Krytyk!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
+    const labelCol = { crit: CK.r0, ok: CK.g0, miss: CK.ash, skip: CK.ash }[c.result];
     const prep = !c.result && realNow < c.t0;
     const nm = ITEMS[it.type].name + (all.length > 1 ? ' + ' + (all.length - 1) : '');
-    const title = prep ? 'Uwaga: ' + (all.length > 1 ? 'seria (' + all.length + ')' : ITEMS[it.type].name.toLowerCase()) + '!' : nm + (label ? ': ' + label : ': stuknij!');
+    const head = prep ? 'Uwaga: ' + (all.length > 1 ? 'seria (' + all.length + ')' : ITEMS[it.type].name.toLowerCase()) + '!' : nm + (label ? ': ' : ': stuknij!');
     const LEG = 'stuknij w mapę · zielone: draśnięcie · czerwone: krytyk · ☠ zabije';
+    const TF = '700 17px "Grenze Gotisch", Georgia, serif', SF = w8 => w8 + ' 11px "Alegreya Sans", system-ui, sans-serif';
+    const title = (x, y, align, maxW) => {   // the gothic title; a result gets its own colour after the name
+      ctx.font = TF; ctx.textBaseline = 'middle';
+      const w1 = ctx.measureText(head).width, w2 = label ? ctx.measureText(label).width : 0, tot = w1 + w2;
+      let x0 = align === 'center' ? x - Math.min(tot, maxW) / 2 : x;
+      ctx.textAlign = 'left'; ctx.fillStyle = prep ? CK.brassHi : CK.bone; ctx.fillText(head, x0, y, label ? maxW * (w1 / tot) : maxW);
+      if (label) { ctx.fillStyle = labelCol; if (c.result === 'crit') ckGlow(() => ctx.fillText(label, x0 + Math.min(w1, maxW * (w1 / tot)), y)); else ctx.fillText(label, x0 + Math.min(w1, maxW * (w1 / tot)), y); }
+    };
     let w = Math.min(320, cw - 28), h = tall ? 74 : c.shape === 'fuse' ? 26 : 22, bx = 0, by = 0, K = 1, rcx = 0, rcy = 0;
     if (round) {
       K = clamp(Math.min(cw, ch) * 0.14, 38, 64) / 25;   // dial radius 25 in the old box, now 38-64 px
       const Rb = 37 * K, note = c.note ? c.note.replace(/^ · /, '') : '';
       rcx = cw / 2; rcy = bottom - Rb;
-      ctx.font = '700 14px "Alegreya Sans", system-ui, sans-serif';
-      const tW = ctx.measureText(title).width;
-      ctx.font = '500 11px "Alegreya Sans", system-ui, sans-serif';
+      ctx.font = TF; const tW = ctx.measureText(head + (label || '')).width;
+      ctx.font = SF('500');
       const sub = [note, legend ? LEG : ''].filter(Boolean), sW = sub.reduce((m, t) => Math.max(m, ctx.measureText(t).width), 0);
-      const pw = Math.min(cw - 16, Math.max(tW, sW) + 26), ph = 26 + sub.length * 14, px = rcx - pw / 2, py = rcy - Rb - 6 - ph;
+      const pw = Math.min(cw - 16, Math.max(tW, sW) + 30), ph = 30 + sub.length * 14, px = rcx - pw / 2, py = rcy - Rb - 8 - ph;
       c.box = { x: Math.min(px, rcx - Rb), y: py, w: Math.max(pw, 2 * Rb), h: bottom - py };
-      ctx.fillStyle = 'rgba(10,11,13,0.92)'; ctx.beginPath(); ctx.arc(rcx, rcy, Rb, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = 'rgba(10,11,13,0.94)'; rr(px, py, pw, ph, 4); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.15)'; rr(px, py, pw, ph, 4); ctx.stroke();
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = prep ? '#ffe066' : '#f1e7d3'; ctx.font = '700 14px "Alegreya Sans", system-ui, sans-serif'; ctx.fillText(title, rcx, py + 13, pw - 12);
-      sub.forEach((t, k) => { ctx.fillStyle = t === note ? '#c3b2ff' : '#8e939a'; ctx.font = (t === note ? '600 ' : '500 ') + '11px "Alegreya Sans", system-ui, sans-serif'; ctx.fillText(t, rcx, py + 27 + k * 14, pw - 12); });
-      if (prep) { const left = clamp((c.t0 - realNow) / CHECK_PREP, 0, 1); ctx.fillStyle = '#ffe066'; ctx.fillRect(rcx - 35 * left, py + ph - 4, 70 * left, 3); }
+      ckDisc(rcx, rcy, Rb);
+      ckSlab(px, py, pw, ph);
+      title(rcx, py + 15, 'center', pw - 16);
+      ctx.textAlign = 'center';
+      sub.forEach((t, k) => { ctx.fillStyle = t === note ? CK.violet : CK.ash; ctx.font = SF(t === note ? '600' : '500'); ctx.fillText(t, rcx, py + 31 + k * 14, pw - 14); });
+      if (prep) { const left = clamp((c.t0 - realNow) / CHECK_PREP, 0, 1); ctx.fillStyle = CK.brass; ctx.fillRect(rcx - 35 * left, py + ph - 5, 70 * left, 2); }
     } else {
-      const boxH = h + 30 + (legend ? 14 : 0);
-      bx = (cw - w) / 2; by = bottom - boxH + 22;
-      c.box = { x: bx - 8, y: by - 22, w: w + 16, h: boxH };
-      ctx.fillStyle = 'rgba(10,11,13,0.94)'; rr(bx - 8, by - 22, w + 16, boxH, 4); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; rr(bx - 8, by - 22, w + 16, boxH, 4); ctx.stroke();
-      ctx.fillStyle = prep ? '#ffe066' : '#f1e7d3'; ctx.font = '700 13px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText(title, bx, by - 11);
-      if (c.note) { ctx.fillStyle = '#c3b2ff'; ctx.font = '600 11px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.fillText(c.note.replace(/^ · /, ''), bx + w, by - 11); ctx.textAlign = 'left'; }
-      if (prep) {   // shrinking line = time left before the needle starts
+      const boxH = h + 34 + (legend ? 14 : 0) + (tall ? 14 : 0);   // the pendulum's skulls hang below the arc: the legend goes lower
+      bx = (cw - w) / 2; by = bottom - boxH + 26;
+      c.box = { x: bx - 10, y: by - 26, w: w + 20, h: boxH };
+      ckSlab(bx - 10, by - 26, w + 20, boxH);
+      title(bx, by - 13, 'left', c.note ? w - 90 : w);
+      if (c.note) { ctx.fillStyle = CK.violet; ctx.font = SF('600'); ctx.textAlign = 'right'; ctx.fillText(c.note.replace(/^ · /, ''), bx + w, by - 13); ctx.textAlign = 'left'; }
+      if (prep) {   // shrinking brass line = time left before the needle starts
         const left = clamp((c.t0 - realNow) / CHECK_PREP, 0, 1);
-        ctx.fillStyle = '#ffe066'; ctx.fillRect(bx + w - 70 * left, by - 13, 70 * left, 3);
+        ctx.fillStyle = CK.brass; ctx.fillRect(bx + w - 70 * left, by - 4, 70 * left, 2);
       }
     }
     const p = clamp(c.result ? (c.p !== undefined ? c.p : 1) : checkPos(c, (realNow - c.t0) / c.dur), 0, 1);
-    const needle = prep ? 'rgba(255,255,255,0.35)' : '#ffffff';
-    ctx.font = '700 ' + Math.round(14 * Math.sqrt(K)) + 'px system-ui, sans-serif'; ctx.textAlign = 'center';
+    const needle = prep ? 'rgba(230,225,214,0.35)' : CK.bone;
     const Z = [{ g0: c.g0, g1: c.g1, r0: c.r0, r1: c.r1 }].concat(c.z2 ? [c.z2] : []);
-    const skulls = (posOf) => { ctx.fillStyle = '#ffffff'; Z.forEach(z => { if (c.lethalOk) { const q = posOf((z.g0 + z.g1) / 2); ctx.fillText('☠', q[0], q[1]); } if (c.lethalCrit) { const q = posOf((z.r0 + z.r1) / 2); ctx.fillText('☠', q[0], q[1]); } }); };
+    const skulls = (posOf) => {
+      ctx.font = '700 ' + Math.round(14 * Math.sqrt(K)) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const one = q => { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText('☠', q[0], q[1]); ctx.fillStyle = CK.bone; ctx.fillText('☠', q[0], q[1]); };
+      Z.forEach(z => { if (c.lethalOk) one(posOf((z.g0 + z.g1) / 2)); if (c.lethalCrit) one(posOf((z.r0 + z.r1) / 2)); });
+    };
+    const needleGlow = f => { ctx.save(); if (!prep) { ctx.shadowColor = 'rgba(255,240,215,0.55)'; ctx.shadowBlur = 8; } f(); ctx.restore(); };
     if (c.shape === 'bar') {   // one pass, left to right
-      ctx.fillStyle = '#1e2126'; ctx.fillRect(bx, by, w, h);
-      Z.forEach(z => { ctx.fillStyle = '#3f9d5a'; ctx.fillRect(bx + w * z.g0, by, w * (z.g1 - z.g0), h); ctx.fillStyle = '#d23b4a'; ctx.fillRect(bx + w * z.r0, by, w * (z.r1 - z.r0), h); });
+      ctx.fillStyle = CK.track; ctx.fillRect(bx, by, w, h); ctx.strokeStyle = CK.trackEdge; ctx.lineWidth = 1; ctx.strokeRect(bx - 0.5, by - 0.5, w + 1, h + 1);
+      Z.forEach(z => {
+        ctx.fillStyle = ckGraze(0, by, 0, by + h); ctx.fillRect(bx + w * z.g0, by, w * (z.g1 - z.g0), h);
+        ckGlow(() => { ctx.fillStyle = ckCrit(0, by, 0, by + h); ctx.fillRect(bx + w * z.r0, by, w * (z.r1 - z.r0), h); });
+      });
+      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(bx, by + h - 4, w, 4);   // a little depth at the bottom of the groove
       skulls(q => [bx + w * q, by + h / 2 + 1]);
-      ctx.fillStyle = needle; ctx.fillRect(bx + w * p - 2, by - 5, 4, h + 10);
-    } else if (c.shape === 'fuse') {   // powder: a fuse burning towards the barrel, the spark speeds up
-      const ry = by + h / 2, x0 = bx + 4, x1 = bx + w - 30;
-      ctx.lineCap = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = '#4a3b2a'; ctx.beginPath(); ctx.moveTo(x0, ry); ctx.lineTo(x1, ry); ctx.stroke();
-      Z.forEach(z => { ctx.strokeStyle = '#3f9d5a'; ctx.beginPath(); ctx.moveTo(x0 + (x1 - x0) * z.g0, ry); ctx.lineTo(x0 + (x1 - x0) * z.g1, ry); ctx.stroke(); ctx.strokeStyle = '#d23b4a'; ctx.beginPath(); ctx.moveTo(x0 + (x1 - x0) * z.r0, ry); ctx.lineTo(x0 + (x1 - x0) * z.r1, ry); ctx.stroke(); });
+      const nx = bx + w * p;
+      ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(nx - 3, by - 6, 6, h + 12);
+      needleGlow(() => { ctx.fillStyle = needle; ctx.fillRect(nx - 1.5, by - 5, 3, h + 10); });
+    } else if (c.shape === 'fuse') {   // powder: a fuse burning towards the keg, the spark speeds up
+      const ry = by + h / 2, x0 = bx + 4, x1 = bx + w - 32;
+      ctx.lineCap = 'round'; ctx.lineWidth = 7; ctx.strokeStyle = '#2e241a'; ctx.beginPath(); ctx.moveTo(x0, ry); ctx.lineTo(x1, ry); ctx.stroke();
+      ctx.lineWidth = 5; ctx.strokeStyle = '#4a3a28'; ctx.beginPath(); ctx.moveTo(x0, ry); ctx.lineTo(x1, ry); ctx.stroke();
+      Z.forEach(z => {
+        ctx.strokeStyle = ckGraze(0, ry - 3, 0, ry + 3); ctx.beginPath(); ctx.moveTo(x0 + (x1 - x0) * z.g0, ry); ctx.lineTo(x0 + (x1 - x0) * z.g1, ry); ctx.stroke();
+        ckGlow(() => { ctx.strokeStyle = ckCrit(0, ry - 3, 0, ry + 3); ctx.beginPath(); ctx.moveTo(x0 + (x1 - x0) * z.r0, ry); ctx.lineTo(x0 + (x1 - x0) * z.r1, ry); ctx.stroke(); });
+      });
       ctx.lineCap = 'butt';
-      ctx.fillStyle = '#5a3a24'; ctx.beginPath(); ctx.arc(bx + w - 14, ry, 11, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#8a6a44'; ctx.lineWidth = 2; ctx.stroke();
-      skulls(q => [x0 + (x1 - x0) * q, ry - 10]);
+      const kx = bx + w - 15;   // the keg: dark wood, two iron bands
+      ctx.fillStyle = ckGrad(kx - 12, 0, kx + 12, 0, '#4a3324', '#2a1c13'); ckCut(kx - 11, ry - 12, 22, 24, 4); ctx.fill();
+      ctx.strokeStyle = CK.iron; ctx.lineWidth = 1; ckCut(kx - 10.5, ry - 11.5, 21, 23, 4); ctx.stroke();
+      ctx.fillStyle = '#2b2e34'; ctx.fillRect(kx - 11, ry - 6, 22, 2); ctx.fillRect(kx - 11, ry + 4, 22, 2);
+      skulls(q => [x0 + (x1 - x0) * q, ry - 12]);
       const sx = x0 + (x1 - x0) * p;
-      ctx.fillStyle = prep ? 'rgba(255,224,102,0.4)' : '#ffe066'; ctx.beginPath(); ctx.arc(sx, ry, 6 + (prep ? 0 : 2 * Math.random()), 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(sx, ry, 2.5, 0, Math.PI * 2); ctx.fill();
-    } else if (c.shape === 'swing') {   // monsters: a real pendulum hanging from the top, swinging there and back
+      ctx.save(); if (!prep) { ctx.shadowColor = 'rgba(255,140,60,0.9)'; ctx.shadowBlur = 12; }
+      ctx.fillStyle = prep ? 'rgba(224,100,60,0.4)' : CK.ember; ctx.beginPath(); ctx.arc(sx, ry, 6 + (prep ? 0 : 2 * Math.random()), 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      ctx.fillStyle = prep ? 'rgba(255,230,180,0.5)' : '#ffe2b0'; ctx.beginPath(); ctx.arc(sx, ry, 2.5, 0, Math.PI * 2); ctx.fill();
+    } else if (c.shape === 'swing') {   // monsters: a pendulum hanging from a brass pivot, swinging there and back
       const cx = bx + w / 2, cy = by - 6, R = h + 2, A = Math.PI / 3, ang = q => Math.PI / 2 + A - q * 2 * A;
-      ctx.lineCap = 'butt'; ctx.lineWidth = 12;
-      ctx.strokeStyle = '#1e2126'; ctx.beginPath(); ctx.arc(cx, cy, R, ang(1), ang(0)); ctx.stroke();
-      Z.forEach(z => { ctx.strokeStyle = '#3f9d5a'; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.g1), ang(z.g0)); ctx.stroke(); ctx.strokeStyle = '#d23b4a'; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.r1), ang(z.r0)); ctx.stroke(); });
-      skulls(q => { const a = ang(q); return [cx + Math.cos(a) * (R + 14), cy + Math.sin(a) * (R + 14)]; });
-      const a = ang(p);
-      ctx.strokeStyle = needle; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 6), cy + Math.sin(a) * (R + 6)); ctx.stroke();
-      ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * R, cy + Math.sin(a) * R, 6, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#8a7fa0'; ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.lineCap = 'butt';
+      ctx.lineWidth = 14; ctx.strokeStyle = CK.trackEdge; ctx.beginPath(); ctx.arc(cx, cy, R, ang(1), ang(0)); ctx.stroke();
+      ctx.lineWidth = 12; ctx.strokeStyle = CK.track; ctx.beginPath(); ctx.arc(cx, cy, R, ang(1), ang(0)); ctx.stroke();
+      Z.forEach(z => {
+        ctx.strokeStyle = CK.g1; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.g1), ang(z.g0)); ctx.stroke();
+        ctx.lineWidth = 6; ctx.strokeStyle = CK.g0; ctx.beginPath(); ctx.arc(cx, cy, R - 2, ang(z.g1), ang(z.g0)); ctx.stroke(); ctx.lineWidth = 12;
+        ckGlow(() => { ctx.strokeStyle = CK.r1; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.r1), ang(z.r0)); ctx.stroke(); ctx.lineWidth = 6; ctx.strokeStyle = CK.r0; ctx.beginPath(); ctx.arc(cx, cy, R - 2, ang(z.r1), ang(z.r0)); ctx.stroke(); ctx.lineWidth = 12; });
+      });
+      skulls(q => { const a = ang(q); return [cx + Math.cos(a) * (R + 15), cy + Math.sin(a) * (R + 15)]; });
+      const a = ang(p), ex = cx + Math.cos(a) * R, ey = cy + Math.sin(a) * R;
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 4.5; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 6), cy + Math.sin(a) * (R + 6)); ctx.stroke();
+      needleGlow(() => { ctx.strokeStyle = needle; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 6), cy + Math.sin(a) * (R + 6)); ctx.stroke();
+        ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(ex, ey, 6.5, 0, Math.PI * 2); ctx.fill(); });
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(ex, ey, 6.5, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = CK.brass; ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#6b5528'; ctx.stroke();
     } else if (c.shape === 'ring' || c.shape === 'double') {   // a dial: the needle sweeps once around (double: two windows)
       const cx = rcx, cy = rcy, R = 25 * K, ang = q => c.rot - Math.PI / 2 + q * Math.PI * 2;
       ctx.lineCap = 'butt';
-      ctx.lineWidth = 10 * K; ctx.strokeStyle = '#1e2126'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
-      Z.forEach(z => { ctx.strokeStyle = '#3f9d5a'; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.g0), ang(z.g1)); ctx.stroke(); ctx.strokeStyle = '#d23b4a'; ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.r0), ang(z.r1)); ctx.stroke(); });
-      if (c.shape === 'double') { ctx.strokeStyle = 'rgba(195,178,255,0.5)'; ctx.lineWidth = 1.5 * K; ctx.beginPath(); ctx.arc(cx, cy, R + 8 * K, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.lineWidth = 12 * K; ctx.strokeStyle = CK.trackEdge; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 10 * K; ctx.strokeStyle = CK.track; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+      Z.forEach(z => {
+        ctx.strokeStyle = ckGraze(cx, cy - R, cx, cy + R); ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.g0), ang(z.g1)); ctx.stroke();
+        ckGlow(() => { ctx.strokeStyle = ckCrit(cx, cy - R, cx, cy + R); ctx.beginPath(); ctx.arc(cx, cy, R, ang(z.r0), ang(z.r1)); ctx.stroke(); });
+      });
+      if (c.shape === 'double') { ctx.strokeStyle = 'rgba(160,140,232,0.45)'; ctx.lineWidth = 1.2 * K; ctx.setLineDash([3 * K, 3 * K]); ctx.beginPath(); ctx.arc(cx, cy, R + 8 * K, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
       skulls(q => { const a = ang(q); return [cx + Math.cos(a) * (R + 9 * K), cy + Math.sin(a) * (R + 9 * K)]; });
-      const a = ang(p);
-      ctx.strokeStyle = needle; ctx.lineWidth = 3.5 * Math.sqrt(K); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 7 * K), cy + Math.sin(a) * (R + 7 * K)); ctx.stroke();
-      ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(cx, cy, 3.5 * Math.sqrt(K), 0, Math.PI * 2); ctx.fill();
+      const a = ang(p), L = R + 7 * K;
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 5.5 * Math.sqrt(K); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * L, cy + Math.sin(a) * L); ctx.stroke();
+      needleGlow(() => { ctx.strokeStyle = needle; ctx.lineWidth = 3 * Math.sqrt(K); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * L, cy + Math.sin(a) * L); ctx.stroke(); });
+      ctx.fillStyle = CK.brass; ctx.beginPath(); ctx.arc(cx, cy, 4 * Math.sqrt(K), 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#6b5528'; ctx.lineWidth = 1; ctx.stroke();
     } else if (c.shape === 'spiral') {   // webs and spiders: the needle runs inward along a spiral (two turns)
       const cx = rcx, cy = rcy, pt = q => { const a = c.rot + q * Math.PI * 4, r = (31 - 23 * q) * K; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; };
       const seg = (q0, q1, col, lw) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); const n = Math.max(2, Math.ceil((q1 - q0) * 120)); for (let k = 0; k <= n; k++) { const q = pt(q0 + (q1 - q0) * k / n); if (k) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.stroke(); };
       ctx.lineCap = 'round';
-      seg(0, 1, '#1e2126', 7 * K);
-      Z.forEach(z => { seg(z.g0, z.g1, '#3f9d5a', 7 * K); seg(z.r0, z.r1, '#d23b4a', 7 * K); });
+      seg(0, 1, CK.trackEdge, 9 * K); seg(0, 1, CK.track, 7 * K);
+      Z.forEach(z => { seg(z.g0, z.g1, CK.g1, 7 * K); seg(z.g0, z.g1, CK.g0, 4 * K); ckGlow(() => { seg(z.r0, z.r1, CK.r1, 7 * K); seg(z.r0, z.r1, CK.r0, 4 * K); }); });
       ctx.lineCap = 'butt';
       skulls(q => { const a = pt(q); return [a[0], a[1] - 10 * K]; });
-      const q = pt(p); ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(q[0], q[1], 5 * K, 0, Math.PI * 2); ctx.fill();
-    } else {   // a pulse: the white ring closes in; tap when it lies on the green (or the red, further in)
+      const q = pt(p);
+      ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.beginPath(); ctx.arc(q[0], q[1], 6.5 * K, 0, Math.PI * 2); ctx.fill();
+      needleGlow(() => { ctx.fillStyle = needle; ctx.beginPath(); ctx.arc(q[0], q[1], 5 * K, 0, Math.PI * 2); ctx.fill(); });
+    } else {   // a pulse: the bone ring closes in; tap when it lies on the green (or the red, further in)
       const cx = rcx, cy = rcy, RM = 31 * K, rad = q => RM * (1 - q);
       const band = (q0, q1, col) => { const ro = rad(q0), ri = Math.max(0, Math.min(rad(q1), ro - 3.5 * K)); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, ro, 0, Math.PI * 2); ctx.arc(cx, cy, ri, 0, Math.PI * 2, true); ctx.fill(); };
-      band(0, 1, '#1e2126'); band(c.g0, c.g1, '#3f9d5a'); band(c.r0, c.r1, '#d23b4a');
-      ctx.fillStyle = '#ffffff';
-      if (c.lethalOk) ctx.fillText('☠', cx + RM * 0.72, cy - RM * 0.72);
-      if (c.lethalCrit) ctx.fillText('☠', cx + RM * 0.72, cy + RM * 0.72);
-      ctx.strokeStyle = needle; ctx.lineWidth = 3 * Math.sqrt(K); ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, rad(p)), 0, Math.PI * 2); ctx.stroke();
+      band(0, 1, CK.track); ctx.strokeStyle = CK.trackEdge; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, RM, 0, Math.PI * 2); ctx.stroke();
+      band(c.g0, c.g1, ckGraze(cx, cy - RM, cx, cy + RM)); ckGlow(() => band(c.r0, c.r1, ckCrit(cx, cy - RM, cx, cy + RM)));
+      skulls(q => q === (c.g0 + c.g1) / 2 ? [cx + RM * 0.72, cy - RM * 0.72] : [cx + RM * 0.72, cy + RM * 0.72]);
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 5 * Math.sqrt(K); ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, rad(p)), 0, Math.PI * 2); ctx.stroke();
+      needleGlow(() => { ctx.strokeStyle = needle; ctx.lineWidth = 2.6 * Math.sqrt(K); ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, rad(p)), 0, Math.PI * 2); ctx.stroke(); });
     }
     if (legend && !round) {
-      ctx.fillStyle = '#8e939a'; ctx.font = '500 11px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText(LEG, bx, by + h + 12, w);
+      ctx.fillStyle = CK.ash; ctx.font = SF('500'); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(LEG, bx, by + h + (tall ? 27 : 13), w);
     }
   }
+
   function drawNextWave() {
     const list = run.next || [];
     if (!list.length) { uiRects.list = null; return; }

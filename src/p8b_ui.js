@@ -235,8 +235,9 @@
     // Nothing going on: Groza 0 and the multipliers as they stand now (dim). Between waves: the greed a wave starts with.
     const cm = 1 + 0.25 * (comboNow() - 1), raid = fl.phase === 'raid', wait = raid && cm > 1 && !!fl.quiet;   // the combo waits while nothing happens
     const C = raid ? fl.chain : null, PY = raid && !C && fl.lastPay && fl.time - fl.lastPay.t <= 1.6 ? fl.lastPay : null, B = C || PY;
-    const eqG = C ? '+' + fmtG(C.g) : PY ? fmtG(PY.g) : '0', eqC = fmt2(B ? B.greed : raid ? fl.greed : greedStartNow()), eqK = fmt2(B ? B.cm : raid ? cm : 1);
-    const eqE = C ? '+' + fmtE(C.g * C.greed * C.cm * mods.regen) : PY ? '+' + fmtE(PY.e) : '+0';
+    const gNow = C ? Math.max(0, C.g - (C.fly || 0)) : 0;   // 1.02: the Groza box grows as the violet orbs land in it
+    const eqG = C ? '+' + fmtG(gNow) : PY ? fmtG(PY.g) : '0', eqC = fmt2(B ? B.greed : raid ? fl.greed : greedStartNow()), eqK = fmt2(B ? B.cm : raid ? cm : 1);
+    const eqE = C ? '+' + fmtE(gNow * C.greed * C.cm * mods.regen) : PY ? '+' + fmtE(PY.e) : '+0';
     const txt = [eqG, eqC, eqK, eqE, C ? 1 : PY ? 2 : 0, wait ? 1 : 0, raid ? 1 : 0, mods.regen].join('|');
     const eq = $('#h-eq');
     if (!eq.dataset.hook) { eq.dataset.hook = '1'; const open = () => { if (!run || !fl || modalOpen) return; const un = fl.phase === 'raid' && !paused; if (un) setPaused(true); openModal({ type: 'esencja', unpause: un }); };
@@ -288,7 +289,7 @@
     const box = $('#toast'), foot = modalOpen ? document.querySelector('#card .scr-foot') : null, fr = foot && foot.getBoundingClientRect();
     box.style.top = ''; box.style.bottom = '';
     if (fr && fr.height) box.style.bottom = Math.round(innerHeight - fr.top + 8) + 'px';
-    else if (modalOpen) box.style.top = 'max(12px, env(safe-area-inset-top, 0px))';
+    else if (modalOpen) box.style.top = 'max(12px, var(--safe-top))';
     else box.style.top = Math.round(stage.getBoundingClientRect().top + 8) + 'px';
   }
   $('#toast').addEventListener('click', hideToast);
@@ -440,7 +441,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.01 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.02 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -473,10 +474,15 @@
      'Za każdą przetrwaną falę (nawet z utratą kryształu) dostajesz darmową kartę, po bossie legendarną w ofercie. Wybierasz ją w sklepie po fali; tam też kupisz karty za Esencję, odświeżysz ofertę, sprzedasz kartę, odłożysz ją do schowka albo odkupisz kryształ.',
      'Gildia czyta raporty z fal i przysyła odpowiedź: kontruj ją budowlami. Od fali 6 może przebić wyłom.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.01'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.02'));
     const ul2 = el('ul', 'conseq');
-    ['1.01: combo jak w Balatro: Groza zbiera się, dopóki trwa combo (widać to w linii u góry), i wypłaca się na końcu po końcowym combo, więc combo działa wstecz na całą serię. Liczby nad bohaterami pokazują teraz Grozę (fiolet), a czerwona Esencja wpada przy wypłacie.',
-     '1.01: serce bierze pierwsze porcje Esencji z każdej fali, aż się naje, i chce dużo więcej niż wcześniej. Fala da za mało: zje to, co dostało, i kryształ. Nie ma już zapasu serca ani limitu Esencji. Na koniec fali rozliczenie: Groza, Esencja, porcja serca, reszta dla Ciebie.',
+    ['1.02: na pełnym ekranie telefonu góra nie jest już ucięta (aparat w ekranie, zaokrąglone rogi): gra zostawia u góry odstęp. Gdyby wciąż coś było ucięte, w Ustawieniach jest suwak "Odstęp od góry ekranu".',
+     '1.02: skill checki w stylu reszty gry: kamienna płyta z żelazną krawędzią i nitami, gotycki tytuł, kościana wskazówka, zielona strefa jak mech, krwista strefa krytyku, która się żarzy.',
+     '1.02: ekran rozliczenia po fali czeka na przycisk Dalej (stuknięcie w ekran tylko przyspiesza liczenie).',
+     '1.02: w trakcie combo fioletowe kule Grozy lecą od bohatera do okienka Groza i liczba rośnie, gdy dolatują. Gdy combo się zamyka, wynik równania osobno zamienia się w Esencję: czerwone kule wylatują z okienka wyniku do serca i do sakiewki.',
+     '1.02: autoprzyspieszenie (▶▶ spokój) działa częściej i dłużej. Gra zwalnia dopiero, gdy bohater jest krok od pola, w które sięga gotowa pułapka, potwór albo łup, a nie od razu po wejściu do pokoju, w którym cokolwiek stoi. Pułapka, która się jeszcze przeładowuje, nie przerywa spokoju. Przyspieszenie rośnie płynnie, a zwalnia od razu.',
+     '1.01: combo jak w Balatro: Groza zbiera się, dopóki trwa combo (widać to w linii u góry), i wypłaca się na końcu po końcowym combo, więc combo działa wstecz na całą serię. Liczby nad bohaterami pokazują teraz Grozę (fiolet), a czerwona Esencja wpada przy wypłacie.',
+     '1.01: serce bierze pierwsze porcje Esencji z każdej fali, aż się naje, i chce dużo więcej niż wcześniej. Fala da za mało: zje to, co dostało, i kryształ. Nie ma już zapasu serca ani limitu Esencji. Na koniec fali rozliczenie: Groza, Esencja, porcja serca, reszta dla Ciebie (od 1.02 czeka na Dalej).',
      '1.01: po końcu cierpliwości bohaterowie robią odwrót i wracają do domu (tylko bohater z przepowiedni szturmuje serce).',
      '1.01: wyższe, stałe ceny: pułapki, potwory i łup ok. 1,4 raza, budowle i typy pokoi 2-2,5 raza (np. Runa 14, Mgła 10), łatanie wyłomu 20, kryształ 40. Na start 30 Esencji, po fali +8.',
      '1.01: krata zamyka zawsze na 4 s i odnawia się dopiero 8 s po otwarciu; poziom 3 daje 2 zamknięcia więcej (zamiast bez limitu). Zablokowani przez kratę idą szukać w innych pokojach, a złodziej potrafi ją podważyć.',
@@ -544,9 +550,12 @@
     const val = el('b'), show = () => { val.textContent = sd.fmt ? sd.fmt(S[sd.k]) : String(S[sd.k]); };
     show(); lab.appendChild(el('span', null, sd.label)); lab.appendChild(val);
     const inp = el('input'); inp.type = 'range'; inp.id = 'sl-' + sd.k; inp.min = sd.min; inp.max = sd.max; inp.step = sd.step; inp.value = S[sd.k];
-    inp.addEventListener('input', () => { S[sd.k] = parseFloat(inp.value); show(); saveSettings(); });
+    inp.addEventListener('input', () => { S[sd.k] = parseFloat(inp.value); show(); saveSettings(); applyLook(); });
     wrap.appendChild(lab); wrap.appendChild(inp); return wrap;
   }
+  // 1.02: settings that change the page itself (the extra gap at the top of the screen)
+  function applyLook() { try { document.documentElement.style.setProperty('--top-extra', Math.max(0, S.topPad || 0) + 'px'); } catch (e) {} }
+  applyLook();
   // Player settings: what a player of the finished game would see.
   function renderSettings(card, m) {
     card.appendChild(el('h2', null, 'Ustawienia'));
@@ -1214,8 +1223,8 @@
     card.appendChild(btn('primary', 'Zamknij', null, () => { closeModal(); if (m.unpause) setPaused(false); }));
   }
   // Prototype 1.01: the end of a wave reckons itself up before the summary: the wave's Groza, times the multipliers it was paid at
-  // = Esencja, the heart's share taken off (or the crystal it eats), and what is left for you. A tap jumps to the end; then it
-  // goes on to the summary by itself (or with Dalej).
+  // = Esencja, the heart's share taken off (or the crystal it eats), and what is left for you. A tap jumps to the end.
+  // 1.02 (author: it closed before he could read it): it waits for Dalej.
   function renderSettle(card, m) {
     card.classList.add('settle');
     const H = fl.hunger, need = H ? H.need : 0, E = fl.score, G = fl.base, mult = G > 0 ? E / G : 1, heart = H ? Math.min(need, fl.fed || 0) : 0, mine = Math.max(0, E - heart);
@@ -1235,10 +1244,9 @@
       rG.v.textContent = fG(G); rE.v.textContent = fE(E); if (rH) rH.v.textContent = H.fed ? '−' + fE(need) : '−' + fE(heart) + ' · ◆'; rM.v.textContent = '+' + fE(H && !H.fed ? 0 : mine);
       note.textContent = H && !H.fed ? 'Fala dała za mało: serce zjadło całą Esencję z fali i kryształ.' : (H ? 'Serce syte. ' : '') + 'Po fali dostajesz jeszcze +' + run.lastIncome + ' Esencji.';
       go.classList.add('ready');
-      timers.push(setTimeout(next, 1400));
     };
     const next = () => { if (left) return; left = true; done = true; timers.forEach(clearTimeout); if (modalKind === 'settle') openModal(m.next); };
-    card.addEventListener('click', e => { if (e.target.closest('#settle-next')) return; if (!done) finalState(); else next(); });
+    card.addEventListener('click', e => { if (e.target.closest('#settle-next')) return; if (!done) finalState(); });   // a tap only skips the counting
     if (reduceMotion) { finalState(); return; }
     show(rG); tween(rG.v, 0, G, 650, fG);
     timers.push(setTimeout(() => { show(rE); rG.r.classList.add('fly'); tween(rE.v, 0, E, 750, fE); }, 750));
@@ -1451,7 +1459,7 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 44;   // 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
+  const LOG_VERSION = 45;   // 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
   function snapshotLayout() {
     const L = run.layout;
     return { WW, WH, entrance: L.entrance, heart: L.heartKey, entX: L.entX, essence: Math.round(fl.essence), breach: L.breach ? Object.assign({}, L.breach) : null, greedKeep: Math.round(run.greedKeep * 100) / 100,
@@ -1952,7 +1960,7 @@
   requestAnimationFrame(frame);
 
   // Hook for automated checks; no effect on normal play.
-  window.__yatd = { walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  window.__yatd = { quietWhy, QUIET, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
