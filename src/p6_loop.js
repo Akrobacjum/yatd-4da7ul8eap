@@ -432,7 +432,8 @@
     fl.cardMult = cardMultNow();
     fl.quietCheckT = (fl.quietCheckT || 0) - dt;
     if (fl.quietCheckT <= 0) { fl.quietCheckT = 0.1; fl.quiet = quietNow(); }   // v15.1: checked 10 times a second (was 5)
-    if (fl.quiet) { fl.quietT += dt; if (autoFFOn()) fl.autoFFTime += dt; } else { fl.quietT = 0; fl.cclock += dt; }   // the combo clock waits while nothing happens
+    if (fl.quiet) { fl.quietT += dt; if (autoFFOn()) fl.autoFFTime += dt; } else fl.quietT = 0;
+    fl.cclock += dt;   // 1.12: the combo clock no longer waits while nothing happens (a combo asks for grouped traps)
     chainTick();   // Prototype 1.01: a combo chain that ran out is cashed in
     if (mods.hauntedGallery) fl.portraitRooms = portraitRooms();
     if (fl.echoQ && fl.echoQ.length) {   // Echo mechanizmów

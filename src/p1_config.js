@@ -12,7 +12,7 @@
 
   const DEFAULTS = {
     waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
-    essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 37, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
+    essenceCap: 40, crystals: 3, comboWin: 2.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 37, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
     music: 0.5,   // 1.07: the music's volume (0 = off)
     haptics: 1, trayAuto: 1, series: 1, split: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley, split screen (1.03)
     topPad: 0   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
@@ -127,6 +127,36 @@
   const ITEM_ORDER = TABS.flatMap(t => t.items).concat(['upgrade']);   // Ulepsz stays as a mode the code knows, with no tile in any tab
   const START_UNLOCKED = ['spikes', 'trapdoor', 'arrows', 'portrait', 'eyes', 'bones', 'gate', 'crate', 'powder', 'goblin', 'archer', 'loot', 'lpotion', 'loot2', 'loot3', 'lcursed', 'dig', 'tunnel', 'expand', 'demolish', 'rune', 'altar', 'decoy', 'acid', 'veil', 'fortify', 'howl', 'shackles', 'upgrade', 'move',
     'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'];
+  // 1.12 (author: the tutorial spread over a few runs): the first runs open the game step by step. Run 1 is the core
+  // (what wounds: traps and monsters; loot, digging, the shop and the deck, the heart), run 2 adds what scares, run 3
+  // the guild's specialists with the counter-buildings and the room types, run 4 the heroes' bodies and phobias, the
+  // returners, the treasure hunters and the breach. The stage lives in the browser ('yatd-onb'): a run that ends (or one
+  // left after wave 5) moves it on, "Pomiń samouczek" opens everything at once. A run started any other way (the dungeon
+  // behind the start screen, the tests) is the full game.
+  const ONB_FULL = 4;
+  // (both of the author's winning runs leaned on monsters: the kill run on the ogre, the archer and the goblin, so the wounding
+  // monsters stay in run 1; a run 1 of traps only would be another game)
+  const ONB_ITEM = { ghost: 2, shade: 2, bats: 2, portrait: 2, eyes: 2, bones: 2, mirror: 2, creak: 2, coffin: 2, musicbox: 2,
+    crate: 3, rune: 3, altar: 3, decoy: 3, acid: 3, howl: 3, shackles: 3, veil: 3, fortify: 3,
+    r_fog: 3, r_swamp: 3, r_grotto: 3, r_crypt: 3, r_vault: 3, r_haven: 3, r_gears: 3, r_hush: 3, r_ice: 3 };
+  // cards that only make sense with what a later run brings (a card that needs a locked trap or monster is filtered by its req)
+  const ONB_CARD = { monsterroar: 2, haunt: 2, echo: 2, panic: 2, harvest: 2, chronicle: 2, dread: 2, screams: 2, lastgasp: 2, cageghost: 2, isolation: 2,
+    heavyair: 3, cheapwalls: 3, weakspot: 4, anatomy: 4, nightmares: 4, oddbodies: 4, scars: 4, memories: 4, survivors: 4 };
+  const ONB_STAGES = [null,
+    { name: 'Podstawy', news: [] },
+    { name: 'Strach', news: [
+      'Pułapki, które straszą (w zakładce Pułapki, za raniącymi): portret, oczy i kości od razu, a z kart lustro, zawiasy, trumna i pozytywka. Nie ranią, ale strach to też Groza, a pełny fioletowy pasek wygania bohatera z lochu.',
+      'Potwory, które straszą (z kart w sklepie): duch, cień i nietoperze.',
+      'Wystraszony uciekinier daje Esencję, ale opowie następnej fali o pułapkach, które go zraniły albo przestraszyły. Nowe karty w sklepie grają strachem.'] },
+    { name: 'Gildia i loch', news: [
+      'Gildia czyta raporty z fal. Od fali 3 przysyła specjalistę na Twój styl: kapłana z amuletem na strach, wojownika z talizmanem na zabijanie, złodzieja na masę pułapek, maga na potwory, barda na błądzenie, barbarzyńcę na zastawione przejścia. Kogo i po co przysyła, zobaczysz przed falą.',
+      'Zakładka Obiekty: skrzynia i budowle-kontry na specjalistów (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy, Zasłona, Bastion).',
+      'Typy pokoi na końcu zakładki Loch: Mgła, Bagno, Grota, Krypta, Sezam, Sanktuarium, Zębatki, Głusza i Lodownia. Każdy zmienia zasady w jednym pokoju (przytrzymaj kafelek, żeby przeczytać).'] },
+    { name: 'Pełna gra', news: [
+      'Ciała i fobie: część bohaterów ma słabość albo odporność ciała i fobię, przez którą jedna rzecz straszy ich 2 razy mocniej. Karczma zdradza część z tego przed falą, resztę zobaczysz w lochu (stuknij bohatera).',
+      'Powracający: uciekinier może wrócić po 2-3 falach, silniejszy, z blizną i z pamięcią Twojego lochu.',
+      'Łowcy skarbów: przy dużej chciwości część drużyny to łowcy (sakiewka przy figurce), chciwsi od reszty.',
+      'Wyłom: od fali 6 gildia może przebić tunel do głębszego pokoju. Załatasz go za Esencję albo zostawisz.'] }];
   const TRAPS = { spikes: 1, web: 1, trapdoor: 1, cage: 1, arrows: 1, fire: 1, portrait: 1, gate: 1, powder: 1, mimic: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1 };
   const MONSTERS = { goblin: 1, archer: 1, spider: 1, ogre: 1, shaman: 1, ghost: 1, shade: 1, bats: 1 };
   // v15.1: traps that only scare (no wounds), the cursed ones a priest lifts (the thief and bombs leave them alone),
@@ -145,6 +175,14 @@
   // Loot comes in kinds the player picks: coins (pure greed), a potion (a lure for the wounded), gear, a relic, a cursed treasure.
   // rarity = how far it can be seen from (1: the same room, 2: the next room, 3: across the dungeon).
   const LOOT_KIND = { loot: 'gold', lpotion: 'potion', loot2: 'gear', loot3: 'relic', lcursed: 'cursed' };
+  // 1.12: how much one combo step adds to the power of a trap's wounds and scares (see fireRaw)
+  const COMBO_POW = 0.12;
+  // ...and the heroes get more HP to make up for it (author: longer raids, a reward for grouped traps rather than for more of
+  // them): +20% from wave 5, half of it in wave 3 (a young dungeon has few traps to group). Replays of the author's two 1.11.1
+  // runs (his own dungeons, waves 4-10, 4-5 tries a wave, so rough): the kill run's raids +6% and Esencja -8%, the fear
+  // run's raids +33% and Esencja -14% (its scares lost more: +12% a combo step instead of +25%).
+  const COMBO_HP = 0.2;
+  const comboHp = n => 1 + COMBO_HP * Math.min(1, Math.max(0, n - 1) / 4);
   const LOOT_GREED = { gold: [0.08, 0.06], potion: [0.03, 0.02], gear: [0.15, 0.08], relic: [0.35, 0.15], cursed: [0.15, 0.08] };   // [seen, picked up]
   const isLoot = t => !!LOOT_KIND[t];
   const RARITY_NAME = ['', 'zwykły', 'rzadki', 'legendarny'];

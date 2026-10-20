@@ -1,6 +1,7 @@
-# 1.05: the interactive tutorial, walked through by taps like a player: open the build bar, move a trap, spikes, arrows,
-# a portrait, coins, a double-tap upgrade, release the wave, answer a check, open a hero card, hold to speed up, dig a room,
-# then the talk steps. Every step must be reached and none skipped; the run summary logs the progress.
+# 1.05: the interactive tutorial, walked through by taps like a player. 1.12 (the tutorial spread over the first runs): the
+# guide of run 1 over its first three waves: move a trap, spikes, arrows, release the wave, answer a check, open a hero
+# card, hold to speed up; wave 2: coins, a double-tap upgrade, the deck; wave 3: dig a room, the end. Every step must be
+# reached and none skipped; the run summary logs the progress.
 import asyncio, json, sys
 from playwright.async_api import async_playwright
 BASE='file:///tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scratchpad/test/page15.html'
@@ -13,7 +14,7 @@ async def show(page, t):
 async def tap(page, t, wait=300):
     await show(page, t); xy = await tile_xy(page, t); await page.mouse.click(xy['x'], xy['y']); await page.clock.run_for(wait)
 async def step(page):
-    return await page.evaluate("(() => { const G=__yatd, s=G.TUT[G.run.tut]; return { i: G.run.tut, id: s ? s.id : null, phase: G.fl.phase, modal: G.modalKind, check: !!(G.fl.check && !G.fl.check.result), coach: document.querySelector('#coach').hidden ? null : document.querySelector('#coach').innerText.slice(0, 70), tray: !document.querySelector('#drawer').classList.contains('closed') }; })()")
+    return await page.evaluate("(() => { const G=__yatd, s=G.TUT[G.run.tut]; return { i: G.run.tut, id: s ? s.id : null, phase: G.fl.phase, modal: G.modalKind, check: !!(G.fl.check && !G.fl.check.result), coach: document.querySelector('#coach').hidden ? null : document.querySelector('#coach').innerText.slice(0, 70), tray: !document.querySelector('#drawer').classList.contains('closed'), pop: G.tutPopNow, popQ: 0 }; })()")
 async def target(page):
     return await page.evaluate("(() => { const G=__yatd, s=G.TUT[G.run.tut]; if (!s || !s.tile) return null; if (s.cached === undefined) s.cached = s.tile(); return s.cached; })()")
 async def main():
@@ -30,13 +31,6 @@ async def main():
             if s['id'] != sid: fails.append('expected step %s, got %s' % (sid, s['id']))
             return s
         await expect('intro'); await page.click('#coach .next'); await page.clock.run_for(300)
-        s = await expect('tray')   # 1.08: only a tap moves the tray: the step asks to fold it and unfold it
-        if not s['tray']: fails.append('the tray step starts with the bar open')
-        await page.click('#tray-toggle'); await page.clock.run_for(600)
-        s = await expect('tray')
-        if s['tray']: fails.append('the tap folds the bar')
-        await page.screenshot(path=OUT + '01_tray.png')
-        await page.click('#tray-toggle'); await page.clock.run_for(600)
         s = await expect('move')
         t = await target(page)
         if t:
@@ -48,17 +42,6 @@ async def main():
         if t: await tap(page, t)
         await expect('arrows'); await page.click('#item-arrows'); await page.clock.run_for(300); t = await target(page)
         if t: await tap(page, t)
-        await expect('portrait'); await page.screenshot(path=OUT + '02_portrait.png')
-        await page.click('#item-portrait'); await page.clock.run_for(300); t = await target(page)
-        if t: await tap(page, t)
-        await expect('loot'); await page.click('#tab-loot'); await page.click('#item-loot'); await page.clock.run_for(200)
-        lt = await page.evaluate("(() => { const G=__yatd, P=G.shortestPath(); for (let k=Math.floor(P.length*0.5);k<P.length;k++){ if (G.canPlace('loot',P[k][0],P[k][1])) return P[k]; } return null; })()")
-        if lt: await tap(page, lt)
-        await expect('upgrade'); await page.screenshot(path=OUT + '03_upgrade.png')
-        t = await target(page)
-        if t: await show(page, t); xy = await tile_xy(page, t); await page.mouse.click(xy['x'], xy['y']); await page.clock.run_for(110); await page.mouse.click(xy['x'], xy['y']); await page.clock.run_for(400)
-        lv = await page.evaluate("t => (__yatd.fl.items.get(t[0]+','+t[1]) || {}).lvl", t) if t else None
-        if lv != 2: fails.append('the double tap upgraded the target (lvl %s)' % lv)
         s = await expect('spend')
         for i in range(14):
             s = await step(page)
@@ -110,16 +93,34 @@ async def main():
             if not await page.evaluate("__yatd.modalKind"): break
             await page.evaluate("(() => { const G=__yatd; const k=G.modalKind; if (k==='shop') { const x=document.querySelector('#shop-close'); if (x) x.click(); else G.closeModal(); return; } const b = document.querySelector('#card .btn.primary'); if (b) b.click(); else G.closeModal(); })()")
             await page.clock.run_for(300)
+        # wave 2: coins, the upgrade, the deck
+        await expect('loot'); await page.click('#tab-loot'); await page.click('#item-loot'); await page.clock.run_for(200)
+        lt = await page.evaluate("(() => { const G=__yatd, P=G.shortestPath(); for (let k=Math.floor(P.length*0.5);k<P.length;k++){ if (G.canPlace('loot',P[k][0],P[k][1])) return P[k]; } return null; })()")
+        if lt: await tap(page, lt)
+        await expect('upgrade'); await page.screenshot(path=OUT + '03_upgrade.png')
+        await page.evaluate("__yatd.setMode(null)"); await page.clock.run_for(100)
+        t = await target(page)
+        if t: await show(page, t); xy = await tile_xy(page, t); await page.mouse.click(xy['x'], xy['y']); await page.clock.run_for(110); await page.mouse.click(xy['x'], xy['y']); await page.clock.run_for(400)
+        lv = await page.evaluate("t => (__yatd.fl.items.get(t[0]+','+t[1]) || {}).lvl", t) if t else None
+        if lv != 2: fails.append('the double tap upgraded the target (lvl %s)' % lv)
+        await expect('deck'); await page.click('#coach .next'); await page.clock.run_for(200)
+        s = await step(page)
+        if not s['coach'] is None: fails.append('after the deck the guide waits for wave 3 (%s)' % s)
+        await page.click('#btn-action'); await page.clock.run_for(300)
+        while await page.evaluate("__yatd.tutPopNow"): await page.click('#coach .next'); await page.clock.run_for(150)
+        mk = await page.evaluate(RUNW); print('wave 2 end', mk)
+        for i in range(8):
+            if not await page.evaluate("__yatd.modalKind"): break
+            await page.evaluate("(() => { const G=__yatd; const k=G.modalKind; if (k==='shop') { const x=document.querySelector('#shop-close'); if (x) x.click(); else G.closeModal(); return; } const b = document.querySelector('#card .btn.primary'); if (b) b.click(); else G.closeModal(); })()")
+            await page.clock.run_for(300)
+        # wave 3: dig, the end
         await expect('dig')
         if not (await step(page))['tray']: fails.append('the bar is open in the build')
         await page.click('#item-dig'); await page.clock.run_for(300)
         m = await page.evaluate("(() => { const G=__yatd; const ms=G.toolMarkers('dig'); return ms[0] ? [ms[0].x - 0.5, ms[0].y - 0.5] : null; })()")
         if m: await tap(page, m)
-        for sid in ['deck', 'object', 'types', 'tales', 'end']:
-            s = await step(page); seen.append(s['id']); print(s)
-            if s['id'] != (None if sid == 'deck' else sid) and sid != 'deck': fails.append('expected step %s, got %s' % (sid, s['id']))
-            if sid == 'types': await page.screenshot(path=OUT + '07_types.png')
-            await page.click('#coach .next'); await page.clock.run_for(200)
+        s = await expect('end'); await page.screenshot(path=OUT + '07_end.png')
+        await page.click('#coach .next'); await page.clock.run_for(200)
         s = await step(page); print('end', s)
         log = await page.evaluate("(() => { const G=__yatd; return G.run.tutLog; })()"); print('tutLog', log)
         if s['coach'] or s['i'] != -1: fails.append('the tutorial ends')

@@ -16,7 +16,8 @@
   // typical wave brings about 73 x 1,257^(wave - 2) (73, 146 in wave 5, 289 in wave 8, 457 in wave 10), so the heart wants
   // 37 x 1,25^(wave - 2): 37, 72 in wave 5, 141 in wave 8, 221 in wave 10 (1.10: 20 to 119, about a quarter of a wave).
   // A wave under half of the usual feeds nothing and costs a crystal; the heart's half keeps the purse from piling up.
-  const hungerNeed = n => (run && run.tutorial) || n < 2 || !(S.hungerBase > 0) ? 0 :
+  // 1.12: the first run (with the guide) is a real run, so its heart is hungry from wave 2 too
+  const hungerNeed = n => n < 2 || !(S.hungerBase > 0) ? 0 :
     Math.max(1, Math.round(S.hungerBase * Math.pow(S.hungerGrowth, n - 2) * ((mods && mods.hungerK) || 1) - (run.stacks.granary || 0) * ((mods && mods.granary) || 0)));   // Spichlerz dusz: every kill feeds it for good
   // extra levels of the leader from greed. Up to 1.02 at most 3, so greed 23 was as safe as greed 4 (the author's run: 42 798
   // Esencja). 1.03: no ceiling, but past 4 it creeps up slowly (6: +3,7, 8: +4,2, 12: +5,0, 23: +6,1).
@@ -92,8 +93,9 @@
     return o;
   }
   const inB = (t, r) => !!(fl && fl.bRooms && r >= 0 && fl.bRooms[t] && fl.bRooms[t].has(r));
-  // The combo clock only runs while something is happening (see quietNow): a walk down an empty corridor between two trap rooms
-  // does not break the combo, so traps spread over a big dungeon still chain.
+  // The combo clock only ran while something was happening (up to 1.11.1: a walk down an empty corridor between two trap rooms
+  // did not break the combo, so traps spread over a big dungeon still chained). 1.12 (author: a combo should not last too long
+  // and should ask for traps grouped together): it runs all the time and the window is 2,5 s (Grota x1,5).
   const comboNow = () => (fl && fl.cclock - fl.lastTrapC < (fl.comboWinNow || S.comboWin)) ? fl.combo : 1;
   const alive = () => fl.heroes.filter(h => !h.dead && !h.fled && !h.gone);
   const webbed = h => fl.time < h.slowUntil;
@@ -269,9 +271,14 @@
       // v12: gear and powers, getting lost, detours, curses, faith
       swaps: 0, potionsGiven: 0, amulets: 0, boots: 0, goldPicked: 0, cursed: 0, curseLifts: 0, faithOut: 0, detours: 0, gotLost: 0, searches: 0, deathFear: 0, roomsVisited: 0 };
   }
-  function newRun(tutorial) {
+  // 1.12: stage = which of the first runs this is (ONB_STAGES); the guide (tutorial) goes with the first one. Anything else is the full game.
+  const stageOf = () => (run && run.stage) || ONB_FULL;
+  const onbOk = (t, stg) => (ONB_ITEM[t] || 1) <= (stg || stageOf());
+  function newRun(tutorial, stage) {
+    stage = Math.max(1, Math.min(ONB_FULL, stage || (tutorial ? 1 : ONB_FULL)));
+    coachHide();   // 1.12 (bug): the guide's card from a run left in the middle stayed on the screen in the next run
     run = { wave: 1, total: 0, waves: [], crystals: S.crystals, maxCrystals: S.crystals, grozaTotal: 0, greedRep: 1, returners: [], stash: [], freePicks: 0, shop: null, shopOwed: 1, stacks: {}, guild: null, resumed: 0, moleWave: 0, essence: S.essence,
-      items: new Map(), layout: null, rumor: { tiles: new Map(), traps: new Map(), loot: new Map(), heart: -1, gold: 0 }, upgrades: [], unlocked: new Set(START_UNLOCKED),
+      items: new Map(), layout: null, rumor: { tiles: new Map(), traps: new Map(), loot: new Map(), heart: -1, gold: 0 }, upgrades: [], unlocked: new Set(START_UNLOCKED.filter(t => onbOk(t, stage))), stage,
       pendingUpgrades: [], continueUsed: false, startedAt: Date.now(), result: null, reason: '', checkHints: 3, tut: tutorial ? 0 : -1, tutorial: !!tutorial,
       mode: 'check', fires: 0, buildSec: 0, raidSec: 0, best: loadBest(), next: null, lastIncome: 0, afterModals: null, over: false,
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), thrIdx: 0, greedKeep: 0, greedNext: 0, waveDocs: [], won: false, logState: '', waveStart: null, deck: [], deckSize: S.deckSize || DECK_SIZE, freeDigs: 0, lastInterest: 0 };
@@ -341,6 +348,7 @@
     fl.bRooms = computeBRooms();
   }
   function startBuild(resume) {
+    tutPopDrop();   // 1.12: a card of the wave never outlives it
     setupFl('build');
     if (!run.shop || run.shop.wave !== run.wave) shopRefresh(true);   // v14: a fresh offer every wave
     if (!run.next || run.nextFor !== run.wave) { run.next = makeWave(run.wave); run.nextFor = run.wave; }   // 1.05: usually made at the end of the last wave
@@ -403,7 +411,7 @@
   const BREACH_P = 0.35, BREACH_PATCH = 20;   // Prototype 1.01: 5 was pocket change
   function planBreach() {
     const L = run.layout; delete L.breach;
-    if (run.tut >= 0) return false;
+    if (run.tut >= 0 || stageOf() < 4) return false;   // 1.12: the breach comes with the full game
     const dist = layoutDist(L), fromHeart = layoutDist({ entrance: L.heartKey, cells: L.cells, edges: L.edges }), cands = [];
     fl.rooms.forEach(R => {   // never next door to the heart: the guild always has to cross at least one of your rooms
       if (R.kind !== 'room' || R.key === L.entrance || R.key === L.heartKey || (fromHeart.get(R.key) || 0) < 2) return;
@@ -429,7 +437,7 @@
   // Patching the breach: between waves, a tap on it (see the breach sheet).
   function patchBreach() {
     if (!fl || fl.phase !== 'build' || !run.layout.breach) return false;
-    if (fl.essence < BREACH_PATCH) { setHint('Za mało Esencji: łatanie wyłomu kosztuje ' + BREACH_PATCH + '.'); return false; }
+    if (fl.essence < BREACH_PATCH) { note('Za mało Esencji (' + BREACH_PATCH + ')', fl.breach.x, fl.breach.y); return false; }
     pushUndo('łatanie wyłomu');
     delete run.layout.breach; fl.essence -= BREACH_PATCH; fl.stats.patched = (fl.stats.patched || 0) + 1;
     rebuildDungeon(true); fl.threatDirty = true;
@@ -464,14 +472,15 @@
     const female = pre.nm ? pre.female : Math.random() < 0.4, pool = (female ? NAMES_F : NAMES_M).filter(nm => !used.has(nm[0]));
     const nm = pre.nm || pick(pool.length ? pool : (female ? NAMES_F : NAMES_M)); used.add(nm[0]);
     const R = levelStats(lvl), T = HEROES[type], bm = boss === 'final' ? 3 : boss ? 1.7 : 1;
-    const max = Math.round(T.hp * R.hp * bm * S.heroHp / 100 * (1 + (EARLY_HP[n] || 0) * S.earlyHp));
+    const max = Math.round(T.hp * R.hp * bm * S.heroHp / 100 * (1 + (EARLY_HP[n] || 0) * S.earlyHp) * comboHp(n));   // 1.12: comboHp
     let trait = null;
     if (!boss && Math.random() < 0.5) trait = pick(Object.keys(HERO_TRAITS));   // about half of them have a personality
     if (pre.trait !== undefined) trait = pre.trait;
     const ck = trait === 'coward' ? 0.8 : trait === 'brave' ? 1.2 : 1;
     // v14: a body (a weakness or a toughness) and a phobia; the tavern knows some of it (shown before the wave), the rest shows in the dungeon
-    const phys = pre.phys !== undefined ? pre.phys : (Math.random() < 0.35 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHYS)) : null);
-    const phobia = pre.phobia !== undefined ? pre.phobia : (!boss && Math.random() < 0.3 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHOBIAS)) : null);
+    const deep = stageOf() >= 4;   // 1.12: bodies and phobias come with the full game
+    const phys = pre.phys !== undefined ? pre.phys : (deep && Math.random() < 0.35 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHYS)) : null);
+    const phobia = pre.phobia !== undefined ? pre.phobia : (deep && !boss && Math.random() < 0.3 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHOBIAS)) : null);
     const known = pre.known || [phys && (mods.revealAll || Math.random() < 0.3) ? 'phys' : null, phobia && (mods.revealAll || Math.random() < 0.3) ? 'phobia' : null].filter(Boolean);
     return { type, lvl, rank: tierOf(lvl), boss: boss || null, female, nm, hp: max, max, inv: makeKit(type, lvl + (boss ? 2 : 0)), trait,
       courage: Math.round(R.courage * (boss === 'final' ? 2 : boss ? 1.5 : 1) * ck), phys, phobia, known, returning: !!pre.returning, scar: pre.scar || null, times: pre.times || 0 };
@@ -481,7 +490,7 @@
   const GUILD_WANT = { fear: 'priest', kill: 'warrior', traps: 'thief', monsters: 'mage', lost: 'bard', block: 'barbarian' };
   function guildAdapt(n) {
     const w = run.waves[run.waves.length - 1];
-    if (n < 3 || !w) return null;
+    if (n < 3 || !w || stageOf() < 3) return null;   // 1.12: the guild's specialists come with run 3 (with the counter-buildings)
     const st = w.stats, fearShare = (st.fearPts + st.scarePts) / Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts);
     const killShare = st.kills / Math.max(1, w.heroes.length);
     let traps = 0, mons = 0, blocks = 0; run.items.forEach(it => { if (TRAPS[it.type]) traps++; else if (MONSTERS[it.type]) mons++; if (BUILDINGS[it.type]) blocks++; });
@@ -532,7 +541,7 @@
   function makeWave(n) {
     const size = waveSize(n);
     // v12.1: treasure hunters TAKE THE PLACE of ordinary heroes (greed brings stronger and greedier people, not more of them)
-    const hunters = n >= 3 ? Math.min(size - 2, huntersN(greedRaw(run.greedRep || 1))) : 0;
+    const hunters = n >= 3 && stageOf() >= 4 ? Math.min(size - 2, huntersN(greedRaw(run.greedRep || 1))) : 0;
     const recruit = n >= 4 && partySize(n) > partySize(n - 1) && !bossOf(n);   // the newest member is a rookie for one wave: the step in numbers is softer (not in boss waves)
     // 1.05: never two of a class (6 classes, at most 6 heroes); the first three waves bring only the four classic ones
     const classes = shuffle((n <= 3 ? CLASSIC : PARTY).slice()).slice(0, size);
@@ -659,6 +668,7 @@
       phys: e.phys || null, phobia: e.phobia || null, known: new Set(e.known || []), returning: !!e.returning, scar: e.scar || null, trauma: {}, fearBy: {}, dmgBy: {}, phobiaSeen: new Set() };
     h.inR = realNow;   // 1.09: pops in
     fl.heroes.push(h);
+    if (h.returning) tutPop('returner');   // 1.12: the first returner in the first runs
     tl('sp', h.id);
     reveal(h);
     if (fl.heroes.length === 1 && fl.breach) say(h, pick(fl.spawnAt === 'breach' ? SAY.breachUse : SAY.doorUse), 3, 2.2);
@@ -805,7 +815,7 @@
   // Głód serca: the wave's score feeds the heart. Short: the reserve pays first, then a crystal. Surplus: the reserve
   // (at most 2 needs); a full reserve grows a lost crystal back.
   function collectReturners() {
-    if (run.tutorial) return;
+    if (stageOf() < 4) return;   // 1.12: the returners come with the full game
     run.returners = run.returners || [];
     fl.heroes.forEach(h => {
       if (!h.fled || h.dead || h.boss || run.returners.length >= 8) return;
@@ -867,12 +877,13 @@
     const picks = run.pendingUpgrades.splice(0);
     run.freePicks = (run.freePicks || 0) + picks.length + (mods.patron && run.wave % 2 === 0 ? mods.patron : 0);
     run.shopOwed = Math.max(run.shopOwed || 1, ...picks.map(p => p.r), 1);
-    run.afterModals = () => { run.wave++; startBuild(); queueModal({ type: 'shop', between: true }); if (run.tut >= 0) tutOnBuild(); if (run.breachNew === run.wave && fl.breach) queueModal({ type: 'breach', fresh: true }); if (run.wave === 2 && !run.tutorial && !run.hungerTip) { run.hungerTip = true; queueModal({ type: 'hungerTip' }); } };   // v12.1: a new breach asks right away (patch or leave)
+    run.afterModals = () => { run.wave++; startBuild(); queueModal({ type: 'shop', between: true }); if (run.tut >= 0) tutOnBuild(); if (run.breachNew === run.wave && fl.breach) queueModal({ type: 'breach', fresh: true }); if (run.wave === 2 && !run.hungerTip) { run.hungerTip = true; queueModal({ type: 'hungerTip' }); } };   // v12.1: a new breach asks right away (patch or leave)
     const f = run.afterModals; run.afterModals = null; f();
   }
   function endRun(reason, result) {
     run.result = result || 'end'; run.reason = reason; run.over = true;
     if (run.won && run.result !== 'win') { run.endless = run.wave - RUN_WAVES; run.result = 'win'; }   // won at wave 10, ended later: still a win
+    onbDone(run);   // 1.12: the next run opens more of the game
     clearSave();
     fl.phase = 'over'; ff = false; updateAction();
     queueModal({ type: 'end' });
@@ -931,8 +942,8 @@
   function forgetTiles(tiles) { tiles.forEach(t => { run.rumor.tiles.delete(t[1] * WW + t[0]); }); }
   function applyTool(m) {
     const L = run.layout, cost = toolCost(m.tool, m);
-    if (fl.phase !== 'build') { setHint('Przebudowa lochu tylko między falami.'); return false; }
-    if (fl.essence < cost) { setHint('Za mało Esencji (' + ITEMS[m.tool].name + ': ' + cost + ').'); return false; }
+    if (fl.phase !== 'build') { note('Tylko między falami'); return false; }
+    if (fl.essence < cost) { note('Za mało Esencji (' + cost + ')'); return false; }
     pushUndo(ITEMS[m.tool].name.toLowerCase());
     let ok = false, refund = 0, msg = '';
     if (m.tool === 'dig') {
@@ -967,7 +978,7 @@
         else { const was = c.rt; c.rt = rt; R.rt = rt; msg = 'Pokój: ' + RT_INFO[rt].name + (was ? ' (zamiast: ' + RT_INFO[was].name + ')' : '') + '. ' + ITEMS[m.tool].desc.split(': ').slice(1).join(': ').replace(/ Stuknij znacznik pokoju\.$/, ''); }
       }
     }
-    if (!ok) { undoStack.pop(); updateUndoBtn(); setHint('Tu się nie da.'); return false; }
+    if (!ok) { undoStack.pop(); updateUndoBtn(); note('Tu się nie da'); return false; }
     fl.essence -= cost;
     fl.stats.built++; bt(m.tool).placed++; bt(m.tool).spent += cost;
     run.next = run.next || makeWave(run.wave);
@@ -990,6 +1001,7 @@
     h.known.add('phys'); if (h.entry) h.entry.known = [...h.known]; fl.stats.revealed = (fl.stats.revealed || 0) + 1; tl('rv', h.id, 'phys');
     say(h, pick(P.res[dtp] > 1 ? SAY.weakHit[dtp] : SAY.resistHit[dtp]), 3, 1.8, 'loud');
     floatHero(h, (P.res[dtp] > 1 ? 'Słabość: ' : 'Odporność: ') + DMG_TYPES[dtp], P.res[dtp] > 1 ? '#ffb35c' : '#9fc6ff', 13, -1.0);
+    tutPop('body');
   }
   function phobiaOn(h, attr, src, dtp) {
     const F = h.phobia && PHOBIAS[h.phobia];
@@ -1001,6 +1013,7 @@
     if (h.known.has('phobia')) return;
     h.known.add('phobia'); if (h.entry) h.entry.known = [...h.known]; fl.stats.revealed = (fl.stats.revealed || 0) + 1; tl('rv', h.id, 'phobia');
     say(h, pick(SAY.phobia[h.phobia]), 4, 2.2); floatHero(h, 'Fobia: ' + PHOBIAS[h.phobia].name, '#c3b2ff', 13, -1.1);
+    tutPop('phobia');
   }
   function phobiaMult(h, attr, src, dtp) {
     let k = 1;
@@ -1031,7 +1044,7 @@
   function damage(h, amt, src, comboMult) {
     if (h.dead || h.fled || amt <= 0 || fl.ending !== null) return;
     const kind = srcKind(src);
-    comboMult = comboMult || 1;
+    comboMult = comboMult || 1; amt *= comboMult;   // 1.12: a combo makes the wounds hit harder too
     const tkey = kind === 'trap' && src.type ? src.type : null;
     if (tkey) {
       // self-defence first: the thief may dodge a single hit, a talisman's ward (a power the hero switches on) soaks part of it

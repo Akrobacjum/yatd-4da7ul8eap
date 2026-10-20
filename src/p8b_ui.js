@@ -48,14 +48,14 @@
           if (tipEat) { tipEat = false; return; }   // the end of a hold is not a tap
           if (!fl || !run || (fl.phase !== 'build' && fl.phase !== 'raid')) return;
           if (MODES[t]) {
-            if (fl.phase !== 'build') { setHint(ITEMS[t].name + ': tylko między falami.'); return; }
+            if (fl.phase !== 'build') { nope(b, 'między falami'); return; }
             selected = selected === t ? null : t; movingKey = null; movingObj = null; updateTray();
             if (selected) setHint(ITEMS[t].desc);   // a mode: how to use it
             return;
           }
-          if (!run.unlocked.has(t)) { setHint(ITEMS[t].name + ' jest zablokowany. Odblokujesz go kartą ze sklepu.'); return; }
-          if ((TOOLS[t] || ITEMS[t].build) && fl.phase !== 'build') { setHint(ITEMS[t].name + ': przebudowa lochu tylko między falami.'); return; }
-          if (fl.essence < costOf(t)) { setHint('Za mało Esencji na: ' + ITEMS[t].name + ' (' + costOf(t) + ').'); return; }
+          if (!run.unlocked.has(t)) { nope(b, 'zablokowane'); return; }
+          if ((TOOLS[t] || ITEMS[t].build) && fl.phase !== 'build') { nope(b, 'między falami'); return; }
+          if (fl.essence < costOf(t)) { nope(b, 'za mało Esencji'); return; }
           selected = selected === t ? null : t; movingKey = null; movingObj = null;   // choosing from the tray puts down what was in hand
           updateTray();
           // 1.05 (a tester paid 256 for one more slot in a room he had expanded ten times; a new room cost about 8): say the prices side by side
@@ -67,12 +67,15 @@
         tray.appendChild(b);
       });
     }
+    // 1.12: what a later run brings is not in the tray at all (a tab with nothing in it yet is gone too)
+    const tabOn = tb => !tb.items.length || tb.items.some(t => onbOk(t));
+    if (!tabOn(TABS.find(tb => tb.id === tab) || TABS[0])) tab = 'traps';
     const cur = TABS.find(tb => tb.id === tab) || TABS[0];
-    TABS.forEach(tb => $('#tab-' + tb.id).setAttribute('aria-selected', String(tb === cur)));
+    TABS.forEach(tb => { const tbb = $('#tab-' + tb.id); tbb.hidden = !tabOn(tb); tbb.setAttribute('aria-selected', String(tb === cur)); });
     let shown = 0;
     ITEM_ORDER.forEach(t => {
       const b = $('#item-' + t);
-      b.hidden = !cur.items.includes(t);
+      b.hidden = !cur.items.includes(t) || !onbOk(t);
       if (!b.hidden) b.style.setProperty('--d', String(Math.min(9, shown++)));
       const cst = b.querySelector('.cost');
       cst.textContent = MODES[t] ? '' : String(costOf(t)); cst.classList.toggle('nocost', !!MODES[t]);
@@ -232,7 +235,7 @@
         hudCache.hunger = k;
         row.classList.toggle('off', !need); row.classList.toggle('fed', ok); row.classList.toggle('hungry', !!need && !ok && inW);
         $('#h-hfill').style.width = (need ? Math.min(1, fed / need) * 100 : 0).toFixed(1) + '%';
-        $('#h-hlabel').textContent = !need ? (run.tutorial ? 'serce śpi (samouczek)' : 'serce głodne od fali 2') : ok ? 'serce syte' : inW ? 'serce ' + Math.floor(fed) + '/' + need : 'serce chce ' + need + ' z fali';
+        $('#h-hlabel').textContent = !need ? 'serce głodne od fali 2' : ok ? 'serce syte' : inW ? 'serce ' + Math.floor(fed) + '/' + need : 'serce chce ' + need + ' z fali';
       }
     }
     const out = fl.party && fl.party.carrierId >= 0 && fl.phase === 'raid' ? 1 : 0;
@@ -246,7 +249,7 @@
     // The equation row (the Balatro line). Prototype 1.01: while a combo lasts its Groza piles up here and the line shows what it
     // will pay (Groza x Chciwość x Combo = Esencja); when the combo ends it is cashed in (the line glows for a moment, orbs fly).
     // Nothing going on: Groza 0 and the multipliers as they stand now (dim). Between waves: the greed a wave starts with.
-    const cm = 1 + 0.25 * (comboNow() - 1), raid = fl.phase === 'raid', wait = raid && cm > 1 && !!fl.quiet;   // the combo waits while nothing happens
+    const cm = 1 + 0.25 * (comboNow() - 1), raid = fl.phase === 'raid', wait = false;   // 1.12: the combo clock never waits now
     const C = raid ? fl.chain : null, PY = raid && !C && fl.lastPay && fl.time - fl.lastPay.t <= 1.6 ? fl.lastPay : null, B = C || PY;
     const gNow = C ? Math.max(0, C.g - (C.fly || 0)) : 0;   // 1.02: the Groza box grows as the violet orbs land in it
     // 1.10: Chciwość and Combo grow as their orbs land too (what is still flying is not shown yet)
@@ -288,14 +291,21 @@
     }
     box.setAttribute('aria-label', 'Postęp runu: fala ' + run.wave + ' z ' + RUN_WAVES);
   }
-  function setHint(t) {
-    if (!t) return;
-    const box = $('#toast'), same = t === hintMsg && !box.hidden && !box.classList.contains('bye');
-    hintMsg = t;
-    if (!same) { box.textContent = t; box.hidden = false; box.classList.remove('bye'); box.style.animation = 'none'; void box.offsetWidth; box.style.animation = ''; }
-    placeToast(); requestAnimationFrame(placeToast);
-    clearTimeout(setHint.t1); clearTimeout(setHint.t2);
-    setHint.t1 = setTimeout(hideToast, Math.min(9000, Math.max(2600, 1400 + t.length * 45)));
+  // 1.12 (author: the message box at the top of the map goes, all of it): what it explained is in the onboarding cards (Nowe w
+  // tym runie), in the tile tips (hold a tile) and on the screens; what a tap did wrong is said for a moment right where you
+  // tapped (note), and a tray tile you cannot take shakes and says why on itself (nope). setHint stays, as a no-op.
+  function setHint(t) {}
+  let lastTapT = null;
+  function note(t, x, y) {
+    if (!fl || !t) return;
+    const p = x != null ? { x, y } : lastTapT; if (!p) return;
+    addFloat(p.x + 0.5, p.y + 0.5, t, '#ffc2b8', 13, -0.3, 'note');
+  }
+  function nope(b, t) {
+    if (!b) return; const sl = b.querySelector('.sl'); buzz(15);
+    b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope');
+    if (sl) { if (sl.dataset.was == null) sl.dataset.was = sl.textContent; sl.textContent = t; }
+    clearTimeout(b.nopeT); b.nopeT = setTimeout(() => { b.classList.remove('nope'); if (sl && sl.dataset.was != null) { sl.textContent = sl.dataset.was; delete sl.dataset.was; } }, 1500);
   }
   function hideToast() {
     const box = $('#toast'); clearTimeout(setHint.t1); if (box.hidden) return;
@@ -404,7 +414,7 @@
     const card = $('#card'); card.innerHTML = ''; const scr = m.type === 'shop' || m.type === 'wave' || m.type === 'end', top = m.type === 'breach'; card.className = 'card enter' + (scr ? ' screen' : '') + (top ? ' topsheet' : '');
     card.scrollTop = 0; $('#overlay').classList.toggle('screenbg', scr); $('#overlay').classList.toggle('top', top);   // 1.01: the breach sheet sits at the top, the map stays in view
     clearTimeout(openModal.t); openModal.t = setTimeout(() => card.classList.remove('enter'), 900);   // the entrance plays once, not on every tap inside
-    ({ start: renderStart, menu: renderMenu, settings: renderSettings, tests: renderTests, upgrade: renderUpgrade, wave: renderWave, over: renderOver, end: renderEnd, survey: renderSurvey, victory: renderVictory, card: renderCard, item: renderItem, breach: renderBreach, hungerTip: renderHungerTip, shop: renderShop, hero: renderHero, esencja: renderEsencja })[m.type](card, m);
+    ({ start: renderStart, menu: renderMenu, settings: renderSettings, tests: renderTests, upgrade: renderUpgrade, wave: renderWave, over: renderOver, end: renderEnd, survey: renderSurvey, victory: renderVictory, card: renderCard, item: renderItem, breach: renderBreach, hungerTip: renderHungerTip, onb: renderOnb, shop: renderShop, hero: renderHero, esencja: renderEsencja })[m.type](card, m);
     $('#overlay').hidden = false;
   }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -490,7 +500,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.11.1 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.12 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -505,13 +515,25 @@
       const c = btn('primary big', sv.run.tutorial && sv.run.tut >= 0 ? 'Kontynuuj samouczek' : 'Kontynuuj run', 'fala ' + sv.run.wave + (sv.stage === 'summary' ? ' zakończona' : '') + ' · zebrane ' + Math.round(sv.run.total) + ' Esencji · zapisano ' + new Date(sv.at).toLocaleString('pl-PL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }), () => { closeModal(); userStarted = true; if (!resumeRun()) { setHint('Nie udało się wczytać zapisu.'); openModal({ type: 'start' }); } });
       c.id = 'start-continue'; box.appendChild(c);
     }
-    const a = btn((sv ? '' : 'primary ') + 'big', 'Samouczek', sv ? 'od nowa · zapisany run przepadnie' : 'Pierwsza fala krok po kroku', () => { closeModal(); userStarted = true; newRun(true); }); a.id = 'start-tut';
-    const b = btn('big', sv ? 'Nowy run' : 'Pomiń samouczek', sv ? 'zapisany run przepadnie' : 'Od razu do gry', () => { closeModal(); userStarted = true; newRun(false); }); b.id = 'start-play';
-    box.appendChild(a); box.appendChild(b); card.appendChild(box);
+    // 1.12: the first four runs open the game step by step (the first one with the guide); "Pomiń samouczek" opens it all
+    const onb = onbStage(), lost = sv ? ' · zapisany run przepadnie' : '';
+    const drop = () => { if (sv) onbDone(Object.assign({}, sv.run, { result: 'quit' })); };   // a run of the first ones left after wave 5 counts as played
+    if (onb <= 4) {
+      const first = onb === 1 && !coachDone();
+      const a = btn((sv ? '' : 'primary ') + 'big', first ? 'Samouczek' : 'Nowy run', (first ? 'Pierwszy run z przewodnikiem' : 'Run ' + onb + ' z 4: ' + ONB_STAGES[onb].name.toLowerCase()) + lost, () => { closeModal(); userStarted = true; drop(); startGuided(); }); a.id = 'start-tut';
+      const b = btn('big', 'Pomiń samouczek', 'Cała gra od razu' + lost, () => { closeModal(); userStarted = true; setOnb(5); newRun(false); }); b.id = 'start-play';
+      box.appendChild(a); box.appendChild(b);
+    } else {
+      const b = btn((sv ? '' : 'primary ') + 'big', 'Nowy run', sv ? 'zapisany run przepadnie' : 'Pełna gra', () => { closeModal(); userStarted = true; newRun(false); }); b.id = 'start-play';
+      const a = btn('big', 'Samouczek', 'Nauka od nowa: 4 runy, pierwszy z przewodnikiem' + lost, () => { closeModal(); userStarted = true; setOnb(1); try { localStorage.removeItem(COACH_KEY); localStorage.removeItem(POPS_KEY); } catch (e) {} startGuided(); }); a.id = 'start-tut';
+      box.appendChild(b); box.appendChild(a);
+    }
+    card.appendChild(box);
     webStartRow(card);
     const how = el('details'); how.id = 'start-how'; how.appendChild(el('summary', null, 'Jak grać'));
     const ul = el('ul', 'conseq');
-    ['Między falami budujesz z paska na dole. Zakładki: Pułapki (te, które ranią, i te, które straszą), Potwory, Łup, Obiekty (skrzynia i budowle-kontry), Loch (nowe pokoje, przejścia, rozbudowa i typy pokoi), Talia. Każdy pokój mieści kilka elementów (licznik w rogu pokoju). Z rozwiniętym paskiem widzisz loch z wysoka (wysoka izometria), zwinięty pasek (▼ Budowa) pokazuje go tak jak w fali (izometria 2:1). W fali pasek sam się chowa, a rozwinięcie go (▲ Budowa) zatrzymuje grę: budujesz w spokoju, a ▼ Budowa gra dalej. Przycisku pauzy nie ma.',
+    ['Pierwsze 4 runy odsłaniają grę po kawałku: run 1 to rany (pułapki i potwory), łup, kopanie, sklep i serce, run 2 dokłada straszenie, run 3 gildię, budowle i typy pokoi, run 4 ciała, fobie, powracających, łowców i wyłom. Pomiń samouczek otwiera wszystko od razu.',
+     'Między falami budujesz z paska na dole. Zakładki: Pułapki (te, które ranią, i te, które straszą), Potwory, Łup, Obiekty (skrzynia i budowle-kontry), Loch (nowe pokoje, przejścia, rozbudowa i typy pokoi), Talia. Każdy pokój mieści kilka elementów (licznik w rogu pokoju). Z rozwiniętym paskiem widzisz loch z wysoka (wysoka izometria), zwinięty pasek (▼ Budowa) pokazuje go tak jak w fali (izometria 2:1). W fali pasek sam się chowa, a rozwinięcie go (▲ Budowa) zatrzymuje grę: budujesz w spokoju, a ▼ Budowa gra dalej. Przycisku pauzy nie ma.',
      'Ściany od strony kamery są ścięte do podłogi, więc nic się za nimi nie chowa. Pułapka ścienna na takiej ścianie stoi przy niej jak tabliczka.',
      'Stuknięcie postawionego elementu albo mebla podnosi go (stuknij nowe miejsce, żeby przenieść), dwa szybkie stuknięcia ulepszają pułapkę albo potwora, przytrzymanie zdejmuje i oddaje Esencję. Przytrzymanie kafelka w pasku pokazuje, co robi. Działa też na pułapki, z którymi loch startuje (meble lochu nic nie oddają).',
      'W fali stukasz w mapę przy skill checku: obwódka to draśnięcie, pełne pole to krytyk (najmocniej), czaszka znaczy, że ktoś zginie. Każda pułapka ma swój kształt checku, a im silniejszy bohater, tym szybszy koralik.',
@@ -522,15 +544,21 @@
      'Bohaterowie mają 6 klas i każdą poznasz po figurce: hełm, tarcza i miecz (wojownik), kaptur i sztylet (złodziej), aureola i szata z krzyżem (kapłan), spiczasty kapelusz i laska (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). W jednej drużynie nigdy nie ma dwóch tej samej klasy. Bard krzepi pieśnią i woła zgubionych, barbarzyńca wpada w furię i rozbija skrzynie i budowle. Sakiewka przy bohaterze znaczy łowcę skarbów.',
      'Część pułapek nie rani, tylko straszy: portret, oczy, kości, lustro, zawiasy, trumna, pozytywka (w zakładce Pułapki, za raniącymi), a w zakładce Potwory duch, cień i nietoperze. Przestraszony uciekinier, który widział łup, opowie o nim i następna fala przyjdzie bardziej chciwa.',
      'Rany mają typ: kłute, obuchowe, ogień i trucizna. Klasa i ciało bohatera zmieniają obrażenia, a fobie podwajają strach. Stuknij bohatera (w fali albo na liście u góry), żeby zobaczyć jego kartę.',
-     'Rany i strach to Groza. Dopóki trwa combo (różne pułapki pod rząd), Groza się zbiera, a gdy combo się skończy, wypłaca się jako Esencja: Groza × Chciwość (łup, rozległy loch, karty) × Combo. Chciwość rośnie coraz wolniej: im jej więcej, tym mniej dokłada kolejny łup. Esencję wydasz jeszcze w tej samej fali.',
+     'Rany i strach to Groza. Dopóki trwa combo (różne pułapki pod rząd, każda w ciągu 2,5 s od poprzedniej), Groza się zbiera, a każdy krok combo wzmacnia rany i strach kolejnych pułapek o 12%. Gdy combo się skończy, Groza wypłaca się jako Esencja: Groza × Chciwość (łup, rozległy loch, karty) × Combo. Chciwość rośnie coraz wolniej: im jej więcej, tym mniej dokłada kolejny łup. Esencję wydasz jeszcze w tej samej fali.',
      'Od fali 2 serce bierze pierwsze porcje Esencji z każdej fali, aż się naje (♥ u góry pokazuje ile). Fala da za mało: serce zje to, co dostało, i kryształ. Trzymaj bohaterów w lochu jak najdłużej: wypędzeni od razu nie nakarmią serca. Limitu Esencji nie ma.',
      'Za każdą przetrwaną falę (nawet z utratą kryształu) dostajesz darmową kartę, po bossie legendarną w ofercie. Wybierasz ją w sklepie po fali; tam też kupisz karty za Esencję, odświeżysz ofertę, sprzedasz kartę albo odłożysz ją do schowka. Kryształu nie da się odkupić.',
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.11.1'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.12'));
     const ul2 = el('ul', 'conseq');
-    ['1.11.1: serce znowu zabiera swoją porcję z każdej fali (tyle, ile wynosi próg), ale próg pasuje teraz do tego, ile naprawdę dają fale: to mniej więcej połowa typowej fali. Fala 2: 37, fala 5: 72, fala 8: 141, fala 10: 221 (+25% na falę). Fala, która da mniej, oddaje sercu wszystko i kryształ. Spichlerz dusz znowu −1 za zabitego.',
+    ['1.12: samouczek rozłożony na pierwsze 4 runy. Run 1 to podstawy (pułapki i potwory, które ranią, łup, kopanie, sklep i talia, serce) z przewodnikiem przez pierwsze 3 fale. Run 2 dokłada to, co straszy (pułapki i potwory), run 3 gildię z jej specjalistami, budowle-kontry i typy pokoi, a run 4 to pełna gra: ciała i fobie bohaterów, powracający, łowcy skarbów i wyłom. Na starcie runów 2-4 karta mówi, co nowego, a pierwsze spotkanie z fobią, ciałem albo powracającym ma swoją krótką kartę. Pomiń samouczek otwiera wszystko od razu (kto grał wcześniej, ma już wszystko).',
+     '1.12: w pierwszym runie serce jest głodne od fali 2, jak w każdym (wcześniej w samouczku spało), a run liczy się do rekordów.',
+     '1.12: combo wzmacnia pułapki: każdy krok combo to +12% obrażeń i strachu kolejnych pułapek (wcześniej combo wzmacniało tylko strach, o 25% na krok). Combo trwa, póki następna pułapka odpali w ciągu 2,5 s (było 3,5 s), a ten czas płynie zawsze (wcześniej stał, gdy nic się nie działo). Combo wymaga więc pułapek ustawionych blisko siebie.',
+     '1.12: bohaterowie mają więcej życia: +10% w fali 3, +20% od fali 5. Kilka mądrze zgrupowanych pułapek ma wygrywać z masą porozrzucanych.',
+     '1.12: nie ma już podpowiedzi u góry ekranu. Gdy coś się nie uda, krótki napis pojawia się przy stukniętym miejscu, a kafelek w pasku drga i mówi, czego brakuje.',
+     '1.12: naprawione: karta samouczka zostawała na ekranie w nowym runie, gdy wyszło się z samouczka w trakcie.',
+     '1.11.1: serce znowu zabiera swoją porcję z każdej fali (tyle, ile wynosi próg), ale próg pasuje teraz do tego, ile naprawdę dają fale: to mniej więcej połowa typowej fali. Fala 2: 37, fala 5: 72, fala 8: 141, fala 10: 221 (+25% na falę). Fala, która da mniej, oddaje sercu wszystko i kryształ. Spichlerz dusz znowu −1 za zabitego.',
      '1.11: serce nie zabiera już Esencji. Zamiast tego każda fala od fali 2 musi przebić próg serca: 60 Esencji w fali 2, potem o 25% więcej co falę (fala 10: 358, trzy razy więcej niż dawny głód). Cała Esencja zostaje u Ciebie, ale fala poniżej progu kosztuje kryształ. Spichlerz dusz obniża próg o 3 za zabitego.',
      '1.11: rozmowy naprawione. Korytarz nie liczył się jako pokój, więc drużyna idąca korytarzem "nie słyszała się" i mówiła naraz, a każdy trafiony w ostatnich 1,5 s mógł przekrzykiwać innych. Teraz słyszą się na 7 pól, a przekrzykują się tylko okrzyki (ból, trafienie, strach, krzyk na pułapkę) i bohaterowie w panice albo w ucieczce.',
      '1.10: bohaterowie rozmawiają po kolei. W jednym pokoju mówi jeden naraz, odpowiedź czeka, aż przeczytasz poprzednią kwestię (dymek wisi tyle, ile trzeba na przeczytanie), a mówiący odwraca się do słuchacza. Przekrzykują się tylko w chaosie (ranni, w panice, w ucieczce, w walce, przy krzyku) i w osobnych pokojach.',
@@ -679,10 +707,10 @@
   const reqOk = u => !u.req || (typeof u.req === 'function' ? u.req() : run.unlocked.has(u.req));
   function upgradePicks(r) {
     const has = id => run.deck.includes(id) || (run.stash || []).includes(id);
-    const locked = shuffle(UPGRADES.filter(u => u.kind === 'unlock' && !run.unlocked.has(u.unlock)));
+    const locked = shuffle(UPGRADES.filter(u => u.kind === 'unlock' && !run.unlocked.has(u.unlock) && onbOk(u.unlock)));   // 1.12: nothing from a later run
     const f = 0.75 * Math.max(0, run.wave - 1), rareP = r >= 2 ? 1 : Math.min(0.6, 0.15 + 0.02 * f), legP = r >= 3 ? 1 : r >= 2 ? Math.min(0.4, 0.15 + 0.01 * f) : Math.min(0.15, 0.03 + 0.005 * f);
     const rarOk = u => u.rar === 'c' || (u.rar === 'r' && Math.random() < rareP) || (u.rar === 'l' && Math.random() < legP);   // the more famous the dungeon, the better the cards
-    const pool = UPGRADES.filter(u => u.kind !== 'unlock' && reqOk(u) && !(u.unique && has(u.id)) && rarOk(u));
+    const pool = UPGRADES.filter(u => u.kind !== 'unlock' && reqOk(u) && (ONB_CARD[u.id] || 1) <= stageOf() && !(u.unique && has(u.id)) && rarOk(u));
     const picks = [];
     if (r === 3) { const leg = shuffle(pool.filter(u => u.rar === 'l')); if (leg.length) picks.push(leg[0]); }
     if (locked.length && (r >= 2 || Math.random() < 0.5)) picks.push(locked[0]);
@@ -894,7 +922,7 @@
       const tiles = el('div', 'statrow');
       statTile(tiles, String(Math.floor(run.essence)), 'masz Esencji', 'ess');
       if (H) statTile(tiles, '♥ ' + H.need, H.fed ? 'serce syte' : 'zjadło kryształ', H.fed ? 'good' : 'bad');
-      else statTile(tiles, '-', run.tutorial ? 'serce śpi' : run.wave < 2 ? 'głód od fali 2' : 'serce');
+      else statTile(tiles, '-', run.wave < 2 ? 'głód od fali 2' : 'serce');
       statTile(tiles, run.crystals + '/' + run.maxCrystals, 'kryształy', fl.crystalLost || ate ? 'bad' : 'good');
       statTile(tiles, s.kills + ' · ' + s.scared, 'zabici · przestr.');
       body.appendChild(tiles);
@@ -946,7 +974,7 @@
     }
     foot.appendChild(mr);
     dn.textContent = m.logNote || 'Zapisuję falę...'; foot.appendChild(dn);
-    if (!m.logNote) Promise.resolve(run.lastLog).then(() => { m.logNote = (logText(run.logState) || '') + (run.tutorial ? '' : ' Run zapisany w tej przeglądarce.'); if (dn.isConnected) dn.textContent = m.logNote; });
+    if (!m.logNote) Promise.resolve(run.lastLog).then(() => { m.logNote = (logText(run.logState) || '') + ' Run zapisany w tej przeglądarce.'; if (dn.isConnected) dn.textContent = m.logNote; });
     if (won && !m.pushed) { m.pushed = true; pushLog(null); }
   }
   // Szczegóły: where the Esencja came from, then four views in one box (what comes next, the heroes, the elements, the numbers)
@@ -1134,12 +1162,12 @@
     const dur = (Date.now() - run.startedAt) / 1000;
     if (run.result === 'end' && run.won) run.result = 'win';   // won earlier, fell later in the endless part: still a win
     const W = run.waves, held = W.filter(w => !w.partial).length, rec = loadRecords(), wasBest = m.wasBest != null ? m.wasBest : (rec.best || 0);
-    if (!run.recorded && !run.tutorial) {   // this browser's records
+    if (!run.recorded) {   // this browser's records (1.12: the first run with the guide is a real run too)
       run.recorded = true; rec.runs++; if (run.result === 'win') rec.wins++;
       rec.best = Math.max(wasBest, Math.round(run.total)); rec.wave = Math.max(rec.wave || 0, held); saveRecords(rec);
     }
     m.wasBest = wasBest;
-    const isBest = !run.tutorial && run.total > wasBest && run.total > 0;
+    const isBest = run.total > wasBest && run.total > 0;
     if (run.result === 'win') card.classList.add('vic');
     scrHead(card, 'Koniec runu · ' + mmss(dur), run.result === 'win' ? 'Zwycięstwo' : run.result === 'quit' ? 'Run przerwany' : 'Loch upadł', String(Math.round(run.total)), 'Esencji w runie', [run.total, v => String(Math.round(v))]);
     const body = el('div', 'scr-body'); card.appendChild(body);
@@ -1159,7 +1187,7 @@
     best.forEach(([k, v]) => { const d = el('div', 'irow'), bar = el('i'), bw = el('span', 'bw'); bar.style.width = Math.max(2, Math.round(100 * v / mx)) + '%'; bw.appendChild(bar); d.appendChild(el('span', null, ITEMS[k].name)); d.appendChild(bw); d.appendChild(el('b', null, Math.round(v) + ' Esencji')); list.appendChild(d); });
     if (!best.length) frow(list, 'Brak danych o elementach.');
     if (run.deck.length) frow(list, 'Talia: ' + run.deck.map(id => UPG[id] ? UPG[id].name : id).join(', ') + '.');
-    if (!run.tutorial) frow(list, 'Rekordy tutaj: ' + Math.round(rec.best) + ' Esencji w runie · najdalej fala ' + rec.wave + ' · wygrane ' + rec.wins + ' z ' + rec.runs + '.');
+    frow(list, 'Rekordy tutaj: ' + Math.round(rec.best) + ' Esencji w runie · najdalej fala ' + rec.wave + ' · wygrane ' + rec.wins + ' z ' + rec.runs + '.');
     fitList(list);
     const foot = el('div', 'scr-foot'); card.appendChild(foot);
     const row = el('div', 'row');
@@ -1323,12 +1351,12 @@
   }
   function tapUpgrade(it) {
     const T = ITEMS[it.type], lvl = it.lvl || 1;
-    if (!ACTIVE[it.type]) { setHint(T.name + ' się nie ulepsza. Ulepszysz pułapki i potwory.'); return; }
-    if (lvl >= 3) { setHint(T.name + ' ma już poziom 3' + (TRAITS[it.type] ? ' (' + TRAITS[it.type][0] + ').' : '.')); return; }
+    if (!ACTIVE[it.type]) { note('Nie ulepsza się', it.x, it.y); return; }
+    if (lvl >= 3) { note('Poziom 3 to maks', it.x, it.y); return; }
     const c = upgCost(it);
-    if (fl.essence < c) { setHint('Za mało Esencji: ulepszenie ' + T.name.toLowerCase() + ' kosztuje ' + c + '.'); return; }
+    if (fl.essence < c) { note('Za mało Esencji (' + c + ')', it.x, it.y); return; }
     upgradeItem(it);
-    setHint(T.name + ': poziom ' + it.lvl + (it.lvl === 3 && TRAITS[it.type] ? ', cecha: ' + TRAITS[it.type][0] : '') + ' (-' + c + ' Esencji).');
+    note('Poziom ' + it.lvl + (it.lvl === 3 && TRAITS[it.type] ? ': ' + TRAITS[it.type][0] : ''), it.x, it.y);
   }
   function tapMove(wx, wy) {
     const cur = movingKey && fl.items.get(movingKey);
@@ -1340,7 +1368,7 @@
     }
     if (Math.floor(wx) === cur.x && Math.floor(wy) === cur.y) { movingKey = null; setHint('Odłożone. Stuknij inny element, żeby go przenieść.'); return; }
     const t = moveTarget(cur, wx, wy);
-    if (!t) { setHint(ITEMS[cur.type].name + ' tu nie pasuje: potrzebne jest miejsce typu ' + SLOT_LABEL[ITEMS[cur.type].slot] + ' w pokoju z wolnym miejscem.'); return; }
+    if (!t) { note('Tu nie pasuje'); return; }
     moveItem(cur, t[0], t[1]); movingKey = null;
     setHint(ITEMS[cur.type].name + ' przeniesione (za darmo). Plotki o starym miejscu są już nieaktualne.');
   }
@@ -1403,7 +1431,7 @@
     const gb = greedBonusParts();
     card.appendChild(el('p', 'note', 'Rośnie, gdy bohaterowie zobaczą łup (droższy łup więcej). Stałe dodatki: ' + (gb.length ? gb.map(p => p[0] + ' +' + fmt2(p[1])).join(', ') : 'na razie żadnych') + (run.greedKeep > 0.001 ? ', zabrany łup +' + fmt2(run.greedKeep) : '') + '. Im większa chciwość, tym wolniej rośnie: każdy przyrost dzieli się przez to, ile jej już jest (dodatki wyżej to wartości przed tym przeliczeniem).'));
     card.appendChild(el('h2', 'h2small', 'Combo ×' + fmt2(raid ? cm : 1)));
-    card.appendChild(el('p', 'note', 'Różne pułapki pod rząd (w Zębatkach także ta sama) w ciągu ' + fmt2(S.comboWin).replace(',00', '').replace(/0$/, '') + ' s: +0,25 za każdy stopień, najwyżej ×2,5. Końcowe combo mnoży całą zebraną Grozę serii. Zegar combo stoi, gdy drużyna idzie pustym korytarzem.' + (mods.regen !== 1 ? ' Żyła esencji mnoży jeszcze ×' + fmt2(mods.regen) + '.' : '')));
+    card.appendChild(el('p', 'note', 'Różne pułapki pod rząd (w Zębatkach także ta sama) w ciągu ' + fmt2(S.comboWin).replace(',00', '').replace(/0$/, '') + ' s (w Grocie 1,5 raza dłużej): +0,25 za każdy stopień, najwyżej ×2,5. Końcowe combo mnoży całą zebraną Grozę serii. Każdy stopień combo wzmacnia też rany i strach od pułapek o ' + Math.round(COMBO_POW * 100) + '% (przy ×2,5 o ' + Math.round(COMBO_POW * 600) + '%), więc opłaca się grupować różne pułapki blisko siebie.' + (mods.regen !== 1 ? ' Żyła esencji mnoży jeszcze ×' + fmt2(mods.regen) + '.' : '')));
     if (raid || fl.phase === 'summary') {
       card.appendChild(el('h2', 'h2small', 'W tej fali'));
       const pt = el('table', 'stats');
@@ -1622,7 +1650,9 @@
   function clearSave() { clearTimeout(saveTimer); try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
   function resumeRun() {
     const sv = loadSave(); if (!sv) return false;
+    coachHide();
     run = sv.run;
+    if (!run.stage) run.stage = ONB_FULL;   // 1.12: a run saved before is the full game
     Object.assign(run, { afterModals: null, over: false, best: loadBest(), resumed: (run.resumed || 0) + 1, logState: '' });
     run.stacks = run.stacks || {};
     // v14 fields for a run saved by v13: returning heroes, the stash, the shop; cards removed in v14 (Labirynt) drop out of the deck
@@ -1638,7 +1668,7 @@
     if (!run.shopOwed) run.shopOwed = 1;
     if (run.nextFor == null) run.nextFor = run.wave;   // 1.05: a run saved by 1.04 (the next party was made at the start of the build)
     if (run.builtFor == null) run.builtFor = run.wave;
-    ['howl', 'shackles'].forEach(t => run.unlocked.add(t));   // 1.05: the new counter-buildings for a run saved before
+    if (run.stage >= 3) ['howl', 'shackles'].forEach(t => run.unlocked.add(t));   // 1.05: the new counter-buildings for a run saved before
     if (!sv.gv || sv.gv < 38) run.shop = null;
     run.deck = run.deck.filter(id => UPG[id]); run.stash = run.stash.filter(id => UPG[id]);
     mods = freshMods(); run.deck.forEach(id => { const u = UPG[id]; if (u && u.apply) u.apply(mods); });
@@ -1660,7 +1690,8 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 55;   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
+  const LOG_VERSION = 56;   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
+  // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
   // 54: Prototype 1.11: the heart takes no Esencja, a wave must reach hungerNeed (60 x 1,25^(wave-2)) or a crystal goes (hunger.fedAmt = how far the bar got; stats.essHeart is gone)
   // 53: Prototype 1.10: 4 heroes a wave (+ the boss), the greed curve, room types haven/gears/hush/ice (stats.slips, naps, hushUnlearned, hushLost), loot taken by steps
   // 52: Prototype 1.09: a check answer stays with the trap between waves (stats.memLost: answers lost to the heroes; memFires counts every remembered hit), checks slow the world to x0,25 instead of stopping it (frozen = the share of the wave under a check, slowed), quiet x1,5 and a held finger x3 for everyone (settings.autoFF 1.5, ffSpeed 3), the tray folds at a wave's start again, walls 2x high; 51: Prototype 1.08: the tray folds only on a tap (a wave let out with it open starts paused: in stats.pauseTime), a held finger x5 (settings.ffSpeed 5, was 3), quiet x2,5 for old saves too; 50: Prototype 1.07: the isometric camera, the build tray is the pause (a wave has trayPauses: how often the tray stopped it; stats.pauseTime: how long); 49: Prototype 1.06: heroes drawn as figurines, one build-bar button (no change in the data); 48: Prototype 1.05: a check's result kept for the wave (memFires, skullOff), checks per minute (cpm) and the share of the wave frozen by checks (frozen, perf.realSec), the classes of each party (bard, barbarian), rumours only of what hurt or scared (max 3, 2 waves), tutorial progress in the run summary (tut: furthest step, skipped, how it ended), new stats (songs, bardCalls, answers, rages, smashes, disputes, healCalls); 47: Prototype 1.04: wave summaries carry perf (frame gaps, js time, dpr, direct tiles share) and errors, the party waits at the gate 1,8 s, start traps near the heart, tutorial cards; 46: Prototype 1.03: greed risk without a ceiling (leader levels, hunters), loot dearer per copy, Odwrotna chciwość reworked (taken loot x3), split screen; 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
@@ -1673,7 +1704,7 @@
   }
   function runSummary() {
     return { version: LOG_VERSION, runId: run.id, startedAt: new Date(run.startedAt).toISOString(), at: new Date().toISOString(),
-      player: (playerName || '').slice(0, 40), device: deviceId, web: WEB ? 1 : 0, tutorial: run.tutorial, status: run.result || 'active', won: run.won, waves: run.waves.length,
+      player: (playerName || '').slice(0, 40), device: deviceId, web: WEB ? 1 : 0, tutorial: run.tutorial, stage: run.stage || ONB_FULL, guided: !!run.guided, status: run.result || 'active', won: run.won, waves: run.waves.length,
       total: Math.round(run.total), best: loadBest(), resumed: run.resumed || 0, stacks: Object.assign({}, run.stacks), crystals: run.crystals, continueUsed: run.continueUsed,
       upgrades: run.upgrades.slice(), deck: run.deck.slice(), deckSize: run.deckSize, sold: (run.sold || []).slice(), fires: run.fires, durationSec: Math.round((Date.now() - run.startedAt) / 1000), buildSec: Math.round(run.buildSec), raidSec: Math.round(run.raidSec),
       settings: Object.assign({}, S),
@@ -1855,13 +1886,13 @@
         const t = moveTarget(cur, wx, wy);
         if (t) { moveItem(cur, t[0], t[1]); dropCarry(ITEMS[cur.type].name + ' przeniesione (za darmo). Plotki o starym miejscu są już nieaktualne.'); return true; }
         if (dirO) { pickUpObj(dirO); return true; }
-        setHint(ITEMS[cur.type].name + ' tu nie pasuje: potrzebne miejsce typu ' + SLOT_LABEL[ITEMS[cur.type].slot] + ' w pokoju z wolnym miejscem. Stuknij ' + ITEMS[cur.type].name.toLowerCase() + ' jeszcze raz, żeby odłożyć.');
+        note('Tu nie pasuje'); if (0) setHint(ITEMS[cur.type].name + ' tu nie pasuje: potrzebne miejsce typu ' + SLOT_LABEL[ITEMS[cur.type].slot] + ' w pokoju z wolnym miejscem. Stuknij ' + ITEMS[cur.type].name.toLowerCase() + ' jeszcze raz, żeby odłożyć.');
         return true;
       }
       if (dirO && dirO !== curO) { pickUpObj(dirO); return true; }
       const t = objTarget(curO, wx, wy);
       if (t) { const nm = objName(curO); moveObj(curO, t[0], t[1]); dropCarry(nm + ' przeniesiony.'); return true; }
-      setHint(objName(curO) + ' tu nie pasuje: wolna podłoga pokoju, nie przy drzwiach ani sercu, i pokój nie może zostać przecięty.');
+      note('Tu nie pasuje');
       return true;
     }
     if (selected && TOOLS[selected] && toolMarkers(selected).some(m => Math.hypot(wx - m.x, wy - m.y) < 0.7)) return false;   // a tool's marker wins
@@ -1922,7 +1953,7 @@
   const DOUBLE_TAP_MS = 380; let lastTap = null;
   function handleTap(wx, wy) {
     if (!fl || !run) return;
-    const x = Math.floor(wx), y = Math.floor(wy);
+    const x = Math.floor(wx), y = Math.floor(wy); lastTapT = { x, y };
     if (fl.phase === 'build') {   // Prototype 1.0: two quick taps on a placed element upgrade it (the first tap picked it up: put it back)
       const tx = Math.floor(wx), ty = Math.floor(wy), now = performance.now(), it2 = fl.items.get(key(tx, ty)) || (!selected || MODES[selected] ? itemAt(wx, wy) : null);
       if (it2 && lastTap && lastTap.it === it2 && now - lastTap.t < DOUBLE_TAP_MS) { lastTap = null; if (movingKey === key(it2.x, it2.y)) dropCarry(); tapUpgrade(it2); return; }
@@ -1955,19 +1986,19 @@
   function tryPlace(type, x, y) {
     const T = ITEMS[type], cost = costOf(type);
     if (T.tool) return false;
-    if (!run.unlocked.has(type)) { setHint(T.name + ' jest zablokowany.'); return false; }
-    if (fl.essence < cost) { setHint('Za mało Esencji.'); return false; }
+    if (!run.unlocked.has(type)) { note('Zablokowane', x, y); return false; }
+    if (fl.essence < cost) { note('Za mało Esencji', x, y); return false; }
     if (BUILDINGS[type] && !canPlace(type, x, y)) {
       const r = roomOf(x, y);
-      if (fl.phase !== 'build') { setHint('Budowle stawiasz tylko między falami.'); return false; }
-      if (r >= 0 && fl.rooms[r].kind !== 'room') { setHint('Budowle stoją tylko w pokojach, nie w korytarzach.'); return false; }
-      if (r >= 0 && [...fl.items.values()].some(o => o.type === type && roomOf(o.x, o.y) === r)) { setHint('W tym pokoju już stoi: ' + T.name + '. Jedna budowla danego rodzaju na pokój.'); return false; }
-      if (!fl.items.has(key(x, y)) && !blockerOk(x, y)) { setHint(T.name + ' blokuje przejście jak skrzynia: wolna podłoga pokoju, nie przy drzwiach ani sercu, i nie może odciąć części pokoju.'); return false; }
+      if (fl.phase !== 'build') { note('Tylko między falami', x, y); return false; }
+      if (r >= 0 && fl.rooms[r].kind !== 'room') { note('Tylko w pokoju', x, y); return false; }
+      if (r >= 0 && [...fl.items.values()].some(o => o.type === type && roomOf(o.x, o.y) === r)) { note('Już stoi w tym pokoju', x, y); return false; }
+      if (!fl.items.has(key(x, y)) && !blockerOk(x, y)) { note('Zablokuje przejście', x, y); return false; }
     }
     if (!canPlace(type, x, y)) {
-      if (slotOf(x, y) === T.slot && !fl.items.has(key(x, y)) && roomFull(type, x, y)) { const R = fl.rooms[slotRoom(type, x, y)]; setHint((R.kind === 'hall' ? 'Ten korytarz' : 'Ten pokój') + ' jest pełny (' + roomCap(R) + '). Rozbuduj go albo wykop nowy pokój (zakładka Loch), albo zdejmij coś stąd.'); return false; }
-      if (type === 'crate') { setHint(fl.phase !== 'build' ? 'Skrzynie stawiasz tylko między falami.' : 'Skrzynia: wolna podłoga pokoju, nie przy drzwiach ani sercu, i nie może odciąć części pokoju.'); return false; }
-      setHint(T.name + ' pasuje tylko na: ' + SLOT_LABEL[T.slot] + '. Pasujące wolne miejsca są podświetlone.'); return false;
+      if (slotOf(x, y) === T.slot && !fl.items.has(key(x, y)) && roomFull(type, x, y)) { const R = fl.rooms[slotRoom(type, x, y)]; note((R.kind === 'hall' ? 'Korytarz' : 'Pokój') + ' pełny (' + roomCap(R) + ')', x, y); if (0) setHint((R.kind === 'hall' ? 'Ten korytarz' : 'Ten pokój') + ' jest pełny (' + roomCap(R) + '). Rozbuduj go albo wykop nowy pokój (zakładka Loch), albo zdejmij coś stąd.'); return false; }
+      if (type === 'crate') { note(fl.phase !== 'build' ? 'Tylko między falami' : 'Tu nie pasuje', x, y); return false; }
+      note('Tu nie pasuje', x, y); return false;
     }
     if (fl.phase === 'build') pushUndo('postawienie: ' + T.name);
     if (type === 'crate') {
@@ -2129,45 +2160,51 @@
   // in a line or two, and the moments that matter stop the game once with a short card (TUT_POP). The theory moved to wave 2's build.
   // 1.05 (author: as much as possible by doing): open the build bar, move, place spikes, arrows, a portrait and coins, upgrade
   // something; in the wave tap a check, a hero and hold to speed up (no timeouts: each waits for the player or Pomiń krok).
+  // 1.12 (author: the tutorial spread over a few runs): the guide covers the first run only, step by step over its first three
+  // waves (wave 1: placing, the check, the equation; wave 2: the heart, loot, upgrades, the deck; wave 3: digging). What the
+  // later runs add comes as a card at their start (ONB_STAGES) and as a short card the first time it happens (TUT_POP).
   const TUT = [
     { id: 'intro', text: 'To Twój loch. Bohaterowie przyjdą falami po kryształy z serca (ostatni pokój). Loch postawił za Ciebie dwie pułapki blisko serca, ale same nie wystarczą: dostawisz więcej.', next: true },
-    { id: 'tray', text: 'Na dole jest pasek budowy. Zwiń go (▼ Budowa): kamera pokaże loch tak jak w fali. Potem rozwiń go znowu (▲ Budowa), żeby wrócić do widoku budowy.', hl: ['#tray-toggle'], prep: () => { selected = null; if (!trayOpen()) tutFlags.trayFolded = true; }, done: () => !!tutFlags.trayFolded && trayOpen() },   // 1.08: only a tap moves the tray
     { id: 'move', text: 'Stuknij pułapkę w kółku, żeby ją podnieść, a potem inne podświetlone pole, żeby ją przenieść (za darmo). Przytrzymanie palca zdejmuje element i oddaje Esencję.', tile: () => { const it = [...fl.items.values()].find(o => o.sys); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); }, done: () => !!tutFlags.moved, skip: true },
     { id: 'spikes', text: 'Teraz dostaw więcej. Wybierz Kolce z paska na dole (zakładka Pułapki). Przytrzymaj kafelek, żeby zobaczyć, co robi.', hl: ['#tab-traps', '#item-spikes'], prep: () => { movingKey = null; movingObj = null; tab = 'traps'; updateTray(); setTrayOpen(true); }, done: () => selected === 'spikes' || countType('spikes') > (tutFlags.sp0 || 0) },
     { id: 'place', text: 'Postaw je na trasie bohaterów: stuknij pole z pulsującym kółkiem.', tile: () => tutPathTile(0.25, 'spikes'), done: () => countType('spikes') > (tutFlags.sp0 || 0) },
     { id: 'arrows', text: 'Strzały idą na ściany: wybierz Strzały i stuknij ścianę przy trasie (kółko).', hl: ['#item-arrows'], prep: () => { tab = 'traps'; updateTray(); setTrayOpen(true); }, tile: () => tutWallTile('arrows'), done: () => countType('arrows') > (tutFlags.ar0 || 0) },
-    { id: 'portrait', text: 'Nie wszystko musi ranić. Portret straszy: strach to też Groza, a pełny fioletowy pasek wygania bohatera. Wybierz Portret (dalej w zakładce Pułapki) i powieś go na ścianie przy trasie.', hl: ['#item-portrait'], prep: () => { selected = null; tab = 'traps'; updateTray(); setTrayOpen(true); if (fl.essence < costOf('portrait')) fl.essence = costOf('portrait'); }, tile: () => tutWallTile('portrait'), done: () => countType('portrait') > (tutFlags.po0 || 0) },
-    { id: 'loot', text: 'Łup wabi bohaterów i podbija chciwość, czyli mnożnik Esencji. Postaw Monety z zakładki Łup.', hl: ['#tab-loot', '#item-loot'], prep: () => { tab = 'loot'; updateTray(); setTrayOpen(true); if (fl.essence < costOf('loot')) fl.essence = costOf('loot'); }, done: () => [...fl.items.values()].some(o => isLoot(o.type)) },
-    { id: 'upgrade', text: () => { const it = tutUpTarget(); return 'Dwa szybkie stuknięcia w element to ulepszenie: mocniej bije i ma szersze strefy checku. Stuknij dwa razy ' + (it ? ITEMS[it.type].name.toLowerCase() : 'pułapkę') + ' w kółku (koszt: ' + (it ? upgCost(it) : 6) + ' Esencji).'; }, tile: () => { const it = tutUpTarget(); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); const it = tutUpTarget(); if (it && fl.essence < upgCost(it)) fl.essence = upgCost(it); }, done: () => !!tutFlags.upgraded },
-    { id: 'spend', text: () => 'Masz jeszcze ' + Math.floor(fl.essence) + ' Esencji. W pierwszej fali nie oszczędzaj: dostaw kolce i strzały przy trasie. Pokój mieści kilka pułapek (licznik w rogu).', hl: ['#tab-traps'], prep: () => { selected = null; tab = 'traps'; updateTray(); }, done: () => fl.phase !== 'build' || fl.essence < 3 || !tutAnySpot(), skip: true },   // drop the loot from the hand, or every tap adds more loot
+    { id: 'spend', text: () => 'Masz jeszcze ' + Math.floor(fl.essence) + ' Esencji. W pierwszej fali nie oszczędzaj: dostaw kolce i strzały przy trasie. Pokój mieści kilka pułapek (licznik w rogu).', hl: ['#tab-traps'], prep: () => { selected = null; tab = 'traps'; updateTray(); }, done: () => fl.phase !== 'build' || fl.essence < 3 || !tutAnySpot(), skip: true },
     { id: 'go', text: 'Gotowe. Wypuść falę przyciskiem w prawym dolnym rogu. Pasek budowy schowa się na czas fali, a w fali ▲ Budowa zatrzymuje grę, żebyś mógł spokojnie dostawić pułapki.', hl: ['#btn-action'], done: () => fl.phase === 'raid' },
     // the wave: one line at the top; the first check jumps to 'check' (after its card)
-    { id: 'novice', text: 'Nadchodzą nowicjusze. Każda rana i każdy strach to Groza, a linia u góry zamienia ją w Esencję.', hl: ['#h-eq'], raid: true, hideAfter: 9 },
+    { id: 'novice', text: 'Nadchodzą nowicjusze. Każda rana to Groza, a linia u góry zamienia ją w Esencję: Groza × Chciwość × Combo.', hl: ['#h-eq'], raid: true, hideAfter: 9 },
     { id: 'check', text: 'Stuknij w mapę, gdy koralik będzie w obwódce (draśnięcie) albo w pełnym polu (krytyk). Trafiony wynik pułapka pamięta (znaczek w rogu pola), także w kolejnych falach.', raid: true, done: () => tutFlags.resolved || (!fl.check && tutT > 2) },
-    { id: 'herocard', text: 'Stuknij bohatera (albo listę w rogu): zobaczysz jego kartę, klasę i słabości. Gra stoi, dopóki ją czytasz.', raid: true, skip: true, done: () => tutFlags.heroCard },
+    { id: 'herocard', text: 'Stuknij bohatera (albo listę w rogu): zobaczysz jego kartę i klasę. Gra stoi, dopóki ją czytasz.', raid: true, skip: true, done: () => tutFlags.heroCard },
     { id: 'ff', text: 'Teraz przytrzymaj palec na mapie: gra przyspiesza, a pułapki biją same (z zapamiętaną siłą albo jak draśnięcie). Gdy nic się nie dzieje, gra przyspiesza sama (▶▶ spokój).', raid: true, skip: true, done: () => tutFlags.ffUsed },
-    // between waves 1 and 2
-    { id: 'dig', text: 'Pokój mieści tylko kilka pułapek (licznik w rogu), więc między falami kop nowe pokoje. Zakładka Loch: Nowy pokój, Przejście, Rozbuduj, Wyburz. Spróbuj wykopać pokój.', build: true, hl: ['#tab-dungeon', '#item-dig'], prep: () => { tab = 'dungeon'; updateTray(); }, done: () => tutFlags.tool, skip: true },
-    { text: () => 'To Twoja talia: ' + slotsTxt(run.deckSize) + '. Karta działa do końca runu albo do sprzedaży, a kopie tej samej karty się sumują. Kafelki z przerywaną ramką leżą w schowku. Pierwszy kafelek otwiera sklep.', build: true, hl: ['#tab-deck'], prep: () => { tab = 'deck'; updateTray(); }, next: true },
-    { id: 'object', text: 'Poziom 3 ulepszenia dodaje cechę, np. strzały przebijają tarcze. Zakładka Obiekty to kontry na sztuczki gildii: Ołtarz na kapłanów, Runa na magów, Kamień wyjec na bardów, Okowy na barbarzyńców. Na końcu zakładki Loch są typy pokoi.', build: true, hl: ['#tab-object', '#tab-dungeon'], prep: () => { tab = 'object'; updateTray(); setTrayOpen(true); }, next: true },
-    { id: 'types', text: 'Klasę poznasz po figurce: hełm i tarcza (wojownik), kaptur (złodziej), aureola (kapłan), spiczasty kapelusz (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). Obrażenia są kłute, obuchowe, ogniem albo trucizną, a klasy znoszą je różnie. Lista u góry mapy pokazuje następną drużynę: stuknij wiersz.', build: true, next: true },
-    { id: 'tales', text: 'Kto ucieknie, opowie tylko o pułapkach, które go zraniły albo przestraszyły (najwyżej o 3), a plotka żyje 2 fale: oko na pułapce znaczy, że następna fala ją zna. Kto widział łup, ściągnie chciwszych. Wystraszony może wrócić za 2-3 fale silniejszy.', build: true, next: true },
-    { id: 'end', text: 'Klatka zabija, jeśli drużyna nie uwolni uwięzionego. W zwykłym runie od fali 2 serce zjada pierwsze porcje Esencji z każdej fali (pasek ♥), a gdy dostanie za mało, zje kryształ. Kryształów nie da się odkupić. Od fali 6 gildia może przebić wyłom. Powodzenia!', build: true, next: true }
+    // wave 2 (after the first card from the shop and the card about the heart)
+    { id: 'loot', wave: 2, text: 'Serce chce Esencji, a Esencję mnoży chciwość. Łup wabi bohaterów i ją podbija (złote orby w równaniu). Postaw Monety z zakładki Łup w pokoju, przez który przejdą.', build: true, hl: ['#tab-loot', '#item-loot'], prep: () => { tab = 'loot'; updateTray(); setTrayOpen(true); if (fl.essence < costOf('loot')) fl.essence = costOf('loot'); }, done: () => [...fl.items.values()].some(o => isLoot(o.type) && !o.dropped), skip: true },   // not what the dead left behind
+    { id: 'upgrade', wave: 2, text: () => { const it = tutUpTarget(); return 'Dwa szybkie stuknięcia w element to ulepszenie: mocniej bije i ma szersze strefy checku. Stuknij dwa razy ' + (it ? ITEMS[it.type].name.toLowerCase() : 'pułapkę') + ' w kółku (koszt: ' + (it ? upgCost(it) : 6) + ' Esencji).'; }, build: true, tile: () => { const it = tutUpTarget(); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); const it = tutUpTarget(); if (it && fl.essence < upgCost(it)) fl.essence = upgCost(it); }, done: () => !!tutFlags.upgraded, skip: true },
+    { id: 'deck', wave: 2, text: () => 'Karta ze sklepu leży w talii: ' + slotsTxt(run.deckSize) + '. Działa do końca runu albo do sprzedaży, a kopie tej samej karty się sumują. Po każdej fali dostajesz darmową kartę; inne kupisz za Esencję. Pierwszy kafelek otwiera sklep.', build: true, hl: ['#tab-deck'], prep: () => { tab = 'deck'; updateTray(); setTrayOpen(true); }, next: true },
+    // wave 3
+    { id: 'dig', wave: 3, text: 'Pokój mieści tylko kilka pułapek (licznik w rogu), więc między falami kop nowe pokoje. Zakładka Loch: Nowy pokój, Przejście, Rozbuduj, Wyburz. Spróbuj wykopać pokój.', build: true, hl: ['#tab-dungeon', '#item-dig'], prep: () => { tab = 'dungeon'; updateTray(); setTrayOpen(true); }, done: () => tutFlags.tool, skip: true },
+    { id: 'end', wave: 3, text: 'To wszystko na pierwszy run. Każdy kolejny run dołoży coś nowego: straszenie, potem gildię z budowlami i typy pokoi, a na końcu ciała i fobie bohaterów. Powodzenia!', build: true, next: true }
   ];
   // 1.04: the moments that matter stop the game once, with a card at the top of the map (the check waits under it)
   const TUT_POP = {
     check: 'Skill check! Gdy koralik wjedzie w obwódkę, stuknij w mapę: to draśnięcie. Pełne pole to krytyk, najmocniejszy cios. ☠ znaczy, że ten cios zabije. Trafiony wynik pułapka pamięta, także w kolejnych falach.',
     pay: 'Koniec combo: Groza × Chciwość × Combo zamienia się w Esencję (czerwone kuleczki). Możesz ją wydać od razu, nawet w trakcie fali.',
     theft: 'Kryształ skradziony! Zabij albo wystrasz niosącego, zanim dojdzie do wyjścia: kryształ wróci do serca. Jeśli wyjdzie z nim z lochu, kryształ przepada.',
-    flee: 'Bohater ucieka ze strachu (pełny fioletowy pasek). Kiedy wybiegnie z lochu, dostaniesz Esencję, ale opowie innym o Twoich pułapkach.'
+    flee: 'Bohater ucieka ze strachu (pełny fioletowy pasek). Kiedy wybiegnie z lochu, dostaniesz Esencję, ale opowie innym o Twoich pułapkach.',
+    // 1.12: the full game (run 4 of the first ones): the first time each of these shows up
+    body: 'Słabość albo odporność ciała! Ten bohater obrywa od jednego typu obrażeń mocniej (słabość) albo słabiej (odporność). Stuknij go, żeby zobaczyć kartę.',
+    phobia: 'Fobia! Ten bohater boi się jednej rzeczy 2 razy bardziej i właśnie ją zobaczył. Stuknij go, żeby zobaczyć, czego się boi.',
+    returner: 'W drużynie jest powracający: uciekł Ci kiedyś, a teraz wraca silniejszy, z blizną i z pamięcią Twojego lochu (stuknij go na liście).'
   };
   let tutPopNow = null; const tutPopQ = [];
   function coachSync() { const co = $('#coach'); coachInset = !co.hidden && co.classList.contains('top') ? co.offsetTop + co.offsetHeight : 0; }   // read once per change, not every frame
+  // 1.12: the cards show in the first runs (with the guide or not), each once in this browser
+  const POPS_KEY = 'yatd-pops';
+  const popsSeen = () => { try { return JSON.parse(localStorage.getItem(POPS_KEY) || '{}') || {}; } catch (e) { return {}; } };
   function tutPop(id) {   // true if the card shows (or waits for the one up now)
-    if (!run || !run.tutorial || run.tut < 0 || !fl || fl.phase !== 'raid' || fl.ending !== null || fl.finishing || modalOpen || !TUT_POP[id]) return false;   // not as the wave ends
-    run.tutSeen = run.tutSeen || {};
-    if (run.tutSeen[id]) return false;
-    run.tutSeen[id] = 1;
+    if (!run || !(run.guided || (run.tutorial && run.tut >= 0)) || !fl || fl.phase !== 'raid' || fl.ending !== null || fl.finishing || modalOpen || !TUT_POP[id]) return false;   // not as the wave ends
+    const seen = popsSeen();
+    if (seen[id]) return false;
+    seen[id] = 1; try { localStorage.setItem(POPS_KEY, JSON.stringify(seen)); } catch (e) {}
     if (tutPopNow) tutPopQ.push(id); else tutPopShow(id);
     return true;
   }
@@ -2181,12 +2218,41 @@
     box.appendChild(row); box.hidden = false; coachSync();
     setPaused(true, true);
   }
+  function tutPopDrop() { if (!tutPopNow && !tutPopQ.length) return; tutPopNow = null; tutPopQ.length = 0; const box = $('#coach'); box.classList.remove('pop', 'top'); box.hidden = true; coachSync(); }   // the guide's own step comes back with the build (tutOnBuild)
   function tutPopClose() {
     if (tutPopQ.length) { tutPopShow(tutPopQ.shift()); return; }
     tutPopNow = null; $('#coach').classList.remove('pop');
     setPaused(false, true);
     if (run && run.tut >= 0) tutShow(); else $('#coach').hidden = true;
     coachSync();
+  }
+  // 1.12 (bug): a new run (or a saved one) never inherits the guide's card of the run before
+  function coachHide() { tutPopNow = null; tutPopQ.length = 0; tutClearHl(); const box = $('#coach'); box.hidden = true; box.classList.remove('top', 'pop'); coachSync(); }
+  // 1.12: the first runs: 1-4 = the run to play next (ONB_STAGES), 5 = learnt (the full game, no cards). A browser that
+  // has played before 1.12 starts at 5. A run moves it on when it ends (one quit before wave 5 does not).
+  const ONB_KEY = 'yatd-onb', COACH_KEY = 'yatd-coach';
+  function onbStage() { try { const v = parseInt(localStorage.getItem(ONB_KEY), 10); if (v >= 1 && v <= 5) return v; } catch (e) {} return loadRecords().runs > 0 ? 5 : 1; }
+  function setOnb(v) { try { localStorage.setItem(ONB_KEY, String(v)); } catch (e) {} }
+  const coachDone = () => { try { return localStorage.getItem(COACH_KEY) === '1'; } catch (e) { return false; } };
+  function onbDone(r) {
+    if (!r || !r.guided || (r.result === 'quit' && r.wave < 5)) return;
+    const cur = onbStage();
+    if (cur <= 4 && r.stage >= cur) setOnb(Math.min(5, r.stage + 1));
+  }
+  // a run of the first ones: the guide with the first (once: a first run left in the middle starts again without it), a card with what is new for the others
+  function startGuided() {
+    const st = Math.min(4, onbStage());
+    newRun(st === 1 && !coachDone(), st); run.guided = true;
+    if (st > 1) queueModal({ type: 'onb' });
+    saveRun('build');
+  }
+  function renderOnb(card) {
+    const s = run.stage || ONB_FULL, O = ONB_STAGES[s];
+    card.appendChild(el('div', 'sub', 'Run ' + s + ' z 4 · nauka'));
+    card.appendChild(el('h2', null, 'Nowe: ' + O.name.toLowerCase()));
+    const ul = el('ul', 'conseq'); O.news.forEach(t => ul.appendChild(el('li', null, t))); card.appendChild(ul);
+    card.appendChild(el('p', 'note', s < ONB_FULL ? 'Następny run doda: ' + ONB_STAGES[s + 1].name.toLowerCase() + '.' : 'To już cała gra. Wszystkie zasady znajdziesz w Jak grać na ekranie startowym.'));
+    const b = btn('primary', 'Gramy', null, closeModal); b.id = 'onb-go'; card.appendChild(b);
   }
   function tutStart() { tutFlags = { sp0: countType('spikes'), ar0: countType('arrows'), po0: countType('portrait') }; run.tut = 0; run.tutLog = { max: 0, skipped: [], ended: null }; tutShow(); }
   // 1.05: how far the tutorial got (logged with the run): the furthest step, the steps skipped, how it ended
@@ -2201,7 +2267,7 @@
     { const lg = tutLogOf(); lg.max = Math.max(lg.max, run.tut + 1); }
     if (tutPopNow) return;   // a card is up: the step shows when it is closed
     const raid = fl.phase === 'raid';
-    if ((st.build && raid) || (st.raid && !raid)) { box.hidden = true; coachSync(); return; }   // 1.04: a step of the other phase waits out of sight
+    if ((st.build && raid) || (st.raid && !raid) || (st.wave && run.wave < st.wave)) { box.hidden = true; coachSync(); return; }   // 1.04: a step of the other phase waits out of sight (1.12: and one of a later wave)
     if (st.prep) st.prep();
     box.classList.toggle('top', raid);   // 1.04: in a wave the coach sits at the top of the map, the check at the bottom
     box.innerHTML = '';
@@ -2233,6 +2299,7 @@
     tutT += Math.min(0.1, realNow - tutLast); tutLast = realNow;
     if (st.raid && fl.phase !== 'raid') return;
     if (st.build && fl.phase !== 'build') return;
+    if (st.wave && run.wave < st.wave) return;
     if (st.next || tutPopNow) return;
     if (st.hideAfter && tutT >= st.hideAfter && !$('#coach').hidden) { $('#coach').hidden = true; tutClearHl(); coachSync(); }   // said; the step waits for its event
     if ((st.done && st.done()) || (st.wait && tutT >= st.wait)) tutAdvance();
@@ -2246,12 +2313,14 @@
     if (ev === 'resolved') tutFlags.resolved = true;
     if (ev === 'tool') tutFlags.tool = true;
   }
-  function tutOnBuild() { const dig = TUT.findIndex(s => s.id === 'dig'); if (run.tut >= 0 && run.tut < dig) { run.tut = dig; tutShow(); } else if (run.tut >= 0 && $('#coach').hidden) tutShow(); }
+  // 1.12: a new wave's build jumps to its first step (what was left of the wave before is let go)
+  function tutOnBuild() { const i = TUT.findIndex(s => s.wave === run.wave); if (run.tut >= 0 && i >= 0 && run.tut < i) { run.tut = i; tutShow(); } else if (run.tut >= 0 && $('#coach').hidden) tutShow(); }
   // Prototype 1.0: a tutorial run comes back from a save with its coach where it was. A step of the wave itself waits for the
   // next wave, so it goes back to "release the wave"; the "place more" steps count from what stands now.
   function tutResume() {
     if (!run || !run.tutorial || run.tut < 0) return;
     tutFlags = { sp0: countType('spikes'), ar0: countType('arrows'), po0: countType('portrait') };
+    { const i = TUT.findIndex(s => s.wave === run.wave); if (i >= 0 && run.tut < i) run.tut = i; }   // 1.12: the steps of this wave
     const st = TUT[run.tut];
     if (st && st.raid && run.wave === 1) { const go = TUT.findIndex(s => s.hl && s.hl.includes('#btn-action')); if (go >= 0) run.tut = go; }
     if (fl && fl.phase === 'build') tutShow();
@@ -2267,7 +2336,7 @@
     }
     return tutSpotVal;
   }
-  function tutEnd() { if (run) run.tut = -1; tutClearHl(); tutPopNow = null; tutPopQ.length = 0; const box = $('#coach'); box.hidden = true; box.classList.remove('top', 'pop'); coachSync(); if (paused) setPaused(false, true); }
+  function tutEnd() { if (run) run.tut = -1; try { localStorage.setItem(COACH_KEY, '1'); } catch (e) {} tutClearHl(); tutPopNow = null; tutPopQ.length = 0; const box = $('#coach'); box.hidden = true; box.classList.remove('top', 'pop'); coachSync(); if (paused) setPaused(false, true); }
 
   /* ================= boot ================= */
   // An example dungeon sits behind the start screen so the page is never empty.
@@ -2282,7 +2351,7 @@
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
     resolveCheck: p => resolveCheck(p), skipCheck: () => skipCheck(), clearCheck: () => clearCheck(), areaOf, slotOf, shortestPath, frontier, toolMarkers, applyTool, toolCost, get WW() { return WW; }, get WH() { return WH; }, TUT, UPGRADES, UPG, ITEMS, startBuild, applyUpgrade, makeWave, levelStats, recomputeMods, sellCard, upgradePicks, cardMultNow, openModal, queueModal, renderDeckTiles, saveRun, loadSave, resumeRun, clearSave, upgradeItem, removeItem, waveCurve, waveBase, computeBRooms, inB, decoyAlarm, guildAdapt, quietNow, setUser: v => { userStarted = v; }, get userStarted() { return userStarted; }, ignite, trapBoost, calmReady, landFallen, fall, planBreach: () => planBreach(), tutAnySpot, galleryK, stealNeed, portraitRooms, addFear, setTab: t => { tab = t; updateTray(); }, undo, pushUndo, get undoN() { return undoStack.length; }, setTrayOpen, UI, moveItem, moveTarget, setMode: (m, k) => { selected = m; movingKey = k || null; updateTray(); }, get selected() { return selected; }, get movingKey() { return movingKey; }, rankOf, dungeonBounds, regroupAtDoor: () => regroupAtDoor(),
     patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, nbrRooms, roomCount, sizeMult,
-    rollItem, curse, comboNow, get orbs() { return orbs; }, boxOrbs, tileScreen, bfs, say: (h, t, p, d, how) => say(h, t, p, d, how), sayTick, floorBusy, readT, talkAs: (d, l) => talkAs(d, l), greedCurve, greedRaw, addGreed, waveSize, partySize, safestRoom: h => safestRoom(h), planHero: h => planHero(h), lootSeen: it => lootSeen(it), kill: (h, k, a) => kill(h, k, a), damage, loadRecords, BREACH_PATCH, HITEMS, LOOT_KIND, noticeLoot, lootDecision, leader, alive, heroExit, driftTarget, SCARE, CURSED, DRIFT, TABS, objTargetOk, roomOf, dropCarry, holdRemove, buildTap,
+    rollItem, curse, comboNow, get orbs() { return orbs; }, boxOrbs, tileScreen, bfs, say: (h, t, p, d, how) => say(h, t, p, d, how), sayTick, floorBusy, readT, talkAs: (d, l) => talkAs(d, l), greedCurve, greedRaw, addGreed, waveSize, partySize, safestRoom: h => safestRoom(h), planHero: h => planHero(h), lootSeen: it => lootSeen(it), kill: (h, k, a) => kill(h, k, a), damage, loadRecords, BREACH_PATCH, HITEMS, LOOT_KIND, noticeLoot, lootDecision, leader, alive, heroExit, driftTarget, SCARE, CURSED, DRIFT, TABS, objTargetOk, roomOf, dropCarry, holdRemove, buildTap, onbStage, setOnb, onbDone, startGuided, endRun: (r, x) => endRun(r, x), revealPhobia, revealPhys, ONB_STAGES, ONB_CARD, ONB_ITEM, comboHp, onbOk, coachDone,
     get movingObj() { return movingObj; }
   };
 })();

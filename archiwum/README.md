@@ -52,3 +52,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.09.1](1.09.1.html) | 20.10 | wysokie ściany kładące się wokół drużyny, wynik checku pamiętany między falami, check spowalnia świat |
 | [Prototype 1.10](1.10.html) | 20.10 | rozmowy po kolei, łup brany po krokach, orby chciwości i combo, 4 bohaterów, krzywa chciwości, 4 nowe typy pokoi |
 | [Prototype 1.11](1.11.html) | 20.10 | rozmowy naprawione (zasięg słuchu, okrzyki), serce jako próg 60 × 1,25 bez zabierania Esencji |
+| [Prototype 1.11.1](1.11.1.html) | 20.10 | serce znowu zjada swój próg (37 × 1,25), próg dopasowany do krzywej Esencji |

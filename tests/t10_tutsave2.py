@@ -2,9 +2,10 @@ import asyncio
 from playwright.async_api import async_playwright
 BASE='file:///tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scratchpad/test/page15.html'
 ST = "(() => { const G = __yatd; return { tut: G.run.tut, wave: G.run.wave, phase: G.fl.phase, modal: G.modalKind, coach: document.querySelector('#coach').hidden ? null : document.querySelector('#coach').innerText.slice(0, 60) }; })()"
-PLAY = r'''() => { const G = __yatd; G.run.tut = 8; G.startWave(); let g = 0;
+PLAY = r'''() => { const G = __yatd; G.run.tut = G.TUT.findIndex(s => s.id === 'novice'); G.startWave(); let g = 0;
   while (g++ < 20000) { const fl = G.fl; if (G.modalKind) break; if (fl.check) { if (!fl.check.result) G.resolveCheck((fl.check.g0 + fl.check.g1) / 2); G.clearCheck(); continue; } if (fl.phase !== 'raid') break; G.step(0.05); if (fl.ending !== null) { fl.ending -= 0.05; if (fl.ending <= 0) { fl.ending = null; G.finishWave(); } } }
   return G.modalKind; }'''
+def modal_ok(seen): return 'shop' in seen and 'hungerTip' in seen
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(); ctx = await b.new_context(viewport={'width':390,'height':844}); page = await ctx.new_page()
@@ -22,7 +23,8 @@ async def main():
             if not mk: break
             seen.append(mk); await page.evaluate("__yatd.closeModal()"); await page.wait_for_timeout(300)
         s = await page.evaluate(ST); print('modals', seen, 'then', s)
-        ok = s['phase'] == 'build' and s['wave'] == 2 and s['coach'] and ('kop' in s['coach'].lower() or 'pokój mieści' in s['coach'].lower()) or (s['coach'] and 'przebudujesz' in s['coach'])   # 1.04: the dig step starts with the room limit
-        print('FAILS', [] if ok else ['after a saved summary the coach goes on at the dig step']); print('errs', errs[:3])
+        ok = s['phase'] == 'build' and s['wave'] == 2 and s['coach'] and 'łup' in s['coach'].lower()   # 1.12: wave 2 of the guide starts with loot
+        ok = ok and modal_ok(seen)
+        print('FAILS', [] if ok else ['after a saved summary the coach goes on at the loot step (wave 2), after the shop and the heart card']); print('errs', errs[:3])
         await b.close()
 asyncio.run(main())

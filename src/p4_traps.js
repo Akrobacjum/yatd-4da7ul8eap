@@ -95,7 +95,10 @@
     fl.comboWinNow = S.comboWin * (isRt(slotRoom(it.type, it.x, it.y), 'grotto') ? 1.5 : 1);   // Grota: the echo holds the combo longer
     bt(it.type).fires++;
     fl.stats.maxCombo = Math.max(fl.stats.maxCombo, fl.combo);
-    const comboMult = 1 + 0.25 * (fl.combo - 1), D = S.dmg;
+    // 1.12 (author: combo should also make the traps hit and scare harder, so fewer, well grouped traps pay): the combo step
+    // adds COMBO_POW to the power of a trap's wounds and scares (x1,72 at combo 7; scare traps had x1,25 a step since v14,
+    // wounding ones nothing). comboMult stays the Esencja multiplier shown over the trap.
+    const comboMult = 1 + 0.25 * (fl.combo - 1), cpow = 1 + COMBO_POW * (fl.combo - 1), D = S.dmg;
     run.fires++;
     fl.heroes.forEach(h => { if (h.item === it && h.state === 'disarm') { h.state = 'walk'; h.item = null; h.needPlan = true; say(h, pick(SAY.disarmHit), 3, null, 'loud'); } });
     const area = areaOf(it), keys = new Set(area.map(t => key(t[0], t[1])));
@@ -123,7 +126,7 @@
       case 'spikes':
         it.cd = cdBase; it.anim = 0.45;
         list.forEach(h => {
-          damage(h, 35 * D * mods.spikeDmg * (1 + 0.04 * (run.stacks.hunger || 0) * mods.hunger) * pw, it, comboMult); hit++;
+          damage(h, 35 * D * mods.spikeDmg * (1 + 0.04 * (run.stacks.hunger || 0) * mods.hunger) * pw, it, cpow); hit++;
           if (it.lvl >= 3 && !h.dead) { h.burnUntil = Math.max(h.burnUntil, fl.time + 3); h.burnBy = 'spikes'; floatHero(h, 'Krwawi', '#ff6b6b', 12, -0.4); }   // Krwawienie
         });
         break;
@@ -141,7 +144,7 @@
       }
       case 'trapdoor':
         it.cd = cdBase; it.anim = 0.6;
-        list.filter(h => !(h.fellFrom && h.fellFrom.has(it))).forEach(h => { damage(h, 20 * D * mods.fallDmg * pw, it, comboMult); if (!h.dead) fall(h, pw, it); hit++; });
+        list.filter(h => !(h.fellFrom && h.fellFrom.has(it))).forEach(h => { damage(h, 20 * D * mods.fallDmg * pw, it, cpow); if (!h.dead) fall(h, pw, it); hit++; });
         break;
       case 'cage':
         it.cd = cdBase; it.anim = 0.4;
@@ -153,17 +156,17 @@
           let k = 1; while (walkable(it.x + d[0] * k, it.y + d[1] * k)) k++;
           if (k > 1) fxLine(it.x + 0.5, it.y + 0.5, it.x + d[0] * (k - 1) + 0.5, it.y + d[1] * (k - 1) + 0.5, 0.28);
         });
-        list.forEach(h => { damage(h, 25 * D * pw, it, comboMult); if (mods.arrowBurn && !h.dead) ignite(h, 'arrows'); hit++; });   // level 3: piercing (trapMult, talismans)
+        list.forEach(h => { damage(h, 25 * D * pw, it, cpow); if (mods.arrowBurn && !h.dead) ignite(h, 'arrows'); hit++; });   // level 3: piercing (trapMult, talismans)
         break;
       case 'fire':
         it.cd = cdBase;
         fxTiles(area, '255,140,50', 0.5);
-        list.forEach(h => { damage(h, 20 * D * mods.fireDmg * pw, it, comboMult); if (!h.dead) ignite(h, 'fire', it.lvl >= 3 ? 6 : 3); hit++; });   // level 3: Napalm
+        list.forEach(h => { damage(h, 20 * D * mods.fireDmg * pw, it, cpow); if (!h.dead) ignite(h, 'fire', it.lvl >= 3 ? 6 : 3); hit++; });   // level 3: Napalm
         break;
       case 'portrait':
         it.cd = cdBase; it.anim = 0.8;
         fxTiles(area, '170,120,255', 0.5);
-        list.forEach(h => { addFear(h, 22 * pw * mods.portraitFear * comboMult, 'portrait'); floatHero(h, 'Groza!', '#c3b2ff', 14, -0.5); hit++; });
+        list.forEach(h => { addFear(h, 22 * pw * mods.portraitFear * cpow, 'portrait'); floatHero(h, 'Groza!', '#c3b2ff', 14, -0.5); hit++; });
         if (list.length) say(list[0], SAY.trap.portrait, 3);
         if (mods.choir && !opt.choir) {   // Chór potępionych: the other ready portraits in the room join in
           const r = slotRoom('portrait', it.x, it.y);
@@ -174,29 +177,29 @@
       case 'eyes':
         it.cd = cdBase; it.anim = 0.7;
         fxTiles(area, '255,224,102', 0.3);
-        list.forEach(h => { const lone = h.alone || h.lost, k = lone ? (it.lvl >= 3 ? 3 : 2) : 1; addFear(h, 14 * k * pw * comboMult, 'eyes'); floatHero(h, lone ? 'Patrzą na mnie!' : 'Groza!', '#c3b2ff', 13, -0.5); hit++; });
+        list.forEach(h => { const lone = h.alone || h.lost, k = lone ? (it.lvl >= 3 ? 3 : 2) : 1; addFear(h, 14 * k * pw * cpow, 'eyes'); floatHero(h, lone ? 'Patrzą na mnie!' : 'Groza!', '#c3b2ff', 13, -0.5); hit++; });
         break;
       case 'bones':
         it.cd = cdBase; it.anim = 0.5;
         fxTiles(area, '232,224,208', 0.3);
-        list.forEach(h => { addFear(h, 20 * (h.rank === 0 ? 1.5 : 1) * pw * comboMult, 'bones'); floatHero(h, 'Grzechot!', '#e8e0d0', 13, -0.5); hit++; });
+        list.forEach(h => { addFear(h, 20 * (h.rank === 0 ? 1.5 : 1) * pw * cpow, 'bones'); floatHero(h, 'Grzechot!', '#e8e0d0', 13, -0.5); hit++; });
         break;
       case 'mirror':
         it.cd = cdBase; it.anim = 0.8;
         fxTiles(area, '190,220,255', 0.4);
-        list.forEach(h => { const k = 1 + 1.5 * clamp(h.fear / h.courage, 0, 1); addFear(h, 12 * k * pw * comboMult, 'mirror'); floatHero(h, k >= 1.75 ? 'Odbicie!' : 'Groza!', '#bfe0ff', 13, -0.5); hit++; });
+        list.forEach(h => { const k = 1 + 1.5 * clamp(h.fear / h.courage, 0, 1); addFear(h, 12 * k * pw * cpow, 'mirror'); floatHero(h, k >= 1.75 ? 'Odbicie!' : 'Groza!', '#bfe0ff', 13, -0.5); hit++; });
         if (list.length) say(list[0], SAY.trap.mirror, 3);
         break;
       case 'creak':
         it.cd = cdBase; it.anim = 0.7;
-        list.forEach(h => { const close = Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 1; addFear(h, (close ? 24 : 12) * pw * comboMult, 'creak'); if (close && it.lvl >= 3) h.slowUntil = Math.max(h.slowUntil, fl.time + 2); hit++; });
+        list.forEach(h => { const close = Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 1; addFear(h, (close ? 24 : 12) * pw * cpow, 'creak'); if (close && it.lvl >= 3) h.slowUntil = Math.max(h.slowUntil, fl.time + 2); hit++; });
         floatTile(it.x, it.y, 'Skrzyp!', '#d9c9a8', 14, -0.6);
         break;
       case 'coffin': {
         it.cd = cdBase; it.anim = 1;
         const crypt = isRt(roomOf(it.x, it.y), 'crypt') ? 1.5 : 1;
         let near = null, bd = 99; list.forEach(h => { const dd = Math.hypot(h.tx - it.x, h.ty - it.y); if (dd < bd) { bd = dd; near = h; } });
-        list.forEach(h => { const main = h === near; addFear(h, (main ? 36 * (it.lvl >= 3 ? 1.5 : 1) : 14) * crypt * pw * comboMult, 'coffin'); if (main && it.lvl >= 3) h.slowUntil = Math.max(h.slowUntil, fl.time + 3); hit++; });
+        list.forEach(h => { const main = h === near; addFear(h, (main ? 36 * (it.lvl >= 3 ? 1.5 : 1) : 14) * crypt * pw * cpow, 'coffin'); if (main && it.lvl >= 3) h.slowUntil = Math.max(h.slowUntil, fl.time + 3); hit++; });
         if (near) floatHero(near, 'Trumna!', '#c3b2ff', 15, -0.6);
         shake = Math.max(shake, 0.08);
         break;
@@ -205,7 +208,7 @@
         it.cd = cdBase; it.anim = 0.6;
         const dur = it.lvl >= 3 ? 8 : 4, r = roomOf(it.x, it.y);
         it.playUntil = fl.time + dur;
-        list.forEach(h => { addFear(h, 6 * pw * comboMult, 'musicbox'); h.lullUntil = fl.time + dur; h.lullK = 5 * pw; h.lullRoom = r; hit++; });
+        list.forEach(h => { addFear(h, 6 * pw * cpow, 'musicbox'); h.lullUntil = fl.time + dur; h.lullK = 5 * pw; h.lullRoom = r; hit++; });
         if (list.length) say(list[0], pick(SAY.lull), 3);
         floatTile(it.x, it.y, '♪ Kołysanka', '#e6d2ff', 14, -0.6);
         break;
@@ -220,7 +223,7 @@
         it.uses = (it.uses || 0) + 1;
         if (it.uses >= mods.gateUses + (it.lvl >= 3 ? 2 : 0)) { it.disabled = true; it.worn = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Ostatnie zamknięcie', '#c9c2d8', 13, -0.6); }
         fl.heroes.forEach(h => { if (!h.dead && !h.fled && h.nx === it.x && h.ny === it.y && h.prog < 0.5) { h.nx = null; h.ny = null; h.prog = 0; } });
-        list.forEach(h => { damage(h, 60 * D * mods.gateCrush * pw, it, comboMult); hit++; });
+        list.forEach(h => { damage(h, 60 * D * mods.gateCrush * pw, it, cpow); hit++; });
         const near = alive().find(h => Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 2);
         if (near) { say(near, pick(SAY.gateBlocked), 3, null, 'loud'); addFear(near, 5, 'gate'); }
         replanAll();
@@ -232,7 +235,7 @@
         fl.objects.delete(key(it.x, it.y)); fl.threatDirty = true;
         const L = run.layout, c = L.cells.get(cellKey(Math.floor(it.x / CELL), Math.floor(it.y / CELL)));
         if (c) c.objs = c.objs.filter(o => !(o[0] === it.x && o[1] === it.y));   // the furniture is gone for good
-        list.forEach(h => { damage(h, 60 * D * pw, it, comboMult); if (it.lvl >= 3 && !h.dead) ignite(h, 'powder'); hit++; });   // level 3: Ognisty proch
+        list.forEach(h => { damage(h, 60 * D * pw, it, cpow); if (it.lvl >= 3 && !h.dead) ignite(h, 'powder'); hit++; });   // level 3: Ognisty proch
         burst(it.x + 0.5, it.y + 0.5, '#ff9a3c', 26); burst(it.x + 0.5, it.y + 0.5, '#ffd27a', 12);
         particles.push({ ring: true, x: it.x + 0.5, y: it.y + 0.5, r: 0.3, maxR: mods.powderR + 0.5, life: 0.35, color: '#ffb35c' });
         shake = 0.35;
@@ -243,7 +246,7 @@
         it.cd = cdBase; it.anim = 0.35;
         fxTiles(area, '216,67,79', 0.3);
         list.forEach(h => {
-          damage(h, 40 * D * mods.mimicDmg * pw, it, comboMult); hit++;
+          damage(h, 40 * D * mods.mimicDmg * pw, it, cpow); hit++;
           if (it.lvl >= 3 && !h.dead && h.inv.length) { const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0]; floatHero(h, 'Pożarte: ' + HITEMS[lost.type].name, '#d8434f', 12, -0.6); }   // Pożeracz
         });
         break;
@@ -251,23 +254,23 @@
         it.cd = cdBase; it.anim = 0.3;
         const near = alive().filter(h => Math.max(Math.abs(h.tx - it.x), Math.abs(h.ty - it.y)) <= 1);
         const tgt = near.find(h => h.foe === it) || near[0];
-        if (tgt) { damage(tgt, 35 * D * it.power * pw, actSrc(it.type), comboMult); hit++; if (it.lvl >= 3 && !tgt.dead) tgt.slowUntil = Math.max(tgt.slowUntil, fl.time + 1.5); }   // Podcięcie
+        if (tgt) { damage(tgt, 35 * D * it.power * pw, actSrc(it.type), cpow); hit++; if (it.lvl >= 3 && !tgt.dead) tgt.slowUntil = Math.max(tgt.slowUntil, fl.time + 1.5); }   // Podcięcie
         break;
       }
       case 'archer':
         it.cd = cdBase;
-        list.forEach(h => { const p = heroPos(h); fxLine(it.x + 0.5, it.y + 0.5, p.x, p.y, 0.25); damage(h, 22 * D * it.power * pw, actSrc(it.type), comboMult); if (it.lvl >= 3 && !h.dead) ignite(h, 'archer'); hit++; });
+        list.forEach(h => { const p = heroPos(h); fxLine(it.x + 0.5, it.y + 0.5, p.x, p.y, 0.25); damage(h, 22 * D * it.power * pw, actSrc(it.type), cpow); if (it.lvl >= 3 && !h.dead) ignite(h, 'archer'); hit++; });
         break;
       case 'spider':
         it.cd = cdBase; it.anim = 0.35;
         fl.zones.push({ keys, tiles: area, until: fl.time + 4 * pw, src: it });
         fxTiles(area, '220,230,255', 0.35);
-        list.forEach(h => { h.slowUntil = fl.time + 4 * pw; damage(h, 30 * D * it.power * pw, actSrc(it.type), comboMult); hit++; });
+        list.forEach(h => { h.slowUntil = fl.time + 4 * pw; damage(h, 30 * D * it.power * pw, actSrc(it.type), cpow); hit++; });
         break;
       case 'ogre':
         it.cd = cdBase; it.anim = 0.35; shake = Math.max(shake, 0.2);
         fxTiles(area, '200,180,140', 0.35);
-        list.forEach(h => { damage(h, 45 * D * it.power * pw, actSrc(it.type), comboMult); if (it.lvl >= 3 && !h.dead) addFear(h, 15 * pw, 'ogre'); hit++; });   // Grzmot
+        list.forEach(h => { damage(h, 45 * D * it.power * pw, actSrc(it.type), cpow); if (it.lvl >= 3 && !h.dead) addFear(h, 15 * pw, 'ogre'); hit++; });   // Grzmot
         break;
       case 'shaman': {
         it.cd = cdBase;
@@ -281,14 +284,14 @@
       case 'ghost':
         it.cd = cdBase; it.anim = 0.6;
         fxTiles(area, '200,210,255', 0.4);
-        list.forEach(h => { addFear(h, 40 * pw * mods.ghostAura * galleryK(it) * comboMult, 'ghost'); damage(h, 5 * D * pw, actSrc(it.type), comboMult); hit++; });
+        list.forEach(h => { addFear(h, 40 * pw * mods.ghostAura * galleryK(it) * cpow, 'ghost'); damage(h, 5 * D * pw, actSrc(it.type), cpow); hit++; });
         floatTile(it.x, it.y, 'Wrzask!', '#dfe6ff', 15, -0.6);
         break;
       case 'shade': {   // a whisper: the one it follows hears it best (the lonely twice as well)
         it.cd = cdBase; it.anim = 0.6;
         let tgt = null, bs = -1e9;
         list.forEach(h => { const p = heroPos(h), sc = (h.alone || h.lost ? 100 : 0) - Math.hypot(p.x - it.gx, p.y - it.gy); if (sc > bs) { bs = sc; tgt = h; } });
-        list.forEach(h => { addFear(h, (h === tgt ? 30 : 10) * (h.alone || h.lost ? 2 : 1) * pw * comboMult, 'shade'); hit++; });
+        list.forEach(h => { addFear(h, (h === tgt ? 30 : 10) * (h.alone || h.lost ? 2 : 1) * pw * cpow, 'shade'); hit++; });
         if (tgt) {
           floatHero(tgt, 'Szept...', '#9a8fb8', 14, -0.6); say(tgt, pick(SAY.shade), 3, null, 'loud');
           if (it.lvl >= 3 && tgt.alone && !tgt.lost && leader() !== tgt) getLost(tgt, 'shade');   // Pożeracz światła
@@ -300,7 +303,7 @@
         fxTiles(area, '70,56,84', 0.3);
         const L = leader();
         list.forEach(h => {
-          addFear(h, 16 * pw * comboMult, 'bats'); damage(h, 6 * D * pw, actSrc(it.type), comboMult); hit++;
+          addFear(h, 16 * pw * cpow, 'bats'); damage(h, 6 * D * pw, actSrc(it.type), cpow); hit++;
           if (!h.dead && !h.fleeing && !h.crystal && !caged(h) && h !== L && Math.random() < (h.rank === 0 ? 0.6 : 0.35) * (it.lvl >= 3 ? 1.3 : 1)) {
             h.panicUntil = fl.time + 2.5; h.needPlan = true; fl.stats.batScatter = (fl.stats.batScatter || 0) + 1;
             floatHero(h, 'Spłoszony!', '#c9c0d8', 13, -0.8); say(h, pick(SAY.batScatter), 2, null, 'loud');
