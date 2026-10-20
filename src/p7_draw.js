@@ -2060,42 +2060,63 @@
   }
   function drawBubbles(T) {
     if (!fl || fl.phase === 'build') return;
-    ctx.font = '600 11.5px "Alegreya Sans", system-ui, sans-serif'; ctx.textBaseline = 'middle';
-    const boxes = [], seen = new Set();
+    // 1.08 (author: the bubbles did not fit the rest): a dark slab with an iron edge like the coach and the messages, the
+    // speaker's colour as the stripe on its left, bone text (brass, with a brass edge, for the lines that matter), a tail in
+    // steps like the pixel figures, and a thin thread down to the head when the bubble had to move up out of the way.
+    ctx.font = '500 12px "Alegreya Sans", system-ui, sans-serif'; ctx.textBaseline = 'middle';
+    const boxes = [], seen = new Set(), o = 0.5, R = 3, TAIL = 6;
     if (fl.check && fl.check.box) boxes.push(fl.check.box);
     if (uiRects.list) boxes.push(uiRects.list);
     let shown = 0;
     alive().filter(h => h.bubble && h.bubble.until > fl.time).sort((a, b) => b.bubble.prio - a.bubble.prio).forEach(h => {
       if (shown >= 3 || seen.has(h.bubble.text)) return;
       seen.add(h.bubble.text); shown++;
-      const p = heroPos(h), g = W2S(p.x, p.y, 0), sx = g[0], sy = g[1] - figH(T, h.boss) - Math.max(2, T * 0.07) * 2 - 12;   // 1.06: over the figure's head and bars
-      if (sx < -40 || sx > cw + 40 || sy < -40 || sy > ch + 40) return;
-      const lines = wrapText(h.bubble.text, 140), lw = Math.max(...lines.map(l => ctx.measureText(l).width));
-      const w = lw + 14, hh = lines.length * 14 + 10;
-      let bx = clamp(sx - w / 2, 4, cw - w - 4), by = clamp(sy - hh, 4, ch - hh - 4);
+      const bb = h.bubble, p = heroPos(h), g = W2S(p.x, p.y, 0), sx = Math.round(g[0]);
+      const head = g[1] - figH(T, h.boss) - Math.max(2, T * 0.07) * 2 - 4;   // over the figure's head and bars
+      if (sx < -40 || sx > cw + 40 || head < -40 || head > ch + 60) return;
+      const lines = wrapText(bb.text, 150), lw = Math.max(...lines.map(l => ctx.measureText(l).width));
+      const w = Math.round(lw + 19), hh = lines.length * 15 + 9;
+      const inK = clamp((fl.time - bb.at) / 0.16, 0, 1), fade = clamp((bb.until - fl.time) / 0.3, 0, 1) * inK;
+      const want = Math.round(head - 2 - TAIL - hh + (1 - inK) * 4);   // it rises 4 px as it comes in
+      const bx = Math.round(clamp(sx - w / 2, 4, cw - w - 4));
+      let by = clamp(want, 4, ch - hh - TAIL - 4);
       for (let k = 0; k < 6; k++) {
-        const hit = boxes.find(b => bx < b.x + b.w && bx + w > b.x && by < b.y + b.h && by + hh > b.y);
+        const hit = boxes.find(b => bx < b.x + b.w && bx + w > b.x && by < b.y + b.h && by + hh + TAIL > b.y);
         if (!hit) break;
-        by = hit.y - hh - 3;
+        by = hit.y - hh - TAIL - 3;
       }
-      boxes.push({ x: bx, y: by, w, h: hh });
-      const fade = clamp((h.bubble.until - fl.time) / 0.3, 0, 1);
-      ctx.globalAlpha = 0.95 * fade;
-      ctx.fillStyle = h.bubble.prio >= 3 ? '#fff4dd' : '#efe7d6';
-      rr(bx, by, w, hh, 6); ctx.fill();
-      ctx.strokeStyle = h.T.color; ctx.lineWidth = 1.5; rr(bx, by, w, hh, 6); ctx.stroke();
-      ctx.fillStyle = ctx.strokeStyle = h.bubble.prio >= 3 ? '#fff4dd' : '#efe7d6';
-      const tx = clamp(sx, bx + 8, bx + w - 8);
-      ctx.beginPath(); ctx.moveTo(tx - 4, by + hh - 0.5); ctx.lineTo(tx + 4, by + hh - 0.5); ctx.lineTo(clamp(sx, tx - 6, tx + 6), Math.min(by + hh + 6, sy + 8)); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#1a1424'; ctx.textAlign = 'left';
-      lines.forEach((l, k) => ctx.fillText(l, bx + 7, by + 11.5 + k * 14));
+      by = Math.round(by);
+      boxes.push({ x: bx, y: by, w, h: hh + TAIL });
+      const big = bb.prio >= 3, B = by + hh, tx = Math.round(clamp(sx, bx + 10, bx + w - 8));
+      ctx.globalAlpha = fade;
+      if (by < want - 6 && head > B + TAIL + 4) {   // pushed up: a thread to the speaker
+        ctx.strokeStyle = 'rgba(120,126,136,0.55)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(tx + o, B + TAIL); ctx.lineTo(sx + o, head); ctx.stroke();
+      }
+      // the slab and its stepped tail, one outline
+      const L = bx + o, Rr = bx + w - o, Tp = by + o, Bt = B - o;
+      ctx.beginPath();
+      ctx.moveTo(L + R, Tp); ctx.lineTo(Rr - R, Tp); ctx.arcTo(Rr, Tp, Rr, Tp + R, R);
+      ctx.lineTo(Rr, Bt - R); ctx.arcTo(Rr, Bt, Rr - R, Bt, R);
+      ctx.lineTo(tx + 4 + o, Bt); ctx.lineTo(tx + 4 + o, Bt + 2); ctx.lineTo(tx + 2 + o, Bt + 2); ctx.lineTo(tx + 2 + o, Bt + 4);
+      ctx.lineTo(tx + 1 + o, Bt + 4); ctx.lineTo(tx + 1 + o, Bt + TAIL); ctx.lineTo(tx - 1 + o, Bt + TAIL); ctx.lineTo(tx - 1 + o, Bt + 4);
+      ctx.lineTo(tx - 2 + o, Bt + 4); ctx.lineTo(tx - 2 + o, Bt + 2); ctx.lineTo(tx - 4 + o, Bt + 2); ctx.lineTo(tx - 4 + o, Bt);
+      ctx.lineTo(L + R, Bt); ctx.arcTo(L, Bt, L, Bt - R, R); ctx.lineTo(L, Tp + R); ctx.arcTo(L, Tp, L + R, Tp, R); ctx.closePath();
+      ctx.fillStyle = 'rgba(16,17,21,0.95)'; ctx.fill();
+      ctx.strokeStyle = big ? '#8a7034' : '#464b53'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.save(); rr(bx, by, w, hh, R); ctx.clip();
+      ctx.fillStyle = 'rgba(210,220,235,0.07)'; ctx.fillRect(bx, by + 1, w, 1);   // the light on the top edge of a slab
+      ctx.fillStyle = h.T.color; ctx.fillRect(bx, by, 3, hh);   // who speaks
+      ctx.restore();
+      ctx.fillStyle = big ? '#e6cf94' : '#e6e1d6'; ctx.textAlign = 'left';
+      lines.forEach((l, k) => ctx.fillText(l, bx + 10, by + 12 + k * 15));
       ctx.globalAlpha = 1;
     });
   }
   function drawPause() {   // 1.07: the open build tray is the pause: a small plate at the top says how to play on
     if (!paused || !fl || fl.phase !== 'raid') return;
     if (tutPopNow) return;   // 1.04: a tutorial card says it (and the check under it stays clear)
-    const t = trayIsOpen() ? 'Pauza · ▼ Budowa: gramy dalej' : 'Pauza';
+    const t = trayIsOpen() ? (fl.time < 0.01 ? 'Fala czeka · zwiń ▼ Budowa' : 'Pauza · ▼ Budowa: gramy dalej') : 'Pauza';   // 1.08: a wave let out with the tray open waits
     ctx.font = '600 12px "Alegreya Sans", system-ui, sans-serif';
     const w = ctx.measureText(t).width + 22, x0 = (cw - w) / 2, y0 = 8;
     ctx.fillStyle = 'rgba(16,17,20,0.88)'; rr(x0, y0, w, 24, 3); ctx.fill();

@@ -524,11 +524,14 @@
     applyRumors();
     chooseEntrance();
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && isRt(roomOf(m.x, m.y), 'crypt')) m.hp = Math.round(m.max * 1.25); });   // Krypta: +25% HP for this wave
-    selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); setTrayOpen(false); updateTray(); updateAction();   // 1.05: in the tutorial too; 1.07: always (an open tray is the pause)
+    selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); updateTray(); updateAction();   // 1.08 (author): the tray is not folded here any more (only a tap folds it)
     { const bossE = fl.queue.find(e => e.boss), n = fl.queue.length;   // Prototype 1.0: a banner over the map says who is coming
       showBanner('Fala ' + run.wave, (bossE ? 'prowadzi ich ' + (bossE.boss === 'final' ? 'bohater z przepowiedni' : 'czempion') : n === 1 ? '1 bohater' : n + ' bohaterów') +
         (fl.spawnAt === 'breach' ? ' · wchodzą przez wyłom!' : fl.breach ? ' · wchodzą drzwiami' : ''));
-      if (run.wave === 1 && run.tut < 0) setHint('Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.'); }
+      const wait = trayIsOpen();   // 1.08: an open tray is the pause, so a wave let out with it open waits for the fold
+      if (wait) setPaused(true, true);
+      if (run.wave === 1 && run.tut < 0) setHint((wait ? 'Fala czeka, aż zwiniesz ▼ Budowa. ' : '') + 'Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.');
+      else if (wait && run.tut < 0 && (UI.waveWaitHint || 0) < 3) { UI.waveWaitHint = (UI.waveWaitHint || 0) + 1; saveUI(); setHint('Fala czeka: rozwinięty pasek to pauza. Zwiń ▼ Budowa, żeby ruszyła.'); } }
     fl.tl = { ev: [], smp: [], smpT: 0 };
     run.waveStart = snapshotLayout();
     if (fl.breach) { fl.stats.breachOpen = 1; if (fl.spawnAt === 'breach') { tl('br', fl.breach.x, fl.breach.y); fl.stats.breach = 1; } }

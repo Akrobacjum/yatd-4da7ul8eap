@@ -5,7 +5,7 @@ from playwright.async_api import async_playwright
 SC = '/tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scratchpad/'
 src = open(SC + 'test/replay101.py').read()
 JS = re.search(r'JS = r"""(.*?)"""', src, re.S).group(1)
-SETUP = JS[:JS.index('  G.startWave();\n')] + '  G.startWave(); return 1;\n}'
+SETUP = JS[:JS.index('  G.startWave();\n')] + '  G.startWave(); G.setTrayOpen(false); return 1;\n}'   # 1.08: an open tray holds the wave
 doc = json.load(open(SC + 'real103/waves/mvf7u7ufx25j_16.json')); prev = json.load(open(SC + 'real103/waves/mvf7u7ufx25j_15.json'))['summary']
 OUT = SC + 'shots103/'
 FAILS = []

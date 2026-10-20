@@ -29,14 +29,16 @@ async def main():
         ok(lv['4'][0] > lv['1'][0] + 2 and lv['23'][0] > lv['4'][0] + 2 and lv['23'][0] < lv['4'][0] + 5.5, 'leader levels: +3 at greed 4, a few more at 23, no jump')
         ok(lv['1'][1] == 0 and lv['3'][1] == 1 and lv['4.5'][1] == 2 and lv['9'][1] == 3, 'hunters 0/1/2/3 at greed 1/3/4,5/9')
         # Odwrotna chciwość: a hero takes a relic; with the card greed grows 3x as much
-        g = await page.evaluate("""(() => { const G = __yatd, out = {};
+        g = await page.evaluate("""(() => { const G = __yatd, out = {}; let pos = null;   /* 1.08: the same spots both times: a room's depth scales the pull (a flaky ratio) */
           for (const card of [false, true]) {
             G.run.deck = card ? ['nopick'] : []; G.recomputeMods();
             G.fl.essence = 500; G.startWave(); for (let i = 0; i < 40 && !G.fl.heroes.length; i++) G.step(0.05);
-            const h = G.fl.heroes.slice().sort((a, c) => a.inv.length - c.inv.length)[0], rel = [...G.fl.items.values()].filter(i => i.type === 'loot3');
+            const h = G.fl.heroes.slice().sort((a, c) => a.inv.length - c.inv.length)[0]; let rel = [...G.fl.items.values()].filter(i => i.type === 'loot3');
+            if (pos) { const same = pos.map(q => G.fl.items.get(q[0] + ',' + q[1])).filter(i => i && i.type === 'loot3'); if (same.length >= 2) rel = same; } pos = rel.slice(0, 3).map(i => [i.x, i.y]);
             const steps = rel.slice(0, 3).map(it => { h.inv = []; h.gold = 0; const g0 = G.fl.greed; G.pickup(h, it); return +(G.fl.greed - g0).toFixed(3); });   /* 1.07: empty hands before each (a hero with full hands left it lying: a flaky test since 1.05) */
             out[card ? 'card' : 'plain'] = steps; out.taken = rel.slice(0, 3).every(it => !G.fl.items.has(it.x + ',' + it.y));
             G.finishWave(); while (G.modalKind) G.closeModal(); if (G.afterSummary) G.afterSummary(); while (G.modalKind) G.closeModal(); if (G.fl.phase !== 'build') G.startBuild(); while (G.modalKind) G.closeModal();
+            pos.forEach(q => { if (!G.fl.items.has(q[0] + ',' + q[1]) && G.canPlace('loot3', q[0], q[1])) G.tryPlace('loot3', q[0], q[1]); });
             const ps = [...G.fl.items.values()].filter(i => i.type === 'loot3').length; for (let k = ps; k < 6; k++) { for (let y = 0; y < G.WH; y++) { let d = false; for (let x = 0; x < G.WW; x++) if (G.canPlace('loot3', x, y)) { G.tryPlace('loot3', x, y); d = true; break; } if (d) break; } }
           }
           const u = G.UPG.nopick; out.text = u.text; return out; })()""")

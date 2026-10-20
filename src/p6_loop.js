@@ -576,6 +576,7 @@
   }
   function frameBody(now) {
     const rdt = Math.min(0.05, (now - lastT) / 1000); lastT = now; realNow += rdt;
+    trayTick(rdt);   // 1.08: before the camera, which keeps the middle of the map while the stage changes
     if (run && fl) {
       if (fl.check) { if (modalOpen || paused) { fl.check.t0 += rdt; fl.check.prepT0 += rdt; fl.check.resT += rdt; } else updateCheck(); }
       if (paused && fl.phase === 'raid') fl.stats.pauseTime += rdt;
@@ -611,7 +612,7 @@
     particles = particles.filter(p => p.life > 0);
     if (shake > 0) shake = Math.max(0, shake - rdt);
     // 1.03: building with nothing touched for 2 s: every other frame is enough (torches and treasure still move)
-    const idle = fl && fl.phase === 'build' && realNow - lastInputAt > 2 && !movingKey && !holdInfo;
+    const idle = fl && fl.phase === 'build' && realNow - lastInputAt > 2 && !movingKey && !holdInfo && TRAY.t >= 1 && VIEW.t >= 1;   // 1.08: not while the tray and the camera move
     if (!idle || (frameNo++ & 1)) draw();
   }
 
@@ -798,7 +799,11 @@
     const rect = stage.getBoundingClientRect();
     const had = cw > 0, cx = had ? (cam.ox + cw / 2) / cam.s : 0, cy = had ? (cam.oy + ch / 2) / cam.s : 0;
     cw = Math.max(60, Math.floor(rect.width)); ch = Math.max(60, Math.floor(rect.height));
-    cv.width = Math.round(cw * DPR); cv.height = Math.round(ch * DPR);
+    // 1.08: the canvas is as tall as the map is with the tray folded; an open or moving tray covers its lower part (the stage
+    // clips it). So folding and unfolding never makes the canvas anew (a new one is blank until drawn, and costs) and ch is
+    // only how much of it shows.
+    const full = Math.max(ch, Math.round(rect.height + trayCover())), W = Math.round(cw * DPR), H = Math.round(full * DPR);
+    if (cv.width !== W || cv.height < Math.round(ch * DPR) || Math.abs(cv.height - H) > 2) { cv.width = W; cv.height = H; cv.style.height = (H / DPR) + 'px'; }
     if (had) { cam.s = clamp(cam.s, fitScale() * 0.95, MAX_S); centerOnView(cx, cy); }
   }
   function updateZoomBtn() {

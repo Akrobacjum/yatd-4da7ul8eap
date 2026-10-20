@@ -38,7 +38,7 @@ async def main():
                 ok(r[0] and r[1] == 0, 'back to zoom 34: direct, chunks freed (%s)' % r)
                 await page.evaluate(SETUP, ARGS); await page.clock.run_for(100); await shot(page, 34)
                 # a wave: frame times end up in the wave summary
-                await page.evaluate("(() => { const G = __yatd; G.startWave(); setInterval(() => { const f = G.fl; if (f.check && !f.check.result) { G.resolveCheck((f.check.r0 + f.check.r1) / 2); } }, 200); })()")
+                await page.evaluate("(() => { const G = __yatd; G.startWave(); G.setTrayOpen(false); setInterval(() => { const f = G.fl; if (f.check && !f.check.result) { G.resolveCheck((f.check.r0 + f.check.r1) / 2); } }, 200); })()")
                 await page.clock.run_for(4000)
                 ps = await page.evaluate("__yatd.perfSummary()")
                 ok(ps is not None and ps['frames'] > 100 and 0 < ps['fps'] < 200 and ps['dpr'] == 2 and ps['direct'] > 50, 'perf summary %s' % ps)

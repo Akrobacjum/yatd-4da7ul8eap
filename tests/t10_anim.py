@@ -21,7 +21,7 @@ async def main():
         s1 = await page.evaluate("document.querySelector('#h-score').textContent")
         if s1 != str(d['ess']): fails.append('score settles on the value: ' + s1)
         # the wave banner
-        await page.evaluate("__yatd.startWave()"); await page.clock.run_for(100)
+        await page.evaluate("__yatd.startWave(); __yatd.setTrayOpen(false)"); await page.clock.run_for(100)   # 1.08: an open tray holds the wave
         bn = await page.evaluate("(() => { const b = document.querySelector('#banner'); return [b.hidden, b.className, b.innerText]; })()")
         print('banner', bn)
         if bn[0] or 'Fala' not in bn[2]: fails.append('banner')

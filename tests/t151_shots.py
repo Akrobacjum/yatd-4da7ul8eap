@@ -42,7 +42,7 @@ async def main():
             cx, cy = max(80, min(280, r[0])), max(80, min(600, r[1]))
             await page.screenshot(path=OUT+f'el_{t}.png', clip={'x':cx-80,'y':cy-80,'width':160,'height':160})
         # a raid: the floating ones and the music
-        await page.evaluate("__yatd.startWave()"); await page.clock.run_for(200)
+        await page.evaluate("__yatd.startWave(); __yatd.setTrayOpen(false)"); await page.clock.run_for(200)   # 1.08: an open tray holds the wave
         for i in range(30): await page.evaluate("__yatd.step(0.1)")
         await page.evaluate("(() => { const G = __yatd; G.fl.items.forEach(it => { if (G.SCARE[it.type] || G.DRIFT[it.type]) { it.cd = 0; G.fire(it, 1); } }); })()")
         await page.clock.run_for(100)

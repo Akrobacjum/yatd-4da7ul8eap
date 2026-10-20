@@ -30,10 +30,13 @@ async def main():
             if s['id'] != sid: fails.append('expected step %s, got %s' % (sid, s['id']))
             return s
         await expect('intro'); await page.click('#coach .next'); await page.clock.run_for(300)
+        s = await expect('tray')   # 1.08: only a tap moves the tray: the step asks to fold it and unfold it
+        if not s['tray']: fails.append('the tray step starts with the bar open')
+        await page.click('#tray-toggle'); await page.clock.run_for(600)
         s = await expect('tray')
-        if s['tray']: fails.append('the tray step starts with the bar folded')
+        if s['tray']: fails.append('the tap folds the bar')
         await page.screenshot(path=OUT + '01_tray.png')
-        await page.click('#tray-toggle'); await page.clock.run_for(300)
+        await page.click('#tray-toggle'); await page.clock.run_for(600)
         s = await expect('move')
         t = await target(page)
         if t:
@@ -64,8 +67,12 @@ async def main():
             await page.clock.run_for(300)
         if (await step(page))['id'] == 'spend': await page.evaluate("(() => { const b=[...document.querySelectorAll('#coach .skip')].find(x => x.textContent.includes('Pomiń')); if (b) b.click(); })()"); await page.clock.run_for(200)
         await expect('go'); await page.click('#btn-action'); await page.clock.run_for(500)
+        s = await expect('fold')   # 1.08: the wave waits while the bar is open
+        w = await page.evaluate("({ paused: __yatd.paused, t: __yatd.fl.time })")
+        if not s['tray'] or not w['paused'] or w['t'] > 0: fails.append('the wave waits with the bar open (%s)' % w)
+        await page.click('#tray-toggle'); await page.clock.run_for(600)
         s = await step(page)
-        if s['tray']: fails.append('the bar folds for the wave in the tutorial too')
+        if s['tray'] or s['id'] == 'fold': fails.append('folding the bar lets the wave go')
         await page.screenshot(path=OUT + '04_wave.png')
         got_check = hero = held = False
         for i in range(500):

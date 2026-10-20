@@ -19,7 +19,7 @@ async def main():
         st1 = await page.evaluate("({ timer: !!__yatd.MUS.timer, want: __yatd.MUS.want, step: __yatd.MUS.step, a: __yatd.MUS.g.A.gain.value })")
         print('after the first touch', st1)
         ok(st1['timer'] and st1['want'] == 'A' and st1['step'] > 0, 'music plays (Loch) in the build phase')
-        await page.evaluate("__yatd.startWave()"); await page.wait_for_timeout(1800)
+        await page.evaluate("__yatd.startWave(); __yatd.setTrayOpen(false)"); await page.wait_for_timeout(1800)   # 1.08: an open tray holds the wave
         st2 = await page.evaluate("({ want: __yatd.MUS.want, a: __yatd.MUS.g.A.gain.value, b: __yatd.MUS.g.B.gain.value })")
         print('in the wave', st2)
         ok(st2['want'] == 'B' and st2['b'] > 0.8 and st2['a'] < 0.2, 'Fala in a running wave (crossfaded)')
