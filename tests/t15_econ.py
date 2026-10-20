@@ -4,15 +4,16 @@ BASE='file:///tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scr
 JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { if (!c) fails.push(m); };
   while (G.modalKind) G.closeModal(); G.newRun(false); while (G.modalKind) G.closeModal();
   const run = G.run, f = G.fl;
-  // 1.11: the heart is a bar the wave must reach (60 x 1,25^(wave-2)); it takes no Esencja; short at the end: a crystal
+  // 1.01: the heart eats first from the wave's Esencja; short at the end of the wave: a crystal. 1.11.1: the need is about half
+  // a typical wave (37 x 1,25^(wave-2))
   run.wave = 3; const need = G.hungerNeed(3); f.essence = 5; f.fed = 0; f.score = 0;
-  ok(need === 75, 'the bar in wave 3 is 75 (' + need + ')');
+  ok(need === 46, 'the need in wave 3 is 46 (' + need + ')'); ok(G.hungerNeed(10) === 221, 'and 221 in wave 10 (' + G.hungerNeed(10) + ')');
   G.essIn(need * 0.5); out.half = { fed: f.fed, ess: f.essence };
-  ok(Math.abs(f.fed - need * 0.5) < 1e-6 && Math.abs(f.essence - 5 - need * 0.5) < 1e-6, 'half the bar: the bar fills, the Esencja is yours');
+  ok(Math.abs(f.fed - need * 0.5) < 1e-6 && f.essence === 5, 'half a need: all to the heart');
   G.feedHeart(); out.ate = { hunger: f.hunger, crystals: run.crystals, ess: f.essence };
-  ok(f.hunger.ate && run.crystals === 2 && Math.abs(f.essence - 5 - need * 0.5) < 1e-6, 'short: the heart eats a crystal, the Esencja stays');
-  f.fed = 0; f.essence = 5; G.essIn(need + 7); out.fed = { fed: f.fed, ess: f.essence };
-  ok(f.fed === need && Math.abs(f.essence - 5 - need - 7) < 1e-6, 'over the bar: all of it to the purse');
+  ok(f.hunger.ate && run.crystals === 2 && f.essence === 5, 'short: the heart eats a crystal, the purse is left alone');
+  f.fed = 0; G.essIn(need + 7); out.fed = { fed: f.fed, ess: f.essence };
+  ok(f.fed === need && Math.abs(f.essence - 12) < 1e-6, 'fed: the rest to the purse');
   G.feedHeart(); ok(f.hunger.fed && run.crystals === 2, 'fed: no crystal');
   // no purse limit
   f.essence = 0; G.essIn(5000); ok(f.essence === 5000, 'no limit');

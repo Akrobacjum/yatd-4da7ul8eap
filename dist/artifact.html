@@ -743,7 +743,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 
   const DEFAULTS = {
     waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
-    essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 60, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
+    essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 37, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
     music: 0.5,   // 1.07: the music's volume (0 = off)
     haptics: 1, trayAuto: 1, series: 1, split: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley, split screen (1.03)
     topPad: 0   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
@@ -762,8 +762,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     { k: 'waveIncome', label: 'Esencja po każdej fali', min: 0, max: 30, step: 1 },
     { k: 'regenBase', label: 'Odnawianie w trakcie fali (na 10 s)', min: 0, max: 6, step: 0.1, fmt: f1 },
     { k: 'fearRate', label: 'Esencja z ran i strachu', min: 0, max: 6, step: 0.5, fmt: f1 },
-    { k: 'hungerBase', label: 'Próg serca: Esencja z fali 2', min: 0, max: 200, step: 5 },
-    { k: 'hungerGrowth', label: 'Próg serca: wzrost na falę', min: 1.2, max: 2, step: 0.05, fmt: x2 },
+    { k: 'hungerBase', label: 'Głód serca: Esencja z fali 2', min: 0, max: 200, step: 1 },
+    { k: 'hungerGrowth', label: 'Głód serca: wzrost na falę', min: 1.2, max: 2, step: 0.05, fmt: x2 },
     { k: 'greedW', label: 'Chciwość: poziomy przywódcy za każde +1 chciwości', min: 0, max: 3, step: 0.1, fmt: v => v.toFixed(1).replace('.', ',') },
     { k: 'crystals', label: 'Kryształy w sercu (od nowego runu)', min: 1, max: 6, step: 1 },
     { k: 'deckSize', label: 'Miejsca w talii (od nowego runu)', min: 3, max: 12, step: 1 },
@@ -1133,7 +1133,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // cards that grow during the run (they count only while the card is in the deck; selling the last copy resets the count)
     { id: 'hunger', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Głodne kolce', text: 'Kolce zadają do końca runu +4% obrażeń za każde zabójstwo kolcami (licznik rośnie przez cały run).', apply: m => { m.hunger += 1; } },
     { id: 'chronicle', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Kronika grozy', text: 'Strach jest o 3% silniejszy za każdego bohatera, który w tym runie uciekł ze strachu (do końca runu).', apply: m => { m.chronicle += 1; } },
-    { id: 'granary', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Spichlerz dusz', text: 'Każdy zabity bohater obniża próg serca o 3 do końca runu.', apply: m => { m.granary += 1; } },
+    { id: 'granary', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Spichlerz dusz', text: 'Każdy zabity bohater zmniejsza głód serca o 1 do końca runu.', apply: m => { m.granary += 1; } },
     { id: 'bank', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Skarbiec', text: 'Każda fala bez utraty kryształu dodaje +2 Esencji do przychodu po każdej kolejnej fali (do końca runu).', apply: m => { m.bank += 1; } },
     { id: 'tempered', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Zaprawione mechanizmy', text: 'Pułapki działają o 1% mocniej za każde 4 trafienia pułapek w tym runie (do końca runu).', apply: m => { m.tempered += 1; } },
     // cards with a price
@@ -1172,7 +1172,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     { id: 'hoard', kind: 'card', rar: 'r', tag: 'schowek = chciwość', name: 'Kolekcja w schowku', text: 'Każda karta w schowku daje +0,1 chciwości.', apply: m => { m.stashGreed += 0.1; } },
     // v14: the heart's hunger
     { id: 'wager', kind: 'card', rar: 'l', tag: 'chciwość +0,8, głód +30%', name: 'Zakład z sercem', text: 'Chciwość +0,8, ale serce chce o 30% więcej.', apply: m => { m.greedFlat += 0.8; m.hungerK *= 1.3; } },
-    { id: 'gluttony', kind: 'card', rar: 'r', tag: 'po sytości ×1,25', name: 'Obżarstwo', text: 'Gdy fala przebije już próg serca, dalsza Esencja z niej wpada o 25% większa.', apply: m => { m.storeK *= 1.25; } },
+    { id: 'gluttony', kind: 'card', rar: 'r', tag: 'po sytości ×1,25', name: 'Obżarstwo', text: 'Gdy serce jest już syte, Esencja z fali wpada o 25% większa.', apply: m => { m.storeK *= 1.25; } },
     { id: 'fasting', kind: 'card', rar: 'c', tag: 'głód -15%', name: 'Post', text: 'Serce chce o 15% mniej, ale chciwość -0,2.', apply: m => { m.hungerK *= 0.85; m.greedFlat -= 0.2; } },
     { id: 'heartbeat', kind: 'card', rar: 'r', tag: 'pełne serce +20%', name: 'Bijące serce', text: 'Gdy serce jest już syte w tej fali, pułapki i potwory działają o 20% mocniej.', apply: m => { m.heartbeat += 0.2; } },
     // v14: greed and loot
@@ -1979,13 +1979,16 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   }
   // Points, like Balatro: every wound, every scare, every kill and every hero scared away adds to the wave's GROZA (the base,
   // how deadly and scary the dungeon is); at the end the whole Groza is multiplied by CHCIWOŚĆ (the mult, how tempting it is).
-  // The Esencja a wave brings is what the heart judges. Prototype 1.01: from wave 2 the heart took its need out of the wave's
-  // Esencja first. 1.11 (author: the heart should not eat Esencja, but its bar should be much higher, a real threat and a goal
-  // of its own): the heart only LOOKS. From wave 2 a wave must bring at least hungerNeed(n) Esencja (3 times the old need:
-  // 60 in wave 2, x1,25 a wave, 358 in wave 10); all of it stays yours either way, and a wave that brings less costs a crystal.
+  // The Esencja a wave brings is FOOD. Prototype 1.01 (author's decision): from wave 2 the heart takes its need out of THIS
+  // wave's Esencja first; only the rest goes to your purse. A wave that brings less: the heart eats what it got and a crystal.
   // Like a Balatro blind, the wave's score is the goal, so you want the heroes to stay in the dungeon, not to throw them out.
+  // 1.11.1 (author: the heart takes the value of its bar, and the bar has to follow how Esencja really comes in): the bar is
+  // half of what a typical wave brings. Fitted to the author's three runs with the 1.10 economy (4 heroes, the greed curve) a
+  // typical wave brings about 73 x 1,257^(wave - 2) (73, 146 in wave 5, 289 in wave 8, 457 in wave 10), so the heart wants
+  // 37 x 1,25^(wave - 2): 37, 72 in wave 5, 141 in wave 8, 221 in wave 10 (1.10: 20 to 119, about a quarter of a wave).
+  // A wave under half of the usual feeds nothing and costs a crystal; the heart's half keeps the purse from piling up.
   const hungerNeed = n => (run && run.tutorial) || n < 2 || !(S.hungerBase > 0) ? 0 :
-    Math.max(1, Math.round(S.hungerBase * Math.pow(S.hungerGrowth, n - 2) * ((mods && mods.hungerK) || 1) - 3 * (run.stacks.granary || 0) * ((mods && mods.granary) || 0)));   // Spichlerz dusz: every kill lowers it by 3 for good
+    Math.max(1, Math.round(S.hungerBase * Math.pow(S.hungerGrowth, n - 2) * ((mods && mods.hungerK) || 1) - (run.stacks.granary || 0) * ((mods && mods.granary) || 0)));   // Spichlerz dusz: every kill feeds it for good
   // extra levels of the leader from greed. Up to 1.02 at most 3, so greed 23 was as safe as greed 4 (the author's run: 42 798
   // Esencja). 1.03: no ceiling, but past 4 it creeps up slowly (6: +3,7, 8: +4,2, 12: +5,0, 23: +6,1).
   const greedLv = g => g <= 4 ? Math.max(0, g - 1) : 3 + 1.8 * Math.log(g / 4);
@@ -2030,19 +2033,19 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (e >= 1) tutPop('pay');
     return e;
   }
-  // Esencja comes in: all of it goes to the purse; the part that fills the heart's bar sends some orbs to the ♥ on the way
-  // (1.11: the heart takes nothing). Obżarstwo: x1,25 on what comes after the bar is full.
+  // Esencja comes in: the hungry heart takes its share first, the rest goes to the purse (Obżarstwo: x1,25 once it is fed)
   function essIn(e, who) {
     if (!(e > 0)) return;
     const need = hungerNeed(run.wave);
-    let toward = 0;
+    let heart = 0;
     if (need > 0 && fl.fed < need) {
-      toward = Math.min(e, need - fl.fed); fl.fed += toward;
-      if (fl.fed >= need - 1e-6) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Próg serca!', '#ff9aa4', 16, -1.4); }
+      heart = Math.min(e, need - fl.fed); fl.fed += heart;
+      if (fl.fed >= need - 1e-6) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Serce syte!', '#ff9aa4', 16, -1.4); }
     }
-    let gain = e;
-    if (need > 0 && fl.fed >= need && mods.storeK > 1 && e > toward) { const x = (e - toward) * (mods.storeK - 1); gain += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
-    gainEssence('eq', gain, 'essWave', toward);   // 1.02: the Esencja leaves the equation's result box
+    let rest = e - heart;
+    if (rest > 0 && need > 0 && fl.fed >= need && mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
+    fl.stats.essHeart = (fl.stats.essHeart || 0) + heart;
+    gainEssence('eq', rest, 'essWave', heart);   // 1.02: the Esencja leaves the equation's result box
   }
   function setGreed(v) { fl.greed = v; }
   // 1.10 (author: the more greed, the slower it grows): every rise is divided by the greed there is: at x2 a treasure pulls
@@ -2333,7 +2336,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const list = run.next, lv = list.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), boss = list.find(e => e.boss);
     const rt = rumorView();
     return waveName() + ': ' + list.length + ' bohaterów, poziom ' + (lo === hi ? lo : lo + '-' + hi) + (boss ? ', prowadzi ' + BOSS_NAME[boss.boss][boss.female ? 1 : 0] + ' (poz. ' + boss.lvl + ')' : '') + '. ' +
-      (hungerNeed(run.wave) ? 'PRÓG SERCA: ta fala musi przynieść co najmniej ' + hungerNeed(run.wave) + ' Esencji, inaczej serce zje kryształ (Esencja i tak zostaje u Ciebie). Trzymaj bohaterów w lochu. ' : '') +
+      (hungerNeed(run.wave) ? 'GŁÓD: serce weźmie pierwsze ' + hungerNeed(run.wave) + ' Esencji z tej fali; fala da mniej, to zje kryształ. Trzymaj bohaterów w lochu. ' : '') +
       (fl.breach ? (run.layout.breach && run.layout.breach.fresh ? 'WYŁOM: gildia przebiła tunel do Twojego pokoju (czerwony znacznik) i tę falę wpuści tamtędy. ' : 'WYŁOM wciąż otwarty: bohaterowie wybiorą, czy wejść nim, czy drzwiami. ') + 'Stuknij wyłom, żeby go załatać (' + BREACH_PATCH + ' Esencji). ' : '') +
       (run.guild ? 'GILDIA: ' + run.guild.text + ' ' : '') +
       (rt.traps || rt.rooms ? 'Plotki: znają ' + rt.rooms + ' pokoi i ' + rt.traps + ' pułapek (oko na mapie).' : 'Nic o Tobie nie wiedzą.') +
@@ -2790,8 +2793,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       fl.stats.returnersOut = (fl.stats.returnersOut || 0) + 1;
     });
   }
-  // When the wave ends the heart looks at what the wave brought (essIn kept count): enough, or it eats a crystal
-  // (1.11: only the crystal; the Esencja stays yours). Crystals do not grow back by themselves (1.05: and cannot be bought; a card may give one).
+  // Prototype 1.01: the heart has been eating its share of this wave's Esencja all along (essIn). When the wave ends it is
+  // either fed, or it eats what it got and a crystal. Crystals do not grow back by themselves (1.05: and cannot be bought; a card may give one).
   function feedHeart() {
     const need = hungerNeed(run.wave);
     fl.hunger = null;
@@ -8525,7 +8528,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         hudCache.hunger = k;
         row.classList.toggle('off', !need); row.classList.toggle('fed', ok); row.classList.toggle('hungry', !!need && !ok && inW);
         $('#h-hfill').style.width = (need ? Math.min(1, fed / need) * 100 : 0).toFixed(1) + '%';
-        $('#h-hlabel').textContent = !need ? (run.tutorial ? 'serce śpi (samouczek)' : 'próg serca od fali 2') : ok ? 'próg serca przebity' : inW ? 'próg serca ' + Math.floor(fed) + '/' + need : 'próg serca: ' + need + ' z fali';
+        $('#h-hlabel').textContent = !need ? (run.tutorial ? 'serce śpi (samouczek)' : 'serce głodne od fali 2') : ok ? 'serce syte' : inW ? 'serce ' + Math.floor(fed) + '/' + need : 'serce chce ' + need + ' z fali';
       }
     }
     const out = fl.party && fl.party.carrierId >= 0 && fl.phase === 'raid' ? 1 : 0;
@@ -8783,7 +8786,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.11 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.11.1 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -8816,14 +8819,15 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Część pułapek nie rani, tylko straszy: portret, oczy, kości, lustro, zawiasy, trumna, pozytywka (w zakładce Pułapki, za raniącymi), a w zakładce Potwory duch, cień i nietoperze. Przestraszony uciekinier, który widział łup, opowie o nim i następna fala przyjdzie bardziej chciwa.',
      'Rany mają typ: kłute, obuchowe, ogień i trucizna. Klasa i ciało bohatera zmieniają obrażenia, a fobie podwajają strach. Stuknij bohatera (w fali albo na liście u góry), żeby zobaczyć jego kartę.',
      'Rany i strach to Groza. Dopóki trwa combo (różne pułapki pod rząd), Groza się zbiera, a gdy combo się skończy, wypłaca się jako Esencja: Groza × Chciwość (łup, rozległy loch, karty) × Combo. Chciwość rośnie coraz wolniej: im jej więcej, tym mniej dokłada kolejny łup. Esencję wydasz jeszcze w tej samej fali.',
-     'Od fali 2 każda fala musi przynieść co najmniej tyle Esencji, ile wynosi próg serca (♥ u góry pokazuje ile; rośnie o 25% na falę). Serce nic nie zabiera, ale fala poniżej progu kosztuje kryształ. Trzymaj bohaterów w lochu jak najdłużej: wypędzeni od razu nie dadzą Esencji. Limitu Esencji nie ma.',
+     'Od fali 2 serce bierze pierwsze porcje Esencji z każdej fali, aż się naje (♥ u góry pokazuje ile). Fala da za mało: serce zje to, co dostało, i kryształ. Trzymaj bohaterów w lochu jak najdłużej: wypędzeni od razu nie nakarmią serca. Limitu Esencji nie ma.',
      'Za każdą przetrwaną falę (nawet z utratą kryształu) dostajesz darmową kartę, po bossie legendarną w ofercie. Wybierasz ją w sklepie po fali; tam też kupisz karty za Esencję, odświeżysz ofertę, sprzedasz kartę albo odłożysz ją do schowka. Kryształu nie da się odkupić.',
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.11'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.11.1'));
     const ul2 = el('ul', 'conseq');
-    ['1.11: serce nie zabiera już Esencji. Zamiast tego każda fala od fali 2 musi przebić próg serca: 60 Esencji w fali 2, potem o 25% więcej co falę (fala 10: 358, trzy razy więcej niż dawny głód). Cała Esencja zostaje u Ciebie, ale fala poniżej progu kosztuje kryształ. Spichlerz dusz obniża próg o 3 za zabitego.',
+    ['1.11.1: serce znowu zabiera swoją porcję z każdej fali (tyle, ile wynosi próg), ale próg pasuje teraz do tego, ile naprawdę dają fale: to mniej więcej połowa typowej fali. Fala 2: 37, fala 5: 72, fala 8: 141, fala 10: 221 (+25% na falę). Fala, która da mniej, oddaje sercu wszystko i kryształ. Spichlerz dusz znowu −1 za zabitego.',
+     '1.11: serce nie zabiera już Esencji. Zamiast tego każda fala od fali 2 musi przebić próg serca: 60 Esencji w fali 2, potem o 25% więcej co falę (fala 10: 358, trzy razy więcej niż dawny głód). Cała Esencja zostaje u Ciebie, ale fala poniżej progu kosztuje kryształ. Spichlerz dusz obniża próg o 3 za zabitego.',
      '1.11: rozmowy naprawione. Korytarz nie liczył się jako pokój, więc drużyna idąca korytarzem "nie słyszała się" i mówiła naraz, a każdy trafiony w ostatnich 1,5 s mógł przekrzykiwać innych. Teraz słyszą się na 7 pól, a przekrzykują się tylko okrzyki (ból, trafienie, strach, krzyk na pułapkę) i bohaterowie w panice albo w ucieczce.',
      '1.10: bohaterowie rozmawiają po kolei. W jednym pokoju mówi jeden naraz, odpowiedź czeka, aż przeczytasz poprzednią kwestię (dymek wisi tyle, ile trzeba na przeczytanie), a mówiący odwraca się do słuchacza. Przekrzykują się tylko w chaosie (ranni, w panice, w ucieczce, w walce, przy krzyku) i w osobnych pokojach.',
      '1.10: bohaterowie naprawdę biorą łup leżący blisko (wcześniej przez błąd uznawali go za "za daleko", gdy po drodze było jakieś znane niebezpieczeństwo). Po jeden skarb idzie jeden, a przywódca na niego czeka. Na postoju rozstawiają się obok siebie zamiast stać jeden na drugim, rozglądają się i odwracają do rannego.',
@@ -9178,15 +9182,15 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const s = fl.stats, won = !!fl.victory, H = fl.hunger;
     lastWaveModal = m;
     if (won) card.classList.add('vic');
-    const ate = !!(H && !H.fed), mine = Math.max(0, fl.score);   // 1.11: the heart takes no Esencja, only a crystal
+    const heart = H ? Math.min(H.need, fl.fed || 0) : 0, ate = !!(H && !H.fed), mine = ate ? 0 : Math.max(0, fl.score - heart);
     scrHead(card, waveName() + ' · ' + mmss(fl.time), won ? 'Zwycięstwo!' : fl.crystalLost ? 'Kryształ skradziony' : ate ? 'Serce zjadło kryształ' : 'Fala odparta', '+' + fmtE(fl.score), 'Esencji z fali', [fl.score, v => '+' + fmtE(v)]);
     const body = el('div', 'scr-body'); card.appendChild(body);
     if (m.details) waveDetails(body, card, m);
     else {
       const tiles = el('div', 'statrow');
       statTile(tiles, String(Math.floor(run.essence)), 'masz Esencji', 'ess');
-      if (H) statTile(tiles, '♥ ' + H.need, H.fed ? 'próg przebity' : 'zjadło kryształ', H.fed ? 'good' : 'bad');
-      else statTile(tiles, '-', run.tutorial ? 'serce śpi' : run.wave < 2 ? 'próg od fali 2' : 'serce');
+      if (H) statTile(tiles, '♥ ' + H.need, H.fed ? 'serce syte' : 'zjadło kryształ', H.fed ? 'good' : 'bad');
+      else statTile(tiles, '-', run.tutorial ? 'serce śpi' : run.wave < 2 ? 'głód od fali 2' : 'serce');
       statTile(tiles, run.crystals + '/' + run.maxCrystals, 'kryształy', fl.crystalLost || ate ? 'bad' : 'good');
       statTile(tiles, s.kills + ' · ' + s.scared, 'zabici · przestr.');
       body.appendChild(tiles);
@@ -9194,11 +9198,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       const rk = el('div', 'reck' + (ate ? ' ate' : ''));
       const part = (cls, html) => { const sp = el('span', cls); sp.innerHTML = html; rk.appendChild(sp); };
       part('g', 'Groza <b>' + fmtG(fl.base) + '</b> × ' + fmt2(fl.base > 0 ? fl.score / fl.base : 1) + ' = <b class="e">' + fmtE(fl.score) + '</b>');
-      if (H) part('h', H.fed ? '♥ próg <b>' + fmtE(H.need) + ' ✓</b>' : '♥ próg ' + fmtE(H.need) + ': <b>−1 kryształ</b>');
+      if (H) part('h', H.fed ? '♥ <b>−' + fmtE(H.need) + '</b>' : '♥ za mało: <b>−' + fmtE(heart) + ' · kryształ</b>');
       part('m', 'dla Ciebie <b>+' + fmtE(mine) + '</b>' + (run.lastIncome ? ' <small>(+' + run.lastIncome + ' po fali)</small>' : ''));
       body.appendChild(rk);
       if (ate && !m.alarmed) { m.alarmed = true; setTimeout(() => { if (modalKind === 'wave') crystalAlarm(); }, reduceMotion ? 0 : 900); }
-      waveChart(panel(body, 'Esencja z fal', 'kreska: próg serca'), run.waves, run.wave);
+      waveChart(panel(body, 'Esencja z fal', 'kreska: porcja serca'), run.waves, run.wave);
       m.fun = m.fun || waveFun();
       if (m.fun.length) {
         const fr = el('div', 'fun');
@@ -9260,11 +9264,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const box = el('div', 'panel segpanel'), list = el('div', 'flist' + (cur === 'nums' ? ' grid2' : '')); box.appendChild(list); body.appendChild(box);
     if (cur === 'next') {
       const nb = bossOf(run.wave + 1), items = [s.swaps ? 'wymiany: ' + s.swaps : '', s.potionsGiven ? 'mikstury podane: ' + s.potionsGiven : '', s.charms ? 'talizmany: ' + s.charms : '', s.amulets ? 'amulety: ' + s.amulets : '', s.boots ? 'buty: ' + s.boots : ''].filter(Boolean);
-      if (H && !H.fed) frow(list, 'Próg serca był ' + H.need + ' Esencji, a fala dała ' + fmtE(fl.score) + ': serce zjadło kryształ (Esencja została u Ciebie).', 'heart');
+      if (H && !H.fed) frow(list, 'Serce chciało ' + H.need + ' Esencji z fali, a fala dała ' + fmtE(fl.score) + ': zjadło wszystko i kryształ.', 'heart');
       else if (H) frow(list, 'Serce wzięło pierwsze ' + H.need + ' Esencji' + (H.fedAt != null ? ' (najadło się w ' + mmss(H.fedAt) + ')' : '') + ', reszta (' + fmtE(Math.max(0, fl.score - H.need)) + ') trafiła do Ciebie.', 'heart');
       if (run.wave < RUN_WAVES || run.won) frow(list, 'Fala ' + (run.wave + 1) + ': poziom ok. ' + Math.round(waveBase(run.wave + 1)) + (nb ? ', prowadzi ' + (nb === 'final' ? 'bohater z przepowiedni' : 'czempion') : '') + '.', 'wave');
       if (run.guild && run.crystals > 0) frow(list, 'Gildia ' + run.guild.text, 'wave');
-      if (hungerNeed(run.wave + 1)) frow(list, 'Następna fala musi przynieść co najmniej ' + hungerNeed(run.wave + 1) + ' Esencji, inaczej serce zje kryształ. Trzymaj bohaterów w lochu, żeby było z czego.', 'heart');
+      if (hungerNeed(run.wave + 1)) frow(list, 'Następna fala: serce weźmie pierwsze ' + hungerNeed(run.wave + 1) + ' Esencji. Trzymaj bohaterów w lochu, żeby było z czego.', 'heart');
       frow(list, 'Esencja: +' + run.lastIncome + ' po fali' + (run.lastInterest ? ' (odsetki ' + run.lastInterest + ')' : '') + ', masz ' + Math.floor(run.essence) + '.', 'ess');
       frow(list, m.out ? 'Plotki: uciekinierzy opowiedzą o ' + m.rr + ' pokojach i ' + m.rt + ' pułapkach (tylko o tych, które ich zraniły albo przestraszyły). Przestaw je albo postaw Zasłonę.' : 'Nikt nie wyszedł żywy: Twoje sekrety są bezpieczne.');
       if (s.treasureTale) frow(list, 'Opowieści o skarbach: chciwość na start następnej fali +' + fmt2(s.treasureTale) + '.', 'ess');
@@ -9301,7 +9305,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       cell('Rozbrojone / odczynione', s.disarmed + ' / ' + s.blessed);
       cell('Plotki: pokoje / pułapki', s.rumorRooms + ' / ' + s.rumorTraps);
       cell('Zapadnie / klatki', s.falls + ' / ' + s.cages);
-      cell('Próg serca / fala dała', (fl.hunger ? fl.hunger.need : '-') + ' / ' + Math.round(fl.score));
+      cell('Serce / dla Ciebie', Math.round(s.essHeart || 0) + ' / ' + Math.round(Math.max(0, fl.score - (s.essHeart || 0))));
       cell('Czas / przyspieszenie', mmss(fl.time) + ' / ' + Math.round(s.ffTime) + ' s');
     }
     fitList(list);
@@ -9682,7 +9686,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const raid = fl.phase === 'raid', s = fl.stats, cm = 1 + 0.25 * (comboNow() - 1);
     card.appendChild(el('div', 'sub', raid ? waveName() + ' · fala trwa' : waveName() + ' · budowa'));
     card.appendChild(el('h2', null, 'Skąd Esencja'));
-    card.appendChild(el('p', null, 'Esencja = Groza × Chciwość × Combo. Dopóki trwa combo, Groza się zbiera (linia u góry), a gdy combo się skończy, cała seria wypłaca się po końcowym combo. Od fali 2 fala musi przebić próg serca, inaczej serce zje kryształ; Esencja zawsze zostaje u Ciebie.'));
+    card.appendChild(el('p', null, 'Esencja = Groza × Chciwość × Combo. Dopóki trwa combo, Groza się zbiera (linia u góry), a gdy combo się skończy, cała seria wypłaca się po końcowym combo. Od fali 2 serce bierze pierwsze porcje Esencji z fali, reszta trafia do Ciebie.'));
     card.appendChild(el('h2', 'h2small', 'Groza: co przeżywają bohaterowie'));
     card.appendChild(el('p', 'note', 'To nie mnożnik, tylko suma zdarzeń. Każde liczy się względem bohatera i razy mnożnik pokoju (liczba w rogu pokoju: ×1 przy wejściu, do ×' + fmtE(S.depthMax) + ' przy sercu).'));
     const gt = el('table', 'stats');
@@ -9754,13 +9758,13 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // v14: the first hungry wave explains itself once
   function renderHungerTip(card) {
     card.appendChild(el('div', 'sub', 'Fala 2'));
-    card.appendChild(el('h2', null, 'Próg serca'));
-    card.appendChild(el('p', 'lead', 'Od tej fali każda fala musi przynieść co najmniej tyle Esencji, ile chce serce: teraz ' + hungerNeed(run.wave) + ', potem z każdą falą o 25% więcej. Serce nic nie zabiera, cała Esencja jest Twoja, ale fala poniżej progu kosztuje kryształ.'));
+    card.appendChild(el('h2', null, 'Serce jest głodne'));
+    card.appendChild(el('p', 'lead', 'Od tej fali serce bierze pierwsze porcje Esencji z każdej fali, aż się naje: teraz ' + hungerNeed(run.wave) + ', potem coraz więcej. Dopiero reszta trafia do Ciebie.'));
     const ul = el('ul', 'conseq');
-    ['Pasek ♥ pod czasem napełnia się w trakcie fali. Gdy się zapełni, próg jest przebity.',
+    ['Pasek ♥ pod czasem napełnia się w trakcie fali. Gdy się zapełni, serce jest syte i cała dalsza Esencja jest Twoja.',
      'Esencję daje Groza (rany, strach, śmierć, ucieczki) × Chciwość (łup, rozległy loch, karty) × Combo. Bez łupu nie ma show.',
      'Wypędzeni od razu bohaterowie nie nakarmią serca: trzymaj ich w lochu jak najdłużej, rań i strasz, ale nie wyrzucaj w pierwszym pokoju.',
-     'Fala da za mało: serce zje kryształ. Kryształu nie da się odkupić (wyjątek: karta Żarłoczne serce).'].forEach(t => ul.appendChild(el('li', null, t)));
+     'Fala da za mało: serce zje to, co dostało, i kryształ. Kryształu nie da się odkupić (wyjątek: karta Żarłoczne serce).'].forEach(t => ul.appendChild(el('li', null, t)));
     card.appendChild(ul);
     card.appendChild(btn('primary', 'Rozumiem', null, closeModal));
   }
@@ -9836,7 +9840,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      ['Przebiegnięcia przy przeładowaniu', s.timing],
      ['Najwyższe combo', '×' + fmt2(1 + 0.25 * (s.maxCombo - 1))],
      ['Potwory, które zginęły', s.monstersLost],
-     ['Esencja: z fali / z combo wstecz / relikwie', Math.round(s.essWave || 0) + ' / ' + Math.round(s.comboPts || 0) + ' / ' + Math.round(s.essDrop || 0)],
+     ['Esencja: dla serca / dla Ciebie / z combo wstecz / relikwie', Math.round(s.essHeart || 0) + ' / ' + Math.round(s.essWave || 0) + ' / ' + Math.round(s.comboPts || 0) + ' / ' + Math.round(s.essDrop || 0)],
      ['Czas · pauza · przyspieszenie', mmss(fl.time) + ' · ' + Math.round(s.pauseTime) + ' s · ' + Math.round(s.ffTime) + ' s']
     ].forEach(r => { const tr = el('tr'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, String(r[1]))); t.appendChild(tr); });
     return t;
@@ -9845,7 +9849,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(el('div', 'sub', 'Serce lochu gaśnie'));
     const ate = fl.hunger && fl.hunger.ate;
     card.appendChild(el('h2', null, ate ? 'Serce zjadło ostatni kryształ' : 'Ostatni kryształ wyniesiony'));
-    card.appendChild(el('p', null, (ate ? 'Fala nie przebiła progu serca, więc loch pożarł sam siebie.' : 'Bohaterowie wynieśli wszystkie kryształy.') + ' W grze tu jest reklama nagradzana: jeden kryształ wraca i grasz dalej (raz na run).'));
+    card.appendChild(el('p', null, (ate ? 'Loch nie dostał dość grozy i chciwości, więc pożarł sam siebie.' : 'Bohaterowie wynieśli wszystkie kryształy.') + ' W grze tu jest reklama nagradzana: jeden kryształ wraca i grasz dalej (raz na run).'));
     const row = el('div', 'row');
     if (!run.continueUsed) {
       let gu = null;
@@ -9952,7 +9956,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 54;   // 54: Prototype 1.11: the heart takes no Esencja, a wave must reach hungerNeed (60 x 1,25^(wave-2)) or a crystal goes (hunger.fedAmt = how far the bar got; stats.essHeart is gone)
+  const LOG_VERSION = 55;   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
+  // 54: Prototype 1.11: the heart takes no Esencja, a wave must reach hungerNeed (60 x 1,25^(wave-2)) or a crystal goes (hunger.fedAmt = how far the bar got; stats.essHeart is gone)
   // 53: Prototype 1.10: 4 heroes a wave (+ the boss), the greed curve, room types haven/gears/hush/ice (stats.slips, naps, hushUnlearned, hushLost), loot taken by steps
   // 52: Prototype 1.09: a check answer stays with the trap between waves (stats.memLost: answers lost to the heroes; memFires counts every remembered hit), checks slow the world to x0,25 instead of stopping it (frozen = the share of the wave under a check, slowed), quiet x1,5 and a held finger x3 for everyone (settings.autoFF 1.5, ffSpeed 3), the tray folds at a wave's start again, walls 2x high; 51: Prototype 1.08: the tray folds only on a tap (a wave let out with it open starts paused: in stats.pauseTime), a held finger x5 (settings.ffSpeed 5, was 3), quiet x2,5 for old saves too; 50: Prototype 1.07: the isometric camera, the build tray is the pause (a wave has trayPauses: how often the tray stopped it; stats.pauseTime: how long); 49: Prototype 1.06: heroes drawn as figurines, one build-bar button (no change in the data); 48: Prototype 1.05: a check's result kept for the wave (memFires, skullOff), checks per minute (cpm) and the share of the wave frozen by checks (frozen, perf.realSec), the classes of each party (bard, barbarian), rumours only of what hurt or scared (max 3, 2 waves), tutorial progress in the run summary (tut: furthest step, skipped, how it ended), new stats (songs, bardCalls, answers, rages, smashes, disputes, healCalls); 47: Prototype 1.04: wave summaries carry perf (frame gaps, js time, dpr, direct tiles share) and errors, the party waits at the gate 1,8 s, start traps near the heart, tutorial cards; 46: Prototype 1.03: greed risk without a ceiling (leader levels, hunters), loot dearer per copy, Odwrotna chciwość reworked (taken loot x3), split screen; 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
   function snapshotLayout() {
@@ -10443,7 +10448,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     { id: 'object', text: 'Poziom 3 ulepszenia dodaje cechę, np. strzały przebijają tarcze. Zakładka Obiekty to kontry na sztuczki gildii: Ołtarz na kapłanów, Runa na magów, Kamień wyjec na bardów, Okowy na barbarzyńców. Na końcu zakładki Loch są typy pokoi.', build: true, hl: ['#tab-object', '#tab-dungeon'], prep: () => { tab = 'object'; updateTray(); setTrayOpen(true); }, next: true },
     { id: 'types', text: 'Klasę poznasz po figurce: hełm i tarcza (wojownik), kaptur (złodziej), aureola (kapłan), spiczasty kapelusz (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). Obrażenia są kłute, obuchowe, ogniem albo trucizną, a klasy znoszą je różnie. Lista u góry mapy pokazuje następną drużynę: stuknij wiersz.', build: true, next: true },
     { id: 'tales', text: 'Kto ucieknie, opowie tylko o pułapkach, które go zraniły albo przestraszyły (najwyżej o 3), a plotka żyje 2 fale: oko na pułapce znaczy, że następna fala ją zna. Kto widział łup, ściągnie chciwszych. Wystraszony może wrócić za 2-3 fale silniejszy.', build: true, next: true },
-    { id: 'end', text: 'Klatka zabija, jeśli drużyna nie uwolni uwięzionego. W zwykłym runie od fali 2 każda fala musi przebić próg serca (pasek ♥), inaczej serce zje kryształ. Kryształów nie da się odkupić. Od fali 6 gildia może przebić wyłom. Powodzenia!', build: true, next: true }
+    { id: 'end', text: 'Klatka zabija, jeśli drużyna nie uwolni uwięzionego. W zwykłym runie od fali 2 serce zjada pierwsze porcje Esencji z każdej fali (pasek ♥), a gdy dostanie za mało, zje kryształ. Kryształów nie da się odkupić. Od fali 6 gildia może przebić wyłom. Powodzenia!', build: true, next: true }
   ];
   // 1.04: the moments that matter stop the game once, with a card at the top of the map (the check waits under it)
   const TUT_POP = {

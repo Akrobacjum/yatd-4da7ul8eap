@@ -8,13 +8,16 @@
   }
   // Points, like Balatro: every wound, every scare, every kill and every hero scared away adds to the wave's GROZA (the base,
   // how deadly and scary the dungeon is); at the end the whole Groza is multiplied by CHCIWOŚĆ (the mult, how tempting it is).
-  // The Esencja a wave brings is what the heart judges. Prototype 1.01: from wave 2 the heart took its need out of the wave's
-  // Esencja first. 1.11 (author: the heart should not eat Esencja, but its bar should be much higher, a real threat and a goal
-  // of its own): the heart only LOOKS. From wave 2 a wave must bring at least hungerNeed(n) Esencja (3 times the old need:
-  // 60 in wave 2, x1,25 a wave, 358 in wave 10); all of it stays yours either way, and a wave that brings less costs a crystal.
+  // The Esencja a wave brings is FOOD. Prototype 1.01 (author's decision): from wave 2 the heart takes its need out of THIS
+  // wave's Esencja first; only the rest goes to your purse. A wave that brings less: the heart eats what it got and a crystal.
   // Like a Balatro blind, the wave's score is the goal, so you want the heroes to stay in the dungeon, not to throw them out.
+  // 1.11.1 (author: the heart takes the value of its bar, and the bar has to follow how Esencja really comes in): the bar is
+  // half of what a typical wave brings. Fitted to the author's three runs with the 1.10 economy (4 heroes, the greed curve) a
+  // typical wave brings about 73 x 1,257^(wave - 2) (73, 146 in wave 5, 289 in wave 8, 457 in wave 10), so the heart wants
+  // 37 x 1,25^(wave - 2): 37, 72 in wave 5, 141 in wave 8, 221 in wave 10 (1.10: 20 to 119, about a quarter of a wave).
+  // A wave under half of the usual feeds nothing and costs a crystal; the heart's half keeps the purse from piling up.
   const hungerNeed = n => (run && run.tutorial) || n < 2 || !(S.hungerBase > 0) ? 0 :
-    Math.max(1, Math.round(S.hungerBase * Math.pow(S.hungerGrowth, n - 2) * ((mods && mods.hungerK) || 1) - 3 * (run.stacks.granary || 0) * ((mods && mods.granary) || 0)));   // Spichlerz dusz: every kill lowers it by 3 for good
+    Math.max(1, Math.round(S.hungerBase * Math.pow(S.hungerGrowth, n - 2) * ((mods && mods.hungerK) || 1) - (run.stacks.granary || 0) * ((mods && mods.granary) || 0)));   // Spichlerz dusz: every kill feeds it for good
   // extra levels of the leader from greed. Up to 1.02 at most 3, so greed 23 was as safe as greed 4 (the author's run: 42 798
   // Esencja). 1.03: no ceiling, but past 4 it creeps up slowly (6: +3,7, 8: +4,2, 12: +5,0, 23: +6,1).
   const greedLv = g => g <= 4 ? Math.max(0, g - 1) : 3 + 1.8 * Math.log(g / 4);
@@ -59,19 +62,19 @@
     if (e >= 1) tutPop('pay');
     return e;
   }
-  // Esencja comes in: all of it goes to the purse; the part that fills the heart's bar sends some orbs to the ♥ on the way
-  // (1.11: the heart takes nothing). Obżarstwo: x1,25 on what comes after the bar is full.
+  // Esencja comes in: the hungry heart takes its share first, the rest goes to the purse (Obżarstwo: x1,25 once it is fed)
   function essIn(e, who) {
     if (!(e > 0)) return;
     const need = hungerNeed(run.wave);
-    let toward = 0;
+    let heart = 0;
     if (need > 0 && fl.fed < need) {
-      toward = Math.min(e, need - fl.fed); fl.fed += toward;
-      if (fl.fed >= need - 1e-6) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Próg serca!', '#ff9aa4', 16, -1.4); }
+      heart = Math.min(e, need - fl.fed); fl.fed += heart;
+      if (fl.fed >= need - 1e-6) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Serce syte!', '#ff9aa4', 16, -1.4); }
     }
-    let gain = e;
-    if (need > 0 && fl.fed >= need && mods.storeK > 1 && e > toward) { const x = (e - toward) * (mods.storeK - 1); gain += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
-    gainEssence('eq', gain, 'essWave', toward);   // 1.02: the Esencja leaves the equation's result box
+    let rest = e - heart;
+    if (rest > 0 && need > 0 && fl.fed >= need && mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
+    fl.stats.essHeart = (fl.stats.essHeart || 0) + heart;
+    gainEssence('eq', rest, 'essWave', heart);   // 1.02: the Esencja leaves the equation's result box
   }
   function setGreed(v) { fl.greed = v; }
   // 1.10 (author: the more greed, the slower it grows): every rise is divided by the greed there is: at x2 a treasure pulls
@@ -362,7 +365,7 @@
     const list = run.next, lv = list.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), boss = list.find(e => e.boss);
     const rt = rumorView();
     return waveName() + ': ' + list.length + ' bohaterów, poziom ' + (lo === hi ? lo : lo + '-' + hi) + (boss ? ', prowadzi ' + BOSS_NAME[boss.boss][boss.female ? 1 : 0] + ' (poz. ' + boss.lvl + ')' : '') + '. ' +
-      (hungerNeed(run.wave) ? 'PRÓG SERCA: ta fala musi przynieść co najmniej ' + hungerNeed(run.wave) + ' Esencji, inaczej serce zje kryształ (Esencja i tak zostaje u Ciebie). Trzymaj bohaterów w lochu. ' : '') +
+      (hungerNeed(run.wave) ? 'GŁÓD: serce weźmie pierwsze ' + hungerNeed(run.wave) + ' Esencji z tej fali; fala da mniej, to zje kryształ. Trzymaj bohaterów w lochu. ' : '') +
       (fl.breach ? (run.layout.breach && run.layout.breach.fresh ? 'WYŁOM: gildia przebiła tunel do Twojego pokoju (czerwony znacznik) i tę falę wpuści tamtędy. ' : 'WYŁOM wciąż otwarty: bohaterowie wybiorą, czy wejść nim, czy drzwiami. ') + 'Stuknij wyłom, żeby go załatać (' + BREACH_PATCH + ' Esencji). ' : '') +
       (run.guild ? 'GILDIA: ' + run.guild.text + ' ' : '') +
       (rt.traps || rt.rooms ? 'Plotki: znają ' + rt.rooms + ' pokoi i ' + rt.traps + ' pułapek (oko na mapie).' : 'Nic o Tobie nie wiedzą.') +
@@ -819,8 +822,8 @@
       fl.stats.returnersOut = (fl.stats.returnersOut || 0) + 1;
     });
   }
-  // When the wave ends the heart looks at what the wave brought (essIn kept count): enough, or it eats a crystal
-  // (1.11: only the crystal; the Esencja stays yours). Crystals do not grow back by themselves (1.05: and cannot be bought; a card may give one).
+  // Prototype 1.01: the heart has been eating its share of this wave's Esencja all along (essIn). When the wave ends it is
+  // either fed, or it eats what it got and a crystal. Crystals do not grow back by themselves (1.05: and cannot be bought; a card may give one).
   function feedHeart() {
     const need = hungerNeed(run.wave);
     fl.hunger = null;
