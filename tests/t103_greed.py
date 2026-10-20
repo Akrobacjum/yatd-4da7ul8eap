@@ -36,7 +36,7 @@ async def main():
             const h = G.fl.heroes.slice().sort((a, c) => a.inv.length - c.inv.length)[0]; let rel = [...G.fl.items.values()].filter(i => i.type === 'loot3');
             if (pos) { const same = pos.map(q => G.fl.items.get(q[0] + ',' + q[1])).filter(i => i && i.type === 'loot3'); if (same.length >= 2) rel = same; } pos = rel.slice(0, 3).map(i => [i.x, i.y]);
             const steps = rel.slice(0, 3).map(it => { h.inv = []; h.gold = 0; const g0 = G.fl.greed; G.pickup(h, it); return +(G.fl.greed - g0).toFixed(3); });   /* 1.07: empty hands before each (a hero with full hands left it lying: a flaky test since 1.05) */
-            out[card ? 'card' : 'plain'] = steps; out.taken = rel.slice(0, 3).every(it => !G.fl.items.has(it.x + ',' + it.y));
+            out[card ? 'card' : 'plain'] = steps; out[card ? 'cardPos' : 'plainPos'] = rel.slice(0, 3).map(i => i.x + ',' + i.y); out.taken = rel.slice(0, 3).every(it => !G.fl.items.has(it.x + ',' + it.y));
             G.finishWave(); while (G.modalKind) G.closeModal(); if (G.afterSummary) G.afterSummary(); while (G.modalKind) G.closeModal(); if (G.fl.phase !== 'build') G.startBuild(); while (G.modalKind) G.closeModal();
             pos.forEach(q => { if (!G.fl.items.has(q[0] + ',' + q[1]) && G.canPlace('loot3', q[0], q[1])) G.tryPlace('loot3', q[0], q[1]); });
             const ps = [...G.fl.items.values()].filter(i => i.type === 'loot3').length; for (let k = ps; k < 6; k++) { for (let y = 0; y < G.WH; y++) { let d = false; for (let x = 0; x < G.WW; x++) if (G.canPlace('loot3', x, y)) { G.tryPlace('loot3', x, y); d = true; break; } if (d) break; } }
@@ -44,7 +44,9 @@ async def main():
           const u = G.UPG.nopick; out.text = u.text; return out; })()""")
         print(g)
         pl = [x for x in g['plain'] if x > 0]; cd = [x for x in g['card'] if x > 0]   # (a hero with full hands leaves it lying)
-        ok(len(pl) >= 2 and len(cd) >= 2 and abs(cd[0] / pl[0] - 3) < 0.4, 'taken loot pulls greed 3x with the card')
+        # 1.09: compare the first pickup only when both passes took it from the same spot (a room's depth scales the pull)
+        if g['plainPos'][:1] == g['cardPos'][:1]: ok(len(pl) >= 2 and len(cd) >= 2 and abs(cd[0] / pl[0] - 3) < 0.4, 'taken loot pulls greed 3x with the card')
+        else: print('NOTE: the two passes took loot from different spots', g['plainPos'], g['cardPos'], '(ratio not compared)'); ok(len(pl) >= 2 and len(cd) >= 2 and cd[0] > pl[0], 'the card pulls more')
         ok(cd[-1] < cd[0] and pl[-1] < pl[0], 'each taken loot pulls a little less')
         ok('zabierają łup jak zwykle' in g['text'], 'card text says they take it')
         print('FAILS', FAILS); print('errs', errs[:3]); await b.close()

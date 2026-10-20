@@ -260,8 +260,11 @@ body {
 /* ---------- the drawer: tabs and the tray ---------- */
 .drawer { display: grid; gap: 6px; }
 /* 1.06 (author): the build bar's button looks the same open and folded; only the arrow turns (▼ Budowa / ▲ Budowa) */
-.handle { display: flex; align-items: center; justify-content: center; height: 30px; margin: 0; padding: 0; background: none; border: 0; color: var(--gold-hi); font: inherit; cursor: pointer; }
+.handle { display: flex; align-items: center; justify-content: center; justify-self: center; height: 30px; margin: 0; padding: 0 6px; background: none; border: 0; color: var(--gold-hi); font: inherit; cursor: pointer; }
 .handle .grip { display: none; }
+.handle:active #tray-label { transform: translateY(1px); box-shadow: inset 0 1px 3px #000; }   /* 1.09: the button gives under the finger */
+#tray.deal > .item:not([hidden]) { animation: dealin 0.24s calc(var(--d, 0) * 24ms) ease-out both; }   /* 1.09: a new tab deals its tiles in */
+@keyframes dealin { from { opacity: 0; transform: translateY(10px) scale(0.94); } to { opacity: 1; transform: none; } }   /* 1.09: the handle is as wide as its button (it took taps across the whole row) */
 /* 1.08: the body folds in step with the camera (trayPaint sets its height); the stage clips the canvas under it */
 #tray-label { min-width: 132px; text-align: center; padding: 4px 18px 5px; border: 1px solid #5c4b28; border-radius: var(--r); background-color: #1b1914; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 #000; }
 #drawer-body { display: grid; gap: 6px; }

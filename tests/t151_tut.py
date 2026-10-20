@@ -67,12 +67,8 @@ async def main():
             await page.clock.run_for(300)
         if (await step(page))['id'] == 'spend': await page.evaluate("(() => { const b=[...document.querySelectorAll('#coach .skip')].find(x => x.textContent.includes('Pomiń')); if (b) b.click(); })()"); await page.clock.run_for(200)
         await expect('go'); await page.click('#btn-action'); await page.clock.run_for(500)
-        s = await expect('fold')   # 1.08: the wave waits while the bar is open
-        w = await page.evaluate("({ paused: __yatd.paused, t: __yatd.fl.time })")
-        if not s['tray'] or not w['paused'] or w['t'] > 0: fails.append('the wave waits with the bar open (%s)' % w)
-        await page.click('#tray-toggle'); await page.clock.run_for(600)
         s = await step(page)
-        if s['tray'] or s['id'] == 'fold': fails.append('folding the bar lets the wave go')
+        if s['tray']: fails.append('the bar folds for the wave in the tutorial too')   # 1.09: back as before 1.08
         await page.screenshot(path=OUT + '04_wave.png')
         got_check = hero = held = False
         for i in range(500):

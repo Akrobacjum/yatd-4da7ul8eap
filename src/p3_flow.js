@@ -272,7 +272,8 @@
     });
     validateItems(true);
     fl.items.forEach(it => {   // between waves everything is repaired and re-armed; monsters lick their wounds
-      it.cd = 0; it.disabled = false; it.bent = false; it.anim = 0; it.sleep = false; it.detected = false; it.rumored = false; it.uses = 0; it.seenWave = 0; it.preview = 0; it.noGreed = false; it.cursedKnown = false;
+      if (it.memRes && !it.worn && (it.disabled || it.broken)) it.memRes = null;   // 1.09: put out of use by the heroes: it asks again
+      it.worn = false; it.cd = 0; it.disabled = false; it.bent = false; it.anim = 0; it.sleep = false; it.detected = false; it.rumored = false; it.uses = 0; it.seenWave = 0; it.preview = 0; it.noGreed = false; it.cursedKnown = false;
       it.jamUntil = 0; it.skipUntil = 0; it.lastFire = null; it.broken = false;   // wave clocks restart at 0: stale timers from last wave would jam or mute a trap; smashed buildings stand again
       if (MONSTERS[it.type]) { it.hp = it.max; it.gx = it.x + 0.5; it.gy = it.y + 0.5; it.foeT = 0; }
     });
@@ -513,7 +514,7 @@
     run.buildSec += Math.max(0, realNow - fl.buildStart); fl.buildSec = Math.round(realNow - fl.buildStart);
     saveRun('build');   // a tab closed during the wave comes back to this build
     perfReset();
-    fl.items.forEach(it => { it.skullOff = false; });   // 1.05: a new wave asks every trap again (it.mem belongs to a wave)
+    fl.items.forEach(it => { it.skullOff = false; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap)
     fl.phase = 'raid'; fl.time = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
     { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał
@@ -524,14 +525,11 @@
     applyRumors();
     chooseEntrance();
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && isRt(roomOf(m.x, m.y), 'crypt')) m.hp = Math.round(m.max * 1.25); });   // Krypta: +25% HP for this wave
-    selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); updateTray(); updateAction();   // 1.08 (author): the tray is not folded here any more (only a tap folds it)
+    selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); setTrayOpen(false); updateTray(); updateAction();   // 1.05: in the tutorial too; 1.07: always (an open tray is the pause); 1.09 (author): back after 1.08 (his complaint was the button's width)
     { const bossE = fl.queue.find(e => e.boss), n = fl.queue.length;   // Prototype 1.0: a banner over the map says who is coming
       showBanner('Fala ' + run.wave, (bossE ? 'prowadzi ich ' + (bossE.boss === 'final' ? 'bohater z przepowiedni' : 'czempion') : n === 1 ? '1 bohater' : n + ' bohaterów') +
         (fl.spawnAt === 'breach' ? ' · wchodzą przez wyłom!' : fl.breach ? ' · wchodzą drzwiami' : ''));
-      const wait = trayIsOpen();   // 1.08: an open tray is the pause, so a wave let out with it open waits for the fold
-      if (wait) setPaused(true, true);
-      if (run.wave === 1 && run.tut < 0) setHint((wait ? 'Fala czeka, aż zwiniesz ▼ Budowa. ' : '') + 'Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.');
-      else if (wait && run.tut < 0 && (UI.waveWaitHint || 0) < 3) { UI.waveWaitHint = (UI.waveWaitHint || 0) + 1; saveUI(); setHint('Fala czeka: rozwinięty pasek to pauza. Zwiń ▼ Budowa, żeby ruszyła.'); } }
+      if (run.wave === 1 && run.tut < 0) setHint('Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.'); }
     fl.tl = { ev: [], smp: [], smpT: 0 };
     run.waveStart = snapshotLayout();
     if (fl.breach) { fl.stats.breachOpen = 1; if (fl.spawnAt === 'breach') { tl('br', fl.breach.x, fl.breach.y); fl.stats.breach = 1; } }
@@ -591,6 +589,7 @@
       gold: 0, cursed: false, faith: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithMax: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithT: 0,
       wardUntil: -1, wardK: 0, sprintUntil: -1, sprintK: 1, calmUntil: -1, giveCd: 0, sepT: 0, sepRolled: false, shakenUntil: -1, rtSaid: new Set(), lostCallT: 0, hunter: !!e.hunter,
       phys: e.phys || null, phobia: e.phobia || null, known: new Set(e.known || []), returning: !!e.returning, scar: e.scar || null, trauma: {}, fearBy: {}, dmgBy: {}, phobiaSeen: new Set() };
+    h.inR = realNow;   // 1.09: pops in
     fl.heroes.push(h);
     tl('sp', h.id);
     reveal(h);
@@ -651,7 +650,7 @@
   function heroExit(h) {
     if (h.fled || h.dead) return;
     if (!h.crystal && !h.fleeing && fl.time < h.panicUntil) { h.fleeing = true; fl.stats.panicExits = (fl.stats.panicExits || 0) + 1; }   // ran out in a panic: that is a hero scared away
-    h.fled = true; h.bubble = null; fl.stats.escaped++;
+    h.fled = true; h.bubble = null; fl.stats.escaped++; h.outR = realNow; h.outKind = 'out';   // 1.09: fades at the door
     const P = fl.party;
     if (h.crystal) {
       h.crystal = false; h.carriedOut = true; fl.crystalLost = true; run.crystals = Math.max(0, run.crystals - 1); fl.stats.crystalLost++;
@@ -1133,7 +1132,7 @@
   // A dead hero: points, a soul for the dungeon, a louder legend (Infamy), panic among the others. His secrets die with him.
   function kill(h, kind, attr) {
     const p = heroPos(h);
-    h.acc = 0; h.foe = null; h.bubble = null;
+    h.acc = 0; h.foe = null; h.bubble = null; h.outR = realNow; h.outKind = 'dead';   // 1.09: he tips over
     fl.stats.kills++; buzz(14);
     if (kind === 'heart') fl.stats.killsHeart++; else if (kind === 'monster') fl.stats.killsMon++; else fl.stats.killsTrap++;
     if (attr) bt(attr).kills++;

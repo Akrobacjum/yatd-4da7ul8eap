@@ -260,8 +260,11 @@ body {
 /* ---------- the drawer: tabs and the tray ---------- */
 .drawer { display: grid; gap: 6px; }
 /* 1.06 (author): the build bar's button looks the same open and folded; only the arrow turns (▼ Budowa / ▲ Budowa) */
-.handle { display: flex; align-items: center; justify-content: center; height: 30px; margin: 0; padding: 0; background: none; border: 0; color: var(--gold-hi); font: inherit; cursor: pointer; }
+.handle { display: flex; align-items: center; justify-content: center; justify-self: center; height: 30px; margin: 0; padding: 0 6px; background: none; border: 0; color: var(--gold-hi); font: inherit; cursor: pointer; }
 .handle .grip { display: none; }
+.handle:active #tray-label { transform: translateY(1px); box-shadow: inset 0 1px 3px #000; }   /* 1.09: the button gives under the finger */
+#tray.deal > .item:not([hidden]) { animation: dealin 0.24s calc(var(--d, 0) * 24ms) ease-out both; }   /* 1.09: a new tab deals its tiles in */
+@keyframes dealin { from { opacity: 0; transform: translateY(10px) scale(0.94); } to { opacity: 1; transform: none; } }   /* 1.09: the handle is as wide as its button (it took taps across the whole row) */
 /* 1.08: the body folds in step with the camera (trayPaint sets its height); the stage clips the canvas under it */
 #tray-label { min-width: 132px; text-align: center; padding: 4px 18px 5px; border: 1px solid #5c4b28; border-radius: var(--r); background-color: #1b1914; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 #000; }
 #drawer-body { display: grid; gap: 6px; }
@@ -737,7 +740,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 
   const DEFAULTS = {
     waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
-    essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 5, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 20, hungerGrowth: 1.25, greedW: 1.0, autoFF: 2.5, earlyHp: 1,
+    essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 20, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
     music: 0.5,   // 1.07: the music's volume (0 = off)
     haptics: 1, trayAuto: 1, series: 1, split: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley, split screen (1.03)
     topPad: 0   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
@@ -1408,15 +1411,16 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   let S = Object.assign({}, DEFAULTS);
   try {
     const saved = JSON.parse(localStorage.getItem('yatd12-settings') || 'null');
-    // 1.08 (author): quiet ×2,5 and a held finger ×5 for everyone, once: older saves kept the speeds of their day (e.g. quiet ×2)
-    const speeds108 = saved && saved.speedsV !== 108 ? ['autoFF', 'ffSpeed'] : [];
+    // 1.08 (author): quiet ×2,5 and a held finger ×5 for everyone, once: older saves kept the speeds of their day (e.g. quiet ×2);
+    // 1.09 (author: more time to watch the heroes): quiet ×1,5 and a held finger ×3, once again for everyone
+    const speeds108 = saved && saved.speedsV !== 109 ? ['autoFF', 'ffSpeed'] : [];
     if (saved) { GAME_SETTINGS.forEach(sd => { if (typeof saved[sd.k] === 'number' && !speeds108.includes(sd.k)) S[sd.k] = saved[sd.k]; }); }   // v14: no balance sliders, so only the player's own settings come back
     else {   // new balance (v12): from older saves keep only personal settings, so old slider values do not override the new defaults
       const old = JSON.parse(localStorage.getItem('yatd11-settings') || localStorage.getItem('yatd10-settings') || localStorage.getItem('yatd8-settings') || localStorage.getItem('yatd7-settings') || 'null');
       if (old) ['volume', 'checkDiff'].forEach(k => { if (typeof old[k] === 'number') S[k] = old[k]; });
     }
   } catch (e) {}
-  S.speedsV = 108;   // saved with the settings from now on
+  S.speedsV = 109;   // saved with the settings from now on
   let playerName = '';
   try { playerName = localStorage.getItem('yatd-name') || ''; } catch (e) {}
   function loadBest() { try { return parseInt(localStorage.getItem('yatd15-best') || '0', 10) || 0; } catch (e) { return 0; } }
@@ -2199,7 +2203,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     });
     validateItems(true);
     fl.items.forEach(it => {   // between waves everything is repaired and re-armed; monsters lick their wounds
-      it.cd = 0; it.disabled = false; it.bent = false; it.anim = 0; it.sleep = false; it.detected = false; it.rumored = false; it.uses = 0; it.seenWave = 0; it.preview = 0; it.noGreed = false; it.cursedKnown = false;
+      if (it.memRes && !it.worn && (it.disabled || it.broken)) it.memRes = null;   // 1.09: put out of use by the heroes: it asks again
+      it.worn = false; it.cd = 0; it.disabled = false; it.bent = false; it.anim = 0; it.sleep = false; it.detected = false; it.rumored = false; it.uses = 0; it.seenWave = 0; it.preview = 0; it.noGreed = false; it.cursedKnown = false;
       it.jamUntil = 0; it.skipUntil = 0; it.lastFire = null; it.broken = false;   // wave clocks restart at 0: stale timers from last wave would jam or mute a trap; smashed buildings stand again
       if (MONSTERS[it.type]) { it.hp = it.max; it.gx = it.x + 0.5; it.gy = it.y + 0.5; it.foeT = 0; }
     });
@@ -2440,7 +2445,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     run.buildSec += Math.max(0, realNow - fl.buildStart); fl.buildSec = Math.round(realNow - fl.buildStart);
     saveRun('build');   // a tab closed during the wave comes back to this build
     perfReset();
-    fl.items.forEach(it => { it.skullOff = false; });   // 1.05: a new wave asks every trap again (it.mem belongs to a wave)
+    fl.items.forEach(it => { it.skullOff = false; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap)
     fl.phase = 'raid'; fl.time = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
     { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał
@@ -2451,14 +2456,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     applyRumors();
     chooseEntrance();
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && isRt(roomOf(m.x, m.y), 'crypt')) m.hp = Math.round(m.max * 1.25); });   // Krypta: +25% HP for this wave
-    selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); updateTray(); updateAction();   // 1.08 (author): the tray is not folded here any more (only a tap folds it)
+    selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); setTrayOpen(false); updateTray(); updateAction();   // 1.05: in the tutorial too; 1.07: always (an open tray is the pause); 1.09 (author): back after 1.08 (his complaint was the button's width)
     { const bossE = fl.queue.find(e => e.boss), n = fl.queue.length;   // Prototype 1.0: a banner over the map says who is coming
       showBanner('Fala ' + run.wave, (bossE ? 'prowadzi ich ' + (bossE.boss === 'final' ? 'bohater z przepowiedni' : 'czempion') : n === 1 ? '1 bohater' : n + ' bohaterów') +
         (fl.spawnAt === 'breach' ? ' · wchodzą przez wyłom!' : fl.breach ? ' · wchodzą drzwiami' : ''));
-      const wait = trayIsOpen();   // 1.08: an open tray is the pause, so a wave let out with it open waits for the fold
-      if (wait) setPaused(true, true);
-      if (run.wave === 1 && run.tut < 0) setHint((wait ? 'Fala czeka, aż zwiniesz ▼ Budowa. ' : '') + 'Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.');
-      else if (wait && run.tut < 0 && (UI.waveWaitHint || 0) < 3) { UI.waveWaitHint = (UI.waveWaitHint || 0) + 1; saveUI(); setHint('Fala czeka: rozwinięty pasek to pauza. Zwiń ▼ Budowa, żeby ruszyła.'); } }
+      if (run.wave === 1 && run.tut < 0) setHint('Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.'); }
     fl.tl = { ev: [], smp: [], smpT: 0 };
     run.waveStart = snapshotLayout();
     if (fl.breach) { fl.stats.breachOpen = 1; if (fl.spawnAt === 'breach') { tl('br', fl.breach.x, fl.breach.y); fl.stats.breach = 1; } }
@@ -2518,6 +2520,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       gold: 0, cursed: false, faith: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithMax: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithT: 0,
       wardUntil: -1, wardK: 0, sprintUntil: -1, sprintK: 1, calmUntil: -1, giveCd: 0, sepT: 0, sepRolled: false, shakenUntil: -1, rtSaid: new Set(), lostCallT: 0, hunter: !!e.hunter,
       phys: e.phys || null, phobia: e.phobia || null, known: new Set(e.known || []), returning: !!e.returning, scar: e.scar || null, trauma: {}, fearBy: {}, dmgBy: {}, phobiaSeen: new Set() };
+    h.inR = realNow;   // 1.09: pops in
     fl.heroes.push(h);
     tl('sp', h.id);
     reveal(h);
@@ -2578,7 +2581,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function heroExit(h) {
     if (h.fled || h.dead) return;
     if (!h.crystal && !h.fleeing && fl.time < h.panicUntil) { h.fleeing = true; fl.stats.panicExits = (fl.stats.panicExits || 0) + 1; }   // ran out in a panic: that is a hero scared away
-    h.fled = true; h.bubble = null; fl.stats.escaped++;
+    h.fled = true; h.bubble = null; fl.stats.escaped++; h.outR = realNow; h.outKind = 'out';   // 1.09: fades at the door
     const P = fl.party;
     if (h.crystal) {
       h.crystal = false; h.carriedOut = true; fl.crystalLost = true; run.crystals = Math.max(0, run.crystals - 1); fl.stats.crystalLost++;
@@ -3060,7 +3063,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // A dead hero: points, a soul for the dungeon, a louder legend (Infamy), panic among the others. His secrets die with him.
   function kill(h, kind, attr) {
     const p = heroPos(h);
-    h.acc = 0; h.foe = null; h.bubble = null;
+    h.acc = 0; h.foe = null; h.bubble = null; h.outR = realNow; h.outKind = 'dead';   // 1.09: he tips over
     fl.stats.kills++; buzz(14);
     if (kind === 'heart') fl.stats.killsHeart++; else if (kind === 'monster') fl.stats.killsMon++; else fl.stats.killsTrap++;
     if (attr) bt(attr).kills++;
@@ -3306,7 +3309,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     run.fires++;
     fl.heroes.forEach(h => { if (h.item === it && h.state === 'disarm') { h.state = 'walk'; h.item = null; h.needPlan = true; say(h, pick(SAY.disarmHit), 3); } });
     const area = areaOf(it), keys = new Set(area.map(t => key(t[0], t[1])));
-    const list = heroesOn(keys);
+    let list = heroesOn(keys);
+    if (opt.lock && opt.lock.length) list = [...new Set(list.concat(opt.lock.filter(h => !h.dead && !h.fled && !h.gone && !h.fleeing)))];   // 1.09: a check's targets stay its targets
     fl.surprise = TRAPS[it.type] && !it.detected;
     if (TRAPS[it.type]) {
       const rooms = new Set(area.map(t => roomOf(t[0], t[1])));
@@ -3423,7 +3427,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         const d = fl.doors.get(key(it.x, it.y));
         d.closedUntil = fl.time + shut; d.wasClosed = true;
         it.uses = (it.uses || 0) + 1;
-        if (it.uses >= mods.gateUses + (it.lvl >= 3 ? 2 : 0)) { it.disabled = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Ostatnie zamknięcie', '#c9c2d8', 13, -0.6); }
+        if (it.uses >= mods.gateUses + (it.lvl >= 3 ? 2 : 0)) { it.disabled = true; it.worn = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Ostatnie zamknięcie', '#c9c2d8', 13, -0.6); }
         fl.heroes.forEach(h => { if (!h.dead && !h.fled && h.nx === it.x && h.ny === it.y && h.prog < 0.5) { h.nx = null; h.ny = null; h.prog = 0; } });
         list.forEach(h => { damage(h, 60 * D * mods.gateCrush * pw, it, comboMult); hit++; });
         const near = alive().find(h => Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 2);
@@ -3517,7 +3521,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     fl.surprise = false;
     if (TRAPS[it.type] && hit > 0 && mods.tempered) run.stacks.tempered = (run.stacks.tempered || 0) + hit;   // Zaprawione mechanizmy
     if (mods.overload && TRAPS[it.type] && it.type !== 'powder' && !opt.echo && fl.items.get(key(it.x, it.y)) === it && Math.random() < mods.overload) {   // Przeciążenie
-      it.disabled = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Zepsuta!', '#a69bbb', 13, -1.1); fl.stats.broken = (fl.stats.broken || 0) + 1;
+      it.disabled = true; it.worn = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Zepsuta!', '#a69bbb', 13, -1.1); fl.stats.broken = (fl.stats.broken || 0) + 1;
     }
     if (TRAPS[it.type] && list.some(h => h.rank === 0) && Math.random() < 0.3) {   // a veteran has seen this before
       const v = alive().find(o => o.rank >= 2 && !list.includes(o) && hdist(o, list[0]) < 7);
@@ -3543,7 +3547,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // A hero falls through a given trapdoor once per wave: after that he knows where the edge is and steps around it.
   function fall(h, pw, it) {
     if (it) { (h.fellFrom = h.fellFrom || new Set()).add(it); learnTrap(it, 'seen', null); if (it.lvl >= 3) h.deepFall = true; }
-    h.gone = true; h.state = 'fallen'; h.fallUntil = fl.time + mods.fallTime * Math.max(1, pw);
+    h.gone = true; h.state = 'fallen'; h.fallUntil = fl.time + mods.fallTime * Math.max(1, pw); h.outR = realNow; h.outKind = 'fall';   // 1.09: sinks into the floor
     h.path = []; h.nx = null; h.ny = null; h.prog = 0; h.foe = null; h.item = null;
     fl.stats.falls++; say(h, pick(SAY.fall), 4); tl('tr', h.id);
     if (h.crystal && mods.bottomless) { floatHero(h, 'Kryształ przepadł w studni!', '#ff9ab0', 15, -1); crystalReturns(h); }
@@ -3553,6 +3557,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (fl.party.scoutId === h.id) fl.party.scoutId = -1;
   }
   function landFallen(h) {
+    h.inR = realNow;   // 1.09: pops in where he climbs out
     const L = leader(), lp = L ? heroPos(L) : { x: fl.ent.x, y: fl.ent.y };
     const rooms = fl.rooms.filter(r => r.kind === 'room' && r.id !== fl.heart.room);
     // With the crystal he comes out as far from every way out as possible (picking "far from the leader" used to drop him at the door).
@@ -3619,6 +3624,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (m.hp <= 0) {   // dead for good: monsters do not come back
       m.hp = 0; fl.stats.monstersLost++; bt(m.type).died++; tl('mn', m.type, m.x, m.y);
       fl.items.delete(key(m.x, m.y));
+      if (!DRIFT[m.type]) { const gx = m.gx !== undefined ? m.gx : m.x + 0.5, gy = m.gy !== undefined ? m.gy : m.y + 0.5; fl.fx.push({ kind: 'corpse', type: m.type, x: gx, y: gy, face: m.face || 1, h: { ogre: 1.25, goblin: 0.8, archer: 0.95, shaman: 0.9, spider: 0.6 }[m.type] || 0.9, life: 0.75, max: 0.75 }); burst(gx, gy, '#8a8378', 8); }   // 1.09: it falls
       floatTile(m.x, m.y, ITEMS[m.type].name + ' ginie', '#9be37a', 14);
       burst((m.gx || m.x + 0.5), (m.gy || m.y + 0.5), '#7fbf5a', 12);
       fl.heroes.forEach(h => { if (h.foe === m) { h.state = 'walk'; h.foe = null; h.needPlan = true; } });
@@ -5028,6 +5034,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // or red (critical 180%, may kill). Taps on buttons and the tray never answer a check. No tap = the trap waits.
   const CHECK_DUR = 1.15;
   const CHECK_PREP = 0.5;
+  const CHECK_SLOW = 0.25;   // 1.09: the world's speed under a check
   const BASE_DMG = { spikes: 35, arrows: 25, fire: 20, gate: 60, powder: 60, mimic: 40, trapdoor: 20, goblin: 35, archer: 22, spider: 30, ogre: 45, ghost: 5, web: 0, cage: 0, portrait: 0, shaman: 0,
     eyes: 0, bones: 0, mirror: 0, creak: 0, coffin: 0, musicbox: 0, shade: 0, bats: 6 };
   function predictedDmg(it, pw) {
@@ -5091,7 +5098,13 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // one check decides how a trap works for the rest of the wave. A crit or a graze is remembered and the trap then fires by
   // itself with that strength; a miss (or no tap) asks again the next time it fires. A hit that would kill always asks (the
   // skull), and letting that one go switches the trap off until it can hit without killing.
-  const memOf = it => it.mem && it.mem.wave === run.wave ? it.mem.res : null;
+  // 1.09 (author): the answer stays with the trap from wave to wave. Only an upgrade asks again (the answer belongs to a level),
+  // or the heroes putting the trap out of use in any way (disarmed, smashed, a monster killed, jammed, its furniture broken);
+  // moving it, or taking it down and putting it back on the same spot, keeps it. A miss asks again the next time it fires, and a
+  // hit that would kill always asks (the skull). Kept as two plain fields, so the save keeps them too.
+  const memOf = it => it.memRes && it.memLvl === (it.lvl || 1) ? it.memRes : null;
+  function forgetMem(it, quiet) { if (!it.memRes) return; it.memRes = null; if (!quiet) { fl.stats.memLost = (fl.stats.memLost || 0) + 1; bt(it.type).memLost = (bt(it.type).memLost || 0) + 1; } }
+  const putOut = it => !it.worn && (it.disabled || it.broken || it.jamUntil > fl.time);   // the heroes stopped it (worn: its own limit or a card)
   const memPw = it => { const m = memOf(it); return m === 'crit' ? mods.critPw : m === 'ok' ? mods.okPw : 0; };
   function skullHolds(it) {   // switched off at a skull: it stays off while its hit (the remembered one, or a graze) would kill
     if (!it.skullOff) return false;
@@ -5101,9 +5114,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   const needsCheck = it => { const pw = memPw(it); return !pw || lethalFor(it, pw); };
   function checkTick() {
     if (fl.check || fl.ending !== null) return;
-    // what already has this wave's answer fires by itself; with a finger held on the map (fast-forward) everything does,
+    // what already has an answer fires by itself; with a finger held on the map (fast-forward) everything does,
     // and what has no answer yet fires at graze strength (v14)
     for (const it of fl.items.values()) {
+      if (it.memRes && putOut(it)) forgetMem(it);
       if (!checkWanted(it) || skullHolds(it)) continue;
       const pw = memPw(it);
       if (ff) { if (fire(it, pw || mods.okPw)) { fl.stats.autoFires = (fl.stats.autoFires || 0) + 1; if (!pw) bt(it.type).ok++; } }
@@ -5128,7 +5142,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       const extra = [];
       if (S.series) for (const o of fl.items.values()) { if (o !== it && extra.length < SERIES_MAX && checkWanted(o) && !skullHolds(o) && needsCheck(o)) extra.push(o); }
       const all = [it].concat(extra);
-      fl.check = { it, extra, shape, maxL, t0: realNow + CHECK_PREP, prepT0: realNow, go: false, dur: CHECK_DUR / Math.sqrt(ks) * SHAPE_DUR[shape], g0, g1, r0, r1, z2, rot: Math.random() * Math.PI * 2,
+      const lock = new Map(all.map(o => [o, heroesInArea(o)]));   // 1.09: who it aims at, pinned (they keep walking in the slow motion)
+      fl.check = { it, extra, shape, maxL, lock, t0: realNow + CHECK_PREP, prepT0: realNow, go: false, dur: CHECK_DUR / Math.sqrt(ks) * SHAPE_DUR[shape], g0, g1, r0, r1, z2, rot: Math.random() * Math.PI * 2,
         lethalOk: all.some(o => lethalFor(o, mods.okPw)), lethalCrit: all.some(o => lethalFor(o, mods.critPw)), result: null, resT: 0 };
       fl.stats.checks++; all.forEach(o => { bt(o.type).checks++; });
       if (extra.length) { fl.stats.volleys = (fl.stats.volleys || 0) + 1; fl.stats.volleyTraps = (fl.stats.volleyTraps || 0) + extra.length; }
@@ -5145,7 +5160,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         inA.some(h => fl.time < h.wardUntil) ? 'talizman' : '',
         maxL >= 12 ? 'poz. ' + maxL + ': szybciej' : ''].filter(Boolean).join(' · ');
       sfx('warn');
-      if (run.checkHints > 0 && run.tut < 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" stuknij w MAPĘ. Obwódka = draśnięcie, pełne pole = krytyk, czaszka = ktoś zginie. Trafiony wynik pułapka pamięta do końca fali (znaczek na polu) i dalej bije sama.'); }
+      if (run.checkHints > 0 && run.tut < 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" stuknij w MAPĘ. Obwódka = draśnięcie, pełne pole = krytyk, czaszka = ktoś zginie. Trafiony wynik pułapka pamięta także w kolejnych falach (znaczek na polu) i dalej bije sama.'); }
       if (run.tut >= 0) tutEvent('check');
       return;
     }
@@ -5160,8 +5175,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     else if ((p >= c.g0 && p <= c.g1) || (z && p >= z.g0 && p <= z.g1)) { res = 'ok'; pw = mods.okPw; }
     c.result = res; c.resT = realNow; c.p = p;
     const all = [c.it].concat(c.extra || []);
-    // 1.05: the answer stays for the rest of the wave (a skull check of a trap that already had one decides only this hit)
-    if (res !== 'miss') all.forEach(o => { if (!memOf(o)) o.mem = { res, wave: run.wave }; o.skullOff = false; });
+    // 1.05: the answer stays (1.09: from wave to wave); a skull check of a trap that already had one decides only this hit
+    if (res !== 'miss') all.forEach(o => { if (!memOf(o)) { o.memRes = res; o.memLvl = o.lvl || 1; } o.skullOff = false; });
     tl('ch', c.it.type, c.it.x, c.it.y, res, heroesInArea(c.it).length, all.length - 1, c.maxL || 1, Math.round((p - (c.r0 + c.r1) / 2) * 100));   // v36: the strongest level near it and how far from the red strip the tap landed (in % of the shape)
     sfx(res); if (res === 'crit') buzz(25);
     all.forEach(o => { bt(o.type)[res === 'crit' ? 'crit' : res === 'ok' ? 'ok' : 'miss']++; });
@@ -5175,9 +5190,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       return;
     }
     const victims = new Set();
-    all.forEach(o => heroesInArea(o).forEach(h => victims.add(h)));
-    fire(c.it, pw);
-    (c.extra || []).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o && !o.disabled && !(o.jamUntil > fl.time) && !(MONSTERS[o.type] && o.hp <= 0)) fire(o, pw); });
+    all.forEach(o => heroesInArea(o).concat((c.lock && c.lock.get(o)) || []).forEach(h => victims.add(h)));
+    const lk = o => c.lock && c.lock.get(o);
+    fire(c.it, pw, { lock: lk(c.it) });
+    (c.extra || []).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o && !o.disabled && !(o.jamUntil > fl.time) && !(MONSTERS[o.type] && o.hp <= 0)) fire(o, pw, { lock: lk(o) }); });
     if (res === 'crit') {
       fl.stats.checkCrit++; shake = Math.max(shake, 0.22); floatTile(c.it.x, c.it.y, all.length > 1 ? 'SERIA: KRYTYK!' : 'KRYTYK!', '#ff6b6b', 19, -1.2);
       victims.forEach(h => {   // a critical knocks a piece of gear out of the hero's pack (v13: no Esencja for it, so loot is a risk again)
@@ -5309,7 +5325,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   /* ================= main loop (real time) ================= */
   function timeScale() {
     if (!fl || modalOpen || fl.phase !== 'raid' || paused) return 0;
-    if (fl.check && !fl.check.result) return 0.06;
+    if (fl.check && !fl.check.result) return CHECK_SLOW;   // 1.09 (author: more time to watch the heroes): slowed, not stopped (was 0.06)
     const sp = 1;   // v14: no speed button; holding the finger speeds up
     if (ff) return Math.max(S.ffSpeed, sp);
     return Math.max(sp, ffAuto);   // nothing happening: the game hurries on by itself (1.02: speeds up smoothly, slows down at once)
@@ -5693,7 +5709,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // a wall trap's own plane: the face towards the room on a full wall, the top of a cut wall (its bottom edge towards the room)
   function wallPlane(it) {
     const w = wallSpot(it);
-    if (w.face) { const h = wallH(it.x, it.y); if (w.face[1] === 1) faceMap(it.x, it.y + 1, it.x + 1, it.y + 1, 0, h); else faceMap(it.x + 1, it.y, it.x + 1, it.y + 1, 0, h); }
+    if (w.face) { const h = wallH(it.x, it.y), z1 = Math.min(h, 1.2), z0 = Math.max(0, z1 - 1); if (w.face[1] === 1) faceMap(it.x, it.y + 1, it.x + 1, it.y + 1, z0, z1); else faceMap(it.x + 1, it.y, it.x + 1, it.y + 1, z0, z1); }   // 1.09: a picture keeps its shape on a high wall
     else tileMap(it.x, it.y, WALL_LIP, w.d);
     return w;
   }
@@ -5706,37 +5722,113 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       x1: clamp(Math.ceil(Math.max(...xs)) + 3, 0, WW - 1), y1: clamp(Math.ceil(Math.max(...ys)) + 3, 0, WH - 1) };
   }
   const onScreen = (p, m) => p[0] > -m && p[0] < cw + m && p[1] > -m && p[1] < ch + m * 1.6;
-  // A wall stands full height only where it hides no floor from the camera; every other wall is cut down to a low lip, so
-  // nothing in the dungeon ever hides behind a wall (author: the nearest walls cut to the floor, no see-through).
-  // Worked out once per map, for the lowest tilt (the wave's), so a wall never changes with the view.
-  const WALL_H = 0.85, WALL_LIP = 0.06;
-  let WHC = { tiles: null, ww: 0, h: null };
-  function wallHeights() {
-    if (WHC.tiles === fl.tiles && WHC.ww === WW && WHC.wh === WH) return WHC.h;
-    const h = new Float32Array(WW * WH), sp = Math.sin(PITCH_RAID * Math.PI / 180), Hs = WALL_H * Math.cos(PITCH_RAID * Math.PI / 180);
+  // 1.07: walls are blocks, and a wall that would hide floor from the camera lies flat (a lip).
+  // 1.09 (author): the standing walls are twice as high (1,7 tiles); which walls lie flat stays as it was (worked out for the old
+  // height, 0,85, in the wave view), so a room with nobody in it looks as before, only its far walls are higher. A high wall can
+  // hide what is behind it, so in a wave every room that stands between the camera and the heroes lies flat whole, and so do
+  // the rooms they are in or about to enter. The blocks sink and rise one by one with an ease and a pop of size, in a ripple
+  // from the party; a room the party left stands up again a second later.
+  const WALL_H = 1.7, WALL_H0 = 0.85, WALL_LIP = 0.06, DOOR_H = 1.25;
+  const WALL_ANIM = 0.4, WALL_STAY = 1.0;   // s: one block's move; how long a room stays open after the party leaves
+  const WA = { tiles: null, ww: 0, wh: 0, sig: '', focus: new Map(), moving: new Set() };
+  function areaAt(x, y) { const r = roomOf(x, y); if (r >= 0) return r; for (const d of [[0, 1], [1, 0], [0, -1], [-1, 0]]) { const q = roomOf(x + d[0], y + d[1]); if (q >= 0) return q; } return -1; }
+  // per map: which walls stand, which rooms each standing wall would hide (at full height, in the wave view), whose walls they are
+  function wallSetup() {
+    if (WA.tiles === fl.tiles && WA.ww === WW && WA.wh === WH) return WA;
+    const n = WW * WH, stand = new Uint8Array(n), sp = Math.sin(PITCH_RAID * Math.PI / 180), cp = Math.cos(PITCH_RAID * Math.PI / 180);
     const walk = (x, y) => { const t = tileAt(x, y); return t === FLOOR || t === DOOR; };
-    const hides = (dx, dy) => {   // does a full wall hide the tile (dx, dy) away from it? (two equal diamonds overlap by more than a sliver)
+    const hidesAt = Hs => (dx, dy) => {   // does a wall Hs high (on screen) hide the tile (dx, dy) away from it? (two diamonds overlap by more than a sliver)
       const du = Math.abs(dx - dy) * R2, dv = (dx + dy) * R2 * sp, t = clamp(-dv, 0, Hs);
       return du / R2 + Math.abs(dv + t) / (R2 * sp) < 1.85;
     };
+    const hides0 = hidesAt(WALL_H0 * cp), hides1 = hidesAt(WALL_H * cp), RW = Math.ceil(WALL_H * cp / (R2 * sp)) + 1;
+    const occ = new Map(), own = new Map(), roomWalls = new Map();
     for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
-      if (fl.tiles[y * WW + x] !== WALL) continue;
+      const i = y * WW + x; if (fl.tiles[i] !== WALL) continue;
       let cut = false;
-      for (let dy = -3; dy <= 0 && !cut; dy++) for (let dx = -3; dx <= 0 && !cut; dx++) if ((dx || dy) && walk(x + dx, y + dy) && hides(dx, dy)) cut = true;
-      h[y * WW + x] = cut ? WALL_LIP : WALL_H;
+      for (let dy = -3; dy <= 0 && !cut; dy++) for (let dx = -3; dx <= 0 && !cut; dx++) if ((dx || dy) && walk(x + dx, y + dy) && hides0(dx, dy)) cut = true;
+      if (cut) continue;
+      stand[i] = 1;
+      const hid = new Set();
+      for (let dy = -RW; dy <= 0; dy++) for (let dx = -RW; dx <= 0; dx++) if ((dx || dy) && walk(x + dx, y + dy) && hides1(dx, dy)) { const a = areaAt(x + dx, y + dy); if (a >= 0) hid.add(a); }
+      if (hid.size) occ.set(i, [...hid]);
+      const o = new Set(); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (tileAt(x + dx, y + dy) === FLOOR) { const a = roomOf(x + dx, y + dy); if (a >= 0) o.add(a); }
+      if (o.size) { own.set(i, [...o]); o.forEach(a => { if (!roomWalls.has(a)) roomWalls.set(a, []); roomWalls.get(a).push(i); }); }
     }
-    // the torches: on some full walls, on the face towards a floor (worked out once per map too)
+    // the torches: on some standing walls, on the face towards a floor
     const torches = [];
     for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
-      const i = y * WW + x; if (fl.tiles[i] !== WALL || h[i] <= 0.2 || tileHash(x + 101, y + 37) % 5 !== 0) continue;
-      const hs = (x2, y2) => (x2 < 0 || y2 < 0 || x2 >= WW || y2 >= WH || fl.tiles[y2 * WW + x2] !== WALL) ? 0 : h[y2 * WW + x2];
-      if (hs(x, y + 1) < h[i] && tileAt(x, y + 1) === FLOOR) torches.push({ x, y, fx: x + 0.5, fy: y + 1, gx: x + 0.5, gy: y + 1.2, h: h[i], face: 'S' });
-      else if (hs(x + 1, y) < h[i] && tileAt(x + 1, y) === FLOOR) torches.push({ x, y, fx: x + 1, fy: y + 0.5, gx: x + 1.2, gy: y + 0.5, h: h[i], face: 'E' });
+      const i = y * WW + x; if (!stand[i] || tileHash(x + 101, y + 37) % 5 !== 0) continue;
+      const st = (x2, y2) => x2 >= 0 && y2 >= 0 && x2 < WW && y2 < WH && stand[y2 * WW + x2];
+      if (!st(x, y + 1) && tileAt(x, y + 1) === FLOOR) torches.push({ x, y, fx: x + 0.5, fy: y + 1, gx: x + 0.5, gy: y + 1.2, face: 'S' });
+      else if (!st(x + 1, y) && tileAt(x + 1, y) === FLOOR) torches.push({ x, y, fx: x + 1, fy: y + 0.5, gx: x + 1.2, gy: y + 0.5, face: 'E' });
     }
-    WHC = { tiles: fl.tiles, ww: WW, wh: WH, h, torches };
-    return h;
+    const cur = new Float32Array(n), from = new Float32Array(n), to = new Float32Array(n), t0 = new Float32Array(n), pp = new Float32Array(n);
+    for (let i = 0; i < n; i++) if (fl.tiles[i] === WALL) cur[i] = from[i] = to[i] = stand[i] ? WALL_H : WALL_LIP;
+    Object.assign(WA, { tiles: fl.tiles, ww: WW, wh: WH, stand, occ, own, roomWalls, torches, cur, from, to, t0, pp, RW, sig: '', focus: new Map(), moving: new Set() });
+    return WA;
   }
+  // which rooms and halls are open now: where the heroes stand, and past a door they are within 2 tiles of
+  function wallFocus() {
+    const F = WA.focus, now = realNow;
+    if (fl.phase === 'raid') alive().forEach(h => {
+      const p = heroPos(h), x = Math.floor(p.x), y = Math.floor(p.y), mark = a => { if (a >= 0) F.set(a, now + WALL_STAY); };
+      mark(areaAt(x, y));
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (tileAt(x + dx, y + dy) === DOOR) [[0, 1], [1, 0], [0, -1], [-1, 0]].forEach(d => mark(roomOf(x + dx + d[0], y + dy + d[1])));
+    });
+    else if (fl.phase === 'build') F.clear();
+    const open = []; F.forEach((u, a) => { if (u > now) open.push(a); else F.delete(a); });
+    return open.sort((a, b) => a - b);
+  }
+  const easeOutBack = p => { const c = 1.9; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+  const easeInBack = p => { const c = 1.7; return (c + 1) * p * p * p - c * p * p; };
+  // once a frame: the heights each wall goes to, and the blocks on their way
+  function wallTick() {
+    const A = wallSetup(), open = wallFocus(), sig = fl.phase + ':' + open.join(',');
+    if (sig !== A.sig) {
+      A.sig = sig;
+      const F = new Set(open), flat = new Set(), between = new Set();
+      if (F.size) A.occ.forEach((areas, i) => {
+        if (!areas.some(a => F.has(a))) return;
+        flat.add(i); (A.own.get(i) || []).forEach(a => { if (!F.has(a)) between.add(a); });   // its rooms stand between the camera and the party
+      });
+      between.forEach(a => (A.roomWalls.get(a) || []).forEach(i => flat.add(i)));
+      const hs = alive().map(h => heroPos(h));
+      for (let i = 0; i < WW * WH; i++) {
+        if (!A.stand[i]) continue;
+        const target = flat.has(i) ? WALL_LIP : WALL_H;
+        if (target === A.to[i]) continue;
+        const x = i % WW, y = (i - x) / WW;
+        let d = 99; hs.forEach(p => { d = Math.min(d, Math.hypot(p.x - x - 0.5, p.y - y - 0.5)); });
+        A.from[i] = A.cur[i]; A.to[i] = target; A.t0[i] = realNow + (reduceMotion ? 0 : Math.min(0.3, d * 0.025)); A.moving.add(i);
+      }
+    }
+    A.moving.forEach(i => {
+      const p = reduceMotion ? 1 : (realNow - A.t0[i]) / WALL_ANIM;
+      if (p <= 0) return;
+      if (p >= 1) { A.cur[i] = A.to[i]; A.pp[i] = 0; A.moving.delete(i); return; }
+      const up = A.to[i] > A.from[i];
+      A.cur[i] = Math.max(WALL_LIP, A.from[i] + (A.to[i] - A.from[i]) * (up ? easeOutBack(p) : easeInBack(p)));
+      A.pp[i] = p;
+    });
+  }
+  function wallHeights() { return wallSetup().cur; }
   const wallH = (x, y) => (x < 0 || y < 0 || x >= WW || y >= WH || fl.tiles[y * WW + x] !== WALL) ? 0 : wallHeights()[y * WW + x];
+  const wallUp = h => h > WALL_LIP + 0.01;   // a standing (or moving) block, not a lip
+  // a standing wall in front of a point that would cover something hz high standing there (so it is drawn among the walls)
+  function wallCovers(px, py, hz) {
+    const A = WA, ox = Math.floor(px), oy = Math.floor(py), R = A.RW || 5;
+    const u0 = vX(px, py), vb = vY(px, py, 0), vt = vY(px, py, hz);
+    for (let s = 1; s <= 2 * R; s++) for (let dd = -2; dd <= 2; dd++) {
+      if ((s + dd) & 1) continue;
+      const dx = (s + dd) / 2, dy = (s - dd) / 2, x = ox + dx, y = oy + dy;
+      if (x < 0 || y < 0 || x >= WW || y >= WH) continue;
+      const i = y * WW + x; if (fl.tiles[i] !== WALL || !wallUp(A.cur[i])) continue;
+      if (Math.abs(vX(x + 0.5, y + 0.5) - u0) > R2 + 0.45) continue;
+      if (vY(x, y, A.cur[i]) < vb && vY(x + 1, y + 1, 0) > vt) return true;
+    }
+    return false;
+  }
   function poly(pts, fill) { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } }
   // maps the unit square (u along a to b, v from the top z1 down to z0) onto an upright face of the dungeon
   function faceMap(ax, ay, bx, by, z0, z1) {
@@ -5755,24 +5847,23 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const p = W2S(x, y, 0), T = cam.s;
     ctx.fillStyle = 'rgba(0,0,0,' + (a || 0.45) + ')'; ctx.beginPath(); ctx.ellipse(p[0], p[1], rx * T, ry * T * SP, 0, 0, Math.PI * 2); ctx.fill();
   }
-  // Walls: the cut ones are a stone lip in the floor; the full ones are blocks of stone with a lit south face and a darker east
-  // face (the light comes from the left of the screen), mortar lines, torches and the wall traps on the face towards the room.
+  // Walls: the lips are a stone strip in the floor; the standing ones are blocks of stone with a lit south face and a darker east
+  // face (the light comes from the left of the screen), courses of mortar, torches and the wall traps on the face towards the room.
   const WALL_TOP = '#3a3c43', WALL_S = '#2c2e34', WALL_E = '#202227', LIP_TOP = '#2b2d33';
+  // the lips (and what hangs over them) go first, under everything; the standing blocks come back sorted by depth, to be drawn
+  // among what stands (a high wall can hide it)
   function drawWalls(x0, y0, x1, y1, T, wallItems) {
-    // 1.07: batched: every kind of face is one path (thousands of separate fills were too slow); the tops go after all the
-    // faces, so a wall in front covers the faces of the one behind it. Equal-height boxes on a grid need nothing more.
-    const H = wallHeights(), full = [];
+    wallTick();
+    const H = WA.cur, ups = [], lips = [];
     const quad = (a, b, c, d) => { ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath(); };
-    const lips = [];
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const i = y * WW + x; if (fl.tiles[i] !== WALL) continue;
-      const c = W2S(x + 0.5, y + 0.5, 0); if (!onScreen(c, T * 2)) continue;
-      if (H[i] > 0.2) full.push(i); else lips.push(i);
+      const c = W2S(x + 0.5, y + 0.5, 0); if (!onScreen(c, T * 3)) continue;
+      if (wallUp(H[i]) || WA.moving.has(i)) ups.push(i); else lips.push(i);
     }
-    // the lips: a top a hair above the floor and their front edges
     const L = WALL_LIP;
-    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x, y + 1) < L) quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)); }); ctx.fillStyle = WALL_S; ctx.fill();
-    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x + 1, y) < L) quad(W2S(x + 1, y, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x + 1, y, L)); }); ctx.fillStyle = WALL_E; ctx.fill();
+    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x, y + 1) < L + 0.001) quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)); }); ctx.fillStyle = WALL_S; ctx.fill();
+    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x + 1, y) < L + 0.001) quad(W2S(x + 1, y, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x + 1, y, L)); }); ctx.fillStyle = WALL_E; ctx.fill();
     ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; quad(W2S(x, y, L), W2S(x + 1, y, L), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)); }); ctx.fillStyle = LIP_TOP; ctx.fill();
     // a fine joint where a lip meets the floor, so the outline of the rooms stays readable
     ctx.strokeStyle = 'rgba(150,155,170,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
@@ -5785,56 +5876,90 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (walkT(x + 1, y)) edge(x + 1, y, x + 1, y + 1);
     });
     ctx.stroke();
-    wallItems.forEach(it => { if (wallH(it.x, it.y) <= 0.2) drawWallItem(it, T, false); });
-    // full walls: the lit south faces, the darker east faces, then all the tops
-    const sOpen = i => { const x = i % WW, y = (i - x) / WW; return wallH(x, y + 1) < H[i]; }, eOpen = i => { const x = i % WW, y = (i - x) / WW; return wallH(x + 1, y) < H[i]; };
-    full.sort((a, b) => (a % WW + Math.floor(a / WW)) - (b % WW + Math.floor(b / WW)));
-    ctx.beginPath(); full.forEach(i => { if (!sOpen(i)) return; const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, h), W2S(x, y + 1, h)); }); ctx.fillStyle = WALL_S; ctx.fill();
-    ctx.beginPath(); full.forEach(i => { if (!eOpen(i)) return; const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x + 1, y, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, h), W2S(x + 1, y, h)); }); ctx.fillStyle = WALL_E; ctx.fill();
-    if (T >= 12) {   // mortar: two courses of stone
-      ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath();
-      full.forEach(i => {
-        const x = i % WW, y = (i - x) / WW, h = H[i], hh = tileHash(x, y), o = (hh % 3 - 1) * 0.12;
-        if (sOpen(i)) { const m = (a, za, b, zb) => { const p = W2S(a, y + 1, za), q = W2S(b, y + 1, zb); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }; m(x, h * 0.5, x + 1, h * 0.5); m(x + 0.5 + o, h * 0.5, x + 0.5 + o, h); m(x + 0.25, 0, x + 0.25, h * 0.5); m(x + 0.8, 0, x + 0.8, h * 0.5); }
-        if (eOpen(i)) { const m = (a, za, b, zb) => { const p = W2S(x + 1, a, za), q = W2S(x + 1, b, zb); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }; m(y, h * 0.5, y + 1, h * 0.5); m(y + 0.5 - o, h * 0.5, y + 0.5 - o, h); m(y + 0.3, 0, y + 0.3, h * 0.5); m(y + 0.75, 0, y + 0.75, h * 0.5); }
+    wallItems.forEach(it => { if (!wallUp(wallH(it.x, it.y))) drawWallItem(it, T, false); });
+    ups.sort((a, b) => (a % WW + Math.floor(a / WW)) - (b % WW + Math.floor(b / WW)));
+    WA.items = wallItems;
+    return ups.map(i => ({ i, d: i % WW + Math.floor(i / WW) + 1 }));
+  }
+  // the standing blocks from a to b (sorted by depth): the still ones in one go (south faces, east faces, mortar, tops, edges),
+  // a moving one by itself (it pops out of its tile); then the torches and the wall traps on them
+  function drawWallRun(list, a, b, T) {
+    const H = WA.cur, quad = (p, q, r, s) => { ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.lineTo(r[0], r[1]); ctx.lineTo(s[0], s[1]); ctx.closePath(); };
+    const sOpen = i => { const x = i % WW, y = (i - x) / WW; return wallH(x, y + 1) < H[i] - 0.001; }, eOpen = i => { const x = i % WW, y = (i - x) / WW; return wallH(x + 1, y) < H[i] - 0.001; };
+    let run = [];
+    const flush = () => {
+      if (!run.length) return;
+      ctx.beginPath(); run.forEach(i => { if (!sOpen(i)) return; const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, h), W2S(x, y + 1, h)); }); ctx.fillStyle = WALL_S; ctx.fill();
+      ctx.beginPath(); run.forEach(i => { if (!eOpen(i)) return; const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x + 1, y, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, h), W2S(x + 1, y, h)); }); ctx.fillStyle = WALL_E; ctx.fill();
+      if (T >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); run.forEach(i => mortar(i, H[i], sOpen(i), eOpen(i), 1)); ctx.stroke(); }
+      ctx.beginPath(); run.forEach(i => { const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x, y, h), W2S(x + 1, y, h), W2S(x + 1, y + 1, h), W2S(x, y + 1, h)); }); ctx.fillStyle = WALL_TOP; ctx.fill();
+      ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
+      run.forEach(i => {
+        const x = i % WW, y = (i - x) / WW, h = H[i];
+        if (sOpen(i)) { const p = W2S(x, y + 1, h), q = W2S(x + 1, y + 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+        if (eOpen(i)) { const p = W2S(x + 1, y, h), q = W2S(x + 1, y + 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
       });
       ctx.stroke();
+      run.forEach(i => wallDressing(i, T));
+      run = [];
+    };
+    for (let k = a; k < b; k++) {
+      const i = list[k].i;
+      if (WA.moving.has(i) && WA.pp[i] > 0) { flush(); drawBlockPop(i, T); wallDressing(i, T); }
+      else if (wallUp(H[i])) run.push(i);
     }
-    ctx.beginPath(); full.forEach(i => { const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x, y, h), W2S(x + 1, y, h), W2S(x + 1, y + 1, h), W2S(x, y + 1, h)); }); ctx.fillStyle = WALL_TOP; ctx.fill();
-    // a lighter edge where a top meets an open face
-    ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
-    full.forEach(i => {
-      const x = i % WW, y = (i - x) / WW, h = H[i];
-      if (sOpen(i)) { const a = W2S(x, y + 1, h), b = W2S(x + 1, y + 1, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
-      if (eOpen(i)) { const a = W2S(x + 1, y, h), b = W2S(x + 1, y + 1, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
-    });
-    ctx.stroke();
-    // torches on some faces towards a floor (not where a trap hangs)
-    if (T >= 10) WHC.torches.forEach(t => { if (t.x >= x0 && t.x <= x1 && t.y >= y0 && t.y <= y1 && !fl.items.has(key(t.x, t.y))) drawTorch(t, T); });
-    wallItems.forEach(it => { if (wallH(it.x, it.y) > 0.2) drawWallItem(it, T, true); });
+    flush();
+  }
+  // mortar: courses of stone on the open faces (k: the block's size, 1 when still)
+  function mortar(i, h, sO, eO, k) {
+    const x = i % WW, y = (i - x) / WW, o = (tileHash(x, y) % 3 - 1) * 0.12, c = Math.max(2, Math.round(h / 0.42)), m0 = 0.5 - k / 2, m1 = 0.5 + k / 2;
+    if (sO) { const m = (a, za, b, zb) => { const p = W2S(x + a, y + m1, za), q = W2S(x + b, y + m1, zb); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); };
+      for (let j = 1; j < c; j++) m(m0, h * j / c, m1, h * j / c);
+      for (let j = 0; j < c; j++) { const u = m0 + k * (j % 2 ? 0.5 + o : 0.25 - o / 2); m(u, h * j / c, u, h * (j + 1) / c); } }
+    if (eO) { const m = (a, za, b, zb) => { const p = W2S(x + m1, y + a, za), q = W2S(x + m1, y + b, zb); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); };
+      for (let j = 1; j < c; j++) m(m0, h * j / c, m1, h * j / c);
+      for (let j = 0; j < c; j++) { const u = m0 + k * (j % 2 ? 0.5 - o : 0.3 + o / 2); m(u, h * j / c, u, h * (j + 1) / c); } }
+  }
+  // a block on its way up or down: it grows a little wider in the middle of the move (the pop) and its faces are all shown
+  function drawBlockPop(i, T) {
+    const x = i % WW, y = (i - x) / WW, h = WA.cur[i], k = 1 + 0.14 * Math.sin(Math.PI * WA.pp[i]), m0 = 0.5 - k / 2, m1 = 0.5 + k / 2;
+    const P = (u, v, z) => W2S(x + u, y + v, z);
+    poly([P(m0, m1, 0), P(m1, m1, 0), P(m1, m1, h), P(m0, m1, h)], WALL_S);
+    poly([P(m1, m0, 0), P(m1, m1, 0), P(m1, m1, h), P(m1, m0, h)], WALL_E);
+    if (T >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); mortar(i, h, true, true, k); ctx.stroke(); }
+    poly([P(m0, m0, h), P(m1, m0, h), P(m1, m1, h), P(m0, m1, h)], WALL_TOP);
+    ctx.strokeStyle = 'rgba(205,210,225,0.22)'; ctx.lineWidth = 1; ctx.beginPath();
+    const a = P(m0, m1, h), b = P(m1, m1, h), c = P(m1, m0, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
+  }
+  // what is on a standing block: its torch, the wall traps on its face
+  function wallDressing(i, T) {
+    const x = i % WW, y = (i - x) / WW, h = WA.cur[i];
+    if (T >= 10 && h > WALL_H * 0.6) WA.torches.forEach(t => { if (t.x === x && t.y === y && !fl.items.has(key(x, y))) drawTorch(t, T); });
+    (WA.items || []).forEach(it => { if (it.x === x && it.y === y) drawWallItem(it, T, true); });
   }
   function torchFlicker(x, y) { return 0.86 + 0.14 * Math.sin(realNow * 8.3 + x * 1.7) * Math.sin(realNow * 5.1 + y * 2.3); }
   function drawTorch(t, T) {   // a sconce on the wall's face, a flame (a flame faces you), a warm light on the face around it
     const f = torchFlicker(t.fx, t.fy);
     ctx.save();
-    if (t.face === 'S') faceMap(t.x, t.y + 1, t.x + 1, t.y + 1, 0, t.h); else faceMap(t.x + 1, t.y, t.x + 1, t.y + 1, 0, t.h);
+    const z1 = Math.min(wallH(t.x, t.y), 1.25), z0 = Math.max(0, z1 - 1);   // 1.09: a sconce at a hand's height on the high wall
+    if (t.face === 'S') faceMap(t.x, t.y + 1, t.x + 1, t.y + 1, z0, z1); else faceMap(t.x + 1, t.y, t.x + 1, t.y + 1, z0, z1);
     ctx.globalAlpha = 0.9; ctx.drawImage(glowSprite('torchw', [[0, 'rgba(255,170,90,0.3)'], [0.6, 'rgba(255,120,50,0.06)'], [1, 'rgba(255,120,40,0)']]), 0.5 - 0.95 * f, 0.38 - 0.95 * f, 1.9 * f, 1.9 * f);
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#121316'; ctx.fillRect(0.46, 0.38, 0.08, 0.22);
     ctx.fillStyle = '#4a4e57'; ctx.fillRect(0.41, 0.36, 0.18, 0.05);
     ctx.restore();
-    const p = W2S(t.fx, t.fy, t.h * 0.66);
+    const p = W2S(t.fx, t.fy, z0 + 0.66);
     ctx.fillStyle = 'rgba(255,110,30,0.92)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.08, T * 0.07, T * 0.12 * f, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = 'rgba(255,225,140,0.95)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.05, T * 0.035, T * 0.065 * f, 0, 0, Math.PI * 2); ctx.fill();
   }
   // the light of the torches on the floor in front of them (flat, under the walls)
   function drawTorchLight(x0, y0, x1, y1, T) {   // the light of the torches on the floor in front of them (screen space: an upright ellipse is fast)
     if (T < 10) return;
-    wallHeights();
+    wallSetup();
     const spr = glowSprite('torch', [[0, 'rgba(255,150,70,0.2)'], [0.5, 'rgba(255,120,50,0.06)'], [1, 'rgba(255,120,40,0)']]);
     ctx.save(); screenT();
-    WHC.torches.forEach(t => {
-      if (fl.items.has(key(t.x, t.y))) return;
+    WA.torches.forEach(t => {
+      if (fl.items.has(key(t.x, t.y)) || wallH(t.x, t.y) < WALL_H * 0.6) return;   // 1.09: a wall laid flat has no torch
       const f = torchFlicker(t.gx, t.gy), gr = T * 2.4 * f, p = W2S(t.gx, t.gy, 0);
       if (!onScreen(p, gr * 2)) return;
       ctx.drawImage(spr, p[0] - gr * 1.41, p[1] - gr * 1.41 * SP, gr * 2.82, gr * 2.82 * SP);
@@ -5869,7 +5994,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (DRIFT[it.type]) { if (seen(Math.floor(it.gx !== undefined ? it.gx : it.x), Math.floor(it.gy !== undefined ? it.gy : it.y))) drift.push(it); return; }
       if (!seen(it.x, it.y)) return;
       if (WALL_ITEM[it.type]) { wallItems.push(it); return; }
-      if (flatItem(it)) drawItemTop(it, T); else stand.push(it);
+      if (flatItem(it)) { const k = popK(it); if (k !== 1) { ctx.save(); ctx.translate((it.x + 0.5) * T, (it.y + 0.5) * T); ctx.scale(k, k); ctx.translate(-(it.x + 0.5) * T, -(it.y + 0.5) * T); drawItemTop(it, T); ctx.restore(); } else drawItemTop(it, T); }
+      else stand.push(it);
       drawItemStatus(it, T);
     });
     drift.forEach(it => { if (it.gx === undefined) return; ctx.save(); tileMap(it.gx - 0.5, it.gy - 0.5, 0, null); statusUnit(it, T); ctx.restore(); });   // what floats: its signs on the floor under it
@@ -5881,18 +6007,25 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (run.tut >= 0) drawTutTarget(T);
     drawFx(T);
     drawParticles(T, true);
-    // 2. the walls (a wall never hides a floor, so they all go before what stands)
+    // 2. the walls: the lips now; the standing blocks among what stands (1.09: a high wall can hide what is behind it)
     screenT();
-    drawWalls(x0, y0, x1, y1, T, wallItems);
-    drawWallMarks(T);
-    // 3. what stands, nearest last
+    const WL = drawWalls(x0, y0, x1, y1, T, wallItems);
+    // 3. what stands, nearest last: [depth, kind, thing, x, y, height]
     const SO = [];
-    fl.objects.forEach(o => { if (seen(o.x, o.y)) SO.push([o.x + o.y + 1, 0, o]); });
-    stand.forEach(it => SO.push([it.x + it.y + 1 + (ON_OBJECT[it.type] ? 0.02 : 0), 1, it]));
-    SO.push([fl.heart.x + fl.heart.y + 1, 2, null]);
-    fl.heroes.forEach(h => { if (!h.dead && !h.fled && !h.gone) { const p = heroPos(h); SO.push([p.x + p.y, 3, h]); } });
+    fl.objects.forEach(o => { if (seen(o.x, o.y)) SO.push([o.x + o.y + 1, 0, o, o.x + 0.5, o.y + 0.5, 0.95]); });
+    stand.forEach(it => SO.push([it.x + it.y + 1 + (ON_OBJECT[it.type] ? 0.02 : 0), 1, it, it.x + 0.5, it.y + 0.5, MONSTERS[it.type] ? 1.3 : 1.0]));
+    SO.push([fl.heart.x + fl.heart.y + 1, 2, null, fl.heart.x + 0.5, fl.heart.y + 0.5, 1.7]);
+    fl.heroes.forEach(h => { if ((!h.dead && !h.fled && !h.gone) || heroOut(h)) { const p = heroPos(h); SO.push([p.x + p.y, 3, h, p.x, p.y, 1.35]); } });
+    fl.fx.forEach(f => { if (f.kind === 'corpse') SO.push([f.x + f.y, 4, f, f.x, f.y, 1.2]); });   // 1.09: a monster falling
     SO.sort((a, b) => a[0] - b[0]);
-    SO.forEach(e => { if (e[1] === 0) drawObjectIso(e[2], T); else if (e[1] === 1) drawItemUp(e[2], T); else if (e[1] === 2) drawHeartIso(T); else drawHero(e[2], T); });
+    const drawSO = e => { if (e[1] === 0) drawObjectIso(e[2], T); else if (e[1] === 1) drawItemUp(e[2], T); else if (e[1] === 2) drawHeartIso(T); else if (e[1] === 4) drawCorpse(e[2], T); else drawHero(e[2], T); };
+    // what a standing wall in front of it covers goes between the walls, in depth order; the rest after all of them
+    let wi = 0; const later = [];
+    const wallsTo = d => { const s0 = wi; while (wi < WL.length && WL[wi].d <= d) wi++; if (wi > s0) drawWallRun(WL, s0, wi, T); };
+    SO.forEach(e => { if (WL.length && wallCovers(e[3], e[4], e[5])) { wallsTo(e[0]); drawSO(e); } else later.push(e); });
+    wallsTo(Infinity);
+    drawWallMarks(T);
+    later.forEach(drawSO);
     drift.forEach(it => drawItemUp(it, T));   // ghosts, shades and bats float above everything
     // 4. signs over the world (upright, readable)
     fl.items.forEach(it => { if (it.jamUntil > fl.time && fl.phase === 'raid') { const p = itemAnchor(it); ctx.fillStyle = '#e6dcff'; ctx.font = numFont(Math.max(10, T * 0.4)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', p[0], p[1]); } });
@@ -5905,6 +6038,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     drawHoldLabel(T);
     drawCostLabels(T);
     if (fl.phase === 'raid') { drawMemBadges(T, seen); drawDetected(T); }
+    else if (fl.phase === 'build') drawMemBadges(T, seen, true);   // 1.09: the answers stay between waves, so you see them while building
     drawParticles(T, false); drawFloats(T);
     ctx.restore();
     cam.ox += sx; cam.oy += sy;
@@ -5918,7 +6052,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // a wall trap's spot: the middle of its face towards the room (a full wall), or just in front of a cut wall
   function wallSpot(it) {
     const h = wallH(it.x, it.y), ds = wallDirs(it.x, it.y), d = ds.find(q => q[0] === 1 || q[1] === 1) || ds[0] || [0, 1];
-    if (h > 0.2 && (d[0] === 1 || d[1] === 1)) return { x: it.x + 0.5 + d[0] * 0.5, y: it.y + 0.5 + d[1] * 0.5, z: h * 0.55, face: d };
+    if (h > 0.2 && (d[0] === 1 || d[1] === 1)) return { x: it.x + 0.5 + d[0] * 0.5, y: it.y + 0.5 + d[1] * 0.5, z: Math.max(0.1, Math.min(h, 1.2) - 0.45), face: d };
     return { x: it.x + 0.5 + d[0] * 0.3, y: it.y + 0.5 + d[1] * 0.3, z: 0.32, face: null, d };
   }
   function drawTiles(x0, y0, x1, y1, T, g) {   // 1.03: g = the context to draw on (a cached chunk)
@@ -6045,11 +6179,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     });
   }
   // 1.05: a trap's answer for this wave, in the check's own language: a full pale disc = crit, a ring = graze; a skull = let go
-  function drawMemBadges(T, seen) {   // 1.05: a trap's answer for this wave (1.07: over its top right, upright)
+  function drawMemBadges(T, seen, build) {   // 1.05: a trap's answer (1.07: over its top right, upright; 1.09: kept between waves)
     if (T < 9) return;
     const r = Math.max(3, T * 0.13);
     fl.items.forEach(it => {
-      const m = memOf(it), off = it.skullOff;
+      const m = memOf(it), off = !build && it.skullOff;
       if (!m && !off) return;
       if (!seen(it.x, it.y)) return;
       const a = itemAnchor(it), x = a[0] + T * 0.34, y = a[1] - T * 0.3;
@@ -6495,10 +6629,17 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     ctx.fillStyle = 'rgba(255,214,170,0.9)'; ctx.fillText('SERCE', p[0], p[1] + T * 0.18);
   }
   // Standing traps, buildings, loot and monsters. Until each has its own drawing, the old picture stands up on its tile.
+  function drawCorpse(f, T) {   // 1.09: a monster's last moment: it tips over and fades
+    const k = 1 - clamp(f.life / f.max, 0, 1), t = clamp(k / 0.5, 0, 1), p = W2S(f.x, f.y, 0), H = Math.max(FIG_MIN, T * f.h * 1.15);
+    drawPixelFigure(f.type, p[0], p[1], H, f.face || 1, { rot: (f.face || 1) * Math.PI / 2 * t * t, alpha: k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45, flash: k < 0.15 });
+  }
+  // 1.09: something just placed, moved or upgraded pops (a little too big, then its size)
+  const popK = it => { const t = (realNow - (it.popR || -9)) / 0.34; return t >= 1 || t < 0 || reduceMotion ? 1 : 0.55 + 0.45 * easeOutBack(t); };
   function drawItemUp(it, T) {
     const gh = DRIFT[it.type] && it.gx !== undefined, bx = gh ? it.gx : it.x + 0.5, by = gh ? it.gy : it.y + 0.5;
     const a = fogged(clamp(Math.floor(bx), 0, WW - 1), clamp(Math.floor(by), 0, WH - 1)) ? 0.55 : 1;
     ctx.save(); ctx.globalAlpha = a;
+    { const k = popK(it); if (k !== 1) { const f = W2S(bx, by, 0); ctx.translate(f[0], f[1]); ctx.scale(k, k); ctx.translate(-f[0], -f[1]); } }
     const art = ISO_ART[it.type] || (LOOT_KIND[it.type] ? ISO_ART.loot : null);
     if (art) art(it, bx, by, T);
     else {
@@ -6994,7 +7135,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const c = sprite(type, frame, opt.flash);
     ctx.save(); ctx.imageSmoothingEnabled = false;
     const sx = Math.round(x * DPR) / DPR, sy = Math.round(feet * DPR) / DPR;
-    if (face < 0) { ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(c, -w / 2, sy - h, w, h); }
+    if (opt.alpha !== undefined) ctx.globalAlpha *= clamp(opt.alpha, 0, 1);
+    if (opt.kx !== undefined || opt.ky !== undefined || opt.rot) {   // 1.09: squashed, popping or tipping over (around the feet)
+      ctx.translate(sx, sy + (opt.dy || 0)); if (opt.rot) ctx.rotate(opt.rot); ctx.scale((face < 0 ? -1 : 1) * (opt.kx === undefined ? 1 : opt.kx), opt.ky === undefined ? 1 : opt.ky);
+      ctx.drawImage(c, -w / 2, -h, w, h);
+    }
+    else if (face < 0) { ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(c, -w / 2, sy - h, w, h); }
     else ctx.drawImage(c, sx - w / 2, sy - h, w, h);
     ctx.restore();
     return h;
@@ -7012,7 +7158,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     ISO_ART[t] = (it, bx, by, T) => {
       const p = W2S(bx, by, 0), H = monH(it, T) * 1.15;
       groundShadow(bx, by, t === 'ogre' ? 0.42 : t === 'spider' ? 0.4 : 0.3, 0.3, 0.42);
-      drawPixelFigure(t, p[0], p[1], Math.max(FIG_MIN * (t === 'spider' ? 0.75 : t === 'goblin' ? 0.85 : t === 'ogre' ? 1.2 : 1), H), monFace(it, bx, by), { frame: it.anim > 0 ? 1 : 0, flash: it.flash > 0 });
+      const q = it.flash > 0 ? clamp(it.flash / 0.12, 0, 1) : 0;   // 1.09: a hit squashes it for a moment
+      drawPixelFigure(t, p[0], p[1], Math.max(FIG_MIN * (t === 'spider' ? 0.75 : t === 'goblin' ? 0.85 : t === 'ogre' ? 1.2 : 1), H), monFace(it, bx, by), q ? { frame: it.anim > 0 ? 1 : 0, flash: true, kx: 1 + 0.14 * q, ky: 1 - 0.12 * q } : { frame: it.anim > 0 ? 1 : 0, flash: false });
     };
   });
   ISO_ART.ghost = (it, bx, by, T) => {
@@ -7116,7 +7263,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       ctx.stroke();
     },
     gate(it, bx, by, T) {   // a portcullis in the doorway: down when shut, up in the arch when open
-      const d = fl.doors.get(key(it.x, it.y)), closed = d && doorClosed(d), ax = doorAlongX(it.x, it.y), H = WALL_H, z0 = closed ? 0 : H * 0.72;
+      const d = fl.doors.get(key(it.x, it.y)), closed = d && doorClosed(d), ax = doorAlongX(it.x, it.y), H = DOOR_H, z0 = closed ? 0 : H * 0.72;
       const A = ax ? [bx - 0.5, by] : [bx, by - 0.5], B = ax ? [bx + 0.5, by] : [bx, by + 0.5];
       line2(W2S(A[0], A[1], H), W2S(B[0], B[1], H), '#2a2b31', Math.max(2, T * 0.08));
       ctx.strokeStyle = '#9a9eae'; ctx.lineWidth = Math.max(1.4, T * 0.045); ctx.beginPath();
@@ -7127,7 +7274,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (T >= 14) for (let k = 0; k < left; k++) { const p = W2S(bx + (ax ? -0.3 + k * 0.15 : 0.35), by + (ax ? 0.35 : -0.3 + k * 0.15), 0); ctx.fillStyle = '#d9a640'; ctx.beginPath(); ctx.ellipse(p[0], p[1], Math.max(1.5, T * 0.05), Math.max(1, T * 0.05 * SP), 0, 0, Math.PI * 2); ctx.fill(); }   // uses left: studs in the floor
     },
     creak(it, bx, by, T) {   // a door leaf in the doorway, swinging when it creaks
-      const ax = doorAlongX(it.x, it.y), sw = it.anim > 0 ? Math.sin(realNow * 30) * 0.08 : 0, H = WALL_H * 0.92;
+      const ax = doorAlongX(it.x, it.y), sw = it.anim > 0 ? Math.sin(realNow * 30) * 0.08 : 0, H = DOOR_H * 0.92;
       const A = ax ? [bx - 0.42, by + sw] : [bx + sw, by - 0.42], B = ax ? [bx + 0.42, by - sw] : [bx - sw, by + 0.42];
       ctx.save(); faceMap(A[0], A[1], B[0], B[1], 0, H);
       ctx.fillStyle = '#5a3d22'; ctx.fillRect(0, 0, 1, 1);
@@ -7336,7 +7483,20 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k));
     return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
   }
+  // 1.09: a hero on his way out: the dead tip over and fade, the ones who get out fade at the door, the fallen sink into the floor
+  const HERO_OUT = 0.7;
+  function drawHeroOut(h, T) {
+    const p = heroPos(h), g = W2S(p.x, p.y, 0), k = clamp((realNow - h.outR) / HERO_OUT, 0, 1), face = h.face || 1, H = figH(T, h.boss) * 1.15;
+    const o = { alpha: 1 };
+    if (h.outKind === 'dead') { const t = clamp(k / 0.5, 0, 1); o.rot = face * Math.PI / 2 * t * t; o.alpha = k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45; o.dy = -H * 0.05 * Math.sin(Math.PI * t); }
+    else if (h.outKind === 'fall') { o.ky = 1 - k; o.kx = 1 - k * 0.3; o.alpha = 1 - k * 0.6; }
+    else o.alpha = 1 - k;
+    ctx.fillStyle = 'rgba(0,0,0,' + (0.45 * (1 - k)).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(g[0], g[1], H * 0.3, H * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+    drawPixelFigure(h.type, g[0], g[1], H, face, o);
+  }
+  const heroOut = h => (h.dead || h.fled || h.gone) && h.outR !== undefined && realNow - h.outR < HERO_OUT && !reduceMotion;
   function drawHero(h, T) {
+    if (h.dead || h.fled || h.gone) { if (heroOut(h)) drawHeroOut(h, T); return; }
     const p = heroPos(h), g = W2S(p.x, p.y, 0), sm = h.state === 'smash' ? Math.sin(realNow * 40) * T * 0.04 : 0;   // 1.05: the axe swings
     if (h.nx !== null) { const sdx = (h.nx - h.x) - (h.ny - h.y); if (sdx) h.face = sdx > 0 ? 1 : -1; }   // 1.06: the figure looks the way it goes (1.07: on the screen)
     const face = h.face || 1, H = figH(T, h.boss), x = g[0] + sm, feet = g[1], top = feet - H, mid = feet - H * 0.48, W = H * 0.36;
@@ -7365,7 +7525,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // 1.07 (author: the 1.06 figurines did not fit dark fantasy): a pixel figure; a treasure hunter has a bag, a boss a crown
     const walking = h.nx !== null && fl.phase === 'raid' && !paused, PH = H * 1.15;
     if (h.hunter) { ctx.fillStyle = '#8a6a2c'; ctx.beginPath(); ctx.ellipse(x - face * W * 0.55, feet - H * 0.4, Math.max(2.5, H * 0.09), Math.max(3, H * 0.11), 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x - face * W * 0.55 - 1, feet - H * 0.5, 2, H * 0.06); }
-    const ph = drawPixelFigure(h.type, x, feet, PH, face, { flash: h.flash > 0, walk: walking, seed: h.id });
+    const fo = { flash: h.flash > 0, walk: walking, seed: h.id }, ki = (realNow - (h.inR || -9)) / 0.36, q = h.flash > 0 ? clamp(h.flash / 0.12, 0, 1) : 0;
+    if (ki < 1 && !reduceMotion) { const s = 0.35 + 0.65 * easeOutBack(clamp(ki, 0, 1)); fo.kx = s; fo.ky = s; fo.alpha = clamp(ki * 2.5, 0, 1); }   // 1.09: pops in where it enters
+    else if (q) { fo.kx = 1 + 0.12 * q; fo.ky = 1 - 0.1 * q; }   // 1.09: a hit squashes it for a moment
+    const ph = drawPixelFigure(h.type, x, feet, PH, face, fo);
     if (h.boss) { const cy = feet - ph * (h.type === 'mage' ? 0.98 : 0.86), cs = Math.max(3, H * 0.12); ctx.fillStyle = '#d9b44a'; ctx.beginPath(); ctx.moveTo(x - cs, cy); ctx.lineTo(x - cs, cy - cs * 0.9); ctx.lineTo(x - cs * 0.4, cy - cs * 0.45); ctx.lineTo(x, cy - cs * 1.1); ctx.lineTo(x + cs * 0.4, cy - cs * 0.45); ctx.lineTo(x + cs, cy - cs * 0.9); ctx.lineTo(x + cs, cy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = 'rgba(30,20,10,0.7)'; ctx.lineWidth = 1; ctx.stroke(); }
     if (fl.time < h.burnUntil) { ctx.fillStyle = Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x + face * W * 0.5, mid - H * 0.12, Math.max(2.5, H * 0.07), 0, Math.PI * 2); ctx.fill(); }
     if (fl.time < h.wardUntil) {   // talisman ward around the body
@@ -7755,7 +7918,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function drawPause() {   // 1.07: the open build tray is the pause: a small plate at the top says how to play on
     if (!paused || !fl || fl.phase !== 'raid') return;
     if (tutPopNow) return;   // 1.04: a tutorial card says it (and the check under it stays clear)
-    const t = trayIsOpen() ? (fl.time < 0.01 ? 'Fala czeka · zwiń ▼ Budowa' : 'Pauza · ▼ Budowa: gramy dalej') : 'Pauza';   // 1.08: a wave let out with the tray open waits
+    const t = trayIsOpen() ? 'Pauza · ▼ Budowa: gramy dalej' : 'Pauza';
     ctx.font = '600 12px "Alegreya Sans", system-ui, sans-serif';
     const w = ctx.measureText(t).width + 22, x0 = (cw - w) / 2, y0 = 8;
     ctx.fillStyle = 'rgba(16,17,20,0.88)'; rr(x0, y0, w, 24, 3); ctx.fill();
@@ -7955,9 +8118,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     }
     const cur = TABS.find(tb => tb.id === tab) || TABS[0];
     TABS.forEach(tb => $('#tab-' + tb.id).setAttribute('aria-selected', String(tb === cur)));
+    let shown = 0;
     ITEM_ORDER.forEach(t => {
       const b = $('#item-' + t);
       b.hidden = !cur.items.includes(t);
+      if (!b.hidden) b.style.setProperty('--d', String(Math.min(9, shown++)));
       const cst = b.querySelector('.cost');
       cst.textContent = MODES[t] ? '' : String(costOf(t)); cst.classList.toggle('nocost', !!MODES[t]);
       const locked = !run || !run.unlocked.has(t);
@@ -7972,7 +8137,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (!locked && lk) lk.remove();
     });
     renderDeckTiles(cur.id === 'deck' && !!run);
-    if (trayTab !== cur.id) { trayTab = cur.id; tray.scrollLeft = trayScroll[cur.id] || 0; }
+    if (trayTab !== cur.id) { trayTab = cur.id; tray.scrollLeft = trayScroll[cur.id] || 0; tray.classList.remove('deal'); void tray.offsetWidth; tray.classList.add('deal'); clearTimeout(updateTray.dealT); updateTray.dealT = setTimeout(() => tray.classList.remove('deal'), 700); }   // 1.09: a new tab deals its tiles in
     trayFade();
     if (fl && fl.phase === 'build') updateAction();
   }
@@ -8045,7 +8210,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (build) { const left = Math.floor(fl.essence); b.disabled = false; b.classList.add('ready'); actLabel(b, 'Wypuść falę ' + run.wave, (run.next ? run.next.length : 0) + ' bohaterów' + (left >= 6 ? ' · zostało ' + left + ' Esencji' : '')); return; }
     if (fl.phase === 'raid') {   // v14: no silence: the button only says how to speed up
       b.disabled = true;
-      if (paused && trayIsOpen()) { actLabel(b, fl.time < 0.01 ? 'Fala czeka' : 'Pauza', 'zwiń ▼ Budowa: gramy'); return; }   // 1.08
+      if (paused && trayIsOpen()) { actLabel(b, 'Pauza', 'zwiń ▼ Budowa: gramy'); return; }   // 1.08
       actLabel(b, 'Fala trwa', 'przytrzymaj mapę: szybciej');
       return;
     }
@@ -8195,8 +8360,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   $('#toast').addEventListener('click', hideToast);
   $('#h-wave').addEventListener('click', () => { if (run && fl && !modalOpen && fl.phase === 'build') setHint(waveHint()); });   // the wave's news again
 
-  // The element tray folds away and comes back on a tap of its handle, and only then (1.08, author: nothing folds it by itself;
-  // the start of a wave used to). Between waves it remembers you.
+  // The element tray folds away and comes back on a tap of its handle; a wave folds it as it starts (1.09: again, after 1.08 took
+  // that out: the author's complaint was the handle's width, a whole-row hit area). Between waves it remembers you.
   function trayIsOpen() { const d = $('#drawer'); return !!d && !d.classList.contains('closed'); }
   // 1.07 (author): in a wave the tray is the pause: open = time stops and the camera tilts to the building view (high isometry),
   // folded = the game goes on in the wave view (2:1). Between waves a folded tray previews the wave view.
@@ -8370,7 +8535,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.08 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.09 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -8395,7 +8560,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Ściany od strony kamery są ścięte do podłogi, więc nic się za nimi nie chowa. Pułapka ścienna na takiej ścianie stoi przy niej jak tabliczka.',
      'Stuknięcie postawionego elementu albo mebla podnosi go (stuknij nowe miejsce, żeby przenieść), dwa szybkie stuknięcia ulepszają pułapkę albo potwora, przytrzymanie zdejmuje i oddaje Esencję. Przytrzymanie kafelka w pasku pokazuje, co robi. Działa też na pułapki, z którymi loch startuje (meble lochu nic nie oddają).',
      'W fali stukasz w mapę przy skill checku: obwódka to draśnięcie, pełne pole to krytyk (najmocniej), czaszka znaczy, że ktoś zginie. Każda pułapka ma swój kształt checku, a im silniejszy bohater, tym szybszy koralik.',
-     'Jeden check ustawia pułapkę na całą falę: krytyk albo draśnięcie zostaje (pełny krążek albo obwódka w rogu pola) i pułapka dalej bije sama z tą siłą. Pudło albo brak stuknięcia: check wraca przy następnym razie. Gdy cios miałby zabić, check z czaszką pyta zawsze, a odpuszczona czaszka usypia pułapkę (☠ w rogu), dopóki nie może trafić bez zabijania.',
+     'Jeden check ustawia pułapkę na dobre: krytyk albo draśnięcie zostaje (pełny krążek albo obwódka w rogu pola) także w kolejnych falach i pułapka dalej bije sama z tą siłą. Zapomina go po ulepszeniu albo gdy bohaterowie ją wyłączą (rozbroją, rozbiją, zabiją potwora, zablokują); przeniesienie go nie kasuje. Pudło albo brak stuknięcia: check wraca przy następnym razie. Gdy cios miałby zabić, check z czaszką pyta zawsze, a odpuszczona czaszka usypia pułapkę (☠ w rogu), dopóki nie może trafić bez zabijania.',
      'Przytrzymaj palec na mapie: gra przyspiesza, checków nie ma, a pułapki biją same: z zapamiętaną siłą albo jak draśnięcie. Puścisz palec i checki wracają.',
      'Gdy drużyna rozejdzie się po dużym lochu za daleko, ekran dzieli się na dwie części, po jednej dla każdej grupy (wyłączysz to w Ustawieniach). Przeciągnięcie mapy w fali daje na chwilę jeden ekran i wolną kamerę.',
      'Strach wypędza bohaterów; rany i śmierć towarzyszy też straszą, a strach powoli opada. Niosący kryształ rzuca go ze strachu. Uciekinier opowie innym o pułapkach, które go zraniły albo przestraszyły (najwyżej o 3, plotka żyje 2 fale), i może wrócić z blizną. Uwięzionego w klatce, którego nikt nie uwolni, klatka zabija.',
@@ -8408,10 +8573,14 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.08'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.09'));
     const ul2 = el('ul', 'conseq');
-    ['1.08: pasek budowy zwija się i rozwija tylko wtedy, gdy stukniesz ▼/▲ Budowa, i robi to razem z kamerą (ten sam czas, ten sam ruch). Wypuszczenie fali już go nie zwija: fala wypuszczona z rozwiniętym paskiem czeka w pauzie, aż go zwiniesz.',
-     '1.08: przytrzymanie palca przyspiesza grę ×5 (było ×3), a ▶▶ spokój ×2,5. Obie wartości ustawią się tak raz także u tych, którzy mieli zapisane stare ustawienia.',
+    ['1.09: ściany są dwa razy wyższe. Które leżą płasko, zostaje jak było, a w fali kładą się całe pokoje stojące między kamerą a drużyną (i pokój, do którego ktoś właśnie wchodzi). Bloczki chowają się i wyskakują z popem, falą od drużyny, a pokój, z którego drużyna wyszła, staje z powrotem po chwili.',
+     '1.09: skill check pamięta wynik na kolejne fale. Pułapka pyta znowu po ulepszeniu albo gdy bohaterowie ją wyłączą (rozbroją, rozbiją, zabiją potwora, zablokują). Przeniesienie i ponowne postawienie w tym samym miejscu wyniku nie kasują. Pudło pyta znowu, czaszka zawsze. Znaczek wyniku widać też w budowie.',
+     '1.09: w trakcie checku świat zwalnia (×0,25) zamiast prawie stanąć, więc widać, co robią bohaterowie. Cios trafia tych, w których celował, nawet jeśli zdążą zrobić krok.',
+     '1.09: spokój ×1,5 i przytrzymanie palca ×3 (ustawią się tak raz u wszystkich). Pasek budowy znowu sam chowa się na starcie fali, a przycisk ▼/▲ Budowa reaguje tylko na siebie.',
+     '1.09: nowe animacje: bohater wskakuje w drzwiach, ugina się od ciosu, przewraca się, gdy ginie, zapada się w zapadnię i znika przy wyjściu; potwór ugina się i przewraca; postawiona, przeniesiona i ulepszona rzecz wyskakuje z kurzem; nowa zakładka paska rozdaje kafelki.',
+     '1.08: pasek budowy zwija się i rozwija razem z kamerą (ten sam czas, ten sam ruch).',
      '1.08: dymki bohaterów w stylu reszty gry: ciemna płyta z żelazną krawędzią, pasek w kolorze mówiącego, ważne kwestie w mosiądzu. Dymek przesunięty w górę, żeby nie zasłaniać innego, ma nitkę do głowy mówiącego.',
      '1.07: nowa kamera: loch jest obrócony o 45° (izometria). Z rozwiniętym paskiem budowy widzisz go z wysoka (wysoka izometria), a w fali i po zwinięciu paska w izometrii 2:1. Przy przełączaniu zmienia się tylko nachylenie, kierunki zostają te same.',
      '1.07: w fali ▲ Budowa zatrzymuje grę i pokazuje widok budowy, a ▼ Budowa gra dalej. Przycisku pauzy już nie ma. Gdy wyjdziesz z gry w trakcie fali, pasek sam się rozwinie, więc po powrocie gra stoi.',
@@ -9138,13 +9307,18 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (MONSTERS[it.type]) { const k = LVL_MON[it.lvl] / LVL_MON[was]; it.max = Math.round(it.max * k); it.hp = it.max; it.power *= k; }
     bt(it.type).spent += c; bt(it.type).upgraded = (bt(it.type).upgraded || 0) + 1; fl.stats.upgrades = (fl.stats.upgrades || 0) + 1; tutFlags.upgraded = true;
     floatTile(it.x, it.y, 'Poziom ' + it.lvl + (it.lvl === 3 && TRAITS[it.type] ? ': ' + TRAITS[it.type][0] : ''), '#ffb35c', 15, -0.8);
+    it.popR = realNow; burst(it.x + 0.5, it.y + 0.5, '#ffb35c', 12); particles.push({ ring: true, x: it.x + 0.5, y: it.y + 0.5, r: 0.2, maxR: 1.1, life: 0.4, color: '#ffb35c' });   // 1.09: an upgrade glows and pops
     updateTray(); saveRunSoon();
     return true;
   }
+  // 1.09: a puff of dust and a ring on a tile (placing, moving, taking down)
+  function dustAt(x, y) { if (reduceMotion) return; burst(x + 0.5, y + 0.5, '#9a9286', 7); particles.push({ ring: true, x: x + 0.5, y: y + 0.5, r: 0.15, maxR: 0.85, life: 0.32, color: '#b9b2a6' }); }
   function removeItem(it) {
     pushUndo('zdjęcie: ' + ITEMS[it.type].name);
     const back = it.spent != null ? it.spent : ITEMS[it.type].cost;   // loot left by heroes (spent 0) gives nothing back
     fl.items.delete(key(it.x, it.y)); fl.essence += back; if (!it.dropped) { bt(it.type).placed--; bt(it.type).spent -= back; } fl.threatDirty = true;
+    if (it.memRes) { run.memSpots = run.memSpots || {}; run.memSpots[key(it.x, it.y)] = [it.type, it.memRes, it.memLvl || 1]; }   // 1.09: put back here, it remembers
+    dustAt(it.x, it.y);   // 1.09: a puff where it stood
     updateTray(); saveRunSoon();
     return back;
   }
@@ -9164,8 +9338,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function moveItem(it, x, y) {
     if (!fl || fl.phase !== 'build') return false;
     pushUndo('przeniesienie: ' + ITEMS[it.type].name);
-    fl.items.delete(key(it.x, it.y));
-    it.x = x; it.y = y; it.gx = x + 0.5; it.gy = y + 0.5; it.preview = 1.4;
+    fl.items.delete(key(it.x, it.y)); dustAt(it.x, it.y);
+    it.x = x; it.y = y; it.gx = x + 0.5; it.gy = y + 0.5; it.preview = 1.4; it.popR = realNow; dustAt(x, y);   // 1.09: lifted with a puff, put down with a pop
     fl.items.set(key(x, y), it); fl.threatDirty = true;
     floatTile(x, y, 'Przeniesione', '#d8d2c4', 13, -0.6); tutFlags.moved = true;
     updateTray(); saveRunSoon();
@@ -9521,7 +9695,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 51;   // 51: Prototype 1.08: the tray folds only on a tap (a wave let out with it open starts paused: in stats.pauseTime), a held finger x5 (settings.ffSpeed 5, was 3), quiet x2,5 for old saves too; 50: Prototype 1.07: the isometric camera, the build tray is the pause (a wave has trayPauses: how often the tray stopped it; stats.pauseTime: how long); 49: Prototype 1.06: heroes drawn as figurines, one build-bar button (no change in the data); 48: Prototype 1.05: a check's result kept for the wave (memFires, skullOff), checks per minute (cpm) and the share of the wave frozen by checks (frozen, perf.realSec), the classes of each party (bard, barbarian), rumours only of what hurt or scared (max 3, 2 waves), tutorial progress in the run summary (tut: furthest step, skipped, how it ended), new stats (songs, bardCalls, answers, rages, smashes, disputes, healCalls); 47: Prototype 1.04: wave summaries carry perf (frame gaps, js time, dpr, direct tiles share) and errors, the party waits at the gate 1,8 s, start traps near the heart, tutorial cards; 46: Prototype 1.03: greed risk without a ceiling (leader levels, hunters), loot dearer per copy, Odwrotna chciwość reworked (taken loot x3), split screen; 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
+  const LOG_VERSION = 52;   // 52: Prototype 1.09: a check answer stays with the trap between waves (stats.memLost: answers lost to the heroes; memFires counts every remembered hit), checks slow the world to x0,25 instead of stopping it (frozen = the share of the wave under a check, slowed), quiet x1,5 and a held finger x3 for everyone (settings.autoFF 1.5, ffSpeed 3), the tray folds at a wave's start again, walls 2x high; 51: Prototype 1.08: the tray folds only on a tap (a wave let out with it open starts paused: in stats.pauseTime), a held finger x5 (settings.ffSpeed 5, was 3), quiet x2,5 for old saves too; 50: Prototype 1.07: the isometric camera, the build tray is the pause (a wave has trayPauses: how often the tray stopped it; stats.pauseTime: how long); 49: Prototype 1.06: heroes drawn as figurines, one build-bar button (no change in the data); 48: Prototype 1.05: a check's result kept for the wave (memFires, skullOff), checks per minute (cpm) and the share of the wave frozen by checks (frozen, perf.realSec), the classes of each party (bard, barbarian), rumours only of what hurt or scared (max 3, 2 waves), tutorial progress in the run summary (tut: furthest step, skipped, how it ended), new stats (songs, bardCalls, answers, rages, smashes, disputes, healCalls); 47: Prototype 1.04: wave summaries carry perf (frame gaps, js time, dpr, direct tiles share) and errors, the party waits at the gate 1,8 s, start traps near the heart, tutorial cards; 46: Prototype 1.03: greed risk without a ceiling (leader levels, hunters), loot dearer per copy, Odwrotna chciwość reworked (taken loot x3), split screen; 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
   function snapshotLayout() {
     const L = run.layout;
     return { WW, WH, entrance: L.entrance, heart: L.heartKey, entX: L.entX, essence: Math.round(fl.essence), breach: L.breach ? Object.assign({}, L.breach) : null, greedKeep: Math.round(run.greedKeep * 100) / 100,
@@ -9838,6 +10012,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     }
     const hp = MONSTERS[type] ? ITEMS[type].hp * mods.monster : 0;
     fl.items.set(key(x, y), { type, x, y, cd: fl.phase === 'raid' && TRAPS[type] && !mods.quickArm ? ARM_TIME : 0, anim: 0, disabled: false, hp, max: hp, power: mods.monster, shot: 0.5, flash: 0, preview: 1.4, gx: x + 0.5, gy: y + 0.5, lvl: 1, spent: cost });
+    { const ms = run.memSpots && run.memSpots[key(x, y)]; if (ms && ms[0] === type && ms[2] === 1) { const it = fl.items.get(key(x, y)); it.memRes = ms[1]; it.memLvl = 1; } }   // 1.09: put back on its spot, it remembers its answer
+    fl.items.get(key(x, y)).popR = realNow; dustAt(x, y);   // 1.09: it lands with a pop
     fl.essence -= cost; bt(type).placed++; bt(type).spent += cost;
     if (fl.phase === 'build') saveRunSoon();
     if (fl.phase === 'raid') {
@@ -9996,11 +10172,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     { id: 'loot', text: 'Łup wabi bohaterów i podbija chciwość, czyli mnożnik Esencji. Postaw Monety z zakładki Łup.', hl: ['#tab-loot', '#item-loot'], prep: () => { tab = 'loot'; updateTray(); setTrayOpen(true); if (fl.essence < costOf('loot')) fl.essence = costOf('loot'); }, done: () => [...fl.items.values()].some(o => isLoot(o.type)) },
     { id: 'upgrade', text: () => { const it = tutUpTarget(); return 'Dwa szybkie stuknięcia w element to ulepszenie: mocniej bije i ma szersze strefy checku. Stuknij dwa razy ' + (it ? ITEMS[it.type].name.toLowerCase() : 'pułapkę') + ' w kółku (koszt: ' + (it ? upgCost(it) : 6) + ' Esencji).'; }, tile: () => { const it = tutUpTarget(); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); const it = tutUpTarget(); if (it && fl.essence < upgCost(it)) fl.essence = upgCost(it); }, done: () => !!tutFlags.upgraded },
     { id: 'spend', text: () => 'Masz jeszcze ' + Math.floor(fl.essence) + ' Esencji. W pierwszej fali nie oszczędzaj: dostaw kolce i strzały przy trasie. Pokój mieści kilka pułapek (licznik w rogu).', hl: ['#tab-traps'], prep: () => { selected = null; tab = 'traps'; updateTray(); }, done: () => fl.phase !== 'build' || fl.essence < 3 || !tutAnySpot(), skip: true },   // drop the loot from the hand, or every tap adds more loot
-    { id: 'go', text: 'Gotowe. Wypuść falę przyciskiem w prawym dolnym rogu. Fala ruszy, gdy zwiniesz pasek budowy. W fali rozwinięty pasek to pauza: możesz wtedy spokojnie dostawić pułapki.', hl: ['#btn-action'], done: () => fl.phase === 'raid' },
-    { id: 'fold', text: 'Fala czeka, bo pasek budowy jest rozwinięty. Zwiń go (▼ Budowa), żeby ruszyła.', hl: ['#tray-toggle'], raid: true, skipIf: () => !trayOpen(), done: () => !trayOpen() },   // 1.08
+    { id: 'go', text: 'Gotowe. Wypuść falę przyciskiem w prawym dolnym rogu. Pasek budowy schowa się na czas fali, a w fali ▲ Budowa zatrzymuje grę, żebyś mógł spokojnie dostawić pułapki.', hl: ['#btn-action'], done: () => fl.phase === 'raid' },
     // the wave: one line at the top; the first check jumps to 'check' (after its card)
     { id: 'novice', text: 'Nadchodzą nowicjusze. Każda rana i każdy strach to Groza, a linia u góry zamienia ją w Esencję.', hl: ['#h-eq'], raid: true, hideAfter: 9 },
-    { id: 'check', text: 'Stuknij w mapę, gdy koralik będzie w obwódce (draśnięcie) albo w pełnym polu (krytyk). Trafiony wynik pułapka pamięta do końca fali (znaczek w rogu pola).', raid: true, done: () => tutFlags.resolved || (!fl.check && tutT > 2) },
+    { id: 'check', text: 'Stuknij w mapę, gdy koralik będzie w obwódce (draśnięcie) albo w pełnym polu (krytyk). Trafiony wynik pułapka pamięta (znaczek w rogu pola), także w kolejnych falach.', raid: true, done: () => tutFlags.resolved || (!fl.check && tutT > 2) },
     { id: 'herocard', text: 'Stuknij bohatera (albo listę w rogu): zobaczysz jego kartę, klasę i słabości. Gra stoi, dopóki ją czytasz.', raid: true, skip: true, done: () => tutFlags.heroCard },
     { id: 'ff', text: 'Teraz przytrzymaj palec na mapie: gra przyspiesza, a pułapki biją same (z zapamiętaną siłą albo jak draśnięcie). Gdy nic się nie dzieje, gra przyspiesza sama (▶▶ spokój).', raid: true, skip: true, done: () => tutFlags.ffUsed },
     // between waves 1 and 2
@@ -10013,7 +10188,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   ];
   // 1.04: the moments that matter stop the game once, with a card at the top of the map (the check waits under it)
   const TUT_POP = {
-    check: 'Skill check! Gdy koralik wjedzie w obwódkę, stuknij w mapę: to draśnięcie. Pełne pole to krytyk, najmocniejszy cios. ☠ znaczy, że ten cios zabije. Trafiony wynik pułapka pamięta do końca fali.',
+    check: 'Skill check! Gdy koralik wjedzie w obwódkę, stuknij w mapę: to draśnięcie. Pełne pole to krytyk, najmocniejszy cios. ☠ znaczy, że ten cios zabije. Trafiony wynik pułapka pamięta, także w kolejnych falach.',
     pay: 'Koniec combo: Groza × Chciwość × Combo zamienia się w Esencję (czerwone kuleczki). Możesz ją wydać od razu, nawet w trakcie fali.',
     theft: 'Kryształ skradziony! Zabij albo wystrasz niosącego, zanim dojdzie do wyjścia: kryształ wróci do serca. Jeśli wyjdzie z nim z lochu, kryształ przepada.',
     flee: 'Bohater ucieka ze strachu (pełny fioletowy pasek). Kiedy wybiegnie z lochu, dostaniesz Esencję, ale opowie innym o Twoich pułapkach.'
@@ -10133,7 +10308,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   requestAnimationFrame(frame);
 
   // Hook for automated checks; no effect on normal play.
-  window.__yatd = { get MUS() { return MUS; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => W2S(x, y, z || 0), centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  window.__yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => W2S(x, y, z || 0), centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

@@ -99,7 +99,8 @@
     run.fires++;
     fl.heroes.forEach(h => { if (h.item === it && h.state === 'disarm') { h.state = 'walk'; h.item = null; h.needPlan = true; say(h, pick(SAY.disarmHit), 3); } });
     const area = areaOf(it), keys = new Set(area.map(t => key(t[0], t[1])));
-    const list = heroesOn(keys);
+    let list = heroesOn(keys);
+    if (opt.lock && opt.lock.length) list = [...new Set(list.concat(opt.lock.filter(h => !h.dead && !h.fled && !h.gone && !h.fleeing)))];   // 1.09: a check's targets stay its targets
     fl.surprise = TRAPS[it.type] && !it.detected;
     if (TRAPS[it.type]) {
       const rooms = new Set(area.map(t => roomOf(t[0], t[1])));
@@ -216,7 +217,7 @@
         const d = fl.doors.get(key(it.x, it.y));
         d.closedUntil = fl.time + shut; d.wasClosed = true;
         it.uses = (it.uses || 0) + 1;
-        if (it.uses >= mods.gateUses + (it.lvl >= 3 ? 2 : 0)) { it.disabled = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Ostatnie zamknięcie', '#c9c2d8', 13, -0.6); }
+        if (it.uses >= mods.gateUses + (it.lvl >= 3 ? 2 : 0)) { it.disabled = true; it.worn = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Ostatnie zamknięcie', '#c9c2d8', 13, -0.6); }
         fl.heroes.forEach(h => { if (!h.dead && !h.fled && h.nx === it.x && h.ny === it.y && h.prog < 0.5) { h.nx = null; h.ny = null; h.prog = 0; } });
         list.forEach(h => { damage(h, 60 * D * mods.gateCrush * pw, it, comboMult); hit++; });
         const near = alive().find(h => Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 2);
@@ -310,7 +311,7 @@
     fl.surprise = false;
     if (TRAPS[it.type] && hit > 0 && mods.tempered) run.stacks.tempered = (run.stacks.tempered || 0) + hit;   // Zaprawione mechanizmy
     if (mods.overload && TRAPS[it.type] && it.type !== 'powder' && !opt.echo && fl.items.get(key(it.x, it.y)) === it && Math.random() < mods.overload) {   // Przeciążenie
-      it.disabled = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Zepsuta!', '#a69bbb', 13, -1.1); fl.stats.broken = (fl.stats.broken || 0) + 1;
+      it.disabled = true; it.worn = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Zepsuta!', '#a69bbb', 13, -1.1); fl.stats.broken = (fl.stats.broken || 0) + 1;
     }
     if (TRAPS[it.type] && list.some(h => h.rank === 0) && Math.random() < 0.3) {   // a veteran has seen this before
       const v = alive().find(o => o.rank >= 2 && !list.includes(o) && hdist(o, list[0]) < 7);
@@ -336,7 +337,7 @@
   // A hero falls through a given trapdoor once per wave: after that he knows where the edge is and steps around it.
   function fall(h, pw, it) {
     if (it) { (h.fellFrom = h.fellFrom || new Set()).add(it); learnTrap(it, 'seen', null); if (it.lvl >= 3) h.deepFall = true; }
-    h.gone = true; h.state = 'fallen'; h.fallUntil = fl.time + mods.fallTime * Math.max(1, pw);
+    h.gone = true; h.state = 'fallen'; h.fallUntil = fl.time + mods.fallTime * Math.max(1, pw); h.outR = realNow; h.outKind = 'fall';   // 1.09: sinks into the floor
     h.path = []; h.nx = null; h.ny = null; h.prog = 0; h.foe = null; h.item = null;
     fl.stats.falls++; say(h, pick(SAY.fall), 4); tl('tr', h.id);
     if (h.crystal && mods.bottomless) { floatHero(h, 'Kryształ przepadł w studni!', '#ff9ab0', 15, -1); crystalReturns(h); }
@@ -346,6 +347,7 @@
     if (fl.party.scoutId === h.id) fl.party.scoutId = -1;
   }
   function landFallen(h) {
+    h.inR = realNow;   // 1.09: pops in where he climbs out
     const L = leader(), lp = L ? heroPos(L) : { x: fl.ent.x, y: fl.ent.y };
     const rooms = fl.rooms.filter(r => r.kind === 'room' && r.id !== fl.heart.room);
     // With the crystal he comes out as far from every way out as possible (picking "far from the leader" used to drop him at the door).
@@ -412,6 +414,7 @@
     if (m.hp <= 0) {   // dead for good: monsters do not come back
       m.hp = 0; fl.stats.monstersLost++; bt(m.type).died++; tl('mn', m.type, m.x, m.y);
       fl.items.delete(key(m.x, m.y));
+      if (!DRIFT[m.type]) { const gx = m.gx !== undefined ? m.gx : m.x + 0.5, gy = m.gy !== undefined ? m.gy : m.y + 0.5; fl.fx.push({ kind: 'corpse', type: m.type, x: gx, y: gy, face: m.face || 1, h: { ogre: 1.25, goblin: 0.8, archer: 0.95, shaman: 0.9, spider: 0.6 }[m.type] || 0.9, life: 0.75, max: 0.75 }); burst(gx, gy, '#8a8378', 8); }   // 1.09: it falls
       floatTile(m.x, m.y, ITEMS[m.type].name + ' ginie', '#9be37a', 14);
       burst((m.gx || m.x + 0.5), (m.gy || m.y + 0.5), '#7fbf5a', 12);
       fl.heroes.forEach(h => { if (h.foe === m) { h.state = 'walk'; h.foe = null; h.needPlan = true; } });

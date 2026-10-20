@@ -1,6 +1,6 @@
 # Archiwum wersji prototypu
 
-Stare wersje prototypu "You are the dungeon": v1-v15.2 z czasu, gdy żył jako artefakt w Claude (15-19.10.2026), i Prototype 1.0-1.07 z wersji web (od 19.10.2026). Każdy plik to cała gra w jednym HTML-u, zachowana bez zmian w kodzie gry (dla Prototype 1.x to wersja do artefaktu z `dist/artifact.html` danego commita).
+Stare wersje prototypu "You are the dungeon": v1-v15.2 z czasu, gdy żył jako artefakt w Claude (15-19.10.2026), i Prototype 1.0-1.08 z wersji web (od 19.10.2026). Każdy plik to cała gra w jednym HTML-u, zachowana bez zmian w kodzie gry (dla Prototype 1.x to wersja do artefaktu z `dist/artifact.html` danego commita).
 
 Dodane tylko opakowanie strony: nagłówek dla telefonu, prośba do wyszukiwarek o pominięcie i osobny zapis w przeglądarce dla każdej wersji (klucze z przedrostkiem `yatd-archiwum-<wersja>:`). Dzięki temu stara wersja nie nadpisze zapisu aktualnej gry.
 
@@ -48,3 +48,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.05](1.05.html) | 20.10 | check na falę, bard i barbarzyńca, jeden ekran po fali |
 | [Prototype 1.06](1.06.html) | 20.10 | bohaterowie jako figurki z sylwetkami klas, jeden przycisk Budowa |
 | [Prototype 1.07](1.07.html) | 20.10 | kamera izometryczna, pasek budowy jako pauza, figurki w pixel arcie, muzyka |
+| [Prototype 1.08](1.08.html) | 20.10 | belka zwijana razem z kamerą, nowe dymki, przytrzymanie ×5 |

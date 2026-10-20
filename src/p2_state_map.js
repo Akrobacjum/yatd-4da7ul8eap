@@ -3,15 +3,16 @@
   let S = Object.assign({}, DEFAULTS);
   try {
     const saved = JSON.parse(localStorage.getItem('yatd12-settings') || 'null');
-    // 1.08 (author): quiet ×2,5 and a held finger ×5 for everyone, once: older saves kept the speeds of their day (e.g. quiet ×2)
-    const speeds108 = saved && saved.speedsV !== 108 ? ['autoFF', 'ffSpeed'] : [];
+    // 1.08 (author): quiet ×2,5 and a held finger ×5 for everyone, once: older saves kept the speeds of their day (e.g. quiet ×2);
+    // 1.09 (author: more time to watch the heroes): quiet ×1,5 and a held finger ×3, once again for everyone
+    const speeds108 = saved && saved.speedsV !== 109 ? ['autoFF', 'ffSpeed'] : [];
     if (saved) { GAME_SETTINGS.forEach(sd => { if (typeof saved[sd.k] === 'number' && !speeds108.includes(sd.k)) S[sd.k] = saved[sd.k]; }); }   // v14: no balance sliders, so only the player's own settings come back
     else {   // new balance (v12): from older saves keep only personal settings, so old slider values do not override the new defaults
       const old = JSON.parse(localStorage.getItem('yatd11-settings') || localStorage.getItem('yatd10-settings') || localStorage.getItem('yatd8-settings') || localStorage.getItem('yatd7-settings') || 'null');
       if (old) ['volume', 'checkDiff'].forEach(k => { if (typeof old[k] === 'number') S[k] = old[k]; });
     }
   } catch (e) {}
-  S.speedsV = 108;   // saved with the settings from now on
+  S.speedsV = 109;   // saved with the settings from now on
   let playerName = '';
   try { playerName = localStorage.getItem('yatd-name') || ''; } catch (e) {}
   function loadBest() { try { return parseInt(localStorage.getItem('yatd15-best') || '0', 10) || 0; } catch (e) { return 0; } }

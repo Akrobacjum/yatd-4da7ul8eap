@@ -54,7 +54,7 @@
   // a wall trap's own plane: the face towards the room on a full wall, the top of a cut wall (its bottom edge towards the room)
   function wallPlane(it) {
     const w = wallSpot(it);
-    if (w.face) { const h = wallH(it.x, it.y); if (w.face[1] === 1) faceMap(it.x, it.y + 1, it.x + 1, it.y + 1, 0, h); else faceMap(it.x + 1, it.y, it.x + 1, it.y + 1, 0, h); }
+    if (w.face) { const h = wallH(it.x, it.y), z1 = Math.min(h, 1.2), z0 = Math.max(0, z1 - 1); if (w.face[1] === 1) faceMap(it.x, it.y + 1, it.x + 1, it.y + 1, z0, z1); else faceMap(it.x + 1, it.y, it.x + 1, it.y + 1, z0, z1); }   // 1.09: a picture keeps its shape on a high wall
     else tileMap(it.x, it.y, WALL_LIP, w.d);
     return w;
   }
@@ -67,37 +67,113 @@
       x1: clamp(Math.ceil(Math.max(...xs)) + 3, 0, WW - 1), y1: clamp(Math.ceil(Math.max(...ys)) + 3, 0, WH - 1) };
   }
   const onScreen = (p, m) => p[0] > -m && p[0] < cw + m && p[1] > -m && p[1] < ch + m * 1.6;
-  // A wall stands full height only where it hides no floor from the camera; every other wall is cut down to a low lip, so
-  // nothing in the dungeon ever hides behind a wall (author: the nearest walls cut to the floor, no see-through).
-  // Worked out once per map, for the lowest tilt (the wave's), so a wall never changes with the view.
-  const WALL_H = 0.85, WALL_LIP = 0.06;
-  let WHC = { tiles: null, ww: 0, h: null };
-  function wallHeights() {
-    if (WHC.tiles === fl.tiles && WHC.ww === WW && WHC.wh === WH) return WHC.h;
-    const h = new Float32Array(WW * WH), sp = Math.sin(PITCH_RAID * Math.PI / 180), Hs = WALL_H * Math.cos(PITCH_RAID * Math.PI / 180);
+  // 1.07: walls are blocks, and a wall that would hide floor from the camera lies flat (a lip).
+  // 1.09 (author): the standing walls are twice as high (1,7 tiles); which walls lie flat stays as it was (worked out for the old
+  // height, 0,85, in the wave view), so a room with nobody in it looks as before, only its far walls are higher. A high wall can
+  // hide what is behind it, so in a wave every room that stands between the camera and the heroes lies flat whole, and so do
+  // the rooms they are in or about to enter. The blocks sink and rise one by one with an ease and a pop of size, in a ripple
+  // from the party; a room the party left stands up again a second later.
+  const WALL_H = 1.7, WALL_H0 = 0.85, WALL_LIP = 0.06, DOOR_H = 1.25;
+  const WALL_ANIM = 0.4, WALL_STAY = 1.0;   // s: one block's move; how long a room stays open after the party leaves
+  const WA = { tiles: null, ww: 0, wh: 0, sig: '', focus: new Map(), moving: new Set() };
+  function areaAt(x, y) { const r = roomOf(x, y); if (r >= 0) return r; for (const d of [[0, 1], [1, 0], [0, -1], [-1, 0]]) { const q = roomOf(x + d[0], y + d[1]); if (q >= 0) return q; } return -1; }
+  // per map: which walls stand, which rooms each standing wall would hide (at full height, in the wave view), whose walls they are
+  function wallSetup() {
+    if (WA.tiles === fl.tiles && WA.ww === WW && WA.wh === WH) return WA;
+    const n = WW * WH, stand = new Uint8Array(n), sp = Math.sin(PITCH_RAID * Math.PI / 180), cp = Math.cos(PITCH_RAID * Math.PI / 180);
     const walk = (x, y) => { const t = tileAt(x, y); return t === FLOOR || t === DOOR; };
-    const hides = (dx, dy) => {   // does a full wall hide the tile (dx, dy) away from it? (two equal diamonds overlap by more than a sliver)
+    const hidesAt = Hs => (dx, dy) => {   // does a wall Hs high (on screen) hide the tile (dx, dy) away from it? (two diamonds overlap by more than a sliver)
       const du = Math.abs(dx - dy) * R2, dv = (dx + dy) * R2 * sp, t = clamp(-dv, 0, Hs);
       return du / R2 + Math.abs(dv + t) / (R2 * sp) < 1.85;
     };
+    const hides0 = hidesAt(WALL_H0 * cp), hides1 = hidesAt(WALL_H * cp), RW = Math.ceil(WALL_H * cp / (R2 * sp)) + 1;
+    const occ = new Map(), own = new Map(), roomWalls = new Map();
     for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
-      if (fl.tiles[y * WW + x] !== WALL) continue;
+      const i = y * WW + x; if (fl.tiles[i] !== WALL) continue;
       let cut = false;
-      for (let dy = -3; dy <= 0 && !cut; dy++) for (let dx = -3; dx <= 0 && !cut; dx++) if ((dx || dy) && walk(x + dx, y + dy) && hides(dx, dy)) cut = true;
-      h[y * WW + x] = cut ? WALL_LIP : WALL_H;
+      for (let dy = -3; dy <= 0 && !cut; dy++) for (let dx = -3; dx <= 0 && !cut; dx++) if ((dx || dy) && walk(x + dx, y + dy) && hides0(dx, dy)) cut = true;
+      if (cut) continue;
+      stand[i] = 1;
+      const hid = new Set();
+      for (let dy = -RW; dy <= 0; dy++) for (let dx = -RW; dx <= 0; dx++) if ((dx || dy) && walk(x + dx, y + dy) && hides1(dx, dy)) { const a = areaAt(x + dx, y + dy); if (a >= 0) hid.add(a); }
+      if (hid.size) occ.set(i, [...hid]);
+      const o = new Set(); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (tileAt(x + dx, y + dy) === FLOOR) { const a = roomOf(x + dx, y + dy); if (a >= 0) o.add(a); }
+      if (o.size) { own.set(i, [...o]); o.forEach(a => { if (!roomWalls.has(a)) roomWalls.set(a, []); roomWalls.get(a).push(i); }); }
     }
-    // the torches: on some full walls, on the face towards a floor (worked out once per map too)
+    // the torches: on some standing walls, on the face towards a floor
     const torches = [];
     for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
-      const i = y * WW + x; if (fl.tiles[i] !== WALL || h[i] <= 0.2 || tileHash(x + 101, y + 37) % 5 !== 0) continue;
-      const hs = (x2, y2) => (x2 < 0 || y2 < 0 || x2 >= WW || y2 >= WH || fl.tiles[y2 * WW + x2] !== WALL) ? 0 : h[y2 * WW + x2];
-      if (hs(x, y + 1) < h[i] && tileAt(x, y + 1) === FLOOR) torches.push({ x, y, fx: x + 0.5, fy: y + 1, gx: x + 0.5, gy: y + 1.2, h: h[i], face: 'S' });
-      else if (hs(x + 1, y) < h[i] && tileAt(x + 1, y) === FLOOR) torches.push({ x, y, fx: x + 1, fy: y + 0.5, gx: x + 1.2, gy: y + 0.5, h: h[i], face: 'E' });
+      const i = y * WW + x; if (!stand[i] || tileHash(x + 101, y + 37) % 5 !== 0) continue;
+      const st = (x2, y2) => x2 >= 0 && y2 >= 0 && x2 < WW && y2 < WH && stand[y2 * WW + x2];
+      if (!st(x, y + 1) && tileAt(x, y + 1) === FLOOR) torches.push({ x, y, fx: x + 0.5, fy: y + 1, gx: x + 0.5, gy: y + 1.2, face: 'S' });
+      else if (!st(x + 1, y) && tileAt(x + 1, y) === FLOOR) torches.push({ x, y, fx: x + 1, fy: y + 0.5, gx: x + 1.2, gy: y + 0.5, face: 'E' });
     }
-    WHC = { tiles: fl.tiles, ww: WW, wh: WH, h, torches };
-    return h;
+    const cur = new Float32Array(n), from = new Float32Array(n), to = new Float32Array(n), t0 = new Float32Array(n), pp = new Float32Array(n);
+    for (let i = 0; i < n; i++) if (fl.tiles[i] === WALL) cur[i] = from[i] = to[i] = stand[i] ? WALL_H : WALL_LIP;
+    Object.assign(WA, { tiles: fl.tiles, ww: WW, wh: WH, stand, occ, own, roomWalls, torches, cur, from, to, t0, pp, RW, sig: '', focus: new Map(), moving: new Set() });
+    return WA;
   }
+  // which rooms and halls are open now: where the heroes stand, and past a door they are within 2 tiles of
+  function wallFocus() {
+    const F = WA.focus, now = realNow;
+    if (fl.phase === 'raid') alive().forEach(h => {
+      const p = heroPos(h), x = Math.floor(p.x), y = Math.floor(p.y), mark = a => { if (a >= 0) F.set(a, now + WALL_STAY); };
+      mark(areaAt(x, y));
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (tileAt(x + dx, y + dy) === DOOR) [[0, 1], [1, 0], [0, -1], [-1, 0]].forEach(d => mark(roomOf(x + dx + d[0], y + dy + d[1])));
+    });
+    else if (fl.phase === 'build') F.clear();
+    const open = []; F.forEach((u, a) => { if (u > now) open.push(a); else F.delete(a); });
+    return open.sort((a, b) => a - b);
+  }
+  const easeOutBack = p => { const c = 1.9; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+  const easeInBack = p => { const c = 1.7; return (c + 1) * p * p * p - c * p * p; };
+  // once a frame: the heights each wall goes to, and the blocks on their way
+  function wallTick() {
+    const A = wallSetup(), open = wallFocus(), sig = fl.phase + ':' + open.join(',');
+    if (sig !== A.sig) {
+      A.sig = sig;
+      const F = new Set(open), flat = new Set(), between = new Set();
+      if (F.size) A.occ.forEach((areas, i) => {
+        if (!areas.some(a => F.has(a))) return;
+        flat.add(i); (A.own.get(i) || []).forEach(a => { if (!F.has(a)) between.add(a); });   // its rooms stand between the camera and the party
+      });
+      between.forEach(a => (A.roomWalls.get(a) || []).forEach(i => flat.add(i)));
+      const hs = alive().map(h => heroPos(h));
+      for (let i = 0; i < WW * WH; i++) {
+        if (!A.stand[i]) continue;
+        const target = flat.has(i) ? WALL_LIP : WALL_H;
+        if (target === A.to[i]) continue;
+        const x = i % WW, y = (i - x) / WW;
+        let d = 99; hs.forEach(p => { d = Math.min(d, Math.hypot(p.x - x - 0.5, p.y - y - 0.5)); });
+        A.from[i] = A.cur[i]; A.to[i] = target; A.t0[i] = realNow + (reduceMotion ? 0 : Math.min(0.3, d * 0.025)); A.moving.add(i);
+      }
+    }
+    A.moving.forEach(i => {
+      const p = reduceMotion ? 1 : (realNow - A.t0[i]) / WALL_ANIM;
+      if (p <= 0) return;
+      if (p >= 1) { A.cur[i] = A.to[i]; A.pp[i] = 0; A.moving.delete(i); return; }
+      const up = A.to[i] > A.from[i];
+      A.cur[i] = Math.max(WALL_LIP, A.from[i] + (A.to[i] - A.from[i]) * (up ? easeOutBack(p) : easeInBack(p)));
+      A.pp[i] = p;
+    });
+  }
+  function wallHeights() { return wallSetup().cur; }
   const wallH = (x, y) => (x < 0 || y < 0 || x >= WW || y >= WH || fl.tiles[y * WW + x] !== WALL) ? 0 : wallHeights()[y * WW + x];
+  const wallUp = h => h > WALL_LIP + 0.01;   // a standing (or moving) block, not a lip
+  // a standing wall in front of a point that would cover something hz high standing there (so it is drawn among the walls)
+  function wallCovers(px, py, hz) {
+    const A = WA, ox = Math.floor(px), oy = Math.floor(py), R = A.RW || 5;
+    const u0 = vX(px, py), vb = vY(px, py, 0), vt = vY(px, py, hz);
+    for (let s = 1; s <= 2 * R; s++) for (let dd = -2; dd <= 2; dd++) {
+      if ((s + dd) & 1) continue;
+      const dx = (s + dd) / 2, dy = (s - dd) / 2, x = ox + dx, y = oy + dy;
+      if (x < 0 || y < 0 || x >= WW || y >= WH) continue;
+      const i = y * WW + x; if (fl.tiles[i] !== WALL || !wallUp(A.cur[i])) continue;
+      if (Math.abs(vX(x + 0.5, y + 0.5) - u0) > R2 + 0.45) continue;
+      if (vY(x, y, A.cur[i]) < vb && vY(x + 1, y + 1, 0) > vt) return true;
+    }
+    return false;
+  }
   function poly(pts, fill) { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } }
   // maps the unit square (u along a to b, v from the top z1 down to z0) onto an upright face of the dungeon
   function faceMap(ax, ay, bx, by, z0, z1) {
@@ -116,24 +192,23 @@
     const p = W2S(x, y, 0), T = cam.s;
     ctx.fillStyle = 'rgba(0,0,0,' + (a || 0.45) + ')'; ctx.beginPath(); ctx.ellipse(p[0], p[1], rx * T, ry * T * SP, 0, 0, Math.PI * 2); ctx.fill();
   }
-  // Walls: the cut ones are a stone lip in the floor; the full ones are blocks of stone with a lit south face and a darker east
-  // face (the light comes from the left of the screen), mortar lines, torches and the wall traps on the face towards the room.
+  // Walls: the lips are a stone strip in the floor; the standing ones are blocks of stone with a lit south face and a darker east
+  // face (the light comes from the left of the screen), courses of mortar, torches and the wall traps on the face towards the room.
   const WALL_TOP = '#3a3c43', WALL_S = '#2c2e34', WALL_E = '#202227', LIP_TOP = '#2b2d33';
+  // the lips (and what hangs over them) go first, under everything; the standing blocks come back sorted by depth, to be drawn
+  // among what stands (a high wall can hide it)
   function drawWalls(x0, y0, x1, y1, T, wallItems) {
-    // 1.07: batched: every kind of face is one path (thousands of separate fills were too slow); the tops go after all the
-    // faces, so a wall in front covers the faces of the one behind it. Equal-height boxes on a grid need nothing more.
-    const H = wallHeights(), full = [];
+    wallTick();
+    const H = WA.cur, ups = [], lips = [];
     const quad = (a, b, c, d) => { ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath(); };
-    const lips = [];
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const i = y * WW + x; if (fl.tiles[i] !== WALL) continue;
-      const c = W2S(x + 0.5, y + 0.5, 0); if (!onScreen(c, T * 2)) continue;
-      if (H[i] > 0.2) full.push(i); else lips.push(i);
+      const c = W2S(x + 0.5, y + 0.5, 0); if (!onScreen(c, T * 3)) continue;
+      if (wallUp(H[i]) || WA.moving.has(i)) ups.push(i); else lips.push(i);
     }
-    // the lips: a top a hair above the floor and their front edges
     const L = WALL_LIP;
-    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x, y + 1) < L) quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)); }); ctx.fillStyle = WALL_S; ctx.fill();
-    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x + 1, y) < L) quad(W2S(x + 1, y, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x + 1, y, L)); }); ctx.fillStyle = WALL_E; ctx.fill();
+    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x, y + 1) < L + 0.001) quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)); }); ctx.fillStyle = WALL_S; ctx.fill();
+    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x + 1, y) < L + 0.001) quad(W2S(x + 1, y, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x + 1, y, L)); }); ctx.fillStyle = WALL_E; ctx.fill();
     ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; quad(W2S(x, y, L), W2S(x + 1, y, L), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)); }); ctx.fillStyle = LIP_TOP; ctx.fill();
     // a fine joint where a lip meets the floor, so the outline of the rooms stays readable
     ctx.strokeStyle = 'rgba(150,155,170,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
@@ -146,56 +221,90 @@
       if (walkT(x + 1, y)) edge(x + 1, y, x + 1, y + 1);
     });
     ctx.stroke();
-    wallItems.forEach(it => { if (wallH(it.x, it.y) <= 0.2) drawWallItem(it, T, false); });
-    // full walls: the lit south faces, the darker east faces, then all the tops
-    const sOpen = i => { const x = i % WW, y = (i - x) / WW; return wallH(x, y + 1) < H[i]; }, eOpen = i => { const x = i % WW, y = (i - x) / WW; return wallH(x + 1, y) < H[i]; };
-    full.sort((a, b) => (a % WW + Math.floor(a / WW)) - (b % WW + Math.floor(b / WW)));
-    ctx.beginPath(); full.forEach(i => { if (!sOpen(i)) return; const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, h), W2S(x, y + 1, h)); }); ctx.fillStyle = WALL_S; ctx.fill();
-    ctx.beginPath(); full.forEach(i => { if (!eOpen(i)) return; const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x + 1, y, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, h), W2S(x + 1, y, h)); }); ctx.fillStyle = WALL_E; ctx.fill();
-    if (T >= 12) {   // mortar: two courses of stone
-      ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath();
-      full.forEach(i => {
-        const x = i % WW, y = (i - x) / WW, h = H[i], hh = tileHash(x, y), o = (hh % 3 - 1) * 0.12;
-        if (sOpen(i)) { const m = (a, za, b, zb) => { const p = W2S(a, y + 1, za), q = W2S(b, y + 1, zb); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }; m(x, h * 0.5, x + 1, h * 0.5); m(x + 0.5 + o, h * 0.5, x + 0.5 + o, h); m(x + 0.25, 0, x + 0.25, h * 0.5); m(x + 0.8, 0, x + 0.8, h * 0.5); }
-        if (eOpen(i)) { const m = (a, za, b, zb) => { const p = W2S(x + 1, a, za), q = W2S(x + 1, b, zb); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }; m(y, h * 0.5, y + 1, h * 0.5); m(y + 0.5 - o, h * 0.5, y + 0.5 - o, h); m(y + 0.3, 0, y + 0.3, h * 0.5); m(y + 0.75, 0, y + 0.75, h * 0.5); }
+    wallItems.forEach(it => { if (!wallUp(wallH(it.x, it.y))) drawWallItem(it, T, false); });
+    ups.sort((a, b) => (a % WW + Math.floor(a / WW)) - (b % WW + Math.floor(b / WW)));
+    WA.items = wallItems;
+    return ups.map(i => ({ i, d: i % WW + Math.floor(i / WW) + 1 }));
+  }
+  // the standing blocks from a to b (sorted by depth): the still ones in one go (south faces, east faces, mortar, tops, edges),
+  // a moving one by itself (it pops out of its tile); then the torches and the wall traps on them
+  function drawWallRun(list, a, b, T) {
+    const H = WA.cur, quad = (p, q, r, s) => { ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.lineTo(r[0], r[1]); ctx.lineTo(s[0], s[1]); ctx.closePath(); };
+    const sOpen = i => { const x = i % WW, y = (i - x) / WW; return wallH(x, y + 1) < H[i] - 0.001; }, eOpen = i => { const x = i % WW, y = (i - x) / WW; return wallH(x + 1, y) < H[i] - 0.001; };
+    let run = [];
+    const flush = () => {
+      if (!run.length) return;
+      ctx.beginPath(); run.forEach(i => { if (!sOpen(i)) return; const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, h), W2S(x, y + 1, h)); }); ctx.fillStyle = WALL_S; ctx.fill();
+      ctx.beginPath(); run.forEach(i => { if (!eOpen(i)) return; const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x + 1, y, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, h), W2S(x + 1, y, h)); }); ctx.fillStyle = WALL_E; ctx.fill();
+      if (T >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); run.forEach(i => mortar(i, H[i], sOpen(i), eOpen(i), 1)); ctx.stroke(); }
+      ctx.beginPath(); run.forEach(i => { const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x, y, h), W2S(x + 1, y, h), W2S(x + 1, y + 1, h), W2S(x, y + 1, h)); }); ctx.fillStyle = WALL_TOP; ctx.fill();
+      ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
+      run.forEach(i => {
+        const x = i % WW, y = (i - x) / WW, h = H[i];
+        if (sOpen(i)) { const p = W2S(x, y + 1, h), q = W2S(x + 1, y + 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+        if (eOpen(i)) { const p = W2S(x + 1, y, h), q = W2S(x + 1, y + 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
       });
       ctx.stroke();
+      run.forEach(i => wallDressing(i, T));
+      run = [];
+    };
+    for (let k = a; k < b; k++) {
+      const i = list[k].i;
+      if (WA.moving.has(i) && WA.pp[i] > 0) { flush(); drawBlockPop(i, T); wallDressing(i, T); }
+      else if (wallUp(H[i])) run.push(i);
     }
-    ctx.beginPath(); full.forEach(i => { const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x, y, h), W2S(x + 1, y, h), W2S(x + 1, y + 1, h), W2S(x, y + 1, h)); }); ctx.fillStyle = WALL_TOP; ctx.fill();
-    // a lighter edge where a top meets an open face
-    ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
-    full.forEach(i => {
-      const x = i % WW, y = (i - x) / WW, h = H[i];
-      if (sOpen(i)) { const a = W2S(x, y + 1, h), b = W2S(x + 1, y + 1, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
-      if (eOpen(i)) { const a = W2S(x + 1, y, h), b = W2S(x + 1, y + 1, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
-    });
-    ctx.stroke();
-    // torches on some faces towards a floor (not where a trap hangs)
-    if (T >= 10) WHC.torches.forEach(t => { if (t.x >= x0 && t.x <= x1 && t.y >= y0 && t.y <= y1 && !fl.items.has(key(t.x, t.y))) drawTorch(t, T); });
-    wallItems.forEach(it => { if (wallH(it.x, it.y) > 0.2) drawWallItem(it, T, true); });
+    flush();
+  }
+  // mortar: courses of stone on the open faces (k: the block's size, 1 when still)
+  function mortar(i, h, sO, eO, k) {
+    const x = i % WW, y = (i - x) / WW, o = (tileHash(x, y) % 3 - 1) * 0.12, c = Math.max(2, Math.round(h / 0.42)), m0 = 0.5 - k / 2, m1 = 0.5 + k / 2;
+    if (sO) { const m = (a, za, b, zb) => { const p = W2S(x + a, y + m1, za), q = W2S(x + b, y + m1, zb); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); };
+      for (let j = 1; j < c; j++) m(m0, h * j / c, m1, h * j / c);
+      for (let j = 0; j < c; j++) { const u = m0 + k * (j % 2 ? 0.5 + o : 0.25 - o / 2); m(u, h * j / c, u, h * (j + 1) / c); } }
+    if (eO) { const m = (a, za, b, zb) => { const p = W2S(x + m1, y + a, za), q = W2S(x + m1, y + b, zb); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); };
+      for (let j = 1; j < c; j++) m(m0, h * j / c, m1, h * j / c);
+      for (let j = 0; j < c; j++) { const u = m0 + k * (j % 2 ? 0.5 - o : 0.3 + o / 2); m(u, h * j / c, u, h * (j + 1) / c); } }
+  }
+  // a block on its way up or down: it grows a little wider in the middle of the move (the pop) and its faces are all shown
+  function drawBlockPop(i, T) {
+    const x = i % WW, y = (i - x) / WW, h = WA.cur[i], k = 1 + 0.14 * Math.sin(Math.PI * WA.pp[i]), m0 = 0.5 - k / 2, m1 = 0.5 + k / 2;
+    const P = (u, v, z) => W2S(x + u, y + v, z);
+    poly([P(m0, m1, 0), P(m1, m1, 0), P(m1, m1, h), P(m0, m1, h)], WALL_S);
+    poly([P(m1, m0, 0), P(m1, m1, 0), P(m1, m1, h), P(m1, m0, h)], WALL_E);
+    if (T >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); mortar(i, h, true, true, k); ctx.stroke(); }
+    poly([P(m0, m0, h), P(m1, m0, h), P(m1, m1, h), P(m0, m1, h)], WALL_TOP);
+    ctx.strokeStyle = 'rgba(205,210,225,0.22)'; ctx.lineWidth = 1; ctx.beginPath();
+    const a = P(m0, m1, h), b = P(m1, m1, h), c = P(m1, m0, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
+  }
+  // what is on a standing block: its torch, the wall traps on its face
+  function wallDressing(i, T) {
+    const x = i % WW, y = (i - x) / WW, h = WA.cur[i];
+    if (T >= 10 && h > WALL_H * 0.6) WA.torches.forEach(t => { if (t.x === x && t.y === y && !fl.items.has(key(x, y))) drawTorch(t, T); });
+    (WA.items || []).forEach(it => { if (it.x === x && it.y === y) drawWallItem(it, T, true); });
   }
   function torchFlicker(x, y) { return 0.86 + 0.14 * Math.sin(realNow * 8.3 + x * 1.7) * Math.sin(realNow * 5.1 + y * 2.3); }
   function drawTorch(t, T) {   // a sconce on the wall's face, a flame (a flame faces you), a warm light on the face around it
     const f = torchFlicker(t.fx, t.fy);
     ctx.save();
-    if (t.face === 'S') faceMap(t.x, t.y + 1, t.x + 1, t.y + 1, 0, t.h); else faceMap(t.x + 1, t.y, t.x + 1, t.y + 1, 0, t.h);
+    const z1 = Math.min(wallH(t.x, t.y), 1.25), z0 = Math.max(0, z1 - 1);   // 1.09: a sconce at a hand's height on the high wall
+    if (t.face === 'S') faceMap(t.x, t.y + 1, t.x + 1, t.y + 1, z0, z1); else faceMap(t.x + 1, t.y, t.x + 1, t.y + 1, z0, z1);
     ctx.globalAlpha = 0.9; ctx.drawImage(glowSprite('torchw', [[0, 'rgba(255,170,90,0.3)'], [0.6, 'rgba(255,120,50,0.06)'], [1, 'rgba(255,120,40,0)']]), 0.5 - 0.95 * f, 0.38 - 0.95 * f, 1.9 * f, 1.9 * f);
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#121316'; ctx.fillRect(0.46, 0.38, 0.08, 0.22);
     ctx.fillStyle = '#4a4e57'; ctx.fillRect(0.41, 0.36, 0.18, 0.05);
     ctx.restore();
-    const p = W2S(t.fx, t.fy, t.h * 0.66);
+    const p = W2S(t.fx, t.fy, z0 + 0.66);
     ctx.fillStyle = 'rgba(255,110,30,0.92)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.08, T * 0.07, T * 0.12 * f, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = 'rgba(255,225,140,0.95)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.05, T * 0.035, T * 0.065 * f, 0, 0, Math.PI * 2); ctx.fill();
   }
   // the light of the torches on the floor in front of them (flat, under the walls)
   function drawTorchLight(x0, y0, x1, y1, T) {   // the light of the torches on the floor in front of them (screen space: an upright ellipse is fast)
     if (T < 10) return;
-    wallHeights();
+    wallSetup();
     const spr = glowSprite('torch', [[0, 'rgba(255,150,70,0.2)'], [0.5, 'rgba(255,120,50,0.06)'], [1, 'rgba(255,120,40,0)']]);
     ctx.save(); screenT();
-    WHC.torches.forEach(t => {
-      if (fl.items.has(key(t.x, t.y))) return;
+    WA.torches.forEach(t => {
+      if (fl.items.has(key(t.x, t.y)) || wallH(t.x, t.y) < WALL_H * 0.6) return;   // 1.09: a wall laid flat has no torch
       const f = torchFlicker(t.gx, t.gy), gr = T * 2.4 * f, p = W2S(t.gx, t.gy, 0);
       if (!onScreen(p, gr * 2)) return;
       ctx.drawImage(spr, p[0] - gr * 1.41, p[1] - gr * 1.41 * SP, gr * 2.82, gr * 2.82 * SP);
@@ -230,7 +339,8 @@
       if (DRIFT[it.type]) { if (seen(Math.floor(it.gx !== undefined ? it.gx : it.x), Math.floor(it.gy !== undefined ? it.gy : it.y))) drift.push(it); return; }
       if (!seen(it.x, it.y)) return;
       if (WALL_ITEM[it.type]) { wallItems.push(it); return; }
-      if (flatItem(it)) drawItemTop(it, T); else stand.push(it);
+      if (flatItem(it)) { const k = popK(it); if (k !== 1) { ctx.save(); ctx.translate((it.x + 0.5) * T, (it.y + 0.5) * T); ctx.scale(k, k); ctx.translate(-(it.x + 0.5) * T, -(it.y + 0.5) * T); drawItemTop(it, T); ctx.restore(); } else drawItemTop(it, T); }
+      else stand.push(it);
       drawItemStatus(it, T);
     });
     drift.forEach(it => { if (it.gx === undefined) return; ctx.save(); tileMap(it.gx - 0.5, it.gy - 0.5, 0, null); statusUnit(it, T); ctx.restore(); });   // what floats: its signs on the floor under it
@@ -242,18 +352,25 @@
     if (run.tut >= 0) drawTutTarget(T);
     drawFx(T);
     drawParticles(T, true);
-    // 2. the walls (a wall never hides a floor, so they all go before what stands)
+    // 2. the walls: the lips now; the standing blocks among what stands (1.09: a high wall can hide what is behind it)
     screenT();
-    drawWalls(x0, y0, x1, y1, T, wallItems);
-    drawWallMarks(T);
-    // 3. what stands, nearest last
+    const WL = drawWalls(x0, y0, x1, y1, T, wallItems);
+    // 3. what stands, nearest last: [depth, kind, thing, x, y, height]
     const SO = [];
-    fl.objects.forEach(o => { if (seen(o.x, o.y)) SO.push([o.x + o.y + 1, 0, o]); });
-    stand.forEach(it => SO.push([it.x + it.y + 1 + (ON_OBJECT[it.type] ? 0.02 : 0), 1, it]));
-    SO.push([fl.heart.x + fl.heart.y + 1, 2, null]);
-    fl.heroes.forEach(h => { if (!h.dead && !h.fled && !h.gone) { const p = heroPos(h); SO.push([p.x + p.y, 3, h]); } });
+    fl.objects.forEach(o => { if (seen(o.x, o.y)) SO.push([o.x + o.y + 1, 0, o, o.x + 0.5, o.y + 0.5, 0.95]); });
+    stand.forEach(it => SO.push([it.x + it.y + 1 + (ON_OBJECT[it.type] ? 0.02 : 0), 1, it, it.x + 0.5, it.y + 0.5, MONSTERS[it.type] ? 1.3 : 1.0]));
+    SO.push([fl.heart.x + fl.heart.y + 1, 2, null, fl.heart.x + 0.5, fl.heart.y + 0.5, 1.7]);
+    fl.heroes.forEach(h => { if ((!h.dead && !h.fled && !h.gone) || heroOut(h)) { const p = heroPos(h); SO.push([p.x + p.y, 3, h, p.x, p.y, 1.35]); } });
+    fl.fx.forEach(f => { if (f.kind === 'corpse') SO.push([f.x + f.y, 4, f, f.x, f.y, 1.2]); });   // 1.09: a monster falling
     SO.sort((a, b) => a[0] - b[0]);
-    SO.forEach(e => { if (e[1] === 0) drawObjectIso(e[2], T); else if (e[1] === 1) drawItemUp(e[2], T); else if (e[1] === 2) drawHeartIso(T); else drawHero(e[2], T); });
+    const drawSO = e => { if (e[1] === 0) drawObjectIso(e[2], T); else if (e[1] === 1) drawItemUp(e[2], T); else if (e[1] === 2) drawHeartIso(T); else if (e[1] === 4) drawCorpse(e[2], T); else drawHero(e[2], T); };
+    // what a standing wall in front of it covers goes between the walls, in depth order; the rest after all of them
+    let wi = 0; const later = [];
+    const wallsTo = d => { const s0 = wi; while (wi < WL.length && WL[wi].d <= d) wi++; if (wi > s0) drawWallRun(WL, s0, wi, T); };
+    SO.forEach(e => { if (WL.length && wallCovers(e[3], e[4], e[5])) { wallsTo(e[0]); drawSO(e); } else later.push(e); });
+    wallsTo(Infinity);
+    drawWallMarks(T);
+    later.forEach(drawSO);
     drift.forEach(it => drawItemUp(it, T));   // ghosts, shades and bats float above everything
     // 4. signs over the world (upright, readable)
     fl.items.forEach(it => { if (it.jamUntil > fl.time && fl.phase === 'raid') { const p = itemAnchor(it); ctx.fillStyle = '#e6dcff'; ctx.font = numFont(Math.max(10, T * 0.4)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', p[0], p[1]); } });
@@ -266,6 +383,7 @@
     drawHoldLabel(T);
     drawCostLabels(T);
     if (fl.phase === 'raid') { drawMemBadges(T, seen); drawDetected(T); }
+    else if (fl.phase === 'build') drawMemBadges(T, seen, true);   // 1.09: the answers stay between waves, so you see them while building
     drawParticles(T, false); drawFloats(T);
     ctx.restore();
     cam.ox += sx; cam.oy += sy;
@@ -279,7 +397,7 @@
   // a wall trap's spot: the middle of its face towards the room (a full wall), or just in front of a cut wall
   function wallSpot(it) {
     const h = wallH(it.x, it.y), ds = wallDirs(it.x, it.y), d = ds.find(q => q[0] === 1 || q[1] === 1) || ds[0] || [0, 1];
-    if (h > 0.2 && (d[0] === 1 || d[1] === 1)) return { x: it.x + 0.5 + d[0] * 0.5, y: it.y + 0.5 + d[1] * 0.5, z: h * 0.55, face: d };
+    if (h > 0.2 && (d[0] === 1 || d[1] === 1)) return { x: it.x + 0.5 + d[0] * 0.5, y: it.y + 0.5 + d[1] * 0.5, z: Math.max(0.1, Math.min(h, 1.2) - 0.45), face: d };
     return { x: it.x + 0.5 + d[0] * 0.3, y: it.y + 0.5 + d[1] * 0.3, z: 0.32, face: null, d };
   }
   function drawTiles(x0, y0, x1, y1, T, g) {   // 1.03: g = the context to draw on (a cached chunk)
@@ -406,11 +524,11 @@
     });
   }
   // 1.05: a trap's answer for this wave, in the check's own language: a full pale disc = crit, a ring = graze; a skull = let go
-  function drawMemBadges(T, seen) {   // 1.05: a trap's answer for this wave (1.07: over its top right, upright)
+  function drawMemBadges(T, seen, build) {   // 1.05: a trap's answer (1.07: over its top right, upright; 1.09: kept between waves)
     if (T < 9) return;
     const r = Math.max(3, T * 0.13);
     fl.items.forEach(it => {
-      const m = memOf(it), off = it.skullOff;
+      const m = memOf(it), off = !build && it.skullOff;
       if (!m && !off) return;
       if (!seen(it.x, it.y)) return;
       const a = itemAnchor(it), x = a[0] + T * 0.34, y = a[1] - T * 0.3;
@@ -856,10 +974,17 @@
     ctx.fillStyle = 'rgba(255,214,170,0.9)'; ctx.fillText('SERCE', p[0], p[1] + T * 0.18);
   }
   // Standing traps, buildings, loot and monsters. Until each has its own drawing, the old picture stands up on its tile.
+  function drawCorpse(f, T) {   // 1.09: a monster's last moment: it tips over and fades
+    const k = 1 - clamp(f.life / f.max, 0, 1), t = clamp(k / 0.5, 0, 1), p = W2S(f.x, f.y, 0), H = Math.max(FIG_MIN, T * f.h * 1.15);
+    drawPixelFigure(f.type, p[0], p[1], H, f.face || 1, { rot: (f.face || 1) * Math.PI / 2 * t * t, alpha: k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45, flash: k < 0.15 });
+  }
+  // 1.09: something just placed, moved or upgraded pops (a little too big, then its size)
+  const popK = it => { const t = (realNow - (it.popR || -9)) / 0.34; return t >= 1 || t < 0 || reduceMotion ? 1 : 0.55 + 0.45 * easeOutBack(t); };
   function drawItemUp(it, T) {
     const gh = DRIFT[it.type] && it.gx !== undefined, bx = gh ? it.gx : it.x + 0.5, by = gh ? it.gy : it.y + 0.5;
     const a = fogged(clamp(Math.floor(bx), 0, WW - 1), clamp(Math.floor(by), 0, WH - 1)) ? 0.55 : 1;
     ctx.save(); ctx.globalAlpha = a;
+    { const k = popK(it); if (k !== 1) { const f = W2S(bx, by, 0); ctx.translate(f[0], f[1]); ctx.scale(k, k); ctx.translate(-f[0], -f[1]); } }
     const art = ISO_ART[it.type] || (LOOT_KIND[it.type] ? ISO_ART.loot : null);
     if (art) art(it, bx, by, T);
     else {
@@ -1355,7 +1480,12 @@
     const c = sprite(type, frame, opt.flash);
     ctx.save(); ctx.imageSmoothingEnabled = false;
     const sx = Math.round(x * DPR) / DPR, sy = Math.round(feet * DPR) / DPR;
-    if (face < 0) { ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(c, -w / 2, sy - h, w, h); }
+    if (opt.alpha !== undefined) ctx.globalAlpha *= clamp(opt.alpha, 0, 1);
+    if (opt.kx !== undefined || opt.ky !== undefined || opt.rot) {   // 1.09: squashed, popping or tipping over (around the feet)
+      ctx.translate(sx, sy + (opt.dy || 0)); if (opt.rot) ctx.rotate(opt.rot); ctx.scale((face < 0 ? -1 : 1) * (opt.kx === undefined ? 1 : opt.kx), opt.ky === undefined ? 1 : opt.ky);
+      ctx.drawImage(c, -w / 2, -h, w, h);
+    }
+    else if (face < 0) { ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(c, -w / 2, sy - h, w, h); }
     else ctx.drawImage(c, sx - w / 2, sy - h, w, h);
     ctx.restore();
     return h;
@@ -1373,7 +1503,8 @@
     ISO_ART[t] = (it, bx, by, T) => {
       const p = W2S(bx, by, 0), H = monH(it, T) * 1.15;
       groundShadow(bx, by, t === 'ogre' ? 0.42 : t === 'spider' ? 0.4 : 0.3, 0.3, 0.42);
-      drawPixelFigure(t, p[0], p[1], Math.max(FIG_MIN * (t === 'spider' ? 0.75 : t === 'goblin' ? 0.85 : t === 'ogre' ? 1.2 : 1), H), monFace(it, bx, by), { frame: it.anim > 0 ? 1 : 0, flash: it.flash > 0 });
+      const q = it.flash > 0 ? clamp(it.flash / 0.12, 0, 1) : 0;   // 1.09: a hit squashes it for a moment
+      drawPixelFigure(t, p[0], p[1], Math.max(FIG_MIN * (t === 'spider' ? 0.75 : t === 'goblin' ? 0.85 : t === 'ogre' ? 1.2 : 1), H), monFace(it, bx, by), q ? { frame: it.anim > 0 ? 1 : 0, flash: true, kx: 1 + 0.14 * q, ky: 1 - 0.12 * q } : { frame: it.anim > 0 ? 1 : 0, flash: false });
     };
   });
   ISO_ART.ghost = (it, bx, by, T) => {
@@ -1477,7 +1608,7 @@
       ctx.stroke();
     },
     gate(it, bx, by, T) {   // a portcullis in the doorway: down when shut, up in the arch when open
-      const d = fl.doors.get(key(it.x, it.y)), closed = d && doorClosed(d), ax = doorAlongX(it.x, it.y), H = WALL_H, z0 = closed ? 0 : H * 0.72;
+      const d = fl.doors.get(key(it.x, it.y)), closed = d && doorClosed(d), ax = doorAlongX(it.x, it.y), H = DOOR_H, z0 = closed ? 0 : H * 0.72;
       const A = ax ? [bx - 0.5, by] : [bx, by - 0.5], B = ax ? [bx + 0.5, by] : [bx, by + 0.5];
       line2(W2S(A[0], A[1], H), W2S(B[0], B[1], H), '#2a2b31', Math.max(2, T * 0.08));
       ctx.strokeStyle = '#9a9eae'; ctx.lineWidth = Math.max(1.4, T * 0.045); ctx.beginPath();
@@ -1488,7 +1619,7 @@
       if (T >= 14) for (let k = 0; k < left; k++) { const p = W2S(bx + (ax ? -0.3 + k * 0.15 : 0.35), by + (ax ? 0.35 : -0.3 + k * 0.15), 0); ctx.fillStyle = '#d9a640'; ctx.beginPath(); ctx.ellipse(p[0], p[1], Math.max(1.5, T * 0.05), Math.max(1, T * 0.05 * SP), 0, 0, Math.PI * 2); ctx.fill(); }   // uses left: studs in the floor
     },
     creak(it, bx, by, T) {   // a door leaf in the doorway, swinging when it creaks
-      const ax = doorAlongX(it.x, it.y), sw = it.anim > 0 ? Math.sin(realNow * 30) * 0.08 : 0, H = WALL_H * 0.92;
+      const ax = doorAlongX(it.x, it.y), sw = it.anim > 0 ? Math.sin(realNow * 30) * 0.08 : 0, H = DOOR_H * 0.92;
       const A = ax ? [bx - 0.42, by + sw] : [bx + sw, by - 0.42], B = ax ? [bx + 0.42, by - sw] : [bx - sw, by + 0.42];
       ctx.save(); faceMap(A[0], A[1], B[0], B[1], 0, H);
       ctx.fillStyle = '#5a3d22'; ctx.fillRect(0, 0, 1, 1);
@@ -1697,7 +1828,20 @@
     const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k));
     return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
   }
+  // 1.09: a hero on his way out: the dead tip over and fade, the ones who get out fade at the door, the fallen sink into the floor
+  const HERO_OUT = 0.7;
+  function drawHeroOut(h, T) {
+    const p = heroPos(h), g = W2S(p.x, p.y, 0), k = clamp((realNow - h.outR) / HERO_OUT, 0, 1), face = h.face || 1, H = figH(T, h.boss) * 1.15;
+    const o = { alpha: 1 };
+    if (h.outKind === 'dead') { const t = clamp(k / 0.5, 0, 1); o.rot = face * Math.PI / 2 * t * t; o.alpha = k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45; o.dy = -H * 0.05 * Math.sin(Math.PI * t); }
+    else if (h.outKind === 'fall') { o.ky = 1 - k; o.kx = 1 - k * 0.3; o.alpha = 1 - k * 0.6; }
+    else o.alpha = 1 - k;
+    ctx.fillStyle = 'rgba(0,0,0,' + (0.45 * (1 - k)).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(g[0], g[1], H * 0.3, H * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+    drawPixelFigure(h.type, g[0], g[1], H, face, o);
+  }
+  const heroOut = h => (h.dead || h.fled || h.gone) && h.outR !== undefined && realNow - h.outR < HERO_OUT && !reduceMotion;
   function drawHero(h, T) {
+    if (h.dead || h.fled || h.gone) { if (heroOut(h)) drawHeroOut(h, T); return; }
     const p = heroPos(h), g = W2S(p.x, p.y, 0), sm = h.state === 'smash' ? Math.sin(realNow * 40) * T * 0.04 : 0;   // 1.05: the axe swings
     if (h.nx !== null) { const sdx = (h.nx - h.x) - (h.ny - h.y); if (sdx) h.face = sdx > 0 ? 1 : -1; }   // 1.06: the figure looks the way it goes (1.07: on the screen)
     const face = h.face || 1, H = figH(T, h.boss), x = g[0] + sm, feet = g[1], top = feet - H, mid = feet - H * 0.48, W = H * 0.36;
@@ -1726,7 +1870,10 @@
     // 1.07 (author: the 1.06 figurines did not fit dark fantasy): a pixel figure; a treasure hunter has a bag, a boss a crown
     const walking = h.nx !== null && fl.phase === 'raid' && !paused, PH = H * 1.15;
     if (h.hunter) { ctx.fillStyle = '#8a6a2c'; ctx.beginPath(); ctx.ellipse(x - face * W * 0.55, feet - H * 0.4, Math.max(2.5, H * 0.09), Math.max(3, H * 0.11), 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x - face * W * 0.55 - 1, feet - H * 0.5, 2, H * 0.06); }
-    const ph = drawPixelFigure(h.type, x, feet, PH, face, { flash: h.flash > 0, walk: walking, seed: h.id });
+    const fo = { flash: h.flash > 0, walk: walking, seed: h.id }, ki = (realNow - (h.inR || -9)) / 0.36, q = h.flash > 0 ? clamp(h.flash / 0.12, 0, 1) : 0;
+    if (ki < 1 && !reduceMotion) { const s = 0.35 + 0.65 * easeOutBack(clamp(ki, 0, 1)); fo.kx = s; fo.ky = s; fo.alpha = clamp(ki * 2.5, 0, 1); }   // 1.09: pops in where it enters
+    else if (q) { fo.kx = 1 + 0.12 * q; fo.ky = 1 - 0.1 * q; }   // 1.09: a hit squashes it for a moment
+    const ph = drawPixelFigure(h.type, x, feet, PH, face, fo);
     if (h.boss) { const cy = feet - ph * (h.type === 'mage' ? 0.98 : 0.86), cs = Math.max(3, H * 0.12); ctx.fillStyle = '#d9b44a'; ctx.beginPath(); ctx.moveTo(x - cs, cy); ctx.lineTo(x - cs, cy - cs * 0.9); ctx.lineTo(x - cs * 0.4, cy - cs * 0.45); ctx.lineTo(x, cy - cs * 1.1); ctx.lineTo(x + cs * 0.4, cy - cs * 0.45); ctx.lineTo(x + cs, cy - cs * 0.9); ctx.lineTo(x + cs, cy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = 'rgba(30,20,10,0.7)'; ctx.lineWidth = 1; ctx.stroke(); }
     if (fl.time < h.burnUntil) { ctx.fillStyle = Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x + face * W * 0.5, mid - H * 0.12, Math.max(2.5, H * 0.07), 0, Math.PI * 2); ctx.fill(); }
     if (fl.time < h.wardUntil) {   // talisman ward around the body
@@ -2116,7 +2263,7 @@
   function drawPause() {   // 1.07: the open build tray is the pause: a small plate at the top says how to play on
     if (!paused || !fl || fl.phase !== 'raid') return;
     if (tutPopNow) return;   // 1.04: a tutorial card says it (and the check under it stays clear)
-    const t = trayIsOpen() ? (fl.time < 0.01 ? 'Fala czeka · zwiń ▼ Budowa' : 'Pauza · ▼ Budowa: gramy dalej') : 'Pauza';   // 1.08: a wave let out with the tray open waits
+    const t = trayIsOpen() ? 'Pauza · ▼ Budowa: gramy dalej' : 'Pauza';
     ctx.font = '600 12px "Alegreya Sans", system-ui, sans-serif';
     const w = ctx.measureText(t).width + 22, x0 = (cw - w) / 2, y0 = 8;
     ctx.fillStyle = 'rgba(16,17,20,0.88)'; rr(x0, y0, w, 24, 3); ctx.fill();

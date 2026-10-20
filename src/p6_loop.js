@@ -204,6 +204,7 @@
   // or red (critical 180%, may kill). Taps on buttons and the tray never answer a check. No tap = the trap waits.
   const CHECK_DUR = 1.15;
   const CHECK_PREP = 0.5;
+  const CHECK_SLOW = 0.25;   // 1.09: the world's speed under a check
   const BASE_DMG = { spikes: 35, arrows: 25, fire: 20, gate: 60, powder: 60, mimic: 40, trapdoor: 20, goblin: 35, archer: 22, spider: 30, ogre: 45, ghost: 5, web: 0, cage: 0, portrait: 0, shaman: 0,
     eyes: 0, bones: 0, mirror: 0, creak: 0, coffin: 0, musicbox: 0, shade: 0, bats: 6 };
   function predictedDmg(it, pw) {
@@ -267,7 +268,13 @@
   // one check decides how a trap works for the rest of the wave. A crit or a graze is remembered and the trap then fires by
   // itself with that strength; a miss (or no tap) asks again the next time it fires. A hit that would kill always asks (the
   // skull), and letting that one go switches the trap off until it can hit without killing.
-  const memOf = it => it.mem && it.mem.wave === run.wave ? it.mem.res : null;
+  // 1.09 (author): the answer stays with the trap from wave to wave. Only an upgrade asks again (the answer belongs to a level),
+  // or the heroes putting the trap out of use in any way (disarmed, smashed, a monster killed, jammed, its furniture broken);
+  // moving it, or taking it down and putting it back on the same spot, keeps it. A miss asks again the next time it fires, and a
+  // hit that would kill always asks (the skull). Kept as two plain fields, so the save keeps them too.
+  const memOf = it => it.memRes && it.memLvl === (it.lvl || 1) ? it.memRes : null;
+  function forgetMem(it, quiet) { if (!it.memRes) return; it.memRes = null; if (!quiet) { fl.stats.memLost = (fl.stats.memLost || 0) + 1; bt(it.type).memLost = (bt(it.type).memLost || 0) + 1; } }
+  const putOut = it => !it.worn && (it.disabled || it.broken || it.jamUntil > fl.time);   // the heroes stopped it (worn: its own limit or a card)
   const memPw = it => { const m = memOf(it); return m === 'crit' ? mods.critPw : m === 'ok' ? mods.okPw : 0; };
   function skullHolds(it) {   // switched off at a skull: it stays off while its hit (the remembered one, or a graze) would kill
     if (!it.skullOff) return false;
@@ -277,9 +284,10 @@
   const needsCheck = it => { const pw = memPw(it); return !pw || lethalFor(it, pw); };
   function checkTick() {
     if (fl.check || fl.ending !== null) return;
-    // what already has this wave's answer fires by itself; with a finger held on the map (fast-forward) everything does,
+    // what already has an answer fires by itself; with a finger held on the map (fast-forward) everything does,
     // and what has no answer yet fires at graze strength (v14)
     for (const it of fl.items.values()) {
+      if (it.memRes && putOut(it)) forgetMem(it);
       if (!checkWanted(it) || skullHolds(it)) continue;
       const pw = memPw(it);
       if (ff) { if (fire(it, pw || mods.okPw)) { fl.stats.autoFires = (fl.stats.autoFires || 0) + 1; if (!pw) bt(it.type).ok++; } }
@@ -304,7 +312,8 @@
       const extra = [];
       if (S.series) for (const o of fl.items.values()) { if (o !== it && extra.length < SERIES_MAX && checkWanted(o) && !skullHolds(o) && needsCheck(o)) extra.push(o); }
       const all = [it].concat(extra);
-      fl.check = { it, extra, shape, maxL, t0: realNow + CHECK_PREP, prepT0: realNow, go: false, dur: CHECK_DUR / Math.sqrt(ks) * SHAPE_DUR[shape], g0, g1, r0, r1, z2, rot: Math.random() * Math.PI * 2,
+      const lock = new Map(all.map(o => [o, heroesInArea(o)]));   // 1.09: who it aims at, pinned (they keep walking in the slow motion)
+      fl.check = { it, extra, shape, maxL, lock, t0: realNow + CHECK_PREP, prepT0: realNow, go: false, dur: CHECK_DUR / Math.sqrt(ks) * SHAPE_DUR[shape], g0, g1, r0, r1, z2, rot: Math.random() * Math.PI * 2,
         lethalOk: all.some(o => lethalFor(o, mods.okPw)), lethalCrit: all.some(o => lethalFor(o, mods.critPw)), result: null, resT: 0 };
       fl.stats.checks++; all.forEach(o => { bt(o.type).checks++; });
       if (extra.length) { fl.stats.volleys = (fl.stats.volleys || 0) + 1; fl.stats.volleyTraps = (fl.stats.volleyTraps || 0) + extra.length; }
@@ -321,7 +330,7 @@
         inA.some(h => fl.time < h.wardUntil) ? 'talizman' : '',
         maxL >= 12 ? 'poz. ' + maxL + ': szybciej' : ''].filter(Boolean).join(' · ');
       sfx('warn');
-      if (run.checkHints > 0 && run.tut < 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" stuknij w MAPĘ. Obwódka = draśnięcie, pełne pole = krytyk, czaszka = ktoś zginie. Trafiony wynik pułapka pamięta do końca fali (znaczek na polu) i dalej bije sama.'); }
+      if (run.checkHints > 0 && run.tut < 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" stuknij w MAPĘ. Obwódka = draśnięcie, pełne pole = krytyk, czaszka = ktoś zginie. Trafiony wynik pułapka pamięta także w kolejnych falach (znaczek na polu) i dalej bije sama.'); }
       if (run.tut >= 0) tutEvent('check');
       return;
     }
@@ -336,8 +345,8 @@
     else if ((p >= c.g0 && p <= c.g1) || (z && p >= z.g0 && p <= z.g1)) { res = 'ok'; pw = mods.okPw; }
     c.result = res; c.resT = realNow; c.p = p;
     const all = [c.it].concat(c.extra || []);
-    // 1.05: the answer stays for the rest of the wave (a skull check of a trap that already had one decides only this hit)
-    if (res !== 'miss') all.forEach(o => { if (!memOf(o)) o.mem = { res, wave: run.wave }; o.skullOff = false; });
+    // 1.05: the answer stays (1.09: from wave to wave); a skull check of a trap that already had one decides only this hit
+    if (res !== 'miss') all.forEach(o => { if (!memOf(o)) { o.memRes = res; o.memLvl = o.lvl || 1; } o.skullOff = false; });
     tl('ch', c.it.type, c.it.x, c.it.y, res, heroesInArea(c.it).length, all.length - 1, c.maxL || 1, Math.round((p - (c.r0 + c.r1) / 2) * 100));   // v36: the strongest level near it and how far from the red strip the tap landed (in % of the shape)
     sfx(res); if (res === 'crit') buzz(25);
     all.forEach(o => { bt(o.type)[res === 'crit' ? 'crit' : res === 'ok' ? 'ok' : 'miss']++; });
@@ -351,9 +360,10 @@
       return;
     }
     const victims = new Set();
-    all.forEach(o => heroesInArea(o).forEach(h => victims.add(h)));
-    fire(c.it, pw);
-    (c.extra || []).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o && !o.disabled && !(o.jamUntil > fl.time) && !(MONSTERS[o.type] && o.hp <= 0)) fire(o, pw); });
+    all.forEach(o => heroesInArea(o).concat((c.lock && c.lock.get(o)) || []).forEach(h => victims.add(h)));
+    const lk = o => c.lock && c.lock.get(o);
+    fire(c.it, pw, { lock: lk(c.it) });
+    (c.extra || []).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o && !o.disabled && !(o.jamUntil > fl.time) && !(MONSTERS[o.type] && o.hp <= 0)) fire(o, pw, { lock: lk(o) }); });
     if (res === 'crit') {
       fl.stats.checkCrit++; shake = Math.max(shake, 0.22); floatTile(c.it.x, c.it.y, all.length > 1 ? 'SERIA: KRYTYK!' : 'KRYTYK!', '#ff6b6b', 19, -1.2);
       victims.forEach(h => {   // a critical knocks a piece of gear out of the hero's pack (v13: no Esencja for it, so loot is a risk again)
@@ -485,7 +495,7 @@
   /* ================= main loop (real time) ================= */
   function timeScale() {
     if (!fl || modalOpen || fl.phase !== 'raid' || paused) return 0;
-    if (fl.check && !fl.check.result) return 0.06;
+    if (fl.check && !fl.check.result) return CHECK_SLOW;   // 1.09 (author: more time to watch the heroes): slowed, not stopped (was 0.06)
     const sp = 1;   // v14: no speed button; holding the finger speeds up
     if (ff) return Math.max(S.ffSpeed, sp);
     return Math.max(sp, ffAuto);   // nothing happening: the game hurries on by itself (1.02: speeds up smoothly, slows down at once)
