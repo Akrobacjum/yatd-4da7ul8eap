@@ -1,6 +1,6 @@
 # You are the dungeon: specyfikacja przeniesienia do Unity
 
-Stan: Prototype 1.13.1 (20.10.2026): rozmowy bohaterów, własne kwestie na samotność, narady tylko dla tych, którzy stoją razem, nikt nie stoi w pułapce, skill check u góry mapy, spokój w scenkach. Tabele w `data/` są z 1.13.1. Ta specyfikacja jest dla kolejnego czatu (albo programisty), który zbuduje grę w Unity 6 bez dostępu do rozmów, w których powstawał prototyp. Zawiera wszystko, co trzeba wiedzieć, żeby odtworzyć grę wiernie, plus plan, testy i dane.
+Stan: Prototype 1.13.2 (21.10.2026): rozmowy bohaterów, własne kwestie na samotność, narady tylko dla tych, którzy stoją razem, nikt nie stoi w pułapce, skill check u góry mapy, spokój w scenkach. Tabele w `data/` są z 1.13.1. Ta specyfikacja jest dla kolejnego czatu (albo programisty), który zbuduje grę w Unity 6 bez dostępu do rozmów, w których powstawał prototyp. Zawiera wszystko, co trzeba wiedzieć, żeby odtworzyć grę wiernie, plus plan, testy i dane.
 
 ## Od czego zacząć
 

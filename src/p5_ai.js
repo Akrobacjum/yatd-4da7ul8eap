@@ -1229,11 +1229,12 @@
       !(fl.items.get(key(t[0], t[1])) && MONSTERS[fl.items.get(key(t[0], t[1])).type] && !DRIFT[fl.items.get(key(t[0], t[1])).type] && fl.items.get(key(t[0], t[1])).hp > 0);
     const side = DIRS.map(d => [o.x + d[0], o.y + d[1]]).filter(q => ok(q) && !onWay(q[0], q[1]) && !fl.items.has(key(q[0], q[1])) && !fl.danger[q[1] * WW + q[0]]);
     let t = side.length ? pick(side) : null;
-    if (!t) {   // no room at the side: one step ahead along his way, and whoever stands there goes first
-      const i = h.path.findIndex(q => q[0] === o.x && q[1] === o.y), fw = i >= 0 ? h.path[i + 1] : null;
-      if (!fw) return false;
-      if (ok(fw)) t = fw;
-      else { const o2 = heroBlock(o, fw[0], fw[1]); if (o2 && o2 !== h && o2 !== o) makeWay(o2, h, depth + 1); return false; }
+    // 1.13.2 (author's run: in a dead-end strip the leader and his followers shuffled one tile back and forth for the whole
+    // raid): with no room at the side they swap places, passing each other like any two heroes on their way. (Up to 1.13.1
+    // the idle one stepped one tile ahead along the other's way and then walked straight back to his leader.)
+    if (!t) {
+      if (!h.path.length || h.path[0][0] !== o.x || h.path[0][1] !== o.y || h.nx !== null) return false;
+      t = [h.x, h.y]; o.passing = h.id; fl.stats.swapWay = (fl.stats.swapWay || 0) + 1;
     }
     o.state = 'walk'; o.path = []; o.nx = t[0]; o.ny = t[1]; o.prog = 0; o.needPlan = true; o.blockT = 0; fl.stats.makeWay = (fl.stats.makeWay || 0) + 1;
     return true;
@@ -1409,7 +1410,10 @@
       if (o) {
         const swap = (o.nx === h.x && o.ny === h.y) || (o.nx === null && o.state === 'walk' && o.path.length && o.path[0][0] === h.x && o.path[0][1] === h.y);
         if (!swap) {
-          if (h.path.length === 1 && o.nx === null) { h.path = []; h.blockT = 0; h.state = 'wait'; h.timer = 0.3; return; }   // where he was going is taken: he stops next to it
+          if (h.path.length === 1 && o.nx === null) {   // where he was going is taken: he stops next to it
+            if (h.lootKey && makeWay(o, h, 0)) return;   // 1.13.2: unless it is the treasure he came for and the one on it just stands there
+            h.path = []; h.blockT = 0; h.state = 'wait'; h.timer = 0.3; return;
+          }
           h.blockT = (h.blockT || 0) + dt;
           if (h.blockT < BLOCK_WAIT) return;   // a moment for the other one to move on
           if (o.nx === null && makeWay(o, h, 0)) return;   // 1.12.1: an idle one steps out of his way
