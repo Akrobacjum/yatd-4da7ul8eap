@@ -23,13 +23,22 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   let tB = null; for (let i = 0; i < 120 && tB === null; i++) { G.step(0.05); if (b.bubble && b.bubble.until > f.time) tB = f.time; }
   out.turn.bAt = tB; out.turn.aEnd = a.saidUntil;
   ok(tB !== null && tB >= a.saidUntil + 0.25, 'the answer comes after the line it answers (and a breath)');
-  // 2. another room: at the same time
-  quiet(); put(a, ...tl(r0)[0]); put(b, ...tl(r0)[1]); put(c, ...tl(r1)[0]);
-  ok(G.say(a, 'Trzymajcie się blisko.', 2) && G.say(c, 'Patrzcie pod nogi.', 2), 'heroes in different rooms talk at once');
-  // 3. chaos: a wounded one cries over the others
+  // 2. another room, out of earshot (over 7 steps): at the same time
+  { quiet(); let far = null; R.forEach(x => R.forEach(y => { if (far || x === y) return; for (const p of tl(x)) for (const q of tl(y)) if (!far && Math.hypot(p[0] - q[0], p[1] - q[1]) > 8) far = [p, q]; }));
+    out.far = !!far;
+    if (far) { put(a, ...far[0]); put(c, ...far[1]); ok(G.say(a, 'Trzymajcie się blisko.', 2) && G.say(c, 'Patrzcie pod nogi.', 2), 'heroes far apart in different rooms talk at once'); } }
+  // 3. chaos: a cry of pain goes over the others, an ordinary line of a wounded one does not (1.11)
   quiet(); put(a, ...tl(r0)[0]); put(b, ...tl(r0)[1]);
   G.say(a, 'Trzymajcie się blisko.', 2); b.hurtAt = f.time;
-  ok(G.say(b, 'Aaa! Moja noga!', 2), 'a wounded hero shouts over the others');
+  ok(G.say(b, 'Aaa! Moja noga!', 2, null, 'loud'), 'a cry of pain goes over the others');
+  quiet(); G.say(a, 'Trzymajcie się blisko.', 2); b.hurtAt = f.time;
+  ok(!G.say(b, 'Kto pierwszy, ten lepszy!', 2), 'a wounded hero says an ordinary line in his turn');
+  quiet(); G.say(a, 'Trzymajcie się blisko.', 2); b.panicUntil = f.time + 3;
+  ok(G.say(b, 'Uciekajmy stąd!', 2), 'a panicking hero talks over the others');
+  // 3b. a corridor is no room: four steps apart there they still hear each other (1.11)
+  { quiet(); let cA = null, cB = null;
+    for (let y = 0; y < G.WH && !cA; y++) for (let x = 0; x < G.WW && !cA; x++) if (G.walkable(x, y) && G.roomOf(x, y) < 0) { for (const [dx, dy] of [[4, 0], [0, 4], [3, 2], [2, 3]]) if (G.walkable(x + dx, y + dy)) { cA = [x, y]; cB = [x + dx, y + dy]; break; } }
+    if (cA) { put(a, ...cA); put(b, ...cB); G.say(a, 'Trzymajcie się blisko.', 2); ok(!G.say(b, 'Patrzcie pod nogi.', 2), 'four steps apart in a corridor they still take turns'); } }
   quiet(); G.say(a, 'Trzymajcie się blisko.', 2);
   ok(G.say(b, 'Uwaga!', 4), 'a cry (prio 4) goes over the others');
   // 4. a talk: lines one after another, never two at once in the same room
@@ -61,6 +70,14 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
     ok(goers === 1, 'one hero goes for the loot across known danger, the others do not all run for it (' + out.loot.intents.join(' ') + ')');
     let got = false; for (let i = 0; i < 300 && !got; i++) { G.step(0.05); got = f2.items.get(lk[0] + ',' + lk[1]) !== it; }
     ok(got, 'he takes it'); }
+  // 6b. a whole calm wave (1.11, author: they still talked at once when nothing happened): nobody starts a calm line while
+  // another one within 7 steps is still up
+  { fresh(); enter(); const f4 = G.fl, st = new Map(); let lines = 0, over = 0, ex = [];
+    for (let i = 0; i < 1600 && f4.phase === 'raid'; i++) { const c = f4.check; if (c) { if (!c.result) G.resolveCheck((c.r0 + c.r1) / 2); G.clearCheck(); continue; } G.step(0.05);
+      const A2 = G.alive(); A2.forEach(h => { const b2 = h.bubble; if (!b2 || b2.until <= f4.time || st.get(h.id) === b2.at) return; st.set(h.id, b2.at); lines++;
+        if (b2.loud) return; const o = A2.find(x => x !== h && x.bubble && x.bubble.until > f4.time && x.bubble.at < b2.at && !x.bubble.loud && Math.hypot(x.tx - h.tx, x.ty - h.ty) <= 7);
+        if (o) { over++; if (ex.length < 3) ex.push(o.bubble.text + ' / ' + b2.text); } }); }
+    out.calmWave = { lines, over, ex }; ok(lines >= 5 && over === 0, 'a calm line never starts over another one nearby (' + over + ' of ' + lines + ': ' + ex.join(' | ') + ')'); }
   // 7. greed: the curve
   { fresh(); enter(); const f3 = G.fl; f3.greed = 1; const d1 = G.addGreed(0.5); f3.greed = 3; const d3 = G.addGreed(0.5);
     out.greed = { d1: Math.round(d1 * 1000) / 1000, d3: Math.round(d3 * 1000) / 1000, c538: Math.round(G.greedCurve(5.38) * 100) / 100 };

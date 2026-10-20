@@ -12,7 +12,7 @@
 
   const DEFAULTS = {
     waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
-    essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 20, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
+    essenceCap: 40, crystals: 3, comboWin: 3.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 60, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
     music: 0.5,   // 1.07: the music's volume (0 = off)
     haptics: 1, trayAuto: 1, series: 1, split: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley, split screen (1.03)
     topPad: 0   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
@@ -31,8 +31,8 @@
     { k: 'waveIncome', label: 'Esencja po każdej fali', min: 0, max: 30, step: 1 },
     { k: 'regenBase', label: 'Odnawianie w trakcie fali (na 10 s)', min: 0, max: 6, step: 0.1, fmt: f1 },
     { k: 'fearRate', label: 'Esencja z ran i strachu', min: 0, max: 6, step: 0.5, fmt: f1 },
-    { k: 'hungerBase', label: 'Głód serca: Esencja z fali 2', min: 0, max: 80, step: 1 },
-    { k: 'hungerGrowth', label: 'Głód serca: wzrost progu na falę', min: 1.2, max: 2, step: 0.05, fmt: x2 },
+    { k: 'hungerBase', label: 'Próg serca: Esencja z fali 2', min: 0, max: 200, step: 5 },
+    { k: 'hungerGrowth', label: 'Próg serca: wzrost na falę', min: 1.2, max: 2, step: 0.05, fmt: x2 },
     { k: 'greedW', label: 'Chciwość: poziomy przywódcy za każde +1 chciwości', min: 0, max: 3, step: 0.1, fmt: v => v.toFixed(1).replace('.', ',') },
     { k: 'crystals', label: 'Kryształy w sercu (od nowego runu)', min: 1, max: 6, step: 1 },
     { k: 'deckSize', label: 'Miejsca w talii (od nowego runu)', min: 3, max: 12, step: 1 },
@@ -402,7 +402,7 @@
     // cards that grow during the run (they count only while the card is in the deck; selling the last copy resets the count)
     { id: 'hunger', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Głodne kolce', text: 'Kolce zadają do końca runu +4% obrażeń za każde zabójstwo kolcami (licznik rośnie przez cały run).', apply: m => { m.hunger += 1; } },
     { id: 'chronicle', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Kronika grozy', text: 'Strach jest o 3% silniejszy za każdego bohatera, który w tym runie uciekł ze strachu (do końca runu).', apply: m => { m.chronicle += 1; } },
-    { id: 'granary', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Spichlerz dusz', text: 'Każdy zabity bohater zmniejsza głód serca o 1 do końca runu.', apply: m => { m.granary += 1; } },
+    { id: 'granary', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Spichlerz dusz', text: 'Każdy zabity bohater obniża próg serca o 3 do końca runu.', apply: m => { m.granary += 1; } },
     { id: 'bank', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Skarbiec', text: 'Każda fala bez utraty kryształu dodaje +2 Esencji do przychodu po każdej kolejnej fali (do końca runu).', apply: m => { m.bank += 1; } },
     { id: 'tempered', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Zaprawione mechanizmy', text: 'Pułapki działają o 1% mocniej za każde 4 trafienia pułapek w tym runie (do końca runu).', apply: m => { m.tempered += 1; } },
     // cards with a price
@@ -441,7 +441,7 @@
     { id: 'hoard', kind: 'card', rar: 'r', tag: 'schowek = chciwość', name: 'Kolekcja w schowku', text: 'Każda karta w schowku daje +0,1 chciwości.', apply: m => { m.stashGreed += 0.1; } },
     // v14: the heart's hunger
     { id: 'wager', kind: 'card', rar: 'l', tag: 'chciwość +0,8, głód +30%', name: 'Zakład z sercem', text: 'Chciwość +0,8, ale serce chce o 30% więcej.', apply: m => { m.greedFlat += 0.8; m.hungerK *= 1.3; } },
-    { id: 'gluttony', kind: 'card', rar: 'r', tag: 'po sytości ×1,25', name: 'Obżarstwo', text: 'Gdy serce jest już syte, Esencja z fali wpada o 25% większa.', apply: m => { m.storeK *= 1.25; } },
+    { id: 'gluttony', kind: 'card', rar: 'r', tag: 'po sytości ×1,25', name: 'Obżarstwo', text: 'Gdy fala przebije już próg serca, dalsza Esencja z niej wpada o 25% większa.', apply: m => { m.storeK *= 1.25; } },
     { id: 'fasting', kind: 'card', rar: 'c', tag: 'głód -15%', name: 'Post', text: 'Serce chce o 15% mniej, ale chciwość -0,2.', apply: m => { m.hungerK *= 0.85; m.greedFlat -= 0.2; } },
     { id: 'heartbeat', kind: 'card', rar: 'r', tag: 'pełne serce +20%', name: 'Bijące serce', text: 'Gdy serce jest już syte w tej fali, pułapki i potwory działają o 20% mocniej.', apply: m => { m.heartbeat += 0.2; } },
     // v14: greed and loot

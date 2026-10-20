@@ -8,12 +8,13 @@
   }
   // Points, like Balatro: every wound, every scare, every kill and every hero scared away adds to the wave's GROZA (the base,
   // how deadly and scary the dungeon is); at the end the whole Groza is multiplied by CHCIWOŚĆ (the mult, how tempting it is).
-  // The Esencja a wave brings is FOOD. Prototype 1.01 (author's decision): from wave 2 the heart takes its need out of
-  // THIS wave's Esencja first (hungerNeed(n), much higher than the old hunger); only the rest goes to your purse. A wave that
-  // brings less: the heart eats what it got and a crystal. No store, no purse limit: like a Balatro blind, the wave's score is
-  // the goal, so you want the heroes to stay in the dungeon, not to throw them out at once.
+  // The Esencja a wave brings is what the heart judges. Prototype 1.01: from wave 2 the heart took its need out of the wave's
+  // Esencja first. 1.11 (author: the heart should not eat Esencja, but its bar should be much higher, a real threat and a goal
+  // of its own): the heart only LOOKS. From wave 2 a wave must bring at least hungerNeed(n) Esencja (3 times the old need:
+  // 60 in wave 2, x1,25 a wave, 358 in wave 10); all of it stays yours either way, and a wave that brings less costs a crystal.
+  // Like a Balatro blind, the wave's score is the goal, so you want the heroes to stay in the dungeon, not to throw them out.
   const hungerNeed = n => (run && run.tutorial) || n < 2 || !(S.hungerBase > 0) ? 0 :
-    Math.max(1, Math.round(S.hungerBase * Math.pow(S.hungerGrowth, n - 2) * ((mods && mods.hungerK) || 1) - (run.stacks.granary || 0) * ((mods && mods.granary) || 0)));   // Spichlerz dusz: every kill feeds it for good
+    Math.max(1, Math.round(S.hungerBase * Math.pow(S.hungerGrowth, n - 2) * ((mods && mods.hungerK) || 1) - 3 * (run.stacks.granary || 0) * ((mods && mods.granary) || 0)));   // Spichlerz dusz: every kill lowers it by 3 for good
   // extra levels of the leader from greed. Up to 1.02 at most 3, so greed 23 was as safe as greed 4 (the author's run: 42 798
   // Esencja). 1.03: no ceiling, but past 4 it creeps up slowly (6: +3,7, 8: +4,2, 12: +5,0, 23: +6,1).
   const greedLv = g => g <= 4 ? Math.max(0, g - 1) : 3 + 1.8 * Math.log(g / 4);
@@ -58,19 +59,19 @@
     if (e >= 1) tutPop('pay');
     return e;
   }
-  // Esencja comes in: the hungry heart takes its share first, the rest goes to the purse (Obżarstwo: x1,25 once it is fed)
+  // Esencja comes in: all of it goes to the purse; the part that fills the heart's bar sends some orbs to the ♥ on the way
+  // (1.11: the heart takes nothing). Obżarstwo: x1,25 on what comes after the bar is full.
   function essIn(e, who) {
     if (!(e > 0)) return;
     const need = hungerNeed(run.wave);
-    let heart = 0;
+    let toward = 0;
     if (need > 0 && fl.fed < need) {
-      heart = Math.min(e, need - fl.fed); fl.fed += heart;
-      if (fl.fed >= need - 1e-6) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Serce syte!', '#ff9aa4', 16, -1.4); }
+      toward = Math.min(e, need - fl.fed); fl.fed += toward;
+      if (fl.fed >= need - 1e-6) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Próg serca!', '#ff9aa4', 16, -1.4); }
     }
-    let rest = e - heart;
-    if (rest > 0 && need > 0 && fl.fed >= need && mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
-    fl.stats.essHeart = (fl.stats.essHeart || 0) + heart;
-    gainEssence('eq', rest, 'essWave', heart);   // 1.02: the Esencja leaves the equation's result box
+    let gain = e;
+    if (need > 0 && fl.fed >= need && mods.storeK > 1 && e > toward) { const x = (e - toward) * (mods.storeK - 1); gain += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
+    gainEssence('eq', gain, 'essWave', toward);   // 1.02: the Esencja leaves the equation's result box
   }
   function setGreed(v) { fl.greed = v; }
   // 1.10 (author: the more greed, the slower it grows): every rise is divided by the greed there is: at x2 a treasure pulls
@@ -154,8 +155,13 @@
   // (prio 4), shouts at a trap that just went off ('loud'), and anyone wounded a moment ago, panicking, running, fighting,
   // caged or burning. Heroes in different rooms talk at the same time. The speaker turns to whoever he talks to.
   const SAY_GAP = 0.3;
-  const earshot = (a, b) => { const ra = roomOf(a.tx, a.ty); return (ra >= 0 && ra === roomOf(b.tx, b.ty)) || Math.hypot(a.tx - b.tx, a.ty - b.ty) <= 2.5; };
-  const inChaos = h => fl.time < h.panicUntil || h.fleeing || fl.time - h.hurtAt < 1.5 || h.state === 'fight' || h.state === 'smash' || h.state === 'caged' || fl.time < h.burnUntil;
+  // 1.11 (author: they still talked at once when nothing was going on): earshot was the same room or 2,5 steps, and a
+  // corridor is no room (roomOf -1), so a party walking down a corridor never heard itself; and anyone hit in the last 1,5 s
+  // counted as "chaos", so in a room with an archer nearly every line was a shout. Now earshot is 7 steps (or the same room)
+  // and only the lines that ARE a shout go over the others: cries, pain, a hit, a scare, the shout at a trap; besides them
+  // only a hero who panics or runs for his life talks over anyone.
+  const earshot = (a, b) => { const ra = roomOf(a.tx, a.ty); return (ra >= 0 && ra === roomOf(b.tx, b.ty)) || Math.hypot(a.tx - b.tx, a.ty - b.ty) <= 7; };
+  const inChaos = h => fl.time < h.panicUntil || h.fleeing || h.state === 'caged';
   const readT = t => clamp(1.1 + 0.042 * t.length, 1.6, 3.4);
   const SAYQ_LIFE = [0, 1.4, 2.6, 4];   // how long a calm line can wait for its turn, by priority
   function floorBusy(h) {
@@ -356,7 +362,7 @@
     const list = run.next, lv = list.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), boss = list.find(e => e.boss);
     const rt = rumorView();
     return waveName() + ': ' + list.length + ' bohaterów, poziom ' + (lo === hi ? lo : lo + '-' + hi) + (boss ? ', prowadzi ' + BOSS_NAME[boss.boss][boss.female ? 1 : 0] + ' (poz. ' + boss.lvl + ')' : '') + '. ' +
-      (hungerNeed(run.wave) ? 'GŁÓD: serce weźmie pierwsze ' + hungerNeed(run.wave) + ' Esencji z tej fali; fala da mniej, to zje kryształ. Trzymaj bohaterów w lochu. ' : '') +
+      (hungerNeed(run.wave) ? 'PRÓG SERCA: ta fala musi przynieść co najmniej ' + hungerNeed(run.wave) + ' Esencji, inaczej serce zje kryształ (Esencja i tak zostaje u Ciebie). Trzymaj bohaterów w lochu. ' : '') +
       (fl.breach ? (run.layout.breach && run.layout.breach.fresh ? 'WYŁOM: gildia przebiła tunel do Twojego pokoju (czerwony znacznik) i tę falę wpuści tamtędy. ' : 'WYŁOM wciąż otwarty: bohaterowie wybiorą, czy wejść nim, czy drzwiami. ') + 'Stuknij wyłom, żeby go załatać (' + BREACH_PATCH + ' Esencji). ' : '') +
       (run.guild ? 'GILDIA: ' + run.guild.text + ' ' : '') +
       (rt.traps || rt.rooms ? 'Plotki: znają ' + rt.rooms + ' pokoi i ' + rt.traps + ' pułapek (oko na mapie).' : 'Nic o Tobie nie wiedzą.') +
@@ -813,8 +819,8 @@
       fl.stats.returnersOut = (fl.stats.returnersOut || 0) + 1;
     });
   }
-  // Prototype 1.01: the heart has been eating its share of this wave's Esencja all along (essIn). When the wave ends it is
-  // either fed, or it eats what it got and a crystal. Crystals do not grow back by themselves (1.05: and cannot be bought; a card may give one).
+  // When the wave ends the heart looks at what the wave brought (essIn kept count): enough, or it eats a crystal
+  // (1.11: only the crystal; the Esencja stays yours). Crystals do not grow back by themselves (1.05: and cannot be bought; a card may give one).
   function feedHeart() {
     const need = hungerNeed(run.wave);
     fl.hunger = null;
@@ -979,7 +985,7 @@
     const P = h.phys && PHYS[h.phys];
     if (!P || !P.res[dtp] || h.known.has('phys')) return;
     h.known.add('phys'); if (h.entry) h.entry.known = [...h.known]; fl.stats.revealed = (fl.stats.revealed || 0) + 1; tl('rv', h.id, 'phys');
-    say(h, pick(P.res[dtp] > 1 ? SAY.weakHit[dtp] : SAY.resistHit[dtp]), 3, 1.8);
+    say(h, pick(P.res[dtp] > 1 ? SAY.weakHit[dtp] : SAY.resistHit[dtp]), 3, 1.8, 'loud');
     floatHero(h, (P.res[dtp] > 1 ? 'Słabość: ' : 'Odporność: ') + DMG_TYPES[dtp], P.res[dtp] > 1 ? '#ffb35c' : '#9fc6ff', 13, -1.0);
   }
   function phobiaOn(h, attr, src, dtp) {
@@ -1027,7 +1033,7 @@
     if (tkey) {
       // self-defence first: the thief may dodge a single hit, a talisman's ward (a power the hero switches on) soaks part of it
       if (h.type === 'thief' && (tkey === 'spikes' || tkey === 'arrows') && !held(h) && fl.time > h.dodgeCd && Math.random() < h.R.dodge) {
-        h.dodgeCd = fl.time + 3; fl.stats.dodges++; say(h, pick(SAY.dodge), 2); floatHero(h, 'Unik', '#c9f0b0', 14, -0.6); return;
+        h.dodgeCd = fl.time + 3; fl.stats.dodges++; say(h, pick(SAY.dodge), 2, null, 'loud'); floatHero(h, 'Unik', '#c9f0b0', 14, -0.6); return;
       }
       if (fl.time < h.wardUntil && !(tkey === 'arrows' && src.lvl >= 3)) {   // piercing arrows go through; acid corrodes the ward
         amt *= 1 - h.wardK * (inB('acid', h.room) ? 0.5 : 1); fl.stats.charmSoak = (fl.stats.charmSoak || 0) + 1;
@@ -1086,7 +1092,7 @@
     // wounds scare too, less than a scare trap: losing all HP is worth 25% of courage (monsters 18%; Ryk potworów: x2,5 per copy)
     // v15.1: was 35% / 25%; fear pays more Groza now (1,6), so the fear from wounds pays about what it did and scares less
     if (kind !== 'heart' && kind !== 'loot') addFear(h, real / h.max * h.courage * (kind === 'monster' ? 0.18 * (1 + mods.monsterFear) : 0.25) * (fl.surprise && kind === 'trap' ? 1.3 : 1), attr, kind === 'monster' && mods.monsterFear ? 'roar' : 'dmg', dtp);
-    if (kind === 'trap' && real >= 8 && Math.random() < 0.35) say(h, pick(h.hp < 0.3 * h.max ? SAY.hurtScared : SAY.hurt), h.hp < 0.3 * h.max ? 2 : 1, 1.4);
+    if (kind === 'trap' && real >= 8 && Math.random() < 0.35) say(h, pick(h.hp < 0.3 * h.max ? SAY.hurtScared : SAY.hurt), h.hp < 0.3 * h.max ? 2 : 1, 1.4, 'loud');
     if (kind === 'trap' && !h.dead && h.hp < 0.6 * h.max) useCharm(h, 'hit');   // a hard hit: switch the talisman on for what comes next
   }
   // Fear: the second currency of the dungeon. Every bit of it scores; past a hero's courage he runs for the exit.
@@ -1136,7 +1142,7 @@
     // 1.05: a barbarian on the edge of panic gets angry instead (once in a while; not in Okowy)
     if (h.type === 'barbarian' && before < pk * lim && h.fear >= pk * lim && !h.fleeing && !h.crystal && fl.time > h.rageCd && startRage(h, 'panic')) { h.fear = Math.max(0, h.fear - 0.25 * lim); fl.stats.rageNoPanic = (fl.stats.rageNoPanic || 0) + 1; return; }
     if (before < pk * lim && h.fear >= pk * lim && !h.fleeing && !h.crystal && fl.time > h.panicUntil) {
-      h.panicUntil = fl.time + 2 + Math.random() * 2; h.needPlan = true; fl.stats.panics++; say(h, pick(SAY.panic), 3, 1.8);
+      h.panicUntil = fl.time + 2 + Math.random() * 2; h.needPlan = true; fl.stats.panics++; say(h, pick(SAY.panic), 3, 1.8, 'loud');
     }
     if (h.fear >= lim && h.crystal && !caged(h)) dropCrystal(h);   // v14.1: terror beats greed: the carrier throws the crystal away and runs
     if (h.fear >= lim && !h.fleeing && !h.crystal && !caged(h)) startFlee(h);   // v14.1: the cage holds, fear or not (see cage deaths)

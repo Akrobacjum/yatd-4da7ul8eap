@@ -97,7 +97,7 @@
     fl.stats.maxCombo = Math.max(fl.stats.maxCombo, fl.combo);
     const comboMult = 1 + 0.25 * (fl.combo - 1), D = S.dmg;
     run.fires++;
-    fl.heroes.forEach(h => { if (h.item === it && h.state === 'disarm') { h.state = 'walk'; h.item = null; h.needPlan = true; say(h, pick(SAY.disarmHit), 3); } });
+    fl.heroes.forEach(h => { if (h.item === it && h.state === 'disarm') { h.state = 'walk'; h.item = null; h.needPlan = true; say(h, pick(SAY.disarmHit), 3, null, 'loud'); } });
     const area = areaOf(it), keys = new Set(area.map(t => key(t[0], t[1])));
     let list = heroesOn(keys);
     if (opt.lock && opt.lock.length) list = [...new Set(list.concat(opt.lock.filter(h => !h.dead && !h.fled && !h.gone && !h.fleeing)))];   // 1.09: a check's targets stay its targets
@@ -222,7 +222,7 @@
         fl.heroes.forEach(h => { if (!h.dead && !h.fled && h.nx === it.x && h.ny === it.y && h.prog < 0.5) { h.nx = null; h.ny = null; h.prog = 0; } });
         list.forEach(h => { damage(h, 60 * D * mods.gateCrush * pw, it, comboMult); hit++; });
         const near = alive().find(h => Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 2);
-        if (near) { say(near, pick(SAY.gateBlocked), 3); addFear(near, 5, 'gate'); }
+        if (near) { say(near, pick(SAY.gateBlocked), 3, null, 'loud'); addFear(near, 5, 'gate'); }
         replanAll();
         shake = Math.max(shake, 0.12);
         break;
@@ -290,7 +290,7 @@
         list.forEach(h => { const p = heroPos(h), sc = (h.alone || h.lost ? 100 : 0) - Math.hypot(p.x - it.gx, p.y - it.gy); if (sc > bs) { bs = sc; tgt = h; } });
         list.forEach(h => { addFear(h, (h === tgt ? 30 : 10) * (h.alone || h.lost ? 2 : 1) * pw * comboMult, 'shade'); hit++; });
         if (tgt) {
-          floatHero(tgt, 'Szept...', '#9a8fb8', 14, -0.6); say(tgt, pick(SAY.shade), 3);
+          floatHero(tgt, 'Szept...', '#9a8fb8', 14, -0.6); say(tgt, pick(SAY.shade), 3, null, 'loud');
           if (it.lvl >= 3 && tgt.alone && !tgt.lost && leader() !== tgt) getLost(tgt, 'shade');   // Pożeracz światła
         }
         break;
@@ -303,7 +303,7 @@
           addFear(h, 16 * pw * comboMult, 'bats'); damage(h, 6 * D * pw, actSrc(it.type), comboMult); hit++;
           if (!h.dead && !h.fleeing && !h.crystal && !caged(h) && h !== L && Math.random() < (h.rank === 0 ? 0.6 : 0.35) * (it.lvl >= 3 ? 1.3 : 1)) {
             h.panicUntil = fl.time + 2.5; h.needPlan = true; fl.stats.batScatter = (fl.stats.batScatter || 0) + 1;
-            floatHero(h, 'Spłoszony!', '#c9c0d8', 13, -0.8); say(h, pick(SAY.batScatter), 2);
+            floatHero(h, 'Spłoszony!', '#c9c0d8', 13, -0.8); say(h, pick(SAY.batScatter), 2, null, 'loud');
           }
         });
         break;
@@ -455,13 +455,13 @@
     alive().forEach(h => {
       const q = heroPos(h), dd = Math.hypot(q.x - m.gx, q.y - m.gy);
       if (m.type === 'ghost') {   // chills everyone close
-        if (dd <= (m.lvl >= 3 ? 2.6 : 1.6)) { addFear(h, 10 * dt * mods.ghostAura * galleryK(m), 'ghost'); if (!h.ghostSaid) { h.ghostSaid = true; say(h, pick(SAY.ghost), 3); if (h.type === 'warrior') say(h, pick(SAY.ghostOnly), 2); } }
+        if (dd <= (m.lvl >= 3 ? 2.6 : 1.6)) { addFear(h, 10 * dt * mods.ghostAura * galleryK(m), 'ghost'); if (!h.ghostSaid) { h.ghostSaid = true; say(h, pick(SAY.ghost), 3, null, 'loud'); if (h.type === 'warrior') say(h, pick(SAY.ghostOnly), 2); } }
         if (dd <= 0.8) damage(h, 5 * monDmg(m) * dt, m);
       } else if (m.type === 'shade') {   // a cold breath on the neck, twice as bad for the lonely
-        if (dd <= 1.4) { addFear(h, 7 * dt * (h.alone || h.lost ? 2 : 1), 'shade'); if (!h.shadeSaid) { h.shadeSaid = true; say(h, pick(SAY.shade), 3); } }
+        if (dd <= 1.4) { addFear(h, 7 * dt * (h.alone || h.lost ? 2 : 1), 'shade'); if (!h.shadeSaid) { h.shadeSaid = true; say(h, pick(SAY.shade), 3, null, 'loud'); } }
       } else if (dd <= (m.lvl >= 3 ? 1.6 : 1.0)) {   // bats: tiny bites and wings in the face
         addFear(h, 4 * dt, 'bats'); damage(h, 3 * monDmg(m) * dt, m);
-        if (!h.batSaid) { h.batSaid = true; say(h, pick(SAY.bats), 3); }
+        if (!h.batSaid) { h.batSaid = true; say(h, pick(SAY.bats), 3, null, 'loud'); }
       }
     });
   }
@@ -491,7 +491,7 @@
         if (m.webT <= 0) {
           m.webT = 3; const t = fighters[0];
           if (mods.spiderNest || m.lvl >= 3) { const tiles = areaOf(m); fl.zones.push({ keys: new Set(tiles.map(q => key(q[0], q[1]))), tiles, until: fl.time + 3, src: m }); }
-          if (t) { t.slowUntil = fl.time + 2.5; if (!t.spiderSaid) { t.spiderSaid = true; say(t, pick(SAY.spider), 2); } }
+          if (t) { t.slowUntil = fl.time + 2.5; if (!t.spiderSaid) { t.spiderSaid = true; say(t, pick(SAY.spider), 2, null, 'loud'); } }
         }
       }
       let dmgIn = 0;
