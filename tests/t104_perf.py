@@ -50,7 +50,9 @@ async def main():
                     try: await page.clock.run_for(20)
                     except Exception as e: thrown += 1   # the error thrown again from a timer stops the fake clock's run (not the game)
                 await page.evaluate("(() => { __yatd.fl.fx = window.__fx || []; })()")
-                await page.clock.run_for(1000)
+                for _ in range(10):   # 1.06: errors queued from the broken frames can still be thrown again here; they stop the fake clock's run, not the game
+                    try: await page.clock.run_for(100)
+                    except Exception as e: thrown += 1
                 ok(thrown >= 1, 'the error was thrown again outside the loop (%d)' % thrown)
                 after = await page.evaluate("[__yatd.realNow, __yatd.PERF.errs.slice()]")
                 ok(after[0] - before > 0.5, 'the loop goes on after an error (%.2f s)' % (after[0] - before))

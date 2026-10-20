@@ -233,12 +233,12 @@
 
   // Heroes: four classes, each wave brings new people with names, and ranks that decide how much they know and how well they think.
   const HEROES = {
-    warrior: { name: ['Wojownik', 'Wojowniczka'], hp: 120, speed: 1.5, dps: 18, color: '#cdd6ea', letter: 'W', greed: 0.6 },
-    thief: { name: ['Złodziej', 'Złodziejka'], hp: 70, speed: 1.9, dps: 10, color: '#9be37a', letter: 'Z', greed: 1.5 },
-    priest: { name: ['Kapłan', 'Kapłanka'], hp: 80, speed: 1.3, dps: 6, color: '#ffe9a8', letter: 'K', greed: 0.9 },
-    mage: { name: ['Mag', 'Czarodziejka'], hp: 65, speed: 1.3, dps: 8, color: '#b9a4ff', letter: 'M', greed: 1.0 },
-    bard: { name: ['Bard', 'Bardka'], hp: 75, speed: 1.4, dps: 7, color: '#73d6c6', letter: 'B', greed: 1.2 },   // 1.05
-    barbarian: { name: ['Barbarzyńca', 'Barbarzynka'], hp: 135, speed: 1.45, dps: 20, color: '#f2955e', letter: 'R', greed: 0.7 }   // 1.05
+    warrior: { name: ['Wojownik', 'Wojowniczka'], hp: 120, speed: 1.5, dps: 18, color: '#6f9cff', letter: 'W', greed: 0.6 },
+    thief: { name: ['Złodziej', 'Złodziejka'], hp: 70, speed: 1.9, dps: 10, color: '#6fd64f', letter: 'Z', greed: 1.5 },
+    priest: { name: ['Kapłan', 'Kapłanka'], hp: 80, speed: 1.3, dps: 6, color: '#ffd23f', letter: 'K', greed: 0.9 },
+    mage: { name: ['Mag', 'Czarodziejka'], hp: 65, speed: 1.3, dps: 8, color: '#b76dff', letter: 'M', greed: 1.0 },
+    bard: { name: ['Bard', 'Bardka'], hp: 75, speed: 1.4, dps: 7, color: '#2fd3c4', letter: 'B', greed: 1.2 },   // 1.05
+    barbarian: { name: ['Barbarzyńca', 'Barbarzynka'], hp: 135, speed: 1.45, dps: 20, color: '#ff7a33', letter: 'R', greed: 0.7 }   // 1.05
   };
   // 1.05: six classes and never two of one class in a party (the first waves bring the four classic ones)
   const PARTY = ['warrior', 'thief', 'priest', 'mage', 'bard', 'barbarian'];

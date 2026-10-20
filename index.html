@@ -259,12 +259,11 @@ body {
 
 /* ---------- the drawer: tabs and the tray ---------- */
 .drawer { display: grid; gap: 6px; }
-.handle { display: flex; align-items: center; justify-content: center; gap: 8px; height: 18px; margin: -2px 0; padding: 0; background: none; border: 0; color: var(--dim); font: inherit; font-size: 11.5px; cursor: pointer; }
-.handle .grip { width: 34px; height: 4px; border-radius: 1px; background: var(--line2); box-shadow: 0 1px 0 #000; }
+/* 1.06 (author): the build bar's button looks the same open and folded; only the arrow turns (▼ Budowa / ▲ Budowa) */
+.handle { display: flex; align-items: center; justify-content: center; height: 30px; margin: 0; padding: 0; background: none; border: 0; color: var(--gold-hi); font: inherit; cursor: pointer; }
+.handle .grip { display: none; }
 .drawer.closed #drawer-body { display: none; }
-.drawer.closed .handle { color: var(--gold-hi); height: 30px; margin: 0; }
-.drawer.closed .handle .grip { display: none; }
-.drawer.closed #tray-label { padding: 4px 18px 5px; border: 1px solid #5c4b28; border-radius: var(--r); background-color: #1b1914; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 #000; }
+#tray-label { min-width: 132px; text-align: center; padding: 4px 18px 5px; border: 1px solid #5c4b28; border-radius: var(--r); background-color: #1b1914; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 #000; }
 #drawer-body { display: grid; gap: 6px; }
 #drawer-body > * { min-width: 0; }   /* eight tabs: the row never widens the page */
 .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); box-shadow: 0 1px 0 var(--edge); }
@@ -699,7 +698,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   </header>
   <div id="stage"><canvas id="cv" aria-label="Mapa lochu"></canvas><div id="banner" aria-hidden="true" hidden><b></b><span></span></div><div id="coach" role="status" hidden></div></div>
   <div class="drawer" id="drawer">
-    <button class="handle" id="tray-toggle" type="button" aria-expanded="true" aria-controls="drawer-body"><span class="grip" aria-hidden="true"></span><span id="tray-label">▼ Schowaj pasek</span></button>
+    <button class="handle" id="tray-toggle" type="button" aria-expanded="true" aria-controls="drawer-body"><span class="grip" aria-hidden="true"></span><span id="tray-label">▼ Budowa</span></button>
     <div id="drawer-body">
       <div class="tabs" id="tabs" role="tablist"></div>
       <div class="tray" id="tray"></div>
@@ -962,12 +961,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 
   // Heroes: four classes, each wave brings new people with names, and ranks that decide how much they know and how well they think.
   const HEROES = {
-    warrior: { name: ['Wojownik', 'Wojowniczka'], hp: 120, speed: 1.5, dps: 18, color: '#cdd6ea', letter: 'W', greed: 0.6 },
-    thief: { name: ['Złodziej', 'Złodziejka'], hp: 70, speed: 1.9, dps: 10, color: '#9be37a', letter: 'Z', greed: 1.5 },
-    priest: { name: ['Kapłan', 'Kapłanka'], hp: 80, speed: 1.3, dps: 6, color: '#ffe9a8', letter: 'K', greed: 0.9 },
-    mage: { name: ['Mag', 'Czarodziejka'], hp: 65, speed: 1.3, dps: 8, color: '#b9a4ff', letter: 'M', greed: 1.0 },
-    bard: { name: ['Bard', 'Bardka'], hp: 75, speed: 1.4, dps: 7, color: '#73d6c6', letter: 'B', greed: 1.2 },   // 1.05
-    barbarian: { name: ['Barbarzyńca', 'Barbarzynka'], hp: 135, speed: 1.45, dps: 20, color: '#f2955e', letter: 'R', greed: 0.7 }   // 1.05
+    warrior: { name: ['Wojownik', 'Wojowniczka'], hp: 120, speed: 1.5, dps: 18, color: '#6f9cff', letter: 'W', greed: 0.6 },
+    thief: { name: ['Złodziej', 'Złodziejka'], hp: 70, speed: 1.9, dps: 10, color: '#6fd64f', letter: 'Z', greed: 1.5 },
+    priest: { name: ['Kapłan', 'Kapłanka'], hp: 80, speed: 1.3, dps: 6, color: '#ffd23f', letter: 'K', greed: 0.9 },
+    mage: { name: ['Mag', 'Czarodziejka'], hp: 65, speed: 1.3, dps: 8, color: '#b76dff', letter: 'M', greed: 1.0 },
+    bard: { name: ['Bard', 'Bardka'], hp: 75, speed: 1.4, dps: 7, color: '#2fd3c4', letter: 'B', greed: 1.2 },   // 1.05
+    barbarian: { name: ['Barbarzyńca', 'Barbarzynka'], hp: 135, speed: 1.45, dps: 20, color: '#ff7a33', letter: 'R', greed: 0.7 }   // 1.05
   };
   // 1.05: six classes and never two of one class in a party (the first waves bring the four classic ones)
   const PARTY = ['warrior', 'thief', 'priest', 'mage', 'bard', 'barbarian'];
@@ -5532,7 +5531,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     fl.items.forEach(it => { if (it.jamUntil > fl.time && fl.phase === 'raid') { ctx.fillStyle = 'rgba(150,100,255,0.38)'; ctx.fillRect(it.x * T, it.y * T, T, T); ctx.fillStyle = '#e6dcff'; ctx.font = numFont(Math.max(10, T * 0.4), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('≈', (it.x + 0.5) * T, (it.y + 0.5) * T); } });
     if (run.tut >= 0) drawTutTarget(T);
     drawFx(T);
-    fl.heroes.forEach(h => { if (!h.dead && !h.fled && !h.gone) drawHero(h, T); });
+    fl.heroes.filter(h => !h.dead && !h.fled && !h.gone).sort((a, b) => heroPos(a).y - heroPos(b).y).forEach(h => drawHero(h, T));   // 1.06: standing figures, the nearer one in front
     fl.items.forEach(it => { if (DRIFT[it.type] && seen(Math.floor(it.gx !== undefined ? it.gx : it.x), Math.floor(it.gy !== undefined ? it.gy : it.y))) drawItem(it, T); });   // ghosts, shades and bats float above everything
     if (fl.phase === 'raid') drawMemBadges(T, seen);
     drawParticles(T); drawFloats(T);
@@ -6334,90 +6333,139 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     ctx.save(); ctx.translate(cx, cy); ctx.scale(size / 24, size / 24); if (ic.rot) ctx.rotate(ic.rot * Math.PI / 180); ctx.translate(-12, -12);
     ctx.fillStyle = color; ctx.fill(p, 'evenodd'); ctx.restore();
   }
+  // 1.06 (author: the class icons on the discs were invisible, heroes still looked alike from afar): heroes are standing figurines
+  // with a class silhouette: helmet, shield and sword (warrior), hood and dagger (thief), halo, robe and cross (priest), pointed
+  // hat and staff (mage), feathered cap and lute (bard), horned helmet and axe (barbarian). A figure is never smaller than
+  // FIG_MIN px on screen, whatever the zoom; it looks the way it walks; a dark outline keeps it apart from the floor.
+  const FIG_MIN = 27, FIG_MAX = 50;
+  const figH = (T, boss) => clamp(T * 1.1, FIG_MIN, FIG_MAX) * (boss === 'final' ? 1.3 : boss ? 1.18 : 1);
+  const figFeet = T => T * 0.34;   // the feet stand a bit below the tile's centre (the figure rises from there)
+  const SKIN = '#e8c39d', OUT = '#0c0a10';
+  // draws one figure in a 24-unit box (feet at 0, head top near -24; x to the right = the way it faces)
+  function drawFigure(type, x, feetY, H, face, col, opt) {
+    opt = opt || {};
+    const u = H / 24;
+    ctx.save(); ctx.translate(x, feetY); ctx.scale(u * face, u);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const lw = 1.6 / u;   // about 1,6 px of outline at any size
+    const C = opt.flash ? '#ffffff' : col, D = opt.flash ? '#e8e8e8' : shade(col, -0.45);
+    const shape = (fill, build) => { ctx.beginPath(); build(); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = lw; ctx.stroke(); };
+    const line = (color, w, pts) => { ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]); ctx.strokeStyle = OUT; ctx.lineWidth = w + lw * 1.6; ctx.stroke(); ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke(); };
+    const step = opt.walk ? Math.sin(opt.walk) * 1.4 : 0;
+    const robe = type === 'priest' || type === 'mage';
+    // behind the body: a cape (thief), the bag (treasure hunter)
+    if (type === 'thief') shape(D, () => { ctx.moveTo(-4.6, -14.5); ctx.lineTo(-6.6, -1.5); ctx.lineTo(3.5, -1.5); ctx.lineTo(4.2, -14.5); ctx.closePath(); });
+    if (opt.bag) { shape('#e0a83c', () => { ctx.ellipse(-6.2, -7.5, 2.8, 3.1, 0, 0, Math.PI * 2); }); line('#8a5a1c', 1, [-7.2, -10.6, -5.2, -10.6]); }
+    // legs (a robe covers them)
+    if (!robe) {
+      shape('#2b2530', () => { ctx.rect(-3.4, -6.5 + Math.max(0, step) * 0.5, 2.6, 6.5 - Math.max(0, step) * 0.5); });
+      shape('#2b2530', () => { ctx.rect(0.8, -6.5 + Math.max(0, -step) * 0.5, 2.6, 6.5 - Math.max(0, -step) * 0.5); });
+    }
+    // the body
+    if (type === 'priest') shape('#f1e8cf', () => { ctx.moveTo(-4.6, -14.5); ctx.lineTo(4.6, -14.5); ctx.lineTo(6.6, 0); ctx.lineTo(-6.6, 0); ctx.closePath(); });
+    else if (type === 'mage') shape(C, () => { ctx.moveTo(-4.4, -14.5); ctx.lineTo(4.4, -14.5); ctx.lineTo(6.4, 0); ctx.lineTo(-6.4, 0); ctx.closePath(); });
+    else if (type === 'barbarian') shape(C, () => { ctx.moveTo(-5.6, -15); ctx.lineTo(5.6, -15); ctx.lineTo(4.6, -5.5); ctx.lineTo(-4.6, -5.5); ctx.closePath(); });
+    else shape(C, () => { ctx.moveTo(-4.6, -14.8); ctx.lineTo(4.6, -14.8); ctx.lineTo(4.2, -5.6); ctx.lineTo(-4.2, -5.6); ctx.closePath(); });
+    if (type === 'priest') { line(col, 1.6, [0, -14, 0, -0.6]); line('#fff7d6', 1.2, [0, -12.6, 0, -8.4]); line('#fff7d6', 1.2, [-1.8, -11.2, 1.8, -11.2]); ctx.strokeStyle = col; }   // a gold stripe and a cross
+    if (type === 'barbarian') { line('#5b3a1f', 1.6, [-4.8, -7, 4.8, -7]); line('#f0e2c8', 0.9, [-3.6, -12.4, -1.2, -10.6]); }   // a fur belt, a scar
+    if (type === 'warrior') line('#d6dce8', 1, [-4, -10, 4, -10]);
+    if (type === 'bard') line('#ffd166', 1, [-4.2, -9.6, 4.2, -9.6]);
+    // the head
+    shape(SKIN, () => { ctx.arc(0, -18.2, 3.7, 0, Math.PI * 2); });
+    ctx.fillStyle = OUT; ctx.beginPath(); ctx.arc(1.5, -18.6, 0.55, 0, Math.PI * 2); ctx.fill();   // an eye, the way it looks
+    // headgear: the silhouette that tells the class apart
+    if (type === 'warrior') { shape('#c9d2e3', () => { ctx.arc(0, -18.4, 4.1, Math.PI, 0); ctx.lineTo(4.1, -17.4); ctx.lineTo(-4.1, -17.4); ctx.closePath(); }); line('#c9d2e3', 1.2, [0, -22.6, 0, -24.4]); }
+    else if (type === 'thief') shape(D, () => { ctx.moveTo(-4.4, -15.4); ctx.quadraticCurveTo(-5.4, -23.2, 0.6, -24); ctx.quadraticCurveTo(5.4, -22.6, 4.2, -18.6); ctx.lineTo(2.4, -18.2); ctx.quadraticCurveTo(1.8, -21, -1.6, -20.6); ctx.quadraticCurveTo(-3.2, -18.4, -2.4, -15.2); ctx.closePath(); });
+    else if (type === 'priest') { ctx.strokeStyle = OUT; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.ellipse(0, -23.6, 3.8, 1.2, 0, 0, Math.PI * 2); ctx.stroke(); ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.stroke(); }
+    else if (type === 'mage') { shape(D, () => { ctx.ellipse(0, -20.8, 5.6, 1.5, 0, 0, Math.PI * 2); }); shape(D, () => { ctx.moveTo(-3.6, -21); ctx.lineTo(3.6, -21); ctx.quadraticCurveTo(1.6, -26, 3.8, -31); ctx.quadraticCurveTo(-1.4, -27.6, -3.6, -21); ctx.closePath(); }); line(col, 1, [-3.2, -22.2, 3.2, -22.2]); }
+    else if (type === 'bard') { shape(D, () => { ctx.ellipse(-0.6, -21.4, 4.8, 1.9, -0.18, 0, Math.PI * 2); }); line('#ffd166', 1.2, [2.6, -22.4, 4.8, -25, 8, -26.4]); }
+    else if (type === 'barbarian') { shape('#5a4636', () => { ctx.arc(0, -19, 3.9, Math.PI, 0); ctx.closePath(); }); shape('#efe3ca', () => { ctx.moveTo(-3.6, -20); ctx.quadraticCurveTo(-7.4, -21, -6.8, -25.6); ctx.quadraticCurveTo(-5.4, -22.6, -2.6, -21.8); ctx.closePath(); }); shape('#efe3ca', () => { ctx.moveTo(3.6, -20); ctx.quadraticCurveTo(7.4, -21, 6.8, -25.6); ctx.quadraticCurveTo(5.4, -22.6, 2.6, -21.8); ctx.closePath(); }); }
+    // in front: what each one carries
+    if (type === 'warrior') { line('#e9edf3', 1.5, [5.8, -7.5, 5.8, -19]); line('#8a6a44', 1.6, [4, -7.6, 7.6, -7.6]); shape(D, () => { ctx.arc(-4.8, -10, 4, 0, Math.PI * 2); }); ctx.fillStyle = '#d6dce8'; ctx.beginPath(); ctx.arc(-4.8, -10, 1.1, 0, Math.PI * 2); ctx.fill(); }
+    else if (type === 'thief') { line('#e9edf3', 1.3, [5, -8.4, 7.6, -12.6]); line('#8a6a44', 1.3, [4.2, -7.2, 5.2, -8.6]); }
+    else if (type === 'mage') { line('#8a6a44', 1.3, [6.2, 0, 6.2, -21]); ctx.fillStyle = opt.flash ? '#fff' : '#efe4ff'; ctx.beginPath(); ctx.arc(6.2, -22.2, 1.9, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.stroke(); }
+    else if (type === 'priest') { /* the cross is on the robe */ }
+    else if (type === 'bard') { line('#8a5a2c', 1.2, [0.6, -10.4, 6.8, -15.6]); shape('#c48a46', () => { ctx.ellipse(-0.4, -9.2, 3.3, 2.5, -0.5, 0, Math.PI * 2); }); ctx.fillStyle = OUT; ctx.beginPath(); ctx.arc(-0.4, -9.2, 0.8, 0, Math.PI * 2); ctx.fill(); }
+    else if (type === 'barbarian') { line('#8a6a44', 1.5, [6, -2, 6, -20]); shape('#d7dde8', () => { ctx.moveTo(6, -19.6); ctx.quadraticCurveTo(11.4, -19.4, 11, -13.6); ctx.quadraticCurveTo(8.6, -15.6, 6, -14.6); ctx.closePath(); }); }
+    if (opt.boss) shape('#ffd34d', () => { const b = type === 'mage' ? -31.5 : type === 'priest' ? -25.6 : -24.2; ctx.moveTo(-3, b + 0.4); ctx.lineTo(-3.4, b - 3); ctx.lineTo(-1.4, b - 1.2); ctx.lineTo(0, b - 3.6); ctx.lineTo(1.4, b - 1.2); ctx.lineTo(3.4, b - 3); ctx.lineTo(3, b + 0.4); ctx.closePath(); });   // a crown for a boss
+    ctx.restore();
+  }
+  // a colour a bit darker (k < 0) or lighter (k > 0)
+  function shade(hex, k) {
+    const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k));
+    return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+  }
   function drawHero(h, T) {
-    const p = heroPos(h), sm = h.state === 'smash' ? Math.sin(realNow * 40) * T * 0.04 : 0, x = p.x * T + sm, y = p.y * T, rad = T * 0.24;   // 1.05: the axe swings
+    const p = heroPos(h), sm = h.state === 'smash' ? Math.sin(realNow * 40) * T * 0.04 : 0;   // 1.05: the axe swings
+    if (h.nx !== null && h.nx !== h.x) h.face = h.nx > h.x ? 1 : -1;   // 1.06: the figure looks the way it goes
+    const face = h.face || 1, H = figH(T, h.boss), x = p.x * T + sm, feet = p.y * T + figFeet(T), top = feet - H, mid = feet - H * 0.48, W = H * 0.36;
     if (h.path.length && h.state !== 'boss') {
       ctx.fillStyle = h.T.color; ctx.globalAlpha = 0.45;
       h.path.slice(0, 6).forEach((t, k) => { ctx.beginPath(); ctx.arc((t[0] + 0.5) * T, (t[1] + 0.5) * T, Math.max(1.5, T * (0.07 - k * 0.007)), 0, Math.PI * 2); ctx.fill(); });
       ctx.globalAlpha = 1;
     }
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(x, y + rad * 0.9, rad, rad * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+    // on the ground: the shadow and the rings (slowed, alone, near death, disarming)
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.ellipse(x, feet, W * 0.95, W * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+    const ring = (color, w, dash, a0, a1, k) => { ctx.strokeStyle = color; ctx.lineWidth = w; if (dash) ctx.setLineDash(dash); ctx.beginPath(); ctx.ellipse(x, feet, W * (k || 1.25), W * (k || 1.25) * 0.38, 0, a0 || 0, a1 === undefined ? Math.PI * 2 : a1); ctx.stroke(); if (dash) ctx.setLineDash([]); };
+    if (fl.time < h.slowUntil) ring('#a9c6ff', 2);
+    if (h.alone && fl.phase === 'raid') ring('rgba(255,179,92,0.85)', 1.5, [4, 3], 0, Math.PI * 2, 1.5);
+    if (h.hp / h.max < 0.3 && h.state !== 'rest') ring('rgba(255,90,90,' + (0.55 + 0.4 * Math.sin(realNow * 12)).toFixed(2) + ')', 2, null, 0, Math.PI * 2, 1.1);
+    if (h.state === 'disarm') ring('#ffe066', 2.5, null, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur), 1.4);
     if (h.cursed) {   // a cursed treasure: a violet haze
-      const g = ctx.createRadialGradient(x, y, rad * 0.5, x, y, rad * 2); g.addColorStop(0, 'rgba(180,140,255,0.45)'); g.addColorStop(1, 'rgba(180,140,255,0)');
-      ctx.fillStyle = g; ctx.fillRect(x - rad * 2, y - rad * 2, rad * 4, rad * 4);
+      const g = ctx.createRadialGradient(x, mid, W * 0.4, x, mid, H * 0.75); g.addColorStop(0, 'rgba(180,140,255,0.45)'); g.addColorStop(1, 'rgba(180,140,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(x - H, mid - H, H * 2, H * 2);
     }
-    if (fl.time < h.calmUntil) { ctx.fillStyle = 'rgba(195,178,255,0.22)'; ctx.beginPath(); ctx.arc(x, y, rad * 1.7, 0, Math.PI * 2); ctx.fill(); }   // amulet
-    if (fl.time < h.sprintUntil) {   // boots: speed lines
-      ctx.strokeStyle = 'rgba(232,194,122,0.7)'; ctx.lineWidth = Math.max(1, T * 0.035); ctx.beginPath();
-      for (let k = -1; k <= 1; k++) { ctx.moveTo(x - rad * 1.2, y + k * rad * 0.45); ctx.lineTo(x - rad * 1.9, y + k * rad * 0.45); }
+    if (fl.time < h.calmUntil) { ctx.fillStyle = 'rgba(195,178,255,0.22)'; ctx.beginPath(); ctx.ellipse(x, mid, W * 1.5, H * 0.62, 0, 0, Math.PI * 2); ctx.fill(); }   // amulet
+    if (fl.time < h.sprintUntil) {   // boots: speed lines behind
+      ctx.strokeStyle = 'rgba(232,194,122,0.75)'; ctx.lineWidth = 1.5; ctx.beginPath();
+      for (let k = 0; k < 3; k++) { const yy = feet - H * (0.08 + 0.12 * k); ctx.moveTo(x - face * W * 1.3, yy); ctx.lineTo(x - face * W * 2.2, yy); }
       ctx.stroke();
     }
-    ctx.fillStyle = h.flash > 0 ? '#ffffff' : h.T.color;
-    ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill();
-    ctx.lineWidth = Math.max(1.5, T * (h.rank >= 2 ? 0.07 : 0.05) * (h.boss ? 1.6 : 1)); ctx.strokeStyle = h.R.color; ctx.stroke();   // ring colour = level tier
-    if (T >= 18) { ctx.fillStyle = h.R.color; ctx.font = numFont(Math.max(9, T * 0.2), true); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(String(h.lvl), x + rad * 0.95, y + rad * 0.75); }
-    if (fl.time < h.slowUntil) { ctx.strokeStyle = '#a9c6ff'; ctx.lineWidth = Math.max(1.5, T * 0.04); ctx.beginPath(); ctx.arc(x, y, rad + T * 0.05, 0, Math.PI * 2); ctx.stroke(); }
-    if (fl.time < h.burnUntil) { ctx.fillStyle = Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x + rad * 0.7, y - rad * 0.7, T * 0.07, 0, Math.PI * 2); ctx.fill(); }
-    drawClassIcon(h.type, x, y, rad * 1.7, '#1a1424');
-    if (h.hunter && T >= 14) drawClassIcon('bag', x - rad * 1.05, y - rad * 0.85, Math.max(7, T * 0.26), '#f2b94b');   // a treasure hunter
-    hpBar(x, y - rad - T * 0.14, T * 0.56, h.hp / h.max, h.hp / h.max > 0.35 ? '#6fd38a' : '#ff6b6b', T);
-    hpBar(x, y - rad - T * 0.14 + Math.max(2.5, T * 0.09), T * 0.56, h.fear / (h.courage * (fl.fearless ? 1.3 : 1)), '#b48cff', T);   // fear: full bar = runs away
-    if (h.shield > 0) hpBar(x, y - rad - T * 0.14 - Math.max(3, T * 0.1), T * 0.56, h.shield / h.max, '#7fb8ff', T);
-    if (h.type === 'priest' && h.faithMax && T >= 14) hpBar(x, y - rad - T * 0.14 + 2 * Math.max(2.5, T * 0.09), T * 0.56, h.faith / h.faithMax, '#ffe9a8', T);   // faith
-    if (fl.time < h.wardUntil) {   // talisman ward
-      ctx.strokeStyle = 'rgba(127,184,255,' + (0.6 + 0.3 * Math.sin(realNow * 12)).toFixed(2) + ')'; ctx.lineWidth = Math.max(2, T * 0.06);
-      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.1, 0, Math.PI * 2); ctx.stroke();
+    const walk = h.nx !== null && fl.phase === 'raid' ? realNow * 13 + h.id : 0, bob = walk ? Math.abs(Math.sin(walk)) * H * 0.035 : 0;
+    drawFigure(h.type, x, feet - bob, H, face, h.T.color, { flash: h.flash > 0, walk, bag: h.hunter, boss: h.boss });
+    if (fl.time < h.burnUntil) { ctx.fillStyle = Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x + face * W * 0.5, mid - H * 0.12, Math.max(2.5, H * 0.07), 0, Math.PI * 2); ctx.fill(); }
+    if (fl.time < h.wardUntil) {   // talisman ward around the body
+      ctx.strokeStyle = 'rgba(127,184,255,' + (0.6 + 0.3 * Math.sin(realNow * 12)).toFixed(2) + ')'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(x, mid, W * 1.45, H * 0.6, 0, 0, Math.PI * 2); ctx.stroke();
     }
-    if (h.crystal) crystalShape(x + rad * 1.05, y - rad * 0.2, T * 0.12, '#ff9ab0');
-    if (h.gold > 0 && T >= 14) {   // a purse
-      ctx.fillStyle = '#f2b94b'; ctx.beginPath(); ctx.arc(x - rad * 1.05, y + rad * 0.55, T * 0.09, 0, Math.PI * 2); ctx.fill();
-      if (h.gold > 1) { ctx.fillStyle = '#ffe9a8'; ctx.font = numFont(Math.max(8, T * 0.18), true); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(String(h.gold), x - rad * 1.2, y + rad * 0.55); }
+    if (h.type === 'warrior' && fl.time < h.shieldUpUntil) {   // the raised shield: an arc in front
+      ctx.strokeStyle = '#7fb8ff'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.ellipse(x + face * W * 0.2, mid, W * 1.6, H * 0.55, 0, face > 0 ? -Math.PI * 0.4 : Math.PI * 0.6, face > 0 ? Math.PI * 0.4 : Math.PI * 1.4); ctx.stroke();
+    }
+    // above the head: health, fear, ward, faith
+    const bw = Math.max(T * 0.56, H * 0.62), bh = Math.max(2, T * 0.07), b0 = top - 4 - bh * 2;
+    hpBar(x, b0, bw, h.hp / h.max, h.hp / h.max > 0.35 ? '#6fd38a' : '#ff6b6b', T);
+    hpBar(x, b0 + bh + 1, bw, h.fear / (h.courage * (fl.fearless ? 1.3 : 1)), '#b48cff', T);   // fear: full bar = runs away
+    if (h.shield > 0) hpBar(x, b0 - bh - 1, bw, h.shield / h.max, '#7fb8ff', T);
+    if (h.type === 'priest' && h.faithMax) hpBar(x, b0 + 2 * (bh + 1), bw, h.faith / h.faithMax, '#ffe9a8', T);   // faith
+    // the level beside the head, in the colour of the rank
+    ctx.font = numFont(Math.max(10, H * 0.34), true); ctx.textAlign = face > 0 ? 'right' : 'left'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3; ctx.strokeStyle = OUT; ctx.strokeText(String(h.lvl), x - face * W * 0.95, top + H * 0.22); ctx.fillStyle = h.R.color; ctx.fillText(String(h.lvl), x - face * W * 0.95, top + H * 0.22);
+    if (h.crystal) crystalShape(x + face * W * 1.2, mid, Math.max(3, H * 0.1), '#ff9ab0');
+    if (h.gold > 0) {   // a purse at the belt
+      const gx = x - face * W * 0.95, gy = feet - H * 0.3;
+      ctx.fillStyle = '#f2b94b'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(gx, gy, Math.max(2.5, H * 0.07), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      if (h.gold > 1) { ctx.fillStyle = '#ffe9a8'; ctx.font = numFont(Math.max(9, H * 0.26), true); ctx.textAlign = face > 0 ? 'right' : 'left'; ctx.fillText(String(h.gold), gx - face * 4, gy); }
     }
     if (h.fleeing) {
-      ctx.fillStyle = '#c3b2ff'; ctx.font = numFont(Math.max(10, T * 0.3), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('»', x - rad * 1.15, y - rad * 0.3 + Math.sin(realNow * 10) * T * 0.03);
+      ctx.fillStyle = '#c3b2ff'; ctx.font = numFont(Math.max(11, H * 0.4), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(face > 0 ? '»' : '«', x + face * W * 1.5, mid + Math.sin(realNow * 10) * 2);
     }
-    if (h.inv.length && T >= 16) {   // the pack: one square per item, in its colour; a power on cooldown is dimmed
-      const q = Math.max(3, T * 0.1);
+    if (h.inv.length && T >= 14) {   // the pack: one square per item under the feet, in its colour; a power on cooldown is dimmed
+      const q = Math.max(3, T * 0.1), n = Math.min(6, h.inv.length), x0 = x - (n * (q + 2) - 2) / 2;
       h.inv.slice(0, 6).forEach((it, k) => {
         ctx.globalAlpha = fl.time < (it.cdUntil || 0) || it.charges === 0 ? 0.35 : 1;
-        ctx.fillStyle = ITEM_COLOR[it.type] || rarColor(it.r); ctx.fillRect(x - rad + k * (q + 2), y + rad + T * 0.1, q, q);
-        if (it.r >= 2) { ctx.strokeStyle = rarColor(it.r); ctx.lineWidth = 1; ctx.strokeRect(x - rad + k * (q + 2) - 0.5, y + rad + T * 0.1 - 0.5, q + 1, q + 1); }
+        ctx.fillStyle = ITEM_COLOR[it.type] || rarColor(it.r); ctx.fillRect(x0 + k * (q + 2), feet + W * 0.4, q, q);
+        if (it.r >= 2) { ctx.strokeStyle = rarColor(it.r); ctx.lineWidth = 1; ctx.strokeRect(x0 + k * (q + 2) - 0.5, feet + W * 0.4 - 0.5, q + 1, q + 1); }
       });
       ctx.globalAlpha = 1;
     }
-    if (h.type === 'warrior' && fl.time < h.shieldUpUntil) {
-      ctx.strokeStyle = '#7fb8ff'; ctx.lineWidth = Math.max(2, T * 0.07);
-      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.12, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke();
-    }
-    if (h.alone && fl.phase === 'raid') {
-      ctx.strokeStyle = 'rgba(255,179,92,0.8)'; ctx.setLineDash([T * 0.08, T * 0.06]); ctx.lineWidth = Math.max(1, T * 0.03);
-      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.22, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-    }
-    if (fl.time < h.panicUntil) {
-      ctx.fillStyle = '#ff6b6b'; ctx.font = numFont(Math.max(10, T * 0.32), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('!!', x, y - rad - T * 0.42 + Math.sin(realNow * 14) * T * 0.04);
-    }
-    if (h.hp / h.max < 0.3 && h.state !== 'rest') {
-      ctx.strokeStyle = 'rgba(255,90,90,' + (0.55 + 0.4 * Math.sin(realNow * 12)).toFixed(2) + ')'; ctx.lineWidth = Math.max(1.5, T * 0.05);
-      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.16, 0, Math.PI * 2); ctx.stroke();
-    }
-    if (h.lost) {
-      ctx.fillStyle = '#ffe066'; ctx.font = numFont(Math.max(10, T * 0.34), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('?', x, y - rad - T * 0.42 + Math.sin(realNow * 5) * T * 0.04);
-    }
-    if (h.state === 'talk') {
-      ctx.fillStyle = '#e8dfc8'; ctx.font = numFont(Math.max(9, T * 0.24), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('...', x + rad * 1.1, y - rad - T * 0.2);
-    }
-    if (h.state === 'rest') {
-      ctx.fillStyle = '#c9c2d8'; ctx.font = numFont(Math.max(9, T * 0.24), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('z', x + rad * 0.9, y - rad - T * 0.3 + Math.sin(realNow * 3) * T * 0.05);
-    }
-    if (h.state === 'disarm') {
-      ctx.strokeStyle = '#ffe066'; ctx.lineWidth = Math.max(2, T * 0.06);
-      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.1, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur)); ctx.stroke();
-    }
+    // a sign above the bars: panic, lost, talking, resting
+    const sign = (t, color, size, wob) => { ctx.fillStyle = color; ctx.font = numFont(Math.max(10, size), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, x, b0 - 8 - (h.shield > 0 ? bh + 1 : 0) + wob); };
+    if (fl.time < h.panicUntil) sign('!!', '#ff6b6b', H * 0.4, Math.sin(realNow * 14) * 1.5);
+    else if (h.lost) sign('?', '#ffe066', H * 0.42, Math.sin(realNow * 5) * 1.5);
+    else if (h.state === 'talk') sign('...', '#e8dfc8', H * 0.32, 0);
+    else if (h.state === 'rest') sign('z', '#c9c2d8', H * 0.32, Math.sin(realNow * 3) * 2);
   }
   function drawParticles(T) {
     particles.forEach(p => {
@@ -6713,7 +6761,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     alive().filter(h => h.bubble && h.bubble.until > fl.time).sort((a, b) => b.bubble.prio - a.bubble.prio).forEach(h => {
       if (shown >= 3 || seen.has(h.bubble.text)) return;
       seen.add(h.bubble.text); shown++;
-      const p = heroPos(h), sx = p.x * T - cam.ox, sy = p.y * T - cam.oy - T * 0.55 - 10;
+      const p = heroPos(h), sx = p.x * T - cam.ox, sy = p.y * T - cam.oy + figFeet(T) - figH(T, h.boss) - Math.max(2, T * 0.07) * 2 - 12;   // 1.06: over the figure's head and bars
       if (sx < -40 || sx > cw + 40 || sy < -40 || sy > ch + 40) return;
       const lines = wrapText(h.bubble.text, 140), lw = Math.max(...lines.map(l => ctx.measureText(l).width));
       const w = lw + 14, hh = lines.length * 14 + 10;
@@ -7195,7 +7243,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const d = $('#drawer'), was = !d.classList.contains('closed');
     d.classList.toggle('closed', !open); $('#app').classList.toggle('trayclosed', !open);
     $('#tray-toggle').setAttribute('aria-expanded', String(open));
-    $('#tray-label').textContent = open ? '▼ Schowaj pasek' : '▲ Pułapki';   // 1.05: a clear arrow (a tester took the folded bar for a bug)
+    $('#tray-label').textContent = open ? '▼ Budowa' : '▲ Budowa';   // 1.06 (author): one button that looks the same both ways, only the arrow turns
     if (byUser && fl && fl.phase === 'build') { UI.trayBuild = open; saveUI(); }
     if (was !== open) { if (!open && selected && fl && fl.phase === 'raid') { selected = null; } setTimeout(() => { if (fl) resize(); }, 0); hideTip(); }
   }
@@ -7335,7 +7383,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.05 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.06 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -7356,14 +7404,14 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     webStartRow(card);
     const how = el('details'); how.id = 'start-how'; how.appendChild(el('summary', null, 'Jak grać'));
     const ul = el('ul', 'conseq');
-    ['Między falami budujesz z paska na dole. Zakładki: Pułapki (te, które ranią, i te, które straszą), Potwory, Łup, Obiekty (skrzynia i budowle-kontry), Loch (nowe pokoje, przejścia, rozbudowa i typy pokoi), Talia. Każdy pokój mieści kilka elementów (licznik w rogu pokoju). W fali pasek sam się chowa: wysuniesz go przyciskiem ▲ Pułapki.',
+    ['Między falami budujesz z paska na dole. Zakładki: Pułapki (te, które ranią, i te, które straszą), Potwory, Łup, Obiekty (skrzynia i budowle-kontry), Loch (nowe pokoje, przejścia, rozbudowa i typy pokoi), Talia. Każdy pokój mieści kilka elementów (licznik w rogu pokoju). W fali pasek sam się chowa: wysuniesz go przyciskiem ▲ Budowa (▼ Budowa go chowa).',
      'Stuknięcie postawionego elementu albo mebla podnosi go (stuknij nowe miejsce, żeby przenieść), dwa szybkie stuknięcia ulepszają pułapkę albo potwora, przytrzymanie zdejmuje i oddaje Esencję. Przytrzymanie kafelka w pasku pokazuje, co robi. Działa też na pułapki, z którymi loch startuje (meble lochu nic nie oddają).',
      'W fali stukasz w mapę przy skill checku: obwódka to draśnięcie, pełne pole to krytyk (najmocniej), czaszka znaczy, że ktoś zginie. Każda pułapka ma swój kształt checku, a im silniejszy bohater, tym szybszy koralik.',
      'Jeden check ustawia pułapkę na całą falę: krytyk albo draśnięcie zostaje (pełny krążek albo obwódka w rogu pola) i pułapka dalej bije sama z tą siłą. Pudło albo brak stuknięcia: check wraca przy następnym razie. Gdy cios miałby zabić, check z czaszką pyta zawsze, a odpuszczona czaszka usypia pułapkę (☠ w rogu), dopóki nie może trafić bez zabijania.',
      'Przytrzymaj palec na mapie: gra przyspiesza, checków nie ma, a pułapki biją same: z zapamiętaną siłą albo jak draśnięcie. Puścisz palec i checki wracają.',
      'Gdy drużyna rozejdzie się po dużym lochu za daleko, ekran dzieli się na dwie części, po jednej dla każdej grupy (wyłączysz to w Ustawieniach). Przeciągnięcie mapy w fali daje na chwilę jeden ekran i wolną kamerę.',
      'Strach wypędza bohaterów; rany i śmierć towarzyszy też straszą, a strach powoli opada. Niosący kryształ rzuca go ze strachu. Uciekinier opowie innym o pułapkach, które go zraniły albo przestraszyły (najwyżej o 3, plotka żyje 2 fale), i może wrócić z blizną. Uwięzionego w klatce, którego nikt nie uwolni, klatka zabija.',
-     'Bohaterowie mają 6 klas (ikona na krążku: miecz, sztylet, krzyż, różdżka, lutnia, topór), a w jednej drużynie nigdy nie ma dwóch tej samej klasy. Bard krzepi pieśnią i woła zgubionych, barbarzyńca wpada w furię i rozbija skrzynie i budowle. Sakiewka przy bohaterze znaczy łowcę skarbów.',
+     'Bohaterowie mają 6 klas i każdą poznasz po figurce: hełm, tarcza i miecz (wojownik), kaptur i sztylet (złodziej), aureola i szata z krzyżem (kapłan), spiczasty kapelusz i laska (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). W jednej drużynie nigdy nie ma dwóch tej samej klasy. Bard krzepi pieśnią i woła zgubionych, barbarzyńca wpada w furię i rozbija skrzynie i budowle. Sakiewka przy bohaterze znaczy łowcę skarbów.',
      'Część pułapek nie rani, tylko straszy: portret, oczy, kości, lustro, zawiasy, trumna, pozytywka (w zakładce Pułapki, za raniącymi), a w zakładce Potwory duch, cień i nietoperze. Przestraszony uciekinier, który widział łup, opowie o nim i następna fala przyjdzie bardziej chciwa.',
      'Rany mają typ: kłute, obuchowe, ogień i trucizna. Klasa i ciało bohatera zmieniają obrażenia, a fobie podwajają strach. Stuknij bohatera (w fali albo na liście u góry), żeby zobaczyć jego kartę.',
      'Rany i strach to Groza. Dopóki trwa combo (różne pułapki pod rząd), Groza się zbiera, a gdy combo się skończy, wypłaca się jako Esencja: Groza × Chciwość (łup, rozległy loch, karty) × Combo. Esencję wydasz jeszcze w tej samej fali.',
@@ -7372,9 +7420,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.05'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.06'));
     const ul2 = el('ul', 'conseq');
-    ['1.05: skill check działa na całą falę. Trafiony krytyk albo draśnięcie pułapka pamięta (znaczek w rogu pola) i dalej bije sama z tą siłą. Pudło albo brak stuknięcia: check wraca przy następnym razie. Gdy cios miałby zabić, check z czaszką pyta zawsze, a odpuszczona czaszka usypia pułapkę, dopóki nie może trafić bez zabijania. W powtórkach Waszych runów checków było ok. 55% mniej.',
+    ['1.06: bohaterowie to figurki z sylwetką klasy: hełm, tarcza i miecz (wojownik), kaptur i sztylet (złodziej), aureola i szata z krzyżem (kapłan), spiczasty kapelusz i laska (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). Każda klasa ma wyraźnie inny kolor, figurka nigdy nie jest mniejsza niż ok. 27 px (także przy oddaleniu i na dzielonym ekranie) i patrzy w stronę, w którą idzie. Boss nosi koronę, łowca skarbów sakiewkę na plecach.',
+     '1.06: przycisk paska budowy wygląda tak samo, gdy pasek jest rozwinięty i zwinięty: ▼ Budowa chowa, ▲ Budowa wysuwa.',
+     '1.05: skill check działa na całą falę. Trafiony krytyk albo draśnięcie pułapka pamięta (znaczek w rogu pola) i dalej bije sama z tą siłą. Pudło albo brak stuknięcia: check wraca przy następnym razie. Gdy cios miałby zabić, check z czaszką pyta zawsze, a odpuszczona czaszka usypia pułapkę, dopóki nie może trafić bez zabijania. W powtórkach Waszych runów checków było ok. 55% mniej.',
      '1.05: dwie nowe klasy. Bard (lutnia) krzepi pieśnią po śmierci towarzysza i przy niskim morale, a zgubionych woła muzyką. Barbarzyńca (topór) wpada w furię (po śmierci towarzysza, po mocnym ciosie i zamiast paniki) i rozbija skrzynie, beczki, regały i budowle. Nowe kontry w zakładce Obiekty: Kamień wyjec i Okowy.',
      '1.05: ikony klas na krążkach bohaterów (miecz, sztylet, krzyż, różdżka, lutnia, topór) i nigdy dwóch bohaterów tej samej klasy w drużynie (najwyżej 6, w falach bez końca rosną za to poziomy). Łowca skarbów to znak sakiewki przy dowolnej klasie, gildia przysyła jednego specjalistę, a nowe rodzaje gildii odpowiadają na loch, w którym ludzie błądzą (bard), i na zastawione przejścia (barbarzyńca).',
      '1.05: bohaterowie mówią do rzeczy: nie cieszą się z bogactwa, gdy uciekają, odpowiadają sobie, wołają kapłana, zgubiony idzie na głos drużyny, a na rozwidleniach kłócą się charaktery (chciwy chce po złoto, ostrożny zwalnia, tchórz chce wracać, odważny go zawstydza).',
@@ -8476,7 +8526,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 48;   // 48: Prototype 1.05: a check's result kept for the wave (memFires, skullOff), checks per minute (cpm) and the share of the wave frozen by checks (frozen, perf.realSec), the classes of each party (bard, barbarian), rumours only of what hurt or scared (max 3, 2 waves), tutorial progress in the run summary (tut: furthest step, skipped, how it ended), new stats (songs, bardCalls, answers, rages, smashes, disputes, healCalls); 47: Prototype 1.04: wave summaries carry perf (frame gaps, js time, dpr, direct tiles share) and errors, the party waits at the gate 1,8 s, start traps near the heart, tutorial cards; 46: Prototype 1.03: greed risk without a ceiling (leader levels, hunters), loot dearer per copy, Odwrotna chciwość reworked (taken loot x3), split screen; 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
+  const LOG_VERSION = 49;   // 49: Prototype 1.06: heroes drawn as figurines, one build-bar button (no change in the data); 48: Prototype 1.05: a check's result kept for the wave (memFires, skullOff), checks per minute (cpm) and the share of the wave frozen by checks (frozen, perf.realSec), the classes of each party (bard, barbarian), rumours only of what hurt or scared (max 3, 2 waves), tutorial progress in the run summary (tut: furthest step, skipped, how it ended), new stats (songs, bardCalls, answers, rages, smashes, disputes, healCalls); 47: Prototype 1.04: wave summaries carry perf (frame gaps, js time, dpr, direct tiles share) and errors, the party waits at the gate 1,8 s, start traps near the heart, tutorial cards; 46: Prototype 1.03: greed risk without a ceiling (leader levels, hunters), loot dearer per copy, Odwrotna chciwość reworked (taken loot x3), split screen; 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
   function snapshotLayout() {
     const L = run.layout;
     return { WW, WH, entrance: L.entrance, heart: L.heartKey, entX: L.entX, essence: Math.round(fl.essence), breach: L.breach ? Object.assign({}, L.breach) : null, greedKeep: Math.round(run.greedKeep * 100) / 100,
@@ -8717,7 +8767,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (selected && !TOOLS[selected]) { const t = snapTile(selected, wx, wy) || [x, y]; tryPlace(selected, t[0], t[1]); return; }
     // v14: no more putting traps to sleep; a tap on a hero opens his full card (the game pauses)
     let best = null, bd = 0.9;
-    fl.heroes.forEach(h => { if (h.dead || h.fled || h.gone) return; const p = heroPos(h), d = Math.hypot(p.x - wx, p.y - wy); if (d < bd) { bd = d; best = h; } });
+    const s = cam.s || 20;   // 1.06: a figure stands up from its tile: its body counts too
+    fl.heroes.forEach(h => { if (h.dead || h.fled || h.gone) return; const p = heroPos(h), fy = p.y + figFeet(s) / s, top = fy - figH(s, h.boss) / s, d = Math.hypot(p.x - wx, clamp(wy, top, fy) - wy); if (d < bd) { bd = d; best = h; } });   // the distance to the figure, feet to head
     if (best) { if (!paused) setPaused(true); openModal({ type: 'hero', id: best.id, unpause: true }); }
   }
   function tryPlace(type, x, y) {
@@ -8893,7 +8944,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // something; in the wave tap a check, a hero and hold to speed up (no timeouts: each waits for the player or Pomiń krok).
   const TUT = [
     { id: 'intro', text: 'To Twój loch. Bohaterowie przyjdą falami po kryształy z serca (ostatni pokój). Loch postawił za Ciebie dwie pułapki blisko serca, ale same nie wystarczą: dostawisz więcej.', next: true },
-    { id: 'tray', text: 'Na dole jest pasek budowy. Stuknij ▲ Pułapki, żeby go rozwinąć (w trakcie fali sam się chowa, wysuniesz go tak samo).', hl: ['#tray-toggle'], prep: () => { selected = null; setTrayOpen(false); }, done: () => trayOpen() },
+    { id: 'tray', text: 'Na dole jest pasek budowy. Stuknij ▲ Budowa, żeby go rozwinąć (▼ Budowa go chowa; w trakcie fali chowa się sam).', hl: ['#tray-toggle'], prep: () => { selected = null; setTrayOpen(false); }, done: () => trayOpen() },
     { id: 'move', text: 'Stuknij pułapkę w kółku, żeby ją podnieść, a potem inne podświetlone pole, żeby ją przenieść (za darmo). Przytrzymanie palca zdejmuje element i oddaje Esencję.', tile: () => { const it = [...fl.items.values()].find(o => o.sys); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); }, done: () => !!tutFlags.moved, skip: true },
     { id: 'spikes', text: 'Teraz dostaw więcej. Wybierz Kolce z paska na dole (zakładka Pułapki). Przytrzymaj kafelek, żeby zobaczyć, co robi.', hl: ['#tab-traps', '#item-spikes'], prep: () => { movingKey = null; movingObj = null; tab = 'traps'; updateTray(); setTrayOpen(true); }, done: () => selected === 'spikes' || countType('spikes') > (tutFlags.sp0 || 0) },
     { id: 'place', text: 'Postaw je na trasie bohaterów: stuknij pole z pulsującym kółkiem.', tile: () => tutPathTile(0.25, 'spikes'), done: () => countType('spikes') > (tutFlags.sp0 || 0) },
@@ -8912,7 +8963,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     { id: 'dig', text: 'Pokój mieści tylko kilka pułapek (licznik w rogu), więc między falami kop nowe pokoje. Zakładka Loch: Nowy pokój, Przejście, Rozbuduj, Wyburz. Spróbuj wykopać pokój.', build: true, hl: ['#tab-dungeon', '#item-dig'], prep: () => { tab = 'dungeon'; updateTray(); }, done: () => tutFlags.tool, skip: true },
     { text: () => 'To Twoja talia: ' + slotsTxt(run.deckSize) + '. Karta działa do końca runu albo do sprzedaży, a kopie tej samej karty się sumują. Kafelki z przerywaną ramką leżą w schowku. Pierwszy kafelek otwiera sklep.', build: true, hl: ['#tab-deck'], prep: () => { tab = 'deck'; updateTray(); }, next: true },
     { id: 'object', text: 'Poziom 3 ulepszenia dodaje cechę, np. strzały przebijają tarcze. Zakładka Obiekty to kontry na sztuczki gildii: Ołtarz na kapłanów, Runa na magów, Kamień wyjec na bardów, Okowy na barbarzyńców. Na końcu zakładki Loch są typy pokoi.', build: true, hl: ['#tab-object', '#tab-dungeon'], prep: () => { tab = 'object'; updateTray(); setTrayOpen(true); }, next: true },
-    { id: 'types', text: 'Klasę widać na krążku bohatera: miecz (wojownik), sztylet (złodziej), krzyż (kapłan), różdżka (mag), lutnia (bard), topór (barbarzyńca). Obrażenia są kłute, obuchowe, ogniem albo trucizną, a klasy znoszą je różnie. Lista u góry mapy pokazuje następną drużynę: stuknij wiersz.', build: true, next: true },
+    { id: 'types', text: 'Klasę poznasz po figurce: hełm i tarcza (wojownik), kaptur (złodziej), aureola (kapłan), spiczasty kapelusz (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). Obrażenia są kłute, obuchowe, ogniem albo trucizną, a klasy znoszą je różnie. Lista u góry mapy pokazuje następną drużynę: stuknij wiersz.', build: true, next: true },
     { id: 'tales', text: 'Kto ucieknie, opowie tylko o pułapkach, które go zraniły albo przestraszyły (najwyżej o 3), a plotka żyje 2 fale: oko na pułapce znaczy, że następna fala ją zna. Kto widział łup, ściągnie chciwszych. Wystraszony może wrócić za 2-3 fale silniejszy.', build: true, next: true },
     { id: 'end', text: 'Klatka zabija, jeśli drużyna nie uwolni uwięzionego. W zwykłym runie od fali 2 serce zjada pierwsze porcje Esencji z każdej fali (pasek ♥), a gdy dostanie za mało, zje kryształ. Kryształów nie da się odkupić. Od fali 6 gildia może przebić wyłom. Powodzenia!', build: true, next: true }
   ];

@@ -1,10 +1,10 @@
 # Archiwum wersji prototypu
 
-Stare wersje prototypu "You are the dungeon" z czasu, gdy żył jako artefakt w Claude (15-19.10.2026). Każdy plik to cała gra w jednym HTML-u, zachowana bez zmian w kodzie gry.
+Stare wersje prototypu "You are the dungeon": v1-v15.2 z czasu, gdy żył jako artefakt w Claude (15-19.10.2026), i Prototype 1.0-1.05 z wersji web (od 19.10.2026). Każdy plik to cała gra w jednym HTML-u, zachowana bez zmian w kodzie gry (dla Prototype 1.x to wersja do artefaktu z `dist/artifact.html` danego commita).
 
 Dodane tylko opakowanie strony: nagłówek dla telefonu, prośba do wyszukiwarek o pominięcie i osobny zapis w przeglądarce dla każdej wersji (klucze z przedrostkiem `yatd-archiwum-<wersja>:`). Dzięki temu stara wersja nie nadpisze zapisu aktualnej gry.
 
-Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8eap/archiwum/v8.html`. Nie wysyłają wyników na Dysk; zapis do bazy artefaktu działał tylko w Claude. Prototype 1.0 i nowsze są w historii repo (`git log`).
+Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8eap/archiwum/v8.html`. Nie wysyłają wyników na Dysk (dzięki temu granie w archiwum nie miesza się z danymi z testów); zapis do bazy artefaktu działał tylko w Claude. Aktualna wersja jest zawsze pod głównym adresem gry, a pełna historia zmian w `git log`.
 
 | Wersja | Data | Co nowego |
 |---|---|---|
@@ -40,3 +40,9 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [v15](v15.html) | 19.10 | jedna waluta: Groza × Chciwość × Combo = Esencja |
 | [v15.1](v15.1.html) | 19.10 | zakładka Strach i nowe elementy straszące |
 | [v15.2](v15.2.html) | 19.10 | gesty (stuknij = przenieś), ekrany bez przewijania |
+| [Prototype 1.0](1.0.html) | 19.10 | oprawa dark fantasy, wersja web dla znajomych |
+| [Prototype 1.01](1.01.html) | 19.10 | combo jak w Balatro, serce je pierwsze |
+| [Prototype 1.02](1.02.html) | 19.10 | checki w jednej oprawie, odstęp u góry |
+| [Prototype 1.03](1.03.html) | 19.10 | chciwość z ryzykiem, dzielony ekran |
+| [Prototype 1.04](1.04.html) | 19.10 | krytyk jak w DbD, czekanie przy wejściu, samouczek u góry |
+| [Prototype 1.05](1.05.html) | 20.10 | check na falę, bard i barbarzyńca, jeden ekran po fali |

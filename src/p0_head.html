@@ -259,12 +259,11 @@ body {
 
 /* ---------- the drawer: tabs and the tray ---------- */
 .drawer { display: grid; gap: 6px; }
-.handle { display: flex; align-items: center; justify-content: center; gap: 8px; height: 18px; margin: -2px 0; padding: 0; background: none; border: 0; color: var(--dim); font: inherit; font-size: 11.5px; cursor: pointer; }
-.handle .grip { width: 34px; height: 4px; border-radius: 1px; background: var(--line2); box-shadow: 0 1px 0 #000; }
+/* 1.06 (author): the build bar's button looks the same open and folded; only the arrow turns (▼ Budowa / ▲ Budowa) */
+.handle { display: flex; align-items: center; justify-content: center; height: 30px; margin: 0; padding: 0; background: none; border: 0; color: var(--gold-hi); font: inherit; cursor: pointer; }
+.handle .grip { display: none; }
 .drawer.closed #drawer-body { display: none; }
-.drawer.closed .handle { color: var(--gold-hi); height: 30px; margin: 0; }
-.drawer.closed .handle .grip { display: none; }
-.drawer.closed #tray-label { padding: 4px 18px 5px; border: 1px solid #5c4b28; border-radius: var(--r); background-color: #1b1914; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 #000; }
+#tray-label { min-width: 132px; text-align: center; padding: 4px 18px 5px; border: 1px solid #5c4b28; border-radius: var(--r); background-color: #1b1914; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 #000; }
 #drawer-body { display: grid; gap: 6px; }
 #drawer-body > * { min-width: 0; }   /* eight tabs: the row never widens the page */
 .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); box-shadow: 0 1px 0 var(--edge); }

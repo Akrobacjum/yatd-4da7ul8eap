@@ -65,7 +65,7 @@
     fl.items.forEach(it => { if (it.jamUntil > fl.time && fl.phase === 'raid') { ctx.fillStyle = 'rgba(150,100,255,0.38)'; ctx.fillRect(it.x * T, it.y * T, T, T); ctx.fillStyle = '#e6dcff'; ctx.font = numFont(Math.max(10, T * 0.4), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('≈', (it.x + 0.5) * T, (it.y + 0.5) * T); } });
     if (run.tut >= 0) drawTutTarget(T);
     drawFx(T);
-    fl.heroes.forEach(h => { if (!h.dead && !h.fled && !h.gone) drawHero(h, T); });
+    fl.heroes.filter(h => !h.dead && !h.fled && !h.gone).sort((a, b) => heroPos(a).y - heroPos(b).y).forEach(h => drawHero(h, T));   // 1.06: standing figures, the nearer one in front
     fl.items.forEach(it => { if (DRIFT[it.type] && seen(Math.floor(it.gx !== undefined ? it.gx : it.x), Math.floor(it.gy !== undefined ? it.gy : it.y))) drawItem(it, T); });   // ghosts, shades and bats float above everything
     if (fl.phase === 'raid') drawMemBadges(T, seen);
     drawParticles(T); drawFloats(T);
@@ -867,90 +867,139 @@
     ctx.save(); ctx.translate(cx, cy); ctx.scale(size / 24, size / 24); if (ic.rot) ctx.rotate(ic.rot * Math.PI / 180); ctx.translate(-12, -12);
     ctx.fillStyle = color; ctx.fill(p, 'evenodd'); ctx.restore();
   }
+  // 1.06 (author: the class icons on the discs were invisible, heroes still looked alike from afar): heroes are standing figurines
+  // with a class silhouette: helmet, shield and sword (warrior), hood and dagger (thief), halo, robe and cross (priest), pointed
+  // hat and staff (mage), feathered cap and lute (bard), horned helmet and axe (barbarian). A figure is never smaller than
+  // FIG_MIN px on screen, whatever the zoom; it looks the way it walks; a dark outline keeps it apart from the floor.
+  const FIG_MIN = 27, FIG_MAX = 50;
+  const figH = (T, boss) => clamp(T * 1.1, FIG_MIN, FIG_MAX) * (boss === 'final' ? 1.3 : boss ? 1.18 : 1);
+  const figFeet = T => T * 0.34;   // the feet stand a bit below the tile's centre (the figure rises from there)
+  const SKIN = '#e8c39d', OUT = '#0c0a10';
+  // draws one figure in a 24-unit box (feet at 0, head top near -24; x to the right = the way it faces)
+  function drawFigure(type, x, feetY, H, face, col, opt) {
+    opt = opt || {};
+    const u = H / 24;
+    ctx.save(); ctx.translate(x, feetY); ctx.scale(u * face, u);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const lw = 1.6 / u;   // about 1,6 px of outline at any size
+    const C = opt.flash ? '#ffffff' : col, D = opt.flash ? '#e8e8e8' : shade(col, -0.45);
+    const shape = (fill, build) => { ctx.beginPath(); build(); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = lw; ctx.stroke(); };
+    const line = (color, w, pts) => { ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]); ctx.strokeStyle = OUT; ctx.lineWidth = w + lw * 1.6; ctx.stroke(); ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke(); };
+    const step = opt.walk ? Math.sin(opt.walk) * 1.4 : 0;
+    const robe = type === 'priest' || type === 'mage';
+    // behind the body: a cape (thief), the bag (treasure hunter)
+    if (type === 'thief') shape(D, () => { ctx.moveTo(-4.6, -14.5); ctx.lineTo(-6.6, -1.5); ctx.lineTo(3.5, -1.5); ctx.lineTo(4.2, -14.5); ctx.closePath(); });
+    if (opt.bag) { shape('#e0a83c', () => { ctx.ellipse(-6.2, -7.5, 2.8, 3.1, 0, 0, Math.PI * 2); }); line('#8a5a1c', 1, [-7.2, -10.6, -5.2, -10.6]); }
+    // legs (a robe covers them)
+    if (!robe) {
+      shape('#2b2530', () => { ctx.rect(-3.4, -6.5 + Math.max(0, step) * 0.5, 2.6, 6.5 - Math.max(0, step) * 0.5); });
+      shape('#2b2530', () => { ctx.rect(0.8, -6.5 + Math.max(0, -step) * 0.5, 2.6, 6.5 - Math.max(0, -step) * 0.5); });
+    }
+    // the body
+    if (type === 'priest') shape('#f1e8cf', () => { ctx.moveTo(-4.6, -14.5); ctx.lineTo(4.6, -14.5); ctx.lineTo(6.6, 0); ctx.lineTo(-6.6, 0); ctx.closePath(); });
+    else if (type === 'mage') shape(C, () => { ctx.moveTo(-4.4, -14.5); ctx.lineTo(4.4, -14.5); ctx.lineTo(6.4, 0); ctx.lineTo(-6.4, 0); ctx.closePath(); });
+    else if (type === 'barbarian') shape(C, () => { ctx.moveTo(-5.6, -15); ctx.lineTo(5.6, -15); ctx.lineTo(4.6, -5.5); ctx.lineTo(-4.6, -5.5); ctx.closePath(); });
+    else shape(C, () => { ctx.moveTo(-4.6, -14.8); ctx.lineTo(4.6, -14.8); ctx.lineTo(4.2, -5.6); ctx.lineTo(-4.2, -5.6); ctx.closePath(); });
+    if (type === 'priest') { line(col, 1.6, [0, -14, 0, -0.6]); line('#fff7d6', 1.2, [0, -12.6, 0, -8.4]); line('#fff7d6', 1.2, [-1.8, -11.2, 1.8, -11.2]); ctx.strokeStyle = col; }   // a gold stripe and a cross
+    if (type === 'barbarian') { line('#5b3a1f', 1.6, [-4.8, -7, 4.8, -7]); line('#f0e2c8', 0.9, [-3.6, -12.4, -1.2, -10.6]); }   // a fur belt, a scar
+    if (type === 'warrior') line('#d6dce8', 1, [-4, -10, 4, -10]);
+    if (type === 'bard') line('#ffd166', 1, [-4.2, -9.6, 4.2, -9.6]);
+    // the head
+    shape(SKIN, () => { ctx.arc(0, -18.2, 3.7, 0, Math.PI * 2); });
+    ctx.fillStyle = OUT; ctx.beginPath(); ctx.arc(1.5, -18.6, 0.55, 0, Math.PI * 2); ctx.fill();   // an eye, the way it looks
+    // headgear: the silhouette that tells the class apart
+    if (type === 'warrior') { shape('#c9d2e3', () => { ctx.arc(0, -18.4, 4.1, Math.PI, 0); ctx.lineTo(4.1, -17.4); ctx.lineTo(-4.1, -17.4); ctx.closePath(); }); line('#c9d2e3', 1.2, [0, -22.6, 0, -24.4]); }
+    else if (type === 'thief') shape(D, () => { ctx.moveTo(-4.4, -15.4); ctx.quadraticCurveTo(-5.4, -23.2, 0.6, -24); ctx.quadraticCurveTo(5.4, -22.6, 4.2, -18.6); ctx.lineTo(2.4, -18.2); ctx.quadraticCurveTo(1.8, -21, -1.6, -20.6); ctx.quadraticCurveTo(-3.2, -18.4, -2.4, -15.2); ctx.closePath(); });
+    else if (type === 'priest') { ctx.strokeStyle = OUT; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.ellipse(0, -23.6, 3.8, 1.2, 0, 0, Math.PI * 2); ctx.stroke(); ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.stroke(); }
+    else if (type === 'mage') { shape(D, () => { ctx.ellipse(0, -20.8, 5.6, 1.5, 0, 0, Math.PI * 2); }); shape(D, () => { ctx.moveTo(-3.6, -21); ctx.lineTo(3.6, -21); ctx.quadraticCurveTo(1.6, -26, 3.8, -31); ctx.quadraticCurveTo(-1.4, -27.6, -3.6, -21); ctx.closePath(); }); line(col, 1, [-3.2, -22.2, 3.2, -22.2]); }
+    else if (type === 'bard') { shape(D, () => { ctx.ellipse(-0.6, -21.4, 4.8, 1.9, -0.18, 0, Math.PI * 2); }); line('#ffd166', 1.2, [2.6, -22.4, 4.8, -25, 8, -26.4]); }
+    else if (type === 'barbarian') { shape('#5a4636', () => { ctx.arc(0, -19, 3.9, Math.PI, 0); ctx.closePath(); }); shape('#efe3ca', () => { ctx.moveTo(-3.6, -20); ctx.quadraticCurveTo(-7.4, -21, -6.8, -25.6); ctx.quadraticCurveTo(-5.4, -22.6, -2.6, -21.8); ctx.closePath(); }); shape('#efe3ca', () => { ctx.moveTo(3.6, -20); ctx.quadraticCurveTo(7.4, -21, 6.8, -25.6); ctx.quadraticCurveTo(5.4, -22.6, 2.6, -21.8); ctx.closePath(); }); }
+    // in front: what each one carries
+    if (type === 'warrior') { line('#e9edf3', 1.5, [5.8, -7.5, 5.8, -19]); line('#8a6a44', 1.6, [4, -7.6, 7.6, -7.6]); shape(D, () => { ctx.arc(-4.8, -10, 4, 0, Math.PI * 2); }); ctx.fillStyle = '#d6dce8'; ctx.beginPath(); ctx.arc(-4.8, -10, 1.1, 0, Math.PI * 2); ctx.fill(); }
+    else if (type === 'thief') { line('#e9edf3', 1.3, [5, -8.4, 7.6, -12.6]); line('#8a6a44', 1.3, [4.2, -7.2, 5.2, -8.6]); }
+    else if (type === 'mage') { line('#8a6a44', 1.3, [6.2, 0, 6.2, -21]); ctx.fillStyle = opt.flash ? '#fff' : '#efe4ff'; ctx.beginPath(); ctx.arc(6.2, -22.2, 1.9, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.stroke(); }
+    else if (type === 'priest') { /* the cross is on the robe */ }
+    else if (type === 'bard') { line('#8a5a2c', 1.2, [0.6, -10.4, 6.8, -15.6]); shape('#c48a46', () => { ctx.ellipse(-0.4, -9.2, 3.3, 2.5, -0.5, 0, Math.PI * 2); }); ctx.fillStyle = OUT; ctx.beginPath(); ctx.arc(-0.4, -9.2, 0.8, 0, Math.PI * 2); ctx.fill(); }
+    else if (type === 'barbarian') { line('#8a6a44', 1.5, [6, -2, 6, -20]); shape('#d7dde8', () => { ctx.moveTo(6, -19.6); ctx.quadraticCurveTo(11.4, -19.4, 11, -13.6); ctx.quadraticCurveTo(8.6, -15.6, 6, -14.6); ctx.closePath(); }); }
+    if (opt.boss) shape('#ffd34d', () => { const b = type === 'mage' ? -31.5 : type === 'priest' ? -25.6 : -24.2; ctx.moveTo(-3, b + 0.4); ctx.lineTo(-3.4, b - 3); ctx.lineTo(-1.4, b - 1.2); ctx.lineTo(0, b - 3.6); ctx.lineTo(1.4, b - 1.2); ctx.lineTo(3.4, b - 3); ctx.lineTo(3, b + 0.4); ctx.closePath(); });   // a crown for a boss
+    ctx.restore();
+  }
+  // a colour a bit darker (k < 0) or lighter (k > 0)
+  function shade(hex, k) {
+    const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k));
+    return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+  }
   function drawHero(h, T) {
-    const p = heroPos(h), sm = h.state === 'smash' ? Math.sin(realNow * 40) * T * 0.04 : 0, x = p.x * T + sm, y = p.y * T, rad = T * 0.24;   // 1.05: the axe swings
+    const p = heroPos(h), sm = h.state === 'smash' ? Math.sin(realNow * 40) * T * 0.04 : 0;   // 1.05: the axe swings
+    if (h.nx !== null && h.nx !== h.x) h.face = h.nx > h.x ? 1 : -1;   // 1.06: the figure looks the way it goes
+    const face = h.face || 1, H = figH(T, h.boss), x = p.x * T + sm, feet = p.y * T + figFeet(T), top = feet - H, mid = feet - H * 0.48, W = H * 0.36;
     if (h.path.length && h.state !== 'boss') {
       ctx.fillStyle = h.T.color; ctx.globalAlpha = 0.45;
       h.path.slice(0, 6).forEach((t, k) => { ctx.beginPath(); ctx.arc((t[0] + 0.5) * T, (t[1] + 0.5) * T, Math.max(1.5, T * (0.07 - k * 0.007)), 0, Math.PI * 2); ctx.fill(); });
       ctx.globalAlpha = 1;
     }
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(x, y + rad * 0.9, rad, rad * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+    // on the ground: the shadow and the rings (slowed, alone, near death, disarming)
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.ellipse(x, feet, W * 0.95, W * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+    const ring = (color, w, dash, a0, a1, k) => { ctx.strokeStyle = color; ctx.lineWidth = w; if (dash) ctx.setLineDash(dash); ctx.beginPath(); ctx.ellipse(x, feet, W * (k || 1.25), W * (k || 1.25) * 0.38, 0, a0 || 0, a1 === undefined ? Math.PI * 2 : a1); ctx.stroke(); if (dash) ctx.setLineDash([]); };
+    if (fl.time < h.slowUntil) ring('#a9c6ff', 2);
+    if (h.alone && fl.phase === 'raid') ring('rgba(255,179,92,0.85)', 1.5, [4, 3], 0, Math.PI * 2, 1.5);
+    if (h.hp / h.max < 0.3 && h.state !== 'rest') ring('rgba(255,90,90,' + (0.55 + 0.4 * Math.sin(realNow * 12)).toFixed(2) + ')', 2, null, 0, Math.PI * 2, 1.1);
+    if (h.state === 'disarm') ring('#ffe066', 2.5, null, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur), 1.4);
     if (h.cursed) {   // a cursed treasure: a violet haze
-      const g = ctx.createRadialGradient(x, y, rad * 0.5, x, y, rad * 2); g.addColorStop(0, 'rgba(180,140,255,0.45)'); g.addColorStop(1, 'rgba(180,140,255,0)');
-      ctx.fillStyle = g; ctx.fillRect(x - rad * 2, y - rad * 2, rad * 4, rad * 4);
+      const g = ctx.createRadialGradient(x, mid, W * 0.4, x, mid, H * 0.75); g.addColorStop(0, 'rgba(180,140,255,0.45)'); g.addColorStop(1, 'rgba(180,140,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(x - H, mid - H, H * 2, H * 2);
     }
-    if (fl.time < h.calmUntil) { ctx.fillStyle = 'rgba(195,178,255,0.22)'; ctx.beginPath(); ctx.arc(x, y, rad * 1.7, 0, Math.PI * 2); ctx.fill(); }   // amulet
-    if (fl.time < h.sprintUntil) {   // boots: speed lines
-      ctx.strokeStyle = 'rgba(232,194,122,0.7)'; ctx.lineWidth = Math.max(1, T * 0.035); ctx.beginPath();
-      for (let k = -1; k <= 1; k++) { ctx.moveTo(x - rad * 1.2, y + k * rad * 0.45); ctx.lineTo(x - rad * 1.9, y + k * rad * 0.45); }
+    if (fl.time < h.calmUntil) { ctx.fillStyle = 'rgba(195,178,255,0.22)'; ctx.beginPath(); ctx.ellipse(x, mid, W * 1.5, H * 0.62, 0, 0, Math.PI * 2); ctx.fill(); }   // amulet
+    if (fl.time < h.sprintUntil) {   // boots: speed lines behind
+      ctx.strokeStyle = 'rgba(232,194,122,0.75)'; ctx.lineWidth = 1.5; ctx.beginPath();
+      for (let k = 0; k < 3; k++) { const yy = feet - H * (0.08 + 0.12 * k); ctx.moveTo(x - face * W * 1.3, yy); ctx.lineTo(x - face * W * 2.2, yy); }
       ctx.stroke();
     }
-    ctx.fillStyle = h.flash > 0 ? '#ffffff' : h.T.color;
-    ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill();
-    ctx.lineWidth = Math.max(1.5, T * (h.rank >= 2 ? 0.07 : 0.05) * (h.boss ? 1.6 : 1)); ctx.strokeStyle = h.R.color; ctx.stroke();   // ring colour = level tier
-    if (T >= 18) { ctx.fillStyle = h.R.color; ctx.font = numFont(Math.max(9, T * 0.2), true); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(String(h.lvl), x + rad * 0.95, y + rad * 0.75); }
-    if (fl.time < h.slowUntil) { ctx.strokeStyle = '#a9c6ff'; ctx.lineWidth = Math.max(1.5, T * 0.04); ctx.beginPath(); ctx.arc(x, y, rad + T * 0.05, 0, Math.PI * 2); ctx.stroke(); }
-    if (fl.time < h.burnUntil) { ctx.fillStyle = Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x + rad * 0.7, y - rad * 0.7, T * 0.07, 0, Math.PI * 2); ctx.fill(); }
-    drawClassIcon(h.type, x, y, rad * 1.7, '#1a1424');
-    if (h.hunter && T >= 14) drawClassIcon('bag', x - rad * 1.05, y - rad * 0.85, Math.max(7, T * 0.26), '#f2b94b');   // a treasure hunter
-    hpBar(x, y - rad - T * 0.14, T * 0.56, h.hp / h.max, h.hp / h.max > 0.35 ? '#6fd38a' : '#ff6b6b', T);
-    hpBar(x, y - rad - T * 0.14 + Math.max(2.5, T * 0.09), T * 0.56, h.fear / (h.courage * (fl.fearless ? 1.3 : 1)), '#b48cff', T);   // fear: full bar = runs away
-    if (h.shield > 0) hpBar(x, y - rad - T * 0.14 - Math.max(3, T * 0.1), T * 0.56, h.shield / h.max, '#7fb8ff', T);
-    if (h.type === 'priest' && h.faithMax && T >= 14) hpBar(x, y - rad - T * 0.14 + 2 * Math.max(2.5, T * 0.09), T * 0.56, h.faith / h.faithMax, '#ffe9a8', T);   // faith
-    if (fl.time < h.wardUntil) {   // talisman ward
-      ctx.strokeStyle = 'rgba(127,184,255,' + (0.6 + 0.3 * Math.sin(realNow * 12)).toFixed(2) + ')'; ctx.lineWidth = Math.max(2, T * 0.06);
-      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.1, 0, Math.PI * 2); ctx.stroke();
+    const walk = h.nx !== null && fl.phase === 'raid' ? realNow * 13 + h.id : 0, bob = walk ? Math.abs(Math.sin(walk)) * H * 0.035 : 0;
+    drawFigure(h.type, x, feet - bob, H, face, h.T.color, { flash: h.flash > 0, walk, bag: h.hunter, boss: h.boss });
+    if (fl.time < h.burnUntil) { ctx.fillStyle = Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x + face * W * 0.5, mid - H * 0.12, Math.max(2.5, H * 0.07), 0, Math.PI * 2); ctx.fill(); }
+    if (fl.time < h.wardUntil) {   // talisman ward around the body
+      ctx.strokeStyle = 'rgba(127,184,255,' + (0.6 + 0.3 * Math.sin(realNow * 12)).toFixed(2) + ')'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(x, mid, W * 1.45, H * 0.6, 0, 0, Math.PI * 2); ctx.stroke();
     }
-    if (h.crystal) crystalShape(x + rad * 1.05, y - rad * 0.2, T * 0.12, '#ff9ab0');
-    if (h.gold > 0 && T >= 14) {   // a purse
-      ctx.fillStyle = '#f2b94b'; ctx.beginPath(); ctx.arc(x - rad * 1.05, y + rad * 0.55, T * 0.09, 0, Math.PI * 2); ctx.fill();
-      if (h.gold > 1) { ctx.fillStyle = '#ffe9a8'; ctx.font = numFont(Math.max(8, T * 0.18), true); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(String(h.gold), x - rad * 1.2, y + rad * 0.55); }
+    if (h.type === 'warrior' && fl.time < h.shieldUpUntil) {   // the raised shield: an arc in front
+      ctx.strokeStyle = '#7fb8ff'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.ellipse(x + face * W * 0.2, mid, W * 1.6, H * 0.55, 0, face > 0 ? -Math.PI * 0.4 : Math.PI * 0.6, face > 0 ? Math.PI * 0.4 : Math.PI * 1.4); ctx.stroke();
+    }
+    // above the head: health, fear, ward, faith
+    const bw = Math.max(T * 0.56, H * 0.62), bh = Math.max(2, T * 0.07), b0 = top - 4 - bh * 2;
+    hpBar(x, b0, bw, h.hp / h.max, h.hp / h.max > 0.35 ? '#6fd38a' : '#ff6b6b', T);
+    hpBar(x, b0 + bh + 1, bw, h.fear / (h.courage * (fl.fearless ? 1.3 : 1)), '#b48cff', T);   // fear: full bar = runs away
+    if (h.shield > 0) hpBar(x, b0 - bh - 1, bw, h.shield / h.max, '#7fb8ff', T);
+    if (h.type === 'priest' && h.faithMax) hpBar(x, b0 + 2 * (bh + 1), bw, h.faith / h.faithMax, '#ffe9a8', T);   // faith
+    // the level beside the head, in the colour of the rank
+    ctx.font = numFont(Math.max(10, H * 0.34), true); ctx.textAlign = face > 0 ? 'right' : 'left'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3; ctx.strokeStyle = OUT; ctx.strokeText(String(h.lvl), x - face * W * 0.95, top + H * 0.22); ctx.fillStyle = h.R.color; ctx.fillText(String(h.lvl), x - face * W * 0.95, top + H * 0.22);
+    if (h.crystal) crystalShape(x + face * W * 1.2, mid, Math.max(3, H * 0.1), '#ff9ab0');
+    if (h.gold > 0) {   // a purse at the belt
+      const gx = x - face * W * 0.95, gy = feet - H * 0.3;
+      ctx.fillStyle = '#f2b94b'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(gx, gy, Math.max(2.5, H * 0.07), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      if (h.gold > 1) { ctx.fillStyle = '#ffe9a8'; ctx.font = numFont(Math.max(9, H * 0.26), true); ctx.textAlign = face > 0 ? 'right' : 'left'; ctx.fillText(String(h.gold), gx - face * 4, gy); }
     }
     if (h.fleeing) {
-      ctx.fillStyle = '#c3b2ff'; ctx.font = numFont(Math.max(10, T * 0.3), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('»', x - rad * 1.15, y - rad * 0.3 + Math.sin(realNow * 10) * T * 0.03);
+      ctx.fillStyle = '#c3b2ff'; ctx.font = numFont(Math.max(11, H * 0.4), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(face > 0 ? '»' : '«', x + face * W * 1.5, mid + Math.sin(realNow * 10) * 2);
     }
-    if (h.inv.length && T >= 16) {   // the pack: one square per item, in its colour; a power on cooldown is dimmed
-      const q = Math.max(3, T * 0.1);
+    if (h.inv.length && T >= 14) {   // the pack: one square per item under the feet, in its colour; a power on cooldown is dimmed
+      const q = Math.max(3, T * 0.1), n = Math.min(6, h.inv.length), x0 = x - (n * (q + 2) - 2) / 2;
       h.inv.slice(0, 6).forEach((it, k) => {
         ctx.globalAlpha = fl.time < (it.cdUntil || 0) || it.charges === 0 ? 0.35 : 1;
-        ctx.fillStyle = ITEM_COLOR[it.type] || rarColor(it.r); ctx.fillRect(x - rad + k * (q + 2), y + rad + T * 0.1, q, q);
-        if (it.r >= 2) { ctx.strokeStyle = rarColor(it.r); ctx.lineWidth = 1; ctx.strokeRect(x - rad + k * (q + 2) - 0.5, y + rad + T * 0.1 - 0.5, q + 1, q + 1); }
+        ctx.fillStyle = ITEM_COLOR[it.type] || rarColor(it.r); ctx.fillRect(x0 + k * (q + 2), feet + W * 0.4, q, q);
+        if (it.r >= 2) { ctx.strokeStyle = rarColor(it.r); ctx.lineWidth = 1; ctx.strokeRect(x0 + k * (q + 2) - 0.5, feet + W * 0.4 - 0.5, q + 1, q + 1); }
       });
       ctx.globalAlpha = 1;
     }
-    if (h.type === 'warrior' && fl.time < h.shieldUpUntil) {
-      ctx.strokeStyle = '#7fb8ff'; ctx.lineWidth = Math.max(2, T * 0.07);
-      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.12, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke();
-    }
-    if (h.alone && fl.phase === 'raid') {
-      ctx.strokeStyle = 'rgba(255,179,92,0.8)'; ctx.setLineDash([T * 0.08, T * 0.06]); ctx.lineWidth = Math.max(1, T * 0.03);
-      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.22, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-    }
-    if (fl.time < h.panicUntil) {
-      ctx.fillStyle = '#ff6b6b'; ctx.font = numFont(Math.max(10, T * 0.32), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('!!', x, y - rad - T * 0.42 + Math.sin(realNow * 14) * T * 0.04);
-    }
-    if (h.hp / h.max < 0.3 && h.state !== 'rest') {
-      ctx.strokeStyle = 'rgba(255,90,90,' + (0.55 + 0.4 * Math.sin(realNow * 12)).toFixed(2) + ')'; ctx.lineWidth = Math.max(1.5, T * 0.05);
-      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.16, 0, Math.PI * 2); ctx.stroke();
-    }
-    if (h.lost) {
-      ctx.fillStyle = '#ffe066'; ctx.font = numFont(Math.max(10, T * 0.34), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('?', x, y - rad - T * 0.42 + Math.sin(realNow * 5) * T * 0.04);
-    }
-    if (h.state === 'talk') {
-      ctx.fillStyle = '#e8dfc8'; ctx.font = numFont(Math.max(9, T * 0.24), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('...', x + rad * 1.1, y - rad - T * 0.2);
-    }
-    if (h.state === 'rest') {
-      ctx.fillStyle = '#c9c2d8'; ctx.font = numFont(Math.max(9, T * 0.24), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('z', x + rad * 0.9, y - rad - T * 0.3 + Math.sin(realNow * 3) * T * 0.05);
-    }
-    if (h.state === 'disarm') {
-      ctx.strokeStyle = '#ffe066'; ctx.lineWidth = Math.max(2, T * 0.06);
-      ctx.beginPath(); ctx.arc(x, y, rad + T * 0.1, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur)); ctx.stroke();
-    }
+    // a sign above the bars: panic, lost, talking, resting
+    const sign = (t, color, size, wob) => { ctx.fillStyle = color; ctx.font = numFont(Math.max(10, size), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, x, b0 - 8 - (h.shield > 0 ? bh + 1 : 0) + wob); };
+    if (fl.time < h.panicUntil) sign('!!', '#ff6b6b', H * 0.4, Math.sin(realNow * 14) * 1.5);
+    else if (h.lost) sign('?', '#ffe066', H * 0.42, Math.sin(realNow * 5) * 1.5);
+    else if (h.state === 'talk') sign('...', '#e8dfc8', H * 0.32, 0);
+    else if (h.state === 'rest') sign('z', '#c9c2d8', H * 0.32, Math.sin(realNow * 3) * 2);
   }
   function drawParticles(T) {
     particles.forEach(p => {
@@ -1246,7 +1295,7 @@
     alive().filter(h => h.bubble && h.bubble.until > fl.time).sort((a, b) => b.bubble.prio - a.bubble.prio).forEach(h => {
       if (shown >= 3 || seen.has(h.bubble.text)) return;
       seen.add(h.bubble.text); shown++;
-      const p = heroPos(h), sx = p.x * T - cam.ox, sy = p.y * T - cam.oy - T * 0.55 - 10;
+      const p = heroPos(h), sx = p.x * T - cam.ox, sy = p.y * T - cam.oy + figFeet(T) - figH(T, h.boss) - Math.max(2, T * 0.07) * 2 - 12;   // 1.06: over the figure's head and bars
       if (sx < -40 || sx > cw + 40 || sy < -40 || sy > ch + 40) return;
       const lines = wrapText(h.bubble.text, 140), lw = Math.max(...lines.map(l => ctx.measureText(l).width));
       const w = lw + 14, hh = lines.length * 14 + 10;
