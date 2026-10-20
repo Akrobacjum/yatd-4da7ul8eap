@@ -108,7 +108,9 @@
       if (!st(x, y + 1) && tileAt(x, y + 1) === FLOOR) torches.push({ x, y, fx: x + 0.5, fy: y + 1, gx: x + 0.5, gy: y + 1.2, face: 'S' });
       else if (!st(x + 1, y) && tileAt(x + 1, y) === FLOOR) torches.push({ x, y, fx: x + 1, fy: y + 0.5, gx: x + 1.2, gy: y + 0.5, face: 'E' });
     }
-    const cur = new Float32Array(n), from = new Float32Array(n), to = new Float32Array(n), t0 = new Float32Array(n), pp = new Float32Array(n);
+    // 1.09 fix (author: walls the party does not touch hopped, flat ones blinked): 64-bit, so a height compares equal to itself
+    // (1,7 in 32 bits is not 1,7, and every wall was sent on a move to where it already stood)
+    const cur = new Float64Array(n), from = new Float64Array(n), to = new Float64Array(n), t0 = new Float64Array(n), pp = new Float64Array(n);
     for (let i = 0; i < n; i++) if (fl.tiles[i] === WALL) cur[i] = from[i] = to[i] = stand[i] ? WALL_H : WALL_LIP;
     Object.assign(WA, { tiles: fl.tiles, ww: WW, wh: WH, stand, occ, own, roomWalls, torches, cur, from, to, t0, pp, RW, sig: '', focus: new Map(), moving: new Set() });
     return WA;
@@ -142,7 +144,7 @@
       for (let i = 0; i < WW * WH; i++) {
         if (!A.stand[i]) continue;
         const target = flat.has(i) ? WALL_LIP : WALL_H;
-        if (target === A.to[i]) continue;
+        if (Math.abs(target - A.to[i]) < 1e-6) continue;   // already there or on its way
         const x = i % WW, y = (i - x) / WW;
         let d = 99; hs.forEach(p => { d = Math.min(d, Math.hypot(p.x - x - 0.5, p.y - y - 0.5)); });
         A.from[i] = A.cur[i]; A.to[i] = target; A.t0[i] = realNow + (reduceMotion ? 0 : Math.min(0.3, d * 0.025)); A.moving.add(i);
@@ -204,7 +206,7 @@
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const i = y * WW + x; if (fl.tiles[i] !== WALL) continue;
       const c = W2S(x + 0.5, y + 0.5, 0); if (!onScreen(c, T * 3)) continue;
-      if (wallUp(H[i]) || WA.moving.has(i)) ups.push(i); else lips.push(i);
+      if (wallUp(H[i]) || (WA.moving.has(i) && WA.pp[i] > 0)) ups.push(i); else lips.push(i);   // a block still waiting for its turn is drawn as what it is now
     }
     const L = WALL_LIP;
     ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x, y + 1) < L + 0.001) quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)); }); ctx.fillStyle = WALL_S; ctx.fill();

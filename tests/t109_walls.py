@@ -1,6 +1,7 @@
 # 1.09 (author): standing walls are 2x high (1,7); which walls lie flat is as before (worked out for 0,85); in a wave every wall
 # that would hide a room with heroes lies flat, and so do all the walls of the rooms standing between the camera and them; the
-# blocks move with an ease and a pop, and stand up again after the party leaves; a thing behind a high wall is covered by it.
+# blocks move with an ease and a pop, and stand up again after the party leaves; a thing behind a high wall is covered by it;
+# walls the party does not touch never move (a fix: they hopped and the flat ones blinked whenever the open rooms changed).
 import asyncio
 from playwright.async_api import async_playwright
 BASE='file:///tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scratchpad/test/page15.html'
@@ -33,10 +34,12 @@ async def main():
         print('cover', cov)
         await page.evaluate("__yatd.setTrayOpen(true)"); await page.clock.run_for(900)
         await page.evaluate("__yatd.startWave()")
-        seen_focus = False; seen_pop = False
+        seen_focus = False; seen_pop = False; noop = 0; sigs = set()
         for k in range(80):
             await page.clock.run_for(250)
-            st = await page.evaluate(STATE)
+            st = await page.evaluate(STATE); sigs.add(st['sig'])
+            # 1.09 fix: no wall is ever sent on a move to where it already stands (they hopped, and the flat ones blinked)
+            noop += await page.evaluate("(() => { const A = __yatd.WA; let n = 0; A.moving.forEach(i => { if (Math.abs(A.from[i] - A.to[i]) < 1e-3) n++; }); return n; })()")
             if st['moving']: 
                 pp = await page.evaluate("(() => { const A = __yatd.WA; let m = 0; A.moving.forEach(i => { m = Math.max(m, A.pp[i]); }); return m; })()")
                 if pp > 0: seen_pop = True
@@ -50,6 +53,8 @@ async def main():
         print('wave', st, c)
         ok(seen_focus, 'the party had open rooms at some point')
         ok(seen_pop, 'the blocks moved (with the pop)')
+        print('focus changes', len(sigs), 'no-op moves', noop)
+        ok(len(sigs) >= 2 and noop == 0, 'walls the party does not touch stay still when the open rooms change')
         # after the wave: everything stands again
         while await page.evaluate("__yatd.modalKind"): await page.evaluate("__yatd.closeModal()")
         await page.evaluate("(() => { const G = __yatd; if (G.fl.phase === 'raid') { G.fl.heroes.forEach(h => { h.fled = true; }); } })()")
