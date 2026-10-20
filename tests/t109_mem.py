@@ -17,15 +17,20 @@ async def main():
         await page.clock.install(); await page.goto(BASE); await page.clock.run_for(500)
         await page.click('#start-play'); await page.clock.run_for(400)
         while await page.evaluate("__yatd.modalKind"): await page.evaluate("__yatd.closeModal()")
-        sp = await page.evaluate("""(() => { const G = __yatd; G.fl.essence = 99; const P = G.shortestPath();
-          for (const q of P.slice(2)) if (G.canPlace('spikes', q[0], q[1])) { G.tryPlace('spikes', q[0], q[1]); G.setMode(null); return q; } return null; })()""")
-        K = "%d,%d" % (sp[0], sp[1])
-        # wave 1: step until this trap asks, answer it with a crit
-        await page.evaluate("__yatd.startWave()")
-        got = await page.evaluate("""(k => { const G = __yatd; for (let i = 0; i < 6000; i++) { const c = G.fl.check;
-            if (c && !c.result) { if (c.it === G.fl.items.get(k)) return { at: G.fl.time, lock: c.lock ? [...c.lock.values()].reduce((a, l) => a + l.length, 0) : -1 };
-              G.resolveCheck((c.r0 + c.r1) / 2); G.clearCheck(); continue; }
-            if (c) G.clearCheck(); if (G.fl.phase !== 'raid') return null; G.step(0.05); } return null; })""", K)
+        # (the heroes sometimes spot the spikes, go round them and die elsewhere before they ever step on them: a new dungeon then)
+        for attempt in range(6):
+            if attempt:
+                await page.evaluate("(() => { const G = __yatd; while (G.modalKind) G.closeModal(); G.setUser(true); G.newRun(false); while (G.modalKind) G.closeModal(); })()")
+            sp = await page.evaluate("""(() => { const G = __yatd; G.fl.essence = 99; const P = G.shortestPath();
+              for (const q of P.slice(2)) if (G.canPlace('spikes', q[0], q[1])) { G.tryPlace('spikes', q[0], q[1]); G.setMode(null); return q; } return null; })()""")
+            K = "%d,%d" % (sp[0], sp[1])
+            # wave 1: step until this trap asks, answer it with a crit
+            await page.evaluate("__yatd.startWave()")
+            got = await page.evaluate("""(k => { const G = __yatd; for (let i = 0; i < 6000; i++) { const c = G.fl.check;
+                if (c && !c.result) { if (c.it === G.fl.items.get(k)) return { at: G.fl.time, lock: c.lock ? [...c.lock.values()].reduce((a, l) => a + l.length, 0) : -1 };
+                  G.resolveCheck((c.r0 + c.r1) / 2); G.clearCheck(); continue; }
+                if (c) G.clearCheck(); if (G.fl.phase !== 'raid') return null; G.step(0.05); } return null; })""", K)
+            if got: break
         print('the spikes ask', got)
         ok(got is not None, 'the new trap asks in its first wave')
         if got:

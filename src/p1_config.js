@@ -107,7 +107,12 @@
     r_swamp: { name: 'Bagno', cost: 8, slot: 'roomtype', tag: 'spowalnia', tool: true, rt: 'swamp', desc: 'Bagno (pokój): ruch o 35% wolniej, bez odpoczynku, rozbrajanie trwa o połowę dłużej. Stuknij znacznik pokoju.' },
     r_grotto: { name: 'Grota', cost: 10, slot: 'roomtype', tag: 'echo strachu', tool: true, rt: 'grotto', desc: 'Grota (pokój): 40% strachu słychać w sąsiednich pokojach, combo z groty czeka o połowę dłużej. Stuknij znacznik pokoju.' },
     r_crypt: { name: 'Krypta', cost: 10, slot: 'roomtype', tag: 'śmierć ×2', tool: true, rt: 'crypt', desc: 'Krypta (pokój): śmierć straszy 2 razy mocniej i daje +50% Grozy, potwory mają +25% HP. Stuknij znacznik pokoju.' },
-    r_vault: { name: 'Sezam', cost: 10, slot: 'roomtype', tag: 'łup ×2', tool: true, rt: 'vault', desc: 'Sezam (pokój): łup podbija chciwość 2 razy mocniej i kusi 1,5 raza bardziej, mnożnik pokoju +0,15. Stuknij znacznik pokoju.' }
+    r_vault: { name: 'Sezam', cost: 10, slot: 'roomtype', tag: 'łup ×2', tool: true, rt: 'vault', desc: 'Sezam (pokój): łup podbija chciwość 2 razy mocniej i kusi 1,5 raza bardziej, mnożnik pokoju +0,15. Stuknij znacznik pokoju.' },
+    // 1.10 (author: more room types, each playing with the other mechanics)
+    r_haven: { name: 'Sanktuarium', cost: 10, slot: 'roomtype', tag: 'fałszywy azyl', tool: true, rt: 'haven', desc: 'Sanktuarium (pokój): wygląda na najbezpieczniejsze miejsce w lochu. Ranni chcą tu odpocząć (sami, w biegu, i cała drużyna przy odwrocie), ale rany goją się tu 2 razy wolniej, a śpiących dręczą koszmary: strach rośnie. Stuknij znacznik pokoju.' },
+    r_gears: { name: 'Zębatki', cost: 10, slot: 'roomtype', tag: 'combo z jednej', tool: true, rt: 'gears', desc: 'Zębatki (pokój): pułapki w tym pokoju przeładowują się o 25% szybciej, a ta sama pułapka odpalona drugi raz z rzędu też podbija combo. Stuknij znacznik pokoju.' },
+    r_hush: { name: 'Głusza', cost: 8, slot: 'roomtype', tag: 'bez słów', tool: true, rt: 'hush', desc: 'Głusza (pokój): nic tu nie słychać. Bohaterowie nie ostrzegą się nawzajem (pułapki, które tu odpalą, nie trafią do ich wiedzy), nie zawołają kapłana, nie dodadzą sobie otuchy, a zgubiony nie usłyszy odpowiedzi. Strach +20%. Stuknij znacznik pokoju.' },
+    r_ice: { name: 'Lodownia', cost: 10, slot: 'roomtype', tag: 'poślizg', tool: true, rt: 'ice', desc: 'Lodownia (pokój): ślisko. Co trzeci krok bohater jedzie jedno pole dalej, prosto w to, co tam leży (doświadczeni i złodziej rzadziej). Nikt tu nie odpoczywa. Stuknij znacznik pokoju.' }
   };
   const TABS = [
     // Prototype 1.01 (author's layout): what wounds and what scares together, every monster in one tab, loot apart,
@@ -116,12 +121,12 @@
     { id: 'monster', label: 'Potwory', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman', 'ghost', 'shade', 'bats'] },
     { id: 'loot', label: 'Łup', items: ['loot', 'lpotion', 'loot2', 'loot3', 'lcursed'] },
     { id: 'object', label: 'Obiekty', items: ['crate', 'rune', 'altar', 'decoy', 'acid', 'howl', 'shackles', 'veil', 'fortify'] },
-    { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish', 'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault'] },   // no Przenieś (a tap moves), no Ulepsz (a double tap upgrades)
+    { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish', 'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'] },   // no Przenieś (a tap moves), no Ulepsz (a double tap upgrades)
     { id: 'deck', label: 'Talia', items: [] }
   ];
   const ITEM_ORDER = TABS.flatMap(t => t.items).concat(['upgrade']);   // Ulepsz stays as a mode the code knows, with no tile in any tab
   const START_UNLOCKED = ['spikes', 'trapdoor', 'arrows', 'portrait', 'eyes', 'bones', 'gate', 'crate', 'powder', 'goblin', 'archer', 'loot', 'lpotion', 'loot2', 'loot3', 'lcursed', 'dig', 'tunnel', 'expand', 'demolish', 'rune', 'altar', 'decoy', 'acid', 'veil', 'fortify', 'howl', 'shackles', 'upgrade', 'move',
-    'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault'];
+    'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'];
   const TRAPS = { spikes: 1, web: 1, trapdoor: 1, cage: 1, arrows: 1, fire: 1, portrait: 1, gate: 1, powder: 1, mimic: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1 };
   const MONSTERS = { goblin: 1, archer: 1, spider: 1, ogre: 1, shaman: 1, ghost: 1, shade: 1, bats: 1 };
   // v15.1: traps that only scare (no wounds), the cursed ones a priest lifts (the thief and bombs leave them alone),
@@ -129,10 +134,12 @@
   const SCARE = { portrait: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1 };
   const CURSED = { portrait: 1, eyes: 1, bones: 1, mirror: 1 };
   const DRIFT = { ghost: 1, shade: 1, bats: 1 };
-  const ROOMTYPES = { r_fog: 'fog', r_swamp: 'swamp', r_grotto: 'grotto', r_crypt: 'crypt', r_vault: 'vault' };
+  const ROOMTYPES = { r_fog: 'fog', r_swamp: 'swamp', r_grotto: 'grotto', r_crypt: 'crypt', r_vault: 'vault', r_haven: 'haven', r_gears: 'gears', r_hush: 'hush', r_ice: 'ice' };
   const RT_INFO = { fog: { name: 'Mgła', item: 'r_fog', glyph: '≋', color: '#b9c4d8' }, swamp: { name: 'Bagno', item: 'r_swamp', glyph: '~', color: '#8fbf6a' }, grotto: { name: 'Grota', item: 'r_grotto', glyph: ')', color: '#9fb6ff' },
-    crypt: { name: 'Krypta', item: 'r_crypt', glyph: '✝', color: '#c9b6e8' }, vault: { name: 'Sezam', item: 'r_vault', glyph: '◆', color: '#ffd27a' } };
-  const TOOLS = { dig: 1, tunnel: 1, expand: 1, demolish: 1, r_fog: 1, r_swamp: 1, r_grotto: 1, r_crypt: 1, r_vault: 1 };
+    crypt: { name: 'Krypta', item: 'r_crypt', glyph: '✝', color: '#c9b6e8' }, vault: { name: 'Sezam', item: 'r_vault', glyph: '◆', color: '#ffd27a' },
+    haven: { name: 'Sanktuarium', item: 'r_haven', glyph: '✚', color: '#f3e2b0' }, gears: { name: 'Zębatki', item: 'r_gears', glyph: '⚙', color: '#d6a86a' },
+    hush: { name: 'Głusza', item: 'r_hush', glyph: '◌', color: '#9aa6bb' }, ice: { name: 'Lodownia', item: 'r_ice', glyph: '❄', color: '#bfe6ff' } };
+  const TOOLS = { dig: 1, tunnel: 1, expand: 1, demolish: 1, r_fog: 1, r_swamp: 1, r_grotto: 1, r_crypt: 1, r_vault: 1, r_haven: 1, r_gears: 1, r_hush: 1, r_ice: 1 };
   const MODES = { upgrade: 1, move: 1 };   // tray buttons that change what a tap on the map does (no cost of their own)
   const ACTIVE = Object.assign({}, TRAPS, MONSTERS);   // everything that can fire
   // Loot comes in kinds the player picks: coins (pure greed), a potion (a lure for the wounded), gear, a relic, a cursed treasure.
@@ -564,6 +571,7 @@
     lootLegend: ['Legendarne! Choćby przez piekło!', 'Po to tu przyszliśmy!'],
     lootGreedy: ['Moje! Wszystko moje!', 'Złoto woła mnie po imieniu!'],
     lootCareful: ['Za łatwo leży. To pułapka.', 'Nie ruszam, coś tu śmierdzi.'],
+    lootWait: ['Bierz to, poczekamy.', 'Tylko szybko!', 'Dobra, łap to i idziemy.', 'Weź to, osłaniam cię.'],
     lootStop: ['Zostaw to złoto!', 'Wracaj, to przynęta!', 'Nie teraz, trzymaj się planu!'],
     lootReply: ['Tylko szybko!', 'Sekunda, zaraz wracam!', 'Nie zostawię tego!'],
     revenge: ['Pomszczę cię, {v}!', 'Za {a}! Do ataku!', 'Zapłacą za {a}!'],
@@ -632,6 +640,13 @@
     rtSwamp: ['Grzęzniemy w tym błocie!', 'Fuj, bagno...', 'Nogi mi się zapadają!'],
     rtGrotto: ['Słyszycie to echo?', 'Każdy krzyk tu wraca...', 'Cicho! Echo niesie.'],
     rtCrypt: ['Krypta... Tu leżą umarli.', 'Nie podoba mi się ta cisza grobów.', 'Coś tu patrzy z trumien.'],
+    rtHaven: ['Tu jest spokojnie. Odpocznijmy.', 'Kaplica! Tu nic nam nie grozi.', 'Wreszcie bezpieczne miejsce.'],
+    rtGears: ['Słyszycie te tryby?', 'Cały pokój tyka...', 'Mechanizm! Patrzcie pod nogi.'],
+    rtHush: ['...', 'Nic nie słyszę...', '(cisza)'],
+    rtIce: ['Ślisko! Ostrożnie!', 'Lód! Trzymajcie się ściany.', 'Zimno tu jak w grobie.'],
+    slip: ['Ślisko!', 'Łoo!', 'Nie mogę stanąć!', 'Jadę!'],
+    nap: ['Chwila odpoczynku...', 'Tylko przymknę oczy.', 'Usiądę na moment.'],
+    nightmare: ['Koszmary... nie mogę spać.', 'Ktoś szepcze mi do ucha...', 'To miejsce nie jest święte...'],
     rtVault: ['Skarbiec! Ile tu złota!', 'Tu musi być fortuna!', 'Bogactwo! Rozglądajcie się!'],
     breachUse: ['Idziemy przez wyłom! Krócej.', 'Wyłom! Ominiemy ich pułapki.'],
     doorUse: ['Drzwiami. Wyłom to pułapka.', 'Przez wyłom? Nie, za ciasno. Drzwiami.'],
@@ -674,6 +689,28 @@
     replySearch: ['Kryształ jest ważniejszy.', 'Później. Najpierw serce.', 'Nie ma czasu, idziemy do serca.'],
     argueRetreat: ['Nie cofamy się przed byle pułapką!', 'Odwrót? Teraz?!'],
     agreeRetreat: ['Nareszcie ktoś rozsądny.', 'Tak, tak, wycofajmy się!']
+  };
+  // 1.10: answers to the everyday lines (someone close by says one now and then)
+  const CHAT_REPLY = {
+    'Słyszycie to?': ['Nic nie słyszę.', 'Ciii... Słucham.', 'To tylko wiatr. Chyba.'],
+    'Trzymajcie się blisko.': ['Jestem tuż za tobą.', 'Jasne.'],
+    'Patrzcie pod nogi.': ['Patrzę, patrzę.', 'Wiem, nie jestem {ślepy|ślepa}.'],
+    'Ledwo stoję...': ['Wytrzymaj, jeszcze trochę.', 'Oprzyj się o mnie.'],
+    'Potrzebuję chwili.': ['Nie mamy chwili.', 'Złap oddech, osłaniam cię.'],
+    'Jeszcze trochę złota i wracam do domu.': ['Wszyscy tak mówią.', 'Jak przeżyjesz.'],
+    'Opatrzmy rany.': ['Daj, pomogę.', 'Szybko, zanim coś przyjdzie.'],
+    'Kto ma bandaże?': ['Ja mam. Trzymaj.', 'Zostały mi ostatnie.'],
+    'Chwila oddechu...': ['Tylko krótka.'],
+    'Nie siadaj na tej płycie!': ['Spokojnie, nie siadam.'],
+    'Może jednak wrócimy?': ['Nie ma mowy.', 'Idziemy dalej. Głowa do góry.'],
+    'Czemu zawsze ja idę w środku?': ['Bo w środku najbezpieczniej.'],
+    'Ja tu tylko noszę bagaże...': ['To noś i nie marudź.'],
+    'Podział po równo, tak?': ['Po równo. Jak przeżyjemy.', 'Zobaczymy.'],
+    'Gdzieś tu musi być skarbiec.': ['Najpierw przeżyjmy, potem skarbiec.', 'Oby.'],
+    'Czuję złoto.': ['Ja czuję tylko stęchliznę.'],
+    'Ta płyta jest luźna. Omijamy.': ['Dobrze, że patrzysz.'],
+    'Powoli, nie ma pośpiechu.': ['Jest pośpiech. Czas leci.'],
+    'Niech tylko coś wyskoczy!': ['Nie kuś losu.']
   };
   const gtext = (t, female) => t.replace(/\{([^|}]*)\|([^}]*)\}/g, (_, m, f) => female ? f : m);
   const pick = a => a[Math.floor(Math.random() * a.length)];

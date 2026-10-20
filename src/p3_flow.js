@@ -17,7 +17,7 @@
   // extra levels of the leader from greed. Up to 1.02 at most 3, so greed 23 was as safe as greed 4 (the author's run: 42 798
   // Esencja). 1.03: no ceiling, but past 4 it creeps up slowly (6: +3,7, 8: +4,2, 12: +5,0, 23: +6,1).
   const greedLv = g => g <= 4 ? Math.max(0, g - 1) : 3 + 1.8 * Math.log(g / 4);
-  const huntersLv = () => S.greedW * greedLv(run.greedRep || 1);
+  const huntersLv = () => S.greedW * greedLv(greedRaw(run.greedRep || 1));
   // treasure hunters replacing ordinary heroes: 1 from greed 3, 2 from 4,5, then one more each time greed doubles (9, 18...)
   const huntersN = g => g < 3 ? 0 : g < 4.5 ? 1 : 2 + Math.max(0, Math.floor(Math.log2(g / 4.5)));
   // g = the Groza of one event. Prototype 1.01, the combo like Balatro: Groza piles up while the combo lasts (the CHAIN) and is
@@ -73,6 +73,13 @@
     gainEssence('eq', rest, 'essWave', heart);   // 1.02: the Esencja leaves the equation's result box
   }
   function setGreed(v) { fl.greed = v; }
+  // 1.10 (author: the more greed, the slower it grows): every rise is divided by the greed there is: at x2 a treasure pulls
+  // half as hard as at x1, at x3 a third. Exactly: greed = sqrt(2 x raw - 1), where raw is the plain sum of what made it (the
+  // way greed was counted up to 1.09.1): raw 2 = x1,73, raw 3 = x2,24, raw 5,4 = x3,12. The greed a wave starts with goes
+  // through the same curve; the guild and the heroes' own judgement still go by the raw amount (they are as greedy as before).
+  const greedCurve = raw => raw <= 1 ? raw : Math.sqrt(2 * raw - 1);
+  const greedRaw = g => g <= 1 ? g : (g * g + 1) / 2;
+  function addGreed(dg) { const g0 = fl.greed; if (dg > 0) setGreed(greedCurve(greedRaw(g0) + dg)); return fl.greed - g0; }
   const infMult = () => 1;   // v14: no hidden multipliers on Groza; everything global became greed (greedBonusNow)
   // counter-buildings: which rooms hold which (computed when a wave starts)
   function computeBRooms() {
@@ -141,14 +148,59 @@
   function fxTiles(tiles, rgb, life) { fl.fx.push({ kind: 'tiles', tiles, rgb, life, max: life }); }
   function fxLine(x0, y0, x1, y1, life, rgb) { fl.fx.push({ kind: 'line', x0, y0, x1, y1, life, max: life, rgb: rgb || '255,240,200' }); }
   // Speech bubbles: every decision a hero makes is said out loud. Higher priority lines push out lower ones.
-  function say(h, text, prio, dur) {
-    if (!h || h.dead || h.fled || h.gone || !text) return;
+  // 1.10 (author: they all talked at once instead of talking to each other): one at a time within earshot (the same room or
+  // corridor, or two steps apart). A calm line waits until the line before it has been read, plus a breath, and is dropped
+  // if its moment passes (h.sayQ); a bubble stays up as long as it takes to read. Only chaos talks over the others: cries
+  // (prio 4), shouts at a trap that just went off ('loud'), and anyone wounded a moment ago, panicking, running, fighting,
+  // caged or burning. Heroes in different rooms talk at the same time. The speaker turns to whoever he talks to.
+  const SAY_GAP = 0.3;
+  const earshot = (a, b) => { const ra = roomOf(a.tx, a.ty); return (ra >= 0 && ra === roomOf(b.tx, b.ty)) || Math.hypot(a.tx - b.tx, a.ty - b.ty) <= 2.5; };
+  const inChaos = h => fl.time < h.panicUntil || h.fleeing || fl.time - h.hurtAt < 1.5 || h.state === 'fight' || h.state === 'smash' || h.state === 'caged' || fl.time < h.burnUntil;
+  const readT = t => clamp(1.1 + 0.042 * t.length, 1.6, 3.4);
+  const SAYQ_LIFE = [0, 1.4, 2.6, 4];   // how long a calm line can wait for its turn, by priority
+  function floorBusy(h) {
+    for (const o of fl.heroes) if (!o.dead && !o.fled && !o.gone && (o.saidUntil || -9) + SAY_GAP > fl.time && earshot(h, o)) return true;
+    return false;
+  }
+  // a new line also waits for the lines already waiting around him (a talk going on, an answer due): first come, first said
+  function othersWaiting(h, prio) {
+    for (const o of fl.heroes) if (o.sayQ && o.sayQ.length && !o.dead && !o.fled && !o.gone && o.sayQ.some(e => e.exp > fl.time && e.prio >= prio) && earshot(h, o)) return true;
+    const Q = fl.party && fl.party.queueSay;
+    if (Q && Q.length) for (const q of Q) { if (q.at > fl.time) continue; const o = fl.heroes.find(x => x.id === q.id); if (o && !o.dead && !o.fled && !o.gone && earshot(h, o)) return true; }
+    return false;
+  }
+  function lookAt(h, x, y) { if (h.nx !== null) return; const s = (x - h.x) - (y - h.y); if (Math.abs(s) > 0.3) h.face = s > 0 ? 1 : -1; }
+  function say(h, text, prio, dur, how) {
+    if (!h || h.dead || h.fled || h.gone || !text || !fl) return false;
     prio = prio || 1;
-    const b = h.bubble;
-    if (b && b.until > fl.time && b.prio > prio) return;
-    if (b && b.until > fl.time && b.prio === prio && fl.time - b.at < 0.7) return;
-    h.bubble = { text: gtext(text, h.female), prio, at: fl.time, until: fl.time + (dur || 1.9) };
+    const loud = how === 'loud' || prio >= 4 || inChaos(h), b = h.bubble;
+    if (b && b.until > fl.time && b.prio > prio) return false;
+    if (b && b.until > fl.time && b.prio === prio && fl.time - b.at < 0.7) return false;
+    if (!loud && (floorBusy(h) || (how !== 'q' && othersWaiting(h, prio)))) {   // not his turn yet
+      if (how !== 'q') {
+        const q = h.sayQ || (h.sayQ = []);
+        if (!q.some(e => e.text === text)) { q.push({ text, prio, dur, exp: fl.time + SAYQ_LIFE[Math.min(3, prio)] }); if (q.length > 2) q.splice(q.reduce((m, e, i) => e.prio < q[m].prio ? i : m, 0), 1); }
+      }
+      return false;
+    }
+    const hush = h.room >= 0 && isRt(h.room, 'hush');   // 1.10: Głusza: the mouth moves, nothing comes out
+    const t = hush ? (loud ? '…!' : '…') : gtext(text, h.female), len = hush ? 1.4 : loud ? (dur || 1.9) : Math.max(dur || 1.9, readT(t));
+    h.bubble = { text: t, prio, at: fl.time, until: fl.time + len, loud }; h.saidUntil = fl.time + len;
     fl.stats.lines++;
+    if (!loud) {   // he turns to the nearest one listening, and they turn to him
+      let to = null, bd = 1e9;
+      fl.heroes.forEach(o => { if (o === h || o.dead || o.fled || o.gone || !earshot(h, o)) return; const d = Math.hypot(o.tx - h.tx, o.ty - h.ty); if (d < bd) { bd = d; to = o; } if (d <= 4) lookAt(o, h.x, h.y); });
+      if (to) lookAt(h, to.x, to.y);
+    }
+    return true;
+  }
+  // the lines waiting for their turn: the most important first, the oldest among equals
+  function sayTick() {
+    let wait = null;
+    fl.heroes.forEach(h => { if (!h.sayQ || !h.sayQ.length) return; h.sayQ = h.sayQ.filter(e => e.exp > fl.time); if (h.sayQ.length && !h.dead && !h.fled && !h.gone) (wait || (wait = [])).push(h); else h.sayQ = null; });
+    if (!wait) return;
+    wait.sort((a, b) => (b.sayQ[0].prio - a.sayQ[0].prio) || (a.sayQ[0].exp - b.sayQ[0].exp));
+    wait.forEach(h => { const e = h.sayQ[0]; if (say(h, e.text, e.prio, e.dur, 'q')) h.sayQ.shift(); });
   }
 
   /* ================= run flow ================= */
@@ -455,17 +507,24 @@
   const tutW1 = n => n === 1 && !!run && !!run.tutorial;   // the tutorial's first wave stays gentle: 2 rookies
   const waveCurve = n => 1 + (1.12 * (n - 1) + 0.007 * (n - 1) * (n - 1) + (EARLY_LV[n] || 0) + (tutW1(n) ? 0 : START_LV[n] || 0)) * S.scale;
   // 1.05: six classes, one of each at most, so six heroes at most; in the endless waves the guild sends better people instead of more
-  const partySize = n => tutW1(n) ? 2 : n <= 3 ? 3 : n <= 6 ? 4 : n <= 9 ? 5 : 6;
+  // 1.10 (author: four heroes, a little stronger, instead of five and six): three in waves 1-3, four in waves 4-10, the
+  // champion (wave 5) and the legend (wave 10) come as a fifth; past the finale more again, step by step (5 from wave 11, 6
+  // from 15). Where there used to be more of them, the four get levels instead (SIZE_LV: about +1,5 levels for five -> four
+  // is about +20% HP, courage and strength each).
+  const partySize = n => tutW1(n) ? 2 : n <= 3 ? 3 : n <= 10 ? 4 : n <= 14 ? 5 : 6;
+  const waveSize = n => Math.min(6, partySize(n) + (bossOf(n) && !tutW1(n) ? 1 : 0));
+  const SIZE_LV = [0, 0, 0, 0, 0, 0, 0, 1.5, 1.5, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0];
+  const sizeLv = n => n < SIZE_LV.length ? SIZE_LV[n] : 0;
   const endlessLv = n => n >= 15 ? 1.5 * Math.floor((n - 10) / 5) : 0;   // what the 7th, 8th... hero used to add
-  const waveBase = n => waveCurve(n) + grozaTyp(n) * S.scale + mods.pactLevels + endlessLv(n);
+  const waveBase = n => waveCurve(n) + grozaTyp(n) * S.scale + mods.pactLevels + endlessLv(n) + sizeLv(n) * S.scale;
   const bossOf = n => n % 5 === 0 ? (n % 10 === 0 ? 'final' : 'champion') : null;
   const waveName = () => 'Fala ' + run.wave + (run.wave <= RUN_WAVES ? '/' + RUN_WAVES : '');
   // Each wave is new people: the first ones are rookies, then they keep getting better. Every 5th wave a boss leads them.
   function makeWave(n) {
-    const size = partySize(n);
+    const size = waveSize(n);
     // v12.1: treasure hunters TAKE THE PLACE of ordinary heroes (greed brings stronger and greedier people, not more of them)
-    const hunters = n >= 3 ? Math.min(size - 2, huntersN(run.greedRep || 1)) : 0;
-    const recruit = n >= 4 && size > partySize(n - 1) && !bossOf(n);   // the newest member is a rookie for one wave: the step in numbers is softer (not in boss waves)
+    const hunters = n >= 3 ? Math.min(size - 2, huntersN(greedRaw(run.greedRep || 1))) : 0;
+    const recruit = n >= 4 && partySize(n) > partySize(n - 1) && !bossOf(n);   // the newest member is a rookie for one wave: the step in numbers is softer (not in boss waves)
     // 1.05: never two of a class (6 classes, at most 6 heroes); the first three waves bring only the four classic ones
     const classes = shuffle((n <= 3 ? CLASSIC : PARTY).slice()).slice(0, size);
     const g = run.guild = guildAdapt(n);
@@ -508,7 +567,7 @@
     return list;
   }
   const TALE_PER = 0.04, TALE_LOOT = 4, TALE_CAP = 0.3;   // v15.1: +0,04 greed per treasure seen (up to 4) for every hero scared away, at most +0,3 a wave
-  const greedStartNow = () => 1 + mods.greedStart + run.rumor.gold + run.greedKeep + greedBonusNow();
+  const greedStartNow = () => greedCurve(1 + mods.greedStart + run.rumor.gold + run.greedKeep + greedBonusNow());
   function startWave() {
     if (!fl || fl.phase !== 'build') return;
     run.buildSec += Math.max(0, realNow - fl.buildStart); fl.buildSec = Math.round(realNow - fl.buildStart);
@@ -987,6 +1046,7 @@
     let rest = amt;
     if (h.shield > 0) { const ab = Math.min(h.shield, rest * (inB('acid', h.room) ? 0.5 : 1)); h.shield -= ab; rest -= ab; }   // acid eats through half of a ward
     h.hp -= rest; h.flash = 0.12; h.hurtAt = fl.time;
+    fl.heroes.forEach(o => { if (o !== h && !o.dead && !o.fled && !o.gone && Math.abs(o.tx - h.tx) + Math.abs(o.ty - h.ty) <= 5) lookAt(o, h.x, h.y); });   // 1.10: the others turn to him
     if (kind !== 'heart') h.playerDmg += real * (kind === 'monster' ? MON_FACTOR : 1);
     feltBy(h, real / h.max);   // 1.05: what hurt him (told in the tavern)
     if (attr) { const b = bt(attr); if (kind === 'monster') b.passiveDmg += real; else b.dmg += real; }
@@ -994,7 +1054,7 @@
     if (h.hp <= 0) { h.hp = 0; h.dead = true; kill(h, kind, attr); return; }
     if (kind === 'trap' && real >= 0.25 * h.max && fl.time - (fl.party.lastSay.friendHit || -99) > 5) {   // 1.05: a friend sees it and reacts
       const o = alive().find(q => q !== h && !q.fleeing && !panicking(q) && !q.lost && hdist(q, h) <= 4);
-      if (o) { fl.party.lastSay.friendHit = fl.time; fl.party.queueSay.push({ id: o.id, text: nameFill(pick(SAY.friendHit), h), at: fl.time + 0.5 }); }
+      if (o) { fl.party.lastSay.friendHit = fl.time; fl.party.queueSay.push({ id: o.id, text: nameFill(pick(SAY.friendHit), h), at: fl.time + 0.5, how: 'loud' }); }
     }
     if (h.type === 'barbarian' && real >= 0.2 * h.max && kind !== 'heart' && fl.time > h.rageCd && !raging(h)) startRage(h, 'hit');   // 1.05: a hard blow wakes the fury
     if (h.boss === 'final' && !h.raged && h.hp < 0.5 * h.max) {   // the hero of the prophecy, half dead, gets back up angrier
@@ -1058,7 +1118,7 @@
   function addFear(h, amt, attr, src, dtp) {
     if (h.dead || h.fled || amt <= 0) return;
     const raw = amt;
-    amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : 1);   // Mgła: +15%
+    amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : isRt(h.room, 'hush') ? 1.2 : 1);   // Mgła: +15%, 1.10 Głusza: +20%
     if (raging(h)) amt *= 0.5;   // 1.05: fury dulls fear
     amt *= phobiaMult(h, attr, src, dtp);   // v14: phobias (x2) and this wave's traumas (x1,5)
     if (attr) h.fearBy[attr] = (h.fearBy[attr] || 0) + amt; else if (src) h.fearBy[src] = (h.fearBy[src] || 0) + amt;
@@ -1239,7 +1299,7 @@
     if (it.noGreed) return;   // their own old gear, just put down
     const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1;
     const g = LOOT_GREED[kind][0] * mods.greedMult * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
-    setGreed(fl.greed + g); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
+    greedOrbs(it.x, it.y, addGreed(g)); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
     floatTile(it.x, it.y, 'Chciwość ×' + fmt2(fl.greed), '#f2b94b', 14, -0.6, 'greed');
     if (by && (by.fleeing || by.crystal || panicking(by) || goingOut())) { if (r >= 2) say(by, pick(SAY.lootFlee), 2); }   // 1.05: running for his life, he has no joy for gold
     else if (by) say(by, kind === 'potion' ? pick(['Mikstura!', 'Tam leży mikstura.', 'Lekarstwo!']) : pick(SAY['loot' + Math.min(3, r)]), r >= 2 ? 3 : 2);
@@ -1259,7 +1319,7 @@
     const kg = LOOT_GREED[kind];
     // 1.03: taking it pulls less each time, like seeing it (Odwrotna chciwość x3 on top), and the greed that stays for good
     // grows ever slower: in replays of the author's 223-relic run both kept climbing without end
-    setGreed(fl.greed + kg[1] * mods.greedMult * mods.pickGreed / (1 + 0.15 * fl.stats.loot)); tl('lp', h.id, r, kind);
+    greedOrbs(it.x, it.y, addGreed(kg[1] * mods.greedMult * mods.pickGreed / (1 + 0.15 * fl.stats.loot))); tl('lp', h.id, r, kind);
     if (!it.dropped) { const keep = 0.5 * kg[0] * mods.greedMult / (1 + 0.5 * run.greedKeep); run.greedKeep += keep; fl.stats.greedKept = (fl.stats.greedKept || 0) + keep; }   // part of its pull stays for good
     const pts = addPts(GZ.loot * r * depthMult(roomOf(it.x, it.y)), 'lootPts', h); fl.stats.loot++;
     floatTile(it.x, it.y, '+' + fmtE(pts) + ' łup', '#ff7a86', 16);

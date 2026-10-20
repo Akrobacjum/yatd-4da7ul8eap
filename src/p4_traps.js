@@ -89,8 +89,8 @@
     }
     const chorus = [];
     // combo: a different trap within the window (on the combo clock, which waits while the party walks through empty rooms)
-    if (fl.cclock - fl.lastTrapC < (fl.comboWinNow || S.comboWin)) { if (fl.lastTrapType !== it.type) fl.combo = Math.min(7, fl.combo + 1); }   // only a different type builds combo
-    else { if (fl.chain && fl.chain.trap) payChain(); fl.combo = 1; }   // 1.01: the old chain is cashed in before a new one starts
+    if (fl.cclock - fl.lastTrapC < (fl.comboWinNow || S.comboWin)) { if ((fl.lastTrapType !== it.type || isRt(slotRoom(it.type, it.x, it.y), 'gears')) && fl.combo < 7) { fl.combo++; comboOrbs(it.x, it.y); } }   // 1.10: in Zębatki the same trap again counts too   // only a different type builds combo (1.10: its orbs fly to the Combo box)
+    else { if (fl.chain && fl.chain.trap) payChain(); fl.combo = 1; comboReset(); }   // 1.01: the old chain is cashed in before a new one starts
     fl.lastTrapAt = fl.time; fl.lastTrapC = fl.cclock; fl.lastTrapType = it.type;
     fl.comboWinNow = S.comboWin * (isRt(slotRoom(it.type, it.x, it.y), 'grotto') ? 1.5 : 1);   // Grota: the echo holds the combo longer
     bt(it.type).fires++;
@@ -106,9 +106,10 @@
       const rooms = new Set(area.map(t => roomOf(t[0], t[1])));
       const witnesses = alive().filter(h => rooms.has(h.room));
       if (witnesses.length) {
-        if (!it.detected) say(list[0] || witnesses[0], SAY.trap[it.type] || 'Pułapka!', 3, 1.4);
+        if (!it.detected) say(list[0] || witnesses[0], SAY.trap[it.type] || 'Pułapka!', 3, 1.4, 'loud');   // 1.10: a shout, over anyone
         const p = Math.max(...witnesses.map(h => h.R.learn));
-        if (Math.random() < p) learnTrap(it, 'seen', null);
+        if (isRt(slotRoom(it.type, it.x, it.y), 'hush')) { if (!it.detected) fl.stats.hushUnlearned = (fl.stats.hushUnlearned || 0) + 1; }   // 1.10: Głusza: nobody can call out what he saw
+        else if (Math.random() < p) learnTrap(it, 'seen', null);
         else if (!it.detected) { fl.stats.notLearned++; say(witnesses[0], pick(SAY.noLearn), 2); }
       }
       if (it.detected) fl.threatDirty = true;
@@ -116,7 +117,7 @@
       const P = fl.party;
       if (list.length) { if (fl.time - P.ambushT < 3) P.ambushN++; else P.ambushN = 1; P.ambushT = fl.time; }
     }
-    const cdBase = cdOf(it.type);
+    const cdBase = cdOf(it.type) * (isRt(slotRoom(it.type, it.x, it.y), 'gears') ? 0.75 : 1);   // 1.10: Zębatki
     let hit = 0;
     switch (it.type) {
       case 'spikes':

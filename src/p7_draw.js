@@ -1120,6 +1120,31 @@
         ctx.fillStyle = 'rgba(200,160,50,0.16)'; ctx.fillRect(x, y, w, h);
         ctx.fillStyle = 'rgba(255,230,150,0.7)';
         for (let k = 0; k < 4; k++) { const u = 0.5 + 0.5 * Math.sin(t * 3 + k * 1.7); if (u < 0.7) continue; ctx.fillRect(x + ((k * 0.31 + 0.1) % 1) * w, y + ((k * 0.53 + 0.15) % 1) * h, T * 0.08, T * 0.08); }
+      } else if (R.rt === 'haven') {   // 1.10: a warm, calm light (too calm)
+        ctx.fillStyle = 'rgba(255,236,180,0.11)'; ctx.fillRect(x, y, w, h);
+        const cx = x + w / 2, cy = y + h / 2, rr0 = Math.max(w, h) * (0.42 + 0.04 * Math.sin(t * 1.3));
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rr0); g.addColorStop(0, 'rgba(255,230,160,0.2)'); g.addColorStop(1, 'rgba(255,230,160,0)'); ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = 'rgba(243,226,176,0.32)'; ctx.lineWidth = Math.max(1, T * 0.06);
+        ctx.beginPath(); ctx.moveTo(cx, cy - T * 0.45); ctx.lineTo(cx, cy + T * 0.45); ctx.moveTo(cx - T * 0.3, cy - T * 0.1); ctx.lineTo(cx + T * 0.3, cy - T * 0.1); ctx.stroke();
+      } else if (R.rt === 'gears') {   // 1.10: cogs turning under the floor
+        ctx.fillStyle = 'rgba(150,110,60,0.16)'; ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = 'rgba(214,168,106,0.32)';
+        [[0.3, 0.35, 0.9, 1], [0.68, 0.62, 0.65, -1.35]].forEach(([u, v, s, sp]) => {
+          const cx = x + u * w, cy = y + v * h, r0 = T * s, a0 = t * sp;
+          ctx.lineWidth = Math.max(1, T * 0.05); ctx.beginPath(); ctx.arc(cx, cy, r0, 0, Math.PI * 2); ctx.stroke();
+          ctx.lineWidth = Math.max(1.5, T * 0.12); ctx.beginPath();
+          for (let k = 0; k < 8; k++) { const a = a0 + k * Math.PI / 4; ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); ctx.lineTo(cx + Math.cos(a) * r0 * 1.22, cy + Math.sin(a) * r0 * 1.22); }
+          ctx.stroke();
+        });
+      } else if (R.rt === 'hush') {   // 1.10: rings drawn in, swallowed (sound dies here)
+        ctx.fillStyle = 'rgba(14,16,22,0.34)'; ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = 'rgba(154,166,187,0.2)'; ctx.lineWidth = Math.max(1, T * 0.04);
+        const u = (t * 0.3) % 1; for (let k = 0; k < 2; k++) { const q = 1 - (u + k * 0.5) % 1; ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, q * Math.max(w, h) * 0.55, 0, Math.PI * 2); ctx.stroke(); }
+      } else if (R.rt === 'ice') {   // 1.10: pale ice with glints sliding across it
+        ctx.fillStyle = 'rgba(170,215,240,0.2)'; ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = 'rgba(232,247,255,0.35)'; ctx.lineWidth = Math.max(1, T * 0.04);
+        for (let k = 0; k < 4; k++) { const u = ((t * 0.12 + k * 0.27) % 1), px = x + u * (w + h) - h, py = y + ((k * 0.37 + 0.2) % 1) * h; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + T * 0.7, py - T * 0.25); ctx.stroke(); }
+        ctx.strokeStyle = 'rgba(190,230,255,0.18)'; R.tiles.forEach((tt, k) => { if (k % 5 !== 2) return; const px = tt[0] * T, py = tt[1] * T; ctx.beginPath(); ctx.moveTo(px + T * 0.2, py + T * 0.3); ctx.lineTo(px + T * 0.55, py + T * 0.55); ctx.lineTo(px + T * 0.8, py + T * 0.45); ctx.stroke(); });
       }
       ctx.restore();
     });
@@ -1872,9 +1897,13 @@
     // 1.07 (author: the 1.06 figurines did not fit dark fantasy): a pixel figure; a treasure hunter has a bag, a boss a crown
     const walking = h.nx !== null && fl.phase === 'raid' && !paused, PH = H * 1.15;
     if (h.hunter) { ctx.fillStyle = '#8a6a2c'; ctx.beginPath(); ctx.ellipse(x - face * W * 0.55, feet - H * 0.4, Math.max(2.5, H * 0.09), Math.max(3, H * 0.11), 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x - face * W * 0.55 - 1, feet - H * 0.5, 2, H * 0.06); }
-    const fo = { flash: h.flash > 0, walk: walking, seed: h.id }, ki = (realNow - (h.inR || -9)) / 0.36, q = h.flash > 0 ? clamp(h.flash / 0.12, 0, 1) : 0;
+    const fo = { flash: h.flash > 0, walk: walking && !h.sliding, seed: h.id }, ki = (realNow - (h.inR || -9)) / 0.36, q = h.flash > 0 ? clamp(h.flash / 0.12, 0, 1) : 0;
     if (ki < 1 && !reduceMotion) { const s = 0.35 + 0.65 * easeOutBack(clamp(ki, 0, 1)); fo.kx = s; fo.ky = s; fo.alpha = clamp(ki * 2.5, 0, 1); }   // 1.09: pops in where it enters
     else if (q) { fo.kx = 1 + 0.12 * q; fo.ky = 1 - 0.1 * q; }   // 1.09: a hit squashes it for a moment
+    if (h.sliding && !reduceMotion) {   // 1.10: on the ice: leaning back, arms out, a spray of ice behind
+      fo.rot = -face * 0.2; ctx.fillStyle = 'rgba(225,245,255,0.7)';
+      for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(x - face * W * (0.9 + 0.35 * k), feet - H * (0.02 + 0.05 * ((k + Math.floor(realNow * 12)) % 2)), Math.max(1, H * 0.035), 0, Math.PI * 2); ctx.fill(); }
+    }
     const ph = drawPixelFigure(h.type, x, feet, PH, face, fo);
     if (h.boss) { const cy = feet - ph * (h.type === 'mage' ? 0.98 : 0.86), cs = Math.max(3, H * 0.12); ctx.fillStyle = '#d9b44a'; ctx.beginPath(); ctx.moveTo(x - cs, cy); ctx.lineTo(x - cs, cy - cs * 0.9); ctx.lineTo(x - cs * 0.4, cy - cs * 0.45); ctx.lineTo(x, cy - cs * 1.1); ctx.lineTo(x + cs * 0.4, cy - cs * 0.45); ctx.lineTo(x + cs, cy - cs * 0.9); ctx.lineTo(x + cs, cy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = 'rgba(30,20,10,0.7)'; ctx.lineWidth = 1; ctx.stroke(); }
     if (fl.time < h.burnUntil) { ctx.fillStyle = Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x + face * W * 0.5, mid - H * 0.12, Math.max(2.5, H * 0.07), 0, Math.PI * 2); ctx.fill(); }
@@ -2003,6 +2032,9 @@
   }
   // Prototype 1.0: the souls fly out of the map and land in the big number at the top (on a canvas over the whole page)
   let fxc = null, fxDirty = false;
+  // trail, glow, core; each in the colour of the box it flies to (1.10: gold Chciwość, ice-blue Combo)
+  const ORB_INK = { score: ['rgba(255,90,100,0.38)', 'rgba(255,70,85,0.32)', '#ffe0e3'], heart: ['rgba(255,90,100,0.38)', 'rgba(255,70,85,0.32)', '#ffe0e3'],
+    groza: ['rgba(170,150,245,0.55)', 'rgba(160,135,245,0.42)', '#ece6ff'], greed: ['rgba(236,200,120,0.6)', 'rgba(240,190,80,0.4)', '#fff4d6'], combo: ['rgba(169,212,218,0.6)', 'rgba(140,210,222,0.4)', '#effcff'] };
   function drawOrbs() {
     const c = $('#fx'); if (!c) return;
     const W = innerWidth, H = innerHeight;
@@ -2011,20 +2043,21 @@
     if (!fxc) fxc = c.getContext('2d');
     fxc.setTransform(DPR, 0, 0, DPR, 0, 0); fxc.clearRect(0, 0, W, H); fxDirty = orbs.length > 0;
     if (!orbs.length) return;
-    const cr = cv.getBoundingClientRect(), sr = $('#h-score').getBoundingClientRect(), hr = $('#h-heart').getBoundingClientRect(), gr = $('#eq-g').getBoundingClientRect();
-    const TG = { score: [sr.left + sr.width / 2, sr.top + sr.height / 2], heart: [hr.left + hr.width / 2, hr.top + hr.height / 2], groza: [gr.left + gr.width / 2, gr.top + gr.height / 2] };
+    const cr = cv.getBoundingClientRect(), R = id => $(id).getBoundingClientRect(), sr = R('#h-score'), hr = R('#h-heart'), gr = R('#eq-g'), kr = R('#eq-c'), mr = R('#eq-k');
+    const mid = r => [r.left + r.width / 2, r.top + r.height / 2];
+    const TG = { score: mid(sr), heart: hr.width ? mid(hr) : mid(sr), groza: gr.width ? mid(gr) : mid(sr), greed: kr.width ? mid(kr) : mid(sr), combo: mr.width ? mid(mr) : mid(sr) };
     const at = (o, u) => {
-      const [tx, ty] = TG[o.to === 'heart' && hr.width ? 'heart' : o.to === 'groza' && gr.width ? 'groza' : 'score'];
+      const [tx, ty] = TG[o.to] || TG.score;
       const ox = o.ax != null ? o.ax : o.x + cr.left, oy = o.ay != null ? o.ay : o.y + cr.top;
       const e = u * u * (3 - 2 * u), cx = ox + (tx - ox) * 0.2, cy = Math.min(oy, ty) - (o.ax != null ? 18 : 40);
       return [(1 - e) * (1 - e) * ox + 2 * (1 - e) * e * cx + e * e * tx, (1 - e) * (1 - e) * oy + 2 * (1 - e) * e * cy + e * e * ty];
     };
     orbs.forEach(o => {
       if (o.t < 0) return;   // a cashed-in chain lets its orbs go one after another
-      const u = clamp(o.t / o.dur, 0, 1), [x, y] = at(o, u), [x2, y2] = at(o, Math.max(0, u - 0.08)), vi = o.to === 'groza';
-      fxc.strokeStyle = vi ? 'rgba(170,150,245,0.55)' : 'rgba(255,90,100,0.38)'; fxc.lineWidth = 3; fxc.lineCap = 'round'; fxc.beginPath(); fxc.moveTo(x2, y2); fxc.lineTo(x, y); fxc.stroke();
-      fxc.fillStyle = vi ? 'rgba(160,135,245,0.42)' : 'rgba(255,70,85,0.32)'; fxc.beginPath(); fxc.arc(x, y, 7, 0, Math.PI * 2); fxc.fill();
-      fxc.fillStyle = vi ? '#ece6ff' : '#ffe0e3'; fxc.beginPath(); fxc.arc(x, y, 2.6, 0, Math.PI * 2); fxc.fill();
+      const u = clamp(o.t / o.dur, 0, 1), [x, y] = at(o, u), [x2, y2] = at(o, Math.max(0, u - 0.08)), c = ORB_INK[o.to] || ORB_INK.score;
+      fxc.strokeStyle = c[0]; fxc.lineWidth = 3; fxc.lineCap = 'round'; fxc.beginPath(); fxc.moveTo(x2, y2); fxc.lineTo(x, y); fxc.stroke();
+      fxc.fillStyle = c[1]; fxc.beginPath(); fxc.arc(x, y, 7, 0, Math.PI * 2); fxc.fill();
+      fxc.fillStyle = c[2]; fxc.beginPath(); fxc.arc(x, y, 2.6, 0, Math.PI * 2); fxc.fill();
     });
   }
   // Prototype 1.02: the skill check in the game's own look: a stone slab with an iron edge, cut corners and rivets, a gothic

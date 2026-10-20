@@ -35,7 +35,7 @@
   function talk(dur, lines) {
     const P = fl.party;
     if (fl.fearless || fl.time < P.talkUntil || goingOut()) return;
-    P.talkUntil = fl.time + dur; fl.stats.talks++;
+    P.talkUntil = fl.time + Math.max(dur, talkLen(lines)); fl.stats.talks++;   // 1.10: they stand as long as it takes to say it, one after another
     const crew = alive().filter(h => !h.lost && !panicking(h) && h.id !== P.scoutId && !caged(h));
     P.queueSay = P.queueSay.concat(lines.map((t, i) => ({ id: (crew[i % Math.max(1, crew.length)] || {}).id, text: t, at: fl.time + i * 0.65 })));
   }
@@ -43,10 +43,11 @@
   function talkAs(dur, lines) {
     const P = fl.party;
     if (fl.fearless || fl.time < P.talkUntil || goingOut()) return;
-    P.talkUntil = fl.time + dur; fl.stats.talks++;
+    P.talkUntil = fl.time + Math.max(dur, talkLen(lines.map(l => l[1]))); fl.stats.talks++;
     const crew = alive().filter(h => !h.lost && !panicking(h) && h.id !== P.scoutId && !caged(h));
     lines.forEach((l, i) => { const who = l[0] || crew[i % Math.max(1, crew.length)]; if (who) P.queueSay.push({ id: who.id, text: l[1], at: fl.time + i * 0.7 }); });
   }
+  const talkLen = lines => 0.55 * lines.reduce((a, t) => a + readT(t) + SAY_GAP, 0);
   function lootLevel(it) { return ITEMS[it.type].rarity || 0; }
   // Common loot is noticed from the same room, rare from the next one, legendary glitters across the dungeon.
   function lootSeen(it) {
@@ -79,7 +80,7 @@
     else if (kind === 'gold') need = h.type === 'thief' || h.trait === 'greedy' || h.hunter ? 1.6 : 1;
     else if (it.item) need = Math.min(2, itemValue(h, it.item) / Math.max(0.6, 1.2 * it.item.r));   // a dropped item: better than his own?
     if (it.item && need <= 0.05) { h.lootMemo.set(k, { go: false, t: fl.time }); return false; }
-    let value = [0, 1, 2.6, 6][r] * need * h.T.greed * (h.rank === 0 ? 1.6 : h.rank === 1 ? 1 : 0.85) * (0.6 + 0.4 * fl.greed);
+    let value = [0, 1, 2.6, 6][r] * need * h.T.greed * (h.rank === 0 ? 1.6 : h.rank === 1 ? 1 : 0.85) * (0.6 + 0.4 * greedRaw(fl.greed));   // 1.10: they judge by the raw greed (as greedy as before the curve)
     if (h.rank >= 2 && kind === 'gold' && h.type !== 'thief' && !h.hunter) value *= 0.3;   // elites do not stoop for small change...
     if (r >= 2) value *= 1 + 0.06 * (h.lvl - 1);   // ...but glory and rare treasure pull harder the better they are
     if (h.trait === 'greedy') value *= 1.8; else if (h.trait === 'careful') value *= 0.6;
@@ -114,12 +115,12 @@
     const b = from ? bfs(from.x, from.y, { known: true }) : null;
     let best = -1, bestSc = 1e9;
     fl.rooms.forEach(r => {
-      if (r.kind !== 'room' || !r.seen || r.id === fl.heart.room || r.rt === 'swamp') return;   // nobody rests knee-deep in a swamp
+      if (r.kind !== 'room' || !r.seen || r.id === fl.heart.room || r.rt === 'swamp' || r.rt === 'ice') return;   // nobody rests knee-deep in a swamp (1.10: or on ice)
       let danger = 0, near = 1e9;
       r.tiles.forEach(t => { const i = t[1] * WW + t[0]; danger += fl.danger[i]; if (b && b.dist[i] >= 0 && b.dist[i] < near) near = b.dist[i]; });
       if (b && near >= 1e9) return;
       let threats = 0; fl.items.forEach(it => { if (roomOf(it.x, it.y) !== r.id) return; if (MONSTERS[it.type] && it.hp > 0) threats += 5; else if (LOOKS_TRAP(it.type) && it.detected && !it.disabled) threats += 3; });
-      const sc = danger + threats + (b ? near * 0.2 : 0);
+      const sc = danger + threats + (b ? near * 0.2 : 0) - (r.rt === 'haven' ? 12 : 0);   // 1.10: Sanktuarium looks like the safest place there is
       if (sc < bestSc) { bestSc = sc; best = r.id; }
     });
     return best;
@@ -212,7 +213,18 @@
   function partyThink(dt) {
     const P = fl.party, crew = alive();
     if (P.plan !== P.loggedPlan) { P.loggedPlan = P.plan; tl('pl', P.plan); }
-    if (P.queueSay.length) P.queueSay = P.queueSay.filter(q => { if (q.at > fl.time) return true; const h = byId(q.id); if (h && !h.dead) say(h, q.text, 2, 1.8); return false; });
+    // 1.10: the lines of a talk, an answer, a call: in order, each when its turn comes (an answer waits for the line it answers,
+    // and nobody in earshot of a line still waiting goes before it); a line whose moment has long passed is dropped
+    if (P.queueSay.length) {
+      const held = [];
+      P.queueSay = P.queueSay.sort((a, b) => a.at - b.at).filter(q => {
+        if (q.at > fl.time) return true;
+        const h = byId(q.id); if (!h || h.dead || h.fled || h.gone || fl.time - q.at > 10) return false;
+        if (q.how !== 'loud' && held.some(o => earshot(o, h))) { held.push(h); return true; }
+        if (say(h, q.text, q.prio || 2, q.dur || 1.8, q.how || 'q')) return false;
+        held.push(h); return true;
+      });
+    }
     fl.items.forEach(it => { if (isLoot(it.type)) lootSeen(it); });
     if (!crew.length) return;
     const L = leader();
@@ -320,7 +332,7 @@
     // They came for treasure too: the greedier they are, the more they search before the push for the crystal.
     const roomsAll = fl.rooms.filter(r => r.kind === 'room'), seenShare = roomsAll.reduce((a, r) => a + (r.visited ? 1 : r.seen ? 0.3 : 0), 0) / roomsAll.length;
     if (fl.heartKnown && !P.heartSaid && !goingOut()) { P.heartSaid = true; say(L, pick(seenShare < 0.65 && L.rank > 0 ? SAY.heartLater : SAY.heartSeen), 3); }
-    const need = Math.min(0.85, (L.rank === 0 ? 0.5 : 0.6) + 0.1 * clamp(fl.greed - 1, 0, 2) - (L.rank >= 2 ? 0.1 : 0));
+    const need = Math.min(0.85, (L.rank === 0 ? 0.5 : 0.6) + 0.1 * clamp(greedRaw(fl.greed) - 1, 0, 2) - (L.rank >= 2 ? 0.1 : 0));
     const tLimit = S.waveTime * Math.min(0.6, 0.45 + 0.01 * Math.max(0, roomsAll.length - 6));   // a big dungeon takes longer to search
     const detourG = P.gateDetourUntil > fl.time;   // 1.01: sent round by a closed gate, they search what they have not seen
     const wasSearch = P.wantSearch; P.wantSearch = (seenShare < need && fl.time < tLimit) || detourG;   // still searching the rooms they know of (for treasure)
@@ -376,7 +388,7 @@
     P.chatT -= dt;
     if (P.chatT <= 0) {
       P.chatT = 7 + Math.random() * 6;
-      const pool = crew.filter(o => !o.bubble && !panicking(o) && !caged(o) && !o.lost && o.state !== 'fight' && o.state !== 'smash');
+      const pool = crew.filter(o => !o.bubble && !panicking(o) && !caged(o) && !o.lost && o.state !== 'fight' && o.state !== 'smash' && !floorBusy(o));   // 1.10: small talk only into a silence
       const h = pool.length ? pick(pool) : null, lines = [];
       let mood = null;
       if (h && (h.fleeing || h.crystal || goingOut())) {
@@ -399,19 +411,31 @@
         if (h.rank === 0 && !scared) lines.push(...SAY.rookie); else if (h.rank >= 2) lines.push(...SAY.elite);
         lines.push('Słyszycie to?', 'Trzymajcie się blisko.', 'Patrzcie pod nogi.');
       }
-      if (h && lines.length) {
-        const line = pick(lines); say(h, line, 1, 2.2);
+      const line = h && lines.length ? pick(lines) : null;
+      if (line && say(h, line, 1, 2.2)) {
         // an answer now and then: courage for the scared, sense for the greedy
         const fearLine = mood === 'fear' && (SAY.shaken.includes(line) || line.startsWith('Nie podoba') || line.startsWith('Wracajmy'));
         const greedLine = mood === 'greed' && (line === 'Ile tu złota!' || line === 'Wszyscy będziemy bogaci.');
-        const ans = fearLine ? crew.find(o => o !== h && !panicking(o) && !o.lost && (o.trait === 'brave' || o.id === P.leaderId || o.type === 'bard') && hdist(o, h) <= 6) : greedLine ? crew.find(o => o !== h && !o.lost && o.trait === 'careful' && hdist(o, h) <= 6) : null;
+        const ans = isRt(h.room, 'hush') ? null : fearLine ? crew.find(o => o !== h && !panicking(o) && !o.lost && (o.trait === 'brave' || o.id === P.leaderId || o.type === 'bard') && hdist(o, h) <= 6) : greedLine ? crew.find(o => o !== h && !o.lost && o.trait === 'careful' && hdist(o, h) <= 6) : null;
         if (ans && Math.random() < 0.6) P.queueSay.push({ id: ans.id, text: pick(fearLine ? SAY.reassure : SAY.surviveFirst), at: fl.time + 1.6 });
+        else if (!ans && CHAT_REPLY[line] && Math.random() < 0.55) {   // 1.10: someone close by answers the everyday lines too
+          const o = crew.find(x => x !== h && !x.lost && !panicking(x) && !caged(x) && earshot(x, h));
+          if (o) P.queueSay.push({ id: o.id, text: pick(CHAT_REPLY[line]), at: fl.time + 0.4, prio: 1 });
+        }
       }
     }
     // 1.05: the badly hurt call for the priest when he is not close; he answers and heads their way
     { const pr = crew.find(o => o.type === 'priest' && !o.lost && !panicking(o) && !caged(o));
-      if (pr) crew.forEach(h => { if (h === pr || h.hp >= 0.4 * h.max || exiting(h) || h.lost || caged(h) || panicking(h) || fl.time < (h.healCallT || 0) || hdist(h, pr) <= 3) return;
+      if (pr) crew.forEach(h => { if (h === pr || h.hp >= 0.4 * h.max || exiting(h) || h.lost || caged(h) || panicking(h) || fl.time < (h.healCallT || 0) || hdist(h, pr) <= 3 || isRt(h.room, 'hush')) return;   // 1.10: in Głusza nobody hears him
         h.healCallT = fl.time + 14; say(h, nameFill(pick(SAY.callHealer), pr), 2); P.queueSay.push({ id: pr.id, text: pick(SAY.healerReply), at: fl.time + 1.1 }); pr.needPlan = true; fl.stats.healCalls = (fl.stats.healCalls || 0) + 1; }); }
+    // 1.10: one of them goes for loot close by: the leader waits for him (at most 6 s) and may tell him to hurry
+    if (P.plan !== 'retreat' && !fl.fearless && !goingOut() && L.intent !== 'loot') {
+      const lt = crew.find(o => o !== L && o.intent === 'loot' && !o.lost && !panicking(o) && hdist(o, L) <= 8);
+      if (lt) {
+        if (P.lootWaitId !== lt.id) { P.lootWaitId = lt.id; P.lootWaitT = fl.time; if (Math.random() < 0.55) P.queueSay.push({ id: L.id, text: pick(SAY.lootWait), at: fl.time + 0.3, prio: 1 }); }
+        if (fl.time - P.lootWaitT < 6) P.waitUntil = Math.max(P.waitUntil, fl.time + 0.4);
+      } else P.lootWaitId = -1;
+    }
     if (P.plan !== 'retreat' && !fl.fearless && !goingOut() && L.R.coord) {
       const far = crew.filter(h => h !== L && !h.lost && h.id !== P.scoutId && !panicking(h) && h.state !== 'fight' && !caged(h) && hdist(h, L) > 7);
       if (far.length && fl.time > P.waitUntil + 2) { P.waitUntil = fl.time + 1.6; fl.stats.regroups++; partySay('regroup', 2, L); }
@@ -430,6 +454,7 @@
     const P = fl.party;
     if (fl.fearless || goingOut()) return;
     if (inB('howl', h.room)) { P.queueSay.push({ id: h.id, text: pick(SAY.echoLost), at: fl.time + 1.4 }); fl.stats.howlBlocks = (fl.stats.howlBlocks || 0) + 1; return; }
+    if (isRt(h.room, 'hush')) { fl.stats.hushLost = (fl.stats.hushLost || 0) + 1; return; }   // 1.10: Głusza swallows his call
     const b = bfs(h.x, h.y, {});
     let best = null, bd = 1e9;
     alive().forEach(o => {
@@ -686,23 +711,34 @@
         const hurt = alive().filter(o => o !== h && o.hp < 0.5 * o.max && hdist(o, h) > 2.5).sort((a, c) => a.hp / a.max - c.hp / c.max)[0];
         if (hurt && B().dist[tIdx(hurt)] >= 0 && B().dist[tIdx(hurt)] <= 12) job = { intent: 'heal', goal: tIdx(hurt) };
       }
+      // 1.10: Sanktuarium: a wounded hero passing through sits down for a few seconds (once a wave), and the party goes on
+      if (!job && h.room >= 0 && isRt(h.room, 'haven') && h.hp < 0.6 * h.max && !h.napped && !h.lost && P.plan !== 'retreat' && fl.time >= h.burnUntil) {
+        h.napped = true; h.napUntil = fl.time + 5; h.restAt = fl.time; h.dreamSaid = false; h.state = 'rest'; h.path = []; h.intent = 'nap'; say(h, pick(SAY.nap), 2); fl.stats.naps = (fl.stats.naps || 0) + 1; return;
+      }
       if (!job && h.type === 'barbarian') job = smashJob(h, B());   // 1.05
       if (!job && h.type === 'thief') job = disarmJob(h, B());
       if (!job && h.type === 'priest' && h.rank >= 1) job = blessJob(h, B());
       if (!job) job = bombJob(h, B());
       if (!job) {
-        let best = -1, bd = 1e9;
+        // 1.10 (author: they ignored loot even when it was free): how far it is counts in steps on the way they would take. It
+        // used to be the path cost, which also counts the danger on the way, so in a room full of known traps loot two steps
+        // away was 'too far' and never even weighed; the danger is weighed once, in lootDecision. One hero goes for a
+        // treasure, the others do not all run for the same one.
+        let best = -1, bd = 1e9, bestK = null;
+        const claims = P.lootClaim || (P.lootClaim = new Map());
         fl.items.forEach(it => {
           if (!isLoot(it.type) || it.seenWave !== run.wave || it.cursedKnown) return;
-          const i = it.y * WW + it.x, d = B().dist[i], r = lootLevel(it);
-          const reach = r === 3 ? 30 : r === 2 ? 16 : (LOOT_KIND[it.type] === 'potion' && h.hp < 0.5 * h.max ? 14 : h.type === 'thief' ? 10 : h.rank === 0 ? 8 : 6);
-          if (d >= 0 && d <= reach && d < bd && lootDecision(h, it, B(), i)) { bd = d; best = i; }
+          const k = key(it.x, it.y), cl = byId(claims.get(k));
+          if (cl && cl !== h && !cl.dead && !cl.fled && !cl.gone && cl.intent === 'loot' && cl.lootKey === k) return;
+          const i = it.y * WW + it.x, d = B().dist[i], r = lootLevel(it), steps = d >= 0 ? pathFrom(B(), i).length : -1;
+          const reach = r === 3 ? 30 : r === 2 ? 16 : (LOOT_KIND[it.type] === 'potion' && h.hp < 0.5 * h.max ? 14 : h.type === 'thief' ? 11 : h.rank === 0 ? 9 : 8);
+          if (steps >= 0 && steps <= reach && steps < bd && lootDecision(h, it, B(), i)) { bd = steps; best = i; bestK = k; }
           else if (d < 0 && r === 3 && h.type !== 'priest') {   // legendary in an unknown spot: head for the nearest opening towards it
             const fr = frontier().filter(f => Math.hypot(f % WW - it.x, ((f / WW) | 0) - it.y) < 8);
-            const g = nearestOf(B(), fr); if (g >= 0 && B().dist[g] < bd) { bd = B().dist[g]; best = g; }
+            const g = nearestOf(B(), fr), gs = g >= 0 ? pathFrom(B(), g).length : -1; if (g >= 0 && gs < bd) { bd = gs; best = g; bestK = null; }
           }
         });
-        if (best >= 0) job = { intent: 'loot', goal: best };
+        if (best >= 0) { job = { intent: 'loot', goal: best }; h.lootKey = bestK; if (bestK) claims.set(bestK, h.id); }
       }
       if (!job && h.type === 'warrior') {   // rookies charge anything; veterans pick fights they can win or must fight
         let best = -1, bd = 1e9, skip = null;
@@ -730,12 +766,20 @@
         intent = 'follow';
         const lt = tIdx(L), d = B().dist[lt];
         const gap = h.type === 'priest' || h.type === 'mage' ? 3.5 : 2.5;   // the back line keeps a step behind
-        if (d >= 0 && d <= gap && L.state !== 'boss') { h.intent = intent; h.path = []; h.state = 'wait'; h.timer = 0.35; return; }
+        if (d >= 0 && d <= gap && L.state !== 'boss') {
+          // 1.10: a group, not a heap: one standing on a friend's tile steps aside onto a free, safe tile still close to the leader
+          if (!h.lost && ((L.x === h.x && L.y === h.y) || alive().some(o => o !== h && o.id < h.id && o.nx === null && o.x === h.x && o.y === h.y))) {
+            const sp = DIRS.map(q => [h.x + q[0], h.y + q[1]]).filter(t => walkable(t[0], t[1]) && fl.known[t[1] * WW + t[0]] && !fl.danger[t[1] * WW + t[0]] && !fl.items.has(key(t[0], t[1])) &&
+              Math.hypot(t[0] - L.x, t[1] - L.y) <= gap + 0.5 && !alive().some(o => o !== h && ((o.x === t[0] && o.y === t[1]) || (o.nx === t[0] && o.ny === t[1]))));
+            if (sp.length) { h.intent = 'space'; h.lootKey = null; h.path = [pick(sp)]; return; }
+          }
+          h.intent = intent; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.35; return;
+        }
         goal = (L.state === 'boss' || P.plan === 'assault') && !P.detour && P.searchId < 0 ? heartGoal() : lt;
         if (goal < 0) goal = lt;
       }
     }
-    h.intent = intent;
+    h.intent = intent; if (intent !== 'loot') h.lootKey = null;
     if (goal < 0) { h.path = []; return; }
     const bb = B();
     if (bb.dist[goal] < 0) {
@@ -957,8 +1001,18 @@
     if (DRIFT[target.type]) hurtMonster(target, 30 * h.R.pow);
     area.forEach(t => { const m = fl.items.get(key(t[0], t[1])); if (m && MONSTERS[m.type] && !DRIFT[m.type]) hurtMonster(m, 30 * h.R.pow); });
   }
+  // 1.10: standing, a hero looks around now and then: at a friend, at loot they saw, at a trap they know, or just away
+  function glance(h) {
+    h.glanceT = 1.6 + Math.random() * 2.8;
+    if (h.bubble && h.bubble.until > fl.time) return;   // not while he speaks
+    const pts = [];
+    alive().forEach(o => { if (o !== h && earshot(o, h)) pts.push([o.x, o.y]); });
+    fl.items.forEach(it => { if (Math.abs(it.x - h.x) + Math.abs(it.y - h.y) > 6) return; if ((isLoot(it.type) && it.seenWave === run.wave) || (it.detected && !it.disabled)) pts.push([it.x, it.y]); });
+    if (pts.length && Math.random() < 0.75) { const t = pick(pts); lookAt(h, t[0], t[1]); } else h.face = -(h.face || 1);
+  }
+  const slipChance = h => 0.33 * (h.rank >= 2 ? 0.55 : 1) * (h.type === 'thief' ? 0.6 : 1) * (panicking(h) || h.fleeing ? 1.3 : 1);
   function heroTile(h) { return (h.nx !== null && h.prog >= 0.5) ? [h.nx, h.ny] : [h.x, h.y]; }
-  const RT_SAY = { fog: 'rtFog', swamp: 'rtSwamp', grotto: 'rtGrotto', crypt: 'rtCrypt', vault: 'rtVault' };
+  const RT_SAY = { fog: 'rtFog', swamp: 'rtSwamp', grotto: 'rtGrotto', crypt: 'rtCrypt', vault: 'rtVault', haven: 'rtHaven', gears: 'rtGears', hush: 'rtHush', ice: 'rtIce' };
   function onEnter(h) {
     const P = fl.party;
     const r = roomOf(h.x, h.y), changed = r >= 0 && r !== h.enteredRoom;
@@ -974,6 +1028,14 @@
     if (isExitTile(h.x, h.y) && exiting(h)) { heroExit(h); return; }
     const it = fl.items.get(key(h.x, h.y));
     if (it && isLoot(it.type) && !h.crystal && !h.fleeing) pickup(h, it);
+    // 1.10: Lodownia: a step may run on, one tile straight ahead, into whatever is there (not twice in a row)
+    if (r >= 0 && isRt(r, 'ice') && !h.slid && (h.ldx || h.ldy) && h.state === 'walk' && Math.random() < slipChance(h)) {
+      const sx = h.x + h.ldx, sy = h.y + h.ldy, g = fl.items.get(key(sx, sy));
+      if (passable(sx, sy) && !(g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) && !(Math.abs(sx - fl.heart.x) + Math.abs(sy - fl.heart.y) === 0)) {
+        h.nx = sx; h.ny = sy; h.prog = 0; h.sliding = true; h.path = []; fl.stats.slips = (fl.stats.slips || 0) + 1; tl('sl', h.id, sx, sy);
+        say(h, pick(SAY.slip), 2, 1.2, 'loud'); return;
+      }
+    }
     if (P.plan === 'retreat' && !h.lost && r === P.retreatRoom && !panicking(h) && !exiting(h)) { h.state = 'rest'; h.path = []; return; }
     if (P.plan === 'assault' && !exiting(h) && Math.abs(h.x - fl.heart.x) + Math.abs(h.y - fl.heart.y) === 1 && !panicking(h)) { h.state = 'boss'; h.path = []; return; }
     // veterans time their run through a known trap while it reloads
@@ -1024,10 +1086,14 @@
     h.scan -= dt;
     if (h.scan <= 0) { h.scan = 0.5; scanTraps(h); }
     h.thinkT -= dt;
+    if (h.sliding && (h.state !== 'walk' || h.nx === null)) h.sliding = false;   // 1.10: a cage or a fall stops a slide
     if (caged(h)) { if (fl.time >= h.cageUntil) cageEnds(h); return; }
     if (h.state === 'rest') {
-      if (fl.time >= h.burnUntil) h.hp = Math.min(h.max, h.hp + 4 * dt);
-      if (P.plan !== 'retreat' || panicking(h) || exiting(h)) { h.state = 'walk'; h.needPlan = true; }
+      const haven = h.room >= 0 && isRt(h.room, 'haven'); if (!(h.restAt > 0)) h.restAt = fl.time;
+      if (fl.time >= h.burnUntil) h.hp = Math.min(h.max, h.hp + 4 * dt * (haven ? 0.5 : 1));
+      if (haven) { addFear(h, 3.5 * dt, null, 'nightmare'); if (!h.dreamSaid && fl.time - (h.restAt || fl.time) > 1.5) { h.dreamSaid = true; say(h, pick(SAY.nightmare), 2); } }   // 1.10: Sanktuarium
+      const nap = fl.time < (h.napUntil || -1);
+      if ((P.plan !== 'retreat' && !nap) || panicking(h) || exiting(h)) { h.state = 'walk'; h.napUntil = -1; h.restAt = -1; h.needPlan = true; }
       return;
     }
     if (h.state === 'disarm') {
@@ -1077,6 +1143,7 @@
       }
     }
     if (h.state === 'boss') { if (P.plan !== 'assault' || exiting(h) || panicking(h)) { h.state = 'walk'; h.needPlan = true; } return; }
+    if ((h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && h.nx === null && (h.glanceT = (h.glanceT || 0) - dt) <= 0) glance(h);   // 1.10
     if (h.state === 'talk') { if ((fl.time >= P.talkUntil && !(h.id === P.leaderId && fl.time < P.waitUntil)) || exiting(h)) { h.state = 'walk'; h.needPlan = true; } else return; }
     if (h.state === 'wait') { h.timer -= dt; if (h.timer > 0) return; h.state = 'walk'; h.needPlan = true; }
     if (exiting(h) && h.nx === null && isExitTile(h.x, h.y)) { heroExit(h); return; }
@@ -1113,8 +1180,9 @@
     const sprint = fl.time < h.sprintUntil ? h.sprintK : 1;   // boots (a power)
     const bog = isRt(roomOf(h.nx, h.ny), 'swamp') || isRt(roomOf(h.x, h.y), 'swamp') ? 0.65 : 1;   // Bagno
     const purse = h.gold > 0 ? Math.max(0.8, 1 - 0.04 * h.gold) : 1;   // a heavy purse
+    if (h.sliding) { h.prog += 3.2 * dt; if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = true; h.sliding = false; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); } return; }   // 1.10: a slide on the ice: fast, nothing stops it
     const spd = h.T.speed * h.R.speed * (S.heroSpeed / 100) * slow * (fl.fearless ? 1.3 : 1) * dash * careful * sprint * bog * purse *
       (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1) * (h.crystal ? 0.9 * mods.carrierSlow : 1) * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1) * (fl.time < h.rageUntil ? 1.25 : 1);
     h.prog += spd * dt;
-    if (h.prog >= 1) { h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); }
+    if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = !!h.sliding; h.sliding = false; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); }
   }

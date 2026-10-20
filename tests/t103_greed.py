@@ -17,7 +17,7 @@ async def main():
           const relic = [], gold = []; for (let k = 0; k < 6; k++) relic.push(place('loot3')); for (let k = 0; k < 4; k++) gold.push(place('loot'));
           const rel = [...G.fl.items.values()].filter(i => i.type === 'loot3'), last = rel.find(i => i.spent === 31) || rel[rel.length - 1];
           const e0 = G.fl.essence, got = G.removeItem(last), refund = G.fl.essence - e0, next = place('loot3');
-          const lv = {}; for (const g of [1, 3, 4, 4.5, 8, 9, 23]) { G.run.greedRep = g; let L = 0, H = 0; for (let i = 0; i < 12; i++) { const w = G.makeWave(8); L += w[0].lvl; H += w.filter(e => e.hunter).length; } lv[g] = [+(L / 12).toFixed(1), +(H / 12).toFixed(1)]; }
+          const lv = {}; for (const g of [1, 3, 4, 4.5, 8, 9, 23]) { G.run.greedRep = G.greedCurve ? G.greedCurve(g) : g; let L = 0, H = 0; for (let i = 0; i < 12; i++) { const w = G.makeWave(12); L += w[0].lvl; H += w.filter(e => e.hunter).length; } lv[g] = [+(L / 12).toFixed(1), +(H / 12).toFixed(1)]; }
           G.run.greedRep = 1;
           return { relic, gold, refund, next, count: G.lootCount('loot3'), lv };
         })()""")
@@ -35,7 +35,7 @@ async def main():
             G.fl.essence = 500; G.startWave(); for (let i = 0; i < 40 && !G.fl.heroes.length; i++) G.step(0.05);
             const h = G.fl.heroes.slice().sort((a, c) => a.inv.length - c.inv.length)[0]; let rel = [...G.fl.items.values()].filter(i => i.type === 'loot3');
             if (pos) { const same = pos.map(q => G.fl.items.get(q[0] + ',' + q[1])).filter(i => i && i.type === 'loot3'); if (same.length >= 2) rel = same; } pos = rel.slice(0, 3).map(i => [i.x, i.y]);
-            const steps = rel.slice(0, 3).map(it => { h.inv = []; h.gold = 0; const g0 = G.fl.greed; G.pickup(h, it); return +(G.fl.greed - g0).toFixed(3); });   /* 1.07: empty hands before each (a hero with full hands left it lying: a flaky test since 1.05) */
+            const steps = rel.slice(0, 3).map(it => { h.inv = []; h.gold = 0; const R = G.greedRaw || (x => x), g0 = R(G.fl.greed); G.pickup(h, it); return +(R(G.fl.greed) - g0).toFixed(3); });   /* 1.10: the raw rise (the shown greed grows ever slower) */   /* 1.07: empty hands before each (a hero with full hands left it lying: a flaky test since 1.05) */
             out[card ? 'card' : 'plain'] = steps; out[card ? 'cardPos' : 'plainPos'] = rel.slice(0, 3).map(i => i.x + ',' + i.y); out.taken = rel.slice(0, 3).every(it => !G.fl.items.has(it.x + ',' + it.y));
             G.finishWave(); while (G.modalKind) G.closeModal(); if (G.afterSummary) G.afterSummary(); while (G.modalKind) G.closeModal(); if (G.fl.phase !== 'build') G.startBuild(); while (G.modalKind) G.closeModal();
             pos.forEach(q => { if (!G.fl.items.has(q[0] + ',' + q[1]) && G.canPlace('loot3', q[0], q[1])) G.tryPlace('loot3', q[0], q[1]); });

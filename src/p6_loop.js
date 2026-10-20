@@ -36,6 +36,27 @@
       if (C) C.fly = (C.fly || 0) + v;   // counted per chain, so orbs still flying from a cashed-in chain never dent the next one
     }
   }
+  // 1.10 (author: like the Groza ones, for consistency): gold orbs carry Chciwość from the loot that raised it to its box in
+  // the equation, ice-blue ones carry Combo from the trap that raised it (+0,25 a step) to the Combo box. Each box shows its
+  // number less what is still flying, so it grows as they land. fl.gFly / fl.kFly = what is in the air; a combo that ends
+  // starts a new count (fl.kRun), so orbs left from the old one never dent the new one.
+  function tileScreen(x, y, z) {
+    const V = splitViews(); let c = cam;
+    if (V) { let b = null, bd = 1e9; fl.heroes.forEach(h => { if (h.dead || h.fled || h.gone) return; const p = heroPos(h), d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y); if (d < bd) { bd = d; b = h; } }); c = V[b ? SPLIT.gid.get(b.id) || 0 : 0]; }
+    return { x: vX(x, y) * c.s - c.ox, y: vY(x, y, z || 0) * c.s - c.oy };
+  }
+  function boxOrbs(to, x, y, v, n) {
+    if (!fl || fl.phase !== 'raid' || !(v > 0) || reduceMotion) return;
+    const p = tileScreen(x + 0.5, y + 0.5, 0.4), f = fl, each = v / n;
+    for (let i = 0; i < n; i++) {
+      if (orbs.length >= ORB_MAX) break;
+      orbs.push({ x: p.x + (Math.random() - 0.5) * 12, y: p.y + (Math.random() - 0.5) * 12, t: -i * 0.07, dur: 0.5 + Math.random() * 0.2, to, v: each, f, k: f.kRun || 0 });
+      if (to === 'greed') f.gFly = (f.gFly || 0) + each; else f.kFly = (f.kFly || 0) + each;
+    }
+  }
+  const greedOrbs = (x, y, g) => boxOrbs('greed', x, y, g, clamp(Math.round(g / 0.04), 1, 6));
+  const comboOrbs = (x, y) => boxOrbs('combo', x, y, 0.25, 3);
+  function comboReset() { fl.kRun = (fl.kRun || 0) + 1; fl.kFly = 0; }
   const lootMult = h => 1 + 0.25 * Math.min(4, h.inv.length);   // a hero carrying gear sheds more when hurt
   function regenTick(dt) {
     const r = regenParts();
@@ -48,6 +69,7 @@
   function essPulse() {}   // Prototype 1.0: the big number counts up by itself (tickScore); an orb landing in it gives it a knock (scoreHit)
   function scoreHit() { const e = $('#h-score'); if (!e || realNow - (scoreHit.t || -1) < 0.1) return; scoreHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
   function grozaHit() { const e = $('#eq-g'); if (!e || realNow - (grozaHit.t || -1) < 0.09) return; grozaHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
+  function boxHit(id) { const e = $('#' + id); if (!e || realNow - (boxHit[id] || -1) < 0.09) return; boxHit[id] = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
   function heartHit() { const e = $('#h-heart'); if (!e || realNow - (heartHit.t || -1) < 0.12) return; heartHit.t = realNow; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
 
   /* ================= sound ================= */
@@ -442,6 +464,7 @@
     fl.doors.forEach(d => { if (d.wasClosed && d.closedUntil <= fl.time) { d.wasClosed = false; replanAll(); } });
     fl.party.thinkT -= dt;
     if (fl.party.thinkT <= 0) { partyThink(0.25 - fl.party.thinkT); fl.party.thinkT = 0.25; checkThresholds(run.total + fl.score); }
+    sayTick();   // 1.10: lines waiting for their turn
     if (fl.tl) {   // once a second: where everyone is, how hurt and how scared (for the test log)
       fl.tl.smpT -= dt;
       if (fl.tl.smpT <= 0 && fl.tl.smp.length < 1200) {
@@ -611,6 +634,13 @@
     if (orbs.some(o => o.t >= o.dur && o.to === 'score')) scoreHit();
     if (orbs.some(o => o.t >= o.dur && o.to === 'heart')) heartHit();
     if (orbs.some(o => o.t >= o.dur && o.to === 'groza')) { grozaHit(); orbs.forEach(o => { if (o.t >= o.dur && o.to === 'groza' && o.c) { o.c.fly = (o.c.fly || 0) - o.v; if (o.c.fly < 1e-6) o.c.fly = 0; } }); }
+    if (orbs.some(o => o.t >= o.dur && (o.to === 'greed' || o.to === 'combo'))) {
+      orbs.forEach(o => {
+        if (o.t < o.dur || !o.f) return;
+        if (o.to === 'greed') { boxHit('eq-c'); o.f.gFly = Math.max(0, (o.f.gFly || 0) - o.v); if (o.f.gFly < 1e-6) o.f.gFly = 0; }
+        else if (o.to === 'combo') { boxHit('eq-k'); if (o.k === (o.f.kRun || 0)) { o.f.kFly = Math.max(0, (o.f.kFly || 0) - o.v); if (o.f.kFly < 1e-6) o.f.kFly = 0; } }
+      });
+    }
     orbs = orbs.filter(o => o.t < o.dur);
     floats.forEach(f => { f.life -= rdt; f.lift += 0.9 * rdt; });
     floats = floats.filter(f => f.life > 0);
