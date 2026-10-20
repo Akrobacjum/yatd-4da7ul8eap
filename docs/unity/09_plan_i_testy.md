@@ -68,6 +68,7 @@ Krótkie, deterministyczne sytuacje z ustalonym ziarnem i ręcznie ustawionym lo
 | sklep | darmowa karta za falę, ceny, odświeżanie drożeje, schowek wyłącza kartę, sprzedaż | `t15_shop.py` |
 | pierwsze runy | zakładki i elementy etapu 1-4, karty nowości, przejście etapów | `t112_onb.py` |
 | przewodnik | 16 kroków w falach 1-3, zapis i wznowienie | `t151_tut.py`, `t10_tutsave.py`, `t10_tutsave2.py` |
+| scenka przygotowania (1.13.3) | czterech specjalistów przed groźnym pokojem: mówią lider i dwóch (scenka do 10 s), wszyscy czterej i tak działają; bez specjalisty odpowiada liderowi ktoś inny; sam lider mówi za siebie | `t1133_prep.py` |
 | ślepe przejście (1.13.2) | fala 7 runu autora `mvh4wnpcy54a` odtworzona 8 razy: drużyna może zebrać łup z wąskiego pasa, przygotować się przy drzwiach i odpocząć, ale nigdy nie spędza większości najazdu przy krypcie (na 1.13.1: 130 i 132 s z 132 s fali) | `t1132_deadend.py` |
 | sam bohater (1.13.1) | gdy nikt go nie słyszy: kwestia narady staje się myśleniem na głos, odpowiedź dla innych nie pada, okrzyk zostaje okrzykiem; przy drzwiach, gdy reszta jeszcze wchodzi, nie jest sam | `t113_talk.py` |
 | rozmowy (1.13) | kwestia (np. nieudane rozbrojenie) z przyjacielem w zasięgu słuchu zaczyna wymianę: jego odpowiedź, potem odpowiedź pierwszego, po kolei; przerwana wymiana przepada | `t113_talk.py` |

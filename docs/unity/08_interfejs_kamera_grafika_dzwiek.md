@@ -1,6 +1,6 @@
 # 08. Interfejs, sterowanie, kamera, grafika, dźwięk i samouczek
 
-Wersja źródłowa: Prototype 1.13.2 (`LOG_VERSION = 58`). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
+Wersja źródłowa: Prototype 1.13.3 (`LOG_VERSION = 58`). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
@@ -280,7 +280,7 @@ W Unity: Canvas Scaler z rozdzielczością referencyjną 390×844, dopasowanie d
 
 ### 3.3 Start (`renderStart`, zrzut `01_start.png`)
 
-Od góry: podtytuł "Prototype 1.13.2 · 10 fal i finał"; h1 "You are the dungeon"; akapit wstępu; rekordy (jeśli są: "Twój rekord: N Esencji zebranej w runie (ranga: X) · najdalej: fala F · wygrane: W z R."); pole "Kto testuje (opcjonalnie)" (tylko prototyp); przyciski; wiersz web (tylko prototyp); rozwijane **Jak grać** (17 akapitów w tablicy literalnej w `renderStart`, zasady całej gry, do przeniesienia jako tekst lokalizowany) i **Co nowego w Prototype 1.13.2** (95 wpisów dziennika zmian od v14 do 1.13.2, druga tablica w `renderStart`); przycisk "Ustawienia" (dźwięk, wibracje, skill checki).
+Od góry: podtytuł "Prototype 1.13.3 · 10 fal i finał"; h1 "You are the dungeon"; akapit wstępu; rekordy (jeśli są: "Twój rekord: N Esencji zebranej w runie (ranga: X) · najdalej: fala F · wygrane: W z R."); pole "Kto testuje (opcjonalnie)" (tylko prototyp); przyciski; wiersz web (tylko prototyp); rozwijane **Jak grać** (17 akapitów w tablicy literalnej w `renderStart`, zasady całej gry, do przeniesienia jako tekst lokalizowany) i **Co nowego w Prototype 1.13.3** (96 wpisów dziennika zmian od v14 do 1.13.3, druga tablica w `renderStart`); przycisk "Ustawienia" (dźwięk, wibracje, skill checki).
 
 Przyciski (`startbtns`; `onbStage()` z rozdz. 8.1; `sv` = zapisany run):
 

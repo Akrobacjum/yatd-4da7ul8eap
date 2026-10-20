@@ -978,7 +978,19 @@ dla i < min(5, L.path.length): r = roomOf(L.path[i])
    return                                   // sprawdza tylko pierwszy inny pokój na najbliższych 5 polach
 ```
 
-**`startPrep(r)`**: załoga = grupa lidera (`talkGroup(L)`, od 1.13; wcześniej wszyscy żywi, nie zgubieni, nie w klatce, nie uciekający); gdy ktoś z niej już rozmawia, przygotowania nie ma. `P.prepped.add(r)`. Uczestnicy: kapłan poz. 3+ z `faith >= 2`, mag poz. 5+ z gotowym `jamCd`, złodziej poz. 4+, wojownik poz. 3+ (pierwszy pasujący każdej klasy). od 1.12.1 scenka: kwestie `prepStart` (lider), role (`prepWard`, `prepJam`, `prepDisarm`, `prepShield`), zamknięcie lidera `prepGo` i odpowiedź kogoś spoza ról `prepReply`; `dur = max(3, talkLen(kwestie))`, `P.prep = {room, until: time + dur, ...id}`, `P.talkUntil = max(P.talkUntil, time + dur)` (drużyna staje), potem `huddleUp(L)` (6.7.5). Do 1.12 było stałe 2,4 s i większość kwestii nie zdążyła paść ("Plan!" i bezruch). Kolejka co 0,5 s: lider `prepStart`, potem `prepWard` (kapłan), `prepJam` (mag), `prepDisarm` (złodziej), `prepShield` (wojownik). Każdy poz. 4+ z `hp < 0.7 max` wypija najlepszą miksturę.
+**`startPrep(r)`**: załoga = grupa lidera (`talkGroup(L)`, od 1.13; wcześniej wszyscy żywi, nie zgubieni, nie w klatce, nie uciekający); gdy ktoś z niej już rozmawia, przygotowania nie ma. `P.prepped.add(r)`. Uczestnicy: kapłan poz. 3+ z `faith >= 2`, mag poz. 5+ z gotowym `jamCd`, złodziej poz. 4+, wojownik poz. 3+ (pierwszy pasujący każdej klasy). Scenka (od 1.13.3):
+```
+kwestie = [[L, prepStart]]
+spec = [[kapłan, prepWard], [mag, prepJam], [złodziej, prepDisarm], [wojownik, prepShield]] bez brakujących
+tasowanie Fisher-Yates (Math.random), mówią pierwsi 2 ze spec           // pozostali i tak działają w finishPrep
+if kwestie.length === 1:                                                  // nie mówi żaden specjalista
+   rep = ktoś z załogi poza L
+   rep ? [rep, prepReply] : [L, prepGo]                                   // sam lider: jego własne "idę" (SOLO.prepGo)
+dur = max(3, talkLen(kwestie)); P.prep = {room, until: time + dur, pr, mg, th, wr}   // id WSZYSTKICH specjalistów
+P.talkUntil = max(P.talkUntil, time + dur); załoga: talkUntil = time + dur
+kolejka: kwestia i o czasie time + 0.5*i; huddleUp(L) (6.7.5)
+```
+Sygnałem do biegu jest okrzyk lidera `SAY.rush` w `finishPrep`. Długość scenki (średnie `readT` + przerwy): bez specjalisty ok. 5,8 s (sam lider ok. 6,2 s), z jednym ok. 6,5 s, z dwoma lub więcej ok. 9,3 s; w powtórkach dwóch runów (72 fale) średnio 8,0 s na przygotowanie. W 1.12.1-1.13.2 mówił każdy specjalista, a potem lider `prepGo` i ktoś `prepReply` (do 7 kwestii, 8-19 s, średnio 12,5 s w tych samych powtórkach; autor: za długie). Do 1.12 było stałe 2,4 s i większość kwestii nie zdążyła paść ("Plan!" i bezruch). Każdy poz. 4+ z `hp < 0.7 max` wypija najlepszą miksturę.
 
 **`finishPrep()`** (po `dur`):
 ```
@@ -1773,7 +1785,7 @@ Oznaczenia w kolumnie "prio / tryb": liczba = `prio`; **G** = głośna (`how 'lo
 | `bomb` | rzut bombą w pułapkę albo w potwora (> 60 HP) | rzucający | 3 |
 | `shield` | wojownik podnosi tarczę przed zagrożeniem | wojownik | 2 |
 | `dodge` | złodziej unika trafienia | złodziej | 2, G |
-| `prepStart`, `prepWard`, `prepJam`, `prepDisarm`, `prepShield` | przygotowanie przed groźnym pokojem, co 0,5 s | lider, kapłan, mag, złodziej, wojownik | K |
+| `prepStart`, `prepWard`, `prepJam`, `prepDisarm`, `prepShield` | przygotowanie przed groźnym pokojem, co 0,5 s; od 1.13.3 najwyżej 2 specjalistów (losowo) | lider, kapłan, mag, złodziej, wojownik | K |
 | `rush` | koniec przygotowania, bieg | lider | 3 |
 | `slip` | ślizg na lodzie | on | 2, d 1.2, G |
 | `lull` | pozytywka zaczyna grać | pierwszy objęty | 3 |

@@ -721,11 +721,14 @@
     const find = (t, lv, extra) => crew.find(h => h.type === t && h.lvl >= lv && (!extra || extra(h)));
     const pr = find('priest', 3, h => h.faith >= 2), mg = find('mage', 5, h => fl.time >= (h.jamCd || 0)), th = find('thief', 4), wr = find('warrior', 3);
     const L = leader(), lines = [[L, pick(SAY.prepStart)]];
-    if (pr) lines.push([pr, pick(SAY.prepWard)]); if (mg) lines.push([mg, pick(SAY.prepJam)]); if (th) lines.push([th, pick(SAY.prepDisarm)]); if (wr) lines.push([wr, pick(SAY.prepShield)]);
-    // 1.12.1: the leader closes it and someone answers; the stop lasts as long as the scene (it was 2,4 s, most lines never came)
-    lines.push([L, pick(SAY.prepGo)]);
-    const rep = crew.find(h => h !== L && !lines.some(l => l[0] === h)) || crew.find(h => h !== L);
-    if (rep) lines.push([rep, pick(SAY.prepReply)]);
+    // 1.13.3 (author: the scene was too long, up to 7 lines, 8-19 s): at most two of the specialists say what they will do
+    // (picked at random; all of them still do it in finishPrep) and the leader's "go" is the rush line there, not one more
+    // here; with no specialist a friend answers him (alone, he says his own "go")
+    const spec = [[pr, 'prepWard'], [mg, 'prepJam'], [th, 'prepDisarm'], [wr, 'prepShield']].filter(s => s[0]);
+    for (let i = spec.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [spec[i], spec[j]] = [spec[j], spec[i]]; }
+    spec.slice(0, 2).forEach(s => lines.push([s[0], pick(SAY[s[1]])]));
+    if (lines.length === 1) { const rep = crew.find(h => h !== L); lines.push(rep ? [rep, pick(SAY.prepReply)] : [L, pick(SAY.prepGo)]); }
+    // 1.12.1: the stop lasts as long as the scene (it was 2,4 s, most lines never came)
     const dur = Math.max(3, talkLen(lines.map(l => l[1])));
     P.prep = { room: r, until: fl.time + dur, pr: pr ? pr.id : -1, mg: mg ? mg.id : -1, th: th ? th.id : -1, wr: wr ? wr.id : -1 };
     P.talkUntil = Math.max(P.talkUntil, fl.time + dur); crew.forEach(h => { h.talkUntil = fl.time + dur; });
