@@ -363,7 +363,7 @@
     let best = null, bd = -1;
     for (let k = 0; k < 30; k++) {
       const R = pick(rooms), t = pick(R.tiles);
-      if (!walkable(t[0], t[1])) continue;
+      if (!walkable(t[0], t[1]) || heroBlock(h, t[0], t[1])) continue;   // 1.12.1: not onto another hero
       const d = exitD ? exitD(t[1] * WW + t[0]) + Math.random() * 2 : Math.hypot(t[0] - lp.x, t[1] - lp.y) + Math.random() * 3;
       if (d > bd) { bd = d; best = t; }
     }

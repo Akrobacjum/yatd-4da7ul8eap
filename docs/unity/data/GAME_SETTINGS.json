@@ -1,0 +1,65 @@
+[
+ {
+  "k": "volume",
+  "label": "Głośność efektów",
+  "min": 0,
+  "max": 1,
+  "step": 0.1,
+  "fmt": "fn: v => Math.round(v * 100) + '%'"
+ },
+ {
+  "k": "music",
+  "label": "Muzyka",
+  "min": 0,
+  "max": 1,
+  "step": 0.1,
+  "fmt": "fn: v => v ? Math.round(v * 100) + '%' : 'wyłączona'"
+ },
+ {
+  "k": "haptics",
+  "label": "Wibracje (telefony z Androidem)",
+  "toggle": true
+ },
+ {
+  "k": "series",
+  "label": "Seria: jeden skill check na kilka pułapek naraz",
+  "toggle": true
+ },
+ {
+  "k": "split",
+  "label": "Dziel ekran, gdy drużyna rozejdzie się za daleko",
+  "toggle": true
+ },
+ {
+  "k": "checkDiff",
+  "label": "Trudność skill checków",
+  "min": 0.6,
+  "max": 1.8,
+  "step": 0.1,
+  "fmt": "fn: v => '×' + f1(v)"
+ },
+ {
+  "k": "autoFF",
+  "label": "Auto-przyspieszenie, gdy nic się nie dzieje (1 = wyłączone)",
+  "min": 1,
+  "max": 4,
+  "step": 0.5,
+  "fmt": "fn: v => '×' + f1(v)"
+ },
+ {
+  "k": "ffSpeed",
+  "label": "Przyspieszenie (przytrzymanie palca)",
+  "min": 2,
+  "max": 6,
+  "step": 0.5,
+  "fmt": "fn: v => '×' + f1(v)"
+ },
+ {
+  "k": "topPad",
+  "label": "Odstęp od góry ekranu (gdy aparat albo róg ucina górę)",
+  "min": 0,
+  "max": 48,
+  "step": 4,
+  "fmt": "fn: v => v ? '+' + v + ' px' : 'auto'"
+ }
+]

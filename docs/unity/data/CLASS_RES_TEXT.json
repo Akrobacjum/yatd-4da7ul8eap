@@ -1,0 +1,8 @@
+{
+ "warrior": "płyty: kłute -25%, obuchowe +25%",
+ "thief": "skóra: ogień +25%, trucizna -25% (odtrutki)",
+ "priest": "szaty i modlitwa: kłute +10%, ogień -15%, trucizna -15%",
+ "mage": "szata i bariera: kłute +25%, obuchowe +10%, ogień -30%",
+ "bard": "lekki strój: obuchowe +20%, trucizna +10%",
+ "barbarian": "futra i krzepa: obuchowe -20%, ogień +20%, trucizna +10%"
+}

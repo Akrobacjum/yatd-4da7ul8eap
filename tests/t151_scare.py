@@ -31,7 +31,9 @@ JS = r'''() => {
     f = spawn(); f.essence = 999;
     const sp = spotsFor(t);
     if (!sp.length) { out.fire[t] = 'no spot'; fails.push('no spot ' + t); return; }
-    const [x, y] = sp[Math.floor(sp.length / 2)];
+    // 1.12.1: a wall spot whose whole reach is furniture gives no tile to stand on: try the next spots (the test was flaky)
+    const fitArea = q => { const tmp = { type: t, x: q[0], y: q[1] }; return G.areaOf(tmp).some(a => !(G.fl.objects && G.fl.objects.has(key(a[0], a[1]))) && !(a[0] === q[0] && a[1] === q[1])); };
+    const [x, y] = sp.slice(Math.floor(sp.length / 2)).concat(sp).find(q => t === 'creak' || t === 'shade' || t === 'bats' || fitArea(q)) || sp[Math.floor(sp.length / 2)];
     const okp = G.tryPlace(t, x, y);
     const it = f.items.get(key(x, y));
     if (!okp || !it) { out.fire[t] = 'not placed'; fails.push('not placed ' + t); return; }

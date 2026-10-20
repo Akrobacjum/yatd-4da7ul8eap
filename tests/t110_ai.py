@@ -7,15 +7,23 @@ BASE='file:///tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scr
 JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { if (!c) fails.push(m); };
   const fresh = () => { while (G.modalKind) G.closeModal(); G.setUser(true); G.newRun(false); while (G.modalKind) G.closeModal(); G.run.tutorial = false; G.fl.essence = 999; };
   const enter = () => { G.startWave(); let g = 0; while (G.fl.queue.length && g++ < 400) G.step(0.05); };
-  const quiet = () => G.fl.heroes.forEach(o => { o.bubble = null; o.saidUntil = -9; o.sayQ = null; o.hurtAt = -99; o.panicUntil = -1; o.fleeing = false; o.burnUntil = -1; o.state = 'walk'; });
+  // 1.12.1: a clean floor also means no party lines waiting (scenes, the search for one left alone) and the door line said
+  const quiet = () => { G.fl.party.queueSay = []; G.fl.party.talkUntil = -1; G.fl.party.searchId = -1; G.fl.gateOpen = true;
+    G.fl.heroes.forEach(o => { o.bubble = null; o.saidUntil = -9; o.sayQ = null; o.hurtAt = -99; o.panicUntil = -1; o.fleeing = false; o.burnUntil = -1; o.state = 'walk'; o.lost = false; o.sepT = 0; }); };
   const put = (h, x, y) => { h.x = x; h.y = y; h.tx = x; h.ty = y; h.nx = null; h.room = G.roomOf(x, y); h.path = []; };
   fresh(); enter();
   const f = G.fl, A = G.alive(); const [a, b, c] = A;
-  const R = f.rooms.filter(r => r.kind === 'room'), r0 = R[0], r1 = R.find(r => r !== r0 && r.id !== f.heart.room) || R[1];
+  const R = f.rooms.filter(r => r.kind === 'room'), r0 = R[0];
   const tl = r => r.tiles.filter(t => G.walkable(t[0], t[1]));
+  // 1.12.1: the other room is the one furthest from the first, so the lonely one there is surely out of earshot
+  const gap = r => Math.min(...tl(r).map(t => Math.min(...tl(r0).map(u => Math.abs(t[0] - u[0]) + Math.abs(t[1] - u[1])))));
+  const r1 = R.filter(r => r !== r0 && r.id !== f.heart.room && tl(r).length).sort((x, y) => gap(y) - gap(x))[0] || R[1];
   // 1. the same room: one at a time
   f.party.queueSay = []; f.party.talkUntil = -1;
-  quiet(); put(a, ...tl(r0)[0]); put(b, ...tl(r0)[1]); put(c, ...tl(r1)[0]);
+  // c goes to the walkable tile furthest from the two (a small dungeon may have its rooms within 7 steps: earshot)
+  const allT = f.rooms.flatMap(r => tl(r)), dd = t => Math.min(...[tl(r0)[0], tl(r0)[1]].map(u => Math.hypot(t[0] - u[0], t[1] - u[1])));
+  const cT = allT.reduce((m, t) => dd(t) > dd(m) ? t : m, tl(r1)[0]);
+  quiet(); put(a, ...tl(r0)[0]); put(b, ...tl(r0)[1]); put(c, ...cT); out.cDist = Math.round(dd(cT) * 10) / 10;
   const s1 = G.say(a, 'Słyszycie to?', 2), s2 = G.say(b, 'Nic nie słyszę, cicho bądź.', 2);
   out.turn = { s1, s2, q: b.sayQ ? b.sayQ.length : 0, aLen: Math.round((a.bubble.until - a.bubble.at) * 100) / 100 };
   ok(s1 && !s2 && b.sayQ && b.sayQ.length === 1, 'a calm line waits for its turn');

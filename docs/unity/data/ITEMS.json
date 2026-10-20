@@ -1,0 +1,456 @@
+{
+ "spikes": {
+  "name": "Kolce",
+  "cost": 3,
+  "slot": "floor",
+  "tag": "szybkie",
+  "cd": 1.5,
+  "desc": "Kolce (podłoga, kłute): jedno pole, szybkie odnowienie. +50%, gdy bohater stoi: walczy, czeka, w sieci albo w klatce. Najlepsze tuż za drzwiami."
+ },
+ "web": {
+  "name": "Sieć",
+  "cost": 3,
+  "slot": "floor",
+  "tag": "spowalnia",
+  "cd": 7,
+  "desc": "Sieć (podłoga): spowalnia w kwadracie 3×3 na 3 s, a bohater w sieci dostaje +30% obrażeń. Mag potrafi ją rozproszyć."
+ },
+ "trapdoor": {
+  "name": "Zapadnia",
+  "cost": 4,
+  "slot": "floor",
+  "tag": "rozdziela",
+  "cd": 8,
+  "desc": "Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony. Złodziej ją rozbroi."
+ },
+ "cage": {
+  "name": "Klatka",
+  "cost": 4,
+  "slot": "floor",
+  "tag": "więzi",
+  "cd": 10,
+  "desc": "Klatka (podłoga): więzi bohatera na 6 s, uwięziony dostaje +50% obrażeń. Jeśli drużyna go nie uwolni, umiera w klatce (boss wyłamie kraty)."
+ },
+ "arrows": {
+  "name": "Strzały",
+  "cost": 3,
+  "slot": "wall",
+  "tag": "linia",
+  "cd": 3,
+  "desc": "Strzały (ściana, kłute): strzała leci przez cały pokój w linii prostej i trafia każdego. Mebel ją zatrzymuje."
+ },
+ "fire": {
+  "name": "Ogień",
+  "cost": 4,
+  "slot": "wall",
+  "tag": "podpala",
+  "cd": 5,
+  "desc": "Ogień (ściana, ogień): płomień 2×3 przed ścianą i podpalenie na 3 s. Podpalonego nie leczy odpoczynek, kapłan musi go ugasić."
+ },
+ "portrait": {
+  "name": "Portret",
+  "cost": 4,
+  "slot": "wall",
+  "tag": "strach",
+  "cd": 6,
+  "desc": "Portret (ściana): nie rani, tylko straszy wszystkich w zasięgu 4 pól. Doświadczony kapłan potrafi go odczynić."
+ },
+ "gate": {
+  "name": "Krata",
+  "cost": 4,
+  "slot": "door",
+  "tag": "rozdziela",
+  "cd": 8,
+  "desc": "Krata (drzwi, obuchowe): zamyka przejście na 4 s i rozdziela drużynę. Odcięci szukają innej drogi albo się gubią. Odnawia się 8 s po otwarciu, 3 zamknięcia na falę."
+ },
+ "crate": {
+  "name": "Skrzynia",
+  "cost": 3,
+  "slot": "floor",
+  "tag": "blokuje",
+  "build": true,
+  "desc": "Skrzynia (podłoga pokoju, między falami): blokuje przejście i jest meblem pod proch, mimika albo pozytywkę. Przytrzymanie w budowie zwraca Esencję."
+ },
+ "powder": {
+  "name": "Proch",
+  "cost": 3,
+  "slot": "object",
+  "tag": "wybuch",
+  "cd": 0,
+  "desc": "Proch (mebel, ogień): wybuch 3×3, mebel znika i otwiera nowe przejście. Jednorazowy."
+ },
+ "mimic": {
+  "name": "Mimik",
+  "cost": 4,
+  "slot": "object",
+  "tag": "gryzie",
+  "cd": 4,
+  "desc": "Mimik (mebel, kłute): mebel gryzie wszystkich dookoła. Złodziej go nie rozbroi."
+ },
+ "goblin": {
+  "name": "Goblin",
+  "cost": 4,
+  "slot": "floor",
+  "cd": 3,
+  "hp": 110,
+  "melee": 14,
+  "tag": "blokuje",
+  "desc": "Goblin (potwór, kłute): blokuje przejście i mocno bije tego, kto z nim walczy. Ginie na dobre. Skill check: Dźgnięcie."
+ },
+ "archer": {
+  "name": "Łucznik",
+  "cost": 4,
+  "slot": "floor",
+  "cd": 4,
+  "hp": 50,
+  "melee": 4,
+  "tag": "strzela",
+  "desc": "Łucznik (potwór, kłute): sam strzela do bohaterów w swoim pokoju (zasięg 4). Ginie na dobre. Skill check: Salwa."
+ },
+ "spider": {
+  "name": "Pająk",
+  "cost": 5,
+  "slot": "floor",
+  "cd": 5,
+  "hp": 90,
+  "melee": 12,
+  "tag": "oplata",
+  "desc": "Pająk (potwór, trucizna): blokuje przejście, gryzie i oplata siecią. Skill check: Oplątanie 3×3 z ugryzieniem."
+ },
+ "ogre": {
+  "name": "Ogr",
+  "cost": 7,
+  "slot": "floor",
+  "cd": 6,
+  "hp": 240,
+  "melee": 18,
+  "tag": "tank",
+  "desc": "Ogr (potwór, obuchowe): bardzo dużo życia, bije wszystkich, którzy z nim walczą. Skill check: Uderzenie 3×3."
+ },
+ "shaman": {
+  "name": "Szaman",
+  "cost": 5,
+  "slot": "floor",
+  "cd": 8,
+  "hp": 60,
+  "melee": 3,
+  "tag": "leczy",
+  "desc": "Szaman (potwór): leczy potwory w promieniu 2 pól. Skill check: Wielkie leczenie wszystkich potworów w pokoju."
+ },
+ "ghost": {
+  "name": "Duch",
+  "cost": 5,
+  "slot": "floor",
+  "cd": 7,
+  "hp": 60,
+  "melee": 5,
+  "tag": "straszy",
+  "desc": "Duch (potwór): krąży przy bohaterach i straszy, nie blokuje przejścia. Ranią go tylko kapłan i mag. Skill check: Wrzask."
+ },
+ "eyes": {
+  "name": "Oczy",
+  "cost": 3,
+  "slot": "wall",
+  "tag": "samotni ×2",
+  "cd": 3,
+  "desc": "Oczy (ściana): patrzą w linii przez cały pokój i straszą każdego na tej linii. Samotny albo zgubiony boi się 2 razy bardziej. Kapłan je odczyni."
+ },
+ "bones": {
+  "name": "Kości",
+  "cost": 3,
+  "slot": "floor",
+  "tag": "nowicjusze",
+  "cd": 4,
+  "desc": "Kości (podłoga): grzechoczą i straszą w kwadracie 3×3. Nowicjusze boją się 1,5 raza bardziej. Kapłan je odczyni."
+ },
+ "mirror": {
+  "name": "Lustro",
+  "cost": 4,
+  "slot": "wall",
+  "tag": "dobija",
+  "cd": 6,
+  "desc": "Lustro (ściana): straszy w zasięgu 3 pól, tym mocniej, im bardziej bohater już się boi (do 2,5 raza). Kapłan je odczyni."
+ },
+ "creak": {
+  "name": "Zawiasy",
+  "cost": 3,
+  "slot": "door",
+  "tag": "próg",
+  "cd": 4,
+  "desc": "Skrzypiące zawiasy (drzwi): mocno straszą tego, kto jest w drzwiach albo tuż przy nich, słabiej każdego do 2 pól. Złodziej je rozbroi."
+ },
+ "coffin": {
+  "name": "Trumna",
+  "cost": 5,
+  "slot": "floor",
+  "tag": "mocny strach",
+  "cd": 9,
+  "desc": "Trumna (podłoga): wieko się uchyla. Najbliższy bohater bardzo się boi, inni do 2 pól trochę. W Krypcie +50%. Złodziej zabije ją gwoździami."
+ },
+ "musicbox": {
+  "name": "Pozytywka",
+  "cost": 4,
+  "slot": "object",
+  "tag": "cały pokój",
+  "cd": 9,
+  "desc": "Pozytywka (mebel): gra kołysankę w całym pokoju i przez 4 s każdy, kto tam jest, boi się coraz bardziej. Złodziej ją rozbroi."
+ },
+ "shade": {
+  "name": "Cień",
+  "cost": 5,
+  "slot": "floor",
+  "cd": 8,
+  "hp": 50,
+  "melee": 0,
+  "tag": "samotni",
+  "desc": "Cień (potwór): sunie za samotnym albo ostatnim w szyku i szepcze mu do ucha. Samotny boi się 2 razy bardziej. Rani go tylko kapłan. Skill check: Szept."
+ },
+ "bats": {
+  "name": "Nietoperze",
+  "cost": 4,
+  "slot": "floor",
+  "cd": 6,
+  "hp": 40,
+  "melee": 0,
+  "tag": "płoszą",
+  "desc": "Nietoperze (potwór, kłute): szybki rój krąży między bohaterami, gryzie i straszy. Ranią go tylko mag i kapłan. Skill check: rój płoszy bohaterów (uciekają na oślep)."
+ },
+ "loot": {
+  "name": "Monety",
+  "cost": 3,
+  "slot": "floor",
+  "tag": "chciwość",
+  "cd": 0,
+  "rarity": 1,
+  "desc": "Monety (łup): widać je dopiero z pokoju. Tanio i mocno podbijają chciwość, kuszą chciwych i złodziei. Połowa chciwości zostaje do końca runu."
+ },
+ "lpotion": {
+  "name": "Mikstura",
+  "cost": 4,
+  "slot": "floor",
+  "tag": "wabi rannych",
+  "cd": 0,
+  "rarity": 1,
+  "desc": "Mikstura (łup): prawie bez chciwości, ale ranny bohater pójdzie po nią nawet przez pułapki. Postaw ją w pokoju śmierci."
+ },
+ "loot2": {
+  "name": "Ekwipunek",
+  "cost": 5,
+  "slot": "floor",
+  "tag": "rzadki",
+  "cd": 0,
+  "rarity": 2,
+  "desc": "Ekwipunek (łup): widać go z sąsiedniego pokoju, mocno podbija chciwość. Zabrany daje rzadki przedmiot, gorszy zostaje na podłodze."
+ },
+ "loot3": {
+  "name": "Relikwia",
+  "cost": 10,
+  "slot": "floor",
+  "tag": "legendarny",
+  "cd": 0,
+  "rarity": 3,
+  "desc": "Relikwia (łup): lśni przez kilka pokoi, bardzo podbija chciwość i rozdziela drużynę. Zabrana: 4 Esencji i legendarny przedmiot."
+ },
+ "lcursed": {
+  "name": "Przeklęty",
+  "cost": 5,
+  "slot": "floor",
+  "tag": "klątwa",
+  "cd": 0,
+  "rarity": 2,
+  "desc": "Przeklęty skarb (łup, trucizna): wygląda jak ekwipunek. Kto go weźmie: +30% obrażeń, słabsze przedmioty, rosnący strach. Kapłan zdejmie klątwę."
+ },
+ "rune": {
+  "name": "Runa",
+  "cost": 14,
+  "slot": "floor",
+  "tag": "magowie",
+  "build": true,
+  "desc": "Runa (budowla, blokuje przejście jak skrzynia): magowie nie zakłócą ani nie wyczują pułapek w tym pokoju. Kontra na gildię z magami. Jedna na pokój."
+ },
+ "altar": {
+  "name": "Ołtarz",
+  "cost": 14,
+  "slot": "floor",
+  "tag": "kapłani",
+  "build": true,
+  "desc": "Ołtarz (budowla, blokuje przejście jak skrzynia): moce kapłana i amulety działają tu o połowę słabiej. Kontra na kapłanów i leczenie. Jeden na pokój."
+ },
+ "decoy": {
+  "name": "Wabik",
+  "cost": 10,
+  "slot": "floor",
+  "tag": "złodzieje",
+  "build": true,
+  "desc": "Wabik (budowla, blokuje przejście jak skrzynia): wygląda jak pułapka. Złodziej rozbraja go najpierw i podnosi alarm: odpalają wszystkie gotowe pułapki w pokoju."
+ },
+ "acid": {
+  "name": "Kwas",
+  "cost": 12,
+  "slot": "floor",
+  "tag": "tarcze",
+  "build": true,
+  "desc": "Kwas (budowla, blokuje przejście jak skrzynia): tarcza wojownika, osłona kapłana i talizmany chronią tu o połowę słabiej. Kontra na wojowników. Jeden na pokój."
+ },
+ "veil": {
+  "name": "Zasłona",
+  "cost": 12,
+  "slot": "floor",
+  "tag": "plotki",
+  "build": true,
+  "desc": "Zasłona (budowla, blokuje przejście jak skrzynia): uciekinierzy nie zapamiętają tego pokoju ani jego pułapek. Jedna na pokój."
+ },
+ "howl": {
+  "name": "Kamień wyjec",
+  "cost": 12,
+  "slot": "floor",
+  "tag": "bardowie",
+  "build": true,
+  "desc": "Kamień wyjec (budowla, blokuje przejście jak skrzynia): wiatr wyje w jego otworach. Pieśń barda tu nie działa, a echo myli głosy: zgubiony nie trafi tu do drużyny po głosie. Kontra na bardów. Jeden na pokój."
+ },
+ "shackles": {
+  "name": "Okowy",
+  "cost": 12,
+  "slot": "floor",
+  "tag": "furia",
+  "build": true,
+  "desc": "Okowy (budowla, blokuje przejście jak skrzynia): w tym pokoju nikt nie wpada w furię, a skrzyń i budowli nie da się tu rozbić. Kontra na barbarzyńców. Jeden na pokój."
+ },
+ "fortify": {
+  "name": "Bastion",
+  "cost": 10,
+  "slot": "floor",
+  "tag": "wyłomy",
+  "build": true,
+  "desc": "Bastion (budowla, blokuje przejście jak skrzynia): przez ściany tego pokoju gildia nie przebije wyłomu. Jeden na pokój."
+ },
+ "upgrade": {
+  "name": "Ulepsz",
+  "cost": 0,
+  "slot": null,
+  "tag": "poziom +1",
+  "mode": true,
+  "desc": "Ulepsz: stuknij pułapkę albo potwora (koszt nad elementem). Poziom 2 i 3 to więcej mocy, poziom 3 dodaje cechę. Stuknij Ulepsz znowu, żeby wyjść."
+ },
+ "move": {
+  "name": "Przenieś",
+  "cost": 0,
+  "slot": null,
+  "tag": "za darmo",
+  "mode": true,
+  "desc": "Przenieś: stuknij element, potem nowe miejsce. Za darmo, poziom zostaje. Tak przestawisz pułapki znane z plotek."
+ },
+ "dig": {
+  "name": "Nowy pokój",
+  "cost": 8,
+  "slot": "dig",
+  "tag": "kopanie",
+  "tool": true,
+  "desc": "Nowy pokój: stuknij plus przy krawędzi lochu. Nowego pokoju nie znają plotki, więc bohaterowie muszą go odkryć."
+ },
+ "tunnel": {
+  "name": "Przejście",
+  "cost": 4,
+  "slot": "tunnel",
+  "tag": "pętla",
+  "tool": true,
+  "desc": "Przejście między dwoma sąsiednimi pokojami. Więcej dróg to więcej wyborów i więcej błędów bohaterów."
+ },
+ "expand": {
+  "name": "Rozbuduj",
+  "cost": 4,
+  "slot": "expand",
+  "tag": "+1 miejsce",
+  "tool": true,
+  "desc": "Rozbuduj pokój albo korytarz: +1 miejsce na element. Każda kolejna rozbudowa tego miejsca kosztuje 2 razy więcej."
+ },
+ "demolish": {
+  "name": "Wyburz",
+  "cost": 0,
+  "slot": "demolish",
+  "tag": "zwrot",
+  "tool": true,
+  "desc": "Wyburz pokój albo przejście. Elementy wracają jako Esencja, pokój zwraca jeszcze 5. Serca nie odetniesz od wejścia."
+ },
+ "r_fog": {
+  "name": "Mgła",
+  "cost": 10,
+  "slot": "roomtype",
+  "tag": "gubią się",
+  "tool": true,
+  "rt": "fog",
+  "desc": "Mgła (pokój): widać na 2 pola, drużyna się rozłazi i każdy łatwo się gubi, nikt nie wykrywa pułapek, strach +15%. Stuknij znacznik pokoju."
+ },
+ "r_swamp": {
+  "name": "Bagno",
+  "cost": 8,
+  "slot": "roomtype",
+  "tag": "spowalnia",
+  "tool": true,
+  "rt": "swamp",
+  "desc": "Bagno (pokój): ruch o 35% wolniej, bez odpoczynku, rozbrajanie trwa o połowę dłużej. Stuknij znacznik pokoju."
+ },
+ "r_grotto": {
+  "name": "Grota",
+  "cost": 10,
+  "slot": "roomtype",
+  "tag": "echo strachu",
+  "tool": true,
+  "rt": "grotto",
+  "desc": "Grota (pokój): 40% strachu słychać w sąsiednich pokojach, combo z groty czeka o połowę dłużej. Stuknij znacznik pokoju."
+ },
+ "r_crypt": {
+  "name": "Krypta",
+  "cost": 10,
+  "slot": "roomtype",
+  "tag": "śmierć ×2",
+  "tool": true,
+  "rt": "crypt",
+  "desc": "Krypta (pokój): śmierć straszy 2 razy mocniej i daje +50% Grozy, potwory mają +25% HP. Stuknij znacznik pokoju."
+ },
+ "r_vault": {
+  "name": "Sezam",
+  "cost": 10,
+  "slot": "roomtype",
+  "tag": "łup ×2",
+  "tool": true,
+  "rt": "vault",
+  "desc": "Sezam (pokój): łup podbija chciwość 2 razy mocniej i kusi 1,5 raza bardziej, mnożnik pokoju +0,15. Stuknij znacznik pokoju."
+ },
+ "r_haven": {
+  "name": "Sanktuarium",
+  "cost": 10,
+  "slot": "roomtype",
+  "tag": "fałszywy azyl",
+  "tool": true,
+  "rt": "haven",
+  "desc": "Sanktuarium (pokój): wygląda na najbezpieczniejsze miejsce w lochu. Ranni chcą tu odpocząć (sami, w biegu, i cała drużyna przy odwrocie), ale rany goją się tu 2 razy wolniej, a śpiących dręczą koszmary: strach rośnie. Stuknij znacznik pokoju."
+ },
+ "r_gears": {
+  "name": "Zębatki",
+  "cost": 10,
+  "slot": "roomtype",
+  "tag": "combo z jednej",
+  "tool": true,
+  "rt": "gears",
+  "desc": "Zębatki (pokój): pułapki w tym pokoju przeładowują się o 25% szybciej, a ta sama pułapka odpalona drugi raz z rzędu też podbija combo. Stuknij znacznik pokoju."
+ },
+ "r_hush": {
+  "name": "Głusza",
+  "cost": 8,
+  "slot": "roomtype",
+  "tag": "bez słów",
+  "tool": true,
+  "rt": "hush",
+  "desc": "Głusza (pokój): nic tu nie słychać. Bohaterowie nie ostrzegą się nawzajem (pułapki, które tu odpalą, nie trafią do ich wiedzy), nie zawołają kapłana, nie dodadzą sobie otuchy, a zgubiony nie usłyszy odpowiedzi. Strach +20%. Stuknij znacznik pokoju."
+ },
+ "r_ice": {
+  "name": "Lodownia",
+  "cost": 10,
+  "slot": "roomtype",
+  "tag": "poślizg",
+  "tool": true,
+  "rt": "ice",
+  "desc": "Lodownia (pokój): ślisko. Co trzeci krok bohater jedzie jedno pole dalej, prosto w to, co tam leży (doświadczeni i złodziej rzadziej). Nikt tu nie odpoczywa. Stuknij znacznik pokoju."
+ }
+}

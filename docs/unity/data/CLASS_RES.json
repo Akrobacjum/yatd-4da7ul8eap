@@ -1,0 +1,29 @@
+{
+ "warrior": {
+  "pierce": 0.75,
+  "blunt": 1.25
+ },
+ "thief": {
+  "fire": 1.25,
+  "poison": 0.75
+ },
+ "priest": {
+  "pierce": 1.1,
+  "fire": 0.85,
+  "poison": 0.85
+ },
+ "mage": {
+  "pierce": 1.25,
+  "blunt": 1.1,
+  "fire": 0.7
+ },
+ "bard": {
+  "blunt": 1.2,
+  "poison": 1.1
+ },
+ "barbarian": {
+  "blunt": 0.8,
+  "fire": 1.2,
+  "poison": 1.1
+ }
+}

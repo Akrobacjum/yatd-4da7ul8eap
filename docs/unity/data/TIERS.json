@@ -1,0 +1,50 @@
+[
+ {
+  "min": 1,
+  "name": [
+   "Nowicjusz",
+   "Nowicjuszka"
+  ],
+  "color": "#9be37a"
+ },
+ {
+  "min": 3,
+  "name": [
+   "Weteran",
+   "Weteranka"
+  ],
+  "color": "#6fb7ff"
+ },
+ {
+  "min": 6,
+  "name": [
+   "Elita",
+   "Elita"
+  ],
+  "color": "#c39bff"
+ },
+ {
+  "min": 10,
+  "name": [
+   "Mistrz",
+   "Mistrzyni"
+  ],
+  "color": "#ff8a3c"
+ },
+ {
+  "min": 15,
+  "name": [
+   "Legenda",
+   "Legenda"
+  ],
+  "color": "#ff5a6a"
+ },
+ {
+  "min": 20,
+  "name": [
+   "Mit",
+   "Mit"
+  ],
+  "color": "#ffe066"
+ }
+]

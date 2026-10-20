@@ -1,0 +1,8 @@
+{
+ "trap": 1,
+ "loot": 1,
+ "burn": 1,
+ "monster": 0.4,
+ "heart": 0,
+ "other": 0
+}

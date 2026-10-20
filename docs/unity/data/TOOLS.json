@@ -1,0 +1,15 @@
+{
+ "dig": 1,
+ "tunnel": 1,
+ "expand": 1,
+ "demolish": 1,
+ "r_fog": 1,
+ "r_swamp": 1,
+ "r_grotto": 1,
+ "r_crypt": 1,
+ "r_vault": 1,
+ "r_haven": 1,
+ "r_gears": 1,
+ "r_hush": 1,
+ "r_ice": 1
+}

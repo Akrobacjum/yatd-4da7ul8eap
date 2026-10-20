@@ -1,0 +1,82 @@
+{
+ "fire": {
+  "name": "ogień",
+  "attrs": [
+   "fire",
+   "powder"
+  ],
+  "types": [
+   "fire"
+  ],
+  "sees": [
+   "fire",
+   "powder"
+  ]
+ },
+ "spiders": {
+  "name": "pająki",
+  "attrs": [
+   "spider",
+   "web"
+  ],
+  "sees": [
+   "spider",
+   "web"
+  ]
+ },
+ "closed": {
+  "name": "ciasnota",
+  "attrs": [
+   "cage",
+   "trapdoor",
+   "gate",
+   "creak",
+   "coffin"
+  ],
+  "sees": [
+   "cage",
+   "gate",
+   "creak",
+   "coffin"
+  ]
+ },
+ "ghosts": {
+  "name": "duchy",
+  "attrs": [
+   "ghost",
+   "portrait",
+   "eyes",
+   "mirror"
+  ],
+  "sees": [
+   "ghost",
+   "portrait",
+   "eyes",
+   "mirror"
+  ]
+ },
+ "blood": {
+  "name": "krew i kości",
+  "srcs": [
+   "death"
+  ],
+  "attrs": [
+   "bones"
+  ],
+  "sees": [
+   "bones"
+  ]
+ },
+ "dark": {
+  "name": "ciemność",
+  "dark": true,
+  "attrs": [
+   "shade",
+   "bats"
+  ],
+  "sees": [
+   "shade",
+   "bats"
+  ]
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "spikes": [
+  "Krwawienie",
+  "trafiony krwawi przez 3 s"
+ ],
+ "web": [
+  "Kwaśna sieć",
+  "bohater w tej sieci dostaje +60% obrażeń od pułapek zamiast +30%"
+ ],
+ "trapdoor": [
+  "Bezdenny szyb",
+  "spadający wychodzi zgubiony i dużo bardziej przestraszony"
+ ],
+ "cage": [
+  "Kolczasta klatka",
+  "uwięziony dostaje 2 razy więcej obrażeń i boi się 2 razy bardziej"
+ ],
+ "arrows": [
+  "Przebijające groty",
+  "strzały przebijają tarczę wojownika i talizmany"
+ ],
+ "fire": [
+  "Napalm",
+  "podpalenie trwa 6 s zamiast 3"
+ ],
+ "portrait": [
+  "Całun grozy",
+  "portret straszy cały pokój"
+ ],
+ "gate": [
+  "Żelazna krata",
+  "+2 zamknięcia na falę"
+ ],
+ "powder": [
+  "Ognisty proch",
+  "wybuch sięga o pole dalej i podpala"
+ ],
+ "mimic": [
+  "Pożeracz",
+  "ugryziony traci jeden przedmiot"
+ ],
+ "goblin": [
+  "Podcięcie",
+  "trafiony zwalnia na 1,5 s"
+ ],
+ "archer": [
+  "Ogniste strzały",
+  "trafiony płonie"
+ ],
+ "ogre": [
+  "Grzmot",
+  "każde uderzenie mocno straszy"
+ ],
+ "spider": [
+  "Gniazdo",
+  "oplata siecią cały kwadrat 3×3"
+ ],
+ "shaman": [
+  "Tarcza ducha",
+  "potwory w jego pokoju dostają 30% mniej obrażeń"
+ ],
+ "ghost": [
+  "Wycie",
+  "straszy z dalszej odległości"
+ ],
+ "eyes": [
+  "Wszystkowidzące",
+  "samotny albo zgubiony boi się 3 razy bardziej"
+ ],
+ "bones": [
+  "Kostnica",
+  "grzechoczą w kwadracie 5×5"
+ ],
+ "mirror": [
+  "Krzywe zwierciadło",
+  "lustro straszy cały pokój"
+ ],
+ "creak": [
+  "Trzask",
+  "ten w drzwiach zwalnia na 2 s"
+ ],
+ "coffin": [
+  "Pogrzebany żywcem",
+  "najbliższy boi się 1,5 raza bardziej i zwalnia na 3 s"
+ ],
+ "musicbox": [
+  "Kołysanka śmierci",
+  "kołysanka trwa 8 s"
+ ],
+ "shade": [
+  "Pożeracz światła",
+  "szept gubi samotnego bohatera"
+ ],
+ "bats": [
+  "Chmara",
+  "rój sięga 3 pól i płoszy częściej"
+ ]
+}

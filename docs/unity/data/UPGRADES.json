@@ -1,0 +1,1026 @@
+[
+ {
+  "id": "u-web",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "web",
+  "name": "Nowa pułapka: Sieć",
+  "text": "Na podłogę. Spowalnia w kwadracie 3×3, bohater w sieci dostaje +30% obrażeń."
+ },
+ {
+  "id": "u-fire",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "fire",
+  "name": "Nowa pułapka: Ogień",
+  "text": "Na ścianę. Płomień 2×3 pola i podpalenie."
+ },
+ {
+  "id": "u-mimic",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "mimic",
+  "name": "Nowa pułapka: Mimik",
+  "text": "Na obiekt. Mebel gryzie wszystkich dookoła."
+ },
+ {
+  "id": "u-cage",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "cage",
+  "name": "Nowa pułapka: Klatka",
+  "text": "Na podłogę. Więzi bohatera; jeśli drużyna go nie uwolni, umiera w klatce."
+ },
+ {
+  "id": "u-portrait",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "portrait",
+  "name": "Nowa pułapka: Portret",
+  "text": "Na ścianę. Nie rani, tylko straszy cały kawałek pokoju."
+ },
+ {
+  "id": "u-spider",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "spider",
+  "name": "Nowy potwór: Pająk",
+  "text": "Blokuje przejście, gryzie i oplata siecią."
+ },
+ {
+  "id": "u-ogre",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "ogre",
+  "name": "Nowy potwór: Ogr",
+  "text": "Dużo życia, bije wszystkich, którzy z nim walczą."
+ },
+ {
+  "id": "u-shaman",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "shaman",
+  "name": "Nowy potwór: Szaman",
+  "text": "Leczy potwory dookoła, w skill checku cały pokój."
+ },
+ {
+  "id": "u-ghost",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "ghost",
+  "name": "Nowy potwór: Duch",
+  "text": "Krąży przy bohaterach i ich straszy. Tkną go tylko kapłan i mag."
+ },
+ {
+  "id": "u-mirror",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "mirror",
+  "name": "Nowa pułapka: Lustro",
+  "text": "Na ścianę. Straszy tym mocniej, im bardziej bohater już się boi."
+ },
+ {
+  "id": "u-creak",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "creak",
+  "name": "Nowa pułapka: Zawiasy",
+  "text": "Na drzwi. Skrzypią i mocno straszą każdego w progu."
+ },
+ {
+  "id": "u-coffin",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "coffin",
+  "name": "Nowa pułapka: Trumna",
+  "text": "Na podłogę. Bardzo mocno straszy najbliższego bohatera, w Krypcie jeszcze mocniej."
+ },
+ {
+  "id": "u-musicbox",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "musicbox",
+  "name": "Nowa pułapka: Pozytywka",
+  "text": "Na obiekt. Kołysanka straszy cały pokój przez kilka sekund."
+ },
+ {
+  "id": "u-shade",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "shade",
+  "name": "Nowy potwór: Cień",
+  "text": "Sunie za samotnym bohaterem i szepcze. Rani go tylko kapłan."
+ },
+ {
+  "id": "u-bats",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "bats",
+  "name": "Nowy potwór: Nietoperze",
+  "text": "Szybki rój: gryzie, straszy i płoszy bohaterów."
+ },
+ {
+  "id": "crystal",
+  "kind": "instant",
+  "rar": "r",
+  "name": "Żarłoczne serce",
+  "text": "Od razu: serce dostaje dodatkowy kryształ (także maksymalnie, do końca runu).",
+  "apply": "fn: () => { run.crystals += 1; run.maxCrystals += 1; }"
+ },
+ {
+  "id": "infusion",
+  "kind": "instant",
+  "rar": "c",
+  "name": "Zastrzyk Esencji",
+  "text": "Od razu: +20 Esencji, nawet ponad pojemność.",
+  "apply": "fn: () => { fl.essence += 20; run.essence = fl.essence; }"
+ },
+ {
+  "id": "gift",
+  "kind": "instant",
+  "rar": "r",
+  "name": "Hojny kupiec",
+  "text": "Od razu: 2 darmowe karty do wybrania w sklepie.",
+  "apply": "fn: () => { run.freePicks = (run.freePicks || 0) + 2; }"
+ },
+ {
+  "id": "pact",
+  "kind": "instant",
+  "rar": "l",
+  "name": "Pakt",
+  "text": "Do końca runu +1 miejsce w talii, ale serce traci 1 kryształ (także maksymalnie, zawsze zostaje co najmniej 1).",
+  "apply": "fn: () => { run.deckSize += 1; run.maxCrystals = Math.max(1, run.maxCrystals - 1); run.crystals = Math.max(1, Math.min(run.crystals - 1, run.maxCrystals)); }"
+ },
+ {
+  "id": "spikes",
+  "kind": "card",
+  "rar": "c",
+  "tag": "kolce ×1,5",
+  "name": "Ostrzejsze kolce",
+  "text": "Kolce zadają +50% obrażeń.",
+  "apply": "fn: m => { m.spikeDmg *= 1.5; }"
+ },
+ {
+  "id": "cooldown",
+  "kind": "card",
+  "rar": "c",
+  "tag": "odnowa -25%",
+  "name": "Szybkie przeładowanie",
+  "text": "Odnowienie wszystkich pułapek krótsze o 25%.",
+  "apply": "fn: m => { m.cooldown *= 0.75; }"
+ },
+ {
+  "id": "walls",
+  "kind": "card",
+  "rar": "c",
+  "tag": "ściany -20%",
+  "name": "Głodne ściany",
+  "text": "Strzały, ogień i portrety przeładowują się o 20% szybciej.",
+  "apply": "fn: m => { m.wallCd *= 0.8; }"
+ },
+ {
+  "id": "powder",
+  "kind": "card",
+  "rar": "c",
+  "tag": "proch +1",
+  "name": "Więcej prochu",
+  "text": "Wybuch prochu sięga o 1 pole dalej.",
+  "apply": "fn: m => { m.powderR += 1; }"
+ },
+ {
+  "id": "arrows",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "tag": "podpalenie",
+  "name": "Płonące groty",
+  "text": "Strzały podpalają trafionych.",
+  "apply": "fn: m => { m.arrowBurn = true; }"
+ },
+ {
+  "id": "gate",
+  "kind": "card",
+  "rar": "c",
+  "tag": "krata",
+  "name": "Ciężka krata",
+  "text": "Każda krata wytrzymuje 2 zamknięcia więcej i miażdży o 50% mocniej.",
+  "apply": "fn: m => { m.gateUses += 2; m.gateCrush *= 1.5; }"
+ },
+ {
+  "id": "web",
+  "kind": "card",
+  "rar": "c",
+  "req": "web",
+  "tag": "sieć ×2",
+  "name": "Lepka sieć",
+  "text": "Sieć trzyma 2 razy dłużej.",
+  "apply": "fn: m => { m.webDur *= 2; }"
+ },
+ {
+  "id": "fire",
+  "kind": "card",
+  "rar": "c",
+  "req": "fire",
+  "tag": "ogień ×1,5",
+  "name": "Smocza smoła",
+  "text": "Ogień zadaje +50% obrażeń.",
+  "apply": "fn: m => { m.fireDmg *= 1.5; }"
+ },
+ {
+  "id": "mimic",
+  "kind": "card",
+  "rar": "c",
+  "req": "mimic",
+  "tag": "mimik ×1,5",
+  "name": "Wygłodniały mimik",
+  "text": "Mimik gryzie o 50% mocniej.",
+  "apply": "fn: m => { m.mimicDmg *= 1.5; }"
+ },
+ {
+  "id": "trapdoor",
+  "kind": "card",
+  "rar": "c",
+  "tag": "zapadnia",
+  "name": "Głęboka zapadnia",
+  "text": "Spadający bohater leci dłużej (+4 s) i obija się o 50% mocniej.",
+  "apply": "fn: m => { m.fallTime += 4; m.fallDmg *= 1.5; }"
+ },
+ {
+  "id": "cage",
+  "kind": "card",
+  "rar": "c",
+  "req": "cage",
+  "tag": "klatka ×2",
+  "name": "Żelazne klatki",
+  "text": "Klatka trzyma 2 razy dłużej (drużyna ma więcej czasu na ratunek), a uwięziony boi się o 50% bardziej.",
+  "apply": "fn: m => { m.cageTime *= 2; m.cageFear *= 1.5; }"
+ },
+ {
+  "id": "portrait",
+  "kind": "card",
+  "rar": "c",
+  "req": "portrait",
+  "tag": "portret +",
+  "name": "Galeria grozy",
+  "text": "Portret sięga o 2 pola dalej i straszy o 30% mocniej.",
+  "apply": "fn: m => { m.portraitR += 2; m.portraitFear *= 1.3; }"
+ },
+ {
+  "id": "spider",
+  "kind": "card",
+  "rar": "r",
+  "req": "spider",
+  "unique": true,
+  "tag": "gniazdo",
+  "name": "Pajęcze gniazdo",
+  "text": "Ugryzienie pająka oplata siecią cały kwadrat 3×3.",
+  "apply": "fn: m => { m.spiderNest = true; }"
+ },
+ {
+  "id": "ghost",
+  "kind": "card",
+  "rar": "r",
+  "req": "ghost",
+  "unique": true,
+  "tag": "zimny dotyk",
+  "name": "Zimny dotyk",
+  "text": "Duch straszy o 50% mocniej, a zranić go może już tylko kapłan.",
+  "apply": "fn: m => { m.ghostAura *= 1.5; m.ghostPriestOnly = true; }"
+ },
+ {
+  "id": "monster",
+  "kind": "card",
+  "rar": "c",
+  "tag": "weterani",
+  "name": "Weterani",
+  "text": "Nowo postawione potwory mają +40% HP i biją o 40% mocniej.",
+  "apply": "fn: m => { m.monster *= 1.4; }"
+ },
+ {
+  "id": "loottrap",
+  "kind": "card",
+  "rar": "c",
+  "tag": "zatruty łup",
+  "name": "Zatruty łup",
+  "text": "Podniesienie łupu zadaje obrażenia (więcej przy rzadszym).",
+  "apply": "fn: m => { m.lootTrap += 15; }"
+ },
+ {
+  "id": "disarm",
+  "kind": "card",
+  "rar": "c",
+  "tag": "zamki ×2",
+  "name": "Zardzewiałe zamki",
+  "text": "Złodziej rozbraja 2 razy wolniej (masz więcej czasu, żeby go przyłapać).",
+  "apply": "fn: m => { m.disarm *= 2; }"
+ },
+ {
+  "id": "suicide",
+  "kind": "card",
+  "rar": "c",
+  "tag": "zemsta 30%",
+  "name": "Mechanizm samobójczy",
+  "text": "Rozbrajana pułapka ma 30% szans, że odpali w twarz rozbrajającemu.",
+  "apply": "fn: m => { m.suicideMech += 0.3; }"
+ },
+ {
+  "id": "essence",
+  "kind": "card",
+  "rar": "c",
+  "tag": "Esencja +30%",
+  "name": "Żyła esencji",
+  "text": "Esencja z Grozy +30% (Groza × Chciwość × Combo × 1,3).",
+  "apply": "fn: m => { m.regen *= 1.3; }"
+ },
+ {
+  "id": "income",
+  "kind": "card",
+  "rar": "c",
+  "tag": "+4 po fali",
+  "name": "Mroczny dochód",
+  "text": "+4 Esencji po każdej fali.",
+  "apply": "fn: m => { m.income += 4; }"
+ },
+ {
+  "id": "usurer",
+  "kind": "card",
+  "rar": "c",
+  "tag": "odsetki",
+  "name": "Lichwiarz",
+  "text": "Po fali dostajesz 15% niewydanej Esencji (najwyżej 12).",
+  "apply": "fn: m => { m.usurer += 0.15; }"
+ },
+ {
+  "id": "dig",
+  "kind": "card",
+  "rar": "c",
+  "tag": "kopanie -2",
+  "name": "Kopacze",
+  "text": "Pokój i przejście kosztują o 2 Esencji mniej.",
+  "apply": "fn: m => { m.digDiscount += 2; }"
+ },
+ {
+  "id": "mole",
+  "kind": "card",
+  "rar": "c",
+  "tag": "pokój za 0",
+  "name": "Kret",
+  "text": "Co drugą falę jedno kopanie pokoju za darmo.",
+  "apply": "fn: m => { m.mole += 1; }"
+ },
+ {
+  "id": "harvest",
+  "kind": "card",
+  "rar": "c",
+  "tag": "żniwa +2",
+  "name": "Żniwa strachu",
+  "text": "Każdy bohater, który ucieknie ze strachu, daje dodatkowo 2 Esencji (bez mnożników).",
+  "apply": "fn: m => { m.fearHarvest += 2; }"
+ },
+ {
+  "id": "soul",
+  "kind": "card",
+  "rar": "r",
+  "tag": "śmierć ×2",
+  "name": "Żniwiarz",
+  "text": "Śmierć bohatera daje 2 razy więcej Grozy.",
+  "apply": "fn: m => { m.soulMult *= 2; }"
+ },
+ {
+  "id": "greed",
+  "kind": "card",
+  "rar": "c",
+  "tag": "chciwość ×1,5",
+  "name": "Złote runo",
+  "text": "Zobaczony łup podbija chciwość o połowę mocniej.",
+  "apply": "fn: m => { m.greedMult *= 1.5; }"
+ },
+ {
+  "id": "fever",
+  "kind": "card",
+  "rar": "c",
+  "tag": "gorączka",
+  "name": "Gorączka złota",
+  "text": "Każda fala zaczyna z chciwością wyższą o 0,3.",
+  "apply": "fn: m => { m.greedStart += 0.3; }"
+ },
+ {
+  "id": "depth",
+  "kind": "card",
+  "rar": "c",
+  "tag": "głębia +0,5",
+  "name": "Głębia mroku",
+  "text": "Mnożnik pokoju z sercem i pokoi tuż przed nim +0,5.",
+  "apply": "fn: m => { m.depthBonus += 0.5; }"
+ },
+ {
+  "id": "infamous",
+  "kind": "card",
+  "rar": "c",
+  "tag": "+0,15 chciwości/kryształ",
+  "name": "Zła sława",
+  "text": "Każdy kryształ w sercu daje +0,15 chciwości (liczone na starcie fali).",
+  "apply": "fn: m => { m.crystalPts += 0.15; }"
+ },
+ {
+  "id": "collector",
+  "kind": "card",
+  "rar": "r",
+  "tag": "+0,05 chciwości/rodzaj",
+  "name": "Kolekcjoner",
+  "text": "+0,05 chciwości za każdy inny rodzaj pułapki lub potwora w lochu (na starcie fali).",
+  "apply": "fn: m => { m.collector += 0.05; }"
+ },
+ {
+  "id": "miser",
+  "kind": "card",
+  "rar": "r",
+  "tag": "minimalizm",
+  "name": "Skąpiec",
+  "text": "+0,05 chciwości za każdy element mniej niż 15 w lochu (pułapki i potwory, na starcie fali).",
+  "apply": "fn: m => { m.miser += 0.05; }"
+ },
+ {
+  "id": "lonely",
+  "kind": "card",
+  "rar": "r",
+  "tag": "samotność ×2",
+  "name": "Echo samotności",
+  "text": "Samotność bohatera daje 2 razy więcej Grozy.",
+  "apply": "fn: m => { m.loneMult *= 2; }"
+ },
+ {
+  "id": "maze",
+  "kind": "card",
+  "rar": "r",
+  "tag": "zgubieni ×2",
+  "name": "Kręte korytarze",
+  "text": "Zgubiony bohater daje 2 razy więcej Grozy.",
+  "apply": "fn: m => { m.lostMult *= 2; }"
+ },
+ {
+  "id": "haunt",
+  "kind": "card",
+  "rar": "c",
+  "tag": "strach +25%",
+  "name": "Nawiedzenie",
+  "text": "Każdy strach jest o 25% silniejszy (więcej Grozy, szybsze ucieczki).",
+  "apply": "fn: m => { m.fearMult *= 1.25; }"
+ },
+ {
+  "id": "echo",
+  "kind": "card",
+  "rar": "r",
+  "tag": "ucieczka ×2",
+  "name": "Echo krzyku",
+  "text": "Bohater, który ucieknie ze strachu, daje 2 razy więcej Grozy.",
+  "apply": "fn: m => { m.scareMult *= 2; }"
+ },
+ {
+  "id": "panic",
+  "kind": "card",
+  "rar": "r",
+  "tag": "panika",
+  "name": "Panika",
+  "text": "Bohater, który zaczyna uciekać, straszy wszystkich w promieniu 3 pól (25 strachu).",
+  "apply": "fn: m => { m.panic += 1; }"
+ },
+ {
+  "id": "hgallery",
+  "kind": "card",
+  "rar": "r",
+  "req": "ghost",
+  "tag": "galeria ×2",
+  "name": "Nawiedzona galeria",
+  "text": "Duch w pokoju z portretem straszy 2 razy mocniej.",
+  "apply": "fn: m => { m.hauntedGallery += 1; }"
+ },
+ {
+  "id": "curse",
+  "kind": "card",
+  "rar": "r",
+  "tag": "klątwa",
+  "name": "Klątwa kryształu",
+  "text": "Niosący kryształ idzie o 35% wolniej i boi się coraz bardziej.",
+  "apply": "fn: m => { m.carrierSlow *= 0.65; m.carrierFear += 4; }"
+ },
+ {
+  "id": "deaf",
+  "kind": "card",
+  "rar": "r",
+  "tag": "plotki /2",
+  "name": "Głuche ściany",
+  "text": "Uciekinierzy pamiętają tylko połowę tego, co widzieli.",
+  "apply": "fn: m => { m.rumorKeep *= 0.5; }"
+ },
+ {
+  "id": "trails",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "tag": "fałszywki",
+  "name": "Fałszywe tropy",
+  "text": "Uciekinierzy opowiadają też o pułapkach, których nie ma. Następna fala omija puste miejsca.",
+  "apply": "fn: m => { m.falseTrails = true; }"
+ },
+ {
+  "id": "cursed",
+  "kind": "card",
+  "rar": "r",
+  "tag": "sprzęt /2",
+  "name": "Rdza",
+  "text": "Przedmioty bohaterów (także z ich wyposażenia) działają o połowę słabiej.",
+  "apply": "fn: m => { m.itemPower *= 0.5; }"
+ },
+ {
+  "id": "sticky",
+  "kind": "card",
+  "rar": "r",
+  "req": "fn: () => run.unlocked.has('web') || run.unlocked.has('spider')",
+  "tag": "kolce+sieć",
+  "name": "Lepkie kolce",
+  "text": "Kolce zadają 2 razy więcej bohaterom oplątanym siecią lub pajęczyną.",
+  "apply": "fn: m => { m.stickySpikes += 1; }"
+ },
+ {
+  "id": "wildfire",
+  "kind": "card",
+  "rar": "r",
+  "req": "fire",
+  "tag": "pożoga",
+  "name": "Pożoga",
+  "text": "Podpalenie przeskakuje na bohaterów w promieniu 1,5 pola (każda kolejna kopia +0,5 pola).",
+  "apply": "fn: m => { m.wildfire += 1; }"
+ },
+ {
+  "id": "blood",
+  "kind": "card",
+  "rar": "r",
+  "tag": "krew = moc",
+  "name": "Krwawy rytuał",
+  "text": "Każde zabójstwo w tej fali wzmacnia pułapki o 10% (obrażenia, strach, czas działania) do końca fali.",
+  "apply": "fn: m => { m.bloodRite += 0.1; }"
+ },
+ {
+  "id": "calm",
+  "kind": "card",
+  "rar": "r",
+  "tag": "cisza ×2,5",
+  "name": "Cisza przed burzą",
+  "text": "Pułapka, która nie odpaliła od 20 s (albo jeszcze wcale w tej fali), działa 2,5 raza mocniej (kolejna kopia: 4 razy, 5,5 raza...).",
+  "apply": "fn: m => { m.calmStorm += 1.5; }"
+ },
+ {
+  "id": "well",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "tag": "studnia",
+  "name": "Bezdenna studnia",
+  "text": "Bohater z kryształem, który spadnie w zapadnię, gubi go w ciemności: kryształ wraca do serca.",
+  "apply": "fn: m => { m.bottomless = true; }"
+ },
+ {
+  "id": "echofire",
+  "kind": "card",
+  "rar": "r",
+  "tag": "echo ×2",
+  "name": "Echo mechanizmów",
+  "text": "Co 5. odpalenie pułapki odpala ją drugi raz (kolejna kopia: co 4., co 3...).",
+  "apply": "fn: m => { m.echoFire += 1; }"
+ },
+ {
+  "id": "glass",
+  "kind": "card",
+  "rar": "l",
+  "tag": "chciwość +1",
+  "name": "Szklane serce",
+  "text": "Chciwość +1, ale bohaterowie wyważają kryształ 2 razy szybciej.",
+  "apply": "fn: m => { m.glass += 1; }"
+ },
+ {
+  "id": "nopick",
+  "kind": "card",
+  "rar": "l",
+  "unique": true,
+  "tag": "zabrany łup ×3",
+  "name": "Odwrotna chciwość",
+  "text": "Bohaterowie zabierają łup jak zwykle, ale zabrany łup podbija chciwość 3 razy mocniej. Opłaca się dać im coś ukraść.",
+  "apply": "fn: m => { m.pickGreed *= 3; }"
+ },
+ {
+  "id": "gambler",
+  "kind": "card",
+  "rar": "l",
+  "tag": "krytyk ×2,4",
+  "name": "Hazardzista",
+  "text": "Krytyk w skill checku uderza ×1,35 mocniej (×2,4 zamiast ×1,8), ale draśnięcie tylko ×0,4 zamiast ×0,7.",
+  "apply": "fn: m => { m.critPw *= 1.35; m.okPw *= 0.57; }"
+ },
+ {
+  "id": "choir",
+  "kind": "card",
+  "rar": "l",
+  "req": "portrait",
+  "tag": "chór",
+  "name": "Chór potępionych",
+  "text": "Odpalony portret odpala też wszystkie gotowe portrety w tym samym pokoju (z 60% mocy, każda kolejna kopia +40%).",
+  "apply": "fn: m => { m.choir += 1; }"
+ },
+ {
+  "id": "hunger",
+  "kind": "card",
+  "rar": "r",
+  "tag": "rośnie",
+  "grows": true,
+  "name": "Głodne kolce",
+  "text": "Kolce zadają do końca runu +4% obrażeń za każde zabójstwo kolcami (licznik rośnie przez cały run).",
+  "apply": "fn: m => { m.hunger += 1; }"
+ },
+ {
+  "id": "chronicle",
+  "kind": "card",
+  "rar": "r",
+  "tag": "rośnie",
+  "grows": true,
+  "name": "Kronika grozy",
+  "text": "Strach jest o 3% silniejszy za każdego bohatera, który w tym runie uciekł ze strachu (do końca runu).",
+  "apply": "fn: m => { m.chronicle += 1; }"
+ },
+ {
+  "id": "granary",
+  "kind": "card",
+  "rar": "c",
+  "tag": "rośnie",
+  "grows": true,
+  "name": "Spichlerz dusz",
+  "text": "Każdy zabity bohater zmniejsza głód serca o 1 do końca runu.",
+  "apply": "fn: m => { m.granary += 1; }"
+ },
+ {
+  "id": "bank",
+  "kind": "card",
+  "rar": "c",
+  "tag": "rośnie",
+  "grows": true,
+  "name": "Skarbiec",
+  "text": "Każda fala bez utraty kryształu dodaje +2 Esencji do przychodu po każdej kolejnej fali (do końca runu).",
+  "apply": "fn: m => { m.bank += 1; }"
+ },
+ {
+  "id": "tempered",
+  "kind": "card",
+  "rar": "r",
+  "tag": "rośnie",
+  "grows": true,
+  "name": "Zaprawione mechanizmy",
+  "text": "Pułapki działają o 1% mocniej za każde 4 trafienia pułapek w tym runie (do końca runu).",
+  "apply": "fn: m => { m.tempered += 1; }"
+ },
+ {
+  "id": "bloodpact",
+  "kind": "card",
+  "rar": "l",
+  "tag": "moc ×1,6, cena",
+  "name": "Krwawa umowa",
+  "text": "Pułapki i potwory działają ×1,6 mocniej, ale bohaterowie przychodzą o 2 poziomy silniejsi.",
+  "apply": "fn: m => { m.pactPower *= 1.6; m.pactLevels += 2; }"
+ },
+ {
+  "id": "overload",
+  "kind": "card",
+  "rar": "r",
+  "tag": "odnowa -40%, cena",
+  "name": "Przeciążenie",
+  "text": "Pułapki odnawiają się o 40% szybciej, ale każde odpalenie ma 6% szans zepsuć pułapkę do końca fali.",
+  "apply": "fn: m => { m.cooldown *= 0.6; m.overload += 0.06; }"
+ },
+ {
+  "id": "cheapwalls",
+  "kind": "card",
+  "rar": "c",
+  "tag": "rozbudowa /2",
+  "name": "Tanie mury",
+  "text": "Rozbudowa pokoi kosztuje o połowę mniej, ale budowle są o 50% droższe.",
+  "apply": "fn: m => { m.expandCost *= 0.5; m.buildingCost *= 1.5; }"
+ },
+ {
+  "id": "firepit",
+  "kind": "card",
+  "rar": "r",
+  "tag": "zapadnia + ogień",
+  "name": "Ognista otchłań",
+  "text": "Bohater, który spadnie przez zapadnię, wychodzi podpalony.",
+  "apply": "fn: m => { m.firepit += 1; }"
+ },
+ {
+  "id": "cageghost",
+  "kind": "card",
+  "rar": "r",
+  "req": "cage",
+  "tag": "klatka + strach",
+  "name": "Nawiedzone klatki",
+  "text": "Uwięziony w klatce dostaje 12 strachu na sekundę.",
+  "apply": "fn: m => { m.cageHaunt += 12; }"
+ },
+ {
+  "id": "monsterroar",
+  "kind": "card",
+  "rar": "c",
+  "tag": "rany od potworów straszą",
+  "name": "Ryk potworów",
+  "text": "Rany zadane przez potwory straszą 2,5 raza mocniej (kolejna kopia: 4 razy...).",
+  "apply": "fn: m => { m.monsterFear += 1.5; }"
+ },
+ {
+  "id": "sharp",
+  "kind": "card",
+  "rar": "c",
+  "tag": "kłute +25%",
+  "name": "Hartowane ostrza",
+  "text": "Obrażenia kłute (kolce, strzały, łucznik, goblin, mimik) +25%.",
+  "apply": "fn: m => { m.dmgType.pierce *= 1.25; }"
+ },
+ {
+  "id": "heavy",
+  "kind": "card",
+  "rar": "c",
+  "tag": "obuchowe +25%",
+  "name": "Ciężkie mechanizmy",
+  "text": "Obrażenia obuchowe (krata, ogr, upadek w zapadnię) +25%.",
+  "apply": "fn: m => { m.dmgType.blunt *= 1.25; }"
+ },
+ {
+  "id": "oil",
+  "kind": "card",
+  "rar": "c",
+  "tag": "ogień +25%",
+  "name": "Olej w szczelinach",
+  "text": "Obrażenia od ognia (ogień, proch, podpalenia) +25%.",
+  "apply": "fn: m => { m.dmgType.fire *= 1.25; }"
+ },
+ {
+  "id": "venom",
+  "kind": "card",
+  "rar": "c",
+  "tag": "trucizna +30%",
+  "name": "Jadowite gruczoły",
+  "text": "Obrażenia od trucizny (pająk, szaman, Zatruty łup) +30%.",
+  "apply": "fn: m => { m.dmgType.poison *= 1.3; }"
+ },
+ {
+  "id": "weakspot",
+  "kind": "card",
+  "rar": "r",
+  "tag": "słabości ×2",
+  "name": "Słabe punkty",
+  "text": "Słabości ciała bohaterów działają 2 razy mocniej (np. kruche kości: obuchowe +80% zamiast +40%).",
+  "apply": "fn: m => { m.weakK += 1; }"
+ },
+ {
+  "id": "anatomy",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "tag": "wszystko jawne",
+  "name": "Anatomia ofiar",
+  "text": "Przed falą znasz ciało i fobie każdego bohatera.",
+  "apply": "fn: m => { m.revealAll = true; }"
+ },
+ {
+  "id": "arsenal",
+  "kind": "card",
+  "rar": "r",
+  "tag": "4 typy: +20%",
+  "name": "Pełen arsenał",
+  "text": "Jeśli na starcie fali masz w lochu wszystkie 4 typy obrażeń, wszystkie obrażenia +20%.",
+  "apply": "fn: m => { m.arsenal += 0.2; }"
+ },
+ {
+  "id": "nightmares",
+  "kind": "card",
+  "rar": "r",
+  "tag": "fobie ×3",
+  "name": "Koszmary",
+  "text": "Fobie straszą 3 razy mocniej zamiast 2 (kolejna kopia: 4 razy).",
+  "apply": "fn: m => { m.phobiaK += 1; }"
+ },
+ {
+  "id": "oddbodies",
+  "kind": "card",
+  "rar": "c",
+  "tag": "więcej fobii",
+  "name": "Przeklęta karczma",
+  "text": "Więcej bohaterów przychodzi z fobią albo słabością ciała (+10% szans na każdą).",
+  "apply": "fn: m => { m.oddBodies += 1; }"
+ },
+ {
+  "id": "scars",
+  "kind": "card",
+  "rar": "r",
+  "tag": "trauma ×2",
+  "name": "Blizny na duszy",
+  "text": "Trauma łapie już poniżej 50% HP i straszy 2 razy (zamiast 1,5 raza).",
+  "apply": "fn: m => { m.traumaK += 1; }"
+ },
+ {
+  "id": "memories",
+  "kind": "card",
+  "rar": "r",
+  "tag": "powracający +30% strachu",
+  "name": "Złe wspomnienia",
+  "text": "Powracający bohaterowie wchodzą do lochu z 30% strachu.",
+  "apply": "fn: m => { m.badMemories += 0.3; }"
+ },
+ {
+  "id": "survivors",
+  "kind": "card",
+  "rar": "c",
+  "tag": "więcej powrotów",
+  "name": "Legenda ocalałych",
+  "text": "Uciekinierzy wracają 1,5 raza częściej, a każdy powracający w drużynie daje +0,2 chciwości.",
+  "apply": "fn: m => { m.moreReturn += 0.5; m.returnGreed += 0.2; }"
+ },
+ {
+  "id": "dread",
+  "kind": "card",
+  "rar": "c",
+  "tag": "strach mija wolniej",
+  "name": "Gęsta atmosfera",
+  "text": "Strach bohaterów opada o połowę wolniej.",
+  "apply": "fn: m => { m.calmK *= 0.5; }"
+ },
+ {
+  "id": "screams",
+  "kind": "card",
+  "rar": "c",
+  "tag": "ucieczka straszy",
+  "name": "Krzyki w ścianach",
+  "text": "Każdy bohater, który ucieknie ze strachu, straszy pozostałych (10% ich odwagi).",
+  "apply": "fn: m => { m.fleeShock += 0.1; }"
+ },
+ {
+  "id": "isolation",
+  "kind": "card",
+  "rar": "r",
+  "tag": "samotni ×1,25",
+  "name": "Izolacja",
+  "text": "Samotny albo zgubiony bohater boi się wszystkiego o 25% bardziej, a sama samotność straszy go 2 razy mocniej.",
+  "apply": "fn: m => { m.isolation += 1; }"
+ },
+ {
+  "id": "heavyair",
+  "kind": "card",
+  "rar": "c",
+  "tag": "Mgła i Krypta +25%",
+  "name": "Ciężkie powietrze",
+  "text": "W Mgle i w Krypcie każdy strach jest o 25% silniejszy.",
+  "apply": "fn: m => { m.heavyAir += 0.25; }"
+ },
+ {
+  "id": "lastgasp",
+  "kind": "card",
+  "rar": "r",
+  "tag": "śmierć straszy pokój",
+  "name": "Ostatnie tchnienie",
+  "text": "Umierający bohater straszy wszystkich w swoim pokoju (20% ich odwagi).",
+  "apply": "fn: m => { m.lastGasp += 0.2; }"
+ },
+ {
+  "id": "broker",
+  "kind": "card",
+  "rar": "c",
+  "tag": "sklep -25%",
+  "name": "Pośrednik",
+  "text": "Karty w sklepie kosztują o 25% mniej.",
+  "apply": "fn: m => { m.shopDisc += 0.25; }"
+ },
+ {
+  "id": "luckydraw",
+  "kind": "card",
+  "rar": "c",
+  "tag": "odświeżenie gratis",
+  "name": "Szczęśliwy los",
+  "text": "Pierwsze odświeżenie sklepu w każdej fali jest darmowe.",
+  "apply": "fn: m => { m.freeReroll += 1; }"
+ },
+ {
+  "id": "pawnshop",
+  "kind": "card",
+  "rar": "c",
+  "tag": "sprzedaż ×2",
+  "name": "Lombard",
+  "text": "Sprzedane karty dają 2 razy więcej Esencji.",
+  "apply": "fn: m => { m.sellK *= 2; }"
+ },
+ {
+  "id": "deepstash",
+  "kind": "card",
+  "rar": "r",
+  "tag": "schowek +2",
+  "name": "Głęboki schowek",
+  "text": "Schowek mieści 2 karty więcej.",
+  "apply": "fn: m => { m.stashPlus += 2; }"
+ },
+ {
+  "id": "patron",
+  "kind": "card",
+  "rar": "r",
+  "tag": "karta co 2 fale",
+  "name": "Mecenas",
+  "text": "Co drugą falę dostajesz dodatkową darmową kartę.",
+  "apply": "fn: m => { m.patron += 1; }"
+ },
+ {
+  "id": "hoard",
+  "kind": "card",
+  "rar": "r",
+  "tag": "schowek = chciwość",
+  "name": "Kolekcja w schowku",
+  "text": "Każda karta w schowku daje +0,1 chciwości.",
+  "apply": "fn: m => { m.stashGreed += 0.1; }"
+ },
+ {
+  "id": "wager",
+  "kind": "card",
+  "rar": "l",
+  "tag": "chciwość +0,8, głód +30%",
+  "name": "Zakład z sercem",
+  "text": "Chciwość +0,8, ale serce chce o 30% więcej.",
+  "apply": "fn: m => { m.greedFlat += 0.8; m.hungerK *= 1.3; }"
+ },
+ {
+  "id": "gluttony",
+  "kind": "card",
+  "rar": "r",
+  "tag": "po sytości ×1,25",
+  "name": "Obżarstwo",
+  "text": "Gdy serce jest już syte, Esencja z fali wpada o 25% większa.",
+  "apply": "fn: m => { m.storeK *= 1.25; }"
+ },
+ {
+  "id": "fasting",
+  "kind": "card",
+  "rar": "c",
+  "tag": "głód -15%",
+  "name": "Post",
+  "text": "Serce chce o 15% mniej, ale chciwość -0,2.",
+  "apply": "fn: m => { m.hungerK *= 0.85; m.greedFlat -= 0.2; }"
+ },
+ {
+  "id": "heartbeat",
+  "kind": "card",
+  "rar": "r",
+  "tag": "pełne serce +20%",
+  "name": "Bijące serce",
+  "text": "Gdy serce jest już syte w tej fali, pułapki i potwory działają o 20% mocniej.",
+  "apply": "fn: m => { m.heartbeat += 0.2; }"
+ },
+ {
+  "id": "gilded",
+  "kind": "card",
+  "rar": "c",
+  "tag": "ulepszone = chciwość",
+  "name": "Pozłacane pułapki",
+  "text": "+0,05 chciwości za każdą pułapkę i potwora na poziomie 2 lub 3.",
+  "apply": "fn: m => { m.gilded += 0.05; }"
+ },
+ {
+  "id": "golddust",
+  "kind": "card",
+  "rar": "c",
+  "tag": "monety ×1,5",
+  "name": "Złoty pył",
+  "text": "Monety podbijają chciwość o połowę mocniej.",
+  "apply": "fn: m => { m.goldDust += 0.5; }"
+ },
+ {
+  "id": "reliquary",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "tag": "relikwie ×1,5",
+  "name": "Relikwiarz",
+  "text": "Relikwie podbijają chciwość 1,5 raza mocniej, a bohater, który zabierze relikwię, nie dostaje z niej przedmiotu.",
+  "apply": "fn: m => { m.reliquary = true; }"
+ },
+ {
+  "id": "pack",
+  "kind": "card",
+  "rar": "c",
+  "tag": "potwory w parach +20%",
+  "name": "Stado",
+  "text": "Potwór, który ma w swoim pokoju innego potwora, bije o 20% mocniej.",
+  "apply": "fn: m => { m.pack += 0.2; }"
+ },
+ {
+  "id": "quickarm",
+  "kind": "card",
+  "rar": "c",
+  "unique": true,
+  "tag": "od razu gotowe",
+  "name": "Szybki montaż",
+  "text": "Pułapki postawione w trakcie fali są gotowe od razu.",
+  "apply": "fn: m => { m.quickArm = true; }"
+ }
+]

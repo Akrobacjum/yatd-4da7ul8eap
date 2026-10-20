@@ -1,0 +1,16 @@
+{
+ "spikes": "pierce",
+ "arrows": "pierce",
+ "archer": "pierce",
+ "goblin": "pierce",
+ "mimic": "pierce",
+ "gate": "blunt",
+ "ogre": "blunt",
+ "trapdoor": "blunt",
+ "fire": "fire",
+ "powder": "fire",
+ "spider": "poison",
+ "shaman": "poison",
+ "loot": "poison",
+ "bats": "pierce"
+}

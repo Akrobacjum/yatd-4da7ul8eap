@@ -1,0 +1,35 @@
+{
+ "warrior": {
+  "potion": 3,
+  "charm": 3,
+  "bomb": 2,
+  "amulet": 1
+ },
+ "thief": {
+  "boots": 3,
+  "amulet": 2,
+  "potion": 2,
+  "bomb": 1
+ },
+ "priest": {
+  "potion": 3,
+  "amulet": 3,
+  "charm": 2
+ },
+ "mage": {
+  "bomb": 3,
+  "potion": 2,
+  "amulet": 2,
+  "charm": 1
+ },
+ "bard": {
+  "potion": 2,
+  "amulet": 3,
+  "boots": 2
+ },
+ "barbarian": {
+  "potion": 3,
+  "bomb": 2,
+  "charm": 1
+ }
+}

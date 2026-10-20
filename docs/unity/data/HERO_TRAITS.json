@@ -1,0 +1,30 @@
+{
+ "greedy": {
+  "name": [
+   "chciwy",
+   "chciwa"
+  ],
+  "w": 1
+ },
+ "coward": {
+  "name": [
+   "tchórzliwy",
+   "tchórzliwa"
+  ],
+  "w": 1
+ },
+ "brave": {
+  "name": [
+   "bohaterski",
+   "bohaterska"
+  ],
+  "w": 1
+ },
+ "careful": {
+  "name": [
+   "ostrożny",
+   "ostrożna"
+  ],
+  "w": 1
+ }
+}

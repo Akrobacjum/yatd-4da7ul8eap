@@ -1,0 +1,18 @@
+{
+ "fire": "fire",
+ "powder": "fire",
+ "spider": "spiders",
+ "web": "spiders",
+ "cage": "closed",
+ "trapdoor": "closed",
+ "gate": "closed",
+ "creak": "closed",
+ "coffin": "closed",
+ "ghost": "ghosts",
+ "portrait": "ghosts",
+ "eyes": "ghosts",
+ "mirror": "ghosts",
+ "bones": "blood",
+ "shade": "dark",
+ "bats": "dark"
+}

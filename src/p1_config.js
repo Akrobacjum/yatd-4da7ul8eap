@@ -12,7 +12,7 @@
 
   const DEFAULTS = {
     waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
-    essenceCap: 40, crystals: 3, comboWin: 2.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 37, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
+    essenceCap: 40, crystals: 3, comboWin: 3, comboQuiet: 0.25, essK: 1.1, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 37, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
     music: 0.5,   // 1.07: the music's volume (0 = off)
     haptics: 1, trayAuto: 1, series: 1, split: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley, split screen (1.03)
     topPad: 0   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
@@ -37,6 +37,8 @@
     { k: 'crystals', label: 'Kryształy w sercu (od nowego runu)', min: 1, max: 6, step: 1 },
     { k: 'deckSize', label: 'Miejsca w talii (od nowego runu)', min: 3, max: 12, step: 1 },
     { k: 'comboWin', label: 'Okno combo (s)', min: 1, max: 6, step: 0.5, fmt: f1 },
+    { k: 'comboQuiet', label: 'Zegar combo w ciszy (×)', min: 0, max: 1, step: 0.05, fmt: f1 },
+    { k: 'essK', label: 'Mnożnik Esencji z Grozy (×)', min: 0.5, max: 2, step: 0.05, fmt: f1 },
     { k: 'thrBase', label: 'Pierwszy próg karty (pkt)', min: 500, max: 5000, step: 100 },
     { k: 'depthMax', label: 'Mnożnik pokoju z sercem', min: 1, max: 5, step: 0.1, fmt: x1 }
   ];
@@ -587,7 +589,15 @@
     crystalFear: ['Bierzcie sobie ten kamień!', 'Nie chcę go! Uciekam!', 'Przeklęty kryształ!'],
     sapped: ['Rozmontowane, nie odpali już nigdy.', 'Zabieram mechanizm na pamiątkę.', 'Ta pułapka jest już moja.'],
     sense: ['Czuję tu magię pułapek.', 'Stop. Widzę, gdzie są mechanizmy.', 'Ten pokój jest zaminowany.'],
-    prepStart: ['Stop. Za tymi drzwiami jest pokój śmierci.', 'Słyszeliśmy o tym pokoju. Przygotujmy się.', 'Tam czeka masa pułapek. Plan!'],
+    prepStart: ['Stop. Za tymi drzwiami jest pokój śmierci.', 'Słyszeliśmy o tym pokoju. Przygotujmy się.', 'Tam czeka masa pułapek. Potrzebujemy planu.'],
+    // 1.12.1 (author: longer breaks, little scenes with bubbles when they rest or talk it over, not a shout and a freeze)
+    prepGo: ['Wszyscy wiedzą, co robić?', 'Na mój znak. Raz, dwa...', 'Dobra. Razem i szybko.'],
+    prepReply: ['Tak jest.', 'Got{ów|owa}.', 'Miejmy to za sobą.', 'Nie podoba mi się to.'],
+    councilReply: ['Zgoda.', 'Mnie tam wszystko jedno.', 'Byle nie pod te kolce.', 'Prowadź.', 'Ostatnio też tak było.', 'Dobra, ale ja idę na końcu.'],
+    restStart: ['Siadamy. Opatrzmy rany.', 'Tu jest spokojnie. Odpoczynek.', 'Stop. Złapmy oddech.'],
+    restPriest: ['Pokażcie rany, pomodlę się.', 'Światło was opatrzy, siedźcie spokojnie.', 'Kto najbardziej krwawi? Do mnie.'],
+    restScene: ['Auć! Delikatniej z tym bandażem!', 'Nogi mi odpadają.', 'Zjadł{bym|abym} coś ciepłego.', 'Ten loch nas powoli zjada.', 'Nie zasypiać mi tu!', 'Słyszeliście to skrzypienie?', 'Ile jeszcze tych pokoi?', 'Kto wziął ostatni bandaż?', 'Moja zbroja jest cała we krwi. Nie mojej. Chyba.', 'Jeszcze chwila i ruszamy.'],
+    restReply: ['Cicho, odpoczywam.', 'Też to słyszał{em|am}.', 'Wytrzymaj, zaraz ruszamy.', 'Nie marudź.', 'Ja też.', 'Lepiej nie pytaj.'],
     prepWard: ['Błogosławię was. Osłona na wszystkich!', 'Światło, chroń nas!', 'Odwagi! Światło jest z nami.'],
     prepJam: ['Zagłuszę ich mechanizmy. Biegniemy na mój znak!', 'Zakłócam pułapki, szybko przez pokój!'],
     prepDisarm: ['Rozbroję, co się da, z progu.', 'Dajcie mi chwilę przy drzwiach.'],

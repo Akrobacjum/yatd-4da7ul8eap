@@ -35,7 +35,7 @@
   function addPts(g, stat, h) {
     if (!(g > 0) || !fl) return 0;
     const cm = 1 + 0.25 * (comboNow() - 1);
-    const e = g * fl.greed * cm * mods.regen;
+    const e = g * fl.greed * cm * mods.regen * S.essK;   // 1.12.1: S.essK (1,1) brings the Esencja back to what 1.11.1 paid (replays of the author's two runs)
     fl.base += g;
     let C = fl.chain;
     if (!C) C = fl.chain = { g: 0, prov: 0, cm: 1, greed: fl.greed, t0: fl.time, last: fl.time, trap: false, who: new Map(), n: 0 };
@@ -54,7 +54,7 @@
   function payChain() {
     const C = fl && fl.chain; if (!C) return 0;
     fl.chain = null;
-    const e = C.g * C.greed * C.cm * mods.regen;
+    const e = C.g * C.greed * C.cm * mods.regen * S.essK;
     fl.stats.comboPts = (fl.stats.comboPts || 0) + Math.max(0, e - C.prov);
     fl.score += e;
     fl.lastPay = { g: C.g, greed: C.greed, cm: C.cm, e, t: fl.time, n: ++payN };
@@ -138,11 +138,15 @@
     floats.push({ x, gy: y, lift: l0 + ol, l0, text, color, size: size || 15, life: 1.2, tag });
   }
   function floatTile(x, y, text, color, size, dy, tag) { addFloat(x + 0.5, y + 0.5, text, color, size, dy, tag); }
+  // 1.12.1: one hero a tile, so a hero stands in the middle of his tile (the old small shift by id now only when two stand on one
+  // tile for a moment); two passing each other lean aside, each to his right, most in the middle of the step
   function heroPos(h) {
-    const off = (h.id % 3 - 1) * 0.14;
     const moving = h.nx !== null;
     const fx = moving ? h.x + (h.nx - h.x) * h.prog : h.x, fy = moving ? h.y + (h.ny - h.y) * h.prog : h.y;
-    return { x: fx + 0.5 + off, y: fy + 0.5 + off * 0.5 };
+    let ox = 0, oy = 0;
+    if (moving && h.passing != null) { const s = 0.24 * Math.sin(Math.PI * Math.min(1, h.prog)); ox = -(h.ny - h.y) * s; oy = (h.nx - h.x) * s; }
+    else if (!moving && fl && fl.heroes.some(o => o !== h && !o.dead && !o.fled && !o.gone && o.nx === null && o.x === h.x && o.y === h.y)) { const off = (h.id % 3 - 1) * 0.14; ox = off; oy = off * 0.5; }
+    return { x: fx + 0.5 + ox, y: fy + 0.5 + oy };
   }
   function floatHero(h, text, color, size, dy) { const p = heroPos(h); addFloat(p.x, p.y, text, color, size, dy, undefined, 0.6); }
   function burst(x, y, color, n) {
@@ -482,7 +486,7 @@
     const phys = pre.phys !== undefined ? pre.phys : (deep && Math.random() < 0.35 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHYS)) : null);
     const phobia = pre.phobia !== undefined ? pre.phobia : (deep && !boss && Math.random() < 0.3 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHOBIAS)) : null);
     const known = pre.known || [phys && (mods.revealAll || Math.random() < 0.3) ? 'phys' : null, phobia && (mods.revealAll || Math.random() < 0.3) ? 'phobia' : null].filter(Boolean);
-    return { type, lvl, rank: tierOf(lvl), boss: boss || null, female, nm, hp: max, max, inv: makeKit(type, lvl + (boss ? 2 : 0)), trait,
+    return { type, lvl, rank: tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: comboHp(n), inv: makeKit(type, lvl + (boss ? 2 : 0)), trait,
       courage: Math.round(R.courage * (boss === 'final' ? 2 : boss ? 1.5 : 1) * ck), phys, phobia, known, returning: !!pre.returning, scar: pre.scar || null, times: pre.times || 0 };
   }
   // The guild reads the last wave's report and sends the right people (from wave 3): priests and amulets against fear,
@@ -592,7 +596,7 @@
     saveRun('build');   // a tab closed during the wave comes back to this build
     perfReset();
     fl.items.forEach(it => { it.skullOff = false; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap)
-    fl.phase = 'raid'; fl.time = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
+    fl.phase = 'raid'; fl.time = 0; fl.patT = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
     { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał
     if (run.returners) run.returners = run.returners.filter(r => r.used !== run.wave);   // the returners of this wave are in
@@ -651,7 +655,7 @@
   }
   function spawnHero(e) {
     const T = HEROES[e.type], R = levelStats(e.lvl), sp = spawnPt();
-    const h = { entry: e, id: fl.heroes.length, type: e.type, T, R, rank: e.rank, lvl: e.lvl, boss: e.boss, female: e.female, nm: e.nm, hp: e.hp, max: e.max,
+    const h = { entry: e, id: fl.heroes.length, type: e.type, T, R, rank: e.rank, lvl: e.lvl, boss: e.boss, female: e.female, nm: e.nm, hp: e.hp, max: e.max, hpK: e.hpK || 1,
       x: sp.x, y: sp.y, nx: null, ny: null, prog: 0, tx: sp.x, ty: sp.y, path: [], needPlan: true, thinkT: 0, intent: 'follow',
       room: roomOf(sp.ix, sp.iy), state: 'walk', timer: 0, dur: 1, slowUntil: -1, burnUntil: -1, burnBy: null, foe: null, item: null,
       dead: false, fled: false, gone: false, flash: 0, acc: 0, accT: 0, cast: e.type === 'priest' ? 1.5 : e.type === 'mage' ? 2 : 0,
@@ -1093,7 +1097,8 @@
         say(h, pick(SAY.trauma[dtp]), 4, 2.2); floatHero(h, 'Trauma: ' + DMG_TYPES[dtp], '#ff9a9a', 13, -1.1);
       }
     }
-    let pts = real / h.max * GZ.dmg * DMG_FACTOR[kind] * depthMult(h.room) * lootMult(h);   // v15: Groza against his max HP (gear-laden heroes bleed more); the combo is applied in addPts
+    const gmax = h.max / (h.hpK || 1);   // 1.12.1: Groza and the fear of a wound count against his HP without the 1.12 bonus (the bonus makes raids longer, not wounds cheaper)
+    let pts = real / gmax * GZ.dmg * DMG_FACTOR[kind] * depthMult(h.room) * lootMult(h);   // v15: Groza against his max HP (gear-laden heroes bleed more); the combo is applied in addPts
     if (pts > 0 && h.hp < 0.3 * h.max && (kind === 'trap' || kind === 'loot' || kind === 'burn')) {
       fl.stats.edgePts += pts * 0.5; pts *= 1.5;
       if (fl.time - h.edgeAt > 1.5) { h.edgeAt = fl.time; floatHero(h, 'Na skraju!', '#ff9a3c', 15, -0.9); }
@@ -1107,7 +1112,7 @@
     }
     // wounds scare too, less than a scare trap: losing all HP is worth 25% of courage (monsters 18%; Ryk potworów: x2,5 per copy)
     // v15.1: was 35% / 25%; fear pays more Groza now (1,6), so the fear from wounds pays about what it did and scares less
-    if (kind !== 'heart' && kind !== 'loot') addFear(h, real / h.max * h.courage * (kind === 'monster' ? 0.18 * (1 + mods.monsterFear) : 0.25) * (fl.surprise && kind === 'trap' ? 1.3 : 1), attr, kind === 'monster' && mods.monsterFear ? 'roar' : 'dmg', dtp);
+    if (kind !== 'heart' && kind !== 'loot') addFear(h, real / gmax * h.courage * (kind === 'monster' ? 0.18 * (1 + mods.monsterFear) : 0.25) * (fl.surprise && kind === 'trap' ? 1.3 : 1), attr, kind === 'monster' && mods.monsterFear ? 'roar' : 'dmg', dtp);
     if (kind === 'trap' && real >= 8 && Math.random() < 0.35) say(h, pick(h.hp < 0.3 * h.max ? SAY.hurtScared : SAY.hurt), h.hp < 0.3 * h.max ? 2 : 1, 1.4, 'loud');
     if (kind === 'trap' && !h.dead && h.hp < 0.6 * h.max) useCharm(h, 'hit');   // a hard hit: switch the talisman on for what comes next
   }

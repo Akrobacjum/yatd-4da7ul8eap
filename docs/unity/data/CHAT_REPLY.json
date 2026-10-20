@@ -1,0 +1,71 @@
+{
+ "Słyszycie to?": [
+  "Nic nie słyszę.",
+  "Ciii... Słucham.",
+  "To tylko wiatr. Chyba."
+ ],
+ "Trzymajcie się blisko.": [
+  "Jestem tuż za tobą.",
+  "Jasne."
+ ],
+ "Patrzcie pod nogi.": [
+  "Patrzę, patrzę.",
+  "Wiem, nie jestem {ślepy|ślepa}."
+ ],
+ "Ledwo stoję...": [
+  "Wytrzymaj, jeszcze trochę.",
+  "Oprzyj się o mnie."
+ ],
+ "Potrzebuję chwili.": [
+  "Nie mamy chwili.",
+  "Złap oddech, osłaniam cię."
+ ],
+ "Jeszcze trochę złota i wracam do domu.": [
+  "Wszyscy tak mówią.",
+  "Jak przeżyjesz."
+ ],
+ "Opatrzmy rany.": [
+  "Daj, pomogę.",
+  "Szybko, zanim coś przyjdzie."
+ ],
+ "Kto ma bandaże?": [
+  "Ja mam. Trzymaj.",
+  "Zostały mi ostatnie."
+ ],
+ "Chwila oddechu...": [
+  "Tylko krótka."
+ ],
+ "Nie siadaj na tej płycie!": [
+  "Spokojnie, nie siadam."
+ ],
+ "Może jednak wrócimy?": [
+  "Nie ma mowy.",
+  "Idziemy dalej. Głowa do góry."
+ ],
+ "Czemu zawsze ja idę w środku?": [
+  "Bo w środku najbezpieczniej."
+ ],
+ "Ja tu tylko noszę bagaże...": [
+  "To noś i nie marudź."
+ ],
+ "Podział po równo, tak?": [
+  "Po równo. Jak przeżyjemy.",
+  "Zobaczymy."
+ ],
+ "Gdzieś tu musi być skarbiec.": [
+  "Najpierw przeżyjmy, potem skarbiec.",
+  "Oby."
+ ],
+ "Czuję złoto.": [
+  "Ja czuję tylko stęchliznę."
+ ],
+ "Ta płyta jest luźna. Omijamy.": [
+  "Dobrze, że patrzysz."
+ ],
+ "Powoli, nie ma pośpiechu.": [
+  "Jest pośpiech. Czas leci."
+ ],
+ "Niech tylko coś wyskoczy!": [
+  "Nie kuś losu."
+ ]
+}

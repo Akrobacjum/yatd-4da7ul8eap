@@ -454,7 +454,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .scr-big span { font-size: 11px; color: var(--muted); margin-top: 3px; white-space: nowrap; }
 .scr-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
 .scr-body > * { flex: none; }
-.scr-foot { flex: none; display: grid; gap: 6px; }
+.scr-foot { flex: none; display: grid; gap: 6px; position: relative; }
+.shopmsg { position: absolute; left: 8px; right: 8px; bottom: calc(100% + 6px); padding: 6px 10px; border-radius: var(--r); background: rgba(12, 10, 9, 0.94); border: 1px solid var(--line); color: var(--ink); font-size: 13px; text-align: center; pointer-events: none; animation: shopmsg 2.8s ease-out forwards; z-index: 2; }   /* 1.12.1 */
+@keyframes shopmsg { 0% { opacity: 0; transform: translateY(4px); } 8% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
 .scr-foot .note { text-align: center; font-size: 11.5px; min-height: 14px; }
 .panel { background-color: var(--panel2); border: 1px solid var(--line); border-radius: var(--r); padding: 7px 10px 8px; min-width: 0; box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 rgba(0, 0, 0, 0.4); }
 .panel h3 { margin: 0 0 5px; display: flex; justify-content: space-between; gap: 8px; font: 600 10.5px var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
@@ -746,7 +748,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 
   const DEFAULTS = {
     waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
-    essenceCap: 40, crystals: 3, comboWin: 2.5, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 37, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
+    essenceCap: 40, crystals: 3, comboWin: 3, comboQuiet: 0.25, essK: 1.1, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 37, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
     music: 0.5,   // 1.07: the music's volume (0 = off)
     haptics: 1, trayAuto: 1, series: 1, split: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley, split screen (1.03)
     topPad: 0   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
@@ -771,6 +773,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     { k: 'crystals', label: 'Kryształy w sercu (od nowego runu)', min: 1, max: 6, step: 1 },
     { k: 'deckSize', label: 'Miejsca w talii (od nowego runu)', min: 3, max: 12, step: 1 },
     { k: 'comboWin', label: 'Okno combo (s)', min: 1, max: 6, step: 0.5, fmt: f1 },
+    { k: 'comboQuiet', label: 'Zegar combo w ciszy (×)', min: 0, max: 1, step: 0.05, fmt: f1 },
+    { k: 'essK', label: 'Mnożnik Esencji z Grozy (×)', min: 0.5, max: 2, step: 0.05, fmt: f1 },
     { k: 'thrBase', label: 'Pierwszy próg karty (pkt)', min: 500, max: 5000, step: 100 },
     { k: 'depthMax', label: 'Mnożnik pokoju z sercem', min: 1, max: 5, step: 0.1, fmt: x1 }
   ];
@@ -1321,7 +1325,15 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     crystalFear: ['Bierzcie sobie ten kamień!', 'Nie chcę go! Uciekam!', 'Przeklęty kryształ!'],
     sapped: ['Rozmontowane, nie odpali już nigdy.', 'Zabieram mechanizm na pamiątkę.', 'Ta pułapka jest już moja.'],
     sense: ['Czuję tu magię pułapek.', 'Stop. Widzę, gdzie są mechanizmy.', 'Ten pokój jest zaminowany.'],
-    prepStart: ['Stop. Za tymi drzwiami jest pokój śmierci.', 'Słyszeliśmy o tym pokoju. Przygotujmy się.', 'Tam czeka masa pułapek. Plan!'],
+    prepStart: ['Stop. Za tymi drzwiami jest pokój śmierci.', 'Słyszeliśmy o tym pokoju. Przygotujmy się.', 'Tam czeka masa pułapek. Potrzebujemy planu.'],
+    // 1.12.1 (author: longer breaks, little scenes with bubbles when they rest or talk it over, not a shout and a freeze)
+    prepGo: ['Wszyscy wiedzą, co robić?', 'Na mój znak. Raz, dwa...', 'Dobra. Razem i szybko.'],
+    prepReply: ['Tak jest.', 'Got{ów|owa}.', 'Miejmy to za sobą.', 'Nie podoba mi się to.'],
+    councilReply: ['Zgoda.', 'Mnie tam wszystko jedno.', 'Byle nie pod te kolce.', 'Prowadź.', 'Ostatnio też tak było.', 'Dobra, ale ja idę na końcu.'],
+    restStart: ['Siadamy. Opatrzmy rany.', 'Tu jest spokojnie. Odpoczynek.', 'Stop. Złapmy oddech.'],
+    restPriest: ['Pokażcie rany, pomodlę się.', 'Światło was opatrzy, siedźcie spokojnie.', 'Kto najbardziej krwawi? Do mnie.'],
+    restScene: ['Auć! Delikatniej z tym bandażem!', 'Nogi mi odpadają.', 'Zjadł{bym|abym} coś ciepłego.', 'Ten loch nas powoli zjada.', 'Nie zasypiać mi tu!', 'Słyszeliście to skrzypienie?', 'Ile jeszcze tych pokoi?', 'Kto wziął ostatni bandaż?', 'Moja zbroja jest cała we krwi. Nie mojej. Chyba.', 'Jeszcze chwila i ruszamy.'],
+    restReply: ['Cicho, odpoczywam.', 'Też to słyszał{em|am}.', 'Wytrzymaj, zaraz ruszamy.', 'Nie marudź.', 'Ja też.', 'Lepiej nie pytaj.'],
     prepWard: ['Błogosławię was. Osłona na wszystkich!', 'Światło, chroń nas!', 'Odwagi! Światło jest z nami.'],
     prepJam: ['Zagłuszę ich mechanizmy. Biegniemy na mój znak!', 'Zakłócam pułapki, szybko przez pokój!'],
     prepDisarm: ['Rozbroję, co się da, z progu.', 'Dajcie mi chwilę przy drzwiach.'],
@@ -2047,7 +2059,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function addPts(g, stat, h) {
     if (!(g > 0) || !fl) return 0;
     const cm = 1 + 0.25 * (comboNow() - 1);
-    const e = g * fl.greed * cm * mods.regen;
+    const e = g * fl.greed * cm * mods.regen * S.essK;   // 1.12.1: S.essK (1,1) brings the Esencja back to what 1.11.1 paid (replays of the author's two runs)
     fl.base += g;
     let C = fl.chain;
     if (!C) C = fl.chain = { g: 0, prov: 0, cm: 1, greed: fl.greed, t0: fl.time, last: fl.time, trap: false, who: new Map(), n: 0 };
@@ -2066,7 +2078,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function payChain() {
     const C = fl && fl.chain; if (!C) return 0;
     fl.chain = null;
-    const e = C.g * C.greed * C.cm * mods.regen;
+    const e = C.g * C.greed * C.cm * mods.regen * S.essK;
     fl.stats.comboPts = (fl.stats.comboPts || 0) + Math.max(0, e - C.prov);
     fl.score += e;
     fl.lastPay = { g: C.g, greed: C.greed, cm: C.cm, e, t: fl.time, n: ++payN };
@@ -2150,11 +2162,15 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     floats.push({ x, gy: y, lift: l0 + ol, l0, text, color, size: size || 15, life: 1.2, tag });
   }
   function floatTile(x, y, text, color, size, dy, tag) { addFloat(x + 0.5, y + 0.5, text, color, size, dy, tag); }
+  // 1.12.1: one hero a tile, so a hero stands in the middle of his tile (the old small shift by id now only when two stand on one
+  // tile for a moment); two passing each other lean aside, each to his right, most in the middle of the step
   function heroPos(h) {
-    const off = (h.id % 3 - 1) * 0.14;
     const moving = h.nx !== null;
     const fx = moving ? h.x + (h.nx - h.x) * h.prog : h.x, fy = moving ? h.y + (h.ny - h.y) * h.prog : h.y;
-    return { x: fx + 0.5 + off, y: fy + 0.5 + off * 0.5 };
+    let ox = 0, oy = 0;
+    if (moving && h.passing != null) { const s = 0.24 * Math.sin(Math.PI * Math.min(1, h.prog)); ox = -(h.ny - h.y) * s; oy = (h.nx - h.x) * s; }
+    else if (!moving && fl && fl.heroes.some(o => o !== h && !o.dead && !o.fled && !o.gone && o.nx === null && o.x === h.x && o.y === h.y)) { const off = (h.id % 3 - 1) * 0.14; ox = off; oy = off * 0.5; }
+    return { x: fx + 0.5 + ox, y: fy + 0.5 + oy };
   }
   function floatHero(h, text, color, size, dy) { const p = heroPos(h); addFloat(p.x, p.y, text, color, size, dy, undefined, 0.6); }
   function burst(x, y, color, n) {
@@ -2494,7 +2510,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const phys = pre.phys !== undefined ? pre.phys : (deep && Math.random() < 0.35 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHYS)) : null);
     const phobia = pre.phobia !== undefined ? pre.phobia : (deep && !boss && Math.random() < 0.3 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHOBIAS)) : null);
     const known = pre.known || [phys && (mods.revealAll || Math.random() < 0.3) ? 'phys' : null, phobia && (mods.revealAll || Math.random() < 0.3) ? 'phobia' : null].filter(Boolean);
-    return { type, lvl, rank: tierOf(lvl), boss: boss || null, female, nm, hp: max, max, inv: makeKit(type, lvl + (boss ? 2 : 0)), trait,
+    return { type, lvl, rank: tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: comboHp(n), inv: makeKit(type, lvl + (boss ? 2 : 0)), trait,
       courage: Math.round(R.courage * (boss === 'final' ? 2 : boss ? 1.5 : 1) * ck), phys, phobia, known, returning: !!pre.returning, scar: pre.scar || null, times: pre.times || 0 };
   }
   // The guild reads the last wave's report and sends the right people (from wave 3): priests and amulets against fear,
@@ -2604,7 +2620,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     saveRun('build');   // a tab closed during the wave comes back to this build
     perfReset();
     fl.items.forEach(it => { it.skullOff = false; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap)
-    fl.phase = 'raid'; fl.time = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
+    fl.phase = 'raid'; fl.time = 0; fl.patT = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
     { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał
     if (run.returners) run.returners = run.returners.filter(r => r.used !== run.wave);   // the returners of this wave are in
@@ -2663,7 +2679,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   }
   function spawnHero(e) {
     const T = HEROES[e.type], R = levelStats(e.lvl), sp = spawnPt();
-    const h = { entry: e, id: fl.heroes.length, type: e.type, T, R, rank: e.rank, lvl: e.lvl, boss: e.boss, female: e.female, nm: e.nm, hp: e.hp, max: e.max,
+    const h = { entry: e, id: fl.heroes.length, type: e.type, T, R, rank: e.rank, lvl: e.lvl, boss: e.boss, female: e.female, nm: e.nm, hp: e.hp, max: e.max, hpK: e.hpK || 1,
       x: sp.x, y: sp.y, nx: null, ny: null, prog: 0, tx: sp.x, ty: sp.y, path: [], needPlan: true, thinkT: 0, intent: 'follow',
       room: roomOf(sp.ix, sp.iy), state: 'walk', timer: 0, dur: 1, slowUntil: -1, burnUntil: -1, burnBy: null, foe: null, item: null,
       dead: false, fled: false, gone: false, flash: 0, acc: 0, accT: 0, cast: e.type === 'priest' ? 1.5 : e.type === 'mage' ? 2 : 0,
@@ -3105,7 +3121,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         say(h, pick(SAY.trauma[dtp]), 4, 2.2); floatHero(h, 'Trauma: ' + DMG_TYPES[dtp], '#ff9a9a', 13, -1.1);
       }
     }
-    let pts = real / h.max * GZ.dmg * DMG_FACTOR[kind] * depthMult(h.room) * lootMult(h);   // v15: Groza against his max HP (gear-laden heroes bleed more); the combo is applied in addPts
+    const gmax = h.max / (h.hpK || 1);   // 1.12.1: Groza and the fear of a wound count against his HP without the 1.12 bonus (the bonus makes raids longer, not wounds cheaper)
+    let pts = real / gmax * GZ.dmg * DMG_FACTOR[kind] * depthMult(h.room) * lootMult(h);   // v15: Groza against his max HP (gear-laden heroes bleed more); the combo is applied in addPts
     if (pts > 0 && h.hp < 0.3 * h.max && (kind === 'trap' || kind === 'loot' || kind === 'burn')) {
       fl.stats.edgePts += pts * 0.5; pts *= 1.5;
       if (fl.time - h.edgeAt > 1.5) { h.edgeAt = fl.time; floatHero(h, 'Na skraju!', '#ff9a3c', 15, -0.9); }
@@ -3119,7 +3136,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     }
     // wounds scare too, less than a scare trap: losing all HP is worth 25% of courage (monsters 18%; Ryk potworów: x2,5 per copy)
     // v15.1: was 35% / 25%; fear pays more Groza now (1,6), so the fear from wounds pays about what it did and scares less
-    if (kind !== 'heart' && kind !== 'loot') addFear(h, real / h.max * h.courage * (kind === 'monster' ? 0.18 * (1 + mods.monsterFear) : 0.25) * (fl.surprise && kind === 'trap' ? 1.3 : 1), attr, kind === 'monster' && mods.monsterFear ? 'roar' : 'dmg', dtp);
+    if (kind !== 'heart' && kind !== 'loot') addFear(h, real / gmax * h.courage * (kind === 'monster' ? 0.18 * (1 + mods.monsterFear) : 0.25) * (fl.surprise && kind === 'trap' ? 1.3 : 1), attr, kind === 'monster' && mods.monsterFear ? 'roar' : 'dmg', dtp);
     if (kind === 'trap' && real >= 8 && Math.random() < 0.35) say(h, pick(h.hp < 0.3 * h.max ? SAY.hurtScared : SAY.hurt), h.hp < 0.3 * h.max ? 2 : 1, 1.4, 'loud');
     if (kind === 'trap' && !h.dead && h.hp < 0.6 * h.max) useCharm(h, 'hit');   // a hard hit: switch the talisman on for what comes next
   }
@@ -3736,7 +3753,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     let best = null, bd = -1;
     for (let k = 0; k < 30; k++) {
       const R = pick(rooms), t = pick(R.tiles);
-      if (!walkable(t[0], t[1])) continue;
+      if (!walkable(t[0], t[1]) || heroBlock(h, t[0], t[1])) continue;   // 1.12.1: not onto another hero
       const d = exitD ? exitD(t[1] * WW + t[0]) + Math.random() * 2 : Math.hypot(t[0] - lp.x, t[1] - lp.y) + Math.random() * 3;
       if (d > bd) { bd = d; best = t; }
     }
@@ -3924,7 +3941,36 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const crew = alive().filter(h => !h.lost && !panicking(h) && h.id !== P.scoutId && !caged(h));
     lines.forEach((l, i) => { const who = l[0] || crew[i % Math.max(1, crew.length)]; if (who) P.queueSay.push({ id: who.id, text: l[1], at: fl.time + i * 0.7 }); });
   }
-  const talkLen = lines => 0.55 * lines.reduce((a, t) => a + readT(t) + SAY_GAP, 0);
+  // 1.12.1: the stop lasts the whole exchange (since 1.10 the lines come one after another) plus a breath (it used to be about half)
+  const talkLen = lines => lines.reduce((a, t) => a + readT(t) + SAY_GAP, 0) + 0.6;
+  // 1.12.1: when the party stops to talk it over, the ones further off come up to the leader (to a free tile at most 2 steps from
+  // him) and everyone turns to him: a huddle, not a freeze
+  function huddleUp(L) {
+    if (!L || L.lost) return;
+    const P = fl.party, taken = new Set([L.y * WW + L.x]);
+    const crew = alive().filter(h => h !== L && !h.lost && !caged(h) && !h.fleeing && !panicking(h) && h.id !== P.scoutId && h.state !== 'fight' && h.state !== 'disarm' && h.state !== 'free' && h.state !== 'smash' && !exiting(h));
+    crew.sort((a, b) => hdist(a, L) - hdist(b, L)).forEach(h => {
+      const k0 = (h.nx !== null ? h.ny : h.y) * WW + (h.nx !== null ? h.nx : h.x);
+      if (Math.abs(h.x - L.x) + Math.abs(h.y - L.y) <= 2 && !taken.has(k0)) { taken.add(k0); h.huddleId = L.id; return; }
+      if (h.nx !== null) return;   // mid-step: he turns to the leader when he stops
+      const s0 = h.y * WW + h.x, prev = new Map([[s0, -1]]), q = [s0];
+      let goal = -1;
+      for (let qi = 0; qi < q.length && q.length < 220; qi++) {
+        const i = q[qi], cx = i % WW, cy = (i / WW) | 0;
+        if (i !== s0 && Math.abs(cx - L.x) + Math.abs(cy - L.y) <= 2 && !taken.has(i) && !isExitTile(cx, cy)) { goal = i; break; }
+        for (const d of DIRS) {
+          const nx = cx + d[0], ny = cy + d[1], j = ny * WW + nx;
+          if (prev.has(j) || !passable(nx, ny) || heroBlock(h, nx, ny)) continue;
+          const g = fl.items.get(key(nx, ny)); if (g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) continue;
+          prev.set(j, i); q.push(j);
+        }
+      }
+      if (goal < 0) { h.huddleId = L.id; return; }
+      const way = []; for (let k = goal; k !== s0; k = prev.get(k)) way.unshift([k % WW, (k / WW) | 0]);
+      if (way.length > 7) { h.huddleId = L.id; return; }
+      taken.add(goal); h.path = way; h.huddle = true; h.huddleId = L.id; h.state = 'walk';
+    });
+  }
   function lootLevel(it) { return ITEMS[it.type].rarity || 0; }
   // Common loot is noticed from the same room, rare from the next one, legendary glitters across the dungeon.
   function lootSeen(it) {
@@ -4070,8 +4116,22 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         P.scoutId = thief.id; thief.scoutTarget = alt.f; thief.scoutUntil = fl.time + 16; thief.needPlan = true; fl.stats.scouts++;
         lines.push([thief, pick(SAY.scout)], [L, pick(SAY.scoutReply)]);   // 1.05: the thief himself offers (it used to be anyone)
       }
-      talkAs(1.4 + 0.45 * lines.length, lines);
+      const quiet = crewT.find(o => !lines.some(l => l[0] === o) && o.type !== 'thief');   // 1.12.1: somebody else has a word too
+      if (quiet) lines.push([quiet, pick(SAY.councilReply)]);
+      talkAs(1.4 + 0.45 * lines.length, lines); huddleUp(L);
     } else if (prev !== best.f && Math.random() < 0.35) partySay('explore', 1, L);
+  }
+  // 1.12.1: when they sit down to rest: the leader calls it, the priest tends the wounds, somebody grumbles and gets an answer
+  function restScene(L, crew) {
+    const P = fl.party, pool = crew.filter(h => !caged(h) && !h.lost && !h.fleeing && !panicking(h));
+    if (!L || !pool.length) return;
+    const pr = pool.find(h => h.type === 'priest' && h !== L), others = pool.filter(h => h !== L && h !== pr);
+    const lines = [[L, pick(SAY.restStart)]];
+    if (pr) lines.push([pr, pick(SAY.restPriest)]);
+    const a = others.length ? pick(others) : null, b = others.find(h => h !== a) || (a ? L : null);
+    if (a) lines.push([a, pick(SAY.restScene)]);
+    if (a && b) lines.push([b, pick(SAY.restReply)]);
+    lines.forEach((l, i) => P.queueSay.push({ id: l[0].id, text: l[1], at: fl.time + 0.3 + i * 0.6 }));
   }
   // A friend in a cage: elites always go back for him; others weigh their own fear.
   function decideCage(c, L) {
@@ -4188,8 +4248,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (goingOut()) { /* everyone heads for the exit */ }
     else if (fl.fearless) { if (P.plan !== 'assault' && fl.heartKnown) { P.plan = 'assault'; replanAll(); } }
     else if (P.plan === 'retreat') {
-      if (P.restSince < 0 && crew.some(h => h.state === 'rest')) P.restSince = fl.time;
-      if (avgHp >= 0.7 || (P.restSince > 0 && fl.time - P.restSince > 20)) {
+      if (P.restSince < 0 && crew.some(h => h.state === 'rest')) { P.restSince = fl.time; restScene(L, crew); }
+      // 1.12.1: a real break: at least 10 s once they sit (unless they come in nearly whole), at most 26 s (was: until 70% HP, at most 20 s)
+      const restT = P.restSince > 0 ? fl.time - P.restSince : 0;
+      if ((avgHp >= 0.7 && (restT >= 10 || (P.restSince < 0 && avgHp >= 0.85))) || restT > 26) {
         P.plan = fl.heartKnown ? 'assault' : 'explore'; P.retreatLock = fl.time + 15; P.restSince = -1;
         partySay('restDone', 2, L);
         crew.forEach(h => { if (h.state === 'rest') h.state = 'walk'; h.needPlan = true; });
@@ -4212,9 +4274,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const need = Math.min(0.85, (L.rank === 0 ? 0.5 : 0.6) + 0.1 * clamp(greedRaw(fl.greed) - 1, 0, 2) - (L.rank >= 2 ? 0.1 : 0));
     const tLimit = S.waveTime * Math.min(0.6, 0.45 + 0.01 * Math.max(0, roomsAll.length - 6));   // a big dungeon takes longer to search
     const detourG = P.gateDetourUntil > fl.time;   // 1.01: sent round by a closed gate, they search what they have not seen
-    const wasSearch = P.wantSearch; P.wantSearch = (seenShare < need && fl.time < tLimit) || detourG;   // still searching the rooms they know of (for treasure)
+    const wasSearch = P.wantSearch; P.wantSearch = (seenShare < need && fl.patT < tLimit) || detourG;   // 1.12.1: patience time (slower during scenes)   // still searching the rooms they know of (for treasure)
     if (wasSearch !== P.wantSearch) fl.knowDirty = true;
-    if (P.plan === 'explore' && !detourG && fl.heartKnown && avgHp >= 0.5 && (seenShare >= need || fl.time > tLimit)) {
+    if (P.plan === 'explore' && !detourG && fl.heartKnown && avgHp >= 0.5 && (seenShare >= need || fl.patT > tLimit)) {
       P.plan = 'assault'; P.detour = null; partySay('assault', 3, L); replanAll();
       const gr = crew.find(o => o !== L && (o.trait === 'greedy' || o.hunter) && !o.lost && !panicking(o));   // 1.05: the greedy are not done yet
       if (gr && seenShare < 0.85) { P.queueSay.push({ id: gr.id, text: pick(SAY.argueSearch), at: fl.time + 1 }, { id: L.id, text: pick(SAY.replySearch), at: fl.time + 2 }); fl.stats.disputes = (fl.stats.disputes || 0) + 1; }
@@ -4264,13 +4326,13 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // Character speaks too, and sometimes someone answers.
     P.chatT -= dt;
     if (P.chatT <= 0) {
-      P.chatT = 7 + Math.random() * 6;
+      P.chatT = P.plan === 'retreat' ? 3.5 + Math.random() * 3 : 7 + Math.random() * 6;   // 1.12.1: at rest they talk more
       const pool = crew.filter(o => !o.bubble && !panicking(o) && !caged(o) && !o.lost && o.state !== 'fight' && o.state !== 'smash' && !floorBusy(o));   // 1.10: small talk only into a silence
       const h = pool.length ? pick(pool) : null, lines = [];
       let mood = null;
       if (h && (h.fleeing || h.crystal || goingOut())) {
         lines.push(...SAY.chatFlee); if (h.crystal) lines.push(...SAY.chatCarrier, ...SAY.chatCarrier); if (h.hp < 0.4 * h.max) lines.push(...SAY.chatHurtOut);
-      } else if (h && P.plan === 'retreat') lines.push(...SAY.chatRest);
+      } else if (h && P.plan === 'retreat') lines.push(...SAY.chatRest, ...SAY.restScene);
       else if (h) {
         const scared = h.fear > 0.5 * h.courage, shaken = fl.time < h.shakenUntil + 6;
         if (h.hp < 0.4 * h.max) lines.push('Ledwo stoję...', 'Potrzebuję chwili.');
@@ -4444,13 +4506,19 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const P = fl.party, crew = alive().filter(h => !h.lost && !caged(h) && !h.fleeing && !h.gone);
     if (!crew.length) return;
     P.prepped.add(r); fl.stats.preps++;
-    const dur = 2.4, find = (t, lv, extra) => crew.find(h => h.type === t && h.lvl >= lv && (!extra || extra(h)));
+    const find = (t, lv, extra) => crew.find(h => h.type === t && h.lvl >= lv && (!extra || extra(h)));
     const pr = find('priest', 3, h => h.faith >= 2), mg = find('mage', 5, h => fl.time >= (h.jamCd || 0)), th = find('thief', 4), wr = find('warrior', 3);
-    P.prep = { room: r, until: fl.time + dur, pr: pr ? pr.id : -1, mg: mg ? mg.id : -1, th: th ? th.id : -1, wr: wr ? wr.id : -1 };
-    P.talkUntil = Math.max(P.talkUntil, fl.time + dur);
     const L = leader(), lines = [[L, pick(SAY.prepStart)]];
     if (pr) lines.push([pr, pick(SAY.prepWard)]); if (mg) lines.push([mg, pick(SAY.prepJam)]); if (th) lines.push([th, pick(SAY.prepDisarm)]); if (wr) lines.push([wr, pick(SAY.prepShield)]);
+    // 1.12.1: the leader closes it and someone answers; the stop lasts as long as the scene (it was 2,4 s, most lines never came)
+    lines.push([L, pick(SAY.prepGo)]);
+    const rep = crew.find(h => h !== L && !lines.some(l => l[0] === h)) || crew.find(h => h !== L);
+    if (rep) lines.push([rep, pick(SAY.prepReply)]);
+    const dur = Math.max(3, talkLen(lines.map(l => l[1])));
+    P.prep = { room: r, until: fl.time + dur, pr: pr ? pr.id : -1, mg: mg ? mg.id : -1, th: th ? th.id : -1, wr: wr ? wr.id : -1 };
+    P.talkUntil = Math.max(P.talkUntil, fl.time + dur);
     lines.forEach((l, i) => P.queueSay.push({ id: l[0].id, text: l[1], at: fl.time + i * 0.5 }));
+    huddleUp(L);
     crew.forEach(h => {   // experienced heroes drink up before walking into it
       if (h.lvl < 4 || h.hp >= 0.7 * h.max) return;
       const pot = h.inv.filter(x => x.type === 'potion').sort((a, c) => c.r - a.r)[0];
@@ -4530,6 +4598,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // One hero decides what to do next and finds a path there (only through tiles the party knows).
   function planHero(h) {
     h.needPlan = false; h.thinkT = 0.45 + Math.random() * 0.3;
+    if (h.huddle) { if (h.path.length && fl.time < fl.party.talkUntil) return; h.huddle = false; }   // 1.12.1: on his way into the huddle
     if (h.gone || caged(h)) { h.path = []; return; }
     const P = fl.party, L = leader();
     let goal = -1, intent = 'follow', noDanger = false, b = null;
@@ -4889,6 +4958,73 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   }
   const slipChance = h => 0.33 * (h.rank >= 2 ? 0.55 : 1) * (h.type === 'thief' ? 0.6 : 1) * (panicking(h) || h.fleeing ? 1.3 : 1);
   function heroTile(h) { return (h.nx !== null && h.prog >= 0.5) ? [h.nx, h.ny] : [h.x, h.y]; }
+  // 1.12.1 (author: a hero takes up one tile, like a monster; two share one only while they pass each other). A tile is taken by
+  // a hero standing on it (or mostly on it, past half a step) and by one stepping into it. The door out (and the breach) is
+  // outside the dungeon: they gather there freely. A blocked hero waits a moment, then walks round (a short detour that
+  // rejoins his way), and only when there is no way round squeezes past (passing); one running out or in a panic sooner.
+  const SQUEEZE_T = 2.2, SQUEEZE_RUN = 0.6, SQUEEZE_LONG = 6, BLOCK_WAIT = 0.45;   // s: both stuck / running out / the other one busy
+  function heroBlock(h, x, y) {
+    if (isExitTile(x, y)) return null;
+    for (const o of fl.heroes) {
+      if (o === h || o.dead || o.fled || o.gone) continue;
+      const t = heroTile(o);
+      if ((t[0] === x && t[1] === y) || (o.nx === x && o.ny === y)) return o;
+    }
+    return null;
+  }
+  // a short way round the heroes in the way, back onto the rest of his path (a few steps at most)
+  function detourAround(h) {
+    const want = new Map(); h.path.forEach((p, i) => { if (i >= 1) want.set(p[1] * WW + p[0], i); });
+    if (!want.size) return false;
+    const s0 = h.y * WW + h.x, prev = new Map([[s0, -1]]), q = [s0];
+    for (let qi = 0; qi < q.length && q.length < 160; qi++) {
+      const i = q[qi], cx = i % WW, cy = (i / WW) | 0;
+      if (i !== s0 && want.has(i)) {
+        const way = []; for (let k = i; k !== s0; k = prev.get(k)) way.unshift([k % WW, (k / WW) | 0]);
+        if (way.length > 8) return false;
+        h.path = way.concat(h.path.slice(want.get(i) + 1)); fl.stats.sidesteps = (fl.stats.sidesteps || 0) + 1;
+        return true;
+      }
+      for (const d of DIRS) {
+        const nx = cx + d[0], ny = cy + d[1], j = ny * WW + nx;
+        if (prev.has(j) || !passable(nx, ny) || heroBlock(h, nx, ny)) continue;
+        const g = fl.items.get(key(nx, ny)); if (g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) continue;
+        prev.set(j, i); q.push(j);
+      }
+    }
+    return false;
+  }
+  // two standing on one tile (a fall, a slide, a squeeze): the later one steps to a free tile next to it
+  function stepAside(h) {
+    if (isExitTile(h.x, h.y)) return false;
+    const o = fl.heroes.find(o => o !== h && !o.dead && !o.fled && !o.gone && o.nx === null && o.x === h.x && o.y === h.y && o.id < h.id);
+    if (!o) return false;
+    const free = DIRS.map(d => [h.x + d[0], h.y + d[1]]).filter(t => passable(t[0], t[1]) && !heroBlock(h, t[0], t[1]) && !(Math.abs(t[0] - fl.heart.x) + Math.abs(t[1] - fl.heart.y) === 0) &&
+      !(fl.items.get(key(t[0], t[1])) && MONSTERS[fl.items.get(key(t[0], t[1])).type] && !DRIFT[fl.items.get(key(t[0], t[1])).type] && fl.items.get(key(t[0], t[1])).hp > 0));
+    if (!free.length) return false;
+    const t = pick(free);
+    h.state = 'walk'; h.path = []; h.nx = t[0]; h.ny = t[1]; h.prog = 0; h.needPlan = true; fl.stats.sidesteps = (fl.stats.sidesteps || 0) + 1;
+    return true;
+  }
+  // 1.12.1: a hero standing idle in the way of one who walks makes way: a step to the side, or one ahead along his way
+  // (and whoever stands there makes way too), so the leader never stands behind his own followers
+  function idleIn(o) { return o.nx === null && !o.huddle && (o.state === 'wait' || o.state === 'talk' || (o.state === 'walk' && !o.path.length)) && !o.dead && !o.fled && !o.gone; }
+  function makeWay(o, h, depth) {
+    if (!idleIn(o) || isExitTile(o.x, o.y) || depth > 4) return false;
+    const onWay = (x, y) => (x === h.x && y === h.y) || h.path.some(q => q[0] === x && q[1] === y);
+    const ok = t => passable(t[0], t[1]) && !heroBlock(o, t[0], t[1]) && !(t[0] === fl.heart.x && t[1] === fl.heart.y) && !(t[0] === h.x && t[1] === h.y) &&
+      !(fl.items.get(key(t[0], t[1])) && MONSTERS[fl.items.get(key(t[0], t[1])).type] && !DRIFT[fl.items.get(key(t[0], t[1])).type] && fl.items.get(key(t[0], t[1])).hp > 0);
+    const side = DIRS.map(d => [o.x + d[0], o.y + d[1]]).filter(q => ok(q) && !onWay(q[0], q[1]) && !fl.items.has(key(q[0], q[1])) && !fl.danger[q[1] * WW + q[0]]);
+    let t = side.length ? pick(side) : null;
+    if (!t) {   // no room at the side: one step ahead along his way, and whoever stands there goes first
+      const i = h.path.findIndex(q => q[0] === o.x && q[1] === o.y), fw = i >= 0 ? h.path[i + 1] : null;
+      if (!fw) return false;
+      if (ok(fw)) t = fw;
+      else { const o2 = heroBlock(o, fw[0], fw[1]); if (o2 && o2 !== h && o2 !== o) makeWay(o2, h, depth + 1); return false; }
+    }
+    o.state = 'walk'; o.path = []; o.nx = t[0]; o.ny = t[1]; o.prog = 0; o.needPlan = true; o.blockT = 0; fl.stats.makeWay = (fl.stats.makeWay || 0) + 1;
+    return true;
+  }
   const RT_SAY = { fog: 'rtFog', swamp: 'rtSwamp', grotto: 'rtGrotto', crypt: 'rtCrypt', vault: 'rtVault', haven: 'rtHaven', gears: 'rtGears', hush: 'rtHush', ice: 'rtIce' };
   function onEnter(h) {
     const P = fl.party;
@@ -4908,7 +5044,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // 1.10: Lodownia: a step may run on, one tile straight ahead, into whatever is there (not twice in a row)
     if (r >= 0 && isRt(r, 'ice') && !h.slid && (h.ldx || h.ldy) && h.state === 'walk' && Math.random() < slipChance(h)) {
       const sx = h.x + h.ldx, sy = h.y + h.ldy, g = fl.items.get(key(sx, sy));
-      if (passable(sx, sy) && !(g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) && !(Math.abs(sx - fl.heart.x) + Math.abs(sy - fl.heart.y) === 0)) {
+      if (passable(sx, sy) && !(g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) && !(Math.abs(sx - fl.heart.x) + Math.abs(sy - fl.heart.y) === 0) && !heroBlock(h, sx, sy)) {
         h.nx = sx; h.ny = sy; h.prog = 0; h.sliding = true; h.path = []; fl.stats.slips = (fl.stats.slips || 0) + 1; tl('sl', h.id, sx, sy);
         say(h, pick(SAY.slip), 2, 1.2, 'loud'); return;
       }
@@ -5020,12 +5156,17 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       }
     }
     if (h.state === 'boss') { if (P.plan !== 'assault' || exiting(h) || panicking(h)) { h.state = 'walk'; h.needPlan = true; } return; }
+    if (h.nx === null && (h.state === 'walk' || h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && stepAside(h)) return;   // 1.12.1: one hero a tile
     if ((h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && h.nx === null && (h.glanceT = (h.glanceT || 0) - dt) <= 0) glance(h);   // 1.10
+    if (h.state === 'talk' && h.huddle && h.path.length) h.state = 'walk';   // 1.12.1: still walking up to the huddle
     if (h.state === 'talk') { if ((fl.time >= P.talkUntil && !(h.id === P.leaderId && fl.time < P.waitUntil)) || exiting(h)) { h.state = 'walk'; h.needPlan = true; } else return; }
     if (h.state === 'wait') { h.timer -= dt; if (h.timer > 0) return; h.state = 'walk'; h.needPlan = true; }
     if (exiting(h) && h.nx === null && isExitTile(h.x, h.y)) { heroExit(h); return; }
     // the party stops to talk, or the leader waits for stragglers
-    if (!fl.fearless && !exiting(h) && !h.lost && !panicking(h) && h.nx === null && (fl.time < P.talkUntil || (h.id === P.leaderId && fl.time < P.waitUntil)) && h.id !== P.scoutId && !(h.wanderUntil > fl.time)) { h.state = 'talk'; return; }
+    if (!fl.fearless && !exiting(h) && !h.lost && !panicking(h) && h.nx === null && (fl.time < P.talkUntil || (h.id === P.leaderId && fl.time < P.waitUntil)) && h.id !== P.scoutId && !(h.wanderUntil > fl.time) && !(h.huddle && h.path.length)) {
+      h.state = 'talk'; h.huddle = false; const hl = byId(h.huddleId); if (hl && hl !== h && !hl.dead) lookAt(h, hl.x, hl.y);   // 1.12.1: he faces the leader
+      return;
+    }
     if (h.nx === null) {
       if (h.needPlan || h.thinkT <= 0 || !h.path.length) planHero(h);
       if (h.state !== 'walk') return;
@@ -5049,6 +5190,26 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         if (dng > 1.5 && !fl.fearless && !exiting(h)) useCharm(h, 'danger');
         if (exiting(h) || (h.lost && h.rank >= 1) || (dng > 1 && h.rank >= 1 && !fl.fearless)) useBoots(h, exiting(h) ? 'out' : 'dash');
       }
+      // 1.12.1: one hero a tile; passing each other is fine
+      const o = heroBlock(h, n[0], n[1]);
+      if (o) {
+        const swap = (o.nx === h.x && o.ny === h.y) || (o.nx === null && o.state === 'walk' && o.path.length && o.path[0][0] === h.x && o.path[0][1] === h.y);
+        if (!swap) {
+          if (h.path.length === 1 && o.nx === null) { h.path = []; h.blockT = 0; h.state = 'wait'; h.timer = 0.3; return; }   // where he was going is taken: he stops next to it
+          h.blockT = (h.blockT || 0) + dt;
+          if (h.blockT < BLOCK_WAIT) return;   // a moment for the other one to move on
+          if (o.nx === null && makeWay(o, h, 0)) return;   // 1.12.1: an idle one steps out of his way
+          if (!h.detoured) { h.detoured = true; if (detourAround(h)) { h.blockT = 0; return; } }
+          const urgent = exiting(h) || panicking(h) || h.fleeing || h.crystal, jam = o.nx === null && o.state === 'walk' && (o.blockT || 0) > 0;
+          if (h.blockT < (urgent ? SQUEEZE_RUN : jam ? SQUEEZE_T : SQUEEZE_LONG)) return;   // a busy one (resting, disarming...) is waited for longer
+          // he only squeezes past: the tile behind the other one must be free, or he would stand on his tile (an urgent one may push on)
+          const beyond = h.path[1];
+          if (!urgent && (!beyond || heroBlock(h, beyond[0], beyond[1]))) { if (h.blockT > SQUEEZE_LONG + 2) { h.blockT = 0; h.detoured = false; h.path = []; h.needPlan = true; } return; }
+          fl.stats.squeezes = (fl.stats.squeezes || 0) + 1;
+        }
+        h.passing = o.id; if (swap) o.passing = h.id;   // they pass each other (a step to the side, drawn)
+      }
+      h.blockT = 0; h.detoured = false;
       h.path.shift(); h.nx = n[0]; h.ny = n[1]; h.prog = 0;
     }
     const slow = fl.time < h.slowUntil ? 0.35 : 1;
@@ -5061,7 +5222,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const spd = h.T.speed * h.R.speed * (S.heroSpeed / 100) * slow * (fl.fearless ? 1.3 : 1) * dash * careful * sprint * bog * purse *
       (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1) * (h.crystal ? 0.9 * mods.carrierSlow : 1) * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1) * (fl.time < h.rageUntil ? 1.25 : 1);
     h.prog += spd * dt;
-    if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = !!h.sliding; h.sliding = false; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); }
+    if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = !!h.sliding; h.sliding = false; h.passing = null; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); }
   }
 
   /* ================= Esencja ================= */
@@ -5498,7 +5659,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     fl.quietCheckT = (fl.quietCheckT || 0) - dt;
     if (fl.quietCheckT <= 0) { fl.quietCheckT = 0.1; fl.quiet = quietNow(); }   // v15.1: checked 10 times a second (was 5)
     if (fl.quiet) { fl.quietT += dt; if (autoFFOn()) fl.autoFFTime += dt; } else fl.quietT = 0;
-    fl.cclock += dt;   // 1.12: the combo clock no longer waits while nothing happens (a combo asks for grouped traps)
+    fl.cclock += dt * (fl.quiet ? S.comboQuiet : 1);   // 1.12.1: in the quiet the combo clock runs slower (S.comboQuiet), not stopped (1.11.1) and not at full speed (1.12)
     chainTick();   // Prototype 1.01: a combo chain that ran out is cashed in
     if (mods.hauntedGallery) fl.portraitRooms = portraitRooms();
     if (fl.echoQ && fl.echoQ.length) {   // Echo mechanizmów
@@ -5573,8 +5734,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (P.steal >= stealNeed()) { const by = alive().filter(h => h.state === 'boss'); if (by.length) takeCrystal(by); }
     }
     if (fl.heartHit > 0) fl.heartHit -= dt;
-    if (!fl.fearless && fl.ending === null && fl.time >= S.waveTime) becomeImpatient();
-    if (fl.ending === null && fl.time >= S.waveTime + 60) {   // safety net: nobody stays forever
+    // 1.12.1: patience runs at half speed while the party talks it over or rests (longer scenes do not cut their search short)
+    fl.patT = (fl.patT || 0) + dt * (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0) ? 0.5 : 1);
+    if (!fl.fearless && fl.ending === null && fl.patT >= S.waveTime) becomeImpatient();
+    if (fl.ending === null && fl.patT >= S.waveTime + 60) {   // safety net: nobody stays forever
       fl.heroes.forEach(h => { if (!h.dead && !h.fled) { h.gone = false; heroExit(h); } });
     }
     if (fl.ending === null && fl.queue.length === 0 && fl.heroes.length && fl.heroes.every(h => h.dead || h.fled)) fl.ending = 1.2;
@@ -5591,7 +5754,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   }
   let ffAuto = 1;
   const GATE_T = 1.8;   // s at the door before a wave goes in
-  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check && fl.gateOpen;   // v15.1: after 0,3 s of quiet (was 0,8)
+  // 1.12.1: no quiet fast-forward while the party talks it over or in the first 8 s of a rest (the scenes are there to be read)
+  const sceneNow = () => !!fl.party && (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0 && fl.time - fl.party.restSince < 8));
+  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check && fl.gateOpen && !sceneNow();   // v15.1: after 0,3 s of quiet (was 0,8)
   // "Quiet" = nobody near anything of yours: no hero within a step of the tiles a ready trap, a monster or loot reaches
   // (1.02; up to 1.01 the whole room counted), nobody fighting, caged, disarming, at the heart or about to rush a room.
   // Resting after a retreat counts as quiet.
@@ -8595,8 +8760,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const out = fl.party && fl.party.carrierId >= 0 && fl.phase === 'raid' ? 1 : 0;
     setText('h-cry', '◆'.repeat(Math.max(0, run.crystals - out)) + (out ? '◈' : '') + '◇'.repeat(Math.max(0, run.maxCrystals - run.crystals)));
     { const c = 2 * run.crystals - out; if (SC.cry != null && c < SC.cry && fl.phase !== 'build') crystalAlarm(); SC.cry = c; }   // stolen or eaten: the crystals shake, the map flashes red
-    setText('h-time', fl.phase === 'build' ? 'budowa' : fl.phase === 'raid' ? (paused ? 'pauza' : fl.fearless ? (fl.storm ? 'szturm!' : 'odwrót') : mmss(Math.max(0, S.waveTime - fl.time))) : 'koniec');
-    const bar = $('#h-bar'); bar.style.width = (fl.phase === 'raid' ? Math.min(1, fl.time / S.waveTime) * 100 : 0).toFixed(1) + '%'; bar.classList.toggle('ok', false);
+    setText('h-time', fl.phase === 'build' ? 'budowa' : fl.phase === 'raid' ? (paused ? 'pauza' : fl.fearless ? (fl.storm ? 'szturm!' : 'odwrót') : mmss(Math.max(0, S.waveTime - (fl.patT || 0)))) : 'koniec');
+    const bar = $('#h-bar'); bar.style.width = (fl.phase === 'raid' ? Math.min(1, (fl.patT || 0) / S.waveTime) * 100 : 0).toFixed(1) + '%'; bar.classList.toggle('ok', false);
     const pipsOn = fl.phase !== 'raid';
     if (hudCache.pipsOn !== pipsOn) { hudCache.pipsOn = pipsOn; $('#h-barwrap').hidden = pipsOn; $('#h-pips').hidden = !pipsOn; }
     if (pipsOn) renderPips();
@@ -8677,7 +8842,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     }
   }
   $('#toast').addEventListener('click', hideToast);
-  $('#h-wave').addEventListener('click', () => { if (run && fl && !modalOpen && fl.phase === 'build') setHint(waveHint()); });   // the wave's news again
+  $('#h-wave').addEventListener('click', () => { if (run && fl && !modalOpen && fl.phase === 'build') openModal({ type: 'news' }); });   // the wave's news again (1.12.1: a card, the top hint is gone)
 
   // The element tray folds away and comes back on a tap of its handle; a wave folds it as it starts (1.09: again, after 1.08 took
   // that out: the author's complaint was the handle's width, a whole-row hit area). Between waves it remembers you.
@@ -8768,7 +8933,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const card = $('#card'); card.innerHTML = ''; const scr = m.type === 'shop' || m.type === 'wave' || m.type === 'end', top = m.type === 'breach'; card.className = 'card enter' + (scr ? ' screen' : '') + (top ? ' topsheet' : '');
     card.scrollTop = 0; $('#overlay').classList.toggle('screenbg', scr); $('#overlay').classList.toggle('top', top);   // 1.01: the breach sheet sits at the top, the map stays in view
     clearTimeout(openModal.t); openModal.t = setTimeout(() => card.classList.remove('enter'), 900);   // the entrance plays once, not on every tap inside
-    ({ start: renderStart, menu: renderMenu, settings: renderSettings, tests: renderTests, upgrade: renderUpgrade, wave: renderWave, over: renderOver, end: renderEnd, survey: renderSurvey, victory: renderVictory, card: renderCard, item: renderItem, breach: renderBreach, hungerTip: renderHungerTip, onb: renderOnb, shop: renderShop, hero: renderHero, esencja: renderEsencja })[m.type](card, m);
+    ({ start: renderStart, menu: renderMenu, settings: renderSettings, tests: renderTests, upgrade: renderUpgrade, wave: renderWave, over: renderOver, end: renderEnd, survey: renderSurvey, victory: renderVictory, card: renderCard, item: renderItem, breach: renderBreach, hungerTip: renderHungerTip, onb: renderOnb, news: renderNews, shop: renderShop, hero: renderHero, esencja: renderEsencja })[m.type](card, m);
     $('#overlay').hidden = false;
   }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -8854,7 +9019,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.12 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.12.1 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -8898,15 +9063,19 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Bohaterowie mają 6 klas i każdą poznasz po figurce: hełm, tarcza i miecz (wojownik), kaptur i sztylet (złodziej), aureola i szata z krzyżem (kapłan), spiczasty kapelusz i laska (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). W jednej drużynie nigdy nie ma dwóch tej samej klasy. Bard krzepi pieśnią i woła zgubionych, barbarzyńca wpada w furię i rozbija skrzynie i budowle. Sakiewka przy bohaterze znaczy łowcę skarbów.',
      'Część pułapek nie rani, tylko straszy: portret, oczy, kości, lustro, zawiasy, trumna, pozytywka (w zakładce Pułapki, za raniącymi), a w zakładce Potwory duch, cień i nietoperze. Przestraszony uciekinier, który widział łup, opowie o nim i następna fala przyjdzie bardziej chciwa.',
      'Rany mają typ: kłute, obuchowe, ogień i trucizna. Klasa i ciało bohatera zmieniają obrażenia, a fobie podwajają strach. Stuknij bohatera (w fali albo na liście u góry), żeby zobaczyć jego kartę.',
-     'Rany i strach to Groza. Dopóki trwa combo (różne pułapki pod rząd, każda w ciągu 2,5 s od poprzedniej), Groza się zbiera, a każdy krok combo wzmacnia rany i strach kolejnych pułapek o 12%. Gdy combo się skończy, Groza wypłaca się jako Esencja: Groza × Chciwość (łup, rozległy loch, karty) × Combo. Chciwość rośnie coraz wolniej: im jej więcej, tym mniej dokłada kolejny łup. Esencję wydasz jeszcze w tej samej fali.',
+     'Rany i strach to Groza. Dopóki trwa combo (różne pułapki pod rząd, każda w ciągu 3 s od poprzedniej; gdy nic się nie dzieje, ten czas płynie wolniej), Groza się zbiera, a każdy krok combo wzmacnia rany i strach kolejnych pułapek o 12%. Gdy combo się skończy, Groza wypłaca się jako Esencja: Groza × Chciwość (łup, rozległy loch, karty) × Combo. Chciwość rośnie coraz wolniej: im jej więcej, tym mniej dokłada kolejny łup. Esencję wydasz jeszcze w tej samej fali.',
      'Od fali 2 serce bierze pierwsze porcje Esencji z każdej fali, aż się naje (♥ u góry pokazuje ile). Fala da za mało: serce zje to, co dostało, i kryształ. Trzymaj bohaterów w lochu jak najdłużej: wypędzeni od razu nie nakarmią serca. Limitu Esencji nie ma.',
      'Za każdą przetrwaną falę (nawet z utratą kryształu) dostajesz darmową kartę, po bossie legendarną w ofercie. Wybierasz ją w sklepie po fali; tam też kupisz karty za Esencję, odświeżysz ofertę, sprzedasz kartę albo odłożysz ją do schowka. Kryształu nie da się odkupić.',
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.12'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.12.1'));
     const ul2 = el('ul', 'conseq');
-    ['1.12: samouczek rozłożony na pierwsze 4 runy. Run 1 to podstawy (pułapki i potwory, które ranią, łup, kopanie, sklep i talia, serce) z przewodnikiem przez pierwsze 3 fale. Run 2 dokłada to, co straszy (pułapki i potwory), run 3 gildię z jej specjalistami, budowle-kontry i typy pokoi, a run 4 to pełna gra: ciała i fobie bohaterów, powracający, łowcy skarbów i wyłom. Na starcie runów 2-4 karta mówi, co nowego, a pierwsze spotkanie z fobią, ciałem albo powracającym ma swoją krótką kartę. Pomiń samouczek otwiera wszystko od razu (kto grał wcześniej, ma już wszystko).',
+    ['1.12.1: przychód Esencji wraca do poziomu sprzed 1.12. Zegar combo w ciszy (drużyna idzie, a nic jej nie grozi) płynie 4 razy wolniej, zamiast stać (do 1.11.1) albo biec jak zwykle (1.12); okno combo to 3 s. Groza i strach z ran liczą się od HP bohatera bez dodatku z 1.12, więc najazdy są dłuższe, a rany nie tanieją. Esencja z Grozy ×1,1. Odtworzenia dwóch runów autora: przychód z fal 2-10 o 3% i 5% wyższy niż w 1.11.1, serce syte mniej więcej tak samo często, najazdy o ok. 25-30% dłuższe.',
+     '1.12.1: jeden bohater na polu, tak jak potwory. Nikt nie wejdzie na zajęte pole, a mijający się odsuwają się lekko w bok. Kto stoi bezczynnie na drodze idącego, robi mu miejsce (krok w bok albo krok naprzód). Zablokowany chwilę czeka, potem obchodzi, a przeciska się dopiero, gdy nie ma innej drogi i za stojącym jest wolne pole (uciekający od razu).',
+     '1.12.1: dłuższe przerwy ze scenkami. Przed groźnym pokojem i na rozwidleniu drużyna zbiera się wokół przywódcy i omawia plan: każdy mówi swoje, przywódca zamyka. Na odpoczynku siadają, kapłan opatruje rany, ktoś marudzi, ktoś odpowiada; odpoczynek trwa co najmniej 10 s (najwyżej 26 s). W trakcie narady i na początku odpoczynku gra nie przyspiesza sama, a cierpliwość drużyny płynie wtedy 2 razy wolniej.',
+     '1.12.1: poprawki: komunikaty sklepu (np. "Za mało Esencji", "Talia i schowek są pełne") znowu widać, nad przyciskiem w sklepie; stuknięcie w "Fala X/10" znowu pokazuje wieści o fali (jako karta), "Jeszcze raz" w pierwszych runach prowadzi do kolejnego runu nauki, wszystkie źródła strachu mają polskie nazwy, ulepszenie pokazuje "Poziom N" raz.',
+     '1.12: samouczek rozłożony na pierwsze 4 runy. Run 1 to podstawy (pułapki i potwory, które ranią, łup, kopanie, sklep i talia, serce) z przewodnikiem przez pierwsze 3 fale. Run 2 dokłada to, co straszy (pułapki i potwory), run 3 gildię z jej specjalistami, budowle-kontry i typy pokoi, a run 4 to pełna gra: ciała i fobie bohaterów, powracający, łowcy skarbów i wyłom. Na starcie runów 2-4 karta mówi, co nowego, a pierwsze spotkanie z fobią, ciałem albo powracającym ma swoją krótką kartę. Pomiń samouczek otwiera wszystko od razu (kto grał wcześniej, ma już wszystko).',
      '1.12: w pierwszym runie serce jest głodne od fali 2, jak w każdym (wcześniej w samouczku spało), a run liczy się do rekordów.',
      '1.12: combo wzmacnia pułapki: każdy krok combo to +12% obrażeń i strachu kolejnych pułapek (wcześniej combo wzmacniało tylko strach, o 25% na krok). Combo trwa, póki następna pułapka odpali w ciągu 2,5 s (było 3,5 s), a ten czas płynie zawsze (wcześniej stał, gdy nic się nie działo). Combo wymaga więc pułapek ustawionych blisko siebie.',
      '1.12: bohaterowie mają więcej życia: +10% w fali 3, +20% od fali 5. Kilka mądrze zgrupowanych pułapek ma wygrywać z masą porozrzucanych.',
@@ -9490,7 +9659,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const foot = el('div', 'scr-foot'); card.appendChild(foot);
     const done = btn('primary', 'Do budowy fali ' + run.wave, free ? 'darmowe karty poczekają: ' + run.freePicks : 'sklep: pierwszy kafelek w Talii', closeModal); done.id = 'shop-close';
     foot.appendChild(done);
-    if (m.msg) { const t = m.msg; m.msg = ''; setTimeout(() => setHint(t), 0); }   // what just happened: a message over the big button
+    if (m.msg) { foot.appendChild(el('div', 'shopmsg', m.msg)); m.msg = ''; }   // what just happened: a message over the big button (1.12.1: in the shop itself, the top hint is gone)
     requestAnimationFrame(() => { card.querySelectorAll('.offer:not(.bought), .sheet').forEach(fitText); card.querySelectorAll('.slot:not(.empty)').forEach(fitSlot); });
   }
   // Prototype 1.0: the whole text has to fit its box, nothing is cut. The letters shrink step by step down to a readable minimum;
@@ -9545,7 +9714,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     fitList(list);
     const foot = el('div', 'scr-foot'); card.appendChild(foot);
     const row = el('div', 'row');
-    const again = btn('primary', 'Jeszcze raz', null, () => { closeModal(); newRun(false); }); again.id = 'end-again';
+    const again = btn('primary', 'Jeszcze raz', null, () => { closeModal(); if (onbStage() <= 4) startGuided(); else newRun(false); }); again.id = 'end-again';   // 1.12.1: the first runs go on in order
     row.appendChild(again); row.appendChild(btn('', 'Menu', null, () => { closeModal(); openModal({ type: 'start' }); })); foot.appendChild(row);
     const mr = el('div', 'minirow'), dn = el('p', 'note', m.logNote || 'Zapisuję wynik do analizy...');
     const db = el('button', 'mini', 'Pobierz wyniki tego runu (.json)'); db.type = 'button'; db.addEventListener('click', () => downloadRun(dn)); mr.appendChild(db);
@@ -9709,8 +9878,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (lvl >= 3) { note('Poziom 3 to maks', it.x, it.y); return; }
     const c = upgCost(it);
     if (fl.essence < c) { note('Za mało Esencji (' + c + ')', it.x, it.y); return; }
-    upgradeItem(it);
-    note('Poziom ' + it.lvl + (it.lvl === 3 && TRAITS[it.type] ? ': ' + TRAITS[it.type][0] : ''), it.x, it.y);
+    upgradeItem(it);   // it says "Poziom N" over the tile itself (1.12.1: the second, same note is gone)
   }
   function tapMove(wx, wy) {
     const cur = movingKey && fl.items.get(movingKey);
@@ -9897,7 +10065,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   const fate = h => h.dead ? (h.female ? 'zginęła' : 'zginął') : h.carriedOut ? (h.female ? 'wyniosła kryształ' : 'wyniósł kryształ') : h.fled ? (h.fleeing ? (h.female ? 'uciekła ze strachu' : 'uciekł ze strachu') : (h.female ? 'wyszła' : 'wyszedł')) : '?';
   // where the fear came from, in plain words
   const FEAR_SRC = { dmg: 'rany', death: 'śmierć towarzyszy', lost: 'zgubienie', alone: 'samotność', echo: 'echo groty', curse: 'klątwa', panic: 'panika', lowhp: 'ciężkie rany', ambush: 'zasadzki',
-    carrier: 'klątwa kryształu', roar: 'ryk potworów', haunt: 'nawiedzone klatki', cageAlone: 'porzucenie w klatce', lull: 'kołysanka', other: 'inne' };
+    carrier: 'klątwa kryształu', roar: 'ryk potworów', haunt: 'nawiedzone klatki', cageAlone: 'porzucenie w klatce', lull: 'kołysanka', other: 'inne',
+    heart: 'żar serca', screams: 'krzyki uciekających', phobia: 'fobia', nightmare: 'koszmary' };   // 1.12.1: these showed as raw keys
   const fearSrcName = k => FEAR_SRC[k] || (ITEMS[k] ? ITEMS[k].name.toLowerCase() : k);
   function statTile(box, v, label, cls) { const d = el('div', 'stat' + (cls ? ' ' + cls : '')); d.appendChild(el('b', null, v)); d.appendChild(el('span', null, label)); box.appendChild(d); }
   function itemsTable(byType) {
@@ -10044,7 +10213,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 56;   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
+  const LOG_VERSION = 57;   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
+  // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
   // 54: Prototype 1.11: the heart takes no Esencja, a wave must reach hungerNeed (60 x 1,25^(wave-2)) or a crystal goes (hunger.fedAmt = how far the bar got; stats.essHeart is gone)
   // 53: Prototype 1.10: 4 heroes a wave (+ the boss), the greed curve, room types haven/gears/hush/ice (stats.slips, naps, hushUnlearned, hushLost), loot taken by steps
@@ -10599,6 +10769,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     newRun(st === 1 && !coachDone(), st); run.guided = true;
     if (st > 1) queueModal({ type: 'onb' });
     saveRun('build');
+  }
+  function renderNews(card) {   // 1.12.1: what the tavern says about the next wave (a tap on "Fala X/10" in the build)
+    card.appendChild(el('div', 'sub', 'Wieści z karczmy'));
+    card.appendChild(el('h2', null, waveName()));
+    waveHint().split(/(?<=[.!?])\s+(?=[A-ZŁŚŻŹĆŃÓĘĄ])/).forEach(t => card.appendChild(el('p', null, t)));
+    const b = btn('primary', 'Zamknij', null, closeModal); b.id = 'news-close'; card.appendChild(b);
   }
   function renderOnb(card) {
     const s = run.stage || ONB_FULL, O = ONB_STAGES[s];

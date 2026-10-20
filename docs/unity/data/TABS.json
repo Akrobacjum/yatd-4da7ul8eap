@@ -1,0 +1,88 @@
+[
+ {
+  "id": "traps",
+  "label": "Pułapki",
+  "items": [
+   "spikes",
+   "arrows",
+   "web",
+   "trapdoor",
+   "cage",
+   "fire",
+   "gate",
+   "powder",
+   "mimic",
+   "portrait",
+   "eyes",
+   "bones",
+   "mirror",
+   "creak",
+   "coffin",
+   "musicbox"
+  ]
+ },
+ {
+  "id": "monster",
+  "label": "Potwory",
+  "items": [
+   "goblin",
+   "archer",
+   "spider",
+   "ogre",
+   "shaman",
+   "ghost",
+   "shade",
+   "bats"
+  ]
+ },
+ {
+  "id": "loot",
+  "label": "Łup",
+  "items": [
+   "loot",
+   "lpotion",
+   "loot2",
+   "loot3",
+   "lcursed"
+  ]
+ },
+ {
+  "id": "object",
+  "label": "Obiekty",
+  "items": [
+   "crate",
+   "rune",
+   "altar",
+   "decoy",
+   "acid",
+   "howl",
+   "shackles",
+   "veil",
+   "fortify"
+  ]
+ },
+ {
+  "id": "dungeon",
+  "label": "Loch",
+  "items": [
+   "dig",
+   "tunnel",
+   "expand",
+   "demolish",
+   "r_fog",
+   "r_swamp",
+   "r_grotto",
+   "r_crypt",
+   "r_vault",
+   "r_haven",
+   "r_gears",
+   "r_hush",
+   "r_ice"
+  ]
+ },
+ {
+  "id": "deck",
+  "label": "Talia",
+  "items": []
+ }
+]

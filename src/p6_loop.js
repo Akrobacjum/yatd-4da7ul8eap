@@ -433,7 +433,7 @@
     fl.quietCheckT = (fl.quietCheckT || 0) - dt;
     if (fl.quietCheckT <= 0) { fl.quietCheckT = 0.1; fl.quiet = quietNow(); }   // v15.1: checked 10 times a second (was 5)
     if (fl.quiet) { fl.quietT += dt; if (autoFFOn()) fl.autoFFTime += dt; } else fl.quietT = 0;
-    fl.cclock += dt;   // 1.12: the combo clock no longer waits while nothing happens (a combo asks for grouped traps)
+    fl.cclock += dt * (fl.quiet ? S.comboQuiet : 1);   // 1.12.1: in the quiet the combo clock runs slower (S.comboQuiet), not stopped (1.11.1) and not at full speed (1.12)
     chainTick();   // Prototype 1.01: a combo chain that ran out is cashed in
     if (mods.hauntedGallery) fl.portraitRooms = portraitRooms();
     if (fl.echoQ && fl.echoQ.length) {   // Echo mechanizmów
@@ -508,8 +508,10 @@
       if (P.steal >= stealNeed()) { const by = alive().filter(h => h.state === 'boss'); if (by.length) takeCrystal(by); }
     }
     if (fl.heartHit > 0) fl.heartHit -= dt;
-    if (!fl.fearless && fl.ending === null && fl.time >= S.waveTime) becomeImpatient();
-    if (fl.ending === null && fl.time >= S.waveTime + 60) {   // safety net: nobody stays forever
+    // 1.12.1: patience runs at half speed while the party talks it over or rests (longer scenes do not cut their search short)
+    fl.patT = (fl.patT || 0) + dt * (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0) ? 0.5 : 1);
+    if (!fl.fearless && fl.ending === null && fl.patT >= S.waveTime) becomeImpatient();
+    if (fl.ending === null && fl.patT >= S.waveTime + 60) {   // safety net: nobody stays forever
       fl.heroes.forEach(h => { if (!h.dead && !h.fled) { h.gone = false; heroExit(h); } });
     }
     if (fl.ending === null && fl.queue.length === 0 && fl.heroes.length && fl.heroes.every(h => h.dead || h.fled)) fl.ending = 1.2;
@@ -526,7 +528,9 @@
   }
   let ffAuto = 1;
   const GATE_T = 1.8;   // s at the door before a wave goes in
-  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check && fl.gateOpen;   // v15.1: after 0,3 s of quiet (was 0,8)
+  // 1.12.1: no quiet fast-forward while the party talks it over or in the first 8 s of a rest (the scenes are there to be read)
+  const sceneNow = () => !!fl.party && (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0 && fl.time - fl.party.restSince < 8));
+  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check && fl.gateOpen && !sceneNow();   // v15.1: after 0,3 s of quiet (was 0,8)
   // "Quiet" = nobody near anything of yours: no hero within a step of the tiles a ready trap, a monster or loot reaches
   // (1.02; up to 1.01 the whole room counted), nobody fighting, caged, disarming, at the heart or about to rush a room.
   // Resting after a retreat counts as quiet.

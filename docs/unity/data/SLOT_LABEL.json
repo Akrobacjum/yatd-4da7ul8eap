@@ -1,0 +1,11 @@
+{
+ "floor": "podłoga",
+ "wall": "ściana",
+ "door": "drzwi",
+ "object": "mebel",
+ "dig": "skała przy lochu",
+ "tunnel": "dwa sąsiednie pokoje",
+ "demolish": "pokój albo przejście",
+ "expand": "pokój albo korytarz",
+ "roomtype": "cały pokój"
+}

@@ -1,0 +1,56 @@
+{
+ "potion": {
+  "name": "mikstura",
+  "acc": "miksturę",
+  "g": "f",
+  "w": 30,
+  "use": "once"
+ },
+ "charm": {
+  "name": "talizman",
+  "acc": "talizman",
+  "g": "m",
+  "w": 22,
+  "use": "power",
+  "cd": 20
+ },
+ "amulet": {
+  "name": "amulet",
+  "acc": "amulet",
+  "g": "m",
+  "w": 16,
+  "use": "power",
+  "cd": 30
+ },
+ "boots": {
+  "name": "buty",
+  "acc": "buty",
+  "g": "pl",
+  "w": 14,
+  "use": "power",
+  "cd": 15
+ },
+ "bomb": {
+  "name": "bomba",
+  "acc": "bombę",
+  "g": "f",
+  "w": 18,
+  "use": "once"
+ },
+ "weapon": {
+  "name": "broń",
+  "acc": "broń",
+  "g": "f",
+  "w": 14,
+  "use": "gear",
+  "loot": true
+ },
+ "armor": {
+  "name": "zbroja",
+  "acc": "zbroję",
+  "g": "f",
+  "w": 14,
+  "use": "gear",
+  "loot": true
+ }
+}

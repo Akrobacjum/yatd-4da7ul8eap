@@ -1,0 +1,82 @@
+{
+ "thickskin": {
+  "name": [
+   "gruboskóry",
+   "gruboskóra"
+  ],
+  "res": {
+   "pierce": 0.7
+  },
+  "text": "kłute -30%"
+ },
+ "pierced": {
+  "name": [
+   "dawne rany kłute",
+   "dawne rany kłute"
+  ],
+  "res": {
+   "pierce": 1.35
+  },
+  "text": "kłute +35%"
+ },
+ "sturdy": {
+  "name": [
+   "krzepki",
+   "krzepka"
+  ],
+  "res": {
+   "blunt": 0.75
+  },
+  "text": "obuchowe -25%"
+ },
+ "brittle": {
+  "name": [
+   "kruche kości",
+   "kruche kości"
+  ],
+  "res": {
+   "blunt": 1.4
+  },
+  "text": "obuchowe +40%"
+ },
+ "fireproof": {
+  "name": [
+   "hartowany ogniem",
+   "hartowana ogniem"
+  ],
+  "res": {
+   "fire": 0.6
+  },
+  "text": "ogień -40%"
+ },
+ "burned": {
+  "name": [
+   "dawne oparzenia",
+   "dawne oparzenia"
+  ],
+  "res": {
+   "fire": 1.4
+  },
+  "text": "ogień +40%"
+ },
+ "venomproof": {
+  "name": [
+   "odporny na jady",
+   "odporna na jady"
+  ],
+  "res": {
+   "poison": 0.6
+  },
+  "text": "trucizna -40%"
+ },
+ "allergic": {
+  "name": [
+   "wrażliwy na jady",
+   "wrażliwa na jady"
+  ],
+  "res": {
+   "poison": 1.4
+  },
+  "text": "trucizna +40%"
+ }
+}

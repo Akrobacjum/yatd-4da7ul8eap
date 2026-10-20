@@ -1,0 +1,11 @@
+{
+ "r_fog": "fog",
+ "r_swamp": "swamp",
+ "r_grotto": "grotto",
+ "r_crypt": "crypt",
+ "r_vault": "vault",
+ "r_haven": "haven",
+ "r_gears": "gears",
+ "r_hush": "hush",
+ "r_ice": "ice"
+}

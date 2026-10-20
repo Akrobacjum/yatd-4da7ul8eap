@@ -1,0 +1,407 @@
+{
+ "note": "Prototype 1.12.1, newRun(false) (pełna gra), domyślne ustawienia i mods; liczone przez __yatd w przeglądarce",
+ "waves": [
+  {
+   "n": 1,
+   "partySize": 3,
+   "waveSize": 3,
+   "waveCurve": 1.5,
+   "waveBase": 1.5,
+   "hungerNeed": 0,
+   "comboHp": 1
+  },
+  {
+   "n": 2,
+   "partySize": 3,
+   "waveSize": 3,
+   "waveCurve": 2.827,
+   "waveBase": 3.027,
+   "hungerNeed": 37,
+   "comboHp": 1.05
+  },
+  {
+   "n": 3,
+   "partySize": 3,
+   "waveSize": 3,
+   "waveCurve": 4.268,
+   "waveBase": 4.768,
+   "hungerNeed": 46,
+   "comboHp": 1.1
+  },
+  {
+   "n": 4,
+   "partySize": 4,
+   "waveSize": 4,
+   "waveCurve": 5.423,
+   "waveBase": 6.223,
+   "hungerNeed": 58,
+   "comboHp": 1.15
+  },
+  {
+   "n": 5,
+   "partySize": 4,
+   "waveSize": 5,
+   "waveCurve": 6.092,
+   "waveBase": 7.292,
+   "hungerNeed": 72,
+   "comboHp": 1.2
+  },
+  {
+   "n": 6,
+   "partySize": 4,
+   "waveSize": 4,
+   "waveCurve": 7.775,
+   "waveBase": 9.375,
+   "hungerNeed": 90,
+   "comboHp": 1.2
+  },
+  {
+   "n": 7,
+   "partySize": 4,
+   "waveSize": 4,
+   "waveCurve": 8.272,
+   "waveBase": 11.772,
+   "hungerNeed": 113,
+   "comboHp": 1.2
+  },
+  {
+   "n": 8,
+   "partySize": 4,
+   "waveSize": 4,
+   "waveCurve": 9.183,
+   "waveBase": 13.083,
+   "hungerNeed": 141,
+   "comboHp": 1.2
+  },
+  {
+   "n": 9,
+   "partySize": 4,
+   "waveSize": 4,
+   "waveCurve": 10.908,
+   "waveBase": 15.108,
+   "hungerNeed": 176,
+   "comboHp": 1.2
+  },
+  {
+   "n": 10,
+   "partySize": 4,
+   "waveSize": 5,
+   "waveCurve": 12.347,
+   "waveBase": 16.347,
+   "hungerNeed": 221,
+   "comboHp": 1.2
+  },
+  {
+   "n": 11,
+   "partySize": 5,
+   "waveSize": 5,
+   "waveCurve": 12.9,
+   "waveBase": 17.2,
+   "hungerNeed": 276,
+   "comboHp": 1.2
+  },
+  {
+   "n": 12,
+   "partySize": 5,
+   "waveSize": 5,
+   "waveCurve": 14.167,
+   "waveBase": 18.767,
+   "hungerNeed": 345,
+   "comboHp": 1.2
+  },
+  {
+   "n": 13,
+   "partySize": 5,
+   "waveSize": 5,
+   "waveCurve": 15.448,
+   "waveBase": 20.348,
+   "hungerNeed": 431,
+   "comboHp": 1.2
+  },
+  {
+   "n": 14,
+   "partySize": 5,
+   "waveSize": 5,
+   "waveCurve": 16.743,
+   "waveBase": 21.943,
+   "hungerNeed": 538,
+   "comboHp": 1.2
+  },
+  {
+   "n": 15,
+   "partySize": 6,
+   "waveSize": 6,
+   "waveCurve": 18.052,
+   "waveBase": 24.052,
+   "hungerNeed": 673,
+   "comboHp": 1.2
+  },
+  {
+   "n": 16,
+   "partySize": 6,
+   "waveSize": 6,
+   "waveCurve": 19.375,
+   "waveBase": 25.675,
+   "hungerNeed": 841,
+   "comboHp": 1.2
+  },
+  {
+   "n": 17,
+   "partySize": 6,
+   "waveSize": 6,
+   "waveCurve": 20.712,
+   "waveBase": 27.312,
+   "hungerNeed": 1052,
+   "comboHp": 1.2
+  },
+  {
+   "n": 18,
+   "partySize": 6,
+   "waveSize": 6,
+   "waveCurve": 22.063,
+   "waveBase": 28.963,
+   "hungerNeed": 1315,
+   "comboHp": 1.2
+  },
+  {
+   "n": 19,
+   "partySize": 6,
+   "waveSize": 6,
+   "waveCurve": 23.428,
+   "waveBase": 30.628,
+   "hungerNeed": 1643,
+   "comboHp": 1.2
+  },
+  {
+   "n": 20,
+   "partySize": 6,
+   "waveSize": 6,
+   "waveCurve": 24.807,
+   "waveBase": 33.807,
+   "hungerNeed": 2054,
+   "comboHp": 1.2
+  }
+ ],
+ "greedCurve": [
+  {
+   "raw": 1,
+   "greed": 1
+  },
+  {
+   "raw": 1.25,
+   "greed": 1.2247
+  },
+  {
+   "raw": 1.5,
+   "greed": 1.4142
+  },
+  {
+   "raw": 2,
+   "greed": 1.7321
+  },
+  {
+   "raw": 2.5,
+   "greed": 2
+  },
+  {
+   "raw": 3,
+   "greed": 2.2361
+  },
+  {
+   "raw": 4,
+   "greed": 2.6458
+  },
+  {
+   "raw": 5,
+   "greed": 3
+  },
+  {
+   "raw": 8,
+   "greed": 3.873
+  },
+  {
+   "raw": 12,
+   "greed": 4.7958
+  },
+  {
+   "raw": 23,
+   "greed": 6.7082
+  }
+ ],
+ "comboHp": [],
+ "prices": {
+  "c": 6,
+  "r": 10,
+  "l": 16,
+  "unlock": 8
+ },
+ "mods": {
+  "spikeDmg": 1,
+  "cooldown": 1,
+  "powderR": 1,
+  "webDur": 1,
+  "greedMult": 1,
+  "depthBonus": 0,
+  "lootTrap": 0,
+  "monster": 1,
+  "disarm": 1,
+  "arrowBurn": false,
+  "gateDur": 1,
+  "gateUses": 3,
+  "gateCrush": 1,
+  "mimicDmg": 1,
+  "fireDmg": 1,
+  "regen": 1,
+  "loneMult": 1,
+  "soulMult": 1,
+  "lostMult": 1,
+  "itemPower": 1,
+  "fearMult": 1,
+  "scareMult": 1,
+  "rumorKeep": 1,
+  "falseTrails": false,
+  "crystalPts": 0,
+  "carrierSlow": 1,
+  "carrierFear": 0,
+  "income": 0,
+  "digDiscount": 0,
+  "greedStart": 0,
+  "fallTime": 5,
+  "fallDmg": 1,
+  "cageTime": 1,
+  "cageFear": 1,
+  "spiderNest": false,
+  "ghostAura": 1,
+  "ghostPriestOnly": false,
+  "portraitR": 4,
+  "portraitFear": 1,
+  "wallCd": 1,
+  "suicideMech": 0,
+  "usurer": 0,
+  "mole": 0,
+  "fearHarvest": 0,
+  "labyrinth": 0,
+  "collector": 0,
+  "miser": 0,
+  "panic": 0,
+  "hauntedGallery": 0,
+  "stickySpikes": 0,
+  "wildfire": 0,
+  "bloodRite": 0,
+  "calmStorm": 0,
+  "echoFire": 0,
+  "glass": 0,
+  "pickGreed": 1,
+  "critPw": 1.8,
+  "okPw": 0.7,
+  "choir": 0,
+  "bottomless": false,
+  "hunger": 0,
+  "chronicle": 0,
+  "granary": 0,
+  "bank": 0,
+  "tempered": 0,
+  "pactPower": 1,
+  "pactLevels": 0,
+  "overload": 0,
+  "expandCost": 1,
+  "buildingCost": 1,
+  "firepit": 0,
+  "cageHaunt": 0,
+  "monsterFear": 0,
+  "dmgType": {
+   "pierce": 1,
+   "blunt": 1,
+   "fire": 1,
+   "poison": 1
+  },
+  "weakK": 0,
+  "revealAll": false,
+  "arsenal": 0,
+  "phobiaK": 0,
+  "oddBodies": 0,
+  "traumaK": 0,
+  "badMemories": 0,
+  "moreReturn": 0,
+  "returnGreed": 0,
+  "calmK": 1,
+  "fleeShock": 0,
+  "isolation": 0,
+  "heavyAir": 0,
+  "lastGasp": 0,
+  "shopDisc": 0,
+  "freeReroll": 0,
+  "sellK": 1,
+  "stashPlus": 0,
+  "patron": 0,
+  "stashGreed": 0,
+  "greedFlat": 0,
+  "hungerK": 1,
+  "storeK": 1,
+  "heartbeat": 0,
+  "gilded": 0,
+  "goldDust": 0,
+  "reliquary": false,
+  "pack": 0,
+  "quickArm": false
+ },
+ "S": {
+  "waveTime": 120,
+  "scale": 1,
+  "heroHp": 100,
+  "heroSpeed": 100,
+  "dmg": 0.7,
+  "monDmg": 1,
+  "essence": 30,
+  "deckSize": 7,
+  "waveIncome": 8,
+  "regenBase": 0,
+  "fearRate": 1,
+  "essenceCap": 40,
+  "crystals": 3,
+  "comboWin": 3,
+  "comboQuiet": 0.25,
+  "essK": 1.1,
+  "checkDiff": 1,
+  "ffSpeed": 3,
+  "thrBase": 1500,
+  "depthMax": 2.4,
+  "volume": 0.6,
+  "hungerBase": 37,
+  "hungerGrowth": 1.25,
+  "greedW": 1,
+  "autoFF": 1.5,
+  "earlyHp": 1,
+  "music": 0.5,
+  "haptics": 1,
+  "trayAuto": 1,
+  "series": 1,
+  "split": 1,
+  "topPad": 0,
+  "speedsV": 109
+ },
+ "rerollCost0": 3,
+ "stashCap": 3,
+ "toolCosts": {
+  "dig": [
+   8,
+   8,
+   8
+  ],
+  "tunnel": [],
+  "expand": [
+   4,
+   4,
+   4
+  ],
+  "demolish": [],
+  "r_fog": [
+   10,
+   10,
+   10
+  ]
+ },
+ "crystals": 3,
+ "essenceStart": 24,
+ "deckSize": 7
+}

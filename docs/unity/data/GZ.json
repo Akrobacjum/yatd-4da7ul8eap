@@ -1,0 +1,13 @@
+{
+ "dmg": 1.5,
+ "fear": 1.6,
+ "kill": 1.2,
+ "scare": 2.5,
+ "lost": 0.12,
+ "alone": 0.09,
+ "loot": 0.4,
+ "heal": 0.45,
+ "web": 0.25,
+ "cage": 0.45,
+ "crystal": 4
+}
