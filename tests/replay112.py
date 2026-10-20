@@ -1,3 +1,4 @@
+import json
 import asyncio, json, sys, glob, os
 from playwright.async_api import async_playwright
 # usage: replay12.py PAGE RUNID WAVES REPS MODE(v11|v12) [ACC]
@@ -98,6 +99,7 @@ async def main():
         if os.environ.get('CW'): await page.evaluate('v => { __yatd.S.comboWin = v; }', float(os.environ['CW']))
         if os.environ.get('CQ'): await page.evaluate('v => { __yatd.S.comboQuiet = v; }', float(os.environ['CQ']))
         if os.environ.get('ESS'): await page.evaluate('v => { __yatd.S.essK = v; }', float(os.environ['ESS']))
+        if os.environ.get('SJ'): await page.evaluate('o => Object.assign(__yatd.S, o)', json.loads(os.environ['SJ']))
         for n in WAVES:
             if n not in docs: continue
             tot = sum(docs[k]['summary']['score'] for k in docs if k < n)

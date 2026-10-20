@@ -500,7 +500,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.12.1 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.13 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -550,9 +550,14 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.12.1'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.13'));
     const ul2 = el('ul', 'conseq');
-    ['1.12.1: przychód Esencji wraca do poziomu sprzed 1.12. Zegar combo w ciszy (drużyna idzie, a nic jej nie grozi) płynie 4 razy wolniej, zamiast stać (do 1.11.1) albo biec jak zwykle (1.12); okno combo to 3 s. Groza i strach z ran liczą się od HP bohatera bez dodatku z 1.12, więc najazdy są dłuższe, a rany nie tanieją. Esencja z Grozy ×1,1. Odtworzenia dwóch runów autora: przychód z fal 2-10 o 3% i 5% wyższy niż w 1.11.1, serce syte mniej więcej tak samo często, najazdy o ok. 25-30% dłuższe.',
+    ['1.13: bohaterowie naprawdę ze sobą rozmawiają. Kwestia jednego może zacząć krótką wymianę zdań: ktoś obok odpowiada, pierwszy odpowiada mu, czasem wtrąca się trzeci. Komentują wpadki (pułapka, zapadnia, nieudane rozbrajanie, poślizg), sukcesy (rozbrojenie, unik, zabity potwór, łup), swoje moce i lęki, a to, co powie słuchający, zależy od jego klasy i charakteru (chciwy, tchórzliwy, bohaterski, ostrożny). Jedna wymiana naraz w zasięgu słuchu; kwestia, która przyszłaby za późno, przepada razem z resztą wymiany.',
+     '1.13: narada dotyczy tylko tych, którzy stoją razem (ten sam pokój albo kilka kroków w korytarzu). Reszta robi swoje, a dwie grupy mogą się naradzać naraz. Wcześniej cała drużyna stawała w miejscu, także w innych pokojach i na pułapkach. Scenka odpoczynku też jest dla tych, którzy już siedzą razem.',
+     '1.13: bohater nie stoi i nie odpoczywa w pułapce. Gdy w trakcie narady, czekania albo odpoczynku stoi tam, gdzie drużyna zna zagrożenie, gdzie właśnie coś go trafiło (pamięta to pół minuty) albo na czymś Twoim, przechodzi na bezpieczne pole najwyżej 3 kroki dalej, przy przywódcy. Na odpoczynek wybiera wolne, bezpieczne miejsce w pokoju.',
+     '1.13: skill check jest teraz u góry mapy, pod ikonami drużyny (a w pierwszym runie pod kartą samouczka). Odpowiada się jak dotąd stuknięciem w dowolne miejsce mapy, więc kciuk, który stuka niżej, nie zasłania koralika. Dymek, który wpadłby na check, pokazuje się pod nim.',
+     '1.13: spokój trwa też wtedy, gdy bohaterowie odpoczywają albo się naradzają (także na postoju przed groźnym pokojem), gdy ktoś siedzi w zapadni (zapadnia z bohaterem w środku nie liczy się jako zagrożenie dla reszty, a gdy na górze nie ma nikogo, jest spokój) i gdy wszyscy siedzą w klatkach. Gra sama przyspiesza (×1,5), a zegar combo płynie wolniej, jak w każdej innej cichej chwili. W 1.12.1 scenki wyłączały spokój. Cierpliwość drużyny nadal płynie w scenkach 2 razy wolniej.',
+     '1.12.1: przychód Esencji wraca do poziomu sprzed 1.12. Zegar combo w ciszy (drużyna idzie, a nic jej nie grozi) płynie 4 razy wolniej, zamiast stać (do 1.11.1) albo biec jak zwykle (1.12); okno combo to 3 s. Groza i strach z ran liczą się od HP bohatera bez dodatku z 1.12, więc najazdy są dłuższe, a rany nie tanieją. Esencja z Grozy ×1,1. Odtworzenia dwóch runów autora: przychód z fal 2-10 o 3% i 5% wyższy niż w 1.11.1, serce syte mniej więcej tak samo często, najazdy o ok. 25-30% dłuższe.',
      '1.12.1: jeden bohater na polu, tak jak potwory. Nikt nie wejdzie na zajęte pole, a mijający się odsuwają się lekko w bok. Kto stoi bezczynnie na drodze idącego, robi mu miejsce (krok w bok albo krok naprzód). Zablokowany chwilę czeka, potem obchodzi, a przeciska się dopiero, gdy nie ma innej drogi i za stojącym jest wolne pole (uciekający od razu).',
      '1.12.1: dłuższe przerwy ze scenkami. Przed groźnym pokojem i na rozwidleniu drużyna zbiera się wokół przywódcy i omawia plan: każdy mówi swoje, przywódca zamyka. Na odpoczynku siadają, kapłan opatruje rany, ktoś marudzi, ktoś odpowiada; odpoczynek trwa co najmniej 10 s (najwyżej 26 s). W trakcie narady i na początku odpoczynku gra nie przyspiesza sama, a cierpliwość drużyny płynie wtedy 2 razy wolniej.',
      '1.12.1: poprawki: komunikaty sklepu (np. "Za mało Esencji", "Talia i schowek są pełne") znowu widać, nad przyciskiem w sklepie; stuknięcie w "Fala X/10" znowu pokazuje wieści o fali (jako karta), "Jeszcze raz" w pierwszych runach prowadzi do kolejnego runu nauki, wszystkie źródła strachu mają polskie nazwy, ulepszenie pokazuje "Poziom N" raz.',
@@ -1694,7 +1699,8 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 57;   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
+  const LOG_VERSION = 58;   // 58: Prototype 1.13: conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
   // 54: Prototype 1.11: the heart takes no Esencja, a wave must reach hungerNeed (60 x 1,25^(wave-2)) or a crystal goes (hunger.fedAmt = how far the bar got; stats.essHeart is gone)
@@ -2280,7 +2286,7 @@
     const raid = fl.phase === 'raid';
     if ((st.build && raid) || (st.raid && !raid) || (st.wave && run.wave < st.wave)) { box.hidden = true; coachSync(); return; }   // 1.04: a step of the other phase waits out of sight (1.12: and one of a later wave)
     if (st.prep) st.prep();
-    box.classList.toggle('top', raid);   // 1.04: in a wave the coach sits at the top of the map, the check at the bottom
+    box.classList.toggle('top', raid);   // 1.04: in a wave the coach sits at the top of the map (1.12.1: and the check right under it)
     box.innerHTML = '';
     box.appendChild(el('div', null, typeof st.text === 'function' ? st.text() : st.text));
     const row = el('div', 'crow');
@@ -2356,7 +2362,7 @@
   requestAnimationFrame(frame);
 
   // Hook for automated checks; no effect on normal play.
-  window.__yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => W2S(x, y, z || 0), centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  window.__yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => W2S(x, y, z || 0), centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

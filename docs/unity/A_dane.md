@@ -1,11 +1,11 @@
 # Załącznik A: dane wyeksportowane z prototypu
 
-Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (Prototype 1.12.1), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
+Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (Prototype 1.13), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
 
-- `yatd_content_1.12.1.json`: wszystkie tabele w jednym pliku: `{ version, source, tables: { ITEMS: ..., UPGRADES: ..., ... } }`. Ten plik warto wczytać w Unity.
+- `yatd_content_1.13.json`: wszystkie tabele w jednym pliku: `{ version, source, tables: { ITEMS: ..., UPGRADES: ..., ... } }`. Ten plik warto wczytać w Unity.
 - `<NAZWA>.json`: ta sama tabela osobno (wygodne do czytania i porównań).
 - `levelStats_1_30.json`: wynik `levelStats(L)` dla poziomów 1-30 (zaokrąglone do 4 miejsc).
-- `golden_1.12.1.json`: wartości policzone przez działający prototyp do testów (sekcja 09).
+- `golden_1.13.json`: wartości policzone przez działający prototyp do testów (sekcja 09).
 
 Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pól.
 
@@ -76,13 +76,17 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 |---|---|
 | `SAY` (217 kluczy) | klucz sytuacji -> lista kwestii do losowania. Kiedy pada który klucz i z jakim priorytetem: sekcja 06 |
 | `CHAT_REPLY` | kwestia -> lista odpowiedzi (krótkie rozmowy w drużynie) |
+| `CONVO` (od 1.13, 74 zestawy, 143 wymiany, 305 kwestii) | klucz kwestii, która zaczyna rozmowę (klucz `SAY`, przy zagnieżdżonych `trap:spikes`, `phobia:fire`; `monsterDown` bez własnej kwestii: zabicie potwora; `scare` przez `CONVO_ALIAS`) -> lista wymian `{ l: [[mówiący, tekst], ...], b, bt, br, bv, ac, at, w }`: mówiący `A` (ten, kto powiedział kwestię), `B` (przyjaciel w zasięgu słuchu), `C` (ktoś trzeci); `b`/`bt` klasa/charakter B (jedna wartość albo lista), `br`/`bv` ranga B najwyżej/najmniej, `ac`/`at` klasa/charakter A, `w` waga. Mechanika: sekcja 06 (6.7.5a) |
+| `CONVO_ALIAS` | klucz -> zestaw zastępczy (straszące pułapki -> `scare`) |
+| `CONVO_P` | klucz -> szansa, że kwestia zacznie rozmowę (0,15 przy "Ał!", do 0,9 przy wpadkach i rzadkich chwilach) |
 
 Znaczniki w tekstach (trzeba je obsłużyć w lokalizacji):
 - `{męska|żeńska}` forma zależna od płci mówiącego, np. `Byłem|Byłam` (`p1_config.js: gtext`),
 - `{n}`, `{a}`, `{v}` imię w mianowniku, bierniku i wołaczu (`p1_config.js: nameFill`, dane w `NAMES_M`/`NAMES_F`).
+- w `CONVO` (od 1.13): `{A:męska|żeńska}`, `{B:...}`, `{C:...}` forma zależna od płci innej osoby rozmowy, `{An}` `{Aa}` `{Av}` (i tak samo B, C) jej imię w trzech przypadkach (`p5_ai.js: convoFill`); `{męska|żeńska}` bez litery to nadal płeć mówiącego.
 
 Polszczyzna gry odmienia imiona i formy płci; przy tłumaczeniu na angielski większość znaczników znika, ale klucze muszą zostać te same.
 
-## A.6 Wartości wzorcowe (`golden_1.12.1.json`)
+## A.6 Wartości wzorcowe (`golden_1.13.json`)
 
 Policzone na zbudowanym prototypie (`newRun(false)`, pełna gra, domyślne ustawienia): `waves[n]` dla fal 1-20 (`partySize`, `waveSize`, `waveCurve`, `waveBase`, `hungerNeed`, `comboHp`), `greedCurve` (surowa -> chciwość), `prices` (c 6, r 10, l 16, unlock 8), `rerollCost0` (pierwsze odświeżenie), `stashCap` (3), `toolCosts` na wylosowanym lochu startowym, `crystals` 3, `essenceStart` 24 (po postawieniu dwóch pułapek), `deckSize` 7, `mods` (wszystkie modyfikatory kart z wartościami domyślnymi), `S` (wszystkie ustawienia). Skrypt: `tools/golden.py`.

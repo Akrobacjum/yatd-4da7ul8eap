@@ -688,10 +688,13 @@ Przyspieszenie palcem: w fali bez pauzy przytrzymanie 280 ms bez ruchu ustawia `
 QUIET = { r: 1, cd: 1 }
 quietWhy() (null = spokój):
   fl.ending != null           -> 'ending'
-  fl.party.prep               -> 'prep'
-  brak żywych                 -> 'empty'
-  ktoś w stanie fight / disarm / boss / free -> ten stan;  ktoś w klatce -> 'caged'
-  hot = kafelki i areaOf wszystkich "żywych" elementów z cd <= QUIET.cd
+  (do 1.12.1 tu było: fl.party.prep -> 'prep'; od 1.13 postój przed groźnym pokojem jest spokojem jak narada i odpoczynek)
+  inPit = bohaterowie w zapadni (gone, nie martwi, nie uciekli)
+  brak żywych (alive() pomija tych w zapadni) -> inPit niepuste ? null (spokój, od 1.13) : 'empty'
+  wszyscy żywi w klatkach    -> null (spokój, od 1.13: nic się nie stanie, dopóki klatka się nie otworzy)
+  ktoś w stanie fight / disarm / boss / free -> ten stan;  ktoś w klatce (nie wszyscy) -> 'caged'
+  hot = kafelki i areaOf wszystkich "żywych" elementów z cd <= QUIET.cd, z pominięciem elementu
+        na polu bohatera z inPit (od 1.13: zapadnia z kimś w środku nie grozi reszcie)
         (żywy: ACTIVE, nie disabled, potwór z hp > 0; albo dowolny łup)
   dla każdego bohatera: jego kafelek w hot -> 'near'; sąsiedzi w 4 kierunkach (BFS do QUIET.r = 1 kroku
         po passable; sam sąsiad jest sprawdzany nawet, gdy nieprzechodni) w hot -> 'near'
@@ -887,7 +890,7 @@ W Unity: identyfikator instalacji (losowy GUID w `PlayerPrefs`), nie `SystemInfo
 
 ### 7.12.1 Przegląd
 
-Po każdej fali gra wysyła dokument fali i podsumowanie runu do bazy, a gracz może pobrać cały run jako plik JSON. Służy to autorowi do analizy balansu (także przez Claude). Wersja formatu: `LOG_VERSION = 57` (`p8b_ui.js`); komentarz przy stałej to historia zmian formatu od wersji 31 (np. 57: Prototype 1.12.1, jedno pole na bohatera z nowymi statystykami fali `sidesteps` (zejścia z pola i objazdy) i `squeezes` (przeciśnięcia), dłuższe narady i odpoczynki, cierpliwość `fl.patT`, zegar combo w ciszy ×`S.comboQuiet`, okno 3 s, Groza z ran bez dodatku HP, `S.essK`; 56: etapy nauki, combo +12% na krok, okno 2,5 s; 55: serce znowu je, `stats.essHeart`; 53: `slips`, `naps`, `hushUnlearned`, `hushLost`; 52: `memLost`, `memFires`, `frozen`; 50: `trayPauses`, `pauseTime`; 48: `cpm`, `frozen`, `perf.realSec`, `tut`; 47: `perf`, `errors`).
+Po każdej fali gra wysyła dokument fali i podsumowanie runu do bazy, a gracz może pobrać cały run jako plik JSON. Służy to autorowi do analizy balansu (także przez Claude). Wersja formatu: `LOG_VERSION = 58` (`p8b_ui.js`); komentarz przy stałej to historia zmian formatu od wersji 31 (np. 58: Prototype 1.13, rozmowy z nowymi statystykami fali `convos` (zaczęte wymiany), `convoNo` (dlaczego kwestia nie zaczęła wymiany: `breath`, `talk`, `queue`, `luck`, `hush`, `alone`, `fit`) i `toSafety` (zejścia z niebezpiecznego pola), narady tylko dla stojących razem; 57: Prototype 1.12.1, jedno pole na bohatera z nowymi statystykami fali `sidesteps` (zejścia z pola i objazdy) i `squeezes` (przeciśnięcia), dłuższe narady i odpoczynki, cierpliwość `fl.patT`, zegar combo w ciszy ×`S.comboQuiet`, okno 3 s, Groza z ran bez dodatku HP, `S.essK`; 56: etapy nauki, combo +12% na krok, okno 2,5 s; 55: serce znowu je, `stats.essHeart`; 53: `slips`, `naps`, `hushUnlearned`, `hushLost`; 52: `memLost`, `memFires`, `frozen`; 50: `trayPauses`, `pauseTime`; 48: `cpm`, `frozen`, `perf.realSec`, `tut`; 47: `perf`, `errors`).
 
 W Unity: ten sam podział na dokument runu i dokument fali, wysyłka `UnityWebRequest` POST w tle po fali (kolejka offline w pliku), adres i znacznik z konfiguracji builda (`web_config.json`), nie z kodu w repo.
 

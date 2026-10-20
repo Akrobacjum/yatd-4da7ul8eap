@@ -31,21 +31,121 @@
     if (fl.time - (P.lastSay[k] || -99) < 5) return false;
     P.lastSay[k] = fl.time; say(who || leader(), pick(SAY[k]), prio); return true;
   }
-  // The party stops and talks it over: a few lines from different heroes, one after another.
-  function talk(dur, lines) {
+  // 1.13 (author: they froze wherever they stood, in other rooms and on traps, while the party talked): a talk is for the
+  // ones in the same place as the one who starts it (the same room, or a few steps away in a corridor); the rest go on with
+  // what they were doing. Two groups can talk at the same time. h.talkUntil = till when this one stands and talks.
+  const samePlace = (a, b) => { const ra = roomOf(a.tx, a.ty); return (ra >= 0 && ra === roomOf(b.tx, b.ty)) || Math.hypot(a.tx - b.tx, a.ty - b.ty) <= 3.5; };
+  function talkGroup(c) {
     const P = fl.party;
-    if (fl.fearless || fl.time < P.talkUntil || goingOut()) return;
-    P.talkUntil = fl.time + Math.max(dur, talkLen(lines)); fl.stats.talks++;   // 1.10: they stand as long as it takes to say it, one after another
-    const crew = alive().filter(h => !h.lost && !panicking(h) && h.id !== P.scoutId && !caged(h));
-    P.queueSay = P.queueSay.concat(lines.map((t, i) => ({ id: (crew[i % Math.max(1, crew.length)] || {}).id, text: t, at: fl.time + i * 0.65 })));
+    if (!c || c.lost || caged(c)) return [];
+    return [c].concat(alive().filter(h => h !== c && !h.lost && !panicking(h) && !caged(h) && !h.fleeing && h.id !== P.scoutId && !exiting(h) && samePlace(c, h)));
   }
-  // 1.05: the same, but each line has its speaker (null: anyone in the party)
-  function talkAs(dur, lines) {
-    const P = fl.party;
-    if (fl.fearless || fl.time < P.talkUntil || goingOut()) return;
-    P.talkUntil = fl.time + Math.max(dur, talkLen(lines.map(l => l[1]))); fl.stats.talks++;
-    const crew = alive().filter(h => !h.lost && !panicking(h) && h.id !== P.scoutId && !caged(h));
-    lines.forEach((l, i) => { const who = l[0] || crew[i % Math.max(1, crew.length)]; if (who) P.queueSay.push({ id: who.id, text: l[1], at: fl.time + i * 0.7 }); });
+  const talking = h => fl.time < (h.talkUntil || -1);
+  // 1.13: where a hero may stand still (talking, waiting, resting): not where the party knows of danger, not where a trap
+  // just got him, not on anything of yours (a trap, loot, a monster), not at the heart
+  const unsafeAt = (h, x, y) => fl.danger[y * WW + x] > 0 || (!!h.ouch && fl.time < h.ouch.until && h.ouch.tiles.has(y * WW + x));
+  const standOk = (h, x, y) => walkable(x, y) && !unsafeAt(h, x, y) && !fl.items.has(key(x, y)) && !(x === fl.heart.x && y === fl.heart.y);
+  // a hero who stands still somewhere unsafe walks to a good tile (at most 3 steps, the one nearest the leader; one who rests
+  // stays in his room, so the rest does not walk out of it; none: he stays)
+  function toSafety(h) {
+    if (h.nx !== null || isExitTile(h.x, h.y) || standOk(h, h.x, h.y)) return false;
+    const s0 = h.y * WW + h.x, prev = new Map([[s0, -1]]), q = [s0], dep = new Map([[s0, 0]]), r0 = h.state === 'rest' ? roomOf(h.x, h.y) : -1;
+    // the good tiles within 3 steps; of those the one nearest the leader, so stepping off a trap never splits the party
+    const L = leader(), near = [], withL = L && L !== h && samePlace(h, L), rL = L ? roomOf(L.tx, L.ty) : -1;
+    const byL = (x, y) => !withL || (rL >= 0 && roomOf(x, y) === rL) || Math.hypot(x - L.tx, y - L.ty) <= 3.5;   // one standing with the leader stays with him
+    for (let qi = 0; qi < q.length && q.length < 120; qi++) {
+      const i = q[qi], cx = i % WW, cy = (i / WW) | 0;
+      if (i !== s0 && standOk(h, cx, cy) && !heroBlock(h, cx, cy) && (r0 < 0 || roomOf(cx, cy) === r0) && byL(cx, cy)) near.push(i);
+      if (dep.get(i) >= 3) continue;
+      for (const d of DIRS) {
+        const nx = cx + d[0], ny = cy + d[1], j = ny * WW + nx;
+        if (prev.has(j) || !passable(nx, ny) || heroBlock(h, nx, ny)) continue;
+        const g = fl.items.get(key(nx, ny)); if (g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) continue;
+        prev.set(j, i); dep.set(j, dep.get(i) + 1); q.push(j);
+      }
+    }
+    if (!near.length) return false;
+    const far = i => (L && L !== h ? Math.hypot(i % WW - L.x, ((i / WW) | 0) - L.y) : 0) + dep.get(i) * 0.5;
+    const goal = near.reduce((m, i) => far(i) < far(m) ? i : m, near[0]);
+    const way = []; for (let k = goal; k !== s0; k = prev.get(k)) way.unshift([k % WW, (k / WW) | 0]);
+    h.path = way; h.toSafe = true; h.state = 'walk'; fl.stats.toSafety = (fl.stats.toSafety || 0) + 1;
+    return true;
+  }
+  // The party stops and talks it over: a few lines from different heroes, one after another.
+  function talk(dur, lines, c) {
+    const P = fl.party, g = talkGroup(c || leader());
+    if (fl.fearless || goingOut() || !g.length || g.some(talking)) return null;
+    const end = fl.time + Math.max(dur, talkLen(lines)); fl.stats.talks++;   // 1.10: they stand as long as it takes to say it, one after another
+    g.forEach(h => { h.talkUntil = end; }); P.talkUntil = Math.max(P.talkUntil, end);
+    P.queueSay = P.queueSay.concat(lines.map((t, i) => ({ id: g[i % g.length].id, text: t, at: fl.time + i * 0.65 })));
+    return g;
+  }
+  // 1.05: the same, but each line has its speaker (null: anyone there). 1.13: a speaker who is not there says nothing.
+  function talkAs(dur, lines, c) {
+    const P = fl.party, g = talkGroup(c || leader());
+    if (fl.fearless || goingOut() || !g.length || g.some(talking)) return null;
+    const keep = lines.filter(l => !l[0] || g.includes(l[0]));
+    const end = fl.time + Math.max(dur, talkLen(keep.map(l => l[1]))); fl.stats.talks++;
+    g.forEach(h => { h.talkUntil = end; }); P.talkUntil = Math.max(P.talkUntil, end);
+    keep.forEach((l, i) => { const who = l[0] || g[i % g.length]; P.queueSay.push({ id: who.id, text: l[1], at: fl.time + i * 0.7 }); });
+    return g;
+  }
+  // 1.13 (author: real conversations, not single bubbles): a line a hero says can start a short exchange (CONVO in the
+  // config): a friend in earshot answers, the first one answers back, sometimes a third one chips in. The lines go through
+  // the party's queue, so they come one after another like any talk. One exchange at a time, a few seconds of breath
+  // between them; none while the party talks something over, in a Głusza, or with nobody calm enough to listen.
+  let LINE_KEY = null;
+  function lineKey(t) {   // which SAY key a line comes from ('trap:spikes' for the nested ones); built once
+    if (!LINE_KEY) {
+      LINE_KEY = new Map();
+      for (const [k, v] of Object.entries(SAY)) {
+        if (Array.isArray(v)) v.forEach(x => { if (!LINE_KEY.has(x)) LINE_KEY.set(x, k); });
+        else for (const [s, a] of Object.entries(v)) [].concat(a).forEach(x => { if (!LINE_KEY.has(x)) LINE_KEY.set(x, k + ':' + s); });
+      }
+    }
+    return LINE_KEY.get(t);
+  }
+  function convoAfter(h, text) { const k = lineKey(text); if (k) convoStart(h, k); }
+  const convoFill = (t, who) => t.replace(/\{([ABC]):([^|}]*)\|([^}]*)\}/g, (_, r, m, f) => who[r] && who[r].female ? f : m)
+    .replace(/\{([ABC])([nav])\}/g, (_, r, c) => who[r] ? who[r].nm['nav'.indexOf(c)] : '');
+  function convoStart(A, key) {
+    const P = fl.party, why = w => { const s = fl.stats.convoNo || (fl.stats.convoNo = {}); s[w] = (s[w] || 0) + 1; return false; };
+    if (!P || fl.phase !== 'raid' || fl.ending !== null) return false;
+    if (fl.time < (P.convoT || 0)) return why('breath');
+    if (talking(A)) return why('talk');
+    if (P.queueSay.some(q => { const o = byId(q.id); return o && earshot(A, o); })) return why('queue');   // another exchange going on right there   // a talk or another exchange going on right there
+    const base = key.split(':')[0], alias = CONVO_ALIAS[key], set = CONVO[key] || CONVO[alias] || CONVO[base];
+    if (!set) return false;
+    if (Math.random() > (CONVO_P[key] ?? CONVO_P[alias] ?? CONVO_P[base] ?? 0.5)) return why('luck');
+    if (A.room >= 0 && isRt(A.room, 'hush')) return why('hush');
+    const ears = alive().filter(o => o !== A && !o.lost && !caged(o) && !inChaos(o) && !talking(o) && earshot(A, o));
+    if (!ears.length) return why('alone');
+    const is = (o, v) => !v || [].concat(v).includes(o);
+    const opts = [];
+    set.forEach(t => {
+      const sp = new Set(t.l.map(l => l[0]));
+      if (sp.has('A') && (A.gone || A.dead || A.fled)) return;
+      if (!is(A.type, t.ac) || !is(A.trait, t.at)) return;
+      const Bs = ears.filter(o => is(o.type, t.b) && is(o.trait, t.bt) && (t.br === undefined || o.rank <= t.br) && (t.bv === undefined || o.rank >= t.bv));
+      if (!Bs.length || (sp.has('C') && ears.length < 2)) return;
+      opts.push({ t, Bs, w: (t.w || 1) * (t.b || t.bt || t.br !== undefined || t.bv !== undefined || t.ac || t.at ? 1.6 : 1) });   // the fitting ones first
+    });
+    if (!opts.length) return why('fit');
+    let r = Math.random() * opts.reduce((a, o) => a + o.w, 0), pickO = opts[0];
+    for (const o of opts) { r -= o.w; if (r <= 0) { pickO = o; break; } }
+    const B = pick(pickO.Bs), C = pick(ears.filter(o => o !== B)) || null, who = { A, B, C };
+    // all its lines are due at once (so nobody in earshot cuts in: othersWaiting), they come in order (the queue holds the
+    // later ones till the earlier is said), and a line more than 3,5 s past its expected moment is stale: the exchange ends
+    const t0 = fl.time + 0.3, cv = (P.convoN = (P.convoN || 0) + 1);
+    let at = t0;
+    pickO.t.l.forEach(([s, tx]) => {
+      const h = who[s]; if (!h) return;
+      const text = convoFill(tx, who);
+      P.queueSay.push({ id: h.id, text, at: t0, prio: 2, cv, late: at - t0 + 3.5 });
+      at += readT(gtext(text, h.female)) + SAY_GAP + 0.1;
+    });
+    P.convoT = at + 1.5 + Math.random() * 2.5; fl.stats.convos = (fl.stats.convos || 0) + 1;
+    return true;
   }
   // 1.12.1: the stop lasts the whole exchange (since 1.10 the lines come one after another) plus a breath (it used to be about half)
   const talkLen = lines => lines.reduce((a, t) => a + readT(t) + SAY_GAP, 0) + 0.6;
@@ -54,7 +154,7 @@
   function huddleUp(L) {
     if (!L || L.lost) return;
     const P = fl.party, taken = new Set([L.y * WW + L.x]);
-    const crew = alive().filter(h => h !== L && !h.lost && !caged(h) && !h.fleeing && !panicking(h) && h.id !== P.scoutId && h.state !== 'fight' && h.state !== 'disarm' && h.state !== 'free' && h.state !== 'smash' && !exiting(h));
+    const crew = alive().filter(h => h !== L && talking(h) && !h.lost && !caged(h) && !h.fleeing && !panicking(h) && h.id !== P.scoutId && h.state !== 'fight' && h.state !== 'disarm' && h.state !== 'free' && h.state !== 'smash' && !exiting(h));   // 1.13: only the ones in this talk
     crew.sort((a, b) => hdist(a, L) - hdist(b, L)).forEach(h => {
       const k0 = (h.nx !== null ? h.ny : h.y) * WW + (h.nx !== null ? h.nx : h.x);
       if (Math.abs(h.x - L.x) + Math.abs(h.y - L.y) <= 2 && !taken.has(k0)) { taken.add(k0); h.huddleId = L.id; return; }
@@ -63,7 +163,7 @@
       let goal = -1;
       for (let qi = 0; qi < q.length && q.length < 220; qi++) {
         const i = q[qi], cx = i % WW, cy = (i / WW) | 0;
-        if (i !== s0 && Math.abs(cx - L.x) + Math.abs(cy - L.y) <= 2 && !taken.has(i) && !isExitTile(cx, cy)) { goal = i; break; }
+        if (i !== s0 && Math.abs(cx - L.x) + Math.abs(cy - L.y) <= 2 && !taken.has(i) && !isExitTile(cx, cy) && standOk(h, cx, cy)) { goal = i; break; }   // 1.13: not on a trap
         for (const d of DIRS) {
           const nx = cx + d[0], ny = cy + d[1], j = ny * WW + nx;
           if (prev.has(j) || !passable(nx, ny) || heroBlock(h, nx, ny)) continue;
@@ -203,7 +303,7 @@
       // 1.05: a council with characters: the greedy want the loot next door, the careful want it slow, a coward wants out and a
       // brave one shames him. The leader decides; a greedy or green leader gives in to the loot.
       const lureAlt = seenLoot.some(it => Math.hypot(it.x - alt.fx, it.y - alt.fy) <= 6);
-      const crewT = alive().filter(o => o !== L && !o.lost && !panicking(o) && !caged(o) && !o.fleeing);
+      const crewT = talkGroup(L).filter(o => o !== L);   // 1.13: only the ones standing with him have a say
       const greedy = lureAlt ? crewT.find(o => o.trait === 'greedy' || o.hunter) : null, careful = crewT.find(o => o.trait === 'careful');
       const coward = P.morale < 0.8 ? crewT.find(o => o.trait === 'coward') : null, brave = coward ? crewT.find(o => o.trait === 'brave') : null;
       const lines = [[L, pick(SAY.deliberate)]];
@@ -217,7 +317,7 @@
         if (sway) { P.target = alt.f; P.targetRoom = alt.room; }
         lines.push([L, pick(sway ? SAY.decideYes : SAY.decideNo)]); fl.stats.disputes = (fl.stats.disputes || 0) + 1; tl('dp', greedy.id, sway ? 1 : 0);
       }
-      const thief = alive().find(h => h.type === 'thief' && h !== L && !h.lost && !panicking(h) && !h.fleeing);
+      const thief = crewT.find(h => h.type === 'thief');
       if (!greedy && thief && alive().length >= 3 && P.scoutId < 0 && thief.hp > 0.5 * thief.max && Math.random() < (lureAlt ? 0.9 : 0.55)) {
         P.scoutId = thief.id; thief.scoutTarget = alt.f; thief.scoutUntil = fl.time + 16; thief.needPlan = true; fl.stats.scouts++;
         lines.push([thief, pick(SAY.scout)], [L, pick(SAY.scoutReply)]);   // 1.05: the thief himself offers (it used to be anyone)
@@ -228,8 +328,11 @@
     } else if (prev !== best.f && Math.random() < 0.35) partySay('explore', 1, L);
   }
   // 1.12.1: when they sit down to rest: the leader calls it, the priest tends the wounds, somebody grumbles and gets an answer
-  function restScene(L, crew) {
-    const P = fl.party, pool = crew.filter(h => !caged(h) && !h.lost && !h.fleeing && !panicking(h));
+  function restScene(L0, crew) {
+    // 1.13: the ones already sitting there (and those in the same place) talk; the leader only if he is with them
+    const P = fl.party, first = crew.find(h => h.state === 'rest');
+    const pool = first ? crew.filter(h => !caged(h) && !h.lost && !h.fleeing && !panicking(h) && (h === first || samePlace(first, h))) : [];
+    const L = pool.includes(L0) ? L0 : first;
     if (!L || !pool.length) return;
     const pr = pool.find(h => h.type === 'priest' && h !== L), others = pool.filter(h => h !== L && h !== pr);
     const lines = [[L, pick(SAY.restStart)]];
@@ -259,10 +362,11 @@
     // 1.10: the lines of a talk, an answer, a call: in order, each when its turn comes (an answer waits for the line it answers,
     // and nobody in earshot of a line still waiting goes before it); a line whose moment has long passed is dropped
     if (P.queueSay.length) {
-      const held = [];
+      const held = [], cut = new Set();
       P.queueSay = P.queueSay.sort((a, b) => a.at - b.at).filter(q => {
+        if (q.cv && cut.has(q.cv)) return false;   // 1.13: the rest of an exchange that lost a line goes too
         if (q.at > fl.time) return true;
-        const h = byId(q.id); if (!h || h.dead || h.fled || h.gone || fl.time - q.at > 10) return false;
+        const h = byId(q.id); if (!h || h.dead || h.fled || h.gone || fl.time - q.at > (q.late || 10)) { if (q.cv) cut.add(q.cv); return false; }
         if (q.how !== 'loud' && held.some(o => earshot(o, h))) { held.push(h); return true; }
         if (say(h, q.text, q.prio || 2, q.dur || 1.8, q.how || 'q')) return false;
         held.push(h); return true;
@@ -609,8 +713,8 @@
     }
   }
   function startPrep(r) {
-    const P = fl.party, crew = alive().filter(h => !h.lost && !caged(h) && !h.fleeing && !h.gone);
-    if (!crew.length) return;
+    const P = fl.party, L0 = leader(), crew = talkGroup(L0);   // 1.13: the ones standing with the leader (the rest go on)
+    if (!crew.length || crew.some(talking)) return;
     P.prepped.add(r); fl.stats.preps++;
     const find = (t, lv, extra) => crew.find(h => h.type === t && h.lvl >= lv && (!extra || extra(h)));
     const pr = find('priest', 3, h => h.faith >= 2), mg = find('mage', 5, h => fl.time >= (h.jamCd || 0)), th = find('thief', 4), wr = find('warrior', 3);
@@ -622,7 +726,7 @@
     if (rep) lines.push([rep, pick(SAY.prepReply)]);
     const dur = Math.max(3, talkLen(lines.map(l => l[1])));
     P.prep = { room: r, until: fl.time + dur, pr: pr ? pr.id : -1, mg: mg ? mg.id : -1, th: th ? th.id : -1, wr: wr ? wr.id : -1 };
-    P.talkUntil = Math.max(P.talkUntil, fl.time + dur);
+    P.talkUntil = Math.max(P.talkUntil, fl.time + dur); crew.forEach(h => { h.talkUntil = fl.time + dur; });
     lines.forEach((l, i) => P.queueSay.push({ id: l[0].id, text: l[1], at: fl.time + i * 0.5 }));
     huddleUp(L);
     crew.forEach(h => {   // experienced heroes drink up before walking into it
@@ -680,7 +784,7 @@
     if (wr) { wr.shieldUpUntil = fl.time + 5; wr.shieldCd = fl.time + 5 + wr.R.shieldCd; fl.stats.shields++; }
     P.rushUntil = fl.time + 6;
     const L = leader(); if (L) say(L, pick(SAY.rush), 3);
-    alive().forEach(h => { h.needPlan = true; if (h.state === 'talk') h.state = 'walk'; });
+    alive().forEach(h => { h.needPlan = true; if (h.state === 'talk') h.state = 'walk'; h.talkUntil = -1; });
     P.talkUntil = fl.time;
     tl('pf', r);
   }
@@ -704,7 +808,8 @@
   // One hero decides what to do next and finds a path there (only through tiles the party knows).
   function planHero(h) {
     h.needPlan = false; h.thinkT = 0.45 + Math.random() * 0.3;
-    if (h.huddle) { if (h.path.length && fl.time < fl.party.talkUntil) return; h.huddle = false; }   // 1.12.1: on his way into the huddle
+    if (h.huddle) { if (h.path.length && talking(h)) return; h.huddle = false; }   // 1.12.1: on his way into the huddle
+    if (h.toSafe) { if (h.path.length) return; h.toSafe = false; }   // 1.13: on his way off a trap
     if (h.gone || caged(h)) { h.path = []; return; }
     const P = fl.party, L = leader();
     let goal = -1, intent = 'follow', noDanger = false, b = null;
@@ -723,9 +828,9 @@
     else if (fl.fearless && P.plan === 'assault') { intent = 'heart'; goal = heartGoal(); }
     else if (P.plan === 'retreat' && !h.lost) {
       intent = 'retreat';
-      if (roomOf(h.tx, h.ty) === P.retreatRoom) { h.state = 'rest'; h.path = []; h.intent = intent; return; }
-      const R = fl.rooms[P.retreatRoom];
-      goal = nearestOf(B(), R.tiles.filter(t => walkable(t[0], t[1])).map(t => t[1] * WW + t[0]));
+      const R = fl.rooms[P.retreatRoom], spots = R.tiles.filter(t => standOk(h, t[0], t[1]) && !heroBlock(h, t[0], t[1]));   // 1.13: a free, safe spot
+      if (roomOf(h.tx, h.ty) === P.retreatRoom && (standOk(h, h.x, h.y) || !spots.length)) { h.state = 'rest'; h.path = []; h.intent = intent; return; }
+      goal = nearestOf(B(), (spots.length ? spots : R.tiles.filter(t => walkable(t[0], t[1]))).map(t => t[1] * WW + t[0]));
     } else if (h.lost) {
       intent = 'lost';
       const lt = L ? tIdx(L) : -1, hr = h.hearUntil > fl.time ? byId(h.hearId) : null;
@@ -1108,7 +1213,7 @@
     const free = DIRS.map(d => [h.x + d[0], h.y + d[1]]).filter(t => passable(t[0], t[1]) && !heroBlock(h, t[0], t[1]) && !(Math.abs(t[0] - fl.heart.x) + Math.abs(t[1] - fl.heart.y) === 0) &&
       !(fl.items.get(key(t[0], t[1])) && MONSTERS[fl.items.get(key(t[0], t[1])).type] && !DRIFT[fl.items.get(key(t[0], t[1])).type] && fl.items.get(key(t[0], t[1])).hp > 0));
     if (!free.length) return false;
-    const t = pick(free);
+    const safe = free.filter(t => standOk(h, t[0], t[1])), t = pick(safe.length ? safe : free);   // 1.13: off the traps if he can
     h.state = 'walk'; h.path = []; h.nx = t[0]; h.ny = t[1]; h.prog = 0; h.needPlan = true; fl.stats.sidesteps = (fl.stats.sidesteps || 0) + 1;
     return true;
   }
@@ -1155,7 +1260,7 @@
         say(h, pick(SAY.slip), 2, 1.2, 'loud'); return;
       }
     }
-    if (P.plan === 'retreat' && !h.lost && r === P.retreatRoom && !panicking(h) && !exiting(h)) { h.state = 'rest'; h.path = []; return; }
+    if (P.plan === 'retreat' && !h.lost && r === P.retreatRoom && !panicking(h) && !exiting(h) && (!h.path.length || standOk(h, h.x, h.y))) { h.state = 'rest'; h.path = []; return; }   // 1.13: on his way to a safe spot he walks on
     if (P.plan === 'assault' && !exiting(h) && Math.abs(h.x - fl.heart.x) + Math.abs(h.y - fl.heart.y) === 1 && !panicking(h)) { h.state = 'boss'; h.path = []; return; }
     // veterans time their run through a known trap while it reloads
     if (h.rank >= 1) fl.items.forEach(t => {
@@ -1262,14 +1367,15 @@
       }
     }
     if (h.state === 'boss') { if (P.plan !== 'assault' || exiting(h) || panicking(h)) { h.state = 'walk'; h.needPlan = true; } return; }
+    if (h.nx === null && (h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && toSafety(h)) return;   // 1.13: never stands still in a trap
     if (h.nx === null && (h.state === 'walk' || h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && stepAside(h)) return;   // 1.12.1: one hero a tile
     if ((h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && h.nx === null && (h.glanceT = (h.glanceT || 0) - dt) <= 0) glance(h);   // 1.10
-    if (h.state === 'talk' && h.huddle && h.path.length) h.state = 'walk';   // 1.12.1: still walking up to the huddle
-    if (h.state === 'talk') { if ((fl.time >= P.talkUntil && !(h.id === P.leaderId && fl.time < P.waitUntil)) || exiting(h)) { h.state = 'walk'; h.needPlan = true; } else return; }
+    if (h.state === 'talk' && (h.huddle || h.toSafe) && h.path.length) h.state = 'walk';   // 1.12.1: still walking up to the huddle (1.13: or off a trap)
+    if (h.state === 'talk') { if ((!talking(h) && !(h.id === P.leaderId && fl.time < P.waitUntil)) || exiting(h)) { h.state = 'walk'; h.needPlan = true; } else return; }
     if (h.state === 'wait') { h.timer -= dt; if (h.timer > 0) return; h.state = 'walk'; h.needPlan = true; }
     if (exiting(h) && h.nx === null && isExitTile(h.x, h.y)) { heroExit(h); return; }
     // the party stops to talk, or the leader waits for stragglers
-    if (!fl.fearless && !exiting(h) && !h.lost && !panicking(h) && h.nx === null && (fl.time < P.talkUntil || (h.id === P.leaderId && fl.time < P.waitUntil)) && h.id !== P.scoutId && !(h.wanderUntil > fl.time) && !(h.huddle && h.path.length)) {
+    if (!fl.fearless && !exiting(h) && !h.lost && !panicking(h) && h.nx === null && (talking(h) || (h.id === P.leaderId && fl.time < P.waitUntil)) && h.id !== P.scoutId && !(h.wanderUntil > fl.time) && !((h.huddle || h.toSafe) && h.path.length)) {
       h.state = 'talk'; h.huddle = false; const hl = byId(h.huddleId); if (hl && hl !== h && !hl.dead) lookAt(h, hl.x, hl.y);   // 1.12.1: he faces the leader
       return;
     }

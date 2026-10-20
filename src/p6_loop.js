@@ -528,19 +528,22 @@
   }
   let ffAuto = 1;
   const GATE_T = 1.8;   // s at the door before a wave goes in
-  // 1.12.1: no quiet fast-forward while the party talks it over or in the first 8 s of a rest (the scenes are there to be read)
-  const sceneNow = () => !!fl.party && (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0 && fl.time - fl.party.restSince < 8));
-  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check && fl.gateOpen && !sceneNow();   // v15.1: after 0,3 s of quiet (was 0,8)
+  // 1.13 (author: the quiet goes on while they rest and talk it over): talks, the stop before a known room and rests are
+  // quiet like any other moment with nothing of yours near (1.12.1 held the fast-forward back in the scenes)
+  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check && fl.gateOpen;   // v15.1: after 0,3 s of quiet (was 0,8)
   // "Quiet" = nobody near anything of yours: no hero within a step of the tiles a ready trap, a monster or loot reaches
-  // (1.02; up to 1.01 the whole room counted), nobody fighting, caged, disarming, at the heart or about to rush a room.
-  // Resting after a retreat counts as quiet.
+  // (1.02; up to 1.01 the whole room counted), nobody fighting, caged, disarming or at the heart.
+  // Resting after a retreat counts as quiet, and so (1.13) does the stop before a known room: they only talk there.
+  // (Up to 1.12.1 that stop, P.prep, was never quiet; the rush into the room is still caught by the rule below.)
   const QUIET = { r: 1, cd: 1 };   // 1.02: steps from a hero to anything of yours that still count as quiet (0 = the old room rule)
   const quietNow = () => !quietWhy();
   function quietWhy() {   // 1.02: names what keeps it from being quiet (null = quiet); the tests read it
     if (fl.ending !== null) return 'ending';
-    if (fl.party.prep) return 'prep';
-    const crew = alive();
-    if (!crew.length) return 'empty';
+    const crew = alive(), inPit = fl.heroes.filter(h => h.gone && !h.dead && !h.fled);
+    // 1.13 (author: quiet while a hero is down a trapdoor, and while all of them sit in cages): nobody left up here but
+    // the ones in a trapdoor, or everyone caged, is quiet: nothing happens until they climb out or a cage opens
+    if (!crew.length) return inPit.length ? null : 'empty';
+    if (crew.every(h => caged(h))) return null;
     for (const h of crew) {
       if (h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free') return h.state;
       if (caged(h)) return 'caged';
@@ -556,8 +559,8 @@
       return null;
     }
     // 1.02: busy only when a hero is a few steps from the tiles a trap, monster or loot actually reaches
-    const hot = new Set();
-    fl.items.forEach(it => { if (live(it) && !((it.cd || 0) > QUIET.cd)) { hot.add(it.y * WW + it.x); areaOf(it).forEach(t => hot.add(t[1] * WW + t[0])); } });   // a trap still reloading can't surprise anyone
+    const hot = new Set(), pits = new Set(inPit.map(h => h.y * WW + h.x));   // 1.13: a trapdoor with someone down it is no threat to the others
+    fl.items.forEach(it => { if (live(it) && !((it.cd || 0) > QUIET.cd) && !pits.has(it.y * WW + it.x)) { hot.add(it.y * WW + it.x); areaOf(it).forEach(t => hot.add(t[1] * WW + t[0])); } });   // a trap still reloading can't surprise anyone
     for (const h of crew) {
       let front = [[h.tx, h.ty]]; const seen = new Set([h.ty * WW + h.tx]);
       if (hot.has(h.ty * WW + h.tx)) return 'near';

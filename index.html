@@ -1496,6 +1496,314 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     'Powoli, nie ma pośpiechu.': ['Jest pośpiech. Czas leci.'],
     'Niech tylko coś wyskoczy!': ['Nie kuś losu.']
   };
+  // 1.13 (author: "let them really talk to each other, comment on each other's lines, actions, mistakes and successes"):
+  // conversations. A line a hero says (its SAY key, a nested one as 'trap:spikes') can start a short exchange: a friend in
+  // earshot answers, the first one answers back, sometimes a third one chips in. Each set is a list of exchanges:
+  // l = the lines in order, speaker 'A' (the one whose line started it), 'B' (a friend in earshot), 'C' (another one);
+  // b / bt = B's class / character (one or a list), br / bv = B's rank at most / at least, ac / at = A's class / character,
+  // w = weight. In a text {m|f} is the speaker's own gender, {A:m|f} {B:m|f} {C:m|f} somebody else's,
+  // {An} {Aa} {Av} (and B, C) their name: nominative, accusative, vocative. 'monsterDown' has no line of its own: it starts
+  // when a hero kills a monster. CONVO_P = how likely a line starts an exchange (the rest stays a single bubble).
+  const CONVO = {
+    trap: [
+      { l: [['B', 'Wszyscy cali?'], ['A', 'Chyba tak. Ledwo.']] },
+      { l: [['B', 'Mówił{em|am}, żeby patrzeć pod nogi!'], ['A', 'To trzeba było iść pierws{B:zy|za}!']] },
+      { l: [['B', 'Kto stawia takie rzeczy w piwnicy?!'], ['A', 'Ktoś, kto nas bardzo nie lubi.']] },
+      { bt: 'careful', l: [['B', 'Widział{em|am} ten mechanizm. Trzeba było mnie słuchać.'], ['A', 'Następnym razem posłucham.'], ['B', 'Akurat.']] },
+      { bt: ['brave', 'greedy'], l: [['B', 'Ha! Ale podskoczył{A:eś|aś}, {Av}!'], ['A', 'Bardzo śmieszne.']] },
+      { b: 'priest', l: [['B', 'Pokaż. Zaraz cię opatrzę.'], ['A', 'Tylko szybko, cieknie ze mnie.']] },
+      { at: 'coward', l: [['B', 'Nic ci nie jest, {Av}?'], ['A', 'Wszystko mi jest! Wracajmy stąd!'], ['B', 'Nie marudź.']] },
+      { l: [['B', '{Av}, żyjesz?'], ['A', 'Żyję. Ale ten loch mnie nie lubi.'], ['C', 'Nikogo nie lubi.']] }
+    ],
+    'trap:web': [
+      { l: [['B', 'Wyglądasz jak mucha, {Av}.'], ['A', 'Zamiast gadać, pomóż mi to zdjąć!']] },
+      { b: 'mage', l: [['B', 'Nie ruszaj się, spalę to.'], ['A', 'Spalisz sieć, nie mnie, tak?'], ['B', 'Postaram się.']] }
+    ],
+    'trap:trapdoor': [
+      { l: [['B', '{An} wpadł{A:|a} pod podłogę!'], ['C', 'Spokojnie. Takie doły mają drugie wyjście.']] },
+      { l: [['B', '{Av}! Słyszysz mnie?!'], ['C', 'Nic nie słychać...'], ['B', 'Wyjdzie. Musi wyjść.']] },
+      { bt: 'greedy', l: [['B', 'Mam nadzieję, że {An} nie miał{A:|a} przy sobie naszego złota.'], ['C', 'Serio? Teraz?']] }
+    ],
+    'trap:cage': [
+      { l: [['B', 'Trzymaj się, {Av}, wyciągniemy cię!'], ['A', 'Szybciej, tu jest ciasno!']] },
+      { bt: ['greedy', 'coward'], l: [['B', 'Może tam zostanie? Mniej gęb do dzielenia łupu.'], ['A', 'Słyszał{em|am} to!']] },
+      { b: 'thief', l: [['B', 'Prosty zamek. Daj mi chwilę.'], ['A', 'Chwil mam tu aż nadto.']] }
+    ],
+    scare: [
+      { l: [['B', 'Spokojnie, to tylko sztuczki.'], ['A', 'To czemu ty też się trzęsiesz?']] },
+      { bt: 'brave', l: [['B', 'Boisz się starych gratów, {Av}?'], ['A', 'Nie boję się! Tylko... uważam.']] },
+      { b: 'priest', l: [['B', 'Czuję tu coś złego. Trzymajcie się blisko.'], ['A', 'Bliżej się nie da.']] },
+      { at: 'coward', l: [['B', 'To nic takiego, {Av}.'], ['A', 'Dla ciebie nic! Ja widział{em|am}, jak się ruszało!']] }
+    ],
+    'trap:portrait': [
+      { l: [['B', 'To tylko obraz, {Av}.'], ['A', 'Obraz, który mruga?!'], ['B', '...Chodźmy dalej.']] }
+    ],
+    hurt: [
+      { l: [['B', 'Wytrzymasz?'], ['A', 'Muszę.']] },
+      { b: 'priest', l: [['B', 'Zaraz to opatrzę.'], ['A', 'Dzięki. Tylko się pospiesz.']] }
+    ],
+    disarmDone: [
+      { l: [['B', 'Ładnie, {Av}.'], ['A', 'Wiem.']] },
+      { l: [['B', 'Skąd ty to umiesz?'], ['A', 'Nie pytaj, a nie skłamię.']] },
+      { bt: 'careful', l: [['B', 'Na pewno rozbrojone?'], ['A', 'Na pewno. Prawie na pewno.'], ['B', 'Prawie?!']] },
+      { bt: 'brave', l: [['B', 'Szkoda. Chciał{em|am} sprawdzić, czy wytrzymam.'], ['A', 'Następną zostawię dla ciebie.']] },
+      { l: [['B', 'Jeden problem mniej.'], ['A', 'A ile jeszcze przed nami?'], ['C', 'Lepiej nie liczyć.']] }
+    ],
+    disarmFail: [
+      { l: [['B', 'Co znaczy „ups”?!'], ['A', 'Nic! Nic nie znaczy!']] },
+      { l: [['B', 'Ty w ogóle wiesz, co robisz?'], ['A', 'Wiem. Ten drut był krzywy.']] },
+      { bt: 'coward', l: [['B', 'Następnym razem uprzedź, odsunę się!'], ['A', 'Gdybym wiedział{|a}, sam{|a} bym się odsunął{|a}.']] },
+      { l: [['B', 'Mistrz rozbrajania, panie i panowie.'], ['A', 'Każdemu się zdarza.'], ['C', 'Tobie jakoś często.']] }
+    ],
+    disarmHit: [
+      { l: [['B', 'Prawie to za mało, {Av}.'], ['A', 'Wiem. Następna będzie moja.']] },
+      { b: 'priest', l: [['B', 'Pokaż rękę.'], ['A', 'Nic mi nie jest. Prawie.']] }
+    ],
+    dodge: [
+      { l: [['B', 'Niezły unik!'], ['A', 'Lata praktyki.']] },
+      { bt: ['greedy', 'brave'], l: [['B', 'Ale szczęście, {Av}.'], ['A', 'Szczęście sprzyja zdolnym.']] },
+      { at: 'coward', l: [['B', '{A:Szybki|Szybka} jesteś, jak trzeba uciekać.'], ['A', 'To nie ucieczka. To taktyka.']] }
+    ],
+    shield: [
+      { l: [['B', 'Dzięki, {Av}!'], ['A', 'Od tego jestem.']] },
+      { bt: 'coward', l: [['B', 'Stoję za tobą. Bardzo za tobą.'], ['A', 'Widzę.']] },
+      { l: [['B', 'Ta tarcza widziała już niejedno.'], ['A', 'I jeszcze niejedno zobaczy.']] }
+    ],
+    heal: [
+      { l: [['B', 'Dobrze mieć cię w drużynie, {Av}.'], ['A', 'Przypomnij to sobie przy podziale łupu.']] },
+      { l: [['B', 'Twoje światło grzeje.'], ['A', 'To nie moje. Ja je tylko pożyczam.']] },
+      { bt: ['brave', 'greedy'], l: [['B', 'Starczy, zostaw trochę na później.'], ['A', 'Na później to ty wpadniesz w następną pułapkę.']] }
+    ],
+    fireball: [
+      { l: [['B', 'Ej, uważaj z tym ogniem!'], ['A', 'Gdybym chciał{|a} w ciebie trafić, już byś się palił{B:|a}.']] },
+      { b: ['warrior', 'barbarian'], l: [['B', 'Zostaw coś dla mnie!'], ['A', 'Nie nadążasz, to twój problem.']] },
+      { l: [['B', 'Pachnie pieczenią.'], ['A', 'Nie pytaj, czyją.']] }
+    ],
+    fight: [
+      { l: [['B', 'Pomóc ci, {Av}?'], ['A', 'Sam{|a} dam radę!']] },
+      { bt: 'coward', l: [['B', 'Ja popilnuję tyłów.'], ['A', 'Jasne. Tyłów.']] },
+      { l: [['B', 'Tylko nie daj się zjeść!'], ['A', 'Nie zamierzam.']] }
+    ],
+    monsterDown: [
+      { l: [['A', 'Jeden mniej!'], ['B', 'Nieźle, {Av}!']] },
+      { l: [['B', 'Ładny cios, {Av}.'], ['A', 'Następny!']] },
+      { bt: 'careful', l: [['A', 'Załatwione.'], ['B', 'Nie ciesz się. Gdzie jeden, tam więcej.']] },
+      { at: 'brave', l: [['A', 'Kto następny?!'], ['B', 'Nie wywołuj wilka z lasu.']] },
+      { l: [['A', 'Leży.'], ['B', 'I niech leży.'], ['C', 'Brzydkie to było.']] }
+    ],
+    loot1: [
+      { l: [['B', 'Zostaw, to może być pułapka.'], ['A', 'Wszystko tu może być pułapką.']] },
+      { bt: 'greedy', l: [['B', 'Dzielimy się po połowie, {Av}.'], ['A', 'Jasne. Po mojej połowie.']] }
+    ],
+    loot2: [
+      { l: [['B', 'Ostrożnie z tym, {Av}.'], ['A', 'Ostrożność to moje drugie imię.'], ['C', 'Pierwsze to chyba „chciwość”.']] },
+      { bt: 'greedy', l: [['B', 'Ja to pierws{zy|za} zobaczył{em|am}!'], ['A', 'Ale ja pierws{zy|za} wezmę.']] }
+    ],
+    loot3: [
+      { l: [['B', 'Widzę! Tylko spokojnie...'], ['A', 'Spokojnie?! To legenda!']] },
+      { bt: 'careful', l: [['B', 'Za piękne, żeby było prawdziwe.'], ['A', 'To sprawdźmy!'], ['B', 'Ty sprawdź.']] }
+    ],
+    gold: [
+      { l: [['B', 'Dużo tego?'], ['A', 'Starczy na piwo. Dla mnie.']] },
+      { bt: 'greedy', l: [['B', 'A dla mnie?'], ['A', 'Znajdź sobie własne.']] },
+      { b: 'priest', l: [['B', 'Chciwość to grzech, {Av}.'], ['A', 'To pomódl się za mnie.']] }
+    ],
+    goldHeavy: [
+      { l: [['B', 'Może się podzielisz? Będzie ci lżej.'], ['A', 'Dźwigam i nie narzekam.']] }
+    ],
+    cursedPick: [
+      { b: 'priest', l: [['B', 'Rzuć to! Ten skarb jest przeklęty!'], ['A', 'Nie mogę... Nie chcę.']] },
+      { l: [['B', '{Av}, coś ty podniósł{A:|a}?'], ['A', 'Nic. Moje. Nie patrz.']] }
+    ],
+    panic: [
+      { l: [['B', '{Av}, wracaj!'], ['C', 'Zostaw. Wróci, jak ochłonie.']] },
+      { bt: 'brave', l: [['B', 'Tchórz!'], ['C', 'Każdy się kiedyś boi.']] },
+      { bt: 'coward', l: [['B', '{An} ma rację, trzeba stąd uciekać!'], ['C', 'Nikt nigdzie nie ucieka!']] }
+    ],
+    found: [
+      { l: [['B', '{Av}! Gdzie ty się podziewał{A:eś|aś}?'], ['A', 'Nie pytaj. Ciemno było.']] },
+      { l: [['B', 'Myśleliśmy, że już po tobie.'], ['A', 'Ja też tak myślał{em|am}.']] },
+      { bt: 'greedy', l: [['B', 'Wrócił{A:eś|aś}? A już dzieliliśmy twoje rzeczy.'], ['A', 'Bardzo zabawne.'], ['C', 'To nie był żart.']] }
+    ],
+    landed: [
+      { l: [['B', '{Av}! Żyjesz! Jak tam na dole?'], ['A', 'Ciemno i mokro. Nie polecam.']] }
+    ],
+    freed: [
+      { l: [['B', 'Mówił{em|am}, że cię wyciągnę.'], ['A', 'Jestem ci win{ien|na}.']] },
+      { l: [['B', 'Następnym razem patrz, gdzie stajesz.'], ['A', 'Dobrze, mamo.']] },
+      { bt: 'greedy', l: [['B', 'To będzie kosztowało, {Av}.'], ['A', 'Wiedział{em|am}, że nic nie jest za darmo.']] }
+    ],
+    slip: [
+      { l: [['B', 'Ha! Jak na łyżwach!'], ['A', 'Zamiast się śmiać, łap mnie!']] },
+      { l: [['B', 'Kto tu tak wylał wodę?'], ['A', 'To nie woda, to lód!']] }
+    ],
+    nap: [
+      { l: [['B', 'Tylko nie chrap.'], ['A', 'Ja nigdy nie chrapię.'], ['C', 'Chrapiesz.']] },
+      { bt: 'careful', l: [['B', 'Śpij. Popilnuję.'], ['A', 'Obudź mnie, jak coś się ruszy.']] }
+    ],
+    nightmare: [
+      { l: [['B', 'Też to słyszysz?'], ['A', 'Słyszę. I wolał{bym|abym} nie słyszeć.']] }
+    ],
+    phobia: [
+      { l: [['B', 'Spokojnie, {Av}. Oddychaj.'], ['A', 'Oddycham! To nie pomaga!']] }
+    ],
+    'phobia:spiders': [
+      { l: [['B', 'To tylko pająk, {Av}.'], ['A', 'Tylko?! Ma osiem nóg!']] }
+    ],
+    'phobia:fire': [
+      { l: [['B', 'Ogień jest daleko, {Av}.'], ['A', 'Za blisko. Zawsze jest za blisko.']] }
+    ],
+    'phobia:closed': [
+      { l: [['B', 'Oddychaj. Zaraz stąd wyjdziemy.'], ['A', 'Obiecujesz?'], ['B', 'Obiecuję.']] }
+    ],
+    'phobia:ghosts': [
+      { l: [['B', 'Duchów nie ma, {Av}.'], ['A', 'To kto mnie przed chwilą dotknął?!']] }
+    ],
+    'phobia:blood': [
+      { l: [['B', 'Nie patrz na to. Patrz na mnie.'], ['A', 'Dobrze... Dobrze.']] }
+    ],
+    'phobia:dark': [
+      { l: [['B', 'Jestem tu, {Av}. Słyszysz? Jestem tu.'], ['A', 'Nie odchodź.']] }
+    ],
+    weakHit: [
+      { l: [['B', 'Znowu to samo, {Av}?'], ['A', 'Stare rany. Nie gadajmy o tym.']] }
+    ],
+    resistHit: [
+      { l: [['B', 'Z czego ty jesteś zrobion{A:y|a}?'], ['A', 'Z gorszych lochów niż ten.']] }
+    ],
+    smash: [
+      { l: [['B', 'Można było otworzyć.'], ['A', 'Można było. Tak szybciej.']] },
+      { b: 'thief', l: [['B', 'Miał{em|am} wytrych!'], ['A', 'A ja topór.']] }
+    ],
+    rage: [
+      { l: [['B', 'Nie stój {A:mu|jej} na drodze.'], ['C', 'Nie zamierzam.']] }
+    ],
+    song: [
+      { l: [['B', 'Tylko nie ta ballada znowu...'], ['A', 'Ta jest nowa! Prawie.']] },
+      { bt: 'brave', l: [['B', 'Głośniej! Niech cały loch słyszy!'], ['A', 'Dla ciebie wszystko.']] },
+      { bt: 'coward', l: [['B', 'Ciszej! Wszystko nas usłyszy!'], ['A', 'Muzyka dodaje odwagi.'], ['B', 'Mnie nie dodaje.']] }
+    ],
+    bless: [
+      { l: [['B', 'Dzięki, {Av}. Ten obraz mnie przerażał.'], ['A', 'Mnie też. Dlatego go odczynił{em|am}.']] }
+    ],
+    potion: [
+      { l: [['B', 'Zostaw mi łyk.'], ['A', 'Za późno.']] }
+    ],
+    rookieBoast: [
+      { bv: 2, l: [['B', 'Każdy tak mówi na początku.'], ['A', 'Ja naprawdę dam radę!'], ['B', 'Zobaczymy.']] },
+      { l: [['B', 'Trzymaj się blisko mnie, {A:młody|młoda}.'], ['A', 'Nie potrzebuję niańki!']] }
+    ],
+    vetWarn: [
+      { br: 1, l: [['B', 'Przecież uważam!'], ['A', 'Za mało.']] },
+      { br: 1, l: [['B', 'Skąd miał{em|am} wiedzieć?'], ['A', 'Patrzysz pod nogi, to wiesz.']] }
+    ],
+    ghost: [
+      { l: [['B', 'Ja nic nie widzę.'], ['A', 'Bo ty nigdy nic nie widzisz!']] },
+      { b: 'priest', l: [['B', 'Stój za mną. Duchy nie lubią światła.'], ['A', 'Ja też nie lubię duchów.']] }
+    ],
+    bats: [
+      { l: [['B', 'Machaj rękami!'], ['A', 'Macham! Nie pomaga!']] }
+    ],
+    spider: [
+      { l: [['B', 'Zgnieć go!'], ['A', 'Ty go zgnieć!']] }
+    ],
+    detect: [
+      { l: [['B', 'Dobre oko, {Av}.'], ['A', 'Dlatego mnie zabraliście.']] },
+      { bt: 'greedy', l: [['B', 'A skarbu przypadkiem nie widzisz?'], ['A', 'Skarbu nie. Tylko kłopoty.']] }
+    ],
+    learn: [
+      { l: [['B', 'Zapamiętam. Bolało.'], ['A', 'O to chodzi.']] }
+    ],
+    cowardRun: [
+      { l: [['B', 'Wracaj, tchórzu!'], ['C', 'Niech idzie. Więcej łupu dla nas.']] }
+    ],
+    cautious: [
+      { bt: ['brave', 'greedy'], l: [['B', 'Krok po kroku to my tu zanocujemy.'], ['A', 'Lepiej zanocować, niż zostać tu na zawsze.']] }
+    ],
+    lull: [
+      { l: [['B', 'Zatkaj uszy!'], ['A', 'Wtedy nie usłyszę pułapek!']] }
+    ],
+    charmUse: [
+      { l: [['B', 'Skąd masz takie cacko?'], ['A', 'Z poprzedniego lochu. Z poprzedniego właściciela.']] }
+    ],
+    cleanse: [
+      { l: [['B', 'Szybciej, płonę!'], ['A', 'Stój spokojnie, to szybciej zgaśnie!']] }
+    ],
+    enter: [
+      { l: [['B', 'Ostatnim razem też tak mówił{A:eś|aś}.'], ['A', 'I ostatnim razem wrócił{em|am}.']] },
+      { bt: 'coward', l: [['B', 'Ja idę na końcu.'], ['C', 'Ty zawsze idziesz na końcu.']] },
+      { bt: 'greedy', l: [['B', 'Byle szybko. Złoto samo się nie zbierze.'], ['A', 'Najpierw przeżyj, potem zbieraj.']] },
+      { bt: 'careful', l: [['B', 'Patrzcie pod nogi. I na ściany.'], ['A', 'I na sufit, jak już przy tym jesteśmy.']] }
+    ],
+    champion: [
+      { l: [['B', 'Skromności to ci nie brakuje.'], ['A', 'Skromni nie wracają z kryształem.']] }
+    ],
+    rookie: [
+      { bv: 1, l: [['B', 'Niczego nie dotykaj, {Av}.'], ['A', 'Ale ja tylko...'], ['B', 'Niczego.']] },
+      { l: [['B', 'Łatwizna, mówi. Zobaczymy za godzinę.'], ['A', 'Za godzinę będę bogat{y|a}!']] }
+    ],
+    elite: [
+      { br: 0, l: [['B', 'Po co tak wolno?'], ['A', 'Bo chcę stąd wyjść. W całości.']] }
+    ],
+    explore: [
+      { bt: 'careful', l: [['B', 'Na pewno tędy?'], ['A', 'Na pewno. Prawie.']] },
+      { bt: 'coward', l: [['B', 'A może jednak tamtędy? Tam jest... ciszej.'], ['A', 'Tędy.']] }
+    ],
+    timing: [
+      { l: [['B', 'Skąd wiesz, kiedy biec?'], ['A', 'Liczę. Raz, dwa... teraz.']] },
+      { l: [['B', 'A jak się pomylisz?'], ['A', 'To dowiesz się pierws{B:zy|za}.']] }
+    ],
+    heartSeen: [
+      { l: [['B', 'Wreszcie! Bierzemy i wychodzimy.'], ['C', 'Mówisz, jakby to było takie proste.']] },
+      { bt: 'greedy', l: [['B', 'Tyle bogactwa w jednym miejscu...'], ['A', 'Najpierw przeżyć, potem liczyć.']] }
+    ],
+    assault: [
+      { l: [['B', 'Za tobą!'], ['C', 'Wszyscy za tobą!']] },
+      { bt: 'coward', l: [['B', 'Może jednak nie?'], ['A', 'Za późno. Naprzód!']] }
+    ],
+    steal: [
+      { l: [['B', 'Biegiem, zanim loch się obudzi!'], ['C', 'On już nie śpi.']] },
+      { bt: 'greedy', l: [['B', 'Daj, poniosę!'], ['A', 'Akurat. Sam{|a} poniosę.']] }
+    ],
+    retreat: [
+      { bt: 'brave', l: [['B', 'Uciekamy? Serio?'], ['A', 'Wracamy. Na chwilę. Opatrzymy się i znowu ruszamy.']] },
+      { bt: ['coward', 'careful'], l: [['B', 'Wreszcie ktoś rozsądny.'], ['A', 'Nie przyzwyczajaj się.']] }
+    ],
+    restDone: [
+      { l: [['B', 'Już? Dopiero usiadł{em|am}.'], ['A', 'Wstawaj. Kryształy same nie przyjdą.']] }
+    ],
+    bootsUse: [
+      { l: [['B', 'Zaczekaj na nas!'], ['A', 'Nie mogę, buty same niosą!']] }
+    ],
+    rumor: [
+      { l: [['B', 'W karczmie mówią różne rzeczy.'], ['A', 'Tym razem chyba nie kłamali.']] }
+    ],
+    fame2: [
+      { bt: 'brave', l: [['B', 'Tym lepiej. Będzie o nas pieśń.'], ['C', 'Raczej nagrobek.']] }
+    ],
+    alone: [
+      { l: [['B', 'Tu jestem, {Av}! Idź na mój głos!'], ['A', 'Idę! Nie ruszaj się!']] }
+    ],
+    seenBuilt: [
+      { l: [['B', 'Ściany się nie ruszają, {Av}.'], ['A', 'Te tutaj się ruszają!'], ['C', 'Ten loch żyje...']] }
+    ],
+    gateWait: [
+      { bt: 'brave', l: [['B', 'Może ją wyważymy?'], ['A', 'Spróbuj. Popatrzę.']] }
+    ],
+    crystalDrop: [
+      { l: [['B', 'Jak można zgubić kryształ?!'], ['C', 'Krzycz dalej, to na pewno pomoże.']] }
+    ],
+    barrier: [
+      { l: [['B', 'Przyda się, {Av}.'], ['A', 'Długo nie wytrzyma. Ruszajmy.']] }
+    ]
+  };
+  const CONVO_ALIAS = { 'trap:eyes': 'scare', 'trap:bones': 'scare', 'trap:mirror': 'scare', 'trap:creak': 'scare', 'trap:coffin': 'scare', 'trap:musicbox': 'scare' };
+  const CONVO_P = { trap: 0.5, 'trap:trapdoor': 0.8, 'trap:cage': 0.8, 'trap:web': 0.65, scare: 0.65, hurt: 0.15, disarmDone: 0.8, disarmFail: 0.9, disarmHit: 0.8,
+    dodge: 0.65, shield: 0.45, heal: 0.4, fireball: 0.5, fight: 0.3, monsterDown: 0.65, loot1: 0.4, loot2: 0.65, loot3: 0.9, gold: 0.5, goldHeavy: 0.65,
+    cursedPick: 0.9, panic: 0.65, found: 0.9, landed: 0.8, freed: 0.9, slip: 0.5, nap: 0.65, nightmare: 0.65, phobia: 0.9, weakHit: 0.5, resistHit: 0.5,
+    smash: 0.65, rage: 0.65, song: 0.65, bless: 0.8, potion: 0.4, rookieBoast: 0.9, vetWarn: 0.9, ghost: 0.65, bats: 0.65, spider: 0.65, detect: 0.45, learn: 0.4,
+    cowardRun: 0.9, cautious: 0.8, lull: 0.65, charmUse: 0.5, cleanse: 0.8, barrier: 0.5 , enter: 0.4, champion: 0.5, rookie: 0.5, elite: 0.5, explore: 0.25, timing: 0.5, heartSeen: 0.7, assault: 0.4, steal: 0.6, retreat: 0.6,
+    restDone: 0.5, bootsUse: 0.5, rumor: 0.5, fame2: 0.6, alone: 0.6, seenBuilt: 0.7, gateWait: 0.6, crystalDrop: 0.8 };
   const gtext = (t, female) => t.replace(/\{([^|}]*)\|([^}]*)\}/g, (_, m, f) => female ? f : m);
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const nameFill = (t, h) => t.replace('{n}', h.nm[0]).replace('{a}', h.nm[1]).replace('{v}', h.nm[2]);
@@ -2226,6 +2534,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const t = hush ? (loud ? '…!' : '…') : gtext(text, h.female), len = hush ? 1.4 : loud ? (dur || 1.9) : Math.max(dur || 1.9, readT(t));
     h.bubble = { text: t, prio, at: fl.time, until: fl.time + len, loud }; h.saidUntil = fl.time + len;
     fl.stats.lines++;
+    if (!hush) convoAfter(h, text);   // 1.13: a line can start a conversation
     if (!loud) {   // he turns to the nearest one listening, and they turn to him
       let to = null, bd = 1e9;
       fl.heroes.forEach(o => { if (o === h || o.dead || o.fled || o.gone || !earshot(h, o)) return; const d = Math.hypot(o.tx - h.tx, o.ty - h.ty); if (d < bd) { bd = d; to = o; } if (d <= 4) lookAt(o, h.x, h.y); });
@@ -3069,8 +3378,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (MONSTERS[src.type]) return 'monster';
     return 'other';
   }
+  // 1.13 (author: they stood and rested in traps): a hero remembers where a trap just got him (the whole reach of it, for
+  // half a minute), even if the party learnt nothing; he will not stand still there (p5_ai.js: unsafeAt, toSafety)
+  function markOuch(h, it) { if (it && it.x !== undefined && ITEMS[it.type] && fl.items.get(key(it.x, it.y)) === it) h.ouch = { until: fl.time + 30, tiles: new Set(areaOf(it).map(t => t[1] * WW + t[0]).concat([it.y * WW + it.x])) }; }
   function damage(h, amt, src, comboMult) {
     if (h.dead || h.fled || amt <= 0 || fl.ending !== null) return;
+    if (fl.firing) markOuch(h, fl.firing);
     const kind = srcKind(src);
     comboMult = comboMult || 1; amt *= comboMult;   // 1.12: a combo makes the wounds hit harder too
     const tkey = kind === 'trap' && src.type ? src.type : null;
@@ -3168,6 +3481,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   const raging = h => fl.time < h.rageUntil && !inB('shackles', h.room);
   function addFear(h, amt, attr, src, dtp) {
     if (h.dead || h.fled || amt <= 0) return;
+    if (fl.firing && (TRAPS[fl.firing.type] || SCARE[fl.firing.type])) markOuch(h, fl.firing);   // 1.13: a scare that went off here too
     const raw = amt;
     amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : isRt(h.room, 'hush') ? 1.2 : 1);   // Mgła: +15%, 1.10 Głusza: +20%
     if (raging(h)) amt *= 0.5;   // 1.05: fury dulls fear
@@ -3810,6 +4124,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       fl.items.delete(key(m.x, m.y));
       if (!DRIFT[m.type]) { const gx = m.gx !== undefined ? m.gx : m.x + 0.5, gy = m.gy !== undefined ? m.gy : m.y + 0.5; fl.fx.push({ kind: 'corpse', type: m.type, x: gx, y: gy, face: m.face || 1, h: { ogre: 1.25, goblin: 0.8, archer: 0.95, shaman: 0.9, spider: 0.6 }[m.type] || 0.9, life: 0.75, max: 0.75 }); burst(gx, gy, '#8a8378', 8); }   // 1.09: it falls
       floatTile(m.x, m.y, ITEMS[m.type].name + ' ginie', '#9be37a', 14);
+      const killer = fl.heroes.find(h => h.foe === m && !h.dead && !h.fled && !h.gone);   // 1.13: whoever fought it may brag about it
+      if (killer) convoStart(killer, 'monsterDown');
       burst((m.gx || m.x + 0.5), (m.gy || m.y + 0.5), '#7fbf5a', 12);
       fl.heroes.forEach(h => { if (h.foe === m) { h.state = 'walk'; h.foe = null; h.needPlan = true; } });
       fl.threatDirty = true;
@@ -3925,21 +4241,121 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (fl.time - (P.lastSay[k] || -99) < 5) return false;
     P.lastSay[k] = fl.time; say(who || leader(), pick(SAY[k]), prio); return true;
   }
-  // The party stops and talks it over: a few lines from different heroes, one after another.
-  function talk(dur, lines) {
+  // 1.13 (author: they froze wherever they stood, in other rooms and on traps, while the party talked): a talk is for the
+  // ones in the same place as the one who starts it (the same room, or a few steps away in a corridor); the rest go on with
+  // what they were doing. Two groups can talk at the same time. h.talkUntil = till when this one stands and talks.
+  const samePlace = (a, b) => { const ra = roomOf(a.tx, a.ty); return (ra >= 0 && ra === roomOf(b.tx, b.ty)) || Math.hypot(a.tx - b.tx, a.ty - b.ty) <= 3.5; };
+  function talkGroup(c) {
     const P = fl.party;
-    if (fl.fearless || fl.time < P.talkUntil || goingOut()) return;
-    P.talkUntil = fl.time + Math.max(dur, talkLen(lines)); fl.stats.talks++;   // 1.10: they stand as long as it takes to say it, one after another
-    const crew = alive().filter(h => !h.lost && !panicking(h) && h.id !== P.scoutId && !caged(h));
-    P.queueSay = P.queueSay.concat(lines.map((t, i) => ({ id: (crew[i % Math.max(1, crew.length)] || {}).id, text: t, at: fl.time + i * 0.65 })));
+    if (!c || c.lost || caged(c)) return [];
+    return [c].concat(alive().filter(h => h !== c && !h.lost && !panicking(h) && !caged(h) && !h.fleeing && h.id !== P.scoutId && !exiting(h) && samePlace(c, h)));
   }
-  // 1.05: the same, but each line has its speaker (null: anyone in the party)
-  function talkAs(dur, lines) {
-    const P = fl.party;
-    if (fl.fearless || fl.time < P.talkUntil || goingOut()) return;
-    P.talkUntil = fl.time + Math.max(dur, talkLen(lines.map(l => l[1]))); fl.stats.talks++;
-    const crew = alive().filter(h => !h.lost && !panicking(h) && h.id !== P.scoutId && !caged(h));
-    lines.forEach((l, i) => { const who = l[0] || crew[i % Math.max(1, crew.length)]; if (who) P.queueSay.push({ id: who.id, text: l[1], at: fl.time + i * 0.7 }); });
+  const talking = h => fl.time < (h.talkUntil || -1);
+  // 1.13: where a hero may stand still (talking, waiting, resting): not where the party knows of danger, not where a trap
+  // just got him, not on anything of yours (a trap, loot, a monster), not at the heart
+  const unsafeAt = (h, x, y) => fl.danger[y * WW + x] > 0 || (!!h.ouch && fl.time < h.ouch.until && h.ouch.tiles.has(y * WW + x));
+  const standOk = (h, x, y) => walkable(x, y) && !unsafeAt(h, x, y) && !fl.items.has(key(x, y)) && !(x === fl.heart.x && y === fl.heart.y);
+  // a hero who stands still somewhere unsafe walks to a good tile (at most 3 steps, the one nearest the leader; one who rests
+  // stays in his room, so the rest does not walk out of it; none: he stays)
+  function toSafety(h) {
+    if (h.nx !== null || isExitTile(h.x, h.y) || standOk(h, h.x, h.y)) return false;
+    const s0 = h.y * WW + h.x, prev = new Map([[s0, -1]]), q = [s0], dep = new Map([[s0, 0]]), r0 = h.state === 'rest' ? roomOf(h.x, h.y) : -1;
+    // the good tiles within 3 steps; of those the one nearest the leader, so stepping off a trap never splits the party
+    const L = leader(), near = [], withL = L && L !== h && samePlace(h, L), rL = L ? roomOf(L.tx, L.ty) : -1;
+    const byL = (x, y) => !withL || (rL >= 0 && roomOf(x, y) === rL) || Math.hypot(x - L.tx, y - L.ty) <= 3.5;   // one standing with the leader stays with him
+    for (let qi = 0; qi < q.length && q.length < 120; qi++) {
+      const i = q[qi], cx = i % WW, cy = (i / WW) | 0;
+      if (i !== s0 && standOk(h, cx, cy) && !heroBlock(h, cx, cy) && (r0 < 0 || roomOf(cx, cy) === r0) && byL(cx, cy)) near.push(i);
+      if (dep.get(i) >= 3) continue;
+      for (const d of DIRS) {
+        const nx = cx + d[0], ny = cy + d[1], j = ny * WW + nx;
+        if (prev.has(j) || !passable(nx, ny) || heroBlock(h, nx, ny)) continue;
+        const g = fl.items.get(key(nx, ny)); if (g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) continue;
+        prev.set(j, i); dep.set(j, dep.get(i) + 1); q.push(j);
+      }
+    }
+    if (!near.length) return false;
+    const far = i => (L && L !== h ? Math.hypot(i % WW - L.x, ((i / WW) | 0) - L.y) : 0) + dep.get(i) * 0.5;
+    const goal = near.reduce((m, i) => far(i) < far(m) ? i : m, near[0]);
+    const way = []; for (let k = goal; k !== s0; k = prev.get(k)) way.unshift([k % WW, (k / WW) | 0]);
+    h.path = way; h.toSafe = true; h.state = 'walk'; fl.stats.toSafety = (fl.stats.toSafety || 0) + 1;
+    return true;
+  }
+  // The party stops and talks it over: a few lines from different heroes, one after another.
+  function talk(dur, lines, c) {
+    const P = fl.party, g = talkGroup(c || leader());
+    if (fl.fearless || goingOut() || !g.length || g.some(talking)) return null;
+    const end = fl.time + Math.max(dur, talkLen(lines)); fl.stats.talks++;   // 1.10: they stand as long as it takes to say it, one after another
+    g.forEach(h => { h.talkUntil = end; }); P.talkUntil = Math.max(P.talkUntil, end);
+    P.queueSay = P.queueSay.concat(lines.map((t, i) => ({ id: g[i % g.length].id, text: t, at: fl.time + i * 0.65 })));
+    return g;
+  }
+  // 1.05: the same, but each line has its speaker (null: anyone there). 1.13: a speaker who is not there says nothing.
+  function talkAs(dur, lines, c) {
+    const P = fl.party, g = talkGroup(c || leader());
+    if (fl.fearless || goingOut() || !g.length || g.some(talking)) return null;
+    const keep = lines.filter(l => !l[0] || g.includes(l[0]));
+    const end = fl.time + Math.max(dur, talkLen(keep.map(l => l[1]))); fl.stats.talks++;
+    g.forEach(h => { h.talkUntil = end; }); P.talkUntil = Math.max(P.talkUntil, end);
+    keep.forEach((l, i) => { const who = l[0] || g[i % g.length]; P.queueSay.push({ id: who.id, text: l[1], at: fl.time + i * 0.7 }); });
+    return g;
+  }
+  // 1.13 (author: real conversations, not single bubbles): a line a hero says can start a short exchange (CONVO in the
+  // config): a friend in earshot answers, the first one answers back, sometimes a third one chips in. The lines go through
+  // the party's queue, so they come one after another like any talk. One exchange at a time, a few seconds of breath
+  // between them; none while the party talks something over, in a Głusza, or with nobody calm enough to listen.
+  let LINE_KEY = null;
+  function lineKey(t) {   // which SAY key a line comes from ('trap:spikes' for the nested ones); built once
+    if (!LINE_KEY) {
+      LINE_KEY = new Map();
+      for (const [k, v] of Object.entries(SAY)) {
+        if (Array.isArray(v)) v.forEach(x => { if (!LINE_KEY.has(x)) LINE_KEY.set(x, k); });
+        else for (const [s, a] of Object.entries(v)) [].concat(a).forEach(x => { if (!LINE_KEY.has(x)) LINE_KEY.set(x, k + ':' + s); });
+      }
+    }
+    return LINE_KEY.get(t);
+  }
+  function convoAfter(h, text) { const k = lineKey(text); if (k) convoStart(h, k); }
+  const convoFill = (t, who) => t.replace(/\{([ABC]):([^|}]*)\|([^}]*)\}/g, (_, r, m, f) => who[r] && who[r].female ? f : m)
+    .replace(/\{([ABC])([nav])\}/g, (_, r, c) => who[r] ? who[r].nm['nav'.indexOf(c)] : '');
+  function convoStart(A, key) {
+    const P = fl.party, why = w => { const s = fl.stats.convoNo || (fl.stats.convoNo = {}); s[w] = (s[w] || 0) + 1; return false; };
+    if (!P || fl.phase !== 'raid' || fl.ending !== null) return false;
+    if (fl.time < (P.convoT || 0)) return why('breath');
+    if (talking(A)) return why('talk');
+    if (P.queueSay.some(q => { const o = byId(q.id); return o && earshot(A, o); })) return why('queue');   // another exchange going on right there   // a talk or another exchange going on right there
+    const base = key.split(':')[0], alias = CONVO_ALIAS[key], set = CONVO[key] || CONVO[alias] || CONVO[base];
+    if (!set) return false;
+    if (Math.random() > (CONVO_P[key] ?? CONVO_P[alias] ?? CONVO_P[base] ?? 0.5)) return why('luck');
+    if (A.room >= 0 && isRt(A.room, 'hush')) return why('hush');
+    const ears = alive().filter(o => o !== A && !o.lost && !caged(o) && !inChaos(o) && !talking(o) && earshot(A, o));
+    if (!ears.length) return why('alone');
+    const is = (o, v) => !v || [].concat(v).includes(o);
+    const opts = [];
+    set.forEach(t => {
+      const sp = new Set(t.l.map(l => l[0]));
+      if (sp.has('A') && (A.gone || A.dead || A.fled)) return;
+      if (!is(A.type, t.ac) || !is(A.trait, t.at)) return;
+      const Bs = ears.filter(o => is(o.type, t.b) && is(o.trait, t.bt) && (t.br === undefined || o.rank <= t.br) && (t.bv === undefined || o.rank >= t.bv));
+      if (!Bs.length || (sp.has('C') && ears.length < 2)) return;
+      opts.push({ t, Bs, w: (t.w || 1) * (t.b || t.bt || t.br !== undefined || t.bv !== undefined || t.ac || t.at ? 1.6 : 1) });   // the fitting ones first
+    });
+    if (!opts.length) return why('fit');
+    let r = Math.random() * opts.reduce((a, o) => a + o.w, 0), pickO = opts[0];
+    for (const o of opts) { r -= o.w; if (r <= 0) { pickO = o; break; } }
+    const B = pick(pickO.Bs), C = pick(ears.filter(o => o !== B)) || null, who = { A, B, C };
+    // all its lines are due at once (so nobody in earshot cuts in: othersWaiting), they come in order (the queue holds the
+    // later ones till the earlier is said), and a line more than 3,5 s past its expected moment is stale: the exchange ends
+    const t0 = fl.time + 0.3, cv = (P.convoN = (P.convoN || 0) + 1);
+    let at = t0;
+    pickO.t.l.forEach(([s, tx]) => {
+      const h = who[s]; if (!h) return;
+      const text = convoFill(tx, who);
+      P.queueSay.push({ id: h.id, text, at: t0, prio: 2, cv, late: at - t0 + 3.5 });
+      at += readT(gtext(text, h.female)) + SAY_GAP + 0.1;
+    });
+    P.convoT = at + 1.5 + Math.random() * 2.5; fl.stats.convos = (fl.stats.convos || 0) + 1;
+    return true;
   }
   // 1.12.1: the stop lasts the whole exchange (since 1.10 the lines come one after another) plus a breath (it used to be about half)
   const talkLen = lines => lines.reduce((a, t) => a + readT(t) + SAY_GAP, 0) + 0.6;
@@ -3948,7 +4364,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function huddleUp(L) {
     if (!L || L.lost) return;
     const P = fl.party, taken = new Set([L.y * WW + L.x]);
-    const crew = alive().filter(h => h !== L && !h.lost && !caged(h) && !h.fleeing && !panicking(h) && h.id !== P.scoutId && h.state !== 'fight' && h.state !== 'disarm' && h.state !== 'free' && h.state !== 'smash' && !exiting(h));
+    const crew = alive().filter(h => h !== L && talking(h) && !h.lost && !caged(h) && !h.fleeing && !panicking(h) && h.id !== P.scoutId && h.state !== 'fight' && h.state !== 'disarm' && h.state !== 'free' && h.state !== 'smash' && !exiting(h));   // 1.13: only the ones in this talk
     crew.sort((a, b) => hdist(a, L) - hdist(b, L)).forEach(h => {
       const k0 = (h.nx !== null ? h.ny : h.y) * WW + (h.nx !== null ? h.nx : h.x);
       if (Math.abs(h.x - L.x) + Math.abs(h.y - L.y) <= 2 && !taken.has(k0)) { taken.add(k0); h.huddleId = L.id; return; }
@@ -3957,7 +4373,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       let goal = -1;
       for (let qi = 0; qi < q.length && q.length < 220; qi++) {
         const i = q[qi], cx = i % WW, cy = (i / WW) | 0;
-        if (i !== s0 && Math.abs(cx - L.x) + Math.abs(cy - L.y) <= 2 && !taken.has(i) && !isExitTile(cx, cy)) { goal = i; break; }
+        if (i !== s0 && Math.abs(cx - L.x) + Math.abs(cy - L.y) <= 2 && !taken.has(i) && !isExitTile(cx, cy) && standOk(h, cx, cy)) { goal = i; break; }   // 1.13: not on a trap
         for (const d of DIRS) {
           const nx = cx + d[0], ny = cy + d[1], j = ny * WW + nx;
           if (prev.has(j) || !passable(nx, ny) || heroBlock(h, nx, ny)) continue;
@@ -4097,7 +4513,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       // 1.05: a council with characters: the greedy want the loot next door, the careful want it slow, a coward wants out and a
       // brave one shames him. The leader decides; a greedy or green leader gives in to the loot.
       const lureAlt = seenLoot.some(it => Math.hypot(it.x - alt.fx, it.y - alt.fy) <= 6);
-      const crewT = alive().filter(o => o !== L && !o.lost && !panicking(o) && !caged(o) && !o.fleeing);
+      const crewT = talkGroup(L).filter(o => o !== L);   // 1.13: only the ones standing with him have a say
       const greedy = lureAlt ? crewT.find(o => o.trait === 'greedy' || o.hunter) : null, careful = crewT.find(o => o.trait === 'careful');
       const coward = P.morale < 0.8 ? crewT.find(o => o.trait === 'coward') : null, brave = coward ? crewT.find(o => o.trait === 'brave') : null;
       const lines = [[L, pick(SAY.deliberate)]];
@@ -4111,7 +4527,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         if (sway) { P.target = alt.f; P.targetRoom = alt.room; }
         lines.push([L, pick(sway ? SAY.decideYes : SAY.decideNo)]); fl.stats.disputes = (fl.stats.disputes || 0) + 1; tl('dp', greedy.id, sway ? 1 : 0);
       }
-      const thief = alive().find(h => h.type === 'thief' && h !== L && !h.lost && !panicking(h) && !h.fleeing);
+      const thief = crewT.find(h => h.type === 'thief');
       if (!greedy && thief && alive().length >= 3 && P.scoutId < 0 && thief.hp > 0.5 * thief.max && Math.random() < (lureAlt ? 0.9 : 0.55)) {
         P.scoutId = thief.id; thief.scoutTarget = alt.f; thief.scoutUntil = fl.time + 16; thief.needPlan = true; fl.stats.scouts++;
         lines.push([thief, pick(SAY.scout)], [L, pick(SAY.scoutReply)]);   // 1.05: the thief himself offers (it used to be anyone)
@@ -4122,8 +4538,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     } else if (prev !== best.f && Math.random() < 0.35) partySay('explore', 1, L);
   }
   // 1.12.1: when they sit down to rest: the leader calls it, the priest tends the wounds, somebody grumbles and gets an answer
-  function restScene(L, crew) {
-    const P = fl.party, pool = crew.filter(h => !caged(h) && !h.lost && !h.fleeing && !panicking(h));
+  function restScene(L0, crew) {
+    // 1.13: the ones already sitting there (and those in the same place) talk; the leader only if he is with them
+    const P = fl.party, first = crew.find(h => h.state === 'rest');
+    const pool = first ? crew.filter(h => !caged(h) && !h.lost && !h.fleeing && !panicking(h) && (h === first || samePlace(first, h))) : [];
+    const L = pool.includes(L0) ? L0 : first;
     if (!L || !pool.length) return;
     const pr = pool.find(h => h.type === 'priest' && h !== L), others = pool.filter(h => h !== L && h !== pr);
     const lines = [[L, pick(SAY.restStart)]];
@@ -4153,10 +4572,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // 1.10: the lines of a talk, an answer, a call: in order, each when its turn comes (an answer waits for the line it answers,
     // and nobody in earshot of a line still waiting goes before it); a line whose moment has long passed is dropped
     if (P.queueSay.length) {
-      const held = [];
+      const held = [], cut = new Set();
       P.queueSay = P.queueSay.sort((a, b) => a.at - b.at).filter(q => {
+        if (q.cv && cut.has(q.cv)) return false;   // 1.13: the rest of an exchange that lost a line goes too
         if (q.at > fl.time) return true;
-        const h = byId(q.id); if (!h || h.dead || h.fled || h.gone || fl.time - q.at > 10) return false;
+        const h = byId(q.id); if (!h || h.dead || h.fled || h.gone || fl.time - q.at > (q.late || 10)) { if (q.cv) cut.add(q.cv); return false; }
         if (q.how !== 'loud' && held.some(o => earshot(o, h))) { held.push(h); return true; }
         if (say(h, q.text, q.prio || 2, q.dur || 1.8, q.how || 'q')) return false;
         held.push(h); return true;
@@ -4503,8 +4923,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     }
   }
   function startPrep(r) {
-    const P = fl.party, crew = alive().filter(h => !h.lost && !caged(h) && !h.fleeing && !h.gone);
-    if (!crew.length) return;
+    const P = fl.party, L0 = leader(), crew = talkGroup(L0);   // 1.13: the ones standing with the leader (the rest go on)
+    if (!crew.length || crew.some(talking)) return;
     P.prepped.add(r); fl.stats.preps++;
     const find = (t, lv, extra) => crew.find(h => h.type === t && h.lvl >= lv && (!extra || extra(h)));
     const pr = find('priest', 3, h => h.faith >= 2), mg = find('mage', 5, h => fl.time >= (h.jamCd || 0)), th = find('thief', 4), wr = find('warrior', 3);
@@ -4516,7 +4936,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (rep) lines.push([rep, pick(SAY.prepReply)]);
     const dur = Math.max(3, talkLen(lines.map(l => l[1])));
     P.prep = { room: r, until: fl.time + dur, pr: pr ? pr.id : -1, mg: mg ? mg.id : -1, th: th ? th.id : -1, wr: wr ? wr.id : -1 };
-    P.talkUntil = Math.max(P.talkUntil, fl.time + dur);
+    P.talkUntil = Math.max(P.talkUntil, fl.time + dur); crew.forEach(h => { h.talkUntil = fl.time + dur; });
     lines.forEach((l, i) => P.queueSay.push({ id: l[0].id, text: l[1], at: fl.time + i * 0.5 }));
     huddleUp(L);
     crew.forEach(h => {   // experienced heroes drink up before walking into it
@@ -4574,7 +4994,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (wr) { wr.shieldUpUntil = fl.time + 5; wr.shieldCd = fl.time + 5 + wr.R.shieldCd; fl.stats.shields++; }
     P.rushUntil = fl.time + 6;
     const L = leader(); if (L) say(L, pick(SAY.rush), 3);
-    alive().forEach(h => { h.needPlan = true; if (h.state === 'talk') h.state = 'walk'; });
+    alive().forEach(h => { h.needPlan = true; if (h.state === 'talk') h.state = 'walk'; h.talkUntil = -1; });
     P.talkUntil = fl.time;
     tl('pf', r);
   }
@@ -4598,7 +5018,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // One hero decides what to do next and finds a path there (only through tiles the party knows).
   function planHero(h) {
     h.needPlan = false; h.thinkT = 0.45 + Math.random() * 0.3;
-    if (h.huddle) { if (h.path.length && fl.time < fl.party.talkUntil) return; h.huddle = false; }   // 1.12.1: on his way into the huddle
+    if (h.huddle) { if (h.path.length && talking(h)) return; h.huddle = false; }   // 1.12.1: on his way into the huddle
+    if (h.toSafe) { if (h.path.length) return; h.toSafe = false; }   // 1.13: on his way off a trap
     if (h.gone || caged(h)) { h.path = []; return; }
     const P = fl.party, L = leader();
     let goal = -1, intent = 'follow', noDanger = false, b = null;
@@ -4617,9 +5038,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     else if (fl.fearless && P.plan === 'assault') { intent = 'heart'; goal = heartGoal(); }
     else if (P.plan === 'retreat' && !h.lost) {
       intent = 'retreat';
-      if (roomOf(h.tx, h.ty) === P.retreatRoom) { h.state = 'rest'; h.path = []; h.intent = intent; return; }
-      const R = fl.rooms[P.retreatRoom];
-      goal = nearestOf(B(), R.tiles.filter(t => walkable(t[0], t[1])).map(t => t[1] * WW + t[0]));
+      const R = fl.rooms[P.retreatRoom], spots = R.tiles.filter(t => standOk(h, t[0], t[1]) && !heroBlock(h, t[0], t[1]));   // 1.13: a free, safe spot
+      if (roomOf(h.tx, h.ty) === P.retreatRoom && (standOk(h, h.x, h.y) || !spots.length)) { h.state = 'rest'; h.path = []; h.intent = intent; return; }
+      goal = nearestOf(B(), (spots.length ? spots : R.tiles.filter(t => walkable(t[0], t[1]))).map(t => t[1] * WW + t[0]));
     } else if (h.lost) {
       intent = 'lost';
       const lt = L ? tIdx(L) : -1, hr = h.hearUntil > fl.time ? byId(h.hearId) : null;
@@ -5002,7 +5423,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const free = DIRS.map(d => [h.x + d[0], h.y + d[1]]).filter(t => passable(t[0], t[1]) && !heroBlock(h, t[0], t[1]) && !(Math.abs(t[0] - fl.heart.x) + Math.abs(t[1] - fl.heart.y) === 0) &&
       !(fl.items.get(key(t[0], t[1])) && MONSTERS[fl.items.get(key(t[0], t[1])).type] && !DRIFT[fl.items.get(key(t[0], t[1])).type] && fl.items.get(key(t[0], t[1])).hp > 0));
     if (!free.length) return false;
-    const t = pick(free);
+    const safe = free.filter(t => standOk(h, t[0], t[1])), t = pick(safe.length ? safe : free);   // 1.13: off the traps if he can
     h.state = 'walk'; h.path = []; h.nx = t[0]; h.ny = t[1]; h.prog = 0; h.needPlan = true; fl.stats.sidesteps = (fl.stats.sidesteps || 0) + 1;
     return true;
   }
@@ -5049,7 +5470,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         say(h, pick(SAY.slip), 2, 1.2, 'loud'); return;
       }
     }
-    if (P.plan === 'retreat' && !h.lost && r === P.retreatRoom && !panicking(h) && !exiting(h)) { h.state = 'rest'; h.path = []; return; }
+    if (P.plan === 'retreat' && !h.lost && r === P.retreatRoom && !panicking(h) && !exiting(h) && (!h.path.length || standOk(h, h.x, h.y))) { h.state = 'rest'; h.path = []; return; }   // 1.13: on his way to a safe spot he walks on
     if (P.plan === 'assault' && !exiting(h) && Math.abs(h.x - fl.heart.x) + Math.abs(h.y - fl.heart.y) === 1 && !panicking(h)) { h.state = 'boss'; h.path = []; return; }
     // veterans time their run through a known trap while it reloads
     if (h.rank >= 1) fl.items.forEach(t => {
@@ -5156,14 +5577,15 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       }
     }
     if (h.state === 'boss') { if (P.plan !== 'assault' || exiting(h) || panicking(h)) { h.state = 'walk'; h.needPlan = true; } return; }
+    if (h.nx === null && (h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && toSafety(h)) return;   // 1.13: never stands still in a trap
     if (h.nx === null && (h.state === 'walk' || h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && stepAside(h)) return;   // 1.12.1: one hero a tile
     if ((h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && h.nx === null && (h.glanceT = (h.glanceT || 0) - dt) <= 0) glance(h);   // 1.10
-    if (h.state === 'talk' && h.huddle && h.path.length) h.state = 'walk';   // 1.12.1: still walking up to the huddle
-    if (h.state === 'talk') { if ((fl.time >= P.talkUntil && !(h.id === P.leaderId && fl.time < P.waitUntil)) || exiting(h)) { h.state = 'walk'; h.needPlan = true; } else return; }
+    if (h.state === 'talk' && (h.huddle || h.toSafe) && h.path.length) h.state = 'walk';   // 1.12.1: still walking up to the huddle (1.13: or off a trap)
+    if (h.state === 'talk') { if ((!talking(h) && !(h.id === P.leaderId && fl.time < P.waitUntil)) || exiting(h)) { h.state = 'walk'; h.needPlan = true; } else return; }
     if (h.state === 'wait') { h.timer -= dt; if (h.timer > 0) return; h.state = 'walk'; h.needPlan = true; }
     if (exiting(h) && h.nx === null && isExitTile(h.x, h.y)) { heroExit(h); return; }
     // the party stops to talk, or the leader waits for stragglers
-    if (!fl.fearless && !exiting(h) && !h.lost && !panicking(h) && h.nx === null && (fl.time < P.talkUntil || (h.id === P.leaderId && fl.time < P.waitUntil)) && h.id !== P.scoutId && !(h.wanderUntil > fl.time) && !(h.huddle && h.path.length)) {
+    if (!fl.fearless && !exiting(h) && !h.lost && !panicking(h) && h.nx === null && (talking(h) || (h.id === P.leaderId && fl.time < P.waitUntil)) && h.id !== P.scoutId && !(h.wanderUntil > fl.time) && !((h.huddle || h.toSafe) && h.path.length)) {
       h.state = 'talk'; h.huddle = false; const hl = byId(h.huddleId); if (hl && hl !== h && !hl.dead) lookAt(h, hl.x, hl.y);   // 1.12.1: he faces the leader
       return;
     }
@@ -5754,19 +6176,22 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   }
   let ffAuto = 1;
   const GATE_T = 1.8;   // s at the door before a wave goes in
-  // 1.12.1: no quiet fast-forward while the party talks it over or in the first 8 s of a rest (the scenes are there to be read)
-  const sceneNow = () => !!fl.party && (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0 && fl.time - fl.party.restSince < 8));
-  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check && fl.gateOpen && !sceneNow();   // v15.1: after 0,3 s of quiet (was 0,8)
+  // 1.13 (author: the quiet goes on while they rest and talk it over): talks, the stop before a known room and rests are
+  // quiet like any other moment with nothing of yours near (1.12.1 held the fast-forward back in the scenes)
+  const autoFFOn = () => S.autoFF > 1 && fl && fl.phase === 'raid' && fl.quietT > 0.3 && !fl.check && fl.gateOpen;   // v15.1: after 0,3 s of quiet (was 0,8)
   // "Quiet" = nobody near anything of yours: no hero within a step of the tiles a ready trap, a monster or loot reaches
-  // (1.02; up to 1.01 the whole room counted), nobody fighting, caged, disarming, at the heart or about to rush a room.
-  // Resting after a retreat counts as quiet.
+  // (1.02; up to 1.01 the whole room counted), nobody fighting, caged, disarming or at the heart.
+  // Resting after a retreat counts as quiet, and so (1.13) does the stop before a known room: they only talk there.
+  // (Up to 1.12.1 that stop, P.prep, was never quiet; the rush into the room is still caught by the rule below.)
   const QUIET = { r: 1, cd: 1 };   // 1.02: steps from a hero to anything of yours that still count as quiet (0 = the old room rule)
   const quietNow = () => !quietWhy();
   function quietWhy() {   // 1.02: names what keeps it from being quiet (null = quiet); the tests read it
     if (fl.ending !== null) return 'ending';
-    if (fl.party.prep) return 'prep';
-    const crew = alive();
-    if (!crew.length) return 'empty';
+    const crew = alive(), inPit = fl.heroes.filter(h => h.gone && !h.dead && !h.fled);
+    // 1.13 (author: quiet while a hero is down a trapdoor, and while all of them sit in cages): nobody left up here but
+    // the ones in a trapdoor, or everyone caged, is quiet: nothing happens until they climb out or a cage opens
+    if (!crew.length) return inPit.length ? null : 'empty';
+    if (crew.every(h => caged(h))) return null;
     for (const h of crew) {
       if (h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free') return h.state;
       if (caged(h)) return 'caged';
@@ -5782,8 +6207,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       return null;
     }
     // 1.02: busy only when a hero is a few steps from the tiles a trap, monster or loot actually reaches
-    const hot = new Set();
-    fl.items.forEach(it => { if (live(it) && !((it.cd || 0) > QUIET.cd)) { hot.add(it.y * WW + it.x); areaOf(it).forEach(t => hot.add(t[1] * WW + t[0])); } });   // a trap still reloading can't surprise anyone
+    const hot = new Set(), pits = new Set(inPit.map(h => h.y * WW + h.x));   // 1.13: a trapdoor with someone down it is no threat to the others
+    fl.items.forEach(it => { if (live(it) && !((it.cd || 0) > QUIET.cd) && !pits.has(it.y * WW + it.x)) { hot.add(it.y * WW + it.x); areaOf(it).forEach(t => hot.add(t[1] * WW + t[0])); } });   // a trap still reloading can't surprise anyone
     for (const h of crew) {
       let front = [[h.tx, h.ty]]; const seen = new Set([h.ty * WW + h.tx]);
       if (hot.has(h.ty * WW + h.tx)) return 'near';
@@ -8176,9 +8601,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       ctx.strokeStyle = k ? 'rgba(196,160,82,0.9)' : 'rgba(230,225,214,0.95)'; ctx.lineWidth = 1.6; if (k) ctx.setLineDash([5, 4]);
       ctx.beginPath(); ctx.arc(ox, oy, R, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     }));
-    // the check sits at the bottom of the map (above the tutorial panel if it is open), so it never covers the party or their lines
+    // 1.12.1 (author: on a phone the thumb covered the check): the check sits at the TOP of the map, under the party chips
+    // (and under the tutorial coach when it is up there). The map is tapped anywhere, so the thumb taps lower down and the
+    // bead stays in sight. (It sat at the bottom of the map from 1.02 to 1.12.1.)
     const legend = run.checkHints >= 0 && fl.stats.checks <= 3, coach = $('#coach');
-    const bottom = coach && !coach.hidden && !coach.classList.contains('top') ? ch - coach.offsetHeight - 14 : ch - 10;
+    const coachB = coach && !coach.hidden && coach.classList.contains('top') ? coach.offsetTop + coach.offsetHeight : 0;
+    const CHIPS_B = 36;   // the party chips: 6 px from the top, 30 px tall (drawChips)
     const label = { crit: 'Krytyk!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
     const labelCol = { crit: CK.zone, ok: '#b9b3a6', miss: CK.ash, skip: CK.ash }[c.result];
     const prep = !c.result && realNow < c.t0;
@@ -8203,7 +8631,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (pulse) { x0 = y0 = -DR - TW / 2; x1 = y1 = DR + TW / 2; }
     else for (let k = 0; k <= 96; k++) { const q = path(k / 96); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
     const pad = pulse ? 3 : TW / 2, headH = 26, stageH = (y1 - y0) + 2 * pad + 12, footH = legend ? 18 : 6, boxH = headH + stageH + footH;
-    const bx = (cw - w) / 2, top = bottom - boxH, ox = cw / 2 - (x0 + x1) / 2, oy = top + headH + 6 + pad - y0;
+    const top = Math.max(8, Math.min(Math.max(CHIPS_B + 6, coachB + 8), ch - 10 - boxH));   // never past the bottom on a short screen
+    const bx = (cw - w) / 2, ox = cw / 2 - (x0 + x1) / 2, oy = top + headH + 6 + pad - y0;
     const P = q => { const a = path(q); return [a[0] + ox, a[1] + oy]; };
     c.box = { x: bx - 10, y: top, w: w + 20, h: boxH };
     ckSlab(bx - 10, top, w + 20, boxH);
@@ -8332,8 +8761,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // speaker's colour as the stripe on its left, bone text (brass, with a brass edge, for the lines that matter), a tail in
     // steps like the pixel figures, and a thin thread down to the head when the bubble had to move up out of the way.
     ctx.font = '500 12px "Alegreya Sans", system-ui, sans-serif'; ctx.textBaseline = 'middle';
-    const boxes = [], seen = new Set(), o = 0.5, R = 3, TAIL = 6;
-    if (fl.check && fl.check.box) boxes.push(fl.check.box);
+    const boxes = [], seen = new Set(), o = 0.5, R = 3, TAIL = 6, ckBox = fl.check && fl.check.box;
+    if (ckBox) boxes.push(ckBox);
     if (uiRects.list) boxes.push(uiRects.list);
     let shown = 0;
     alive().filter(h => h.bubble && h.bubble.until > fl.time).sort((a, b) => b.bubble.prio - a.bubble.prio).forEach(h => {
@@ -8351,7 +8780,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       for (let k = 0; k < 6; k++) {
         const hit = boxes.find(b => bx < b.x + b.w && bx + w > b.x && by < b.y + b.h && by + hh + TAIL > b.y);
         if (!hit) break;
-        by = hit.y - hh - TAIL - 3;
+        // 1.12.1: the check is at the top now, so a line under it goes below it (not up and off the screen)
+        by = hit === ckBox && hit.y + hit.h + 3 + hh + TAIL <= ch - 4 ? hit.y + hit.h + 3 : hit.y - hh - TAIL - 3;
       }
       by = Math.round(by);
       boxes.push({ x: bx, y: by, w, h: hh + TAIL });
@@ -9019,7 +9449,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.12.1 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.13 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -9069,9 +9499,14 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.12.1'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.13'));
     const ul2 = el('ul', 'conseq');
-    ['1.12.1: przychód Esencji wraca do poziomu sprzed 1.12. Zegar combo w ciszy (drużyna idzie, a nic jej nie grozi) płynie 4 razy wolniej, zamiast stać (do 1.11.1) albo biec jak zwykle (1.12); okno combo to 3 s. Groza i strach z ran liczą się od HP bohatera bez dodatku z 1.12, więc najazdy są dłuższe, a rany nie tanieją. Esencja z Grozy ×1,1. Odtworzenia dwóch runów autora: przychód z fal 2-10 o 3% i 5% wyższy niż w 1.11.1, serce syte mniej więcej tak samo często, najazdy o ok. 25-30% dłuższe.',
+    ['1.13: bohaterowie naprawdę ze sobą rozmawiają. Kwestia jednego może zacząć krótką wymianę zdań: ktoś obok odpowiada, pierwszy odpowiada mu, czasem wtrąca się trzeci. Komentują wpadki (pułapka, zapadnia, nieudane rozbrajanie, poślizg), sukcesy (rozbrojenie, unik, zabity potwór, łup), swoje moce i lęki, a to, co powie słuchający, zależy od jego klasy i charakteru (chciwy, tchórzliwy, bohaterski, ostrożny). Jedna wymiana naraz w zasięgu słuchu; kwestia, która przyszłaby za późno, przepada razem z resztą wymiany.',
+     '1.13: narada dotyczy tylko tych, którzy stoją razem (ten sam pokój albo kilka kroków w korytarzu). Reszta robi swoje, a dwie grupy mogą się naradzać naraz. Wcześniej cała drużyna stawała w miejscu, także w innych pokojach i na pułapkach. Scenka odpoczynku też jest dla tych, którzy już siedzą razem.',
+     '1.13: bohater nie stoi i nie odpoczywa w pułapce. Gdy w trakcie narady, czekania albo odpoczynku stoi tam, gdzie drużyna zna zagrożenie, gdzie właśnie coś go trafiło (pamięta to pół minuty) albo na czymś Twoim, przechodzi na bezpieczne pole najwyżej 3 kroki dalej, przy przywódcy. Na odpoczynek wybiera wolne, bezpieczne miejsce w pokoju.',
+     '1.13: skill check jest teraz u góry mapy, pod ikonami drużyny (a w pierwszym runie pod kartą samouczka). Odpowiada się jak dotąd stuknięciem w dowolne miejsce mapy, więc kciuk, który stuka niżej, nie zasłania koralika. Dymek, który wpadłby na check, pokazuje się pod nim.',
+     '1.13: spokój trwa też wtedy, gdy bohaterowie odpoczywają albo się naradzają (także na postoju przed groźnym pokojem), gdy ktoś siedzi w zapadni (zapadnia z bohaterem w środku nie liczy się jako zagrożenie dla reszty, a gdy na górze nie ma nikogo, jest spokój) i gdy wszyscy siedzą w klatkach. Gra sama przyspiesza (×1,5), a zegar combo płynie wolniej, jak w każdej innej cichej chwili. W 1.12.1 scenki wyłączały spokój. Cierpliwość drużyny nadal płynie w scenkach 2 razy wolniej.',
+     '1.12.1: przychód Esencji wraca do poziomu sprzed 1.12. Zegar combo w ciszy (drużyna idzie, a nic jej nie grozi) płynie 4 razy wolniej, zamiast stać (do 1.11.1) albo biec jak zwykle (1.12); okno combo to 3 s. Groza i strach z ran liczą się od HP bohatera bez dodatku z 1.12, więc najazdy są dłuższe, a rany nie tanieją. Esencja z Grozy ×1,1. Odtworzenia dwóch runów autora: przychód z fal 2-10 o 3% i 5% wyższy niż w 1.11.1, serce syte mniej więcej tak samo często, najazdy o ok. 25-30% dłuższe.',
      '1.12.1: jeden bohater na polu, tak jak potwory. Nikt nie wejdzie na zajęte pole, a mijający się odsuwają się lekko w bok. Kto stoi bezczynnie na drodze idącego, robi mu miejsce (krok w bok albo krok naprzód). Zablokowany chwilę czeka, potem obchodzi, a przeciska się dopiero, gdy nie ma innej drogi i za stojącym jest wolne pole (uciekający od razu).',
      '1.12.1: dłuższe przerwy ze scenkami. Przed groźnym pokojem i na rozwidleniu drużyna zbiera się wokół przywódcy i omawia plan: każdy mówi swoje, przywódca zamyka. Na odpoczynku siadają, kapłan opatruje rany, ktoś marudzi, ktoś odpowiada; odpoczynek trwa co najmniej 10 s (najwyżej 26 s). W trakcie narady i na początku odpoczynku gra nie przyspiesza sama, a cierpliwość drużyny płynie wtedy 2 razy wolniej.',
      '1.12.1: poprawki: komunikaty sklepu (np. "Za mało Esencji", "Talia i schowek są pełne") znowu widać, nad przyciskiem w sklepie; stuknięcie w "Fala X/10" znowu pokazuje wieści o fali (jako karta), "Jeszcze raz" w pierwszych runach prowadzi do kolejnego runu nauki, wszystkie źródła strachu mają polskie nazwy, ulepszenie pokazuje "Poziom N" raz.',
@@ -10213,7 +10648,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 57;   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
+  const LOG_VERSION = 58;   // 58: Prototype 1.13: conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
   // 54: Prototype 1.11: the heart takes no Esencja, a wave must reach hungerNeed (60 x 1,25^(wave-2)) or a crystal goes (hunger.fedAmt = how far the bar got; stats.essHeart is gone)
@@ -10799,7 +11235,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const raid = fl.phase === 'raid';
     if ((st.build && raid) || (st.raid && !raid) || (st.wave && run.wave < st.wave)) { box.hidden = true; coachSync(); return; }   // 1.04: a step of the other phase waits out of sight (1.12: and one of a later wave)
     if (st.prep) st.prep();
-    box.classList.toggle('top', raid);   // 1.04: in a wave the coach sits at the top of the map, the check at the bottom
+    box.classList.toggle('top', raid);   // 1.04: in a wave the coach sits at the top of the map (1.12.1: and the check right under it)
     box.innerHTML = '';
     box.appendChild(el('div', null, typeof st.text === 'function' ? st.text() : st.text));
     const row = el('div', 'crow');
@@ -10875,7 +11311,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   requestAnimationFrame(frame);
 
   // Hook for automated checks; no effect on normal play.
-  window.__yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => W2S(x, y, z || 0), centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  window.__yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => W2S(x, y, z || 0), centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

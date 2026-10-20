@@ -420,6 +420,8 @@
       fl.items.delete(key(m.x, m.y));
       if (!DRIFT[m.type]) { const gx = m.gx !== undefined ? m.gx : m.x + 0.5, gy = m.gy !== undefined ? m.gy : m.y + 0.5; fl.fx.push({ kind: 'corpse', type: m.type, x: gx, y: gy, face: m.face || 1, h: { ogre: 1.25, goblin: 0.8, archer: 0.95, shaman: 0.9, spider: 0.6 }[m.type] || 0.9, life: 0.75, max: 0.75 }); burst(gx, gy, '#8a8378', 8); }   // 1.09: it falls
       floatTile(m.x, m.y, ITEMS[m.type].name + ' ginie', '#9be37a', 14);
+      const killer = fl.heroes.find(h => h.foe === m && !h.dead && !h.fled && !h.gone);   // 1.13: whoever fought it may brag about it
+      if (killer) convoStart(killer, 'monsterDown');
       burst((m.gx || m.x + 0.5), (m.gy || m.y + 0.5), '#7fbf5a', 12);
       fl.heroes.forEach(h => { if (h.foe === m) { h.state = 'walk'; h.foe = null; h.needPlan = true; } });
       fl.threatDirty = true;

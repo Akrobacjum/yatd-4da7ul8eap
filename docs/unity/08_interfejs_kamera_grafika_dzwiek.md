@@ -1,6 +1,6 @@
 # 08. Interfejs, sterowanie, kamera, grafika, dźwięk i samouczek
 
-Wersja źródłowa: Prototype 1.12.1 (`LOG_VERSION = 57`). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
+Wersja źródłowa: Prototype 1.13 (`LOG_VERSION = 58`). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
@@ -22,7 +22,7 @@ Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenome
 
 ### Zrzuty ekranu (folder `shots/`, 390×844, DPR 2)
 
-Zrobione na Prototype 1.12 (interfejs 1.12.1 różni się tylko listą "Co nowego" i komunikatem w sklepie); zapisane w 256 kolorach, żeby ważyły mniej, więc gradienty mogą mieć lekkie pasy.
+Zrzuty 01-10 zrobione na Prototype 1.12 (interfejs 1.12.1 różni się tylko listą "Co nowego" i komunikatem w sklepie, a 1.13 miejscem checku), 11-12 na 1.13; zapisane w 256 kolorach, żeby ważyły mniej, więc gradienty mogą mieć lekkie pasy.
 
 | Plik | Co pokazuje |
 |---|---|
@@ -30,12 +30,14 @@ Zrobione na Prototype 1.12 (interfejs 1.12.1 różni się tylko listą "Co noweg
 | `02_build_tray.png` | budowa, pasek rozwinięty, wybrane Kolce (przerywane ramki wolnych miejsc), widok wysokiej izometrii |
 | `03_tile_tip.png` | przytrzymany kafelek Strzały: podpowiedź `#tip` nad paskiem |
 | `04_build_folded.png` | budowa, pasek zwinięty: podgląd widoku fali (izometria 2:1) |
-| `05_wave_check.png` | fala: baner "Fala 1", skill check (pasek) na dole mapy, obwódka pułapki, przyciemnienie |
+| `05_wave_check.png` | fala: baner "Fala 1", skill check (pasek), obwódka pułapki, przyciemnienie; zrzut z 1.12, gdy check był na dole mapy (od 1.13 jest u góry: `11_check_top.png`) |
 | `06_wave_play.png` | fala: fioletowe orby Grozy lecące do równania, dymek z nitką, liczby nad bohaterami, serce |
 | `07_summary.png` | podsumowanie fali (jeden ekran) |
 | `08_shop.png` | sklep (4 oferty, odświeżanie, talia i schowek) |
 | `09_hero_card.png` | karta bohatera otwarta w fali (gra stoi) |
 | `10_tutorial.png` | samouczek: coach na dole mapy, pulsujący pierścień celu |
+| `11_check_top.png` | 1.13: check (spirala) u góry mapy pod ikonami drużyny, dymek zepchnięty pod płytę, pułapka z obwódką i drużyna widoczne niżej |
+| `12_check_tutorial.png` | 1.13: pierwszy check w runie z przewodnikiem: karta samouczka u góry (gra stoi), check "Uwaga: strzały!" pod nią |
 
 ## 1. Kierunek artystyczny, paleta, fonty
 
@@ -181,7 +183,7 @@ Canvas `#cv` wypełnia `#stage`; `touch-action: none`. Na canvasie, w przestrzen
 - **Lista drużyny / chipy** (`p7_draw.js: drawChips`, `drawParty`, `drawNextWave`): w lewym górnym rogu (6, 6). Zwinięta (domyślnie): pasek wysokości 30 px, tło `rgba(10,11,13,0.8)`, rogi 3 px; chip co 25 px: krążek r 6,5 px w kolorze klasy z obwódką w kolorze poziomu (boss: `#ff8a3c` 2,4 px), ikona klasy 10,5 px `#1a1424`, poziom 8 px obok. W fali pod krążkiem pasek HP 18×3 px (zielony `#6fd38a`, czerwony `#ff6b6b` ≤35%, martwy `#6b5560`) i strachu 18×2 px (`#b48cff`), nad nim glif stanu (`heroGlyph`: † martwy, » uciekł/ucieka, ↑ wyszedł, ◆ niesie kryształ, ↓ pod lochem, # w klatce, z odpoczywa, ? zgubiony, ! panika, s sam). Na końcu "▾". Kolejność: żywi, potem czekający w kolejce (50% krycia), potem martwi i ci, co wyszli (40%). Rozwinięta (stuknięcie): w fali lista 108 px szeroka, wiersz 19 px (krążek, HP 48×5, strach 48×3, glif, poziom, przedmioty jako kreski 4×3, sakiewka "◉N", klątwa "✶", wiara kapłana). W budowie lista **następnej fali** (szer. 200 px, wiersz 15 px, nagłówek "Fala N/10[ · FINAŁ| · boss]:", wiersz "Imię · poz. L ranga · wraca/łowca/rekrut · boi się: X"). W budowie pod zwiniętymi chipami pigułka wyłomu `rgba(120,20,30,0.85)`: "WYŁOM!" (świeży) albo "WYŁOM otwarty". Stan zwinięcia zapamiętany (`UI.listOpen`).
 - **Strzałki poza ekranem** (`drawOffscreen`): bohater poza kadrem = trójkąt w kolorze klasy z czarną obwódką przy krawędzi (12 px od brzegu), skierowany do niego.
 - **Plakietka pauzy** (`drawPause`): na górze środka, wys. 24 px, tło `rgba(16,17,20,0.88)`, ramka `#5c4b28`, tekst `#e6cf94` 600 12 px: "Pauza · ▼ Budowa: gramy dalej" (pasek otwarty) albo "Pauza". Ukryta, gdy jest karta samouczka.
-- Od 1.12.1 autoprzyspieszenie w ciszy nie włącza się w trakcie narady drużyny (`fl.time < P.talkUntil`) ani przez pierwsze 8 s odpoczynku (`p6_loop.js: sceneNow`, `autoFFOn`): scenki z dymkami są do czytania.
+- Od 1.13 autoprzyspieszenie w ciszy działa też w trakcie narady drużyny, postoju przed groźnym pokojem i odpoczynku, gdy ktoś siedzi w zapadni i gdy wszyscy są w klatkach (decyzje autora; reguły w 7.10.3). W 1.12.1 było tam wyłączone (`sceneNow`), żeby scenki dało się czytać, ale wtedy przerwy ciągnęły się w zwykłym tempie.
 - **Plakietka przyspieszenia** (`drawFF`): auto "▶▶ ×1,5 spokój" (92×22 px, fiolet `#b9a4ff`, Jersey 12) albo trzymany palec "▶▶ ×3" (76×24 px, mosiądz `#f2b94b`, Jersey 14).
 - **Baner fali** (`#banner`, `showBanner`): na 34% wysokości mapy, "Fala N" Grenze 46 px z czerwoną poświatą + podpis 14 px ("3 bohaterów", "prowadzi ich czempion", "· wchodzą przez wyłom!"/"· wchodzą drzwiami") na pasie `rgba(6,7,9,0.86)` zanikającym na boki. Animacja 2,1 s: pojawia się do 12%, trzyma do 75%, znika; napis wjeżdża ze skali 1,5, rozstrzelenia 0,3 em i rozmycia 4 px do normy w 18%. Ukrywany po 2,2 s.
 - **Coach** samouczka (rozdz. 8.2).
@@ -278,7 +280,7 @@ W Unity: Canvas Scaler z rozdzielczością referencyjną 390×844, dopasowanie d
 
 ### 3.3 Start (`renderStart`, zrzut `01_start.png`)
 
-Od góry: podtytuł "Prototype 1.12.1 · 10 fal i finał"; h1 "You are the dungeon"; akapit wstępu; rekordy (jeśli są: "Twój rekord: N Esencji zebranej w runie (ranga: X) · najdalej: fala F · wygrane: W z R."); pole "Kto testuje (opcjonalnie)" (tylko prototyp); przyciski; wiersz web (tylko prototyp); rozwijane **Jak grać** (17 akapitów w tablicy literalnej w `renderStart`, zasady całej gry, do przeniesienia jako tekst lokalizowany) i **Co nowego w Prototype 1.12.1** (87 wpisów dziennika zmian od v14 do 1.12.1, druga tablica w `renderStart`); przycisk "Ustawienia" (dźwięk, wibracje, skill checki).
+Od góry: podtytuł "Prototype 1.13 · 10 fal i finał"; h1 "You are the dungeon"; akapit wstępu; rekordy (jeśli są: "Twój rekord: N Esencji zebranej w runie (ranga: X) · najdalej: fala F · wygrane: W z R."); pole "Kto testuje (opcjonalnie)" (tylko prototyp); przyciski; wiersz web (tylko prototyp); rozwijane **Jak grać** (17 akapitów w tablicy literalnej w `renderStart`, zasady całej gry, do przeniesienia jako tekst lokalizowany) i **Co nowego w Prototype 1.13** (92 wpisy dziennika zmian od v14 do 1.13, druga tablica w `renderStart`); przycisk "Ustawienia" (dźwięk, wibracje, skill checki).
 
 Przyciski (`startbtns`; `onbStage()` z rozdz. 8.1; `sv` = zapisany run):
 
@@ -648,7 +650,7 @@ Kto i kiedy mówi: sekcja 06. Prezentacja (1.08, styl reszty gry), zrzut `06_wav
 - Rysowane w przestrzeni ekranu (czytelne przy każdym przybliżeniu), nie w budowie. Najwyżej 3 naraz, posortowane po priorytecie, bez powtórzeń tego samego tekstu.
 - Font 500 12 px Alegreya Sans, interlinia 15 px, łamanie do szerokości 150 px, **najwyżej 2 linie** (reszta ucięta). Szerokość = tekst + 19 px, wysokość = linie × 15 + 9.
 - Płyta `rgba(16,17,21,0.95)`, rogi 3 px, obramowanie 1 px `#464b53`, a dla ważnych (`prio ≥ 3`) mosiądz `#8a7034` i tekst `#e6cf94` zamiast `#e6e1d6`; światło na górnej krawędzi `rgba(210,220,235,0.07)`; pasek 3 px po lewej w kolorze klasy mówiącego; ogonek 6 px w schodkach (jak pixel art) pod mówiącym.
-- Pozycja: nad głową i paskami, wyśrodkowany, w granicach mapy (4 px). Omija pudło checku, listę drużyny i wcześniejsze dymki (do 6 prób w górę). Gdy musiał wjechać wyżej o > 6 px, cienka nitka `rgba(120,126,136,0.55)` od ogonka do głowy.
+- Pozycja: nad głową i paskami, wyśrodkowany, w granicach mapy (4 px). Omija pudło checku, listę drużyny i wcześniejsze dymki (do 6 prób; od innych dymków i listy w górę, a od pudła checku, które od 1.13 jest u góry, w dół: pod pudło, jeśli tam się mieści). Gdy musiał wjechać wyżej o > 6 px, cienka nitka `rgba(120,126,136,0.55)` od ogonka do głowy.
 - Wejście 0,16 s (wjeżdża 4 px w górę), zanik w ostatnich 0,3 s. Czas: spokojna kwestia `max(dur, readT)`, `readT = clamp(1,1 + 0,042 × długość, 1,6, 3,4)` s; okrzyk (`loud`) `dur` (domyślnie 1,9 s).
 - **Głusza**: zamiast tekstu "…" (okrzyk "…!"), 1,4 s.
 
@@ -676,7 +678,7 @@ Tor: krzywa kwadratowa z punktem kontrolnym `(ox + 0,2(tx - ox), min(oy, ty) - 4
 Logika (strefy, czasy, kształt dla typu, czaszka): sekcja 05. Zrzut: `05_wave_check.png`.
 
 - **Przyciemnienie** mapy `rgba(4,5,7,0.36)` do odpowiedzi. Wokół pułapki: pierścień kości (r `max(12, 0,75T)`, 1,6 px na czarnym 3 px), pozostałe pułapki serii przerywanym mosiądzem (r 0,6T).
-- **Płyta** na dole mapy (10 px od dołu; nad coachem, gdy coach jest na dole), szer. `min(320, cw - 28) + 20`, ścięte rogi 5 px, gradient `#1d1f24`→`#111216`, ramka `#464b53`, nity 1,4 px `#5d6168`, cień 16 px. Tytuł Grenze 700 17 px: w fazie "Uwaga!" (0,5 s, `CHECK_PREP`) "Uwaga: kolce!" albo "Uwaga: seria (n)!" w jasnym mosiądzu `#e6cf94` + kurczący się pasek mosiężny 70 px; potem "Kolce[ + n]: stuknij!" w kości; po odpowiedzi "Kolce: Krytyk!" (kość z poświatą) / "Draśnięcie" `#b9b3a6` / "Pudło" / "Odpuszczone" `#8e939a`. Po prawej uwagi fioletem `#d9ccff` 600 11 px ("rozbraja ją!", "niesie kryształ!", "w klatce +50%", "poz. 12: szybciej"…). Legenda 11 px popiół "obwódka: draśnięcie · pełne pole: krytyk (najmocniej) · ☠ zabije" przez pierwsze 3 checki każdej fali.
+- **Płyta** u góry mapy (od 1.13, decyzja autora: na telefonie kciuk zasłaniał check na dole): górna krawędź `max(36 + 6, dół coacha + 8)` px od góry mapy, czyli pod rzędem ikon drużyny (`drawChips`: 6 px od góry, 30 px wysokości), a w fali z kartą samouczka u góry pod tą kartą; gdy płyta nie mieści się nad dołem mapy, przesuwa się w górę (`min(..., ch - 10 - wysokość)`, nie wyżej niż 8 px). Odpowiedź to nadal stuknięcie w dowolne miejsce mapy, więc kciuk stuka niżej i nie zasłania koralika. Od 1.02 do 1.12.1 płyta była na dole mapy (10 px od dołu, nad coachem, gdy był na dole). Rozwinięta lista drużyny (`UI.listOpen`) leży pod płytą i jest przez nią przykryta na czas checku. Szer. `min(320, cw - 28) + 20`, ścięte rogi 5 px, gradient `#1d1f24`→`#111216`, ramka `#464b53`, nity 1,4 px `#5d6168`, cień 16 px. Tytuł Grenze 700 17 px: w fazie "Uwaga!" (0,5 s, `CHECK_PREP`) "Uwaga: kolce!" albo "Uwaga: seria (n)!" w jasnym mosiądzu `#e6cf94` + kurczący się pasek mosiężny 70 px; potem "Kolce[ + n]: stuknij!" w kości; po odpowiedzi "Kolce: Krytyk!" (kość z poświatą) / "Draśnięcie" `#b9b3a6` / "Pudło" / "Odpuszczone" `#8e939a`. Po prawej uwagi fioletem `#d9ccff` 600 11 px ("rozbraja ją!", "niesie kryształ!", "w klatce +50%", "poz. 12: szybciej"…). Legenda 11 px popiół "obwódka: draśnięcie · pełne pole: krytyk (najmocniej) · ☠ zabije" przez pierwsze 3 checki każdej fali.
 - **Tor** (`ckPath`, q od 0 do 1; R = `clamp(min(cw, ch) × 0,12, 40, 52)`, TW = 14 px): `bar` prosta linia szer. w; `fuse` lont `y = 7 sin(4πq)` (koralik przyspiesza, `checkPos = u^1,7`); `swing` łuk wiszący r 1,45R, ±1,1 rad, tam i z powrotem (2 przejścia, wahadło ±35%); `spiral` 2 obroty do środka (r = 1,2R(1 - 0,74q)); `pulse` zamykający się pierścień (r = (R + TW/2 - 1)(1 - q)); `ring` i `double` okrąg r R od kąta `rot - π/2`. Tor = rowek 14 px `#0a0b0d` z krawędzią `#2b2e34`.
 - **Strefy** (od 1.04, jak w Dead by Daylight, czytelne dla daltonistów): draśnięcie = **obwódka** pasa w kolorze `#ece6da` (pełna szerokość toru z wyciętym środkiem 10 px i poprzecznymi końcówkami 2 px), krytyk = **pełny** jasny pas z poświatą `rgba(255,244,225,0.8)` blur 10. `double` ma dwa okna. W `pulse` strefy to pierścienie (obwódka: dwa okręgi, krytyk: wypełniony pierścień).
 - **Czaszka** "☠" 12 px ciemna z jasnym obrysem na środku strefy, która zabije (draśnięcie i/lub krytyk).
@@ -787,7 +789,7 @@ Płyta wewnątrz mapy: w budowie na dole (8 px od lewej, prawej i dołu), w fali
 
 - **Podświetlenia** (`tut-hl`): elementy z listy `hl` dostają złotą obwódkę 2 px z odstępem 2 px pulsującą 1 s; podświetlony kafelek przewija się do widoku.
 - **Cel na mapie**: krok z `tile` rysuje pulsujący złoty pierścień na polu (`drawTutTarget`) i w budowie centruje na nim kamerę nieco powyżej środka (`cam.oy += ch × 0,14`), bo coach jest na dole.
-- Krok innej fazy albo późniejszej fali czeka niewidoczny. W fali kamera kadruje drużynę pod coachem (`coachInset`, 5.4), a check rysuje się nad coachem, gdy ten jest na dole.
+- Krok innej fazy albo późniejszej fali czeka niewidoczny. W fali kamera kadruje drużynę pod coachem (`coachInset`, 5.4), a check (od 1.13) rysuje się pod coachem.
 
 ### 8.3 Kroki (`TUT`, 16)
 

@@ -2090,9 +2090,12 @@
       ctx.strokeStyle = k ? 'rgba(196,160,82,0.9)' : 'rgba(230,225,214,0.95)'; ctx.lineWidth = 1.6; if (k) ctx.setLineDash([5, 4]);
       ctx.beginPath(); ctx.arc(ox, oy, R, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     }));
-    // the check sits at the bottom of the map (above the tutorial panel if it is open), so it never covers the party or their lines
+    // 1.12.1 (author: on a phone the thumb covered the check): the check sits at the TOP of the map, under the party chips
+    // (and under the tutorial coach when it is up there). The map is tapped anywhere, so the thumb taps lower down and the
+    // bead stays in sight. (It sat at the bottom of the map from 1.02 to 1.12.1.)
     const legend = run.checkHints >= 0 && fl.stats.checks <= 3, coach = $('#coach');
-    const bottom = coach && !coach.hidden && !coach.classList.contains('top') ? ch - coach.offsetHeight - 14 : ch - 10;
+    const coachB = coach && !coach.hidden && coach.classList.contains('top') ? coach.offsetTop + coach.offsetHeight : 0;
+    const CHIPS_B = 36;   // the party chips: 6 px from the top, 30 px tall (drawChips)
     const label = { crit: 'Krytyk!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
     const labelCol = { crit: CK.zone, ok: '#b9b3a6', miss: CK.ash, skip: CK.ash }[c.result];
     const prep = !c.result && realNow < c.t0;
@@ -2117,7 +2120,8 @@
     if (pulse) { x0 = y0 = -DR - TW / 2; x1 = y1 = DR + TW / 2; }
     else for (let k = 0; k <= 96; k++) { const q = path(k / 96); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
     const pad = pulse ? 3 : TW / 2, headH = 26, stageH = (y1 - y0) + 2 * pad + 12, footH = legend ? 18 : 6, boxH = headH + stageH + footH;
-    const bx = (cw - w) / 2, top = bottom - boxH, ox = cw / 2 - (x0 + x1) / 2, oy = top + headH + 6 + pad - y0;
+    const top = Math.max(8, Math.min(Math.max(CHIPS_B + 6, coachB + 8), ch - 10 - boxH));   // never past the bottom on a short screen
+    const bx = (cw - w) / 2, ox = cw / 2 - (x0 + x1) / 2, oy = top + headH + 6 + pad - y0;
     const P = q => { const a = path(q); return [a[0] + ox, a[1] + oy]; };
     c.box = { x: bx - 10, y: top, w: w + 20, h: boxH };
     ckSlab(bx - 10, top, w + 20, boxH);
@@ -2246,8 +2250,8 @@
     // speaker's colour as the stripe on its left, bone text (brass, with a brass edge, for the lines that matter), a tail in
     // steps like the pixel figures, and a thin thread down to the head when the bubble had to move up out of the way.
     ctx.font = '500 12px "Alegreya Sans", system-ui, sans-serif'; ctx.textBaseline = 'middle';
-    const boxes = [], seen = new Set(), o = 0.5, R = 3, TAIL = 6;
-    if (fl.check && fl.check.box) boxes.push(fl.check.box);
+    const boxes = [], seen = new Set(), o = 0.5, R = 3, TAIL = 6, ckBox = fl.check && fl.check.box;
+    if (ckBox) boxes.push(ckBox);
     if (uiRects.list) boxes.push(uiRects.list);
     let shown = 0;
     alive().filter(h => h.bubble && h.bubble.until > fl.time).sort((a, b) => b.bubble.prio - a.bubble.prio).forEach(h => {
@@ -2265,7 +2269,8 @@
       for (let k = 0; k < 6; k++) {
         const hit = boxes.find(b => bx < b.x + b.w && bx + w > b.x && by < b.y + b.h && by + hh + TAIL > b.y);
         if (!hit) break;
-        by = hit.y - hh - TAIL - 3;
+        // 1.12.1: the check is at the top now, so a line under it goes below it (not up and off the screen)
+        by = hit === ckBox && hit.y + hit.h + 3 + hh + TAIL <= ch - 4 ? hit.y + hit.h + 3 : hit.y - hh - TAIL - 3;
       }
       by = Math.round(by);
       boxes.push({ x: bx, y: by, w, h: hh + TAIL });

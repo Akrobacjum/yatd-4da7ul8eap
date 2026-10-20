@@ -703,6 +703,30 @@ po kroku: h.passing = null
 - Skutki dla gry: kolce i inne pułapki jednego pola trafiają mniej bohaterów naraz; w korytarzach drużyna idzie gęsiego; walczyć z potworem w korytarzu może tylko pierwszy; fale są dłuższe (odtworzenia: ok. +30%).
 - Test: `tests/t1121_tiles.py` (12 fal na losowych lochach: dwóch stojących na jednym polu w 0,2-0,3% klatek zamiast 18,5% w 1.12, żadna fala nie utknęła; próg testu 1%).
 
+### 6.2.16 Nikt nie stoi w pułapce (od 1.13, `p3_flow.js: markOuch`, `p5_ai.js: unsafeAt, standOk, toSafety`)
+
+Decyzja autora (20.10): bohaterowie nie mają stawać ani odpoczywać w pułapkach.
+
+```
+markOuch(h, it): przy ranie (damage) albo strachu (addFear) od elementu, który właśnie odpala (fl.firing; strach tylko od pułapek
+                 i straszących): h.ouch = { until: time + 30, tiles: areaOf(it) + pole elementu }   // pamięta to sam, nawet gdy drużyna nic nie wie
+unsafeAt(h, x, y) = fl.danger[y*WW+x] > 0 || (h.ouch && time < h.ouch.until && h.ouch.tiles.has(y*WW+x))
+standOk(h, x, y)  = walkable && !unsafeAt && brak elementu na polu (pułapka, łup, potwór) && nie serce
+toSafety(h): stojący (h.nx == null), nie na polu wyjścia, !standOk(h, h.x, h.y):
+   BFS do 3 kroków po passable bez bohaterów (heroBlock) i żywych potworów; kandydaci = pola standOk, wolne;
+   odpoczywający: tylko w swoim pokoju; stojący z liderem (samePlace): tylko w miejscu lidera;
+   cel = kandydat najbliżej lidera (+ 0,5 × kroki); h.path = droga, h.toSafe = true (planHero i rozmowa jej nie przerywają),
+   stats.toSafety++; brak kandydata -> zostaje
+updateHero: przed zejściem z pola (stepAside) -> if stan talk / wait / rest && toSafety(h): return
+stepAside (6.2.15): wybiera pole standOk, jeśli takie jest
+odpoczynek (odwrót, 6.3.x): w pokoju odwrotu siada tylko na polu standOk, inaczej idzie do najbliższego wolnego pola standOk
+   w tym pokoju; gdy takiego nie ma, siada, gdzie stoi
+scenka odpoczynku (restScene): mówią tylko ci, którzy już siedzą razem (samePlace z pierwszym siedzącym); lider, jeśli jest z nimi
+```
+
+- Pomiar (10 fal z gęstymi pułapkami na trasie): klatki "stoi w pułapce" (stan talk/wait/rest na polu w zasięgu pułapki) 1016 na 1.12.1, ok. 260-560 na 1.13 (zostają głównie zatory w korytarzach, gdzie nie ma dokąd zejść); odpoczynek w pułapce: 0 w obu.
+- Skutek dla gry: bohaterowie rzadziej giną głupio, fale są dłuższe (odtworzenia runów autora: suma czasów fal 2-10 +15% i +5% względem 1.12.1, Esencja +0% i +1%).
+
 ## 6.3 Decyzje drużyny
 
 ### 6.3.1 Lider (`p5_ai.js: leader`)
@@ -933,7 +957,7 @@ nap = time < h.napUntil
 if (P.plan !== 'retreat' && !nap) || panicking(h) || exiting(h): state 'walk', napUntil = restAt = -1, needPlan
 ```
 
-**Scenka odpoczynku** (od 1.12.1, `p5_ai.js: restScene`): gdy pierwszy usiądzie (`P.restSince` ustawiane pierwszy raz), kolejka `P.queueSay` co 0,6 s (od +0,3 s): lider `restStart`, kapłan (jeśli jest i to nie lider) `restPriest`, losowy inny `restScene`, ktoś jeszcze (albo lider) `restReply`. Potem small talk w odwrocie co 3,5-6,5 s (zamiast 7-13 s), z pulą `chatRest` + `restScene`. Przez pierwsze 8 s odpoczynku gra nie przyspiesza sama (`p6_loop.js: sceneNow`), a cierpliwość płynie 2 razy wolniej przez cały odpoczynek (6.3.10).
+**Scenka odpoczynku** (od 1.12.1, `p5_ai.js: restScene`): gdy pierwszy usiądzie (`P.restSince` ustawiane pierwszy raz), kolejka `P.queueSay` co 0,6 s (od +0,3 s): lider `restStart`, kapłan (jeśli jest i to nie lider) `restPriest`, losowy inny `restScene`, ktoś jeszcze (albo lider) `restReply`. Potem small talk w odwrocie co 3,5-6,5 s (zamiast 7-13 s), z pulą `chatRest` + `restScene`. Odpoczynek jest spokojem (gra sama przyspiesza, zegar combo płynie ×0,25), a cierpliwość płynie 2 razy wolniej przez cały odpoczynek (6.3.10). W 1.12.1 przez pierwsze 8 s odpoczynku autoprzyspieszenie było wyłączone (`sceneNow`); od 1.13, na prośbę autora, już nie.
 
 **Koniec odpoczynku** (`partyThink`, od 1.12.1): `restT = restSince > 0 ? time - restSince : 0`; koniec, gdy `(avgHp >= 0.7 && (restT >= 10 || (restSince < 0 && avgHp >= 0.85))) || restT > 26` (do 1.12: `avgHp >= 0.7` albo 20 s od `restSince`). Po końcu: `plan = fl.heartKnown ? 'assault' : 'explore'`, `P.retreatLock = time + 15`, `P.restSince = -1`, `partySay('restDone', 2)`, odpoczywający wstają, `needPlan` wszystkim.
 
@@ -953,7 +977,7 @@ dla i < min(5, L.path.length): r = roomOf(L.path[i])
    return                                   // sprawdza tylko pierwszy inny pokój na najbliższych 5 polach
 ```
 
-**`startPrep(r)`**: załoga = żywi, nie zgubieni, nie w klatce, nie uciekają. `P.prepped.add(r)`. Uczestnicy: kapłan poz. 3+ z `faith >= 2`, mag poz. 5+ z gotowym `jamCd`, złodziej poz. 4+, wojownik poz. 3+ (pierwszy pasujący każdej klasy). od 1.12.1 scenka: kwestie `prepStart` (lider), role (`prepWard`, `prepJam`, `prepDisarm`, `prepShield`), zamknięcie lidera `prepGo` i odpowiedź kogoś spoza ról `prepReply`; `dur = max(3, talkLen(kwestie))`, `P.prep = {room, until: time + dur, ...id}`, `P.talkUntil = max(P.talkUntil, time + dur)` (drużyna staje), potem `huddleUp(L)` (6.7.5). Do 1.12 było stałe 2,4 s i większość kwestii nie zdążyła paść ("Plan!" i bezruch). Kolejka co 0,5 s: lider `prepStart`, potem `prepWard` (kapłan), `prepJam` (mag), `prepDisarm` (złodziej), `prepShield` (wojownik). Każdy poz. 4+ z `hp < 0.7 max` wypija najlepszą miksturę.
+**`startPrep(r)`**: załoga = grupa lidera (`talkGroup(L)`, od 1.13; wcześniej wszyscy żywi, nie zgubieni, nie w klatce, nie uciekający); gdy ktoś z niej już rozmawia, przygotowania nie ma. `P.prepped.add(r)`. Uczestnicy: kapłan poz. 3+ z `faith >= 2`, mag poz. 5+ z gotowym `jamCd`, złodziej poz. 4+, wojownik poz. 3+ (pierwszy pasujący każdej klasy). od 1.12.1 scenka: kwestie `prepStart` (lider), role (`prepWard`, `prepJam`, `prepDisarm`, `prepShield`), zamknięcie lidera `prepGo` i odpowiedź kogoś spoza ról `prepReply`; `dur = max(3, talkLen(kwestie))`, `P.prep = {room, until: time + dur, ...id}`, `P.talkUntil = max(P.talkUntil, time + dur)` (drużyna staje), potem `huddleUp(L)` (6.7.5). Do 1.12 było stałe 2,4 s i większość kwestii nie zdążyła paść ("Plan!" i bezruch). Kolejka co 0,5 s: lider `prepStart`, potem `prepWard` (kapłan), `prepJam` (mag), `prepDisarm` (złodziej), `prepShield` (wojownik). Każdy poz. 4+ z `hp < 0.7 max` wypija najlepszą miksturę.
 
 **`finishPrep()`** (po `dur`):
 ```
@@ -1547,13 +1571,49 @@ Bohaterowie w różnych pokojach (i dalej niż 7 pól) mówią jednocześnie. Bo
 ### 6.7.5 Rozmowy drużyny
 
 - **`partySay(k, prio, who)`** (`p5_ai.js`): ten sam klucz najwyżej co 5 s (`P.lastSay[k]`); mówi `who` albo lider; tekst losowy z `SAY[k]`. Używane dla: `rookieLead`, `explore`, `retreat`, `restDone`, `assault`, `regroup`.
-- **`talk(dur, lines)`**: jeśli nie `fearless`, nie trwa już rozmowa (`time >= P.talkUntil`) i drużyna nie wychodzi: `P.talkUntil = time + max(dur, talkLen(lines))`; mówcy po kolei z załogi (bez zgubionych, panikujących, zwiadowcy, uwięzionych), linia `i` mówi `crew[i % crew.length]` o `at = time + 0.65*i`. Pierwszą linię mówi więc pierwszy z załogi w kolejności spawnu, niekoniecznie lider (także przy wahaniu lidera). Używane: wahanie (`hesitate`), zasadzka (`ambush`).
-- **`talkAs(dur, lines)`** (wersja 1.05): jak wyżej, ale każda linia ma mówcę (`[bohater, tekst]`, `null` = ktokolwiek z załogi wg `i`), `at = time + 0.7*i`. Używane: narada na rozwidleniu. Od 1.12.1 narada dostaje jeszcze głos kogoś, kto nic nie powiedział (nie złodziej): `councilReply`, a po niej `huddleUp(L)`.
+- **Kto rozmawia** (od 1.13, decyzja autora 20.10: drużyna stawała w miejscu wszędzie, w innych pokojach i na pułapkach): `talkGroup(c)` = `c` (zwykle lider) i ci, którzy stoją z nim w tym samym miejscu: `samePlace(a, b)` = ten sam pokój albo korytarz (`roomOf(tx, ty)` równe i >= 0) albo odległość <= 3,5 pola; bez zgubionych, panikujących, uwięzionych, uciekających, zwiadowcy i wychodzących. Tylko oni dostają `h.talkUntil` i stają; reszta robi swoje (idący za liderem dochodzą do niego jak zwykle). Dwie grupy mogą rozmawiać naraz. `P.talkUntil` = koniec najpóźniejszej rozmowy (cierpliwość 6.3.10, blokada rozmów 6.7.8).
+- **`talk(dur, lines, c = lider)`**: jeśli nie `fearless`, drużyna nie wychodzi, grupa niepusta i nikt z grupy już nie rozmawia: `koniec = time + max(dur, talkLen(lines))`, każdy z grupy `h.talkUntil = koniec`; linia `i` mówi `grupa[i % n]` (pierwsza: `c`) o `at = time + 0.65*i`. Zwraca grupę albo `null`.
+- **`talkAs(dur, lines, c = lider)`** (wersja 1.05): jak wyżej, ale każda linia ma mówcę (`[bohater, tekst]`, `null` = ktokolwiek z grupy wg `i`), `at = time + 0.7*i`; od 1.13 linia mówcy spoza grupy przepada (na rozwidleniu głos mają tylko ci, którzy stoją z liderem, i tylko złodziej z grupy może zaproponować zwiad). Używane: narada na rozwidleniu. Od 1.12.1 narada dostaje jeszcze głos kogoś, kto nic nie powiedział (nie złodziej): `councilReply`, a po niej `huddleUp(L)`.
 - **`talkLen(lines) = Σ (readT(t) + SAY_GAP) + 0,6`** (od 1.12.1; w 1.10-1.12 było `0.55 × Σ`, więc drużyna ruszała, zanim padła połowa kwestii): drużyna stoi tyle, ile trwa powiedzenie wszystkiego, jedno po drugim.
-- **`huddleUp(L)`** (od 1.12.1, `p5_ai.js`): w naradzie i przy przygotowaniu bohaterowie dalej niż 2 pola (Manhattan) od lidera podchodzą do najbliższego wolnego pola w promieniu 2 od niego (BFS po polach przejezdnych bez innych bohaterów i bez żywych potworów, nie dalej niż 7 kroków, nie na pole wyjścia); bliżsi zostają. W trakcie dojścia `h.huddle = true` (planHero ich nie przestawia, stan `talk` czeka na koniec drogi). Po dojściu (i ci, którzy stali blisko) odwracają się do lidera (`lookAt`, `h.huddleId`). Bohater w trakcie kroku dołącza po jego końcu.
-- W trakcie `P.talkUntil` i przez pierwsze 8 s odpoczynku gra nie przyspiesza sama w ciszy (`p6_loop.js: sceneNow`, `autoFFOn`), a cierpliwość płynie 2 razy wolniej (6.3.10).
-- W czasie `P.talkUntil` każdy stojący bohater (nie wychodzący, nie zgubiony, nie panikujący, nie zwiadowca, nie wędrujący) przechodzi w stan `talk` (6.1.8). Przygotowanie przed groźnym pokojem też ustawia `P.talkUntil` (6.3.8).
+- **`huddleUp(L)`** (od 1.12.1, `p5_ai.js`; od 1.13 tylko uczestnicy rozmowy, `talking(h)`, a pole docelowe musi spełniać `standOk`, 6.2.16): w naradzie i przy przygotowaniu bohaterowie dalej niż 2 pola (Manhattan) od lidera podchodzą do najbliższego wolnego pola w promieniu 2 od niego (BFS po polach przejezdnych bez innych bohaterów i bez żywych potworów, nie dalej niż 7 kroków, nie na pole wyjścia); bliżsi zostają. W trakcie dojścia `h.huddle = true` (planHero ich nie przestawia, stan `talk` czeka na koniec drogi). Po dojściu (i ci, którzy stali blisko) odwracają się do lidera (`lookAt`, `h.huddleId`). Bohater w trakcie kroku dołącza po jego końcu.
+- W trakcie `P.talkUntil` i odpoczynku cierpliwość płynie 2 razy wolniej (6.3.10). Spokój (autoprzyspieszenie i wolniejszy zegar combo) od 1.13 trwa także w scenkach, w tym na postoju przed groźnym pokojem (decyzja autora 20.10: "cisza niech trwa w trakcie odpoczynku bohaterów i narad również"); w 1.12.1 scenki go wyłączały (`sceneNow`, a `P.prep` nigdy nie był spokojem). Od 1.13 spokojem jest też chwila, gdy ktoś siedzi w zapadni, i gdy wszyscy są w klatkach (7.10.3).
+- Stojący bohater z `fl.time < h.talkUntil` (nie wychodzący, nie zgubiony, nie panikujący, nie zwiadowca, nie wędrujący, nie w drodze do narady ani z pułapki) przechodzi w stan `talk` (6.1.8); do 1.12.1 robił to każdy w czasie `P.talkUntil`. Przygotowanie przed groźnym pokojem też ustawia `h.talkUntil` swojej grupy (6.3.8); specjaliści przygotowania (kapłan, mag, złodziej, wojownik) są brani tylko z tej grupy.
 - Inne krótkie dialogi przez `P.queueSay`: spór o łup (`lootStop`/`lootReply`), porzucenie (`abandon`/`abandoned`), szukanie zgubionego, odpowiedź na wołanie, wołanie o kapłana, podanie mikstury, protest przy szturmie i odwrocie, podziękowanie za pieśń, reakcja na trafienie przyjaciela (`friendHit`, głośna, +0,5 s, gdy pułapka zabrała >= 25% max HP, najbliższy w odległości <= 4 nieuciekający, nie panikujący, nie zgubiony; najwyżej co 5 s dla całej drużyny).
+
+### 6.7.5a Rozmowy bohaterów (od 1.13, `p5_ai.js: lineKey, convoAfter, convoStart, convoFill`; dane `CONVO`, `CONVO_ALIAS`, `CONVO_P`)
+
+Decyzja autora (20.10): "dajmy im konwersacje": bohaterowie mają komentować nawzajem swoje dymki, działania, błędy i sukcesy, a nie tylko rzucać pojedyncze kwestie.
+
+```
+say(h, text, ...) udana i nie w Głuszy -> convoAfter(h, text)
+convoAfter(h, text): k = lineKey(text)            // klucz SAY tej kwestii; zagnieżdżone: 'trap:spikes', 'phobia:fire'
+                     if k: convoStart(h, k)
+zabicie potwora (hurtMonster, hp <= 0): zabójca = bohater z h.foe == m -> convoStart(zabójca, 'monsterDown')
+
+convoStart(A, key):
+  stop gdy: nie fala / koniec fali; time < P.convoT ('breath'); talking(A) ('talk');
+            w kolejce P.queueSay czeka kwestia kogoś w zasięgu słuchu A ('queue')
+  zestaw = CONVO[key] || CONVO[CONVO_ALIAS[key]] || CONVO[klucz bazowy]; brak -> koniec
+  rand > CONVO_P[key] (albo aliasu, bazowego; domyślnie 0,5) -> 'luck';  A w Głuszy -> 'hush'
+  słuchacze = żywi w zasięgu słuchu A (6.7.4), nie zgubieni, nie w klatce, nie w chaosie, nie w rozmowie; brak -> 'alone'
+  pasujące wymiany: A nie zniknął/nie zginął, jeśli mówi; klasa i charakter A (ac, at); B ze słuchaczy z klasą b,
+     charakterem bt, rangą <= br i >= bv; wymiana z C wymaga 2 słuchaczy. Waga w × 1,6, gdy wymiana ma warunki
+     (pasujące do sytuacji wygrywają z ogólnymi). Brak -> 'fit'
+  B = losowy pasujący, C = losowy inny słuchacz
+  t0 = time + 0,3; oczekiwany = t0
+  kwestie do P.queueSay po kolei: { id, text: convoFill(tekst), at: t0, prio 2, cv: nr wymiany, late: oczekiwany - t0 + 3,5 },
+     oczekiwany += readT(tekst) + SAY_GAP + 0,1
+     // wszystkie są "na teraz", więc nikt w zasięgu słuchu się nie wtrąci (othersWaiting, 6.7.3), a kolejka trzyma
+     // późniejsze, dopóki nie padnie wcześniejsza (sortowanie po at jest stabilne)
+  P.convoT = oczekiwany + 1,5-4 s; stats.convos++; każda odmowa liczy się w stats.convoNo[powód]
+kolejka (6.7.3): kwestia spóźniona o > late (od at; inne kwestie 10 s) przepada razem z resztą swojej wymiany (cv)
+```
+
+- Kwestie idą przez zwykłą kolejkę drużyny, więc mówią po kolei, po przeczytaniu poprzedniej (6.7.2-6.7.4); okrzyki i chaos je przerywają, a przerwana wymiana kończy się, zamiast wracać po kilku sekundach bez kontekstu.
+- `convoFill`: `{A:m|ż}` `{B:...}` `{C:...}` = forma wg płci tej osoby; `{An}` `{Aa}` `{Av}` (B, C) = jej imię (mianownik, biernik, wołacz); `{m|ż}` bez litery zostaje do `gtext` w `say` (płeć mówiącego).
+- Zestawy (74, 143 wymiany, 305 kwestii, `data/CONVO.json`): wpadki (`trap`, `trap:web`, `trap:trapdoor`, `trap:cage`, `scare`, `trap:portrait`, `hurt`, `disarmFail`, `disarmHit`, `slip`, `cursedPick`, `panic`, `cowardRun`, `crystalDrop`), sukcesy (`disarmDone`, `dodge`, `monsterDown`, `detect`, `resistHit`, `loot1-3`, `gold`, `freed`, `found`, `steal`), moce i działania (`shield`, `heal`, `fireball`, `fight`, `smash`, `rage`, `song`, `bless`, `cleanse`, `barrier`, `charmUse`, `bootsUse`, `potion`, `timing`), lęki (`phobia:*`, `ghost`, `bats`, `spider`, `lull`, `nightmare`, `seenBuilt`), drużyna (`enter`, `champion`, `rookie`, `rookieBoast`, `vetWarn`, `elite`, `explore`, `cautious`, `heartSeen`, `assault`, `retreat`, `restDone`, `rumor`, `fame2`, `gateWait`, `nap`, `goldHeavy`, `weakHit`, `learn`, `alone`, `landed`).
+- Klucze bez zestawu (np. `chat_*`, `callHealer`, `potionGive`, kwestie narady) nie zaczynają rozmów: mają już swoje odpowiedzi (`CHAT_REPLY`, kolejki 6.7.5).
+- Pomiar (10 fal testu z gęstymi pułapkami, 1.13): ok. 1,5-2,5 wymiany na falę; najczęstsze odmowy: kolejka zajęta w pobliżu, przerwa, los. Test: `tests/t113_talk.py`.
 
 ### 6.7.6 Small talk (`p5_ai.js: partyThink` krok 21)
 

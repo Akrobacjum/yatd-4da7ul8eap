@@ -1,0 +1,2021 @@
+{
+ "trap": [
+  {
+   "l": [
+    [
+     "B",
+     "Wszyscy cali?"
+    ],
+    [
+     "A",
+     "Chyba tak. Ledwo."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Mówił{em|am}, żeby patrzeć pod nogi!"
+    ],
+    [
+     "A",
+     "To trzeba było iść pierws{B:zy|za}!"
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Kto stawia takie rzeczy w piwnicy?!"
+    ],
+    [
+     "A",
+     "Ktoś, kto nas bardzo nie lubi."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Widział{em|am} ten mechanizm. Trzeba było mnie słuchać."
+    ],
+    [
+     "A",
+     "Następnym razem posłucham."
+    ],
+    [
+     "B",
+     "Akurat."
+    ]
+   ]
+  },
+  {
+   "bt": [
+    "brave",
+    "greedy"
+   ],
+   "l": [
+    [
+     "B",
+     "Ha! Ale podskoczył{A:eś|aś}, {Av}!"
+    ],
+    [
+     "A",
+     "Bardzo śmieszne."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Pokaż. Zaraz cię opatrzę."
+    ],
+    [
+     "A",
+     "Tylko szybko, cieknie ze mnie."
+    ]
+   ]
+  },
+  {
+   "at": "coward",
+   "l": [
+    [
+     "B",
+     "Nic ci nie jest, {Av}?"
+    ],
+    [
+     "A",
+     "Wszystko mi jest! Wracajmy stąd!"
+    ],
+    [
+     "B",
+     "Nie marudź."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "{Av}, żyjesz?"
+    ],
+    [
+     "A",
+     "Żyję. Ale ten loch mnie nie lubi."
+    ],
+    [
+     "C",
+     "Nikogo nie lubi."
+    ]
+   ]
+  }
+ ],
+ "trap:web": [
+  {
+   "l": [
+    [
+     "B",
+     "Wyglądasz jak mucha, {Av}."
+    ],
+    [
+     "A",
+     "Zamiast gadać, pomóż mi to zdjąć!"
+    ]
+   ]
+  },
+  {
+   "b": "mage",
+   "l": [
+    [
+     "B",
+     "Nie ruszaj się, spalę to."
+    ],
+    [
+     "A",
+     "Spalisz sieć, nie mnie, tak?"
+    ],
+    [
+     "B",
+     "Postaram się."
+    ]
+   ]
+  }
+ ],
+ "trap:trapdoor": [
+  {
+   "l": [
+    [
+     "B",
+     "{An} wpadł{A:|a} pod podłogę!"
+    ],
+    [
+     "C",
+     "Spokojnie. Takie doły mają drugie wyjście."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "{Av}! Słyszysz mnie?!"
+    ],
+    [
+     "C",
+     "Nic nie słychać..."
+    ],
+    [
+     "B",
+     "Wyjdzie. Musi wyjść."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Mam nadzieję, że {An} nie miał{A:|a} przy sobie naszego złota."
+    ],
+    [
+     "C",
+     "Serio? Teraz?"
+    ]
+   ]
+  }
+ ],
+ "trap:cage": [
+  {
+   "l": [
+    [
+     "B",
+     "Trzymaj się, {Av}, wyciągniemy cię!"
+    ],
+    [
+     "A",
+     "Szybciej, tu jest ciasno!"
+    ]
+   ]
+  },
+  {
+   "bt": [
+    "greedy",
+    "coward"
+   ],
+   "l": [
+    [
+     "B",
+     "Może tam zostanie? Mniej gęb do dzielenia łupu."
+    ],
+    [
+     "A",
+     "Słyszał{em|am} to!"
+    ]
+   ]
+  },
+  {
+   "b": "thief",
+   "l": [
+    [
+     "B",
+     "Prosty zamek. Daj mi chwilę."
+    ],
+    [
+     "A",
+     "Chwil mam tu aż nadto."
+    ]
+   ]
+  }
+ ],
+ "scare": [
+  {
+   "l": [
+    [
+     "B",
+     "Spokojnie, to tylko sztuczki."
+    ],
+    [
+     "A",
+     "To czemu ty też się trzęsiesz?"
+    ]
+   ]
+  },
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Boisz się starych gratów, {Av}?"
+    ],
+    [
+     "A",
+     "Nie boję się! Tylko... uważam."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Czuję tu coś złego. Trzymajcie się blisko."
+    ],
+    [
+     "A",
+     "Bliżej się nie da."
+    ]
+   ]
+  },
+  {
+   "at": "coward",
+   "l": [
+    [
+     "B",
+     "To nic takiego, {Av}."
+    ],
+    [
+     "A",
+     "Dla ciebie nic! Ja widział{em|am}, jak się ruszało!"
+    ]
+   ]
+  }
+ ],
+ "trap:portrait": [
+  {
+   "l": [
+    [
+     "B",
+     "To tylko obraz, {Av}."
+    ],
+    [
+     "A",
+     "Obraz, który mruga?!"
+    ],
+    [
+     "B",
+     "...Chodźmy dalej."
+    ]
+   ]
+  }
+ ],
+ "hurt": [
+  {
+   "l": [
+    [
+     "B",
+     "Wytrzymasz?"
+    ],
+    [
+     "A",
+     "Muszę."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Zaraz to opatrzę."
+    ],
+    [
+     "A",
+     "Dzięki. Tylko się pospiesz."
+    ]
+   ]
+  }
+ ],
+ "disarmDone": [
+  {
+   "l": [
+    [
+     "B",
+     "Ładnie, {Av}."
+    ],
+    [
+     "A",
+     "Wiem."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Skąd ty to umiesz?"
+    ],
+    [
+     "A",
+     "Nie pytaj, a nie skłamię."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Na pewno rozbrojone?"
+    ],
+    [
+     "A",
+     "Na pewno. Prawie na pewno."
+    ],
+    [
+     "B",
+     "Prawie?!"
+    ]
+   ]
+  },
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Szkoda. Chciał{em|am} sprawdzić, czy wytrzymam."
+    ],
+    [
+     "A",
+     "Następną zostawię dla ciebie."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Jeden problem mniej."
+    ],
+    [
+     "A",
+     "A ile jeszcze przed nami?"
+    ],
+    [
+     "C",
+     "Lepiej nie liczyć."
+    ]
+   ]
+  }
+ ],
+ "disarmFail": [
+  {
+   "l": [
+    [
+     "B",
+     "Co znaczy „ups”?!"
+    ],
+    [
+     "A",
+     "Nic! Nic nie znaczy!"
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Ty w ogóle wiesz, co robisz?"
+    ],
+    [
+     "A",
+     "Wiem. Ten drut był krzywy."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Następnym razem uprzedź, odsunę się!"
+    ],
+    [
+     "A",
+     "Gdybym wiedział{|a}, sam{|a} bym się odsunął{|a}."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Mistrz rozbrajania, panie i panowie."
+    ],
+    [
+     "A",
+     "Każdemu się zdarza."
+    ],
+    [
+     "C",
+     "Tobie jakoś często."
+    ]
+   ]
+  }
+ ],
+ "disarmHit": [
+  {
+   "l": [
+    [
+     "B",
+     "Prawie to za mało, {Av}."
+    ],
+    [
+     "A",
+     "Wiem. Następna będzie moja."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Pokaż rękę."
+    ],
+    [
+     "A",
+     "Nic mi nie jest. Prawie."
+    ]
+   ]
+  }
+ ],
+ "dodge": [
+  {
+   "l": [
+    [
+     "B",
+     "Niezły unik!"
+    ],
+    [
+     "A",
+     "Lata praktyki."
+    ]
+   ]
+  },
+  {
+   "bt": [
+    "greedy",
+    "brave"
+   ],
+   "l": [
+    [
+     "B",
+     "Ale szczęście, {Av}."
+    ],
+    [
+     "A",
+     "Szczęście sprzyja zdolnym."
+    ]
+   ]
+  },
+  {
+   "at": "coward",
+   "l": [
+    [
+     "B",
+     "{A:Szybki|Szybka} jesteś, jak trzeba uciekać."
+    ],
+    [
+     "A",
+     "To nie ucieczka. To taktyka."
+    ]
+   ]
+  }
+ ],
+ "shield": [
+  {
+   "l": [
+    [
+     "B",
+     "Dzięki, {Av}!"
+    ],
+    [
+     "A",
+     "Od tego jestem."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Stoję za tobą. Bardzo za tobą."
+    ],
+    [
+     "A",
+     "Widzę."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Ta tarcza widziała już niejedno."
+    ],
+    [
+     "A",
+     "I jeszcze niejedno zobaczy."
+    ]
+   ]
+  }
+ ],
+ "heal": [
+  {
+   "l": [
+    [
+     "B",
+     "Dobrze mieć cię w drużynie, {Av}."
+    ],
+    [
+     "A",
+     "Przypomnij to sobie przy podziale łupu."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Twoje światło grzeje."
+    ],
+    [
+     "A",
+     "To nie moje. Ja je tylko pożyczam."
+    ]
+   ]
+  },
+  {
+   "bt": [
+    "brave",
+    "greedy"
+   ],
+   "l": [
+    [
+     "B",
+     "Starczy, zostaw trochę na później."
+    ],
+    [
+     "A",
+     "Na później to ty wpadniesz w następną pułapkę."
+    ]
+   ]
+  }
+ ],
+ "fireball": [
+  {
+   "l": [
+    [
+     "B",
+     "Ej, uważaj z tym ogniem!"
+    ],
+    [
+     "A",
+     "Gdybym chciał{|a} w ciebie trafić, już byś się palił{B:|a}."
+    ]
+   ]
+  },
+  {
+   "b": [
+    "warrior",
+    "barbarian"
+   ],
+   "l": [
+    [
+     "B",
+     "Zostaw coś dla mnie!"
+    ],
+    [
+     "A",
+     "Nie nadążasz, to twój problem."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Pachnie pieczenią."
+    ],
+    [
+     "A",
+     "Nie pytaj, czyją."
+    ]
+   ]
+  }
+ ],
+ "fight": [
+  {
+   "l": [
+    [
+     "B",
+     "Pomóc ci, {Av}?"
+    ],
+    [
+     "A",
+     "Sam{|a} dam radę!"
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Ja popilnuję tyłów."
+    ],
+    [
+     "A",
+     "Jasne. Tyłów."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Tylko nie daj się zjeść!"
+    ],
+    [
+     "A",
+     "Nie zamierzam."
+    ]
+   ]
+  }
+ ],
+ "monsterDown": [
+  {
+   "l": [
+    [
+     "A",
+     "Jeden mniej!"
+    ],
+    [
+     "B",
+     "Nieźle, {Av}!"
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Ładny cios, {Av}."
+    ],
+    [
+     "A",
+     "Następny!"
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "A",
+     "Załatwione."
+    ],
+    [
+     "B",
+     "Nie ciesz się. Gdzie jeden, tam więcej."
+    ]
+   ]
+  },
+  {
+   "at": "brave",
+   "l": [
+    [
+     "A",
+     "Kto następny?!"
+    ],
+    [
+     "B",
+     "Nie wywołuj wilka z lasu."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "A",
+     "Leży."
+    ],
+    [
+     "B",
+     "I niech leży."
+    ],
+    [
+     "C",
+     "Brzydkie to było."
+    ]
+   ]
+  }
+ ],
+ "loot1": [
+  {
+   "l": [
+    [
+     "B",
+     "Zostaw, to może być pułapka."
+    ],
+    [
+     "A",
+     "Wszystko tu może być pułapką."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Dzielimy się po połowie, {Av}."
+    ],
+    [
+     "A",
+     "Jasne. Po mojej połowie."
+    ]
+   ]
+  }
+ ],
+ "loot2": [
+  {
+   "l": [
+    [
+     "B",
+     "Ostrożnie z tym, {Av}."
+    ],
+    [
+     "A",
+     "Ostrożność to moje drugie imię."
+    ],
+    [
+     "C",
+     "Pierwsze to chyba „chciwość”."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Ja to pierws{zy|za} zobaczył{em|am}!"
+    ],
+    [
+     "A",
+     "Ale ja pierws{zy|za} wezmę."
+    ]
+   ]
+  }
+ ],
+ "loot3": [
+  {
+   "l": [
+    [
+     "B",
+     "Widzę! Tylko spokojnie..."
+    ],
+    [
+     "A",
+     "Spokojnie?! To legenda!"
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Za piękne, żeby było prawdziwe."
+    ],
+    [
+     "A",
+     "To sprawdźmy!"
+    ],
+    [
+     "B",
+     "Ty sprawdź."
+    ]
+   ]
+  }
+ ],
+ "gold": [
+  {
+   "l": [
+    [
+     "B",
+     "Dużo tego?"
+    ],
+    [
+     "A",
+     "Starczy na piwo. Dla mnie."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "A dla mnie?"
+    ],
+    [
+     "A",
+     "Znajdź sobie własne."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Chciwość to grzech, {Av}."
+    ],
+    [
+     "A",
+     "To pomódl się za mnie."
+    ]
+   ]
+  }
+ ],
+ "goldHeavy": [
+  {
+   "l": [
+    [
+     "B",
+     "Może się podzielisz? Będzie ci lżej."
+    ],
+    [
+     "A",
+     "Dźwigam i nie narzekam."
+    ]
+   ]
+  }
+ ],
+ "cursedPick": [
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Rzuć to! Ten skarb jest przeklęty!"
+    ],
+    [
+     "A",
+     "Nie mogę... Nie chcę."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "{Av}, coś ty podniósł{A:|a}?"
+    ],
+    [
+     "A",
+     "Nic. Moje. Nie patrz."
+    ]
+   ]
+  }
+ ],
+ "panic": [
+  {
+   "l": [
+    [
+     "B",
+     "{Av}, wracaj!"
+    ],
+    [
+     "C",
+     "Zostaw. Wróci, jak ochłonie."
+    ]
+   ]
+  },
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Tchórz!"
+    ],
+    [
+     "C",
+     "Każdy się kiedyś boi."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "{An} ma rację, trzeba stąd uciekać!"
+    ],
+    [
+     "C",
+     "Nikt nigdzie nie ucieka!"
+    ]
+   ]
+  }
+ ],
+ "found": [
+  {
+   "l": [
+    [
+     "B",
+     "{Av}! Gdzie ty się podziewał{A:eś|aś}?"
+    ],
+    [
+     "A",
+     "Nie pytaj. Ciemno było."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Myśleliśmy, że już po tobie."
+    ],
+    [
+     "A",
+     "Ja też tak myślał{em|am}."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Wrócił{A:eś|aś}? A już dzieliliśmy twoje rzeczy."
+    ],
+    [
+     "A",
+     "Bardzo zabawne."
+    ],
+    [
+     "C",
+     "To nie był żart."
+    ]
+   ]
+  }
+ ],
+ "landed": [
+  {
+   "l": [
+    [
+     "B",
+     "{Av}! Żyjesz! Jak tam na dole?"
+    ],
+    [
+     "A",
+     "Ciemno i mokro. Nie polecam."
+    ]
+   ]
+  }
+ ],
+ "freed": [
+  {
+   "l": [
+    [
+     "B",
+     "Mówił{em|am}, że cię wyciągnę."
+    ],
+    [
+     "A",
+     "Jestem ci win{ien|na}."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Następnym razem patrz, gdzie stajesz."
+    ],
+    [
+     "A",
+     "Dobrze, mamo."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "To będzie kosztowało, {Av}."
+    ],
+    [
+     "A",
+     "Wiedział{em|am}, że nic nie jest za darmo."
+    ]
+   ]
+  }
+ ],
+ "slip": [
+  {
+   "l": [
+    [
+     "B",
+     "Ha! Jak na łyżwach!"
+    ],
+    [
+     "A",
+     "Zamiast się śmiać, łap mnie!"
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Kto tu tak wylał wodę?"
+    ],
+    [
+     "A",
+     "To nie woda, to lód!"
+    ]
+   ]
+  }
+ ],
+ "nap": [
+  {
+   "l": [
+    [
+     "B",
+     "Tylko nie chrap."
+    ],
+    [
+     "A",
+     "Ja nigdy nie chrapię."
+    ],
+    [
+     "C",
+     "Chrapiesz."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Śpij. Popilnuję."
+    ],
+    [
+     "A",
+     "Obudź mnie, jak coś się ruszy."
+    ]
+   ]
+  }
+ ],
+ "nightmare": [
+  {
+   "l": [
+    [
+     "B",
+     "Też to słyszysz?"
+    ],
+    [
+     "A",
+     "Słyszę. I wolał{bym|abym} nie słyszeć."
+    ]
+   ]
+  }
+ ],
+ "phobia": [
+  {
+   "l": [
+    [
+     "B",
+     "Spokojnie, {Av}. Oddychaj."
+    ],
+    [
+     "A",
+     "Oddycham! To nie pomaga!"
+    ]
+   ]
+  }
+ ],
+ "phobia:spiders": [
+  {
+   "l": [
+    [
+     "B",
+     "To tylko pająk, {Av}."
+    ],
+    [
+     "A",
+     "Tylko?! Ma osiem nóg!"
+    ]
+   ]
+  }
+ ],
+ "phobia:fire": [
+  {
+   "l": [
+    [
+     "B",
+     "Ogień jest daleko, {Av}."
+    ],
+    [
+     "A",
+     "Za blisko. Zawsze jest za blisko."
+    ]
+   ]
+  }
+ ],
+ "phobia:closed": [
+  {
+   "l": [
+    [
+     "B",
+     "Oddychaj. Zaraz stąd wyjdziemy."
+    ],
+    [
+     "A",
+     "Obiecujesz?"
+    ],
+    [
+     "B",
+     "Obiecuję."
+    ]
+   ]
+  }
+ ],
+ "phobia:ghosts": [
+  {
+   "l": [
+    [
+     "B",
+     "Duchów nie ma, {Av}."
+    ],
+    [
+     "A",
+     "To kto mnie przed chwilą dotknął?!"
+    ]
+   ]
+  }
+ ],
+ "phobia:blood": [
+  {
+   "l": [
+    [
+     "B",
+     "Nie patrz na to. Patrz na mnie."
+    ],
+    [
+     "A",
+     "Dobrze... Dobrze."
+    ]
+   ]
+  }
+ ],
+ "phobia:dark": [
+  {
+   "l": [
+    [
+     "B",
+     "Jestem tu, {Av}. Słyszysz? Jestem tu."
+    ],
+    [
+     "A",
+     "Nie odchodź."
+    ]
+   ]
+  }
+ ],
+ "weakHit": [
+  {
+   "l": [
+    [
+     "B",
+     "Znowu to samo, {Av}?"
+    ],
+    [
+     "A",
+     "Stare rany. Nie gadajmy o tym."
+    ]
+   ]
+  }
+ ],
+ "resistHit": [
+  {
+   "l": [
+    [
+     "B",
+     "Z czego ty jesteś zrobion{A:y|a}?"
+    ],
+    [
+     "A",
+     "Z gorszych lochów niż ten."
+    ]
+   ]
+  }
+ ],
+ "smash": [
+  {
+   "l": [
+    [
+     "B",
+     "Można było otworzyć."
+    ],
+    [
+     "A",
+     "Można było. Tak szybciej."
+    ]
+   ]
+  },
+  {
+   "b": "thief",
+   "l": [
+    [
+     "B",
+     "Miał{em|am} wytrych!"
+    ],
+    [
+     "A",
+     "A ja topór."
+    ]
+   ]
+  }
+ ],
+ "rage": [
+  {
+   "l": [
+    [
+     "B",
+     "Nie stój {A:mu|jej} na drodze."
+    ],
+    [
+     "C",
+     "Nie zamierzam."
+    ]
+   ]
+  }
+ ],
+ "song": [
+  {
+   "l": [
+    [
+     "B",
+     "Tylko nie ta ballada znowu..."
+    ],
+    [
+     "A",
+     "Ta jest nowa! Prawie."
+    ]
+   ]
+  },
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Głośniej! Niech cały loch słyszy!"
+    ],
+    [
+     "A",
+     "Dla ciebie wszystko."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Ciszej! Wszystko nas usłyszy!"
+    ],
+    [
+     "A",
+     "Muzyka dodaje odwagi."
+    ],
+    [
+     "B",
+     "Mnie nie dodaje."
+    ]
+   ]
+  }
+ ],
+ "bless": [
+  {
+   "l": [
+    [
+     "B",
+     "Dzięki, {Av}. Ten obraz mnie przerażał."
+    ],
+    [
+     "A",
+     "Mnie też. Dlatego go odczynił{em|am}."
+    ]
+   ]
+  }
+ ],
+ "potion": [
+  {
+   "l": [
+    [
+     "B",
+     "Zostaw mi łyk."
+    ],
+    [
+     "A",
+     "Za późno."
+    ]
+   ]
+  }
+ ],
+ "rookieBoast": [
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Każdy tak mówi na początku."
+    ],
+    [
+     "A",
+     "Ja naprawdę dam radę!"
+    ],
+    [
+     "B",
+     "Zobaczymy."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Trzymaj się blisko mnie, {A:młody|młoda}."
+    ],
+    [
+     "A",
+     "Nie potrzebuję niańki!"
+    ]
+   ]
+  }
+ ],
+ "vetWarn": [
+  {
+   "br": 1,
+   "l": [
+    [
+     "B",
+     "Przecież uważam!"
+    ],
+    [
+     "A",
+     "Za mało."
+    ]
+   ]
+  },
+  {
+   "br": 1,
+   "l": [
+    [
+     "B",
+     "Skąd miał{em|am} wiedzieć?"
+    ],
+    [
+     "A",
+     "Patrzysz pod nogi, to wiesz."
+    ]
+   ]
+  }
+ ],
+ "ghost": [
+  {
+   "l": [
+    [
+     "B",
+     "Ja nic nie widzę."
+    ],
+    [
+     "A",
+     "Bo ty nigdy nic nie widzisz!"
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Stój za mną. Duchy nie lubią światła."
+    ],
+    [
+     "A",
+     "Ja też nie lubię duchów."
+    ]
+   ]
+  }
+ ],
+ "bats": [
+  {
+   "l": [
+    [
+     "B",
+     "Machaj rękami!"
+    ],
+    [
+     "A",
+     "Macham! Nie pomaga!"
+    ]
+   ]
+  }
+ ],
+ "spider": [
+  {
+   "l": [
+    [
+     "B",
+     "Zgnieć go!"
+    ],
+    [
+     "A",
+     "Ty go zgnieć!"
+    ]
+   ]
+  }
+ ],
+ "detect": [
+  {
+   "l": [
+    [
+     "B",
+     "Dobre oko, {Av}."
+    ],
+    [
+     "A",
+     "Dlatego mnie zabraliście."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "A skarbu przypadkiem nie widzisz?"
+    ],
+    [
+     "A",
+     "Skarbu nie. Tylko kłopoty."
+    ]
+   ]
+  }
+ ],
+ "learn": [
+  {
+   "l": [
+    [
+     "B",
+     "Zapamiętam. Bolało."
+    ],
+    [
+     "A",
+     "O to chodzi."
+    ]
+   ]
+  }
+ ],
+ "cowardRun": [
+  {
+   "l": [
+    [
+     "B",
+     "Wracaj, tchórzu!"
+    ],
+    [
+     "C",
+     "Niech idzie. Więcej łupu dla nas."
+    ]
+   ]
+  }
+ ],
+ "cautious": [
+  {
+   "bt": [
+    "brave",
+    "greedy"
+   ],
+   "l": [
+    [
+     "B",
+     "Krok po kroku to my tu zanocujemy."
+    ],
+    [
+     "A",
+     "Lepiej zanocować, niż zostać tu na zawsze."
+    ]
+   ]
+  }
+ ],
+ "lull": [
+  {
+   "l": [
+    [
+     "B",
+     "Zatkaj uszy!"
+    ],
+    [
+     "A",
+     "Wtedy nie usłyszę pułapek!"
+    ]
+   ]
+  }
+ ],
+ "charmUse": [
+  {
+   "l": [
+    [
+     "B",
+     "Skąd masz takie cacko?"
+    ],
+    [
+     "A",
+     "Z poprzedniego lochu. Z poprzedniego właściciela."
+    ]
+   ]
+  }
+ ],
+ "cleanse": [
+  {
+   "l": [
+    [
+     "B",
+     "Szybciej, płonę!"
+    ],
+    [
+     "A",
+     "Stój spokojnie, to szybciej zgaśnie!"
+    ]
+   ]
+  }
+ ],
+ "enter": [
+  {
+   "l": [
+    [
+     "B",
+     "Ostatnim razem też tak mówił{A:eś|aś}."
+    ],
+    [
+     "A",
+     "I ostatnim razem wrócił{em|am}."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Ja idę na końcu."
+    ],
+    [
+     "C",
+     "Ty zawsze idziesz na końcu."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Byle szybko. Złoto samo się nie zbierze."
+    ],
+    [
+     "A",
+     "Najpierw przeżyj, potem zbieraj."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Patrzcie pod nogi. I na ściany."
+    ],
+    [
+     "A",
+     "I na sufit, jak już przy tym jesteśmy."
+    ]
+   ]
+  }
+ ],
+ "champion": [
+  {
+   "l": [
+    [
+     "B",
+     "Skromności to ci nie brakuje."
+    ],
+    [
+     "A",
+     "Skromni nie wracają z kryształem."
+    ]
+   ]
+  }
+ ],
+ "rookie": [
+  {
+   "bv": 1,
+   "l": [
+    [
+     "B",
+     "Niczego nie dotykaj, {Av}."
+    ],
+    [
+     "A",
+     "Ale ja tylko..."
+    ],
+    [
+     "B",
+     "Niczego."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Łatwizna, mówi. Zobaczymy za godzinę."
+    ],
+    [
+     "A",
+     "Za godzinę będę bogat{y|a}!"
+    ]
+   ]
+  }
+ ],
+ "elite": [
+  {
+   "br": 0,
+   "l": [
+    [
+     "B",
+     "Po co tak wolno?"
+    ],
+    [
+     "A",
+     "Bo chcę stąd wyjść. W całości."
+    ]
+   ]
+  }
+ ],
+ "explore": [
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Na pewno tędy?"
+    ],
+    [
+     "A",
+     "Na pewno. Prawie."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "A może jednak tamtędy? Tam jest... ciszej."
+    ],
+    [
+     "A",
+     "Tędy."
+    ]
+   ]
+  }
+ ],
+ "timing": [
+  {
+   "l": [
+    [
+     "B",
+     "Skąd wiesz, kiedy biec?"
+    ],
+    [
+     "A",
+     "Liczę. Raz, dwa... teraz."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "A jak się pomylisz?"
+    ],
+    [
+     "A",
+     "To dowiesz się pierws{B:zy|za}."
+    ]
+   ]
+  }
+ ],
+ "heartSeen": [
+  {
+   "l": [
+    [
+     "B",
+     "Wreszcie! Bierzemy i wychodzimy."
+    ],
+    [
+     "C",
+     "Mówisz, jakby to było takie proste."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Tyle bogactwa w jednym miejscu..."
+    ],
+    [
+     "A",
+     "Najpierw przeżyć, potem liczyć."
+    ]
+   ]
+  }
+ ],
+ "assault": [
+  {
+   "l": [
+    [
+     "B",
+     "Za tobą!"
+    ],
+    [
+     "C",
+     "Wszyscy za tobą!"
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Może jednak nie?"
+    ],
+    [
+     "A",
+     "Za późno. Naprzód!"
+    ]
+   ]
+  }
+ ],
+ "steal": [
+  {
+   "l": [
+    [
+     "B",
+     "Biegiem, zanim loch się obudzi!"
+    ],
+    [
+     "C",
+     "On już nie śpi."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Daj, poniosę!"
+    ],
+    [
+     "A",
+     "Akurat. Sam{|a} poniosę."
+    ]
+   ]
+  }
+ ],
+ "retreat": [
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Uciekamy? Serio?"
+    ],
+    [
+     "A",
+     "Wracamy. Na chwilę. Opatrzymy się i znowu ruszamy."
+    ]
+   ]
+  },
+  {
+   "bt": [
+    "coward",
+    "careful"
+   ],
+   "l": [
+    [
+     "B",
+     "Wreszcie ktoś rozsądny."
+    ],
+    [
+     "A",
+     "Nie przyzwyczajaj się."
+    ]
+   ]
+  }
+ ],
+ "restDone": [
+  {
+   "l": [
+    [
+     "B",
+     "Już? Dopiero usiadł{em|am}."
+    ],
+    [
+     "A",
+     "Wstawaj. Kryształy same nie przyjdą."
+    ]
+   ]
+  }
+ ],
+ "bootsUse": [
+  {
+   "l": [
+    [
+     "B",
+     "Zaczekaj na nas!"
+    ],
+    [
+     "A",
+     "Nie mogę, buty same niosą!"
+    ]
+   ]
+  }
+ ],
+ "rumor": [
+  {
+   "l": [
+    [
+     "B",
+     "W karczmie mówią różne rzeczy."
+    ],
+    [
+     "A",
+     "Tym razem chyba nie kłamali."
+    ]
+   ]
+  }
+ ],
+ "fame2": [
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Tym lepiej. Będzie o nas pieśń."
+    ],
+    [
+     "C",
+     "Raczej nagrobek."
+    ]
+   ]
+  }
+ ],
+ "alone": [
+  {
+   "l": [
+    [
+     "B",
+     "Tu jestem, {Av}! Idź na mój głos!"
+    ],
+    [
+     "A",
+     "Idę! Nie ruszaj się!"
+    ]
+   ]
+  }
+ ],
+ "seenBuilt": [
+  {
+   "l": [
+    [
+     "B",
+     "Ściany się nie ruszają, {Av}."
+    ],
+    [
+     "A",
+     "Te tutaj się ruszają!"
+    ],
+    [
+     "C",
+     "Ten loch żyje..."
+    ]
+   ]
+  }
+ ],
+ "gateWait": [
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Może ją wyważymy?"
+    ],
+    [
+     "A",
+     "Spróbuj. Popatrzę."
+    ]
+   ]
+  }
+ ],
+ "crystalDrop": [
+  {
+   "l": [
+    [
+     "B",
+     "Jak można zgubić kryształ?!"
+    ],
+    [
+     "C",
+     "Krzycz dalej, to na pewno pomoże."
+    ]
+   ]
+  }
+ ],
+ "barrier": [
+  {
+   "l": [
+    [
+     "B",
+     "Przyda się, {Av}."
+    ],
+    [
+     "A",
+     "Długo nie wytrzyma. Ruszajmy."
+    ]
+   ]
+  }
+ ]
+}

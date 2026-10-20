@@ -202,6 +202,7 @@
     const t = hush ? (loud ? '…!' : '…') : gtext(text, h.female), len = hush ? 1.4 : loud ? (dur || 1.9) : Math.max(dur || 1.9, readT(t));
     h.bubble = { text: t, prio, at: fl.time, until: fl.time + len, loud }; h.saidUntil = fl.time + len;
     fl.stats.lines++;
+    if (!hush) convoAfter(h, text);   // 1.13: a line can start a conversation
     if (!loud) {   // he turns to the nearest one listening, and they turn to him
       let to = null, bd = 1e9;
       fl.heroes.forEach(o => { if (o === h || o.dead || o.fled || o.gone || !earshot(h, o)) return; const d = Math.hypot(o.tx - h.tx, o.ty - h.ty); if (d < bd) { bd = d; to = o; } if (d <= 4) lookAt(o, h.x, h.y); });
@@ -1045,8 +1046,12 @@
     if (MONSTERS[src.type]) return 'monster';
     return 'other';
   }
+  // 1.13 (author: they stood and rested in traps): a hero remembers where a trap just got him (the whole reach of it, for
+  // half a minute), even if the party learnt nothing; he will not stand still there (p5_ai.js: unsafeAt, toSafety)
+  function markOuch(h, it) { if (it && it.x !== undefined && ITEMS[it.type] && fl.items.get(key(it.x, it.y)) === it) h.ouch = { until: fl.time + 30, tiles: new Set(areaOf(it).map(t => t[1] * WW + t[0]).concat([it.y * WW + it.x])) }; }
   function damage(h, amt, src, comboMult) {
     if (h.dead || h.fled || amt <= 0 || fl.ending !== null) return;
+    if (fl.firing) markOuch(h, fl.firing);
     const kind = srcKind(src);
     comboMult = comboMult || 1; amt *= comboMult;   // 1.12: a combo makes the wounds hit harder too
     const tkey = kind === 'trap' && src.type ? src.type : null;
@@ -1144,6 +1149,7 @@
   const raging = h => fl.time < h.rageUntil && !inB('shackles', h.room);
   function addFear(h, amt, attr, src, dtp) {
     if (h.dead || h.fled || amt <= 0) return;
+    if (fl.firing && (TRAPS[fl.firing.type] || SCARE[fl.firing.type])) markOuch(h, fl.firing);   // 1.13: a scare that went off here too
     const raw = amt;
     amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : isRt(h.room, 'hush') ? 1.2 : 1);   // Mgła: +15%, 1.10 Głusza: +20%
     if (raging(h)) amt *= 0.5;   // 1.05: fury dulls fear

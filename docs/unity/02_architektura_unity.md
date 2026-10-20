@@ -85,7 +85,7 @@ Nie ma potrzeby zgodności liczb losowych z prototypem (JS i C# i tak losują w 
 | `Set` | `HashSet<int>` (tam, gdzie kolejność nie ma znaczenia) |
 | obiekty bez typu (`run`, `fl`, `h`, `it`) | klasy C# z jawnymi polami; pola z prototypu zachowują nazwy w camelCase po angielsku, żeby dało się szukać w kodzie prototypu |
 | `S` (ustawienia i suwaki balansu) | `Settings` (gracz) + `Balance` (stałe z `DEFAULTS` i stałe rozsiane po plikach); suwaki testowe tylko w buildzie deweloperskim |
-| `mods` (efekty kart, `freshMods`) | klasa `Mods` z polami o tych samych nazwach i wartościach domyślnych (lista w sekcji 03, wartości domyślne w `data/golden_1.12.1.json` pod `mods`) |
+| `mods` (efekty kart, `freshMods`) | klasa `Mods` z polami o tych samych nazwach i wartościach domyślnych (lista w sekcji 03, wartości domyślne w `data/golden_1.13.json` pod `mods`) |
 
 ### Liczby zmiennoprzecinkowe
 
@@ -95,10 +95,10 @@ Nie ma potrzeby zgodności liczb losowych z prototypem (JS i C# i tak losują w 
 
 Katalog `data/` (w repo: `docs/unity/data/`) zawiera eksport tabel z `src/p1_config.js` (opis plików: załącznik A):
 
-- `yatd_content_1.12.1.json`: wszystkie tabele w jednym pliku (`tables.ITEMS`, `tables.UPGRADES`, `tables.HEROES`...),
+- `yatd_content_1.13.json`: wszystkie tabele w jednym pliku (`tables.ITEMS`, `tables.UPGRADES`, `tables.HEROES`...),
 - te same tabele osobno (`ITEMS.json`, `UPGRADES.json`, ...),
 - `levelStats_1_30.json`: policzone statystyki poziomów 1-30,
-- `golden_1.12.1.json`: wartości policzone przez działający prototyp (skład i poziom fal 1-20, głód serca, krzywa chciwości, ceny, koszty narzędzi, domyślne `mods` i `S`).
+- `golden_1.13.json`: wartości policzone przez działający prototyp (skład i poziom fal 1-20, głód serca, krzywa chciwości, ceny, koszty narzędzi, domyślne `mods` i `S`).
 
 Funkcje w danych (np. `apply` kart, `req`) są zapisane jako tekst źródłowy z prefiksem `fn: `. W Unity:
 - **karty**: przepisz 98 funkcji `apply` na listę operacji (`ModOp { field, op: Add|Mul|Set, value }`) albo, prościej, na `switch (card.id)` w jednym pliku `CardEffects.cs`. Pełna lista z kodem: załącznik B. Karty `instant` (Żarłoczne serce, Zastrzyk Esencji, Hojny kupiec, Pakt) działają na `run` raz, przy kupnie.
@@ -158,6 +158,6 @@ Jedna scena gry (`Game`) z warstwami: loch 3D, aktorzy, efekty, UI. Ekran starto
 
 - Nazwy i komentarze w kodzie po angielsku, teksty dla gracza tylko przez lokalizację (polski bazowy).
 - Każda reguła przeniesiona z prototypu ma w komentarzu odnośnik `// proto: p3_flow.js hungerNeed`, a stałe mają te same nazwy co w prototypie (`COMBO_POW`, `BREACH_P`, `CHECK_SLOW`...). Dzięki temu specyfikacja, prototyp i kod Unity dają się porównać wyszukiwaniem.
-- Najpierw test, potem kod: dla formuł testy z `golden_1.12.1.json`, dla zachowań scenariusze (sekcja 09).
+- Najpierw test, potem kod: dla formuł testy z `golden_1.13.json`, dla zachowań scenariusze (sekcja 09).
 - Nie "poprawiaj" zachowania prototypu po cichu. Błędy i niespójności znalezione przy przenoszeniu wpisuj do sekcji 11 i pytaj autora.
 - Ręczne sprawdzenie: prototyp można uruchomić lokalnie (`index.html` z repo w przeglądarce) albo na stronie testowej; w konsoli przeglądarki obiekt `window.__yatd` daje dostęp do stanu (`__yatd.run`, `__yatd.fl`, `__yatd.mods`) i funkcji (pełna lista na końcu `src/p8b_ui.js`).

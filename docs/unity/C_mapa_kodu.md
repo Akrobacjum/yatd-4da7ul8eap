@@ -1,6 +1,6 @@
 # Załącznik C: mapa kodu prototypu
 
-Spis funkcji z `src/` (Prototype 1.12.1) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
+Spis funkcji z `src/` (Prototype 1.13) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
 
 ## p1_config.js (dane i stałe)
 
@@ -212,6 +212,7 @@ Spis funkcji z `src/` (Prototype 1.12.1) z pierwszym zdaniem komentarza, który 
 | `phobiaSight` | seeing what he fears: a jolt the first time (15% of courage), once per element |
 | `bt` |  |
 | `srcKind` |  |
+| `markOuch` | 1.13 (author: they stood and rested in traps): a hero remembers where a trap just got him (the whole reach of it, for half a minute), even if the party learnt nothing; he will not stand still there (p... |
 | `damage` |  |
 | `fearResist` | Fear: the second currency of the dungeon. Every bit of it scores; past a hero's courage he runs for the exit. |
 | `startRage` | 1.05: fury, one mechanic for everyone (it used to be a brave one's answer to a death): +25% speed, half the fear, hits monsters harder. The barbarian lives in it: a death, a hard hit or panic makes him rage (panic... |
@@ -282,8 +283,13 @@ Spis funkcji z `src/` (Prototype 1.12.1) z pierwszym zdaniem komentarza, który 
 | `exitGoal` |  |
 | `leader` |  |
 | `partySay` |  |
+| `talkGroup` |  |
+| `toSafety` | a hero who stands still somewhere unsafe walks to a good tile (at most 3 steps, the one nearest the leader; one who rests stays in his room, so the rest does not walk out of it; none: he stays) |
 | `talk` | The party stops and talks it over: a few lines from different heroes, one after another. |
 | `talkAs` | 1.05: the same, but each line has its speaker (null: anyone in the party) |
+| `lineKey` |  |
+| `convoAfter` |  |
+| `convoStart` |  |
 | `huddleUp` | 1.12.1: when the party stops to talk it over, the ones further off come up to the leader (to a free tile at most 2 steps from him) and everyone turns to him: a huddle, not a freeze |
 | `talkLen` |  |
 | `lootLevel` |  |
