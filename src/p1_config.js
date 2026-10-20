@@ -91,6 +91,9 @@
     decoy: { name: 'Wabik', cost: 10, slot: 'floor', tag: 'złodzieje', build: true, desc: 'Wabik (budowla, blokuje przejście jak skrzynia): wygląda jak pułapka. Złodziej rozbraja go najpierw i podnosi alarm: odpalają wszystkie gotowe pułapki w pokoju.' },
     acid: { name: 'Kwas', cost: 12, slot: 'floor', tag: 'tarcze', build: true, desc: 'Kwas (budowla, blokuje przejście jak skrzynia): tarcza wojownika, osłona kapłana i talizmany chronią tu o połowę słabiej. Kontra na wojowników. Jeden na pokój.' },
     veil: { name: 'Zasłona', cost: 12, slot: 'floor', tag: 'plotki', build: true, desc: 'Zasłona (budowla, blokuje przejście jak skrzynia): uciekinierzy nie zapamiętają tego pokoju ani jego pułapek. Jedna na pokój.' },
+    // 1.05: counters to the two new classes
+    howl: { name: 'Kamień wyjec', cost: 12, slot: 'floor', tag: 'bardowie', build: true, desc: 'Kamień wyjec (budowla, blokuje przejście jak skrzynia): wiatr wyje w jego otworach. Pieśń barda tu nie działa, a echo myli głosy: zgubiony nie trafi tu do drużyny po głosie. Kontra na bardów. Jeden na pokój.' },
+    shackles: { name: 'Okowy', cost: 12, slot: 'floor', tag: 'furia', build: true, desc: 'Okowy (budowla, blokuje przejście jak skrzynia): w tym pokoju nikt nie wpada w furię, a skrzyń i budowli nie da się tu rozbić. Kontra na barbarzyńców. Jeden na pokój.' },
     fortify: { name: 'Bastion', cost: 10, slot: 'floor', tag: 'wyłomy', build: true, desc: 'Bastion (budowla, blokuje przejście jak skrzynia): przez ściany tego pokoju gildia nie przebije wyłomu. Jeden na pokój.' },
     upgrade: { name: 'Ulepsz', cost: 0, slot: null, tag: 'poziom +1', mode: true, desc: 'Ulepsz: stuknij pułapkę albo potwora (koszt nad elementem). Poziom 2 i 3 to więcej mocy, poziom 3 dodaje cechę. Stuknij Ulepsz znowu, żeby wyjść.' },
     move: { name: 'Przenieś', cost: 0, slot: null, tag: 'za darmo', mode: true, desc: 'Przenieś: stuknij element, potem nowe miejsce. Za darmo, poziom zostaje. Tak przestawisz pułapki znane z plotek.' },
@@ -111,12 +114,12 @@
     { id: 'traps', label: 'Pułapki', items: ['spikes', 'arrows', 'web', 'trapdoor', 'cage', 'fire', 'gate', 'powder', 'mimic', 'portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox'] },
     { id: 'monster', label: 'Potwory', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman', 'ghost', 'shade', 'bats'] },
     { id: 'loot', label: 'Łup', items: ['loot', 'lpotion', 'loot2', 'loot3', 'lcursed'] },
-    { id: 'object', label: 'Obiekty', items: ['crate', 'rune', 'altar', 'decoy', 'acid', 'veil', 'fortify'] },
+    { id: 'object', label: 'Obiekty', items: ['crate', 'rune', 'altar', 'decoy', 'acid', 'howl', 'shackles', 'veil', 'fortify'] },
     { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish', 'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault'] },   // no Przenieś (a tap moves), no Ulepsz (a double tap upgrades)
     { id: 'deck', label: 'Talia', items: [] }
   ];
   const ITEM_ORDER = TABS.flatMap(t => t.items).concat(['upgrade']);   // Ulepsz stays as a mode the code knows, with no tile in any tab
-  const START_UNLOCKED = ['spikes', 'trapdoor', 'arrows', 'portrait', 'eyes', 'bones', 'gate', 'crate', 'powder', 'goblin', 'archer', 'loot', 'lpotion', 'loot2', 'loot3', 'lcursed', 'dig', 'tunnel', 'expand', 'demolish', 'rune', 'altar', 'decoy', 'acid', 'veil', 'fortify', 'upgrade', 'move',
+  const START_UNLOCKED = ['spikes', 'trapdoor', 'arrows', 'portrait', 'eyes', 'bones', 'gate', 'crate', 'powder', 'goblin', 'archer', 'loot', 'lpotion', 'loot2', 'loot3', 'lcursed', 'dig', 'tunnel', 'expand', 'demolish', 'rune', 'altar', 'decoy', 'acid', 'veil', 'fortify', 'howl', 'shackles', 'upgrade', 'move',
     'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault'];
   const TRAPS = { spikes: 1, web: 1, trapdoor: 1, cage: 1, arrows: 1, fire: 1, portrait: 1, gate: 1, powder: 1, mimic: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1 };
   const MONSTERS = { goblin: 1, archer: 1, spider: 1, ogre: 1, shaman: 1, ghost: 1, shade: 1, bats: 1 };
@@ -142,7 +145,8 @@
   const SIZE_BONUS = 0.05;   // Rozległość lochu: +0,05 greed for every room over 5 (v14: everything global is greed)
   const DISARMABLE = { spikes: 1, web: 1, trapdoor: 1, cage: 1, gate: 1, arrows: 1, fire: 1, powder: 1, decoy: 1, creak: 1, coffin: 1, musicbox: 1 };
   // Counter-buildings: placed between waves on a room floor, take a slot, one of each kind per room.
-  const BUILDINGS = { rune: 1, altar: 1, decoy: 1, acid: 1, veil: 1, fortify: 1 };
+  const BUILDINGS = { rune: 1, altar: 1, decoy: 1, acid: 1, veil: 1, fortify: 1, howl: 1, shackles: 1 };
+  const SMASHABLE_OBJ = { crate: 1, barrel: 1, shelf: 1 };   // 1.05: what a barbarian's axe goes through (wood; not the stone statues)
   const LOOKS_TRAP = t => !!TRAPS[t] || t === 'decoy';   // what the heroes take for a trap
   const SLOTTED = t => !!ACTIVE[t] || !!BUILDINGS[t];   // what counts towards a room's limit
   // Upgrades: level 2 costs 2x the base price, level 3 another 4x; the level multiplies the power, level 3 adds a trait.
@@ -185,8 +189,24 @@
   const DMG_TYPES = { pierce: 'kłute', blunt: 'obuchowe', fire: 'ogień', poison: 'trucizna' };
   const DMG_OF = { spikes: 'pierce', arrows: 'pierce', archer: 'pierce', goblin: 'pierce', mimic: 'pierce', gate: 'blunt', ogre: 'blunt', trapdoor: 'blunt',
     fire: 'fire', powder: 'fire', spider: 'poison', shaman: 'poison', loot: 'poison', bats: 'pierce' };
-  const CLASS_RES = { warrior: { pierce: 0.75, blunt: 1.25 }, thief: { fire: 1.25, poison: 0.75 }, priest: { pierce: 1.1, fire: 0.85, poison: 0.85 }, mage: { pierce: 1.25, blunt: 1.1, fire: 0.7 } };
-  const CLASS_RES_TEXT = { warrior: 'płyty: kłute -25%, obuchowe +25%', thief: 'skóra: ogień +25%, trucizna -25% (odtrutki)', priest: 'szaty i modlitwa: kłute +10%, ogień -15%, trucizna -15%', mage: 'szata i bariera: kłute +25%, obuchowe +10%, ogień -30%' };
+  const CLASS_RES = { warrior: { pierce: 0.75, blunt: 1.25 }, thief: { fire: 1.25, poison: 0.75 }, priest: { pierce: 1.1, fire: 0.85, poison: 0.85 }, mage: { pierce: 1.25, blunt: 1.1, fire: 0.7 },
+    bard: { blunt: 1.2, poison: 1.1 }, barbarian: { blunt: 0.8, fire: 1.2, poison: 1.1 } };
+  const CLASS_RES_TEXT = { warrior: 'płyty: kłute -25%, obuchowe +25%', thief: 'skóra: ogień +25%, trucizna -25% (odtrutki)', priest: 'szaty i modlitwa: kłute +10%, ogień -15%, trucizna -15%', mage: 'szata i bariera: kłute +25%, obuchowe +10%, ogień -30%',
+    bard: 'lekki strój: obuchowe +20%, trucizna +10%', barbarian: 'futra i krzepa: obuchowe -20%, ogień +20%, trucizna +10%' };
+  // 1.05: what each class does, in a few words (the list of the next party, the hero card)
+  const CLASS_SKILL = { warrior: 'tarcza, walczy z potworami', thief: 'wykrywa i rozbraja pułapki', priest: 'leczy, osłania, odczynia', mage: 'kula ognia, zakłóca pułapki',
+    bard: 'pieśń krzepi, woła zgubionych', barbarian: 'furia, rozbija skrzynie i budowle' };
+  // 1.05: class icons (24x24, drawn on the map and in the lists): sword, dagger, cross, wand, lute, axe; the bag marks a treasure hunter
+  const CLASS_ICON = {
+    warrior: { rot: 0, d: 'M11 1.5h2l1.2 2.3V14h-4.4V3.8z M6.5 14h11v2.3h-11z M10.9 16.3h2.2v4h-2.2z M12 19.6a1.7 1.7 0 1 1-0.01 0z' },
+    thief: { rot: 45, d: 'M12 3l2 3.4V14h-4V6.4z M7.6 14h8.8v2.1H7.6z M11 16.1h2v3.6h-2z M12 19.2a1.5 1.5 0 1 1-0.01 0z' },
+    priest: { rot: 0, d: 'M10 1.5h4v6h6.5v4H14V22.5h-4V11.5H3.5v-4H10z' },
+    mage: { rot: 0, d: 'M3.2 19.4l10.6-10.6 1.8 1.8L5 21.2z M17.5 1.5l1.3 3 3.2 1.2-3.2 1.3-1.3 3-1.3-3-3.2-1.3 3.2-1.2z' },
+    bard: { rot: 0, d: 'M8.5 9a6.2 6.2 0 1 1-0.01 0z M8.5 13.6a1.6 1.6 0 1 0 0.01 0z M11.6 10.6l6.6-6.6 1.6 1.6-6.6 6.6z M17.4 3.2l2.2-1.7 2.9 2.9-1.7 2.2z' },
+    barbarian: { rot: 0, d: 'M12 2h2.2v20.5H12z M12 4.6L5.4 2.2C2.6 6.2 2.6 11.6 5.4 15.6L12 12.6z M14.2 6.2h2.8v4.4h-2.8z' },
+    bag: { rot: 0, d: 'M8.8 6.6h6.4l-1.1-3.6H9.9z M5 15.2c0-4.9 3.3-7.6 7-7.6s7 2.7 7 7.6c0 4.2-3 6.3-7 6.3s-7-2.1-7-6.3z' }
+  };
+
   // body: a weakness or a toughness (some heroes have one; a scar from your dungeon gives one too)
   const PHYS = {
     thickskin: { name: ['gruboskóry', 'gruboskóra'], res: { pierce: 0.7 }, text: 'kłute -30%' },
@@ -216,10 +236,14 @@
     warrior: { name: ['Wojownik', 'Wojowniczka'], hp: 120, speed: 1.5, dps: 18, color: '#cdd6ea', letter: 'W', greed: 0.6 },
     thief: { name: ['Złodziej', 'Złodziejka'], hp: 70, speed: 1.9, dps: 10, color: '#9be37a', letter: 'Z', greed: 1.5 },
     priest: { name: ['Kapłan', 'Kapłanka'], hp: 80, speed: 1.3, dps: 6, color: '#ffe9a8', letter: 'K', greed: 0.9 },
-    mage: { name: ['Mag', 'Czarodziejka'], hp: 65, speed: 1.3, dps: 8, color: '#b9a4ff', letter: 'M', greed: 1.0 }
+    mage: { name: ['Mag', 'Czarodziejka'], hp: 65, speed: 1.3, dps: 8, color: '#b9a4ff', letter: 'M', greed: 1.0 },
+    bard: { name: ['Bard', 'Bardka'], hp: 75, speed: 1.4, dps: 7, color: '#73d6c6', letter: 'B', greed: 1.2 },   // 1.05
+    barbarian: { name: ['Barbarzyńca', 'Barbarzynka'], hp: 135, speed: 1.45, dps: 20, color: '#f2955e', letter: 'R', greed: 0.7 }   // 1.05
   };
-  const PARTY = ['warrior', 'thief', 'priest', 'mage'];
-  const LEADER_ORDER = ['warrior', 'priest', 'mage', 'thief'];
+  // 1.05: six classes and never two of one class in a party (the first waves bring the four classic ones)
+  const PARTY = ['warrior', 'thief', 'priest', 'mage', 'bard', 'barbarian'];
+  const CLASSIC = ['warrior', 'thief', 'priest', 'mage'];
+  const LEADER_ORDER = ['warrior', 'barbarian', 'priest', 'bard', 'mage', 'thief'];
   // [mianownik, biernik, wołacz]
   const NAMES_M = [['Borys', 'Borysa', 'Borysie'], ['Wit', 'Wita', 'Wicie'], ['Radek', 'Radka', 'Radku'], ['Zbych', 'Zbycha', 'Zbychu'], ['Mirek', 'Mirka', 'Mirku'],
     ['Bogdan', 'Bogdana', 'Bogdanie'], ['Lech', 'Lecha', 'Lechu'], ['Gniewko', 'Gniewka', 'Gniewku'], ['Lis', 'Lisa', 'Lisie'], ['Jarek', 'Jarka', 'Jarku'],
@@ -252,7 +276,8 @@
       sapper: L >= 7 ? Math.min(1, 0.08 * (L - 6)) : 0, sight: L >= 8 };   // sapper = chance that a disarm takes the trap apart for good
   }
   // The kit grows with the level: more pieces and better ones (power r has no ceiling either).
-  const KIT = { warrior: { potion: 3, charm: 3, bomb: 2, amulet: 1 }, thief: { boots: 3, amulet: 2, potion: 2, bomb: 1 }, priest: { potion: 3, amulet: 3, charm: 2 }, mage: { bomb: 3, potion: 2, amulet: 2, charm: 1 } };
+  const KIT = { warrior: { potion: 3, charm: 3, bomb: 2, amulet: 1 }, thief: { boots: 3, amulet: 2, potion: 2, bomb: 1 }, priest: { potion: 3, amulet: 3, charm: 2 }, mage: { bomb: 3, potion: 2, amulet: 2, charm: 1 },
+    bard: { potion: 2, amulet: 3, boots: 2 }, barbarian: { potion: 3, bomb: 2, charm: 1 } };
   function makeKit(type, L) {
     const n = L <= 2 ? (Math.random() < 0.3 ? 1 : 0) : Math.floor((L + 1) / 3), r = 1 + Math.floor((L - 1) / 4), w = KIT[type], out = [];
     const tot = Object.values(w).reduce((a, b) => a + b, 0);
@@ -487,6 +512,7 @@
     heartLater: ['Serce! Ale najpierw przeszukajmy resztę.'],
     assault: ['Po kryształ!', 'Do serca!', 'Bierzemy kryształ!'],
     steal: ['Mam kryształ! Uciekamy!', 'Kryształ jest nasz! Do wyjścia!'],
+    heartRepel: ['Ono parzy! Kryształ ani drgnie!', 'Serce nas odpycha!', 'Nie da się go wyrwać, za gorąco!'],   // 1.05: wave 1
     crystalDrop: ['Kryształ! Nie!', 'Zgubiliśmy kryształ!'],
     escape: ['Do wyjścia!', 'Szybciej, zanim nas dopadnie!', 'Osłaniajcie niosącego!'],
     flee: ['Wynoszę się stąd!', 'Mam dość, wracam!', 'Nie zapłacą mi za to!', 'Mamo!'],
@@ -553,11 +579,29 @@
     guildKill: ['Gildia dała nam tarcze. Nie zginiemy jak tamci.', 'Wojownicy przodem, tym razem przeżyjemy.'],
     guildTraps: ['Złodzieje przodem, tu jest pełno pułapek.', 'Gildia mówi: pułapka na pułapce. Biorę zestaw do rozbrajania.'],
     guildMonsters: ['Mamy maga na potwory.', 'Tym razem potwory spłoną.'],
+    guildLost: ['Gildia dała nam barda. Tym razem nikt się nie zgubi.', 'Mamy lutnię. Trzymajcie się dźwięku.'],
+    guildBlock: ['Gildia przysłała barbarzyńcę. Skrzynie nas nie zatrzymają.', 'Topór przodem, tu wszystko zastawione!'],
     bRune: ['Runa! Moje zaklęcia tu nie sięgają.', 'Ten kamień zjada magię...'],
     bAltar: ['Bluźnierczy ołtarz... moja modlitwa tu nie sięga!', 'To miejsce jest przeklęte, bogowie mnie nie słyszą.'],
     bAcid: ['Kwas! Tarcza mi się topi!', 'Ten opar przeżera osłony...'],
     bVeil: ['Tego pokoju nie było w opowieściach...', 'Nikt nam nie mówił o tym miejscu!'],
     bDecoy: ['To była zmyłka!', 'Pułapka w pułapce!', 'Alarm! Wszystko odpala!'],
+    bHowl: ['Ten kamień wyje... zagłusza mi lutnię!', 'Nic nie słychać przez to wycie!', 'Wiatr gra głośniej niż ja...'],
+    bShackles: ['Łańcuchy... czuję, jak furia gaśnie.', 'Okowy! Nie mogę się wściec!', 'Te kajdany... ręce mi ciążą.'],
+    // 1.05: the bard and the barbarian
+    song: ['Zagram wam coś na odwagę!', 'Głowy do góry! Ballada o tych, co wrócili!', 'Słuchajcie! Pieśń o bohaterach!', 'Raz, dwa... śpiewajcie ze mną!'],
+    songThanks: ['Od razu raźniej.', 'Graj dalej!', 'Dzięki, bardzie.', 'Dobra, dam radę.'],
+    bardCall: ['{n}! Idź na moją lutnię!', 'Gram głośniej! {n}, idź za dźwiękiem!', 'Słyszysz mnie, {n}? Tędy!'],
+    lostHear: ['Słyszę lutnię! Idę!', 'To nasz bard! Tędy!', 'Muzyka... tam są!'],
+    answer: ['Tutaj! Na mój głos!', 'Jesteśmy tu! Idź na głos!', '{n}! Tędy!'],
+    hearVoice: ['Słyszę ich! Idę na głos!', 'To oni! Już idę!'],
+    echoLost: ['To echo... skąd to idzie?!', 'Głosy ze wszystkich stron!', 'Wołają, ale skąd?!'],
+    rage: ['AAARGH!', 'Krew za krew!', 'Teraz się wściekł{em|am}!', 'Rozwalę ten loch!'],
+    rageNoPanic: ['Nie uciekam! Wściekam się!', 'Strach? Strach mnie tylko wkurza!', 'Bój się mnie, lochu!'],
+    smash: ['Z drogi, skrzynio!', 'Rozwalę to!', 'Topór lepszy niż klucz!', 'Drzazgi!'],
+    smashB: ['Precz z tym kamieniem!', 'Zaraz z tego będzie gruz!', 'Nic mnie nie zatrzyma!'],
+    bardIdle: ['Ułożę o tym balladę...', 'Ten loch to dobry temat na pieśń.', 'Rym do "kolce"? Hmm...'],
+    barbIdle: ['Za cicho. Chcę się bić.', 'Gdzie te potwory?', 'Mój topór się nudzi.'],
     champShout: ['Stać! Nikt nie ucieka!', 'Do mnie! Trzymamy szyk!', 'Tchórze nie dostaną złota!'],
     finalRage: ['Nie zatrzymasz przeznaczenia!', 'Teraz zobaczysz prawdziwą siłę!'],
     finalAura: ['Jestem z wami. Nie lękajcie się.', 'Przepowiednia nas prowadzi.'],
@@ -602,7 +646,33 @@
       closed: ['Tu jest za ciasno... nie mogę oddychać!', 'Ściany się zamykają!'], ghosts: ['Duchy... wiedział{em|am}, że tu są duchy!', 'Ten wzrok... on patrzy na mnie!'],
       blood: ['Tyle krwi... robi mi się słabo.', 'Kości... nie chcę tu skończyć jak oni!'], dark: ['Nic nie widzę... ciemność mnie zjada!', 'Sam{|a} w ciemności... nie, nie!'] },
     hunters: ['Słyszał{em|am} o złocie w tym lochu!', 'Gdzie te skarby, o których śpiewają?', 'Przyszł{em|am} po złoto, nie po kryształy.'],
-    friendLow: ['Trzymaj się, {n}!', '{n}, wycofaj się!', 'Osłońcie {a}!']
+    friendLow: ['Trzymaj się, {n}!', '{n}, wycofaj się!', 'Osłońcie {a}!'],
+    // 1.05: talk that knows what is going on: on the way out, at rest, reactions, a healer called, councils with traits
+    chatFlee: ['Szybciej!', 'Nie oglądaj się!', 'Już blisko wyjścia!', 'Byle dalej stąd...', 'Biegiem, biegiem!'],
+    chatCarrier: ['Mam go! Osłaniajcie mnie!', 'Kryształ jest ciężki... nie zatrzymujcie się!'],
+    chatHurtOut: ['Ledwo idę...', 'Nie zostawiajcie mnie!'],
+    chatRest: ['Opatrzmy rany.', 'Chwila oddechu...', 'Kto ma bandaże?', 'Nie siadaj na tej płycie!'],
+    chat_coward: ['Może jednak wrócimy?', 'Ja tu tylko noszę bagaże...', 'Czemu zawsze ja idę w środku?'],
+    chat_brave: ['Nie bój się, jestem z tobą.', 'Niech tylko coś wyskoczy!', 'Idziemy dalej, głowa do góry.'],
+    chat_careful: ['Patrzcie, gdzie stawiacie stopy.', 'Ta płyta jest luźna. Omijamy.', 'Powoli, nie ma pośpiechu.'],
+    chat_greedy: ['Gdzieś tu musi być skarbiec.', 'Czuję złoto.', 'Podział po równo, tak?'],
+    reassure: ['Spokojnie, damy radę.', 'Trzymaj się mnie.', 'Nie panikuj, jesteśmy razem.'],
+    surviveFirst: ['Najpierw przeżyjmy, potem liczmy.', 'Złoto nic nie da w grobie.'],
+    friendHit: ['Uważaj, {n}!', '{n}! Żyjesz?', 'Trzymaj się, {n}!', 'Cofnij się, {n}!'],
+    callHealer: ['{n}, tutaj! Krwawię!', '{n}! Potrzebuję leczenia!', 'Pomóż mi, {n}!'],
+    healerReply: ['Idę, wytrzymaj!', 'Już biegnę!', 'Nie ruszaj się, zaraz będę!'],
+    lootFlee: ['Nie ma czasu na złoto!', 'Zostawiam to! Uciekam!', 'Złoto? Życie ważniejsze!'],
+    deathFlee: ['{n} nie żyje! Uciekać!', 'Straciliśmy {a}! Szybciej!', 'Nie! {n}! ...Biegiem!'],
+    argueLoot: ['Tam coś błyszczy! Idźmy tamtędy!', 'Po złoto! Pokój obok!', 'Tamte drzwi, tam był skarb!'],
+    argueCareful: ['Wolniej. Którędy bezpieczniej?', 'Nie pchajmy się na ślepo.', 'Najpierw sprawdźmy podłogę.'],
+    argueCoward: ['A może po prostu wróćmy?', 'Mam złe przeczucia, chodźmy stąd.', 'Ja dalej nie idę...'],
+    argueBrave: ['Tchórzysz? Idziemy dalej!', 'Nie po to tu szliśmy, żeby zawrócić!'],
+    decideYes: ['Dobra, sprawdźmy tamto. Szybko!', 'Niech będzie, po złoto.', 'Zgoda, ale trzymamy się razem.'],
+    decideNo: ['Nie. Idziemy tędy.', 'Złoto poczeka. Za mną.', 'Ja prowadzę. Tędy.'],
+    argueSearch: ['Jeszcze nie przeszukaliśmy wszystkiego!', 'A skarby? Szliśmy tu po złoto!'],
+    replySearch: ['Kryształ jest ważniejszy.', 'Później. Najpierw serce.', 'Nie ma czasu, idziemy do serca.'],
+    argueRetreat: ['Nie cofamy się przed byle pułapką!', 'Odwrót? Teraz?!'],
+    agreeRetreat: ['Nareszcie ktoś rozsądny.', 'Tak, tak, wycofajmy się!']
   };
   const gtext = (t, female) => t.replace(/\{([^|}]*)\|([^}]*)\}/g, (_, m, f) => female ? f : m);
   const pick = a => a[Math.floor(Math.random() * a.length)];

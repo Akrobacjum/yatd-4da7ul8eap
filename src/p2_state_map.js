@@ -313,7 +313,7 @@
     if (t === WALL) return wallDirs(x, y).length ? 'wall' : null;
     return null;
   }
-  const blockerAt = (x, y) => { const it = fl.items.get(key(x, y)); return !!(it && BUILDINGS[it.type]); };   // Prototype 1.0: a building stands in the way like a crate
+  const blockerAt = (x, y) => { const it = fl.items.get(key(x, y)); return !!(it && BUILDINGS[it.type] && !it.broken); };   // 1.05: a building smashed by a barbarian is rubble you can walk over   // Prototype 1.0: a building stands in the way like a crate
   const walkable = (x, y) => tileAt(x, y) === FLOOR && !isHeart(x, y) && !fl.objects.has(key(x, y)) && !blockerAt(x, y);
   // room types (Pokoje tab): fog, swamp, grotto, crypt, vault
   const rtOf = r => (fl && r >= 0 && fl.rooms[r] && fl.rooms[r].rt) || null;

@@ -1,5 +1,6 @@
   /* ================= drawing ================= */
-  const numFont = (px, bold) => (bold ? '700 ' : '500 ') + Math.round(px) + 'px "Pixelify Sans", ui-monospace, monospace';
+  // 1.05 (testers mixed up 2 and 8 in Pixelify Sans): Jersey 10, one weight (no fake bold on the canvas)
+  const numFont = (px, bold) => '400 ' + Math.round(px * 1.08) + 'px "Jersey 10", ui-monospace, monospace';
   function rr(x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
     ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
@@ -66,6 +67,7 @@
     drawFx(T);
     fl.heroes.forEach(h => { if (!h.dead && !h.fled && !h.gone) drawHero(h, T); });
     fl.items.forEach(it => { if (DRIFT[it.type] && seen(Math.floor(it.gx !== undefined ? it.gx : it.x), Math.floor(it.gy !== undefined ? it.gy : it.y))) drawItem(it, T); });   // ghosts, shades and bats float above everything
+    if (fl.phase === 'raid') drawMemBadges(T, seen);
     drawParticles(T); drawFloats(T);
     ctx.restore();
   }
@@ -232,9 +234,36 @@
       }
     }
   }
+  // 1.05: a trap's answer for this wave, in the check's own language: a full pale disc = crit, a ring = graze; a skull = let go
+  function drawMemBadges(T, seen) {
+    if (T < 9) return;
+    const r = Math.max(3, T * 0.13);
+    fl.items.forEach(it => {
+      const m = memOf(it), off = it.skullOff;
+      if (!m && !off) return;
+      const gh = DRIFT[it.type] && it.gx !== undefined, x = (gh ? it.gx + 0.3 : it.x + 0.84) * T, y = (gh ? it.gy - 0.3 : it.y + 0.16) * T;
+      if (!seen(Math.floor(x / T), Math.floor(y / T))) return;
+      ctx.save();
+      ctx.fillStyle = 'rgba(8,8,10,0.75)'; ctx.beginPath(); ctx.arc(x, y, r + 2, 0, Math.PI * 2); ctx.fill();
+      if (off) {
+        ctx.fillStyle = CK.zone; ctx.font = numFont(Math.max(8, r * 1.8), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('☠', x, y + 0.5);
+      } else if (m === 'crit') {
+        ctx.shadowColor = 'rgba(255,244,225,0.85)'; ctx.shadowBlur = 6; ctx.fillStyle = CK.zone; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.strokeStyle = CK.zone; ctx.lineWidth = Math.max(1.4, r * 0.45); ctx.beginPath(); ctx.arc(x, y, r * 0.8, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
   function drawItem(it, T) {
     const gh = DRIFT[it.type] && it.gx !== undefined;
     const px = (gh ? it.gx - 0.5 : it.x) * T, py = (gh ? it.gy - 0.5 : it.y) * T, cx = px + T / 2, cy = py + T / 2, s = T;
+    if (it.broken) {   // 1.05: smashed by a barbarian: rubble for the rest of the wave
+      ctx.fillStyle = '#3a3640';
+      [[-0.2, 0.18, 0.12], [0.05, 0.24, 0.1], [0.22, 0.12, 0.08], [-0.05, 0.02, 0.07], [0.16, 0.3, 0.06]].forEach(q => { ctx.beginPath(); ctx.arc(cx + q[0] * s, cy + q[1] * s, q[2] * s, 0, Math.PI * 2); ctx.fill(); });
+      ctx.fillStyle = 'rgba(160,150,170,0.35)'; ctx.fillRect(cx - s * 0.3, cy + s * 0.3, s * 0.6, s * 0.04);
+      return;
+    }
     if (BUILDINGS[it.type]) { ctx.fillStyle = 'rgba(0,0,0,0.42)'; ctx.beginPath(); ctx.ellipse(cx, py + s * 0.86, s * 0.38, s * 0.11, 0, 0, Math.PI * 2); ctx.fill(); }   // it stands: a shadow like the furniture
     switch (it.type) {
       case 'trapdoor': {
@@ -381,6 +410,20 @@
         ctx.fillStyle = '#3b2a55'; ctx.fillRect(cx - s * 0.34, cy - s * 0.34, s * 0.68, s * 0.06);
         ctx.fillStyle = '#5b3f8a';
         for (let k = 0; k < 4; k++) { const x = cx - s * 0.32 + k * s * 0.16; ctx.beginPath(); ctx.moveTo(x, cy - s * 0.28); ctx.quadraticCurveTo(x + s * 0.08 + Math.sin(realNow * 1.5 + k) * s * 0.02, cy, x + s * 0.02, cy + s * 0.32); ctx.lineTo(x + s * 0.14, cy + s * 0.32); ctx.lineTo(x + s * 0.16, cy - s * 0.28); ctx.closePath(); ctx.fill(); }
+        break;
+      }
+      case 'howl': {   // 1.05: a weathered stone with holes; the wind howls in them (waves pulse out)
+        ctx.fillStyle = '#6e6a78'; ctx.beginPath(); ctx.moveTo(cx - s * 0.22, cy + s * 0.32); ctx.quadraticCurveTo(cx - s * 0.28, cy - s * 0.2, cx - s * 0.04, cy - s * 0.36); ctx.quadraticCurveTo(cx + s * 0.26, cy - s * 0.3, cx + s * 0.22, cy + s * 0.32); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#16131b'; ctx.beginPath(); ctx.ellipse(cx - s * 0.04, cy - s * 0.1, s * 0.07, s * 0.1, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(cx + s * 0.08, cy + s * 0.12, s * 0.05, 0, Math.PI * 2); ctx.fill();
+        const ph = (realNow * 0.9 + it.x * 0.3) % 1; ctx.strokeStyle = 'rgba(115,214,198,' + (0.55 * (1 - ph)).toFixed(2) + ')'; ctx.lineWidth = Math.max(1, s * 0.035);
+        ctx.beginPath(); ctx.arc(cx, cy - s * 0.04, s * (0.3 + 0.12 * ph), -0.6, 0.6); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy - s * 0.04, s * (0.3 + 0.12 * ph), Math.PI - 0.6, Math.PI + 0.6); ctx.stroke();
+        break;
+      }
+      case 'shackles': {   // 1.05: an iron post with chains and open cuffs
+        ctx.fillStyle = '#3a3440'; ctx.fillRect(cx - s * 0.06, cy - s * 0.34, s * 0.12, s * 0.66);
+        ctx.fillStyle = '#5a5262'; ctx.fillRect(cx - s * 0.1, cy - s * 0.36, s * 0.2, s * 0.06);
+        ctx.strokeStyle = '#9a96a6'; ctx.lineWidth = Math.max(1, s * 0.035);
+        [-1, 1].forEach(sd => { for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.ellipse(cx + sd * s * (0.1 + k * 0.08), cy - s * 0.12 + k * s * 0.09, s * 0.045, s * 0.03, sd * 0.6, 0, Math.PI * 2); ctx.stroke(); } ctx.beginPath(); ctx.arc(cx + sd * s * 0.3, cy + s * 0.2, s * 0.07, 0, Math.PI * 2); ctx.stroke(); });
         break;
       }
       case 'fortify': {   // reinforced brickwork
@@ -816,8 +859,16 @@
       }
     });
   }
+  // 1.05 (testers could not tell the heroes apart): a class icon on every hero disc instead of a letter
+  const CI_PATH = {};
+  function drawClassIcon(type, cx, cy, size, color) {
+    const ic = CLASS_ICON[type]; if (!ic) return;
+    const p = CI_PATH[type] || (CI_PATH[type] = new Path2D(ic.d));
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(size / 24, size / 24); if (ic.rot) ctx.rotate(ic.rot * Math.PI / 180); ctx.translate(-12, -12);
+    ctx.fillStyle = color; ctx.fill(p, 'evenodd'); ctx.restore();
+  }
   function drawHero(h, T) {
-    const p = heroPos(h), x = p.x * T, y = p.y * T, rad = T * 0.24;
+    const p = heroPos(h), sm = h.state === 'smash' ? Math.sin(realNow * 40) * T * 0.04 : 0, x = p.x * T + sm, y = p.y * T, rad = T * 0.24;   // 1.05: the axe swings
     if (h.path.length && h.state !== 'boss') {
       ctx.fillStyle = h.T.color; ctx.globalAlpha = 0.45;
       h.path.slice(0, 6).forEach((t, k) => { ctx.beginPath(); ctx.arc((t[0] + 0.5) * T, (t[1] + 0.5) * T, Math.max(1.5, T * (0.07 - k * 0.007)), 0, Math.PI * 2); ctx.fill(); });
@@ -840,8 +891,8 @@
     if (T >= 18) { ctx.fillStyle = h.R.color; ctx.font = numFont(Math.max(9, T * 0.2), true); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(String(h.lvl), x + rad * 0.95, y + rad * 0.75); }
     if (fl.time < h.slowUntil) { ctx.strokeStyle = '#a9c6ff'; ctx.lineWidth = Math.max(1.5, T * 0.04); ctx.beginPath(); ctx.arc(x, y, rad + T * 0.05, 0, Math.PI * 2); ctx.stroke(); }
     if (fl.time < h.burnUntil) { ctx.fillStyle = Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x + rad * 0.7, y - rad * 0.7, T * 0.07, 0, Math.PI * 2); ctx.fill(); }
-    ctx.fillStyle = '#1a1424'; ctx.font = numFont(Math.max(9, T * 0.26), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(h.T.letter, x, y + T * 0.01);
+    drawClassIcon(h.type, x, y, rad * 1.7, '#1a1424');
+    if (h.hunter && T >= 14) drawClassIcon('bag', x - rad * 1.05, y - rad * 0.85, Math.max(7, T * 0.26), '#f2b94b');   // a treasure hunter
     hpBar(x, y - rad - T * 0.14, T * 0.56, h.hp / h.max, h.hp / h.max > 0.35 ? '#6fd38a' : '#ff6b6b', T);
     hpBar(x, y - rad - T * 0.14 + Math.max(2.5, T * 0.09), T * 0.56, h.fear / (h.courage * (fl.fearless ? 1.3 : 1)), '#b48cff', T);   // fear: full bar = runs away
     if (h.shield > 0) hpBar(x, y - rad - T * 0.14 - Math.max(3, T * 0.1), T * 0.56, h.shield / h.max, '#7fb8ff', T);
@@ -930,7 +981,7 @@
       ctx.globalAlpha = hh.queued ? 0.5 : (hh.dead || hh.fled ? 0.4 : 1);
       ctx.fillStyle = hh.T.color; ctx.beginPath(); ctx.arc(x, y, 6.5, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = hh.boss ? '#ff8a3c' : hh.R.color; ctx.lineWidth = hh.boss ? 2.4 : 1.6; ctx.stroke();
-      ctx.fillStyle = '#1a1424'; ctx.font = numFont(8, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(hh.T.letter, x, y + 0.5);
+      drawClassIcon(hh.type || (hh.e && hh.e.type), x, y, 10.5, '#1a1424');
       ctx.fillStyle = hh.R.color; ctx.font = numFont(8, true); ctx.textAlign = 'left'; ctx.fillText(String(hh.lvl), x + 7, y - 4);
       if (hh.hp !== undefined && fl.phase === 'raid') {
         const frac = clamp(hh.hp / hh.max, 0, 1), bw = 18, bx = x - 9, by = y + 9;
@@ -961,7 +1012,7 @@
       ctx.globalAlpha = hh.queued ? 0.45 : (hh.dead || hh.fled ? 0.5 : 1);
       ctx.fillStyle = hh.T.color; ctx.beginPath(); ctx.arc(16, y + 6, 5.5, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = hh.R.color; ctx.lineWidth = 1.6; ctx.stroke();
-      ctx.fillStyle = '#1a1424'; ctx.font = numFont(8, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(hh.T.letter, 16, y + 6.5);
+      drawClassIcon(hh.type || (hh.e && hh.e.type), 16, y + 6, 9.5, '#1a1424');
       const frac = clamp(hh.hp / hh.max, 0, 1);
       ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(25, y + 2, 48, 5);
       ctx.fillStyle = hh.dead ? '#6b5560' : frac > 0.35 ? '#6fd38a' : '#ff6b6b'; ctx.fillRect(25, y + 2, 48 * frac, 5);
@@ -1140,7 +1191,7 @@
     const list = run.next || [];
     if (!list.length) { uiRects.list = null; return; }
     if (!UI.listOpen) {
-      const hh = drawChips(list.map(e => ({ T: HEROES[e.type], R: levelStats(e.lvl), lvl: e.lvl, boss: e.boss })));
+      const hh = drawChips(list.map(e => ({ type: e.type, T: HEROES[e.type], R: levelStats(e.lvl), lvl: e.lvl, boss: e.boss })));
       if (fl.breach) { const fresh = run.layout.breach && run.layout.breach.fresh, bw = fresh ? 62 : 76; ctx.fillStyle = 'rgba(120,20,30,0.85)'; rr(6, 6 + hh + 4, bw, 18, 6); ctx.fill(); ctx.fillStyle = '#ffd0d0'; ctx.font = numFont(10, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(fresh ? 'WYŁOM!' : 'WYŁOM otwarty', 6 + bw / 2, 6 + hh + 13); }
       return;
     }
@@ -1155,7 +1206,7 @@
       const y = 26 + k * rowH, T0 = HEROES[e.type], R0 = levelStats(e.lvl);
       ctx.fillStyle = T0.color; ctx.beginPath(); ctx.arc(16, y, 5, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = R0.color; ctx.lineWidth = 1.6; ctx.stroke();
-      ctx.fillStyle = '#1a1424'; ctx.font = numFont(8, true); ctx.textAlign = 'center'; ctx.fillText(T0.letter, 16, y + 0.5);
+      drawClassIcon(e.type, 16, y, 9.5, '#1a1424');
       ctx.fillStyle = R0.color; ctx.font = '600 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left';
       ctx.fillText(e.nm[0] + ' · poz. ' + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][e.female ? 1 : 0] : R0.name[e.female ? 1 : 0]).toLowerCase() + (e.returning ? ' · wraca' : e.hunter ? ' · łowca' : e.recruit ? ' · rekrut' : '') + (e.phobia && ((e.known || []).includes('phobia') || mods.revealAll) ? ' · boi się: ' + PHOBIAS[e.phobia].name : ''), 25, y, w - 24);
     });

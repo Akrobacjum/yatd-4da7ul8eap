@@ -34,7 +34,8 @@ async def main():
         s3 = await page.evaluate(ST); print('resumed', s3)
         if s3['tut'] != s2['tut'] or not s3['coach']: fails.append('the coach comes back at the same step')
         # release the wave, then close mid-wave: back to the build with the coach at "release the wave"
-        await page.evaluate("__yatd.run.tut = 7"); await page.evaluate("__yatd.startWave()"); await page.wait_for_timeout(600)   # step 7 = release the wave; the save right before the wave holds it
+        GO = await page.evaluate("__yatd.TUT.findIndex(s => s.id === 'go')"); NOV = await page.evaluate("__yatd.TUT.findIndex(s => s.id === 'novice')")   # 1.05: steps by id (new steps came in)
+        await page.evaluate("__yatd.run.tut = " + str(GO)); await page.evaluate("__yatd.startWave()"); await page.wait_for_timeout(600)   # step 7 = release the wave; the save right before the wave holds it
         s4 = await page.evaluate(ST); print('in the wave', s4)
         await boot(page)
         await page.click('#start-continue'); await page.wait_for_timeout(800)
@@ -43,13 +44,13 @@ async def main():
         s5 = await page.evaluate(ST); print('resumed after a wave cut short', s5)
         if s5['phase'] != 'build' or not s5['coach'] or 'Wypuść' not in s5['coach']: fails.append('back to the build, coach says release the wave')
         # a save that holds a step of the wave itself (8 = novice): back to "release the wave"
-        await page.evaluate("__yatd.run.tut = 8")
+        await page.evaluate("__yatd.run.tut = " + str(NOV))
         await page.evaluate("(() => { const G = __yatd; for (let y = 0; y < G.WH; y++) for (let x = 0; x < G.WW; x++) if (G.canPlace('spikes', x, y)) { G.tryPlace('spikes', x, y); return; } })()")
         await page.wait_for_timeout(1000)
         await boot(page); await page.click('#start-continue'); await page.wait_for_timeout(800)
         while await page.evaluate("__yatd.modalKind"): await page.evaluate("__yatd.closeModal()")
         s5b = await page.evaluate(ST); print('resumed with a wave step saved', s5b)
-        if s5b['tut'] != 7 or not s5b['coach'] or 'Wypuść' not in s5b['coach']: fails.append('a wave step goes back to release the wave')
+        if s5b['tut'] != GO or not s5b['coach'] or 'Wypuść' not in s5b['coach']: fails.append('a wave step goes back to release the wave')
         # end the tutorial: a reload offers "Kontynuuj run", no coach
         await page.evaluate("(() => { const c = document.querySelector('#coach .skip'); if (c) c.click(); })()"); await page.wait_for_timeout(300)
         await page.evaluate("(() => { const G = __yatd; G.fl.essence -= 0; for (let y = 0; y < G.WH; y++) for (let x = 0; x < G.WW; x++) if (G.canPlace('arrows', x, y)) { G.tryPlace('arrows', x, y); return; } })()")

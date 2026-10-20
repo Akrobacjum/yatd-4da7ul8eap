@@ -77,7 +77,7 @@
   // counter-buildings: which rooms hold which (computed when a wave starts)
   function computeBRooms() {
     const o = {}; Object.keys(BUILDINGS).forEach(t => { o[t] = new Set(); });
-    fl.items.forEach(it => { if (BUILDINGS[it.type]) o[it.type].add(roomOf(it.x, it.y)); });
+    fl.items.forEach(it => { if (BUILDINGS[it.type] && !it.broken) o[it.type].add(roomOf(it.x, it.y)); });   // 1.05: a smashed one does nothing
     return o;
   }
   const inB = (t, r) => !!(fl && fl.bRooms && r >= 0 && fl.bRooms[t] && fl.bRooms[t].has(r));
@@ -272,7 +272,7 @@
     validateItems(true);
     fl.items.forEach(it => {   // between waves everything is repaired and re-armed; monsters lick their wounds
       it.cd = 0; it.disabled = false; it.bent = false; it.anim = 0; it.sleep = false; it.detected = false; it.rumored = false; it.uses = 0; it.seenWave = 0; it.preview = 0; it.noGreed = false; it.cursedKnown = false;
-      it.jamUntil = 0; it.skipUntil = 0; it.lastFire = null;   // wave clocks restart at 0: stale timers from last wave would jam or mute a trap
+      it.jamUntil = 0; it.skipUntil = 0; it.lastFire = null; it.broken = false;   // wave clocks restart at 0: stale timers from last wave would jam or mute a trap; smashed buildings stand again
       if (MONSTERS[it.type]) { it.hp = it.max; it.gx = it.x + 0.5; it.gy = it.y + 0.5; it.foeT = 0; }
     });
     fl.bRooms = computeBRooms();
@@ -280,8 +280,9 @@
   function startBuild(resume) {
     setupFl('build');
     if (!run.shop || run.shop.wave !== run.wave) shopRefresh(true);   // v14: a fresh offer every wave
-    if (!resume || !run.next) {
-      run.next = makeWave(run.wave);
+    if (!run.next || run.nextFor !== run.wave) { run.next = makeWave(run.wave); run.nextFor = run.wave; }   // 1.05: usually made at the end of the last wave
+    if (run.builtFor !== run.wave) {
+      run.builtFor = run.wave;
       if (mods.mole && run.wave % 2 === 0 && run.moleWave !== run.wave) { run.freeDigs += mods.mole; run.moleWave = run.wave; }   // Kret: a free room every second wave
       // a breach stays until you patch it; from wave 6 the guild may dig a new one (one at a time)
       if (!run.layout.breach && run.wave >= 6 && run.tut < 0 && Math.random() < BREACH_P && planBreach()) { rebuildDungeon(true); run.breachNew = run.wave; }
@@ -414,18 +415,24 @@
   }
   // The guild reads the last wave's report and sends the right people (from wave 3): priests and amulets against fear,
   // warriors and talismans against a slaughterhouse, thieves against a minefield, a mage against monsters.
+  const GUILD_WANT = { fear: 'priest', kill: 'warrior', traps: 'thief', monsters: 'mage', lost: 'bard', block: 'barbarian' };
   function guildAdapt(n) {
     const w = run.waves[run.waves.length - 1];
     if (n < 3 || !w) return null;
     const st = w.stats, fearShare = (st.fearPts + st.scarePts) / Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts);
     const killShare = st.kills / Math.max(1, w.heroes.length);
-    let traps = 0, mons = 0; run.items.forEach(it => { if (TRAPS[it.type]) traps++; else if (MONSTERS[it.type]) mons++; });
+    let traps = 0, mons = 0, blocks = 0; run.items.forEach(it => { if (TRAPS[it.type]) traps++; else if (MONSTERS[it.type]) mons++; if (BUILDINGS[it.type]) blocks++; });
+    run.layout.cells.forEach(c => (c.objs || []).forEach(o => { if (o[2] === 'crate' && o[3]) blocks++; }));   // crates you built
+    const lostShare = (st.lostPts + st.lonePts) / Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts + st.lostPts + st.lonePts);
     const opts = [
-      { kind: 'fear', sc: fearShare > 0.55 ? fearShare : 0, text: 'wie, że straszysz: przysyła kapłanów z amuletami (od fali 6 amulet ma każdy). Kontra: Ołtarz (zakładka Obiekty).' },
-      { kind: 'kill', sc: killShare >= 0.5 ? killShare : 0, text: 'wie, że zabijasz: przysyła wojowników z talizmanami (od fali 6 talizman ma każdy). Kontra: Kwas (zakładka Obiekty).' },
+      { kind: 'fear', sc: fearShare > 0.55 ? fearShare : 0, text: 'wie, że straszysz: przysyła kapłana z amuletem (od fali 6 amulet ma każdy). Kontra: Ołtarz (zakładka Obiekty).' },
+      { kind: 'kill', sc: killShare >= 0.5 ? killShare : 0, text: 'wie, że zabijasz: przysyła wojownika z talizmanem (od fali 6 talizman ma każdy). Kontra: Kwas (zakładka Obiekty).' },
       // a clear style (fear or kills) wins over a plain count of traps or monsters: counts top out at 0.8
-      { kind: 'traps', sc: traps >= 12 ? 0.5 + 0.3 * Math.min(1, (traps - 12) / 20) : 0, text: 'słyszała o masie pułapek: przysyła więcej złodziei. Kontra: Wabik (zakładka Obiekty).' },
-      { kind: 'monsters', sc: mons >= 4 ? 0.5 + 0.3 * Math.min(1, (mons - 4) / 6) : 0, text: 'słyszała o potworach: przysyła więcej magów. Kontra: Runa (zakładka Obiekty).' }
+      { kind: 'traps', sc: traps >= 12 ? 0.5 + 0.3 * Math.min(1, (traps - 12) / 20) : 0, text: 'słyszała o masie pułapek: przysyła złodzieja. Kontra: Wabik (zakładka Obiekty).' },
+      { kind: 'monsters', sc: mons >= 4 ? 0.5 + 0.3 * Math.min(1, (mons - 4) / 6) : 0, text: 'słyszała o potworach: przysyła maga. Kontra: Runa (zakładka Obiekty).' },
+      // 1.05: a dungeon where people get lost and wander alone gets a bard; one walled with crates and buildings gets a barbarian
+      { kind: 'lost', sc: (st.gotLost >= 2 || lostShare >= 0.15) ? 0.5 + Math.min(0.3, lostShare) : 0, text: 'słyszała, że w Twoim lochu ludzie błądzą i giną samotnie: przysyła barda. Kontra: Kamień wyjec (zakładka Obiekty).' },
+      { kind: 'block', sc: blocks >= 5 || (st.reroutes || 0) >= 2 ? 0.5 + 0.3 * Math.min(1, Math.max(blocks - 5, 2 * ((st.reroutes || 0) - 2)) / 6) : 0, text: 'słyszała o zastawionych przejściach: przysyła barbarzyńcę. Kontra: Okowy (zakładka Obiekty).' }
     ].filter(o => o.sc > 0).sort((a, b) => b.sc - a.sc);
     return opts[0] || null;
   }
@@ -437,7 +444,7 @@
   // v12.1: waves 2-6 a little stronger (the real run: heroes died in the first room in waves 1-5), the step at wave 7 softer
   const EARLY_LV = [0, 0, 0, 0.3, 0.6, 0.3, 0.9, 0.3, 0, 0.5, 0.7];   // wave 6 (evenly easy in every recorded run) gets the most; 9-10 make up for the easier checks
   // ...and more HP only (courage stays): levels hit fear builds harder than kill builds, and only kill layouts melted waves 1-5
-  const EARLY_HP = [0, 0.25, 0.35, 0.4, 0.4, 0.15, 0.25, 0, 0, 0, 0];   // 1.01: waves 1-4 more
+  const EARLY_HP = [0, 0.25, 0.25, 0.4, 0.4, 0.15, 0.25, 0, 0, 0, 0];   // 1.01: waves 1-4 more; 1.05: wave 2 +25% (was +35%: a tester lost the crystal there)
   // Prototype 1.01 (author: the heroes were far too weak at the start; wave 1 of his run was over in 3 s): 3 heroes in wave 1,
   // a small head start in levels (fading out by wave 6) and more HP in waves 1-4. Replays of the 7 recorded runs (8 tries a
   // wave): wave 1 lasts ~15-60 s instead of 3-13 s; crystals lost in waves 1-4: 23/21/32/36% of tries (1.0: 7/2/18/23%).
@@ -445,8 +452,10 @@
   const START_LV = [0, 0.5, 0.7, 0.7, 0.4, 0.2, 0.1, 0, 0, 0, 0];
   const tutW1 = n => n === 1 && !!run && !!run.tutorial;   // the tutorial's first wave stays gentle: 2 rookies
   const waveCurve = n => 1 + (1.12 * (n - 1) + 0.007 * (n - 1) * (n - 1) + (EARLY_LV[n] || 0) + (tutW1(n) ? 0 : START_LV[n] || 0)) * S.scale;
-  const partySize = n => tutW1(n) ? 2 : n <= 3 ? 3 : n <= 6 ? 4 : n <= 9 ? 5 : 6 + Math.floor((n - 10) / 5);
-  const waveBase = n => waveCurve(n) + grozaTyp(n) * S.scale + mods.pactLevels;
+  // 1.05: six classes, one of each at most, so six heroes at most; in the endless waves the guild sends better people instead of more
+  const partySize = n => tutW1(n) ? 2 : n <= 3 ? 3 : n <= 6 ? 4 : n <= 9 ? 5 : 6;
+  const endlessLv = n => n >= 15 ? 1.5 * Math.floor((n - 10) / 5) : 0;   // what the 7th, 8th... hero used to add
+  const waveBase = n => waveCurve(n) + grozaTyp(n) * S.scale + mods.pactLevels + endlessLv(n);
   const bossOf = n => n % 5 === 0 ? (n % 10 === 0 ? 'final' : 'champion') : null;
   const waveName = () => 'Fala ' + run.wave + (run.wave <= RUN_WAVES ? '/' + RUN_WAVES : '');
   // Each wave is new people: the first ones are rookies, then they keep getting better. Every 5th wave a boss leads them.
@@ -455,13 +464,10 @@
     // v12.1: treasure hunters TAKE THE PLACE of ordinary heroes (greed brings stronger and greedier people, not more of them)
     const hunters = n >= 3 ? Math.min(size - 2, huntersN(run.greedRep || 1)) : 0;
     const recruit = n >= 4 && size > partySize(n - 1) && !bossOf(n);   // the newest member is a rookie for one wave: the step in numbers is softer (not in boss waves)
-    const classes = shuffle(PARTY.slice()); while (classes.length < size) classes.push(pick(PARTY));
+    // 1.05: never two of a class (6 classes, at most 6 heroes); the first three waves bring only the four classic ones
+    const classes = shuffle((n <= 3 ? CLASSIC : PARTY).slice()).slice(0, size);
     const g = run.guild = guildAdapt(n);
-    if (g) {   // swap people in so the party has (at least) two of what it needs
-      const want = { fear: 'priest', kill: 'warrior', traps: 'thief', monsters: 'mage' }[g.kind];
-      const need = n >= 6 ? 2 : 1;   // the guild learns step by step: one specialist at first, two from wave 6
-      for (let i = 1, have = classes.slice(0, size).filter(c => c === want).length; have < need && i < size; i++) if (classes[i] !== want) { classes[i] = want; have++; }
-    }
+    if (g && !classes.includes(GUILD_WANT[g.kind])) classes[size > 1 ? 1 : 0] = GUILD_WANT[g.kind];   // the guild makes sure its specialist comes (one: no class twice)
     const base = waveBase(n), used = new Set();
     const hl = huntersLv();   // greed: the leader is a seasoned treasure hunter (+hl), everybody else half that
     const list = classes.slice(0, size).map((t, i) => {
@@ -469,15 +475,22 @@
       const bonus = i === 0 ? 1 + hl : isRecruit ? -3 : hl / 2;
       let L = Math.max(1, Math.round(base + bonus + Math.random() * 1.7 - 1.2));
       if (n <= 2) L = Math.min(L, tutW1(n) ? 2 : 4);
-      const e = makeHero(isHunter ? 'thief' : t, L, n, used);
-      if (isHunter) { e.trait = 'greedy'; e.hunter = true; }
+      const e = makeHero(t, L, n, used);
+      if (isHunter) { e.trait = 'greedy'; e.hunter = true; }   // 1.05: a treasure hunter is a mark on any class (the bag), not a thief
       if (isRecruit) e.recruit = true;
       return e;
     });
     // v14: those who got away come back after 2-3 waves, with a name, what they remember and a scar (a phobia or a toughness)
-    (run.returners || []).filter(r => r.back <= n && (!r.used || r.used === n)).slice(0, n >= 8 ? 2 : 1).forEach(r => {
-      let idx = -1; for (let i = list.length - 1; i >= 1; i--) if (!list[i].hunter && !list[i].recruit && !list[i].returning) { idx = i; break; }
+    let back = 0;
+    (run.returners || []).filter(r => r.back <= n && (!r.used || r.used === n)).forEach(r => {
+      if (back >= (n >= 8 ? 2 : 1)) return;
+      // 1.05: no class twice: he takes the place of his own class (the leader's too: he knows the way), or of someone ordinary
+      // when his class is not in the party. In a boss wave the boss leads: a returner of the boss's class waits for the next wave.
+      const same = list.findIndex(e => e.type === r.type);
+      if ((same === 0 && bossOf(n)) || (same >= 0 && list[same].returning)) return;
+      let idx = same; if (idx < 0) for (let i = list.length - 1; i >= 1; i--) if (!list[i].hunter && !list[i].recruit && !list[i].returning && list[i].type !== GUILD_WANT[g && g.kind]) { idx = i; break; }
       if (idx < 0) return;
+      back++;
       const L = Math.max(list[idx].lvl, r.lvl + 1 + (r.crystal ? 1 : 0));
       list[idx] = makeHero(r.type, L, n, used, null, { nm: r.nm, female: r.female, phys: r.phys, phobia: r.phobia, trait: r.trait, known: [r.phys ? 'phys' : null, r.phobia ? 'phobia' : null].filter(Boolean), returning: true, scar: r.scar, times: r.times });
       r.used = n;
@@ -499,6 +512,7 @@
     run.buildSec += Math.max(0, realNow - fl.buildStart); fl.buildSec = Math.round(realNow - fl.buildStart);
     saveRun('build');   // a tab closed during the wave comes back to this build
     perfReset();
+    fl.items.forEach(it => { it.skullOff = false; });   // 1.05: a new wave asks every trap again (it.mem belongs to a wave)
     fl.phase = 'raid'; fl.time = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
     { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał
@@ -509,7 +523,7 @@
     applyRumors();
     chooseEntrance();
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && isRt(roomOf(m.x, m.y), 'crypt')) m.hp = Math.round(m.max * 1.25); });   // Krypta: +25% HP for this wave
-    selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); if (S.trayAuto && run.tut < 0) setTrayOpen(false); updateTray(); updateAction();
+    selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); if (S.trayAuto) setTrayOpen(false); updateTray(); updateAction();   // 1.05: in the tutorial too (testers took the folding for a bug: the handle now says ▲ Pułapki)
     { const bossE = fl.queue.find(e => e.boss), n = fl.queue.length;   // Prototype 1.0: a banner over the map says who is coming
       showBanner('Fala ' + run.wave, (bossE ? 'prowadzi ich ' + (bossE.boss === 'final' ? 'bohater z przepowiedni' : 'czempion') : n === 1 ? '1 bohater' : n + ' bohaterów') +
         (fl.spawnAt === 'breach' ? ' · wchodzą przez wyłom!' : fl.breach ? ' · wchodzą drzwiami' : ''));
@@ -519,10 +533,13 @@
     if (fl.breach) { fl.stats.breachOpen = 1; if (fl.spawnAt === 'breach') { tl('br', fl.breach.x, fl.breach.y); fl.stats.breach = 1; } }
   }
   // What the tavern says: rooms and traps that earlier survivors saw. The better the heroes, the more they take in.
+  const RUMOR_LIFE = 2, RUMOR_PER = 3;
   function applyRumors() {
     const RU = run.rumor, uptake = Math.max(...fl.queue.map(e => levelStats(e.lvl).rumor));
-    RU.tiles.forEach((w, i) => { if (run.wave - w > 4) RU.tiles.delete(i); });
-    RU.traps.forEach((v, k) => { if (run.wave - v.wave > 4) RU.traps.delete(k); });
+    // 1.05 (a tester got bored moving traps around every wave because of the rumours): a rumour lives 2 waves (was 4)
+    RU.tiles.forEach((w, i) => { if (run.wave - w > RUMOR_LIFE) RU.tiles.delete(i); });
+    RU.traps.forEach((v, k) => { if (run.wave - v.wave > RUMOR_LIFE) RU.traps.delete(k); });
+    if (RU.loot) RU.loot.forEach((v, k) => { if (run.wave - v.wave > RUMOR_LIFE) RU.loot.delete(k); });
     fl.rooms.forEach(R => {
       if (!R.tiles.length) return;
       const n = R.tiles.filter(t => RU.tiles.has(t[1] * WW + t[0])).length;
@@ -562,8 +579,10 @@
       barrierCd: 0, dispelCd: 0, scan: 0.5, hurtAt: -9, edgeAt: -9, playerDmg: 0, loot: 0, orbAcc: 0, inv: e.inv.map(it => Object.assign({}, it, { cdUntil: 0 })),
       shield: 0, shieldUpUntil: -1, shieldCd: 0, dodgeCd: 0, panicUntil: -1, lost: false, noPathT: 0, alone: false, aloneSaid: false, bubble: null,
       disarmT: null, scoutTarget: -1, scoutUntil: -1, fear: 0, courage: e.courage || R.courage, fleeing: false, crystal: false, fallUntil: -1, cageUntil: -1, cageIt: null,
-      freeT: null, lostT: 0, lootMemo: new Map(), saidTiming: new Set(), wanderUntil: -1, wanderTarget: -1, rumorSaid: false, invCap: 3 + Math.floor(e.lvl / 3),
+      freeT: null, lostT: 0, lootMemo: new Map(), saidTiming: new Set(), felt: new Map(), wanderUntil: -1, wanderTarget: -1, rumorSaid: false, invCap: 3 + Math.floor(e.lvl / 3),
       trait: e.trait || null, rageUntil: -1, raged: false, shoutCd: 0, saidB: new Set(),
+      // 1.05: the bard's songs (a few a wave) and calls, the barbarian's fury and axe, a lost one following a voice
+      songs: e.type === 'bard' ? 2 + Math.floor(e.lvl / 4) : 0, songCd: 6, callCd: 0, rageCd: 0, smashCd: 0, smashIt: null, hearUntil: -1, hearId: -1,
       // v12: purse, curse, the priest's faith, powers in use, getting separated, shaken by a death
       gold: 0, cursed: false, faith: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithMax: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithT: 0,
       wardUntil: -1, wardK: 0, sprintUntil: -1, sprintK: 1, calmUntil: -1, giveCd: 0, sepT: 0, sepRolled: false, shakenUntil: -1, rtSaid: new Set(), lostCallT: 0, hunter: !!e.hunter,
@@ -650,7 +669,7 @@
   }
   function finishWave() {
     if (fl.phase !== 'raid') return;
-    fl.check = null; ff = false;
+    fl.check = null; ff = false; fl.finishing = true;   // 1.05: no tutorial card from here on (it used to pop up over the summary)
     payChain();   // Prototype 1.01: an unfinished combo chain is cashed in before the heart is counted
     run.greedNext = fl.stats.treasureTale || 0;   // v15.1: tales of treasure from the scared ones, for the next wave only
     fl.items.forEach(it => { const w = it.w || {}; it.lf = w.f || 0; it.lh = w.h || 0; it.lp = Math.round(w.p || 0); it.lk = w.k || 0; it.w = null; });   // what each element did this wave (shown on its card)
@@ -670,7 +689,13 @@
         if (r >= 0 && fl.rooms[r].kind === 'room') roomsSeen.add(r);
       }
       rr = roomsSeen.size;
-      fl.items.forEach((it, k) => { if (LOOKS_TRAP(it.type) && it.detected && !it.disabled && !inB('veil', slotRoom(it.type, it.x, it.y)) && Math.random() < keep) { run.rumor.traps.set(k, { type: it.type, wave: run.wave }); rt++; } });
+      // 1.05: each one who got out tells only of the traps that hurt or scared him most (up to 3), not of all the party saw
+      const told = new Map();
+      fl.heroes.forEach(h => {
+        if (!h.fled || h.dead || !h.felt) return;
+        [...h.felt.entries()].sort((a, b) => b[1] - a[1]).slice(0, RUMOR_PER).forEach(([k]) => { const it = fl.items.get(k); if (it && LOOKS_TRAP(it.type) && !inB('veil', slotRoom(it.type, it.x, it.y))) told.set(k, it.type); });
+      });
+      told.forEach((type, k) => { if (Math.random() < keep) { run.rumor.traps.set(k, { type, wave: run.wave }); rt++; } });
       if (!run.rumor.loot) run.rumor.loot = new Map();
       fl.items.forEach((it, k) => { if (isLoot(it.type) && it.seenWave === run.wave && !inB('veil', roomOf(it.x, it.y)) && Math.random() < keep) run.rumor.loot.set(k, { type: it.type, wave: run.wave }); });   // tales of treasure
       if (fl.heartKnown) run.rumor.heart = run.wave;
@@ -699,10 +724,12 @@
     recordWave(rr, rt);
     run.total += fl.score;
     if (run.total > run.best) { run.best = run.total; saveBest(run.best); }
+    // 1.05: the next party is known right away: the wave summary shows who comes (classes, skills, gear, what the tavern knows)
+    if (run.crystals > 0) { run.next = makeWave(run.wave + 1); run.nextFor = run.wave + 1; }
     logWave(false);
     if (run.crystals > 0) saveRun('summary');
     fl.phase = 'summary'; updateAction();
-    queueModal({ type: 'settle', next: { type: 'wave', rr, rt, out } });   // 1.01: the reckoning plays first, then the summary
+    queueModal({ type: 'wave', rr, rt, out });   // 1.05: one screen (the reckoning is part of it)
   }
   // Głód serca: the wave's score feeds the heart. Short: the reserve pays first, then a crystal. Surplus: the reserve
   // (at most 2 needs); a full reserve grows a lost crystal back.
@@ -725,7 +752,7 @@
     });
   }
   // Prototype 1.01: the heart has been eating its share of this wave's Esencja all along (essIn). When the wave ends it is
-  // either fed, or it eats what it got and a crystal. Crystals do not grow back by themselves; you can buy one in the shop.
+  // either fed, or it eats what it got and a crystal. Crystals do not grow back by themselves (1.05: and cannot be bought; a card may give one).
   function feedHeart() {
     const need = hungerNeed(run.wave);
     fl.hunger = null;
@@ -747,13 +774,16 @@
     }
   }
   function recordWave(rr, rt, partial) {
-    const items = {};
+    const items = {}, ps = perfSummary(), s0 = fl.stats, nChk = s0.checkCrit + s0.checkOk + s0.checkMiss + s0.checkSkip;
+    // 1.05: checks per minute of real play (game time when the device did not report, e.g. in tests) and the share frozen by checks
+    const realMin = (ps && ps.realSec > 5 ? ps.realSec : fl.time) / 60;
     for (const k in fl.byType) { const r = roundStats(fl.byType[k]); if (r.placed || r.fires || r.dmg || r.passiveDmg || r.fear) items[k] = r; }
     run.waves.push({ wave: run.wave, score: Math.round(fl.score), time: Math.round(fl.time), buildSec: fl.buildSec || 0, crystalLost: fl.crystalLost,
       heroes: fl.heroes.map(h => ({ type: h.type, lvl: h.lvl, boss: h.boss, rank: h.rank, trait: h.trait, out: h.dead ? 'dead' : h.fleeing ? 'scared' : h.crystal ? 'crystal' : 'left', fear: Math.round(h.fear), hp: Math.round(h.hp) })),
       hunger: fl.hunger || null, groza: Math.round(fl.base), grozaTotal: Math.round(run.grozaTotal || 0), greedRep: Math.round((run.greedRep || 1) * 100) / 100, guild: run.guild ? run.guild.kind : null,
       autoFF: Math.round(fl.autoFFTime || 0), crystals: run.crystals, greed: Math.round(fl.greed * 100) / 100, rumorRooms: rr, rumorTraps: rt, rooms: run.layout.cells.size,
-      essence: Math.round(fl.essence), stats: roundStats(fl.stats), items, partial: !!partial, perf: perfSummary(), errors: PERF.errs.length ? PERF.errs.splice(0) : undefined });
+      essence: Math.round(fl.essence), stats: roundStats(fl.stats), items, partial: !!partial, perf: ps, errors: PERF.errs.length ? PERF.errs.splice(0) : undefined,
+      checks: nChk, cpm: realMin > 0 ? Math.round(nChk / realMin * 10) / 10 : 0, frozen: ps ? ps.frozen : null, memFires: s0.memFires || 0, skullOff: s0.skullOff || 0, classes: fl.heroes.map(h => h.type) });
   }
   // after the wave summary: game over, or upgrades and the next build phase
   function afterSummary() {
@@ -955,9 +985,15 @@
     if (h.shield > 0) { const ab = Math.min(h.shield, rest * (inB('acid', h.room) ? 0.5 : 1)); h.shield -= ab; rest -= ab; }   // acid eats through half of a ward
     h.hp -= rest; h.flash = 0.12; h.hurtAt = fl.time;
     if (kind !== 'heart') h.playerDmg += real * (kind === 'monster' ? MON_FACTOR : 1);
+    feltBy(h, real / h.max);   // 1.05: what hurt him (told in the tavern)
     if (attr) { const b = bt(attr); if (kind === 'monster') b.passiveDmg += real; else b.dmg += real; }
     if (kind === 'trap') fl.party.morale = Math.max(0.15, fl.party.morale - 0.03);
     if (h.hp <= 0) { h.hp = 0; h.dead = true; kill(h, kind, attr); return; }
+    if (kind === 'trap' && real >= 0.25 * h.max && fl.time - (fl.party.lastSay.friendHit || -99) > 5) {   // 1.05: a friend sees it and reacts
+      const o = alive().find(q => q !== h && !q.fleeing && !panicking(q) && !q.lost && hdist(q, h) <= 4);
+      if (o) { fl.party.lastSay.friendHit = fl.time; fl.party.queueSay.push({ id: o.id, text: nameFill(pick(SAY.friendHit), h), at: fl.time + 0.5 }); }
+    }
+    if (h.type === 'barbarian' && real >= 0.2 * h.max && kind !== 'heart' && fl.time > h.rageCd && !raging(h)) startRage(h, 'hit');   // 1.05: a hard blow wakes the fury
     if (h.boss === 'final' && !h.raged && h.hp < 0.5 * h.max) {   // the hero of the prophecy, half dead, gets back up angrier
       h.raged = true; h.hp = Math.min(h.max, h.hp + 0.2 * h.max); h.shield = Math.max(h.shield, 0.2 * h.max); fl.stats.rage = 1;
       alive().forEach(o => { if (o !== h) o.fear = Math.max(0, o.fear - 0.2 * o.courage); });
@@ -1001,12 +1037,29 @@
     if (fl.time < h.calmUntil) k *= 0.7;   // an amulet just steadied the nerves (a power with a cooldown, see useAmulet)
     return k;
   }
+  // 1.05: fury, one mechanic for everyone (it used to be a brave one's answer to a death): +25% speed, half the fear, hits monsters
+  // harder. The barbarian lives in it: a death, a hard hit or panic makes him rage (panic turns into fury instead). Okowy stop it.
+  function startRage(h, why, dead) {
+    if (h.dead || h.fled || h.fleeing || caged(h)) return false;
+    if (inB('shackles', h.room)) {
+      if (!h.saidB.has('shackles' + h.room)) { h.saidB.add('shackles' + h.room); say(h, pick(SAY.bShackles), 3); fl.stats.shackleBlocks = (fl.stats.shackleBlocks || 0) + 1; }
+      return false;
+    }
+    const barb = h.type === 'barbarian';
+    h.rageUntil = fl.time + (barb ? 8 : 6); h.rageCd = fl.time + (barb ? 14 : 20); fl.stats.rages = (fl.stats.rages || 0) + 1; tl('rg2', h.id, why);
+    say(h, why === 'death' && dead ? nameFill(pick(SAY.revenge), dead) : why === 'panic' ? pick(SAY.rageNoPanic) : pick(SAY.rage), 4, 2.2);
+    floatHero(h, 'Furia!', '#ff9a9a', 13, -0.8);
+    return true;
+  }
+  const raging = h => fl.time < h.rageUntil && !inB('shackles', h.room);
   function addFear(h, amt, attr, src, dtp) {
     if (h.dead || h.fled || amt <= 0) return;
     const raw = amt;
     amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : 1);   // Mgła: +15%
+    if (raging(h)) amt *= 0.5;   // 1.05: fury dulls fear
     amt *= phobiaMult(h, attr, src, dtp);   // v14: phobias (x2) and this wave's traumas (x1,5)
     if (attr) h.fearBy[attr] = (h.fearBy[attr] || 0) + amt; else if (src) h.fearBy[src] = (h.fearBy[src] || 0) + amt;
+    if (attr && fl.firing && fl.firing.type === attr) feltBy(h, amt / h.courage);   // 1.05: what scared him (told in the tavern)
     const sk = src || attr || 'other'; fl.stats.fearSrc[sk] = (fl.stats.fearSrc[sk] || 0) + amt;
     const before = h.fear;
     h.fear += amt;
@@ -1017,6 +1070,8 @@
     const lim = h.courage * (fl.fearless ? 1.3 : 1);
     if (!h.fleeing && !h.crystal && h.fear >= [0.85, 0.7, 0.6, 0.6][h.rank] * lim) useAmulet(h);   // the amulet, before the nerves go (rookies late)
     const pk = h.trait === 'coward' ? 0.55 : 0.7;   // cowards panic early
+    // 1.05: a barbarian on the edge of panic gets angry instead (once in a while; not in Okowy)
+    if (h.type === 'barbarian' && before < pk * lim && h.fear >= pk * lim && !h.fleeing && !h.crystal && fl.time > h.rageCd && startRage(h, 'panic')) { h.fear = Math.max(0, h.fear - 0.25 * lim); fl.stats.rageNoPanic = (fl.stats.rageNoPanic || 0) + 1; return; }
     if (before < pk * lim && h.fear >= pk * lim && !h.fleeing && !h.crystal && fl.time > h.panicUntil) {
       h.panicUntil = fl.time + 2 + Math.random() * 2; h.needPlan = true; fl.stats.panics++; say(h, pick(SAY.panic), 3, 1.8);
     }
@@ -1100,13 +1155,12 @@
       const base = (near ? Math.max(15 * o.R.panic, 0.12 * o.courage + 4) : Math.max(5 * o.R.panic, 0.05 * o.courage + 2)) * (crypt ? 2 : 1);   // v14: softer for rookies (was max(30 x panic, ...))
       o.shakenUntil = fl.time + (near ? 9 : 5);
       // a brave one (and now and then a warrior) turns grief into fury instead of fear
-      if (!o.fleeing && (o.trait === 'brave' || (o.type === 'warrior' && Math.random() < 0.3))) {
-        o.rageUntil = fl.time + 6; fl.stats.revenge = (fl.stats.revenge || 0) + 1;
-        say(o, nameFill(pick(SAY.revenge), h), 4, 2.2); floatHero(o, 'Furia!', '#ff9a9a', 13, -0.8);
+      if (!o.fleeing && (o.trait === 'brave' || o.type === 'barbarian' || (o.type === 'warrior' && Math.random() < 0.3)) && startRage(o, 'death', h)) {
+        fl.stats.revenge = (fl.stats.revenge || 0) + 1;
         addFear(o, base * 0.3, null, 'death');
         return;
       }
-      if (Math.random() < 0.55) say(o, nameFill(pick(SAY.death), h), 4, 2.2);
+      if (Math.random() < 0.55) say(o, nameFill(pick(o.fleeing || goingOut() ? SAY.deathFlee : SAY.death), h), 4, 2.2);   // 1.05: no talk of revenge while running
       const f0 = o.fear;
       addFear(o, base * (o.trait === 'coward' ? 1.5 : 1), null, 'death');
       fl.stats.deathFear += Math.max(0, o.fear - f0);
@@ -1184,7 +1238,8 @@
     const g = LOOT_GREED[kind][0] * mods.greedMult * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
     setGreed(fl.greed + g); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
     floatTile(it.x, it.y, 'Chciwość ×' + fmt2(fl.greed), '#f2b94b', 14, -0.6, 'greed');
-    if (by) say(by, kind === 'potion' ? pick(['Mikstura!', 'Tam leży mikstura.', 'Lekarstwo!']) : pick(SAY['loot' + Math.min(3, r)]), r >= 2 ? 3 : 2);
+    if (by && (by.fleeing || by.crystal || panicking(by) || goingOut())) { if (r >= 2) say(by, pick(SAY.lootFlee), 2); }   // 1.05: running for his life, he has no joy for gold
+    else if (by) say(by, kind === 'potion' ? pick(['Mikstura!', 'Tam leży mikstura.', 'Lekarstwo!']) : pick(SAY['loot' + Math.min(3, r)]), r >= 2 ? 3 : 2);
   }
   // Picking it up: coins go to the purse, the rest is a real item (or the exact one that was dropped). No use or no room: it stays.
   function pickup(h, it) {

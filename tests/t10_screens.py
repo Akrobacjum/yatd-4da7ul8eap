@@ -31,10 +31,12 @@ async def main():
             if await page.evaluate("__yatd.modalKind") == 'wave':
                 print(' wave fit', await page.evaluate(FIT))
                 await page.screenshot(path=OUT+f'scr_wave_{W}x{H}.png')
+                await page.click('#wave-details'); await page.clock.run_for(300)   # 1.05: the tabs sit under Szczegóły
                 for tb in ['heroes', 'items', 'nums']:
                     await page.click('#wtab-' + tb); await page.clock.run_for(200)
                     print(' wave tab', tb, await page.evaluate(FIT))
                     if W == 360 and H == 780: await page.screenshot(path=OUT+f'scr_wave_{tb}.png')
+                await page.click('#wave-details'); await page.clock.run_for(200)   # back to the main view
                 await page.click('#wave-next'); await page.clock.run_for(1200)
             print(' after next', await page.evaluate("__yatd.modalKind"))
             if await page.evaluate("__yatd.modalKind") == 'shop':

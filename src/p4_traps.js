@@ -72,7 +72,10 @@
     fl.stats.alarms = (fl.stats.alarms || 0) + 1; tl('al', it.x, it.y, n);
     const w = by && !by.dead ? by : alive().find(h => h.room === r); if (w) say(w, pick(SAY.bDecoy), 4);
   }
-  function fire(it, pw, opt) {
+  // 1.05: while a trap fires, the wounds and the fright it causes are remembered by each hero (what he will tell in the tavern)
+  function fire(it, pw, opt) { const prev = fl.firing; fl.firing = it; try { return fireRaw(it, pw, opt); } finally { fl.firing = prev; } }
+  function feltBy(h, v) { const it = fl && fl.firing; if (!it || !h.felt || !(v > 0)) return; const k = key(it.x, it.y); h.felt.set(k, (h.felt.get(k) || 0) + v); }
+  function fireRaw(it, pw, opt) {
     pw = pw || 1; opt = opt || {};
     if (!fl || fl.phase !== 'raid' || !ACTIVE[it.type] || it.disabled || (it.cd > 0 && !opt.echo) || it.jamUntil > fl.time || (MONSTERS[it.type] && it.hp <= 0)) return false;
     const basePw = pw, boost = trapBoost(it), s0 = fl.score, k0 = fl.stats.kills;
@@ -488,7 +491,7 @@
         }
       }
       let dmgIn = 0;
-      fighters.forEach(h => { dmgIn += h.T.dps * h.R.dps * (h.type === 'warrior' ? 1.4 : 1) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt; });   // a weapon from your loot cuts monsters down faster
+      fighters.forEach(h => { dmgIn += h.T.dps * h.R.dps * (h.type === 'warrior' ? 1.4 : 1) * (raging(h) ? 1.5 : 1) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt; });   // a weapon from your loot cuts monsters down faster; 1.05: so does fury
       hurtMonster(m, dmgIn);
     });
   }

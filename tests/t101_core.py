@@ -37,21 +37,13 @@ async def main():
             if w >= 2 and st['hunger'] and st['hunger']['fed'] != (st['score'] >= st['need'] - 0.01): fails.append('wave %d: fed flag mismatch' % w)
             if st['store'] is not None: fails.append('heart store still there')
             k = await page.evaluate("__yatd.modalKind")
-            if k != 'settle': fails.append('wave %d: reckoning first, got %s' % (w, k))
+            # 1.05: the reckoning is part of the wave summary (one screen): Groza x multipliers = Esencja, the heart's share, yours
+            if k != 'wave': fails.append('wave %d: the summary comes straight away, got %s' % (w, k))
             else:
-                await page.clock.run_for(900)
-                if w == 2: await page.screenshot(path=OUT + 'settle_mid_w2.png')
-                txt = await page.evaluate("document.querySelector('#card').innerText.replace(/\\n/g,' | ')"); print('settle', txt[:220])
-                await page.clock.run_for(4000)
-                if w == 2: await page.screenshot(path=OUT + 'settle_end_w2.png')
-                await page.clock.run_for(6000)
-                k1 = await page.evaluate("__yatd.modalKind")
-                if k1 != 'settle': fails.append('wave %d: 1.02 the reckoning waits for Dalej, got %s' % (w, k1))
-                await page.mouse.click(195, 200); await page.clock.run_for(500)   # a tap on the card does not move on
-                if await page.evaluate("__yatd.modalKind") != 'settle': fails.append('wave %d: a tap on the card left the reckoning' % w)
-                await page.click('#settle-next'); await page.clock.run_for(500)
-                k2 = await page.evaluate("__yatd.modalKind"); print('after settle', k2)
-                if k2 != 'wave': fails.append('wave %d: Dalej leads to the summary, got %s' % (w, k2))
+                await page.clock.run_for(2000)
+                txt = await page.evaluate("document.querySelector('#card .reck') ? document.querySelector('#card .reck').innerText.replace(/\\n/g,' | ') : ''"); print('reckoning', txt[:220])
+                if 'Groza' not in txt or 'dla Ciebie' not in txt: fails.append('wave %d: the reckoning line on the summary' % w)
+                if w >= 2 and st['hunger'] and '♥' not in txt: fails.append('wave %d: the heart share in the reckoning' % w)
             if w == 2: await page.screenshot(path=OUT + 'summary_w2.png')
             for i in range(8):
                 k = await page.evaluate("__yatd.modalKind")

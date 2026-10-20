@@ -136,15 +136,31 @@
   };
   // A stronger hero makes the needle quicker: +1.5% "difficulty" a level, the needle by its square root (level 11 +7%, level 21 +14%).
   const CHECK_LV_SPEED = 0.015;
+  // 1.05 (testers: no time to watch the heroes, a check every 2-5 s and the world standing ~38% of a wave; the author's rules):
+  // one check decides how a trap works for the rest of the wave. A crit or a graze is remembered and the trap then fires by
+  // itself with that strength; a miss (or no tap) asks again the next time it fires. A hit that would kill always asks (the
+  // skull), and letting that one go switches the trap off until it can hit without killing.
+  const memOf = it => it.mem && it.mem.wave === run.wave ? it.mem.res : null;
+  const memPw = it => { const m = memOf(it); return m === 'crit' ? mods.critPw : m === 'ok' ? mods.okPw : 0; };
+  function skullHolds(it) {   // switched off at a skull: it stays off while its hit (the remembered one, or a graze) would kill
+    if (!it.skullOff) return false;
+    if (lethalFor(it, memPw(it) || mods.okPw)) return true;
+    it.skullOff = false; return false;
+  }
+  const needsCheck = it => { const pw = memPw(it); return !pw || lethalFor(it, pw); };
   function checkTick() {
     if (fl.check || fl.ending !== null) return;
-    if (ff) {   // v14: a finger held on the map speeds the game up: no checks, ready traps fire by themselves at graze strength
-      for (const it of fl.items.values()) if (checkWanted(it) && fire(it, mods.okPw)) { fl.stats.autoFires = (fl.stats.autoFires || 0) + 1; bt(it.type).ok++; }
-      return;
-    }
-    if (fl.time < fl.checkGap) return;
+    // what already has this wave's answer fires by itself; with a finger held on the map (fast-forward) everything does,
+    // and what has no answer yet fires at graze strength (v14)
     for (const it of fl.items.values()) {
-      if (!checkWanted(it)) continue;
+      if (!checkWanted(it) || skullHolds(it)) continue;
+      const pw = memPw(it);
+      if (ff) { if (fire(it, pw || mods.okPw)) { fl.stats.autoFires = (fl.stats.autoFires || 0) + 1; if (!pw) bt(it.type).ok++; } }
+      else if (pw && !lethalFor(it, pw) && fire(it, pw)) { fl.stats.memFires = (fl.stats.memFires || 0) + 1; bt(it.type).memFires = (bt(it.type).memFires || 0) + 1; }
+    }
+    if (ff || fl.time < fl.checkGap) return;
+    for (const it of fl.items.values()) {
+      if (!checkWanted(it) || skullHolds(it) || !needsCheck(it)) continue;
       const inA = heroesInArea(it), shape = CHECK_SHAPE[it.type] || 'bar';
       const maxL = inA.reduce((a, h) => Math.max(a, h.lvl), 1);
       const kz = S.checkDiff * (1 + 0.02 * Math.min(10, run.wave - 1)) / LVL_ZONE[it.lvl || 1], ks = S.checkDiff * (1 + CHECK_LV_SPEED * Math.min(20, maxL - 1));
@@ -159,7 +175,7 @@
       else { g0 = start; g1 = g0 + gw; r0 = g1; r1 = r0 + rw; }
       // Seria: everything else that is ready to fire right now joins this check, so one tap answers the whole volley
       const extra = [];
-      if (S.series) for (const o of fl.items.values()) { if (o !== it && extra.length < SERIES_MAX && checkWanted(o)) extra.push(o); }
+      if (S.series) for (const o of fl.items.values()) { if (o !== it && extra.length < SERIES_MAX && checkWanted(o) && !skullHolds(o) && needsCheck(o)) extra.push(o); }
       const all = [it].concat(extra);
       fl.check = { it, extra, shape, maxL, t0: realNow + CHECK_PREP, prepT0: realNow, go: false, dur: CHECK_DUR / Math.sqrt(ks) * SHAPE_DUR[shape], g0, g1, r0, r1, z2, rot: Math.random() * Math.PI * 2,
         lethalOk: all.some(o => lethalFor(o, mods.okPw)), lethalCrit: all.some(o => lethalFor(o, mods.critPw)), result: null, resT: 0 };
@@ -178,7 +194,7 @@
         inA.some(h => fl.time < h.wardUntil) ? 'talizman' : '',
         maxL >= 12 ? 'poz. ' + maxL + ': szybciej' : ''].filter(Boolean).join(' · ');
       sfx('warn');
-      if (run.checkHints > 0 && run.tut < 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" stuknij w MAPĘ. Obwódka = draśnięcie, pełne pole = krytyk (najmocniej), czaszka = ktoś zginie. Przytrzymasz palec na mapie: gra przyspiesza, a pułapki biją same (jak draśnięcie).'); }
+      if (run.checkHints > 0 && run.tut < 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" stuknij w MAPĘ. Obwódka = draśnięcie, pełne pole = krytyk, czaszka = ktoś zginie. Trafiony wynik pułapka pamięta do końca fali (znaczek na polu) i dalej bije sama.'); }
       if (run.tut >= 0) tutEvent('check');
       return;
     }
@@ -193,6 +209,8 @@
     else if ((p >= c.g0 && p <= c.g1) || (z && p >= z.g0 && p <= z.g1)) { res = 'ok'; pw = mods.okPw; }
     c.result = res; c.resT = realNow; c.p = p;
     const all = [c.it].concat(c.extra || []);
+    // 1.05: the answer stays for the rest of the wave (a skull check of a trap that already had one decides only this hit)
+    if (res !== 'miss') all.forEach(o => { if (!memOf(o)) o.mem = { res, wave: run.wave }; o.skullOff = false; });
     tl('ch', c.it.type, c.it.x, c.it.y, res, heroesInArea(c.it).length, all.length - 1, c.maxL || 1, Math.round((p - (c.r0 + c.r1) / 2) * 100));   // v36: the strongest level near it and how far from the red strip the tap landed (in % of the shape)
     sfx(res); if (res === 'crit') buzz(25);
     all.forEach(o => { bt(o.type)[res === 'crit' ? 'crit' : res === 'ok' ? 'ok' : 'miss']++; });
@@ -223,7 +241,8 @@
   function skipCheck() {
     const c = fl.check; if (!c || c.result) return;
     c.result = 'skip'; c.resT = realNow; fl.stats.checkSkip++;
-    [c.it].concat(c.extra || []).forEach(o => { o.skipUntil = fl.time + 1.2; bt(o.type).skip++; });
+    // 1.05: let go at a skull, the trap stays quiet while its hit would kill; otherwise it asks again next time
+    [c.it].concat(c.extra || []).forEach(o => { o.skipUntil = fl.time + 1.2; bt(o.type).skip++; if ((c.lethalOk || c.lethalCrit) && lethalFor(o, memPw(o) || mods.okPw)) { o.skullOff = true; fl.stats.skullOff = (fl.stats.skullOff || 0) + 1; } });
     tl('ch', c.it.type, c.it.x, c.it.y, 'skip', heroesInArea(c.it).length);
     if (c.lethalOk && c.lethalCrit) { fl.stats.skipLethal++; bt(c.it.type).skipLethal++; }
   }
@@ -311,6 +330,19 @@
       P.steal += dt * (1 + 0.5 * (atHeart.length - 1));
       fl.heartHit = 0.12;
       damage(atHeart[0], 5 * dt, HEART);
+      // 1.05 (author: wave 1 should not be able to take a crystal even from an empty dungeon): the heart will not let the first
+      // party have it. It burns their courage and the crystal does not come loose; sooner or later they run
+      // (a replay of an empty dungeon: without giving up they circled the heart for 100 s, panicking and coming back)
+      if (run.wave === 1) {
+        atHeart.forEach(h => addFear(h, 0.3 * h.courage * dt, null, 'heart'));
+        if (P.steal >= 0.85 * stealNeed()) {
+          P.steal = 0.85 * stealNeed(); fl.stats.repelled = 1;
+          say(atHeart[0], pick(SAY.heartRepel), 4, 2.2); floatTile(fl.heart.x, fl.heart.y, 'Serce ich odpycha!', '#ff9ab0', 15, -1);
+          atHeart.forEach(h => { addFear(h, 0.4 * h.courage, null, 'heart'); if (!h.fleeing && !h.dead) startFlee(h); });
+          P.plan = 'leave'; alive().forEach(h => { h.needPlan = true; if (h.state === 'rest' || h.state === 'talk' || h.state === 'boss') h.state = 'walk'; });
+          const L = alive().find(h => !h.fleeing); if (L) say(L, pick(SAY.leave), 3);
+        }
+      }
       // 1.04: the heart's burn can kill the last one prying in this very tick (a bot found it: the step threw, the game froze)
       if (P.steal >= stealNeed()) { const by = alive().filter(h => h.state === 'boss'); if (by.length) takeCrystal(by); }
     }
@@ -383,8 +415,9 @@
   // be reproduced here): the gaps between frames and the time the game's own code takes, counted only while the wave is on screen
   // and running (no pause, no card open). An error in a frame no longer stops the game (the next frame is always asked for) and
   // the first few go to the log too.
-  const PERF = { gaps: [], js: [], last: 0, made0: 0, direct: 0, split: 0, errs: [] };
-  function perfReset() { PERF.gaps = []; PERF.js = []; PERF.last = 0; PERF.made0 = TC.made || 0; PERF.direct = 0; PERF.split = 0; }
+  // 1.05: also how long the world stood still under a skill check (ms of frames with a check up) and the wave's real running time
+  const PERF = { gaps: [], js: [], last: 0, made0: 0, direct: 0, split: 0, errs: [], fz: 0, ms: 0 };
+  function perfReset() { PERF.gaps = []; PERF.js = []; PERF.last = 0; PERF.made0 = TC.made || 0; PERF.direct = 0; PERF.split = 0; PERF.fz = 0; PERF.ms = 0; }
   const perfErr = e => {   // the message and where: the function and the line of the built file
     if (PERF.errs.length >= 8) return;
     const at = /at (?:(\S+) \()?.*?:(\d+):\d+\)?/.exec(String((e && e.stack) || '').split('\n')[1] || '');
@@ -393,6 +426,7 @@
   window.addEventListener('error', ev => { if (!(ev.error && ev.error.seen)) perfErr(ev.error || ev.message); });
   function perfNote(now, js) {
     const on = !!(fl && fl.phase === 'raid' && !paused && !modalOpen && document.visibilityState !== 'hidden');
+    if (on && PERF.last) { const g = Math.min(100, now - PERF.last); PERF.ms += g; if (fl.check && !fl.check.result) PERF.fz += g; }
     if (on && PERF.last && PERF.gaps.length < 40000) {
       PERF.gaps.push(Math.round((now - PERF.last) * 10) / 10); PERF.js.push(Math.round(js * 10) / 10);
       if (TC.direct) PERF.direct++;
@@ -405,7 +439,7 @@
     const g = PERF.gaps.slice().sort((a, b) => a - b), j = PERF.js.slice().sort((a, b) => a - b), q = (a, k) => a[Math.min(a.length - 1, Math.floor(a.length * k))];
     let sum = 0; PERF.gaps.forEach(x => { sum += x; });
     return { frames: n, fps: Math.round(n / sum * 10000) / 10, gapMed: q(g, 0.5), gapP90: q(g, 0.9), gapMax: g[n - 1], slow: Math.round(g.filter(x => x > 50).length / n * 1000) / 10,
-      jsMed: q(j, 0.5), jsP90: q(j, 0.9), jsMax: j[n - 1], dpr: DPR, w: Math.round(cw), h: Math.round(ch), direct: Math.round(PERF.direct / n * 100), split: Math.round(PERF.split / n * 100), chunks: (TC.made || 0) - PERF.made0 };
+      jsMed: q(j, 0.5), jsP90: q(j, 0.9), jsMax: j[n - 1], realSec: Math.round(PERF.ms / 100) / 10, frozen: PERF.ms > 0 ? Math.round(PERF.fz / PERF.ms * 1000) / 10 : 0, dpr: DPR, w: Math.round(cw), h: Math.round(ch), direct: Math.round(PERF.direct / n * 100), split: Math.round(PERF.split / n * 100), chunks: (TC.made || 0) - PERF.made0 };
   }
   function frame(now) {
     const t0 = performance.now();
