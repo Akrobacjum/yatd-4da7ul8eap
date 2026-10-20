@@ -41,29 +41,37 @@ async def main():
             await page.clock.run_for(100); ks.append(round(await page.evaluate("__yatd.SPLIT.k"), 2))
         st = await page.evaluate("""(() => { const G = __yatd, S = G.SPLIT, V = G.splitViews(); const hs = G.fl.heroes.filter(h => !h.dead && !h.fled && !h.gone);
           const scr = hs.map(h => { const p = G.heroScreen(h); return [Math.round(p.x), Math.round(p.y), S.gid.get(h.id)]; });
-          return { k: S.k, want: S.want, ang: S.ang, s: V ? V.map(v => +v.s.toFixed(1)) : null, mainS: G.cam.s, scr, fit: 0 }; })()""")
+          const c = document.querySelector('canvas'), cw = c.clientWidth, ch = c.clientHeight, side = (x, y) => ((x - cw / 2) * Math.cos(S.ang) + (y - ch / 2) * Math.sin(S.ang)) > 0 ? 1 : 0;
+          const sides = hs.map(h => { const p = G.heroScreen(h); return side(p.x, p.y) === S.gid.get(h.id); });
+          return { k: S.k, want: S.want, ang: S.ang, s: V ? V.map(v => +v.s.toFixed(1)) : null, mainS: G.cam.s, scr, sides, fit: 0 }; })()""")
         print('k over time', ks); print(st)
         ok(st['k'] > 0.95 and st['want'], 'split on')
-        ok(abs(math.cos(st['ang'])) > 0.9, 'line square to left-right groups (vertical cut)')
+        # 1.07 (isometric camera): the cut is square to the line between the groups ON THE SCREEN (where the main camera has them)
+        la = await page.evaluate("(sp) => { const G = __yatd, m = q => q.reduce((a, t) => [a[0] + t[0] / q.length, a[1] + t[1] / q.length], [0, 0]); const a = m(sp[0]), b = m(sp[1]); const pa = G.w2s(a[0] + 0.5, a[1] + 0.5, 0.5), pb = G.w2s(b[0] + 0.5, b[1] + 0.5, 0.5); return Math.atan2(pb[1] - pa[1], pb[0] - pa[0]); }", [L, R])
+        print('line between the groups on the screen', round(math.degrees(la)), 'cut normal', round(math.degrees(st['ang'])))
+        ok(abs(math.cos(st['ang'] - la)) > 0.9, 'line square to the groups (the cut across the line between them)')
         ok(st['s'] and st['s'][0] > st['mainS'] * 1.5, 'halves zoomed in more than one screen would be')
         ok(all(0 <= x <= 390 and 0 <= y <= 844 for x, y, g in st['scr']), 'every hero on the screen')
-        ok(all((x < 195) == (g == 0) for x, y, g in st['scr']), 'each group in its own half')
-        # a tap in each half maps to that half's group
-        w = await page.evaluate("[__yatd.toWorld(97, 422), __yatd.toWorld(292, 422)]")
-        print('tap left ->', w[0], 'tap right ->', w[1])
-        ok(abs(w[0]['x'] - L[0][0]) < 12 and abs(w[1]['x'] - R[0][0]) < 12, 'taps map to the right half')
+        ok(all(st['sides']), 'each group in its own half')
+        # a tap on each group's figure maps to that group's spot of the floor
+        w = await page.evaluate("(scr) => scr.map(q => __yatd.toWorld(q[0], q[1]))", [st['scr'][0], st['scr'][1]])
+        print('taps ->', w)
+        near = lambda q, spots: min(abs(q['x'] - (t[0] + 0.5)) + abs(q['y'] - (t[1] + 0.5)) for t in spots) < 3
+        ok(all(near(q, L) or near(q, R) for q in w) and near(w[0], L) != near(w[1], L), 'taps map to the right half')
         await page.evaluate("document.querySelectorAll('#toast,#hint').forEach(e => e.hidden = true)")
         await page.screenshot(path=OUT + 'split_lr.png')
         # diagonal: one group top-left, the other bottom-right
-        diag = await page.evaluate("""(() => { const G = __yatd, f = G.fl; const fl0 = []; for (let y = 0; y < G.WH; y++) for (let x = 0; x < G.WW; x++) if (G.walkable(x, y) && G.roomOf(x, y) >= 0 && f.rooms[G.roomOf(x, y)].kind === 'room') fl0.push([x, y]);
-          const sc = q => q[0] / G.WW + q[1] / G.WH; fl0.sort((a, b) => sc(a) - sc(b)); return [fl0.slice(0, 3), fl0.slice(-3)]; })()""")
+        diag = await page.evaluate("""((LA) => { const G = __yatd, f = G.fl; const fl0 = []; for (let y = 0; y < G.WH; y++) for (let x = 0; x < G.WW; x++) if (G.walkable(x, y) && G.roomOf(x, y) >= 0 && f.rooms[G.roomOf(x, y)].kind === 'room') fl0.push([x, y]);
+          let best = null, bs = -1e9; for (let i = 0; i < fl0.length; i += 2) for (let j = 0; j < fl0.length; j += 2) { const dx = fl0[j][0] - fl0[i][0], dy = fl0[j][1] - fl0[i][1], du = (dx - dy) * 0.707, dv = (dx + dy) * 0.354; if (dv <= 0) continue; let da = Math.abs(Math.atan2(dv, du) - LA) % Math.PI; da = Math.min(da, Math.PI - da); if (da < 0.5) continue; const sc = Math.max(Math.abs(du) / 342, dv / 478); if (sc > bs) { bs = sc; best = [fl0[i], fl0[j]]; } } const near = (p) => fl0.filter(q => Math.abs(q[0] - p[0]) + Math.abs(q[1] - p[1]) <= 2).slice(0, 3); return [near(best[0]), near(best[1])]; })(""" + str(la) + """)""")
         await page.evaluate(TELE, [diag[0][0], diag[1][0], diag[0][1], diag[1][1], diag[0][2], diag[1][2]])
         for i in range(30):
             await page.evaluate("(() => { const G = __yatd, f = G.fl; if (f.check && !f.check.result) { G.resolveCheck((f.check.r0 + f.check.r1) / 2); G.clearCheck(); } })()")
             await page.clock.run_for(100)
-        a2 = await page.evaluate("__yatd.SPLIT.ang"); want = math.atan2(diag[1][1][1] - diag[0][1][1], diag[1][1][0] - diag[0][1][0])
-        print('diagonal angle', round(math.degrees(a2)), 'between the groups', round(math.degrees(want)), diag[0][0], diag[1][0])
-        ok(abs(a2 - want) < 0.35 and 10 < abs(math.degrees(a2)) < 80, 'the cut follows the line between the groups')
+        a2 = await page.evaluate("__yatd.SPLIT.ang")
+        want = await page.evaluate("(sp) => { const G = __yatd, m = q => q.reduce((a, t) => [a[0] + t[0] / q.length, a[1] + t[1] / q.length], [0, 0]); const a = m(sp[0]), b = m(sp[1]); const pa = G.w2s(a[0] + 0.5, a[1] + 0.5, 0.5), pb = G.w2s(b[0] + 0.5, b[1] + 0.5, 0.5); return Math.atan2(pb[1] - pa[1], pb[0] - pa[0]); }", [diag[0], diag[1]])
+        print('second pair: cut', round(math.degrees(a2)), 'between the groups on the screen', round(math.degrees(want)), diag[0][0], diag[1][0])
+        k2 = await page.evaluate("__yatd.SPLIT.k"); print('second pair split', k2)
+        ok(k2 > 0.9 and abs(math.cos(a2 - want)) > 0.93, 'the cut follows the line between the groups')
         await page.screenshot(path=OUT + 'split_diag.png')
         # together again: everyone in the middle room
         await page.evaluate(TELE, [mid, mid, mid])

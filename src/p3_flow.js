@@ -116,12 +116,13 @@
 
   /* ================= floats, particles, effects (tile units) ================= */
   // Floating numbers: a tagged one (greed, combo) replaces its older twin nearby; others step up instead of piling on each other.
-  function addFloat(x, y, text, color, size, dy, tag) {
-    const yy = y + (dy || 0);
-    if (tag) { const f = floats.find(o => o.tag === tag && Math.abs(o.x - x) < 1.6 && Math.abs(o.y0 - yy) < 1.6); if (f) { f.text = text; f.color = color; f.life = 1.2; f.y = yy; f.y0 = yy; return; } }
-    let oy = 0;
-    for (let k = 0; k < 6; k++) { if (!floats.some(o => o.life > 0.8 && Math.abs(o.x - x) < 0.9 && Math.abs(o.y - (yy + oy)) < 0.3)) break; oy -= 0.34; }
-    floats.push({ x, y: yy + oy, y0: yy, text, color, size: size || 15, life: 1.2, tag });
+  // 1.07: a float stands on its spot of the floor (x, gy) and rises (lift, in tiles up the screen); dy < 0 = higher
+  function addFloat(x, y, text, color, size, dy, tag, base) {
+    const l0 = (base === undefined ? 0.35 : base) - (dy || 0);
+    if (tag) { const f = floats.find(o => o.tag === tag && Math.abs(o.x - x) < 1.6 && Math.abs(o.gy - y) < 1.6); if (f) { f.text = text; f.color = color; f.life = 1.2; f.lift = l0; f.l0 = l0; return; } }
+    let ol = 0;
+    for (let k = 0; k < 6; k++) { if (!floats.some(o => o.life > 0.8 && Math.abs(o.x - x) < 0.9 && Math.abs(o.gy - y) < 0.9 && Math.abs(o.lift - (l0 + ol)) < 0.3)) break; ol += 0.34; }
+    floats.push({ x, gy: y, lift: l0 + ol, l0, text, color, size: size || 15, life: 1.2, tag });
   }
   function floatTile(x, y, text, color, size, dy, tag) { addFloat(x + 0.5, y + 0.5, text, color, size, dy, tag); }
   function heroPos(h) {
@@ -130,7 +131,7 @@
     const fx = moving ? h.x + (h.nx - h.x) * h.prog : h.x, fy = moving ? h.y + (h.ny - h.y) * h.prog : h.y;
     return { x: fx + 0.5 + off, y: fy + 0.5 + off * 0.5 };
   }
-  function floatHero(h, text, color, size, dy) { const p = heroPos(h); addFloat(p.x, p.y - 0.3, text, color, size, dy); }
+  function floatHero(h, text, color, size, dy) { const p = heroPos(h); addFloat(p.x, p.y, text, color, size, dy, undefined, 0.6); }
   function burst(x, y, color, n) {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, s = (0.6 + Math.random()) * 2.2;
@@ -293,7 +294,7 @@
     selected = null; movingKey = null; movingObj = null; holdInfo = null; paused = false; ff = false;
     clearUndo(); setTrayOpen(UI.trayBuild || run.tut >= 0);
     resize();
-    cam.s = buildScale(); centerOn(fl.ent.x + 0.5, fl.ent.y + 5); cam.manualUntil = 0;
+    cam.s = buildScale(); centerOn((fl.ent.x + fl.heart.x) / 2 + 0.5, (fl.ent.y + fl.heart.y) / 2 + 0.5); cam.manualUntil = 0;   // 1.07: between the door and the heart
     updateTray(); updateAction(); updateZoomBtn(); updatePauseBtn();
     setHint(waveHint());
     saveRun('build');
@@ -523,7 +524,7 @@
     applyRumors();
     chooseEntrance();
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && isRt(roomOf(m.x, m.y), 'crypt')) m.hp = Math.round(m.max * 1.25); });   // Krypta: +25% HP for this wave
-    selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); if (S.trayAuto) setTrayOpen(false); updateTray(); updateAction();   // 1.05: in the tutorial too (testers took the folding for a bug: the handle now says ▲ Pułapki)
+    selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); setTrayOpen(false); updateTray(); updateAction();   // 1.05: in the tutorial too; 1.07: always (an open tray is the pause)
     { const bossE = fl.queue.find(e => e.boss), n = fl.queue.length;   // Prototype 1.0: a banner over the map says who is coming
       showBanner('Fala ' + run.wave, (bossE ? 'prowadzi ich ' + (bossE.boss === 'final' ? 'bohater z przepowiedni' : 'czempion') : n === 1 ? '1 bohater' : n + ' bohaterów') +
         (fl.spawnAt === 'breach' ? ' · wchodzą przez wyłom!' : fl.breach ? ' · wchodzą drzwiami' : ''));
@@ -783,7 +784,7 @@
       hunger: fl.hunger || null, groza: Math.round(fl.base), grozaTotal: Math.round(run.grozaTotal || 0), greedRep: Math.round((run.greedRep || 1) * 100) / 100, guild: run.guild ? run.guild.kind : null,
       autoFF: Math.round(fl.autoFFTime || 0), crystals: run.crystals, greed: Math.round(fl.greed * 100) / 100, rumorRooms: rr, rumorTraps: rt, rooms: run.layout.cells.size,
       essence: Math.round(fl.essence), stats: roundStats(fl.stats), items, partial: !!partial, perf: ps, errors: PERF.errs.length ? PERF.errs.splice(0) : undefined,
-      checks: nChk, cpm: realMin > 0 ? Math.round(nChk / realMin * 10) / 10 : 0, frozen: ps ? ps.frozen : null, memFires: s0.memFires || 0, skullOff: s0.skullOff || 0, classes: fl.heroes.map(h => h.type) });
+      checks: nChk, cpm: realMin > 0 ? Math.round(nChk / realMin * 10) / 10 : 0, frozen: ps ? ps.frozen : null, memFires: s0.memFires || 0, skullOff: s0.skullOff || 0, classes: fl.heroes.map(h => h.type), trayPauses: s0.trayPauses || 0 });
   }
   // after the wave summary: game over, or upgrades and the next build phase
   function afterSummary() {

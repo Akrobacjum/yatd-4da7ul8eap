@@ -12,14 +12,14 @@ def ok(c, m):
 D = json.load(open(SC + 'real104/waves/mvfangk12omy_01.json'))
 ARGS = [D, 0, [0, 1], 0.9, None, {}, 'v12', [1.0, 1.0, []], ['gauss', 0.037, 1.9]]
 async def shot(page, s):
-    await page.evaluate("s => { const G = __yatd; const c = document.querySelector('canvas'); G.cam.s = s; G.cam.ox = (G.fl.heart.x + 0.5) * s - c.clientWidth / 2; G.cam.oy = (G.fl.heart.y + 0.5) * s - c.clientHeight / 2; G.cam.manualUntil = 1e9; }", s)
+    await page.evaluate("s => { const G = __yatd; const c = document.querySelector('canvas'); G.cam.s = s; G.centerOn(G.fl.heart.x + 0.5, G.fl.heart.y + 0.5); G.cam.manualUntil = 1e9; }", s)
     await page.clock.run_for(200)
     return await page.evaluate("document.querySelector('canvas').toDataURL('image/png')")
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         imgs = {}
-        for pg in ['page103', 'page15']:
+        for pg in ['page15']:   # 1.07: no comparison with 1.03's picture any more (the camera is isometric now)
             page = await (await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2)).new_page()
             errs = []; page.on('pageerror', lambda e: errs.append(str(e)))
             await page.clock.install(); await page.goto('file://' + SC + 'test/' + pg + '.html'); await page.clock.run_for(500)
@@ -67,15 +67,5 @@ async def main():
                 print('perf in the summary:', w and w[0]); print('errors:', w and w[1])
             print(pg, 'page errors', errs[:2])
         await b.close()
-    # how different do direct tiles look from 1.03's chunks?
-    from PIL import Image, ImageChops
-    for i, s in enumerate([34, 12]):
-        a = Image.open(io.BytesIO(base64.b64decode(imgs['page103'][i].split(',')[1]))).convert('RGB')
-        c = Image.open(io.BytesIO(base64.b64decode(imgs['page15'][i].split(',')[1]))).convert('RGB')
-        d = ImageChops.difference(a, c).convert('L'); h = d.histogram(); n = sum(h)
-        big = sum(h[40:]) / n
-        print('zoom %d: pixels off by > 40/255: %.2f %%' % (s, big * 100))
-        a.save(SC + 'test/out/t104_perf_%d_103.png' % s); c.save(SC + 'test/out/t104_perf_%d_104.png' % s)
-        if s == 34: ok(big < 0.03, 'zoom 34 looks like 1.03 (%.2f %% off)' % (big * 100))
     print('FAILS', FAILS)
 asyncio.run(main())

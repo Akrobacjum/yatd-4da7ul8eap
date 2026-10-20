@@ -152,8 +152,7 @@
   }
   function updateAction() {
     const b = $('#btn-action'), build = !!(fl && fl.phase === 'build'), raid = !!(fl && fl.phase === 'raid');
-    $('#btn-pause').disabled = !raid;   // pause only means something during a wave
-    $('#btn-undo').hidden = raid; $('#btn-pause').hidden = !raid;
+    $('#btn-undo').hidden = raid;   // 1.07: no pause button: in a wave the build tray is the pause
     updateUndoBtn();
     b.classList.remove('focus-on', 'silence-on', 'ready');
     if (!fl || !run) { b.disabled = true; return; }
@@ -165,11 +164,12 @@
     }
     b.disabled = true; actLabel(b, 'Koniec fali');
   }
-  function updatePauseBtn() { const b = $('#btn-pause'); b.classList.toggle('on', paused); b.setAttribute('aria-label', paused ? 'Wznów' : 'Pauza'); b.setAttribute('aria-pressed', String(paused)); }
+  function updatePauseBtn() { }   // 1.07: the pause button is gone (kept as a name for older callers)
   function setPaused(v, quiet) {   // quiet: the tutorial's own pause says it itself
-    if (!fl || fl.phase !== 'raid') { paused = false; updatePauseBtn(); return; }
+    if (!fl || fl.phase !== 'raid') { paused = false; return; }
+    if (!v && trayIsOpen()) v = true;   // 1.07: while the build tray is open in a wave, time stands still whatever else closes
     if (paused !== v) tl('pa', v ? 1 : 0);
-    paused = v; if (paused) ff = false; updatePauseBtn();
+    paused = v; if (paused) ff = false;
     if (!quiet) setHint(paused ? 'Pauza. Możesz przesuwać mapę, stawiać elementy i stuknąć bohatera, żeby zobaczyć jego kartę.' : 'Gramy dalej.');
   }
   const hudCache = {};
@@ -308,6 +308,9 @@
   $('#h-wave').addEventListener('click', () => { if (run && fl && !modalOpen && fl.phase === 'build') setHint(waveHint()); });   // the wave's news again
 
   // The element tray folds away (a tap on the handle); in a wave it folds by itself (game setting), between waves it remembers you.
+  function trayIsOpen() { const d = $('#drawer'); return !!d && !d.classList.contains('closed'); }
+  // 1.07 (author): in a wave the tray is the pause: open = time stops and the camera tilts to the building view (high isometry),
+  // folded = the game goes on in the wave view (2:1). Between waves a folded tray previews the wave view.
   function setTrayOpen(open, byUser) {
     const d = $('#drawer'), was = !d.classList.contains('closed');
     d.classList.toggle('closed', !open); $('#app').classList.toggle('trayclosed', !open);
@@ -315,6 +318,10 @@
     $('#tray-label').textContent = open ? '▼ Budowa' : '▲ Budowa';   // 1.06 (author): one button that looks the same both ways, only the arrow turns
     if (byUser && fl && fl.phase === 'build') { UI.trayBuild = open; saveUI(); }
     if (was !== open) { if (!open && selected && fl && fl.phase === 'raid') { selected = null; } setTimeout(() => { if (fl) resize(); }, 0); hideTip(); }
+    if (was !== open && fl && fl.phase === 'raid') {
+      if (open) { setPaused(true, true); fl.stats.trayPauses = (fl.stats.trayPauses || 0) + 1; if ((UI.trayPauseHint || 0) < 3 && run && run.tut < 0) { UI.trayPauseHint = (UI.trayPauseHint || 0) + 1; saveUI(); setHint('Pauza: budujesz. Zwiń ▼ Budowa, żeby grać dalej.'); } }
+      else if (!tutPopNow) { setPaused(false, true); ff = false; }
+    }
   }
   $('#tray-toggle').addEventListener('click', () => setTrayOpen($('#drawer').classList.contains('closed'), true));
   /* ================= undo (between waves) ================= */
@@ -452,7 +459,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.06 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.07 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -473,7 +480,8 @@
     webStartRow(card);
     const how = el('details'); how.id = 'start-how'; how.appendChild(el('summary', null, 'Jak grać'));
     const ul = el('ul', 'conseq');
-    ['Między falami budujesz z paska na dole. Zakładki: Pułapki (te, które ranią, i te, które straszą), Potwory, Łup, Obiekty (skrzynia i budowle-kontry), Loch (nowe pokoje, przejścia, rozbudowa i typy pokoi), Talia. Każdy pokój mieści kilka elementów (licznik w rogu pokoju). W fali pasek sam się chowa: wysuniesz go przyciskiem ▲ Budowa (▼ Budowa go chowa).',
+    ['Między falami budujesz z paska na dole. Zakładki: Pułapki (te, które ranią, i te, które straszą), Potwory, Łup, Obiekty (skrzynia i budowle-kontry), Loch (nowe pokoje, przejścia, rozbudowa i typy pokoi), Talia. Każdy pokój mieści kilka elementów (licznik w rogu pokoju). Z rozwiniętym paskiem widzisz loch z wysoka (wysoka izometria), zwinięty pasek (▼ Budowa) pokazuje go tak jak w fali (izometria 2:1). W fali pasek sam się chowa, a rozwinięcie go (▲ Budowa) zatrzymuje grę: budujesz w spokoju, a ▼ Budowa gra dalej. Przycisku pauzy nie ma.',
+     'Ściany od strony kamery są ścięte do podłogi, więc nic się za nimi nie chowa. Pułapka ścienna na takiej ścianie stoi przy niej jak tabliczka.',
      'Stuknięcie postawionego elementu albo mebla podnosi go (stuknij nowe miejsce, żeby przenieść), dwa szybkie stuknięcia ulepszają pułapkę albo potwora, przytrzymanie zdejmuje i oddaje Esencję. Przytrzymanie kafelka w pasku pokazuje, co robi. Działa też na pułapki, z którymi loch startuje (meble lochu nic nie oddają).',
      'W fali stukasz w mapę przy skill checku: obwódka to draśnięcie, pełne pole to krytyk (najmocniej), czaszka znaczy, że ktoś zginie. Każda pułapka ma swój kształt checku, a im silniejszy bohater, tym szybszy koralik.',
      'Jeden check ustawia pułapkę na całą falę: krytyk albo draśnięcie zostaje (pełny krążek albo obwódka w rogu pola) i pułapka dalej bije sama z tą siłą. Pudło albo brak stuknięcia: check wraca przy następnym razie. Gdy cios miałby zabić, check z czaszką pyta zawsze, a odpuszczona czaszka usypia pułapkę (☠ w rogu), dopóki nie może trafić bez zabijania.',
@@ -489,9 +497,13 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.06'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.07'));
     const ul2 = el('ul', 'conseq');
-    ['1.06: bohaterowie to figurki z sylwetką klasy: hełm, tarcza i miecz (wojownik), kaptur i sztylet (złodziej), aureola i szata z krzyżem (kapłan), spiczasty kapelusz i laska (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). Każda klasa ma wyraźnie inny kolor, figurka nigdy nie jest mniejsza niż ok. 27 px (także przy oddaleniu i na dzielonym ekranie) i patrzy w stronę, w którą idzie. Boss nosi koronę, łowca skarbów sakiewkę na plecach.',
+    ['1.07: nowa kamera: loch jest obrócony o 45° (izometria). Z rozwiniętym paskiem budowy widzisz go z wysoka (wysoka izometria), a w fali i po zwinięciu paska w izometrii 2:1. Przy przełączaniu zmienia się tylko nachylenie, kierunki zostają te same.',
+     '1.07: w fali ▲ Budowa zatrzymuje grę i pokazuje widok budowy, a ▼ Budowa gra dalej. Przycisku pauzy już nie ma. Gdy wyjdziesz z gry w trakcie fali, pasek sam się rozwinie, więc po powrocie gra stoi.',
+     '1.07: ściany od strony kamery są ścięte do podłogi, więc nic się za nimi nie chowa. Pułapka na takiej ścianie stoi przy niej jak tabliczka, na pozostałych wisi na ścianie.',
+     '1.07: bohaterowie i potwory w pixel arcie (przygaszone kolory, 4 klatki chodu), a meble, pułapki, budowle, łup i serce stoją w lochu jako bryły. Co płaskie, leży na podłodze albo wisi na ścianie.',
+     '1.07: muzyka w stylu retro, jak w Balatro: jeden utwór w dwóch aranżacjach, które grają równo i płynnie przechodzą jedna w drugą. Spokojny "Loch" gra w budowie, sklepie i pauzie, mocniejsza "Fala" w trakcie fali. Głośność muzyki ustawisz osobno w Ustawieniach (0 wyłącza). Zaczyna grać po pierwszym stuknięciu.',
      '1.06: przycisk paska budowy wygląda tak samo, gdy pasek jest rozwinięty i zwinięty: ▼ Budowa chowa, ▲ Budowa wysuwa.',
      '1.05: skill check działa na całą falę. Trafiony krytyk albo draśnięcie pułapka pamięta (znaczek w rogu pola) i dalej bije sama z tą siłą. Pudło albo brak stuknięcia: check wraca przy następnym razie. Gdy cios miałby zabić, check z czaszką pyta zawsze, a odpuszczona czaszka usypia pułapkę, dopóki nie może trafić bez zabijania. W powtórkach Waszych runów checków było ok. 55% mniej.',
      '1.05: dwie nowe klasy. Bard (lutnia) krzepi pieśnią po śmierci towarzysza i przy niskim morale, a zgubionych woła muzyką. Barbarzyńca (topór) wpada w furię (po śmierci towarzysza, po mocnym ciosie i zamiast paniki) i rozbija skrzynie, beczki, regały i budowle. Nowe kontry w zakładce Obiekty: Kamień wyjec i Okowy.',
@@ -1412,7 +1424,7 @@
     const B = run.layout.breach;
     if (!B || !fl.breach || fl.phase !== 'build') { card.appendChild(el('p', null, 'Wyłomu już nie ma.')); card.appendChild(btn('primary', 'Zamknij', null, closeModal)); return; }
     // 1.01: the camera goes to the breach and leaves it in view under this sheet (about two thirds down the map), with a pulse
-    centerOn(fl.breach.x + 0.5, fl.breach.y + 0.5 - (ch / cam.s) * 0.18); fl.breachPing = realNow;
+    centerOn(fl.breach.x + 0.5, fl.breach.y + 0.5); cam.oy -= ch * 0.18; clampCam(); fl.breachPing = realNow;
     card.appendChild(el('div', 'sub', 'Wyłom' + (B.born ? ' · od fali ' + B.born : '') + ' · na mapie poniżej'));
     card.appendChild(el('h2', null, m && m.fresh ? 'Nowy wyłom!' : 'Wyłom w ścianie'));
     card.appendChild(el('p', 'lead', B.fresh ? 'Gildia przebiła tunel do tego pokoju (czerwone kółko) i tę falę wpuści właśnie tędy.' : 'Tunel gildii wciąż jest otwarty. Każda fala wybiera: wyłom albo drzwi, zwykle tę drogę, przy której słyszała o mniejszej liczbie pułapek.'));
@@ -1580,7 +1592,7 @@
     floats = []; particles = []; paused = false; ff = false; selected = null;
     if (sv.stage === 'summary') {   // the wave was over: show what was left to pick, then build
       setupFl('summary');
-      resize(); cam.s = buildScale(); centerOn(fl.ent.x + 0.5, fl.ent.y + 5);
+      resize(); cam.s = buildScale(); centerOn((fl.ent.x + fl.heart.x) / 2 + 0.5, (fl.ent.y + fl.heart.y) / 2 + 0.5);
       updateTray(); updateAction();
       afterSummary();
     } else {
@@ -1595,7 +1607,7 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 49;   // 49: Prototype 1.06: heroes drawn as figurines, one build-bar button (no change in the data); 48: Prototype 1.05: a check's result kept for the wave (memFires, skullOff), checks per minute (cpm) and the share of the wave frozen by checks (frozen, perf.realSec), the classes of each party (bard, barbarian), rumours only of what hurt or scared (max 3, 2 waves), tutorial progress in the run summary (tut: furthest step, skipped, how it ended), new stats (songs, bardCalls, answers, rages, smashes, disputes, healCalls); 47: Prototype 1.04: wave summaries carry perf (frame gaps, js time, dpr, direct tiles share) and errors, the party waits at the gate 1,8 s, start traps near the heart, tutorial cards; 46: Prototype 1.03: greed risk without a ceiling (leader levels, hunters), loot dearer per copy, Odwrotna chciwość reworked (taken loot x3), split screen; 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
+  const LOG_VERSION = 50;   // 50: Prototype 1.07: the isometric camera, the build tray is the pause (a wave has trayPauses: how often the tray stopped it; stats.pauseTime: how long); 49: Prototype 1.06: heroes drawn as figurines, one build-bar button (no change in the data); 48: Prototype 1.05: a check's result kept for the wave (memFires, skullOff), checks per minute (cpm) and the share of the wave frozen by checks (frozen, perf.realSec), the classes of each party (bard, barbarian), rumours only of what hurt or scared (max 3, 2 waves), tutorial progress in the run summary (tut: furthest step, skipped, how it ended), new stats (songs, bardCalls, answers, rages, smashes, disputes, healCalls); 47: Prototype 1.04: wave summaries carry perf (frame gaps, js time, dpr, direct tiles share) and errors, the party waits at the gate 1,8 s, start traps near the heart, tutorial cards; 46: Prototype 1.03: greed risk without a ceiling (leader levels, hunters), loot dearer per copy, Odwrotna chciwość reworked (taken loot x3), split screen; 45: Prototype 1.02: auto fast-forward (autoFF time) counts steps to the tiles a ready trap reaches instead of whole rooms, the settle screen waits for Dalej; 44: Prototype 1.01: combo chains cashed in at the end (cp event), the heart eats first from the wave (fed, fedAt, essHeart), no purse limit or store, retreat after patience, new prices, fixed gate, fog loses heroes, stronger early waves, 6 tabs; 43: Prototype 1.0: new look, hold a tile for its text, full card texts in the shop, a double tap upgrades, buildings block like a crate, 7 tabs; 42: v15.2 tap moves / hold removes, two starting traps (18 Esencja), one-screen shop and summaries; 41: v15.1 scare elements (Strach tab), fear 1.6, scare 2.5, wound fear 25%/18%, tales of treasure;  40: v15 one currency (score = Esencja harvested, hunger in Esencja, crystal bought); 39: crystal dropped in fear, cage deaths; 38: v14 shop, damage types, phobias, returners, hunger bar; 33: deck of cards; 34: fame, item levels, buildings, traits, guild; 35: Groza x Chciwość, typed loot, powers, faith, room types, lasting breach, check shapes; 36: check event + level near it and tap offset, hunters replace, rookies
   function snapshotLayout() {
     const L = run.layout;
     return { WW, WH, entrance: L.entrance, heart: L.heartKey, entX: L.entX, essence: Math.round(fl.essence), breach: L.breach ? Object.assign({}, L.breach) : null, greedKeep: Math.round(run.greedKeep * 100) / 100,
@@ -1805,6 +1817,52 @@
     if (dirO) { pickUpObj(dirO); return true; }
     return false;
   }
+  // 1.07: a tap in the isometric view. The floor under the finger is the default; but what stands (a trap, a monster, a piece
+  // of furniture) or hangs on a wall shows above its own tile, so a tap on its picture counts as a tap on its tile. With a
+  // wall trap in hand, a tap on a wall's face or a cut wall picks that wall.
+  let TAP = null;   // the screen point of the tap being handled (for the heroes, picked on the screen)
+  function withTapCam(sx, sy, fn) {
+    const V = splitViews(); if (!V) return fn();
+    const v = V[splitSide(sx, sy)], keep = { s: cam.s, ox: cam.ox, oy: cam.oy };
+    cam.s = v.s; cam.ox = v.ox; cam.oy = v.oy;
+    try { return fn(); } finally { cam.s = keep.s; cam.ox = keep.ox; cam.oy = keep.oy; }
+  }
+  function tapWorld(sx, sy) {
+    return withTapCam(sx, sy, () => {
+      const g = fromView((sx + cam.ox) / cam.s, (sy + cam.oy) / cam.s), T = cam.s, gx = Math.floor(g.x), gy = Math.floor(g.y);
+      let best = null, bd = 1e9, bdep = -1e9;
+      const hit = (x, y, p, hw, hh, dep) => {   // the tap inside the picture (a box around p): the nearest to the camera wins
+        const dx = Math.abs(sx - p[0]) / hw, dy = Math.abs(sy - p[1]) / hh;
+        if (dx > 1 || dy > 1) return;
+        const d = dx + dy;
+        if (dep > bdep + 0.01 || (Math.abs(dep - bdep) <= 0.01 && d < bd)) { best = { x: x + 0.5, y: y + 0.5 }; bd = d; bdep = dep; }
+      };
+      const wallType = selected && ITEMS[selected] && ITEMS[selected].slot === 'wall' ? selected : null, loads = wallType ? roomLoads() : null;
+      for (let y = gy - 1; y <= gy + 3; y++) for (let x = gx - 1; x <= gx + 3; x++) {
+        if (x < 0 || y < 0 || x >= WW || y >= WH) continue;
+        const it = fl.items.get(key(x, y)), o = fl.objects.get(key(x, y));
+        if (it && !DRIFT[it.type] && !flatItem(it)) {
+          if (WALL_ITEM[it.type]) { const w = wallSpot(it); hit(x, y, W2S(w.x, w.y, w.z), T * 0.42, T * 0.42, x + y + 1.2); }
+          else hit(x, y, W2S(x + 0.5, y + 0.5, 0.42), T * 0.4, T * 0.55, x + y + 1);
+        }
+        if (o) hit(x, y, W2S(x + 0.5, y + 0.5, 0.4), T * 0.42, T * 0.5, x + y + 0.9);
+        if (wallType && fl.tiles[y * WW + x] === WALL && !it && canPlace(wallType, x, y, loads)) { const w = wallSpot({ x, y }); hit(x, y, W2S(w.x, w.y, w.z), T * 0.5, T * 0.5, x + y + 1.1); }
+      }
+      return best || g;
+    });
+  }
+  // the hero whose figure is under the finger (or close to it), on the screen
+  function heroAtScreen(sx, sy) {
+    let best = null, bd = 1e9;
+    alive().forEach(h => {
+      if (h.gone) return;
+      const p = heroPos(h), V = splitViews(), c = V ? V[SPLIT.gid.get(h.id) || 0] : cam;
+      const fx = vX(p.x, p.y) * c.s - c.ox, fy = vY(p.x, p.y, 0) * c.s - c.oy, H = figH(c.s, h.boss), top = fy - H;
+      const d = Math.hypot(sx - fx, clamp(sy, top, fy) - sy), lim = Math.max(22, H * 0.45);
+      if (d < lim && d < bd) { bd = d; best = h; }
+    });
+    return best;
+  }
   const DOUBLE_TAP_MS = 380; let lastTap = null;
   function handleTap(wx, wy) {
     if (!fl || !run) return;
@@ -1835,9 +1893,7 @@
     if (fl.phase !== 'raid') return;
     if (selected && !TOOLS[selected]) { const t = snapTile(selected, wx, wy) || [x, y]; tryPlace(selected, t[0], t[1]); return; }
     // v14: no more putting traps to sleep; a tap on a hero opens his full card (the game pauses)
-    let best = null, bd = 0.9;
-    const s = cam.s || 20;   // 1.06: a figure stands up from its tile: its body counts too
-    fl.heroes.forEach(h => { if (h.dead || h.fled || h.gone) return; const p = heroPos(h), fy = p.y + figFeet(s) / s, top = fy - figH(s, h.boss) / s, d = Math.hypot(p.x - wx, clamp(wy, top, fy) - wy); if (d < bd) { bd = d; best = h; } });   // the distance to the figure, feet to head
+    const best = TAP ? heroAtScreen(TAP[0], TAP[1]) : null;   // 1.07: the figure under the finger, on the screen   // the distance to the figure, feet to head
     if (best) { if (!paused) setPaused(true); openModal({ type: 'hero', id: best.id, unpause: true }); }
   }
   function tryPlace(type, x, y) {
@@ -1902,7 +1958,7 @@
       gesture = { type: 'pan', sx: p.x, sy: p.y, ox: cam.ox, oy: cam.oy, moved: false, handled: false };
       clearTimeout(holdTimer); holdInfo = null;
       if (fl.phase === 'build') {   // v15.1: a finger held on something takes it down
-        const w = toWorld(p.x, p.y), t = holdTarget(w.x, w.y);
+        const w = tapWorld(p.x, p.y), t = holdTarget(w.x, w.y);
         if (t) {
           holdInfo = { x: t.x, y: t.y, t0: realNow, dur: HOLD_DEL };
           holdTimer = setTimeout(() => { if (gesture && !gesture.moved && pointers.size === 1 && fl.phase === 'build' && !modalOpen) { gesture.handled = true; holdRemove(t); } holdInfo = null; }, HOLD_DEL * 1000);
@@ -1946,7 +2002,7 @@
         if (row) { const pause = fl.phase === 'raid' && !paused; if (pause) setPaused(true); openModal(Object.assign({ type: 'hero', unpause: pause }, row.ref)); gesture = null; return; }
         UI.listOpen = !UI.listOpen; saveUI(); gesture = null; return;
       }
-      const w = toWorld(gesture.sx, gesture.sy); handleTap(w.x, w.y);
+      const w = tapWorld(gesture.sx, gesture.sy); TAP = [gesture.sx, gesture.sy]; try { handleTap(w.x, w.y); } finally { TAP = null; }
     }
     gesture = null;
   }
@@ -1963,12 +2019,12 @@
     if (!fl || modalOpen) return;
     if (fl.phase === 'build') { startWave(); return; }
   });
-  $('#btn-pause').addEventListener('click', () => { if (fl && fl.phase === 'raid' && !modalOpen && !tutPopNow) setPaused(!paused); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && fl && fl.phase === 'raid' && !paused) setPaused(true); });
+  // 1.07: leaving the app in a wave opens the build tray: the game waits paused, and folding the tray plays on
+  document.addEventListener('visibilitychange', () => { if (document.hidden && fl && fl.phase === 'raid') { if (!trayIsOpen()) setTrayOpen(true); else if (!paused) setPaused(true); } });
   document.addEventListener('keydown', e => {
     if (!fl || modalOpen || (e.target && e.target.tagName === 'INPUT')) return;
     if (e.code === 'Space' && fl.phase === 'raid') { e.preventDefault(); if (fl.check && !fl.check.result) resolveCheck(); }
-    if (e.code === 'KeyP' && fl.phase === 'raid') setPaused(!paused);
+    if (e.code === 'KeyP' && fl.phase === 'raid' && !tutPopNow) setTrayOpen(!trayIsOpen(), true);
     if (e.code === 'KeyF' && fl.phase === 'raid' && !paused && !ff) { ff = true; tutFlags.ffUsed = true; tl('ff', 1); }
     if (e.code === 'Escape' && (selected || movingKey || movingObj)) { selected = null; movingKey = null; movingObj = null; updateTray(); setHint('Wybierz element i stuknij pasujące miejsce.'); }
     if (e.code === 'KeyZ' && (e.ctrlKey || e.metaKey) && fl.phase === 'build') { e.preventDefault(); undo(); }
@@ -1982,7 +2038,11 @@
   if ($('#btn-zoom')) $('#btn-zoom').addEventListener('click', () => {
     if (!fl) return;
     if (cam.s < buildScale() * 0.92) zoomAt(buildScale(), cw / 2, ch / 2);
-    else { const b = dungeonBounds(); cam.s = clamp(Math.min(cw / (b.x1 - b.x0), ch / (b.y1 - b.y0)), fitScale() * 0.95, buildScale() * 0.9); centerOn((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2); updateZoomBtn(); }
+    else {   // 1.07: the whole dungeon in view (its turned corners)
+      const b = dungeonBounds(), C = [[b.x0, b.y0], [b.x1, b.y0], [b.x0, b.y1], [b.x1, b.y1]], us = C.map(q => vX(q[0], q[1])), vs = C.map(q => vY(q[0], q[1], 0));
+      const u0 = Math.min(...us), u1 = Math.max(...us), v0 = Math.min(...vs) - WALL_H * CP, v1 = Math.max(...vs);
+      cam.s = clamp(Math.min(cw / (u1 - u0), ch / (v1 - v0)), fitScale() * 0.95, buildScale() * 0.9); centerOnView((u0 + u1) / 2, (v0 + v1) / 2); updateZoomBtn();
+    }
     cam.manualUntil = realNow + 6;
   });
   $('#btn-settings').addEventListener('click', () => { if (!modalOpen) { const pause = !!(fl && fl.phase === 'raid' && !paused); if (pause) setPaused(true); openModal({ type: 'menu', unpause: pause }); } });
@@ -2013,7 +2073,7 @@
   // something; in the wave tap a check, a hero and hold to speed up (no timeouts: each waits for the player or Pomiń krok).
   const TUT = [
     { id: 'intro', text: 'To Twój loch. Bohaterowie przyjdą falami po kryształy z serca (ostatni pokój). Loch postawił za Ciebie dwie pułapki blisko serca, ale same nie wystarczą: dostawisz więcej.', next: true },
-    { id: 'tray', text: 'Na dole jest pasek budowy. Stuknij ▲ Budowa, żeby go rozwinąć (▼ Budowa go chowa; w trakcie fali chowa się sam).', hl: ['#tray-toggle'], prep: () => { selected = null; setTrayOpen(false); }, done: () => trayOpen() },
+    { id: 'tray', text: 'Na dole jest pasek budowy. Stuknij ▲ Budowa, żeby go rozwinąć. Rozwinięty pasek to widok budowy, a zwinięty (▼ Budowa) pokazuje loch tak jak w fali.', hl: ['#tray-toggle'], prep: () => { selected = null; setTrayOpen(false); }, done: () => trayOpen() },
     { id: 'move', text: 'Stuknij pułapkę w kółku, żeby ją podnieść, a potem inne podświetlone pole, żeby ją przenieść (za darmo). Przytrzymanie palca zdejmuje element i oddaje Esencję.', tile: () => { const it = [...fl.items.values()].find(o => o.sys); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); }, done: () => !!tutFlags.moved, skip: true },
     { id: 'spikes', text: 'Teraz dostaw więcej. Wybierz Kolce z paska na dole (zakładka Pułapki). Przytrzymaj kafelek, żeby zobaczyć, co robi.', hl: ['#tab-traps', '#item-spikes'], prep: () => { movingKey = null; movingObj = null; tab = 'traps'; updateTray(); setTrayOpen(true); }, done: () => selected === 'spikes' || countType('spikes') > (tutFlags.sp0 || 0) },
     { id: 'place', text: 'Postaw je na trasie bohaterów: stuknij pole z pulsującym kółkiem.', tile: () => tutPathTile(0.25, 'spikes'), done: () => countType('spikes') > (tutFlags.sp0 || 0) },
@@ -2022,7 +2082,7 @@
     { id: 'loot', text: 'Łup wabi bohaterów i podbija chciwość, czyli mnożnik Esencji. Postaw Monety z zakładki Łup.', hl: ['#tab-loot', '#item-loot'], prep: () => { tab = 'loot'; updateTray(); setTrayOpen(true); if (fl.essence < costOf('loot')) fl.essence = costOf('loot'); }, done: () => [...fl.items.values()].some(o => isLoot(o.type)) },
     { id: 'upgrade', text: () => { const it = tutUpTarget(); return 'Dwa szybkie stuknięcia w element to ulepszenie: mocniej bije i ma szersze strefy checku. Stuknij dwa razy ' + (it ? ITEMS[it.type].name.toLowerCase() : 'pułapkę') + ' w kółku (koszt: ' + (it ? upgCost(it) : 6) + ' Esencji).'; }, tile: () => { const it = tutUpTarget(); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); const it = tutUpTarget(); if (it && fl.essence < upgCost(it)) fl.essence = upgCost(it); }, done: () => !!tutFlags.upgraded },
     { id: 'spend', text: () => 'Masz jeszcze ' + Math.floor(fl.essence) + ' Esencji. W pierwszej fali nie oszczędzaj: dostaw kolce i strzały przy trasie. Pokój mieści kilka pułapek (licznik w rogu).', hl: ['#tab-traps'], prep: () => { selected = null; tab = 'traps'; updateTray(); }, done: () => fl.phase !== 'build' || fl.essence < 3 || !tutAnySpot(), skip: true },   // drop the loot from the hand, or every tap adds more loot
-    { id: 'go', text: 'Gotowe. Wypuść falę przyciskiem w prawym dolnym rogu. Pasek budowy schowa się na czas fali.', hl: ['#btn-action'], done: () => fl.phase === 'raid' },
+    { id: 'go', text: 'Gotowe. Wypuść falę przyciskiem w prawym dolnym rogu. Pasek budowy schowa się na czas fali, a w fali ▲ Budowa zatrzymuje grę, żebyś mógł spokojnie dostawić pułapki.', hl: ['#btn-action'], done: () => fl.phase === 'raid' },
     // the wave: one line at the top; the first check jumps to 'check' (after its card)
     { id: 'novice', text: 'Nadchodzą nowicjusze. Każda rana i każdy strach to Groza, a linia u góry zamienia ją w Esencję.', hl: ['#h-eq'], raid: true, hideAfter: 9 },
     { id: 'check', text: 'Stuknij w mapę, gdy koralik będzie w obwódce (draśnięcie) albo w pełnym polu (krytyk). Trafiony wynik pułapka pamięta do końca fali (znaczek w rogu pola).', raid: true, done: () => tutFlags.resolved || (!fl.check && tutT > 2) },
@@ -2099,7 +2159,7 @@
     box.hidden = false; coachSync();
     (st.hl || []).forEach(sel => { const e = $(sel); if (e) { e.classList.add('tut-hl'); if (e.classList.contains('item') && e.parentElement) { const t = e.parentElement; t.scrollLeft = Math.max(0, e.offsetLeft - 8); } } });   // a highlighted tile scrolls into view
     if (st.pause && fl.phase === 'raid') setPaused(true, true);
-    const t = tutTarget(); if (t && fl.phase === 'build') { centerOn(t[0] + 0.5, t[1] + 2.5); cam.manualUntil = 0; }
+    const t = tutTarget(); if (t && fl.phase === 'build') { centerOn(t[0] + 0.5, t[1] + 0.5); cam.oy += ch * 0.14; clampCam(); cam.manualUntil = 0; }   // 1.07: the target a bit above the middle (the coach is at the bottom)
   }
   function tutTarget() {
     const st = run && run.tut >= 0 ? TUT[run.tut] : null;
@@ -2157,7 +2217,7 @@
   requestAnimationFrame(frame);
 
   // Hook for automated checks; no effect on normal play.
-  window.__yatd = { tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  window.__yatd = { get MUS() { return MUS; }, musicWant, w2s: (x, y, z) => W2S(x, y, z || 0), centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

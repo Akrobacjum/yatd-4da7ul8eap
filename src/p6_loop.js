@@ -69,6 +69,133 @@
     } catch (e) {}
   }
 
+  /* ================= music ================= */
+  // 1.07 (author: two simple retro tracks like Balatro's, looped, working the way Balatro's do): one song in two arrangements
+  // that always play in step (same tempo, key and chords), and the game crossfades between them by what is happening, the
+  // way Balatro's music changes in the shop or at a boss. "Loch" (building, the shop, the summary, a paused wave): a slow
+  // swung groove, organ chords, a walking bass, a soft lead. "Fala" (a wave): the same chords with a driving bass, a
+  // chiptune arpeggio, a fuller beat and the lead an octave up. Everything is synthesised (no sound files); the melodies are
+  // our own. A slow "tape" wobble on the pitch gives the woozy retro feel. 96 BPM, A minor, 16 bars (40 s) per loop.
+  const MUS = { on: false, bpm: 96, step: 0, next: 0, timer: null, bus: null, mix: null, lfo: null, noise: null, want: 'A', cur: 'A', g: { A: null, B: null } };
+  const M_BARS = [   // root (bass), chord voicing (MIDI)
+    [45, [57, 60, 64, 67, 71]], [41, [53, 57, 60, 64]], [38, [57, 60, 62, 65]], [40, [56, 59, 62, 64]],
+    [45, [57, 60, 64, 67, 71]], [48, [55, 59, 60, 64]], [46, [58, 62, 65, 69]], [40, [56, 59, 62, 65]]
+  ];
+  // the lead: [bar 0-15, 8th step 0-7, note, length in 8ths]
+  const M_LEAD = [
+    [0, 0, 76, 3], [0, 3, 74, 1], [0, 4, 72, 2], [0, 6, 71, 2], [1, 0, 69, 4], [1, 4, 72, 2], [1, 6, 76, 2],
+    [2, 0, 77, 3], [2, 3, 76, 1], [2, 4, 74, 2], [2, 6, 72, 1], [2, 7, 69, 1], [3, 0, 71, 4], [3, 4, 68, 2], [3, 6, 64, 2],
+    [4, 0, 76, 2], [4, 2, 79, 2], [4, 4, 76, 1], [4, 5, 74, 1], [4, 6, 72, 2], [5, 0, 71, 3], [5, 3, 72, 1], [5, 4, 76, 4],
+    [6, 0, 77, 2], [6, 2, 74, 2], [6, 4, 69, 2], [6, 6, 70, 2], [7, 0, 68, 2], [7, 2, 71, 2], [7, 4, 74, 1], [7, 5, 77, 1], [7, 6, 76, 2],
+    [8, 0, 81, 2], [8, 2, 76, 2], [8, 6, 72, 1], [8, 7, 74, 1], [9, 0, 76, 6],
+    [10, 0, 74, 1], [10, 1, 76, 1], [10, 2, 77, 2], [10, 4, 81, 2], [10, 6, 79, 2], [11, 0, 80, 4], [11, 4, 76, 2], [11, 6, 71, 2],
+    [12, 0, 84, 2], [12, 2, 83, 1], [12, 3, 81, 1], [12, 4, 76, 4], [13, 0, 79, 2], [13, 2, 76, 2], [13, 4, 72, 2], [13, 6, 71, 2],
+    [14, 0, 74, 2], [14, 2, 77, 2], [14, 4, 81, 2], [14, 6, 77, 2], [15, 0, 76, 4], [15, 4, 74, 1], [15, 5, 71, 1], [15, 6, 68, 2]
+  ];
+  const mhz = n => 440 * Math.pow(2, (n - 69) / 12);
+  // which arrangement the moment asks for: a running wave = Fala, anything else (building, shop, pause, start) = Loch
+  const musicWant = () => (fl && fl.phase === 'raid' && !paused && !trayIsOpen() && !fl.finishing) ? 'B' : 'A';
+  function musicInit() {
+    if (MUS.bus || !actx) return;
+    const a = actx;
+    MUS.bus = a.createGain(); MUS.bus.gain.value = 0;
+    const warm = a.createBiquadFilter(); warm.type = 'lowpass'; warm.frequency.value = 5200; warm.Q.value = 0.3;
+    // a short room: a reverb from decaying noise
+    const ir = a.createBuffer(2, Math.floor(a.sampleRate * 1.6), a.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3.2); }
+    const verb = a.createConvolver(); verb.buffer = ir; const wet = a.createGain(); wet.gain.value = 0.22;
+    MUS.bus.connect(warm); warm.connect(a.destination); warm.connect(verb); verb.connect(wet); wet.connect(a.destination);
+    MUS.g.A = a.createGain(); MUS.g.B = a.createGain(); MUS.g.A.gain.value = 1; MUS.g.B.gain.value = 0;
+    MUS.g.A.connect(MUS.bus); MUS.g.B.connect(MUS.bus);
+    // the tape wobble: a slow wave on the pitch of every tuned voice (a few cents)
+    MUS.lfo = a.createOscillator(); MUS.lfo.frequency.value = 0.35; MUS.lfoG = a.createGain(); MUS.lfoG.gain.value = 9; MUS.lfo.connect(MUS.lfoG); MUS.lfo.start();
+    const nb = a.createBuffer(1, a.sampleRate, a.sampleRate), nd = nb.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1; MUS.noise = nb;
+    // an echo for the lead (a dotted eighth)
+    MUS.echo = a.createDelay(1); MUS.echo.delayTime.value = 60 / MUS.bpm * 0.75; const fb = a.createGain(); fb.gain.value = 0.28; const ew = a.createGain(); ew.gain.value = 0.3;
+    MUS.echo.connect(fb); fb.connect(MUS.echo); MUS.echo.connect(ew); ew.connect(MUS.bus);
+  }
+  // one tuned note: wave type, frequency, start, length, volume, an attack and a release; the wobble on its pitch
+  function mNote(bus, type, f, t, len, vol, att, rel, cut, echo) {
+    const a = actx, o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.value = f; MUS.lfoG.connect(o.detune);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + att); g.gain.setValueAtTime(vol, t + Math.max(att, len - rel)); g.gain.exponentialRampToValueAtTime(0.0001, t + len + rel);
+    let out = g;
+    if (cut) { const fl2 = a.createBiquadFilter(); fl2.type = 'lowpass'; fl2.frequency.value = cut; g.connect(fl2); out = fl2; }
+    o.connect(g); out.connect(bus); if (echo) out.connect(MUS.echo);
+    o.start(t); o.stop(t + len + rel + 0.05);
+    o.onended = () => { try { MUS.lfoG.disconnect(o.detune); } catch (e) {} };
+  }
+  function mDrum(bus, kind, t, vol) {
+    const a = actx;
+    if (kind === 'kick') {
+      const o = a.createOscillator(), g = a.createGain(); o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.14);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3); o.connect(g); g.connect(bus); o.start(t); o.stop(t + 0.32); return;
+    }
+    const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(); s.buffer = MUS.noise;
+    const len = kind === 'hat' ? 0.04 : kind === 'open' ? 0.22 : 0.16;
+    f.type = kind === 'snare' ? 'bandpass' : 'highpass'; f.frequency.value = kind === 'snare' ? 1900 : 7200; f.Q.value = kind === 'snare' ? 0.8 : 0.5;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    s.connect(f); f.connect(g); g.connect(bus); s.start(t, Math.random() * 0.5); s.stop(t + len + 0.02);
+    if (kind === 'snare') { const o = a.createOscillator(), g2 = a.createGain(); o.frequency.value = 185; g2.gain.setValueAtTime(vol * 0.5, t); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.09); o.connect(g2); g2.connect(bus); o.start(t); o.stop(t + 0.1); }
+  }
+  // one sixteenth of the loop for both arrangements (a quiet one is skipped)
+  function mStep(i, t) {
+    const sx = 60 / MUS.bpm / 4, bar = Math.floor(i / 16) % 16, s16 = i % 16, s8 = s16 / 2, ch = M_BARS[bar % 8], nextRoot = M_BARS[(bar + 1) % 8][0];
+    const live = k => MUS.g[k].gain.value > 0.004 || MUS.want === k;
+    if (live('A')) {   // Loch: swung eighths
+      const bus = MUS.g.A, swing = (s16 % 4 === 2) ? sx * 0.32 : 0, tt = t + swing;
+      if (s16 % 2 === 0) {
+        if (s16 === 0) ch[1].forEach((n, k) => { mNote(bus, 'square', mhz(n), t, sx * 15, 0.022, 0.08, 0.5, 1300); mNote(bus, 'sine', mhz(n + 12), t, sx * 15, 0.012 - k * 0.001, 0.12, 0.6); });   // organ chord, one per bar
+        const bp = { 0: ch[0], 4: ch[0] + 7, 8: ch[0] + 12, 12: ch[0] + 10, 14: nextRoot - 1 }[s16];
+        if (bp) mNote(bus, 'triangle', mhz(bp), tt, sx * 1.8, 0.16, 0.01, 0.08);
+        M_LEAD.forEach(L => { if (L[0] === bar && L[1] * 2 === s16) mNote(bus, 'square', mhz(L[2]), tt, sx * 2 * L[3] * 0.92, 0.035, 0.02, 0.12, 2400, true); });
+        if (s16 === 0 || s16 === 10) mDrum(bus, 'kick', tt, 0.5);
+        if (s16 === 4 || s16 === 12) mDrum(bus, 'snare', tt, 0.12);
+        mDrum(bus, 'hat', tt, s16 % 4 ? 0.025 : 0.04);
+      }
+    }
+    if (live('B')) {   // Fala: straight sixteenths, the same chords pushed
+      const bus = MUS.g.B;
+      if (s16 % 2 === 0) {
+        if (s16 % 4 === 2) ch[1].forEach(n => mNote(bus, 'square', mhz(n), t, sx * 0.9, 0.016, 0.005, 0.05, 1800));   // offbeat organ stabs
+        const bp = [ch[0], ch[0], ch[0] + 12, ch[0], ch[0] + 7, ch[0], ch[0] + 12, nextRoot - 1][s8];
+        mNote(bus, 'sawtooth', mhz(bp), t, sx * 1.6, 0.08, 0.005, 0.04, 900);
+      }
+      const up = ch[1].map(n => n + 12), arp = [0, 1, 2, 3, 2, 1, 0, 1][s16 % 8];   // a chiptune arpeggio over the chord
+      mNote(bus, 'square', mhz(up[arp % up.length]), t, sx * 0.7, 0.018, 0.003, 0.03, 3200);
+      if (bar >= 8) M_LEAD.forEach(L => { if (L[0] === bar && L[1] * 2 === s16) mNote(bus, 'square', mhz(L[2] + 12), t, sx * 2 * L[3] * 0.9, 0.03, 0.01, 0.1, 3600, true); });   // the theme, an octave up
+      if ([0, 6, 8, 11].includes(s16)) mDrum(bus, 'kick', t, 0.6);
+      if (s16 === 4 || s16 === 12) mDrum(bus, 'snare', t, 0.2);
+      mDrum(bus, s16 === 14 ? 'open' : 'hat', t, s16 % 2 ? 0.018 : 0.035);
+    }
+  }
+  function musicTick() {
+    if (!actx || !MUS.bus) return;
+    const want = musicWant(), a = actx, now = a.currentTime;
+    if (want !== MUS.want) {   // crossfade, both arrangements stay in step
+      MUS.want = want;
+      ['A', 'B'].forEach(k => { const g = MUS.g[k].gain; g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(k === want ? 1 : 0, now + 1.2); });
+    }
+    const vol = (S.music || 0) * 0.55;
+    if (Math.abs(MUS.bus.gain.value - vol) > 0.001) { MUS.bus.gain.cancelScheduledValues(now); MUS.bus.gain.setTargetAtTime(vol, now, 0.15); }
+    if (!(S.music > 0)) return;
+    const sx = 60 / MUS.bpm / 4;
+    if (MUS.next < now - 0.1) MUS.next = now + 0.05;   // after a pause (hidden tab, a stall): carry on from now, no catch-up burst
+    while (MUS.next < now + 0.22) { mStep(MUS.step, MUS.next); MUS.step = (MUS.step + 1) % 256; MUS.next += sx; }
+  }
+  // music starts with the first touch (browsers allow sound only after one)
+  function musicStart() {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      musicInit();
+      if (!MUS.timer) { MUS.next = actx.currentTime + 0.1; MUS.timer = setInterval(() => { try { musicTick(); } catch (e) {} }, 60); }
+    } catch (e) {}
+  }
+  document.addEventListener('pointerdown', () => { if (S.music > 0) musicStart(); }, { capture: true });
+  document.addEventListener('keydown', () => { if (S.music > 0) musicStart(); }, { capture: true });
+  document.addEventListener('visibilitychange', () => { if (!actx) return; try { if (document.hidden) actx.suspend(); else if (MUS.timer) actx.resume(); } catch (e) {} });
+
   // Vibration on phones that have it (Android); a game setting turns it off.
   function buzz(ms) { if (!S.haptics || !navigator.vibrate) return; try { navigator.vibrate(ms); } catch (e) {} }
 
@@ -474,7 +601,7 @@
     if (orbs.some(o => o.t >= o.dur && o.to === 'heart')) heartHit();
     if (orbs.some(o => o.t >= o.dur && o.to === 'groza')) { grozaHit(); orbs.forEach(o => { if (o.t >= o.dur && o.to === 'groza' && o.c) { o.c.fly = (o.c.fly || 0) - o.v; if (o.c.fly < 1e-6) o.c.fly = 0; } }); }
     orbs = orbs.filter(o => o.t < o.dur);
-    floats.forEach(f => { f.life -= rdt; f.y -= 0.9 * rdt; });
+    floats.forEach(f => { f.life -= rdt; f.lift += 0.9 * rdt; });
     floats = floats.filter(f => f.life > 0);
     particles.forEach(p => {
       p.life -= rdt;
@@ -489,32 +616,68 @@
   }
 
   /* ================= camera ================= */
+  // 1.07 (author): an isometric camera. Both views turn the dungeon by 45 degrees (north-west is at the top of the screen) and
+  // differ only in tilt: building = high isometry (55 degrees), the wave and its preview = 2:1 isometry (30 degrees). The tray
+  // decides: open = building view, folded = wave view; a change of tilt is animated around the centre of the screen.
+  // The camera itself works as before, only in "view" units instead of tiles: view = the dungeon turned and tilted,
+  // screen = view * cam.s - cam.ox/oy. vX/vY take a point of the dungeon (tiles, z = height in tiles) into view units.
+  const PITCH_BUILD = 55, PITCH_RAID = 30, HM = 1.25;   // HM: headroom over the top row (walls, figures) in tiles
+  const VIEW = { p: PITCH_BUILD, from: PITCH_BUILD, to: PITCH_BUILD, t: 1, dur: 0.45 };
+  let SP = Math.sin(PITCH_BUILD * Math.PI / 180), CP = Math.cos(PITCH_BUILD * Math.PI / 180);
+  const R2 = Math.SQRT1_2;
+  const vX = (x, y) => (x - y + WH) * R2;
+  const vY = (x, y, z) => (x + y) * R2 * SP + (HM - (z || 0)) * CP;
+  const viewW = () => (WW + WH) * R2, viewH = () => (WW + WH) * R2 * SP + HM * CP;
+  function fromView(u, v) { const a = u / R2 - WH, b = (v - HM * CP) / (R2 * SP); return { x: (a + b) / 2, y: (b - a) / 2 }; }
+  // a point of the dungeon on the screen (with the camera being drawn: in a split screen, that half's)
+  const W2S = (x, y, z) => [vX(x, y) * cam.s - cam.ox, vY(x, y, z) * cam.s - cam.oy];
+  const camCentre = () => fromView((cam.ox + cw / 2) / cam.s, (cam.oy + ch / 2) / cam.s);
+  function setPitchNow(p) { VIEW.p = p; SP = Math.sin(p * Math.PI / 180); CP = Math.cos(p * Math.PI / 180); }
+  // which view the moment asks for: the tray open = building, folded = the wave (its preview between waves)
+  function wantPitch() { return !fl || trayIsOpen() ? PITCH_BUILD : PITCH_RAID; }
+  function viewTick(rdt) {
+    const want = wantPitch();
+    if (want !== VIEW.to) {
+      VIEW.from = VIEW.p; VIEW.to = want; VIEW.t = 0;
+      if (want === PITCH_BUILD) { SPLIT.k = 0; SPLIT.want = false; SPLIT.c = null; SPLIT.cams = [null, null]; }   // building: one screen
+    }
+    if (VIEW.t >= 1) return;
+    const c = cw > 0 ? camCentre() : null;
+    VIEW.t = reduceMotion ? 1 : Math.min(1, VIEW.t + rdt / VIEW.dur);
+    const e = VIEW.t * VIEW.t * (3 - 2 * VIEW.t);
+    setPitchNow(VIEW.from + (VIEW.to - VIEW.from) * e);
+    if (c) centerOn(c.x, c.y);
+  }
+  const viewSettling = () => VIEW.t < 1;
   // Building: you move it. Raid: it follows the party and zooms out as they spread; a drag takes over for a few seconds.
-  const fitScale = () => Math.min(cw / WW, ch / WH);
-  const buildScale = () => clamp(cw / 12.5, fitScale(), 44);
+  const fitScale = () => Math.min(cw / viewW(), ch / viewH());
+  const buildScale = () => clamp(cw / 10.5, fitScale(), 44);
   const MAX_S = 56;
   function clampCam() {
-    const mw = WW * cam.s, mh = WH * cam.s;
+    const mw = viewW() * cam.s, mh = viewH() * cam.s;
     cam.ox = mw <= cw ? (mw - cw) / 2 : clamp(cam.ox, -cw * 0.3, mw - cw * 0.7);
     cam.oy = mh <= ch ? (mh - ch) / 2 : clamp(cam.oy, -ch * 0.3, mh - ch * 0.7);
   }
-  function centerOn(tx, ty) { cam.ox = tx * cam.s - cw / 2; cam.oy = ty * cam.s - ch / 2; clampCam(); }
+  function centerOnView(u, v) { cam.ox = u * cam.s - cw / 2; cam.oy = v * cam.s - ch / 2; clampCam(); }
+  function centerOn(tx, ty) { centerOnView(vX(tx, ty), vY(tx, ty, 0)); }
   function zoomAt(ns, sx, sy) {
     const wx = (sx + cam.ox) / cam.s, wy = (sy + cam.oy) / cam.s;
     cam.s = clamp(ns, fitScale() * 0.95, MAX_S);
     cam.ox = wx * cam.s - sx; cam.oy = wy * cam.s - sy; clampCam(); updateZoomBtn();
   }
-  const toWorld = (sx, sy) => { const V = splitViews(), c = V ? V[splitSide(sx, sy)] : cam; return { x: (sx + c.ox) / c.s, y: (sy + c.oy) / c.s }; };
+  // a point on the screen -> the spot of the floor under it (tiles)
+  const toWorld = (sx, sy) => { const V = splitViews(), c = V ? V[splitSide(sx, sy)] : cam; return fromView((sx + c.ox) / c.s, (sy + c.oy) / c.s); };
   function autoCam(rdt) {
+    viewTick(rdt);
     if (!fl || fl.phase !== 'raid') { SPLIT.k = 0; SPLIT.want = false; SPLIT.c = null; return; }
-    if (paused) return;
+    if (paused || trayIsOpen()) return;
     if (realNow < cam.manualUntil) { SPLIT.want = false; SPLIT.k = Math.max(0, SPLIT.k - rdt * 3); return; }   // a drag takes the camera: one screen
     const pts = alive().map(heroPos);
     if (fl.check && fl.check.it) pts.push({ x: fl.check.it.x + 0.5, y: fl.check.it.y + 0.5 });
     if (!pts.length) { pts.push({ x: fl.ent.x + 0.5, y: fl.ent.y + 0.5 }); }
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    pts.forEach(p => { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); });
-    const m = 3.2, bw = x1 - x0 + 2 * m, bh = y1 - y0 + 2 * m;
+    pts.forEach(p => { const u = vX(p.x, p.y), v = vY(p.x, p.y, 0.5); x0 = Math.min(x0, u); y0 = Math.min(y0, v); x1 = Math.max(x1, u); y1 = Math.max(y1, v); });
+    const m = 3.2, bw = x1 - x0 + 2 * m, bh = y1 - y0 + 2 * m * 0.8;
     // 1.04: with the tutorial coach at the top of the map the party is framed in the space below it (the door is at the top)
     const ins = coachInset, hc = ins + (ch - ins) / 2;
     const ts = clamp(Math.min(cw / bw, (ch - ins) / bh), fitScale(), 34);
@@ -525,7 +688,7 @@
     const nx = cx + (tx - cx) * k, ny = cy + (ty - cy) * k;
     cam.ox = nx * cam.s - cw / 2; cam.oy = ny * cam.s - hc; clampCam();
     // the automatic camera keeps the dungeon in frame instead of showing the void around it
-    const mw = WW * cam.s, mh = WH * cam.s, pad = cam.s * 0.6;
+    const mw = viewW() * cam.s, mh = viewH() * cam.s, pad = cam.s * 0.6;
     if (mw > cw) cam.ox = clamp(cam.ox, -pad, mw - cw + pad);
     if (mh > ch) cam.oy = clamp(cam.oy, -pad - ins, mh - ch + pad);
     splitCam(rdt, Math.min(cw / bw, ch / bh));
@@ -568,7 +731,7 @@
     const crew = alive().filter(h => !h.gone);
     let want = S.split !== 0 && crew.length >= 2 && fitScale() < SPLIT_T && sMerge < SPLIT_T * (SPLIT.want ? 1.12 : 1);
     if (crew.length >= 2 && (want || SPLIT.k > 0)) {
-      const P = crew.map(h => { const p = heroPos(h); return { x: p.x, y: p.y, id: h.id }; });
+      const P = crew.map(h => { const p = heroPos(h); return { x: vX(p.x, p.y), y: vY(p.x, p.y, 0.5), id: h.id }; });   // 1.07: in view units
       const mean = g => ({ x: g.reduce((s, p) => s + p.x, 0) / g.length, y: g.reduce((s, p) => s + p.y, 0) / g.length });
       const group = (a, b) => {   // two groups by k-means, a few rounds
         let ga = [], gb = [];
@@ -591,7 +754,7 @@
         SPLIT.c = [ca, cb]; SPLIT.gid = new Map(); G[0].forEach(p => SPLIT.gid.set(p.id, 0)); G[1].forEach(p => SPLIT.gid.set(p.id, 1));
         const box = G.map(g => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; g.forEach(p => { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }); return [x0, y0, x1, y1]; });
         if (fl.check && fl.check.it) {   // the trap of a running check belongs on the screen of the group it is closest to
-          const t = { x: fl.check.it.x + 0.5, y: fl.check.it.y + 0.5 }, i = (t.x - ca.x) ** 2 + (t.y - ca.y) ** 2 <= (t.x - cb.x) ** 2 + (t.y - cb.y) ** 2 ? 0 : 1, B = box[i];
+          const t = { x: vX(fl.check.it.x + 0.5, fl.check.it.y + 0.5), y: vY(fl.check.it.x + 0.5, fl.check.it.y + 0.5, 0.5) }, i = (t.x - ca.x) ** 2 + (t.y - ca.y) ** 2 <= (t.x - cb.x) ** 2 + (t.y - cb.y) ** 2 ? 0 : 1, B = box[i];
           box[i] = [Math.min(B[0], t.x), Math.min(B[1], t.y), Math.max(B[2], t.x), Math.max(B[3], t.y)];
         }
         const ta = Math.atan2(cb.y - ca.y, cb.x - ca.x);
@@ -628,7 +791,7 @@
   // a hero's place on the screen (in a split screen: in the half of his group)
   function heroScreen(h) {
     const p = heroPos(h), V = splitViews(), c = V ? V[SPLIT.gid.get(h.id) || 0] : cam;
-    return { x: p.x * c.s - c.ox, y: p.y * c.s - c.oy };
+    return { x: vX(p.x, p.y) * c.s - c.ox, y: vY(p.x, p.y, 0.6) * c.s - c.oy };
   }
   function resize() {
     DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));   // 1.03: at most 2x (3x is 2,25 times the pixels for little to see)
@@ -636,7 +799,7 @@
     const had = cw > 0, cx = had ? (cam.ox + cw / 2) / cam.s : 0, cy = had ? (cam.oy + ch / 2) / cam.s : 0;
     cw = Math.max(60, Math.floor(rect.width)); ch = Math.max(60, Math.floor(rect.height));
     cv.width = Math.round(cw * DPR); cv.height = Math.round(ch * DPR);
-    if (had) { cam.s = clamp(cam.s, fitScale() * 0.95, MAX_S); centerOn(cx, cy); }
+    if (had) { cam.s = clamp(cam.s, fitScale() * 0.95, MAX_S); centerOnView(cx, cy); }
   }
   function updateZoomBtn() {
     const b = $('#btn-zoom'); if (!b) return; const zoomedOut = cam.s < buildScale() * 0.92;

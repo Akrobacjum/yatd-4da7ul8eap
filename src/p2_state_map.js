@@ -64,11 +64,11 @@
   function regrid(L) {
     let minCx = Infinity, maxCx = -Infinity, maxCy = 0;
     L.cells.forEach(c => { minCx = Math.min(minCx, c.cx); maxCx = Math.max(maxCx, c.cx); maxCy = Math.max(maxCy, c.cy); });
-    const d = 1 - minCx, oldWW = WW;
+    const d = 1 - minCx, oldWW = WW, wc = (run && fl && cw > 0) ? camCentre() : null;   // 1.07: the view keeps its spot
     if (d) shiftLayout(L, d);
     WW = (maxCx + d + 2) * CELL + 1; WH = (maxCy + 2) * CELL + 1;
     if (run && (d || WW !== oldWW)) remapRunState(oldWW, d * CELL);
-    if (d) cam.ox += d * CELL * cam.s;
+    if (wc) centerOn(wc.x + d * CELL, wc.y);
   }
   function shiftLayout(L, d) {
     const dx = d * CELL, remap = k => { const p = parseCell(k); return cellKey(p[0] + d, p[1]); };

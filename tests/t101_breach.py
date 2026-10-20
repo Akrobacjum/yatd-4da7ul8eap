@@ -20,7 +20,7 @@ async def main():
               const cam0 = [G.cam.ox, G.cam.oy];
               G.openModal({ type: 'breach', fresh: true });
               const br = G.fl.breach, cr = document.querySelector('#card').getBoundingClientRect(), st = document.querySelector('#stage').getBoundingClientRect();
-              const sx = (br.x + 0.5) * G.cam.s - G.cam.ox + document.querySelector('#cv').getBoundingClientRect().left, sy = (br.y + 0.5) * G.cam.s - G.cam.oy + document.querySelector('#cv').getBoundingClientRect().top;
+              const bp = G.w2s(br.x + 0.5, br.y + 0.5, 0), sx = bp[0] + document.querySelector('#cv').getBoundingClientRect().left, sy = bp[1] + document.querySelector('#cv').getBoundingClientRect().top;
               return { ok, breach: br ? [br.x, br.y] : null, cardBottom: Math.round(cr.bottom), screenH: innerHeight, breachOnScreen: [Math.round(sx), Math.round(sy)], stage: [Math.round(st.top), Math.round(st.bottom)], camMoved: cam0[0] !== G.cam.ox || cam0[1] !== G.cam.oy, ess: G.fl.essence, btn: document.querySelector('#sheet-patch').innerText.replace(/\\n/g, ' ') };
             })()""")
             print(W, H, json.dumps(r))

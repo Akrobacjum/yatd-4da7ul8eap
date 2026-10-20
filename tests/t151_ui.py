@@ -5,9 +5,9 @@ OUT='/tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scratchpad/
 RUNW = r'''() => { const G = __yatd; let g = 0; while (g++ < 40000) { const f = G.fl; if (G.modalKind) return G.modalKind;
     if (f.check) { if (!f.check.result) G.resolveCheck((f.check.r0 + f.check.r1) / 2); G.clearCheck(); continue; } if (f.phase !== 'raid') return f.phase; G.step(0.05); if (f.ending !== null) { f.ending -= 0.05; if (f.ending <= 0) { f.ending = null; G.finishWave(); } } } return 'guard'; }'''
 async def tile_xy(page, t):
-    return await page.evaluate("""(t) => { const G=__yatd, c=document.querySelector('canvas').getBoundingClientRect(); return { x: c.left + (t[0]+0.5)*G.cam.s - G.cam.ox, y: c.top + (t[1]+0.5)*G.cam.s - G.cam.oy }; }""", t)
+    return await page.evaluate("""(t) => { const G=__yatd, c=document.querySelector('canvas').getBoundingClientRect(); const p = G.w2s(t[0] + 0.5, t[1] + 0.5, 0); return { x: c.left + p[0], y: c.top + p[1] }; }""", t)
 async def center_on(page, t):
-    await page.evaluate("t => { const G=__yatd; const c=document.querySelector('canvas').getBoundingClientRect(); G.cam.ox = (t[0]+0.5)*G.cam.s - c.width/2; G.cam.oy = (t[1]+0.5)*G.cam.s - c.height/2; G.cam.manualUntil = 1e12; }", t)
+    await page.evaluate("t => { const G=__yatd; const c=document.querySelector('canvas').getBoundingClientRect(); G.centerOn(t[0] + 0.5, t[1] + 0.5); G.cam.manualUntil = 1e12; }", t)
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()

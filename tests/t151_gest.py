@@ -3,9 +3,9 @@ from playwright.async_api import async_playwright
 BASE='file:///tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scratchpad/test/page15.html'
 OUT='/tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scratchpad/shots151/'
 async def tile_xy(page, t):
-    return await page.evaluate("""(t) => { const G=__yatd, c=document.querySelector('canvas').getBoundingClientRect(); return { x: c.left + (t[0]+0.5)*G.cam.s - G.cam.ox, y: c.top + (t[1]+0.5)*G.cam.s - G.cam.oy }; }""", t)
+    return await page.evaluate("""(t) => { const G=__yatd, c=document.querySelector('canvas').getBoundingClientRect(); const p = G.w2s(t[0] + 0.5, t[1] + 0.5, 0); return { x: c.left + p[0], y: c.top + p[1] }; }""", t)
 async def center_on(page, t):
-    await page.evaluate("t => { const G=__yatd; const c=document.querySelector('canvas').getBoundingClientRect(); G.cam.s = 40; G.cam.ox = (t[0]+0.5)*G.cam.s - c.width/2; G.cam.oy = (t[1]+0.5)*G.cam.s - c.height/2; G.cam.manualUntil = 1e12; }", t)
+    await page.evaluate("t => { const G=__yatd; const c=document.querySelector('canvas').getBoundingClientRect(); G.cam.s = 40; G.centerOn(t[0] + 0.5, t[1] + 0.5); G.cam.manualUntil = 1e12; }", t)
 async def tap(page, t):
     await center_on(page, t); await page.clock.run_for(50); xy = await tile_xy(page, t); await page.mouse.click(xy['x'], xy['y']); await page.clock.run_for(100)
 async def hold(page, t, ms=800):
