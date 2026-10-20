@@ -836,6 +836,12 @@
       const R = fl.rooms[P.retreatRoom], spots = R.tiles.filter(t => standOk(h, t[0], t[1]) && !heroBlock(h, t[0], t[1]));   // 1.13: a free, safe spot
       if (roomOf(h.tx, h.ty) === P.retreatRoom && (standOk(h, h.x, h.y) || !spots.length)) { h.state = 'rest'; h.path = []; h.intent = intent; return; }
       goal = nearestOf(B(), (spots.length ? spots : R.tiles.filter(t => walkable(t[0], t[1]))).map(t => t[1] * WW + t[0]));
+      // 1.13.4 (replays: a friend resting just inside the door blocked the way in; he stopped in the doorway, which is no place
+      // to stand, was sent a step back, and walked in again, for up to 15 s): when a resting friend stands on the first steps of
+      // his way and where he stands is fine, he rests here, next to them
+      if (goal >= 0 && standOk(h, h.x, h.y) && pathFrom(B(), goal).slice(0, 3).some(p => alive().some(o => o !== h && o.state === 'rest' && o.x === p[0] && o.y === p[1]))) {
+        h.state = 'rest'; h.path = []; h.intent = intent; fl.stats.restBy = (fl.stats.restBy || 0) + 1; return;
+      }
     } else if (h.lost) {
       intent = 'lost';
       const lt = L ? tIdx(L) : -1, hr = h.hearUntil > fl.time ? byId(h.hearId) : null;
@@ -955,17 +961,39 @@
     h.path = pathFrom(bb, goal);
     h.noPathT = 0;
   }
+  // 1.13.4: where the party is going: the leader's path while someone else leads and walks it, else the route (on b) to the
+  // party's goal: a detour, the heart in an assault, the explore target. Not the hero's own path: a leader who walks his own
+  // errand (a trap to disarm, a bomb to throw) made the errand vanish on the spot and come back one step later.
+  function partyWay(h, b, n) {
+    const L = leader(), P = fl.party;
+    let wp = L && L !== h && L.path.length ? L.path : null;
+    if (!wp) {
+      const g = P.detour ? P.detour.goal : P.plan === 'assault' ? nearestOf(b, heartGoals()) : P.target;
+      wp = g >= 0 && b.dist[g] >= 0 ? pathFrom(b, g) : h.path;
+    }
+    return new Set((n ? wp.slice(0, n) : wp).map(p => key(p[0], p[1])));
+  }
   // The thief deals with known traps that still sit on the leader's way. Rookies are slow and sometimes set them off.
   function disarmJob(h, b) {
     if (fl.fearless || panicking(h)) return null;
-    const L = leader(), way = new Set((L && L.path.length ? L.path : h.path).map(p => key(p[0], p[1])));
+    // 1.13.4 (tester's run: a thief stepped between two tiles in front of an arrow trap for 12 s and was shot from 55 to 10 HP):
+    // "the leader's way" was the leader's current path, and a thief who leads walks his own detour to the trap: on the spot
+    // his path is empty, so the trap was no longer on the way, he led on, one step later it was on the way again and he
+    // stepped back, every 0,4 s, in the line of fire. The way is now where the party is going (the leader's path while he
+    // walks it, else the route to the party's goal: detour, heart in an assault, the explore target), not the thief's own
+    // detour; he keeps the trap he chose while it is still there and armed, nobody else took it and its spot is a few steps
+    // away; and after 2 times it went off in his face he leaves it be (a trap that fires faster than he can take it apart).
+    const way = partyWay(h, b);
+    const prev = h.disarmT, hits = h.disarmHits;
+    const keep = prev && fl.items.get(key(prev.x, prev.y)) === prev && DISARMABLE[prev.type] && prev.detected && !prev.disabled && !(hits && hits.get(prev) >= 2) ? prev : null;
     let tBest = null, tSpot = -1, tCost = 1e9;
     fl.items.forEach(it => {
       if (!DISARMABLE[it.type] || !it.detected || it.disabled) return;
-      if (!areaOf(it).some(t => way.has(key(t[0], t[1])))) return;
+      if (hits && hits.get(it) >= 2) return;
+      if (it !== keep && !areaOf(it).some(t => way.has(key(t[0], t[1])))) return;
       if (fl.heroes.some(o => o !== h && o.disarmT === it && !o.dead)) return;
       const bias = it.type === 'decoy' ? -4 : 0;   // the decoy looks like the juiciest mechanism in the room
-      disarmSpots(it).forEach(t => { const i = t[1] * WW + t[0], d = b.dist[i]; if (d >= 0 && d + bias < tCost) { tCost = d + bias; tBest = it; tSpot = i; } });
+      disarmSpots(it).forEach(t => { const i = t[1] * WW + t[0], d = b.dist[i]; if (d >= 0 && d + bias < tCost && (it !== keep || way.has(key(t[0], t[1])) || pathFrom(b, i).length <= 6)) { tCost = d + bias; tBest = it; tSpot = i; } });
     });
     h.disarmT = tBest;
     if (!tBest) return null;
@@ -1035,11 +1063,17 @@
   function bombJob(h, b) {
     const bomb = h.inv.find(it => it.type === 'bomb');
     if (!bomb || fl.fearless || panicking(h)) return null;
-    const L = leader(); if (!L || !L.path.length) return null;
-    const way = new Set(L.path.slice(0, 8).map(p => key(p[0], p[1])));
+    // 1.13.4 (replays: a warrior who led stepped between two tiles for seconds): the way is partyWay (the first 8 steps), and he
+    // walks to a safe tile within throwing range, not into the trap's area (from where the rule that nobody stands in a trap
+    // sent him back out, and the bomb run started again)
+    // and the trap he already set out for stays his target while it is in the first 14 steps (with a hard 8 a step towards it
+    // could push it to step 9 and back: on, off, on)
+    if (!leader()) { h.bombT = null; return null; }
+    const way = partyWay(h, b, 8), keepT = h.bombT, wayK = keepT ? partyWay(h, b, 14) : null;
+    h.bombT = null;
     for (const it of fl.items.values()) {
       if (!TRAPS[it.type] || !it.detected || it.disabled || it.type === 'gate' || CURSED[it.type]) continue;
-      if (!areaOf(it).some(t => way.has(key(t[0], t[1])))) continue;
+      if (!areaOf(it).some(t => way.has(key(t[0], t[1])) || (it === keepT && wayK.has(key(t[0], t[1]))))) continue;
       if (Math.hypot(it.x - h.tx, it.y - h.ty) <= 3) {
         h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++;
         if (it.type === 'powder') fire(it, 0.5);
@@ -1047,8 +1081,13 @@
         burst(it.x + 0.5, it.y + 0.5, '#ffb35c', 14); floatTile(it.x, it.y, 'Zniszczone bombą', '#ffb35c', 13, -0.5); say(h, pick(SAY.bomb), 3);
         return null;
       }
-      const g = nearestOf(b, areaOf(it).map(t => t[1] * WW + t[0]).concat(disarmSpots(it).map(t => t[1] * WW + t[0])));
-      if (g >= 0) return { intent: 'bomb', goal: g };
+      const near = [];
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+        const x = it.x + dx, y = it.y + dy, i = y * WW + x;
+        if (Math.hypot(dx, dy) <= 3 && x > 0 && y > 0 && x < WW - 1 && y < WH - 1 && walkable(x, y) && fl.known[i] && !fl.danger[i]) near.push(i);
+      }
+      const g = nearestOf(b, near.length ? near : areaOf(it).map(t => t[1] * WW + t[0]).concat(disarmSpots(it).map(t => t[1] * WW + t[0])));
+      if (g >= 0) { h.bombT = it; return { intent: 'bomb', goal: g }; }
     }
     return null;
   }

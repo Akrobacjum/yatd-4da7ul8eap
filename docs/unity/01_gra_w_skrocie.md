@@ -123,7 +123,7 @@ Każda z nich zapadła po testach i ma swoje uzasadnienie w historii projektu (d
 
 | Co | Gdzie |
 |---|---|
-| Zachowanie gry (ostateczne) | kod prototypu: repo `Akrobacjum/yatd-4da7ul8eap`, katalog `src/` (Prototype 1.13.3, commit z 21.10.2026). Gdy GDD i kod się różnią, rację ma kod. |
+| Zachowanie gry (ostateczne) | kod prototypu: repo `Akrobacjum/yatd-4da7ul8eap`, katalog `src/` (Prototype 1.13.4, commit z 21.10.2026). Gdy GDD i kod się różnią, rację ma kod. |
 | Grywalny prototyp | https://akrobacjum.github.io/yatd-4da7ul8eap/ (najnowsza wersja) oraz `archiwum/` w repo (każda wersja jako jedna strona) |
 | Projekt i uzasadnienia | GDD "GDD - You are the dungeon" (dokument w Claude: https://claude.ai/code/artifact/c213e326-fe7e-4be8-b628-1b869b576d8d) |
 | Historia decyzji, rynek, harmonogram | dokument projektu `claude/analiza-rynku-i-plan.md` w projekcie Claude "You Are The Dungeon" |

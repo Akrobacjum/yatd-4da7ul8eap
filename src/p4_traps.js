@@ -100,7 +100,13 @@
     // wounding ones nothing). comboMult stays the Esencja multiplier shown over the trap.
     const comboMult = 1 + 0.25 * (fl.combo - 1), cpow = 1 + COMBO_POW * (fl.combo - 1), D = S.dmg;
     run.fires++;
-    fl.heroes.forEach(h => { if (h.item === it && h.state === 'disarm') { h.state = 'walk'; h.item = null; h.needPlan = true; say(h, pick(SAY.disarmHit), 3, null, 'loud'); } });
+    fl.heroes.forEach(h => {
+      if (h.item !== it || h.state !== 'disarm') return;
+      h.state = 'walk'; h.item = null; h.needPlan = true; say(h, pick(SAY.disarmHit), 3, null, 'loud');
+      // 1.13.4: he keeps trying the trap he chose (disarmJob), but not forever: the 2nd time it goes off in his face he leaves it
+      const hm = h.disarmHits || (h.disarmHits = new Map()), n = (hm.get(it) || 0) + 1; hm.set(it, n);
+      if (n >= 2) { h.disarmT = null; fl.stats.disarmQuit = (fl.stats.disarmQuit || 0) + 1; }
+    });
     const area = areaOf(it), keys = new Set(area.map(t => key(t[0], t[1])));
     let list = heroesOn(keys);
     if (opt.lock && opt.lock.length) list = [...new Set(list.concat(opt.lock.filter(h => !h.dead && !h.fled && !h.gone && !h.fleeing)))];   // 1.09: a check's targets stay its targets

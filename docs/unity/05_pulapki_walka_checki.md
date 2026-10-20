@@ -220,7 +220,7 @@ Bez gracza (bez tapnięcia, bez pamięci, bez `ff`) pułapka **nie odpala**: che
 4. Echo mechanizmów: dla `TRAPS`, gdy `mods.echoFire` i nie echo ani chór: `fl.trapFires++`; gdy `fl.trapFires % max(2, 6 - mods.echoFire) === 0` i typ nie `powder`, do kolejki `fl.echoQ` trafia `{ it, at: fl.time + 0,4, pw: basePw }`.
 5. Combo (5.2.7), zapis `lastTrapAt`, `lastTrapC`, `lastTrapType`, okno `comboWinNow`.
 6. `comboMult = 1 + 0,25 * (combo - 1)` (tylko napis nad pułapką), `cpow = 1 + COMBO_POW * (combo - 1)`, `D = S.dmg`. `run.fires++`.
-7. Każdy, kto właśnie rozbraja ten element (`h.item === it && state === 'disarm'`), przerywa (kwestia `SAY.disarmHit`).
+7. Każdy, kto właśnie rozbraja ten element (`h.item === it && state === 'disarm'`), przerywa (kwestia `SAY.disarmHit`); od 1.13.4 za drugim razem odpuszcza tę pułapkę (`h.disarmHits`, 6.5.2).
 8. `area = areaOf(it)`, `list = heroesOn(keys)`. Z `opt.lock` dochodzą cele zablokowane przez check (żywi, nie `fled`, nie `gone`, **nie uciekający**), bez duplikatów.
 9. `fl.surprise = TRAPS[type] && !it.detected` (rana z niewykrytej pułapki straszy ×1,3).
 10. Dla `TRAPS`, jeśli ktoś jest w pokojach obszaru (świadkowie): okrzyk, gdy niewykryta; uczenie się (`p = max(R.learn)` świadków; w Głuszy nikt się nie uczy, `stats.hushUnlearned`; inaczej z szansą `p` `learnTrap(it, 'seen')`); licznik zasadzki: gdy `list` niepusta, `ambushN++` jeśli od `ambushT` minęło < 3 s, inaczej `ambushN = 1` (co robi zasadzka: 5.7.5). Szczegóły uczenia i kwestie: sekcja 06.

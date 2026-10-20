@@ -58,3 +58,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.13](1.13.html) | 20.10 | rozmowy bohaterów, narady tylko dla stojących razem, nikt nie stoi w pułapce, check u góry mapy |
 | [Prototype 1.13.1](1.13.1.html) | 20.10 | sam bohater myśli na głos zamiast mówić do powietrza |
 | [Prototype 1.13.2](1.13.2.html) | 21.10 | koniec przesuwania się gęsiego w ślepym przejściu (stojący przepuszcza idącego) |
+| [Prototype 1.13.3](1.13.3.html) | 21.10 | krótsza scenka przed groźnym pokojem (najwyżej dwóch specjalistów) |

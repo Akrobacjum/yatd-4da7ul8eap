@@ -490,8 +490,13 @@ elif exiting(h):                         intent = h.crystal ? 'carry' : 'exit'; 
 elif fl.fearless && P.plan === 'assault': intent 'heart'; goal = heartGoal()
 elif P.plan === 'retreat' && !h.lost:
    intent 'retreat'
-   if roomOf(h.tx,h.ty) === P.retreatRoom: h.state = 'rest'; h.path = []; h.intent = intent; return
-   goal = nearestOf(B(), walkable pola P.retreatRoom)
+   spots = pola P.retreatRoom ze standOk i bez heroBlock                                  (1.13: wolne, bezpieczne miejsce)
+   if roomOf(h.tx,h.ty) === P.retreatRoom && (standOk(h.x,h.y) || !spots.length): h.state = 'rest'; h.path = []; h.intent = intent; return
+   goal = nearestOf(B(), spots, a gdy ich brak: walkable pola P.retreatRoom)
+   if goal >= 0 && standOk(h.x,h.y) && na 3 pierwszych polach pathFrom(B(), goal) stoi odpoczywający (state 'rest') przyjaciel:
+      h.state = 'rest'; h.path = []; stats.restBy++; return                              (1.13.4: odpoczywa obok nich)
+   // 1.13.4: bez tego przyjaciel odpoczywający tuż za drzwiami blokował wejście; bohater stawał w drzwiach (nie standOk),
+   // toSafety cofało go o pole, a plan znów prowadził do drzwi (w powtórkach do 15 s)
 elif h.lost:                             zgubiony (6.2.10)
 elif h.wanderUntil > time && h.wanderTarget >= 0 && isFrontierTile(h.wanderTarget): intent 'wander'; goal = h.wanderTarget
 else:
@@ -1267,10 +1272,16 @@ Klasy z `HEROES.json`. Cechy (`HERO_TRAITS.json`): `greedy` (chciwy), `coward` (
 - **Rozbrajanie** (`p5_ai.js: disarmJob`, praca nr 6):
 ```
 if fl.fearless || panicking(h): return null
-way = pola ścieżki lidera (albo własnej, gdy lider nie ma ścieżki)
-dla każdej znanej, nierozbrojonej pułapki z DISARMABLE, której areaOf przecina way i której nikt inny żywy nie ma w disarmT:
+// od 1.13.4: droga = partyWay(h, b): dokąd idzie drużyna, nie objazd samego złodzieja
+wayPath = ścieżka lidera, gdy lider to ktoś inny i ma ścieżkę
+          inaczej ścieżka B() od złodzieja do celu drużyny: P.detour.goal | (P.plan 'assault': najbliższe pole przy sercu) | P.target
+          (cel nieosiągalny: własna ścieżka złodzieja)
+keep = poprzednie h.disarmT, jeśli wciąż leży, jest znane, nierozbrojone i nie odpaliło mu w twarz 2 razy (h.disarmHits)
+dla każdej znanej, nierozbrojonej pułapki z DISARMABLE, której areaOf przecina way albo która jest keep,
+     i której nikt inny żywy nie ma w disarmT i która nie ma h.disarmHits >= 2:
    bias = Wabik ? -4 : 0                                    // wabik wygląda na najsmaczniejszy mechanizm
    dla każdego miejsca disarmSpots(it) z B().dist >= 0: koszt = dist + bias -> najmniejszy
+      (dla keep tylko miejsce na drodze albo najwyżej 6 kroków dalej)
 h.disarmT = wybrana (albo null)
 if stoi na miejscu (tCost <= 0 && B().dist[spot] === 0):
    state 'disarm'; timer = (arrows|fire|powder ? 1.5 : 1.0) * mods.disarm * h.R.disarm * (pokój 'swamp' ? 1.5 : 1)
@@ -1289,7 +1300,8 @@ złodziej && !CURSED && rand < h.R.sapper:    usunięta na stałe z lochu ("Rozm
 inaczej:                                     it.disabled = true do końca fali; SAY.disarmDone (2)
 potem: walk, needPlan
 ```
-  Jeśli rozbrajana pułapka odpali (skill check gracza), rozbrajający przerywa i krzyczy `SAY.disarmHit` (3, loud) (`p4_traps.js: fireRaw`). Inni (poz. 3+, nie złodzieje) czekają, zamiast wejść na pole w obszarze rozbrajanej pułapki (`fl.disarmKeys`, 6.2.6).
+  Jeśli rozbrajana pułapka odpali (skill check gracza), rozbrajający przerywa i krzyczy `SAY.disarmHit` (3, loud) (`p4_traps.js: fireRaw`); od 1.13.4 liczy to w `h.disarmHits` (mapa pułapka -> ile razy) i za drugim razem odpuszcza tę pułapkę do końca fali (`h.disarmT = null`, `stats.disarmQuit`).
+  Dlaczego tak (1.13.4): drogą była bieżąca ścieżka lidera, a złodziej-lider idzie własnym objazdem do pułapki. Na miejscu rozbrajania jego ścieżka była pusta, więc pułapka "nie leżała na drodze"; prowadził dalej, krok później znów leżała i wracał, co 0,4 s, w linii strzału (run testera: fala 2, od 55 do 10 HP w 12 s; w powtórkach tej fali w 9 z 20 prób, ze słabszym graczem w 6 z 16; po zmianie w 0 z 10 i 0 z 16). Inni (poz. 3+, nie złodzieje) czekają, zamiast wejść na pole w obszarze rozbrajanej pułapki (`fl.disarmKeys`, 6.2.6).
 - **Wykrywanie**: +2 do zasięgu `scanTraps` (6.3.5).
 - **Unik** (`p3_flow.js: damage`, sekcja 05): pojedyncze trafienie kolcami albo strzałami, gdy nie jest "trzymany" (`held`), raz na 3 s, szansa `R.dodge`; `SAY.dodge` (2, loud).
 - **Zwiad** na naradzie (6.3.3); **podważanie kraty** (6.3.11, 3 s, poz. 6+ x1,5 szybciej); **preferowany ratownik** z klatki i szybszy (0,8 s zamiast 1,8 s, 6.5.9).
@@ -1394,7 +1406,7 @@ usePower(h, it): it.cdUntil = time + HITEMS[t].cd * (h.cursed ? 1.5 : 1); charge
 | mikstura (sam) | `hp < R.potion * max` (`R.potion = min(0.5, 0.15 + 0.03*(lvl-1))`): najlepsza (najwyższe r) | `hp += max * potionHeal(r) * itemPow`, `potionHeal = min(0.55, 1 - 0.7^r)`; `SAY.potion` (3) | `updateHero` |
 | mikstura (przed groźnym pokojem) | poz. 4+, `hp < 0.7 max` | najlepsza | `startPrep` |
 | mikstura (dla przyjaciela) | dający: nie na przerwie (`giveCd`), nie wychodzi, nie w klatce, nie panikuje, nie zgubiony; ma mikstury i (więcej niż jedną albo sam ma `hp >= 0.7 max`); przyjaciel: `hp < 0.3 max`, bez mikstury, nie w klatce, `hdist <= 2` | daje najsłabszą; `giveCd = time + 10`; `SAY.potionGive` (3), kolejka `SAY.potionThanks` (+1,1) | `partyThink` krok 8 |
-| bomba w pułapkę | praca nr 8 (`bombJob`): pierwsza znana, nierozbrojona pułapka (`TRAPS`, nie Krata, nie przeklęty straszak), której obszar przecina 8 najbliższych pól ścieżki lidera | w odległości <= 3: rzuca (proch odpala z mocą 0,5, inna wyłączona), `SAY.bomb` (3), `bombJob` zwraca `null` (plan idzie do kolejnych prac); dalej: idzie do najbliższego osiągalnego pola obszaru albo miejsca rozbrajania tej pułapki (pierwszej w kolejności elementów, do której jest droga) | `bombJob` |
+| bomba w pułapkę | praca nr 8 (`bombJob`): pierwsza znana, nierozbrojona pułapka (`TRAPS`, nie Krata, nie przeklęty straszak), której obszar przecina 8 pierwszych pól drogi drużyny (od 1.13.4 `partyWay(h, b, 8)`, jak w 6.5.2; wcześniej ścieżka lidera, a gdy lider stał, nic); pułapka, do której już idzie (`h.bombT`), zostaje celem, dopóki leży w 14 pierwszych polach | w odległości <= 3: rzuca (proch odpala z mocą 0,5, inna wyłączona), `SAY.bomb` (3), `bombJob` zwraca `null` (plan idzie do kolejnych prac); dalej: od 1.13.4 idzie do najbliższego znanego pola bez zagrożenia w promieniu 3 od pułapki (gdy brak: jak wcześniej, najbliższe pole obszaru albo miejsca rozbrajania) | `bombJob` |
 | bomba w potwora | w walce, gdy potwór ma > 60 HP | `80 * min(4, r)^1.3 * itemPow` obrażeń; `SAY.bomb` (3) | `updateHero` |
 | talizman | `'hit'`: po trafieniu pułapką, gdy `hp < 0.6 max` (każda ranga); `'danger'`: przed wejściem na pole z `danger > 1.5` (ranga 0 nigdy, ranga 1 w 50%, ranga 2+ zawsze); `'prep'`: przed biegiem | osłona 3 s: `wardK = min(0.4, 0.25 + 0.05*(r-1)) * min(1, itemPow)`; `SAY.charmUse` (3) | `useCharm` |
 | amulet | strach >= `[0.85, 0.7, 0.6, 0.6][rank]` progu ucieczki, nie ucieka, nie niesie kryształu | `fear -= (0.08 + 0.04*min(4, r)) * itemPow * (Ołtarz 0.5) * courage`; `calmUntil = time + (Ołtarz 2 : 4)` (strach x0,7); `SAY.amuletUse` (3) | `addFear` -> `useAmulet` |

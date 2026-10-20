@@ -319,6 +319,7 @@ Spis funkcji z `src/` (Prototype 1.13) z pierwszym zdaniem komentarza, który je
 | `randomKnownFar` |  |
 | `nearestOf` |  |
 | `planHero` | One hero decides what to do next and finds a path there (only through tiles the party knows). |
+| `partyWay` | 1.13.4: where the party is going: the leader's path while someone else leads and walks it, else the route to the party's goal (detour, heart in an assault, explore target). Not the hero's own path. |
 | `disarmJob` | The thief deals with known traps that still sit on the leader's way. Rookies are slow and sometimes set them off. |
 | `smashJob` | 1.05: the barbarian's axe: counter-buildings in his room (always worth it to him) and wooden furniture close by (further when raging). A smashed building does nothing for the rest of the wave and stops blocking; a... |
 | `smashDone` |  |
