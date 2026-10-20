@@ -1,6 +1,6 @@
 # You are the dungeon: specyfikacja przeniesienia do Unity
 
-Stan: Prototype 1.13 (20.10.2026): rozmowy bohaterów, narady tylko dla tych, którzy stoją razem, nikt nie stoi w pułapce, skill check u góry mapy, spokój w scenkach. Tabele w `data/` są z 1.13. Ta specyfikacja jest dla kolejnego czatu (albo programisty), który zbuduje grę w Unity 6 bez dostępu do rozmów, w których powstawał prototyp. Zawiera wszystko, co trzeba wiedzieć, żeby odtworzyć grę wiernie, plus plan, testy i dane.
+Stan: Prototype 1.13.1 (20.10.2026): rozmowy bohaterów, własne kwestie na samotność, narady tylko dla tych, którzy stoją razem, nikt nie stoi w pułapce, skill check u góry mapy, spokój w scenkach. Tabele w `data/` są z 1.13.1. Ta specyfikacja jest dla kolejnego czatu (albo programisty), który zbuduje grę w Unity 6 bez dostępu do rozmów, w których powstawał prototyp. Zawiera wszystko, co trzeba wiedzieć, żeby odtworzyć grę wiernie, plus plan, testy i dane.
 
 ## Od czego zacząć
 
@@ -29,7 +29,7 @@ Stan: Prototype 1.13 (20.10.2026): rozmowy bohaterów, narady tylko dla tych, kt
 | `A_dane.md` | zał. A | opis plików w `data/` |
 | `B_karty.md` | zał. B | wszystkie 113 kart z efektem w kodzie |
 | `C_mapa_kodu.md` | zał. C | spis funkcji prototypu z komentarzami |
-| `data/` | dane | tabele treści z prototypu w JSON (`yatd_content_1.13.json` = wszystko w jednym pliku), statystyki poziomów, wartości wzorcowe |
+| `data/` | dane | tabele treści z prototypu w JSON (`yatd_content_1.13.1.json` = wszystko w jednym pliku), statystyki poziomów, wartości wzorcowe |
 | `parity/` | testy | wzorcowe wyniki odtworzeń dwóch runów autora na 1.13 |
 | `shots/` | obrazy | zrzuty ekranu prototypu (sekcja 08) |
 | `tools/` | skrypty | `dump.js` (eksport danych), `golden.py` (wartości wzorcowe) |

@@ -1600,7 +1600,7 @@ convoStart(A, key):
      charakterem bt, rangą <= br i >= bv; wymiana z C wymaga 2 słuchaczy. Waga w × 1,6, gdy wymiana ma warunki
      (pasujące do sytuacji wygrywają z ogólnymi). Brak -> 'fit'
   B = losowy pasujący, C = losowy inny słuchacz
-  t0 = time + 0,3; oczekiwany = t0
+  t0 = max(time + 0,3, A.saidUntil + SAY_GAP); oczekiwany = t0      // od 1.13.1: od chwili, gdy A skończy kwestię, która ją zaczęła
   kwestie do P.queueSay po kolei: { id, text: convoFill(tekst), at: t0, prio 2, cv: nr wymiany, late: oczekiwany - t0 + 3,5 },
      oczekiwany += readT(tekst) + SAY_GAP + 0,1
      // wszystkie są "na teraz", więc nikt w zasięgu słuchu się nie wtrąci (othersWaiting, 6.7.3), a kolejka trzyma
@@ -1614,6 +1614,25 @@ kolejka (6.7.3): kwestia spóźniona o > late (od at; inne kwestie 10 s) przepad
 - Zestawy (74, 143 wymiany, 305 kwestii, `data/CONVO.json`): wpadki (`trap`, `trap:web`, `trap:trapdoor`, `trap:cage`, `scare`, `trap:portrait`, `hurt`, `disarmFail`, `disarmHit`, `slip`, `cursedPick`, `panic`, `cowardRun`, `crystalDrop`), sukcesy (`disarmDone`, `dodge`, `monsterDown`, `detect`, `resistHit`, `loot1-3`, `gold`, `freed`, `found`, `steal`), moce i działania (`shield`, `heal`, `fireball`, `fight`, `smash`, `rage`, `song`, `bless`, `cleanse`, `barrier`, `charmUse`, `bootsUse`, `potion`, `timing`), lęki (`phobia:*`, `ghost`, `bats`, `spider`, `lull`, `nightmare`, `seenBuilt`), drużyna (`enter`, `champion`, `rookie`, `rookieBoast`, `vetWarn`, `elite`, `explore`, `cautious`, `heartSeen`, `assault`, `retreat`, `restDone`, `rumor`, `fame2`, `gateWait`, `nap`, `goldHeavy`, `weakHit`, `learn`, `alone`, `landed`).
 - Klucze bez zestawu (np. `chat_*`, `callHealer`, `potionGive`, kwestie narady) nie zaczynają rozmów: mają już swoje odpowiedzi (`CHAT_REPLY`, kolejki 6.7.5).
 - Pomiar (10 fal testu z gęstymi pułapkami, 1.13): ok. 1,5-2,5 wymiany na falę; najczęstsze odmowy: kolejka zajęta w pobliżu, przerwa, los. Test: `tests/t113_talk.py`.
+
+### 6.7.5b Sam bohater (od 1.13.1, `p3_flow.js: aloneNow, say`; dane `SOLO`, `SOLO_MUTE`)
+
+Decyzja autora (20.10): bohaterowie nie mogą mówić do powietrza, gdy są sami.
+
+```
+aloneNow(h) = !(fl.queue niepuste && h w odległości <= 5 od wejścia)        // reszta jeszcze wchodzi przez drzwi
+              && nikt inny (żywy, nie uciekł, nie w zapadni) nie jest w zasięgu słuchu h (6.7.4)
+say(h, text, ...): w fali, gdy aloneNow(h):
+   k = lineKey(text) (6.7.5a);  SOLO[k] albo SOLO[klucz bazowy] -> text = losowa kwestia z SOLO (myślenie na głos)
+   inaczej klucz w SOLO_MUTE -> kwestia nie pada (say zwraca true: "powiedziane", bez dymka)
+   inaczej bez zmian (okrzyki, ból, strach, pułapki zostają)
+small talk (6.7.6): sam (i nie ucieka, nie niesie kryształu) -> pula SOLO.chat + SOLO['chat_' + charakter] + SOLO['chat_' + klasa]
+talkAs: kwestia "ktokolwiek" (null) idzie do kogoś innego niż ten, kto zaczął; samotny lider nie dostaje drugiej kwestii narady
+   i nie spiera się sam ze sobą (narada na rozwidleniu dopisuje drugi głos tylko, gdy ktoś stoi obok)
+```
+
+- Przykłady: narada "Lewo czy prawo?" -> "Nie ma kogo zapytać. Idę tędy."; odpoczynek "Siadamy. Opatrzmy rany." -> "Usiądę na chwilę."; small talk "Słyszycie to?" -> "Mówię do siebie. To chyba zły znak."; "Bierz to, poczekamy." -> nic.
+- Rozmowy (6.7.5a) i tak wymagają słuchacza, więc samotny ich nie zaczyna.
 
 ### 6.7.6 Small talk (`p5_ai.js: partyThink` krok 21)
 

@@ -1,6 +1,6 @@
 # Archiwum wersji prototypu
 
-Stare wersje prototypu "You are the dungeon": v1-v15.2 z czasu, gdy żył jako artefakt w Claude (15-19.10.2026), i Prototype 1.0-1.12.1 z wersji web (od 19.10.2026). Każdy plik to cała gra w jednym HTML-u, zachowana bez zmian w kodzie gry (dla Prototype 1.x to wersja do artefaktu z `dist/artifact.html` danego commita).
+Stare wersje prototypu "You are the dungeon": v1-v15.2 z czasu, gdy żył jako artefakt w Claude (15-19.10.2026), i Prototype 1.0-1.13 z wersji web (od 19.10.2026). Każdy plik to cała gra w jednym HTML-u, zachowana bez zmian w kodzie gry (dla Prototype 1.x to wersja do artefaktu z `dist/artifact.html` danego commita).
 
 Dodane tylko opakowanie strony: nagłówek dla telefonu, prośba do wyszukiwarek o pominięcie i osobny zapis w przeglądarce dla każdej wersji (klucze z przedrostkiem `yatd-archiwum-<wersja>:`). Dzięki temu stara wersja nie nadpisze zapisu aktualnej gry.
 
@@ -55,3 +55,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.11.1](1.11.1.html) | 20.10 | serce znowu zjada swój próg (37 × 1,25), próg dopasowany do krzywej Esencji |
 | [Prototype 1.12](1.12.html) | 20.10 | samouczek na 4 runy, combo wzmacnia pułapki (+12% na stopień), bez podpowiedzi u góry |
 | [Prototype 1.12.1](1.12.1.html) | 20.10 | przychód Esencji wraca do poziomu 1.11.1, jeden bohater na polu, narady i odpoczynek jako scenki |
+| [Prototype 1.13](1.13.html) | 20.10 | rozmowy bohaterów, narady tylko dla stojących razem, nikt nie stoi w pułapce, check u góry mapy |

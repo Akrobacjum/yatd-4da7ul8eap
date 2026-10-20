@@ -185,9 +185,17 @@
     return false;
   }
   function lookAt(h, x, y) { if (h.nx !== null) return; const s = (x - h.x) - (y - h.y); if (Math.abs(s) > 0.3) h.face = s > 0 ? 1 : -1; }
+  // 1.13 (author: alone, they talked to the air): nobody in earshot (the ones down a trapdoor do not count)
+  const aloneNow = h => !(fl.queue.length && Math.hypot(h.tx - fl.ent.x, h.ty - fl.ent.y) <= 5) &&   // the rest are still coming in at the door
+    !fl.heroes.some(o => o !== h && !o.dead && !o.fled && !o.gone && earshot(h, o));
   function say(h, text, prio, dur, how) {
     if (!h || h.dead || h.fled || h.gone || !text || !fl) return false;
     prio = prio || 1;
+    if (fl.phase === 'raid' && aloneNow(h)) {   // 1.13: alone he talks to himself (SOLO) or keeps a line meant for others to himself
+      const k = lineKey(text), b = k ? k.split(':')[0] : null;
+      if (k && (SOLO[k] || SOLO[b])) text = pick(SOLO[k] || SOLO[b]);
+      else if (b && SOLO_MUTE.has(b)) return true;
+    }
     const loud = how === 'loud' || prio >= 4 || inChaos(h), b = h.bubble;
     if (b && b.until > fl.time && b.prio > prio) return false;
     if (b && b.until > fl.time && b.prio === prio && fl.time - b.at < 0.7) return false;

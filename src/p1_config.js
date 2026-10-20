@@ -1061,6 +1061,53 @@
       { l: [['B', 'Przyda się, {Av}.'], ['A', 'Długo nie wytrzyma. Ruszajmy.']] }
     ]
   };
+  // 1.13 (author: alone, they talked to the air): what a hero says instead when nobody can hear him (nobody in earshot).
+  // Key = the SAY key of the line he was about to say (p3_flow.js: say swaps it); 'chat' and 'chat_<character>' / 'chat_<class>'
+  // are his small talk when alone. Lines that only make sense with others around and have no solo version here are not
+  // said alone at all (SOLO_MUTE).
+  const SOLO = {
+    enter: ['No to idę.', 'Sam{|a} tam nie wejdę... A jednak wchodzę.', 'Cicho, krok po kroku.'],
+    explore: ['Spróbuję tędy.', 'Może tamte drzwi.', 'Dalej. Byle nie stać w miejscu.'],
+    rookieLead: ['Dam radę sam{|a}!', 'Tędy. Chyba.'],
+    rookie: ['Co robi ten guzik?', 'Łatwizna!', 'Pierwszy loch i od razu sam{|a}...'],
+    elite: ['Sprawdzam podłogę.', 'Krok po kroku.', 'Patrzę na ściany. Nikt inny nie spojrzy.'],
+    deliberate: ['Lewo czy prawo... Niech będzie tędy.', 'Nie ma kogo zapytać. Idę tędy.', 'Gdyby ktoś tu był, wiedział{bym|abym}, co robić.'],
+    hesitate: ['Coś tu nie gra...', 'Za cicho tu...', 'Ostrożnie...', 'Nikt nie pójdzie pierwszy. Czyli ja.'],
+    detect: ['Pułapka. Dobrze, że patrzę pod nogi.', 'Widzę mechanizm. Ominę go.'],
+    learn: ['Zapamiętam to miejsce.', 'Tędy już nie pójdę.'],
+    shield: ['Tarcza w górę!', 'Zasłonię się.'],
+    barrier: ['Bariera!', 'Osłono, chroń mnie.'],
+    heal: ['Światło, ulecz mnie.', 'Muszę się opatrzyć.'],
+    regroup: ['Gdzie wszyscy?!', 'Halo! Czekajcie na mnie!'],
+    retreat: ['Wycofuję się. Muszę się opatrzyć.', 'Za dużo ran. Wracam.'],
+    restStart: ['Usiądę na chwilę.', 'Odpocznę tu. Sam{|a}.'],
+    restDone: ['Dobra. Idę dalej.', 'Wystarczy. Ruszam.'],
+    prepStart: ['Tam jest groźnie... Muszę uważać.', 'Pokój śmierci. A ja tu sam{|a}.'],
+    prepGo: ['Raz, dwa... idę!', 'Teraz albo nigdy.'],
+    assault: ['Po kryształ!', 'Sam{|a} wezmę ten kryształ!'],
+    escape: ['Do wyjścia!', 'Szybciej, zanim mnie dopadnie!'],
+    steal: ['Mam kryształ! Uciekam!', 'Kryształ jest mój! Do wyjścia!'],
+    rush: ['Teraz! Biegiem!', 'Już! Przez pokój!'],
+    ambush: ['Zasadzka!', 'Cofam się!'],
+    champion: ['Ten loch padnie, choćbym miał{|a} go zdobyć sam{|a}.', 'Kryształ będzie mój.'],
+    champShout: ['Nie ucieknę! Nigdy!', 'Sam{|a} też dam radę!'],
+    song: ['Zanucę coś na odwagę...', 'Ballada dla jednego słuchacza. Dla mnie.', 'Śpiewam, żeby nie słyszeć tej ciszy.'],
+    lootGo: ['Warto zaryzykować!', 'Biorę. Nikt nie patrzy.'],
+    gateWait: ['Krata. Poczekam, aż się podniesie.', 'Utknął{em|am}. Czekam.'],
+    leave: ['Nic tu po mnie. Wracam.', 'Szkoda czasu, idę stąd.'],
+    crystalDrop: ['Kryształ! Nie!', 'Zgubił{em|am} kryształ!'],
+    cautious: ['Spokojnie, krok po kroku.', 'Najpierw patrzę, potem idę.'],
+    chat: ['Halo? Jest tu kto?', 'Gdzie oni wszyscy poszli?', 'Sam{|a} w lochu. Świetny plan.', 'Cicho tu... za cicho.', 'Mówię do siebie. To chyba zły znak.', 'Trzymaj się, mówię sobie. Trzymaj się.'],
+    chat_coward: ['Mamo...', 'Czemu ja się na to zgodził{em|am}...', 'Nikogo. Tylko ja i ciemność.'],
+    chat_brave: ['Niech coś wyskoczy. Jestem got{ów|owa}.', 'Sam{|a}? Tym lepiej, nikt mi nie przeszkodzi.'],
+    chat_careful: ['Powoli. Nikt mnie nie pogania.', 'Krok, rozejrzeć się, krok.'],
+    chat_greedy: ['Skoro jestem sam{|a}, nie muszę się dzielić.', 'Całe złoto dla mnie.'],
+    chat_bard: ['Nucę, żeby nie było tak cicho.', 'Ballada o samotnym bohaterze... Brzmi znajomo.'],
+    chat_barbarian: ['Sam{|a}. Dobrze. Więcej potworów dla mnie.', 'Gdzie wszyscy? Nieważne. Topór jest ze mną.']
+  };
+  const SOLO_MUTE = new Set(['lootWait', 'friendHit', 'friendLow', 'rescue', 'scoutReply', 'councilReply', 'prepReply', 'restReply', 'restPriest', 'restScene',
+    'argueLoot', 'argueCareful', 'argueCoward', 'argueBrave', 'decideYes', 'decideNo', 'argueSearch', 'replySearch', 'argueRetreat', 'agreeRetreat', 'reassure', 'surviveFirst',
+    'healerReply', 'potionThanks', 'songThanks', 'lootReply', 'lootStop', 'vetWarn', 'chatRest', 'chatCarrier', 'chatHurtOut', 'chat_coward', 'chat_brave', 'chat_careful', 'chat_greedy']);
   const CONVO_ALIAS = { 'trap:eyes': 'scare', 'trap:bones': 'scare', 'trap:mirror': 'scare', 'trap:creak': 'scare', 'trap:coffin': 'scare', 'trap:musicbox': 'scare' };
   const CONVO_P = { trap: 0.5, 'trap:trapdoor': 0.8, 'trap:cage': 0.8, 'trap:web': 0.65, scare: 0.65, hurt: 0.15, disarmDone: 0.8, disarmFail: 0.9, disarmHit: 0.8,
     dodge: 0.65, shield: 0.45, heal: 0.4, fireball: 0.5, fight: 0.3, monsterDown: 0.65, loot1: 0.4, loot2: 0.65, loot3: 0.9, gold: 0.5, goldHeavy: 0.65,

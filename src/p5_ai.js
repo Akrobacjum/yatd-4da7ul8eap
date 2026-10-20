@@ -87,7 +87,8 @@
     const keep = lines.filter(l => !l[0] || g.includes(l[0]));
     const end = fl.time + Math.max(dur, talkLen(keep.map(l => l[1]))); fl.stats.talks++;
     g.forEach(h => { h.talkUntil = end; }); P.talkUntil = Math.max(P.talkUntil, end);
-    keep.forEach((l, i) => { const who = l[0] || g[i % g.length]; P.queueSay.push({ id: who.id, text: l[1], at: fl.time + i * 0.7 }); });
+    let o = 0;   // 1.13: a line for "anyone" goes to someone other than the one who started it (alone he does not answer himself)
+    keep.forEach((l, i) => { const who = l[0] || (g.length > 1 ? g[1 + (o++ % (g.length - 1))] : null); if (who) P.queueSay.push({ id: who.id, text: l[1], at: fl.time + i * 0.7 }); });
     return g;
   }
   // 1.13 (author: real conversations, not single bubbles): a line a hero says can start a short exchange (CONVO in the
@@ -136,7 +137,7 @@
     const B = pick(pickO.Bs), C = pick(ears.filter(o => o !== B)) || null, who = { A, B, C };
     // all its lines are due at once (so nobody in earshot cuts in: othersWaiting), they come in order (the queue holds the
     // later ones till the earlier is said), and a line more than 3,5 s past its expected moment is stale: the exchange ends
-    const t0 = fl.time + 0.3, cv = (P.convoN = (P.convoN || 0) + 1);
+    const t0 = Math.max(fl.time + 0.3, (A.saidUntil || 0) + SAY_GAP), cv = (P.convoN = (P.convoN || 0) + 1);   // from when the line that started it ends
     let at = t0;
     pickO.t.l.forEach(([s, tx]) => {
       const h = who[s]; if (!h) return;
@@ -311,7 +312,7 @@
       if (careful) lines.push([careful, pick(SAY.argueCareful)]);
       if (coward) lines.push([coward, pick(SAY.argueCoward)]);
       if (brave) lines.push([brave, pick(SAY.argueBrave)]);
-      if (lines.length < 2) lines.push([null, pick(SAY.deliberate)]);
+      if (lines.length < 2 && crewT.length) lines.push([null, pick(SAY.deliberate)]);   // 1.13: alone he does not argue with himself
       if (greedy) {
         const sway = L.trait === 'greedy' || L.hunter || L.rank === 0 || Math.random() < 0.35;
         if (sway) { P.target = alt.f; P.targetRoom = alt.room; }
@@ -540,7 +541,8 @@
       const pool = crew.filter(o => !o.bubble && !panicking(o) && !caged(o) && !o.lost && o.state !== 'fight' && o.state !== 'smash' && !floorBusy(o));   // 1.10: small talk only into a silence
       const h = pool.length ? pick(pool) : null, lines = [];
       let mood = null;
-      if (h && (h.fleeing || h.crystal || goingOut())) {
+      if (h && aloneNow(h) && !(h.fleeing || h.crystal || goingOut())) lines.push(...SOLO.chat, ...(SOLO['chat_' + h.trait] || []), ...(SOLO['chat_' + h.type] || []));   // 1.13: alone he talks to himself
+      else if (h && (h.fleeing || h.crystal || goingOut())) {
         lines.push(...SAY.chatFlee); if (h.crystal) lines.push(...SAY.chatCarrier, ...SAY.chatCarrier); if (h.hp < 0.4 * h.max) lines.push(...SAY.chatHurtOut);
       } else if (h && P.plan === 'retreat') lines.push(...SAY.chatRest, ...SAY.restScene);
       else if (h) {

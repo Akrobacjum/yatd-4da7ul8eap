@@ -31,7 +31,7 @@ Kolejność M1-M3 jest ważna: najpierw rdzeń bez grafiki z testami, bo grafika
 
 ### a) Testy wzorcowe formuł (EditMode)
 
-Plik `data/golden_1.13.json` to wartości policzone przez działający prototyp (funkcje z `window.__yatd`). Testy porównują z nimi kod C#:
+Plik `data/golden_1.13.1.json` to wartości policzone przez działający prototyp (funkcje z `window.__yatd`). Testy porównują z nimi kod C#:
 
 | Co | Pole w golden | Funkcja prototypu |
 |---|---|---|
@@ -68,6 +68,7 @@ Krótkie, deterministyczne sytuacje z ustalonym ziarnem i ręcznie ustawionym lo
 | sklep | darmowa karta za falę, ceny, odświeżanie drożeje, schowek wyłącza kartę, sprzedaż | `t15_shop.py` |
 | pierwsze runy | zakładki i elementy etapu 1-4, karty nowości, przejście etapów | `t112_onb.py` |
 | przewodnik | 16 kroków w falach 1-3, zapis i wznowienie | `t151_tut.py`, `t10_tutsave.py`, `t10_tutsave2.py` |
+| sam bohater (1.13.1) | gdy nikt go nie słyszy: kwestia narady staje się myśleniem na głos, odpowiedź dla innych nie pada, okrzyk zostaje okrzykiem; przy drzwiach, gdy reszta jeszcze wchodzi, nie jest sam | `t113_talk.py` |
 | rozmowy (1.13) | kwestia (np. nieudane rozbrojenie) z przyjacielem w zasięgu słuchu zaczyna wymianę: jego odpowiedź, potem odpowiedź pierwszego, po kolei; przerwana wymiana przepada | `t113_talk.py` |
 | narada tylko dla stojących razem (1.13) | bohater w innym pokoju nie staje, gdy lider rozmawia; dwie grupy mogą rozmawiać naraz | `t113_talk.py` |
 | nikt nie stoi w pułapce (1.13) | bohater w rozmowie na znanym zagrożeniu schodzi na bezpieczne pole; odpoczynek tylko na bezpiecznym polu | `t113_talk.py` |
@@ -86,7 +87,7 @@ Najmocniejszy test zgodności: te same lochy, te same talie, losowi bohaterowie,
 - **Harness w Unity**: wczytaj plik fali, zbuduj loch i stan dokładnie jak `replay101.py`/`replay112.py` (te skrypty pokazują, które pola zapisu są potrzebne i jak ustawić chciwość, stosy kart i pamięć checków), uruchom falę bez grafiki z botem checków (trafia w środek obwódki z prawdopodobieństwem 0,9, inaczej krytyk albo pudło jak w skrypcie), powtórz 30 razy.
 - **Tolerancja** (propozycja): średnia Esencja z fali i średni czas fali w granicach ±20% wzorca dla każdej fali 3-10; liczba prób z najedzonym sercem i ze skradzionym kryształem w granicach ±2 na 8 (przeskalowane na 30 prób); ta sama kolejność wielkości rozbicia Grozy (np. w runie strachu strach > rany). Większe różnice to błąd przeniesienia albo świadoma zmiana, którą trzeba opisać w sekcji 11.
 
-Uwaga do wzorca: szum jest duży (pojedyncza fala potrafi różnić się o 30% między seriami 8 prób), więc porównuj sumy fal 2-10 i liczbę najedzonych serc, a pojedyncze fale traktuj ostrożnie. Dla porównania: na 1.11.1 suma średnich Esencji z fal 2-10 wynosiła 2340 (run zabijania) i 2182 (run strachu), na 1.12.1 2401 i 2281, na 1.13 (wzorzec) 2408 i 2311 (suma czasów fal 2-10: 657 i 610 s na 1.11.1, 851 i 769 s na 1.12.1, 976 i 804 s na 1.13). Esencja 1.12.1 i 1.13 różni się w granicach szumu; fale 1.13 są dłuższe, bo bohaterowie nie stoją w pułapkach (6.2.16).
+Uwaga do wzorca: szum jest duży (pojedyncza fala potrafi różnić się o 30% między seriami 8 prób), więc porównuj sumy fal 2-10 i liczbę najedzonych serc, a pojedyncze fale traktuj ostrożnie. Dla porównania: na 1.11.1 suma średnich Esencji z fal 2-10 wynosiła 2340 (run zabijania) i 2182 (run strachu), na 1.12.1 2401 i 2281, na 1.13 (wzorzec) 2408 i 2311 (suma czasów fal 2-10: 657 i 610 s na 1.11.1, 851 i 769 s na 1.12.1, 976 i 804 s na 1.13). Esencja 1.12.1 i 1.13 różni się w granicach szumu (1.13.1 zmienia tylko kwestie, wzorzec z 1.13 obowiązuje); fale 1.13 są dłuższe, bo bohaterowie nie stoją w pułapkach (6.2.16).
 
 ### d) Testy interfejsu (PlayMode) i ręczne
 

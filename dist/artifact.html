@@ -1797,6 +1797,53 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       { l: [['B', 'Przyda się, {Av}.'], ['A', 'Długo nie wytrzyma. Ruszajmy.']] }
     ]
   };
+  // 1.13 (author: alone, they talked to the air): what a hero says instead when nobody can hear him (nobody in earshot).
+  // Key = the SAY key of the line he was about to say (p3_flow.js: say swaps it); 'chat' and 'chat_<character>' / 'chat_<class>'
+  // are his small talk when alone. Lines that only make sense with others around and have no solo version here are not
+  // said alone at all (SOLO_MUTE).
+  const SOLO = {
+    enter: ['No to idę.', 'Sam{|a} tam nie wejdę... A jednak wchodzę.', 'Cicho, krok po kroku.'],
+    explore: ['Spróbuję tędy.', 'Może tamte drzwi.', 'Dalej. Byle nie stać w miejscu.'],
+    rookieLead: ['Dam radę sam{|a}!', 'Tędy. Chyba.'],
+    rookie: ['Co robi ten guzik?', 'Łatwizna!', 'Pierwszy loch i od razu sam{|a}...'],
+    elite: ['Sprawdzam podłogę.', 'Krok po kroku.', 'Patrzę na ściany. Nikt inny nie spojrzy.'],
+    deliberate: ['Lewo czy prawo... Niech będzie tędy.', 'Nie ma kogo zapytać. Idę tędy.', 'Gdyby ktoś tu był, wiedział{bym|abym}, co robić.'],
+    hesitate: ['Coś tu nie gra...', 'Za cicho tu...', 'Ostrożnie...', 'Nikt nie pójdzie pierwszy. Czyli ja.'],
+    detect: ['Pułapka. Dobrze, że patrzę pod nogi.', 'Widzę mechanizm. Ominę go.'],
+    learn: ['Zapamiętam to miejsce.', 'Tędy już nie pójdę.'],
+    shield: ['Tarcza w górę!', 'Zasłonię się.'],
+    barrier: ['Bariera!', 'Osłono, chroń mnie.'],
+    heal: ['Światło, ulecz mnie.', 'Muszę się opatrzyć.'],
+    regroup: ['Gdzie wszyscy?!', 'Halo! Czekajcie na mnie!'],
+    retreat: ['Wycofuję się. Muszę się opatrzyć.', 'Za dużo ran. Wracam.'],
+    restStart: ['Usiądę na chwilę.', 'Odpocznę tu. Sam{|a}.'],
+    restDone: ['Dobra. Idę dalej.', 'Wystarczy. Ruszam.'],
+    prepStart: ['Tam jest groźnie... Muszę uważać.', 'Pokój śmierci. A ja tu sam{|a}.'],
+    prepGo: ['Raz, dwa... idę!', 'Teraz albo nigdy.'],
+    assault: ['Po kryształ!', 'Sam{|a} wezmę ten kryształ!'],
+    escape: ['Do wyjścia!', 'Szybciej, zanim mnie dopadnie!'],
+    steal: ['Mam kryształ! Uciekam!', 'Kryształ jest mój! Do wyjścia!'],
+    rush: ['Teraz! Biegiem!', 'Już! Przez pokój!'],
+    ambush: ['Zasadzka!', 'Cofam się!'],
+    champion: ['Ten loch padnie, choćbym miał{|a} go zdobyć sam{|a}.', 'Kryształ będzie mój.'],
+    champShout: ['Nie ucieknę! Nigdy!', 'Sam{|a} też dam radę!'],
+    song: ['Zanucę coś na odwagę...', 'Ballada dla jednego słuchacza. Dla mnie.', 'Śpiewam, żeby nie słyszeć tej ciszy.'],
+    lootGo: ['Warto zaryzykować!', 'Biorę. Nikt nie patrzy.'],
+    gateWait: ['Krata. Poczekam, aż się podniesie.', 'Utknął{em|am}. Czekam.'],
+    leave: ['Nic tu po mnie. Wracam.', 'Szkoda czasu, idę stąd.'],
+    crystalDrop: ['Kryształ! Nie!', 'Zgubił{em|am} kryształ!'],
+    cautious: ['Spokojnie, krok po kroku.', 'Najpierw patrzę, potem idę.'],
+    chat: ['Halo? Jest tu kto?', 'Gdzie oni wszyscy poszli?', 'Sam{|a} w lochu. Świetny plan.', 'Cicho tu... za cicho.', 'Mówię do siebie. To chyba zły znak.', 'Trzymaj się, mówię sobie. Trzymaj się.'],
+    chat_coward: ['Mamo...', 'Czemu ja się na to zgodził{em|am}...', 'Nikogo. Tylko ja i ciemność.'],
+    chat_brave: ['Niech coś wyskoczy. Jestem got{ów|owa}.', 'Sam{|a}? Tym lepiej, nikt mi nie przeszkodzi.'],
+    chat_careful: ['Powoli. Nikt mnie nie pogania.', 'Krok, rozejrzeć się, krok.'],
+    chat_greedy: ['Skoro jestem sam{|a}, nie muszę się dzielić.', 'Całe złoto dla mnie.'],
+    chat_bard: ['Nucę, żeby nie było tak cicho.', 'Ballada o samotnym bohaterze... Brzmi znajomo.'],
+    chat_barbarian: ['Sam{|a}. Dobrze. Więcej potworów dla mnie.', 'Gdzie wszyscy? Nieważne. Topór jest ze mną.']
+  };
+  const SOLO_MUTE = new Set(['lootWait', 'friendHit', 'friendLow', 'rescue', 'scoutReply', 'councilReply', 'prepReply', 'restReply', 'restPriest', 'restScene',
+    'argueLoot', 'argueCareful', 'argueCoward', 'argueBrave', 'decideYes', 'decideNo', 'argueSearch', 'replySearch', 'argueRetreat', 'agreeRetreat', 'reassure', 'surviveFirst',
+    'healerReply', 'potionThanks', 'songThanks', 'lootReply', 'lootStop', 'vetWarn', 'chatRest', 'chatCarrier', 'chatHurtOut', 'chat_coward', 'chat_brave', 'chat_careful', 'chat_greedy']);
   const CONVO_ALIAS = { 'trap:eyes': 'scare', 'trap:bones': 'scare', 'trap:mirror': 'scare', 'trap:creak': 'scare', 'trap:coffin': 'scare', 'trap:musicbox': 'scare' };
   const CONVO_P = { trap: 0.5, 'trap:trapdoor': 0.8, 'trap:cage': 0.8, 'trap:web': 0.65, scare: 0.65, hurt: 0.15, disarmDone: 0.8, disarmFail: 0.9, disarmHit: 0.8,
     dodge: 0.65, shield: 0.45, heal: 0.4, fireball: 0.5, fight: 0.3, monsterDown: 0.65, loot1: 0.4, loot2: 0.65, loot3: 0.9, gold: 0.5, goldHeavy: 0.65,
@@ -2517,9 +2564,17 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     return false;
   }
   function lookAt(h, x, y) { if (h.nx !== null) return; const s = (x - h.x) - (y - h.y); if (Math.abs(s) > 0.3) h.face = s > 0 ? 1 : -1; }
+  // 1.13 (author: alone, they talked to the air): nobody in earshot (the ones down a trapdoor do not count)
+  const aloneNow = h => !(fl.queue.length && Math.hypot(h.tx - fl.ent.x, h.ty - fl.ent.y) <= 5) &&   // the rest are still coming in at the door
+    !fl.heroes.some(o => o !== h && !o.dead && !o.fled && !o.gone && earshot(h, o));
   function say(h, text, prio, dur, how) {
     if (!h || h.dead || h.fled || h.gone || !text || !fl) return false;
     prio = prio || 1;
+    if (fl.phase === 'raid' && aloneNow(h)) {   // 1.13: alone he talks to himself (SOLO) or keeps a line meant for others to himself
+      const k = lineKey(text), b = k ? k.split(':')[0] : null;
+      if (k && (SOLO[k] || SOLO[b])) text = pick(SOLO[k] || SOLO[b]);
+      else if (b && SOLO_MUTE.has(b)) return true;
+    }
     const loud = how === 'loud' || prio >= 4 || inChaos(h), b = h.bubble;
     if (b && b.until > fl.time && b.prio > prio) return false;
     if (b && b.until > fl.time && b.prio === prio && fl.time - b.at < 0.7) return false;
@@ -4297,7 +4352,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const keep = lines.filter(l => !l[0] || g.includes(l[0]));
     const end = fl.time + Math.max(dur, talkLen(keep.map(l => l[1]))); fl.stats.talks++;
     g.forEach(h => { h.talkUntil = end; }); P.talkUntil = Math.max(P.talkUntil, end);
-    keep.forEach((l, i) => { const who = l[0] || g[i % g.length]; P.queueSay.push({ id: who.id, text: l[1], at: fl.time + i * 0.7 }); });
+    let o = 0;   // 1.13: a line for "anyone" goes to someone other than the one who started it (alone he does not answer himself)
+    keep.forEach((l, i) => { const who = l[0] || (g.length > 1 ? g[1 + (o++ % (g.length - 1))] : null); if (who) P.queueSay.push({ id: who.id, text: l[1], at: fl.time + i * 0.7 }); });
     return g;
   }
   // 1.13 (author: real conversations, not single bubbles): a line a hero says can start a short exchange (CONVO in the
@@ -4346,7 +4402,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const B = pick(pickO.Bs), C = pick(ears.filter(o => o !== B)) || null, who = { A, B, C };
     // all its lines are due at once (so nobody in earshot cuts in: othersWaiting), they come in order (the queue holds the
     // later ones till the earlier is said), and a line more than 3,5 s past its expected moment is stale: the exchange ends
-    const t0 = fl.time + 0.3, cv = (P.convoN = (P.convoN || 0) + 1);
+    const t0 = Math.max(fl.time + 0.3, (A.saidUntil || 0) + SAY_GAP), cv = (P.convoN = (P.convoN || 0) + 1);   // from when the line that started it ends
     let at = t0;
     pickO.t.l.forEach(([s, tx]) => {
       const h = who[s]; if (!h) return;
@@ -4521,7 +4577,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (careful) lines.push([careful, pick(SAY.argueCareful)]);
       if (coward) lines.push([coward, pick(SAY.argueCoward)]);
       if (brave) lines.push([brave, pick(SAY.argueBrave)]);
-      if (lines.length < 2) lines.push([null, pick(SAY.deliberate)]);
+      if (lines.length < 2 && crewT.length) lines.push([null, pick(SAY.deliberate)]);   // 1.13: alone he does not argue with himself
       if (greedy) {
         const sway = L.trait === 'greedy' || L.hunter || L.rank === 0 || Math.random() < 0.35;
         if (sway) { P.target = alt.f; P.targetRoom = alt.room; }
@@ -4750,7 +4806,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       const pool = crew.filter(o => !o.bubble && !panicking(o) && !caged(o) && !o.lost && o.state !== 'fight' && o.state !== 'smash' && !floorBusy(o));   // 1.10: small talk only into a silence
       const h = pool.length ? pick(pool) : null, lines = [];
       let mood = null;
-      if (h && (h.fleeing || h.crystal || goingOut())) {
+      if (h && aloneNow(h) && !(h.fleeing || h.crystal || goingOut())) lines.push(...SOLO.chat, ...(SOLO['chat_' + h.trait] || []), ...(SOLO['chat_' + h.type] || []));   // 1.13: alone he talks to himself
+      else if (h && (h.fleeing || h.crystal || goingOut())) {
         lines.push(...SAY.chatFlee); if (h.crystal) lines.push(...SAY.chatCarrier, ...SAY.chatCarrier); if (h.hp < 0.4 * h.max) lines.push(...SAY.chatHurtOut);
       } else if (h && P.plan === 'retreat') lines.push(...SAY.chatRest, ...SAY.restScene);
       else if (h) {
@@ -9449,7 +9506,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.13 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.13.1 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -9499,9 +9556,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.13'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.13.1'));
     const ul2 = el('ul', 'conseq');
-    ['1.13: bohaterowie naprawdę ze sobą rozmawiają. Kwestia jednego może zacząć krótką wymianę zdań: ktoś obok odpowiada, pierwszy odpowiada mu, czasem wtrąca się trzeci. Komentują wpadki (pułapka, zapadnia, nieudane rozbrajanie, poślizg), sukcesy (rozbrojenie, unik, zabity potwór, łup), swoje moce i lęki, a to, co powie słuchający, zależy od jego klasy i charakteru (chciwy, tchórzliwy, bohaterski, ostrożny). Jedna wymiana naraz w zasięgu słuchu; kwestia, która przyszłaby za późno, przepada razem z resztą wymiany.',
+    ['1.13.1: sam bohater nie mówi do powietrza. Gdy nikt go nie słyszy, kwestie dla drużyny zamieniają się w myślenie na głos („Nie ma kogo zapytać. Idę tędy.”, „Usiądę na chwilę.”, „Mówię do siebie. To chyba zły znak.”), odpowiedzi i zachęty dla innych w ogóle nie padają, a samotny nie naradza się sam ze sobą. Okrzyki zostają okrzykami.',
+     '1.13.1: rozmowa zaczyna się, gdy pierwszy skończy mówić, więc rzadziej się urywa (wcześniej odpowiedź mogła przepaść, zanim pierwszy domówił).',
+     '1.13: bohaterowie naprawdę ze sobą rozmawiają. Kwestia jednego może zacząć krótką wymianę zdań: ktoś obok odpowiada, pierwszy odpowiada mu, czasem wtrąca się trzeci. Komentują wpadki (pułapka, zapadnia, nieudane rozbrajanie, poślizg), sukcesy (rozbrojenie, unik, zabity potwór, łup), swoje moce i lęki, a to, co powie słuchający, zależy od jego klasy i charakteru (chciwy, tchórzliwy, bohaterski, ostrożny). Jedna wymiana naraz w zasięgu słuchu; kwestia, która przyszłaby za późno, przepada razem z resztą wymiany.',
      '1.13: narada dotyczy tylko tych, którzy stoją razem (ten sam pokój albo kilka kroków w korytarzu). Reszta robi swoje, a dwie grupy mogą się naradzać naraz. Wcześniej cała drużyna stawała w miejscu, także w innych pokojach i na pułapkach. Scenka odpoczynku też jest dla tych, którzy już siedzą razem.',
      '1.13: bohater nie stoi i nie odpoczywa w pułapce. Gdy w trakcie narady, czekania albo odpoczynku stoi tam, gdzie drużyna zna zagrożenie, gdzie właśnie coś go trafiło (pamięta to pół minuty) albo na czymś Twoim, przechodzi na bezpieczne pole najwyżej 3 kroki dalej, przy przywódcy. Na odpoczynek wybiera wolne, bezpieczne miejsce w pokoju.',
      '1.13: skill check jest teraz u góry mapy, pod ikonami drużyny (a w pierwszym runie pod kartą samouczka). Odpowiada się jak dotąd stuknięciem w dowolne miejsce mapy, więc kciuk, który stuka niżej, nie zasłania koralika. Dymek, który wpadłby na check, pokazuje się pod nim.',
@@ -10648,7 +10707,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 58;   // 58: Prototype 1.13: conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  const LOG_VERSION = 58;   // 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave

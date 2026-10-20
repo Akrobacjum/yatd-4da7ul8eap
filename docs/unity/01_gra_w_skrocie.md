@@ -81,7 +81,7 @@ Rdzeń to skill check: gracz robi go setki razy w runie, więc ma bawić bez ule
 | Ceny kart | zwykła 6, rzadka 10, legendarna 16, odblokowanie 8 | 03 |
 | Pierwsze runy | 4 etapy odsłaniania gry (1.12) | 03, 08 |
 
-Wartości policzone przez sam prototyp (do testów jednostkowych w Unity): `data/golden_1.13.json`.
+Wartości policzone przez sam prototyp (do testów jednostkowych w Unity): `data/golden_1.13.1.json`.
 
 ## 1.5 Decyzje autora, których nie wolno zgubić
 
@@ -104,6 +104,7 @@ Każda z nich zapadła po testach i ma swoje uzasadnienie w historii projektu (d
 | 20.10 | 1.12: samouczek rozłożony na 4 pierwsze runy, bez podpowiedzi u góry ekranu; combo wzmacnia obrażenia i strach i naprawdę wymaga grupowania; dłuższe najazdy zamiast krótszego budowania (budowanie własnego lochu to frajda); bez ważenia ofert sklepu (trywializuje grę i odbiera sens odświeżaniu). |
 | 20.10 | 1.12.1: bohater zajmuje jedno pole jak potwór (dwóch na jednym polu tylko przy mijaniu); narady i odpoczynek to scenki z dymkami, a nie zatrzymanie drużyny; przychód Esencji nie może spaść przy zmianach balansu (wrócił do poziomu 1.11.1). |
 | 20.10 | 1.13: bohaterowie rozmawiają ze sobą (komentują nawzajem swoje kwestie, działania, wpadki i sukcesy); narada tylko dla tych, którzy stoją razem (mogą być dwie naraz), reszta robi swoje; nikt nie stoi ani nie odpoczywa w pułapce. |
+| 20.10 | 1.13.1: sam bohater nie mówi do powietrza: myśli na głos, a kwestie dla innych przemilcza. |
 | 20.10 | 1.13: skill check u góry mapy, bo na telefonie kciuk zasłaniał go na dole (odpowiedź to nadal stuknięcie w dowolne miejsce mapy); spokój (samo przyspieszenie i wolniejszy zegar combo) trwa też w trakcie odpoczynku i narad, gdy ktoś siedzi w zapadni i gdy wszyscy są w klatkach. |
 | 20.10 | Meta (kolekcja, serce lochu) poza prototypem; prototyp miał tylko udowodnić pętlę. Dźwięki zostają, autor je lubi. |
 | 20.10 | Wygląd, działanie i dźwięk prototypu autor ocenił jako "fenomenalna robota": wersja w Unity ma go wiernie odtworzyć, a nie wymyślać od nowa. |
@@ -122,7 +123,7 @@ Każda z nich zapadła po testach i ma swoje uzasadnienie w historii projektu (d
 
 | Co | Gdzie |
 |---|---|
-| Zachowanie gry (ostateczne) | kod prototypu: repo `Akrobacjum/yatd-4da7ul8eap`, katalog `src/` (Prototype 1.13, commit z 20.10.2026). Gdy GDD i kod się różnią, rację ma kod. |
+| Zachowanie gry (ostateczne) | kod prototypu: repo `Akrobacjum/yatd-4da7ul8eap`, katalog `src/` (Prototype 1.13.1, commit z 20.10.2026). Gdy GDD i kod się różnią, rację ma kod. |
 | Grywalny prototyp | https://akrobacjum.github.io/yatd-4da7ul8eap/ (najnowsza wersja) oraz `archiwum/` w repo (każda wersja jako jedna strona) |
 | Projekt i uzasadnienia | GDD "GDD - You are the dungeon" (dokument w Claude: https://claude.ai/code/artifact/c213e326-fe7e-4be8-b628-1b869b576d8d) |
 | Historia decyzji, rynek, harmonogram | dokument projektu `claude/analiza-rynku-i-plan.md` w projekcie Claude "You Are The Dungeon" |
