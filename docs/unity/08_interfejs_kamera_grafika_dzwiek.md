@@ -359,7 +359,7 @@ Karta: "Serce lochu gaśnie", tytuł "Serce zjadło ostatni kryształ" albo "Ost
 
 ### 3.12 Koniec runu (`renderEnd`)
 
-Ekran pełny: "Koniec runu · m:ss", tytuł "Zwycięstwo" / "Run przerwany" / "Loch upadł", duża liczba = Esencja w runie. Ciało: powód (+ fale bez końca), pigułka "Ranga: X" z "następna: Y od Z" i ewentualnie zielone "Nowy rekord!", kafelki (utrzymane fale z polską odmianą `plural`, zabici, przestraszeni, zjedzone kryształy), wykres "Esencja z fal" ("szare: stracony kryształ"), panel "Najlepsze elementy runu" (5 z paskami) + talia + rekordy. Stopka: "Jeszcze raz" (główny, `newRun(false)`), "Menu" (start), "Pobierz wyniki tego runu (.json)" (tylko prototyp). Rekordy urządzenia aktualizują się raz (`yatd15-records`).
+Ekran pełny: "Koniec runu · m:ss", tytuł "Zwycięstwo" / "Run przerwany" / "Loch upadł", duża liczba = Esencja w runie. Ciało: powód (+ fale bez końca), pigułka "Ranga: X" z "następna: Y od Z" i ewentualnie zielone "Nowy rekord!", kafelki (utrzymane fale z polską odmianą `plural`, zabici, przestraszeni, zjedzone kryształy), wykres "Esencja z fal" ("szare: stracony kryształ"), panel "Najlepsze elementy runu" (5 z paskami) + talia + rekordy. Stopka: "Jeszcze raz" (główny; od 1.12.1 w etapach 1-4 `startGuided()`, potem `newRun(false)`), "Menu" (start), "Pobierz wyniki tego runu (.json)" (tylko prototyp). Rekordy urządzenia aktualizują się raz (`yatd15-records`).
 
 ### 3.13 Ankieta (`renderSurvey`, tylko prototyp)
 

@@ -26,7 +26,6 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | Problem | Skutek |
 |---|---|
 | Po fali zakończonej z 0 kryształów nie ma zapisu | zamknięcie aplikacji na ekranie przegranej wraca do budowy przed tą falą |
-| "Jeszcze raz" woła `newRun(false)` | zawsze pełna gra, z pominięciem etapów pierwszych runów |
 | Karta `u-portrait` nie może wypaść | portret jest w `START_UNLOCKED`, a w etapach 1 jest wyłączony, więc karta nie ma sensu w żadnym etapie |
 | Kontynuacja za reklamę po fali 10 z 0 kryształów | run nie może już zostać wygrany |
 | Karty rosnące w schowku | przeniesienie do schowka zeruje licznik (opis karty mówi tylko o sprzedaży) |

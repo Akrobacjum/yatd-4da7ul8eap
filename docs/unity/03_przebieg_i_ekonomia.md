@@ -1018,7 +1018,7 @@ Tylko prototyp: `localStorage`. W Unity: plik zapisu profilu (sekcja 07) albo Pl
 - **HUD:** sekcja 08 (sakiewka, "fala +fl.score", równanie z serią w toku albo ostatnią wypłatą przez 1,6 s, pasek ♥).
 - **Okno "Skąd Esencja"** (`p8b_ui.js: renderEsencja`, stuknięcie w równanie): tabela wartości `GZ`, części chciwości (`greedBonusParts` + `greedKeep`), opis combo, w fali i po niej rozbicie `dmgPts, fearPts, scarePts (liczba), killPts (liczba), lootPts, crystalPts, lostPts + lonePts, healPts, comboPts`, "Groza razem" `fl.base`, "Średnio na punkt Grozy" `fl.score / fl.base`, "= Esencja z fali" `fl.score`.
 - **Podsumowanie fali:** 1.9.
-- **Ekran końca** (`p8b_ui.js: renderEnd`): tytuł "Zwycięstwo" / "Run przerwany" / "Loch upadł"; duża liczba `round(run.total)` "Esencji w runie"; powód + "Po wygranej fale bez końca: N"; ranga i następna; "Nowy rekord!" gdy `run.total > poprzedni best`; kafelki: fale (`held`), zabici (suma `stats.kills`), przestraszeni (suma `stats.scared`), zjedzone kryształy (fale z `hunger.ate`); wykres Esencji z fal; 5 najlepszych elementów runu według sumy `pts + passivePts + fearPts` z `w.items`; skład talii; rekordy. "Jeszcze raz" -> `newRun(false)`, "Menu".
+- **Ekran końca** (`p8b_ui.js: renderEnd`): tytuł "Zwycięstwo" / "Run przerwany" / "Loch upadł"; duża liczba `round(run.total)` "Esencji w runie"; powód + "Po wygranej fale bez końca: N"; ranga i następna; "Nowy rekord!" gdy `run.total > poprzedni best`; kafelki: fale (`held`), zabici (suma `stats.kills`), przestraszeni (suma `stats.scared`), zjedzone kryształy (fale z `hunger.ate`); wykres Esencji z fal; 5 najlepszych elementów runu według sumy `pts + passivePts + fearPts` z `w.items`; skład talii; rekordy. "Jeszcze raz" -> `onbStage() <= 4 ? startGuided() : newRun(false)` (od 1.12.1), "Menu".
 
 ---
 
@@ -1068,7 +1068,7 @@ Zasady dodatkowe:
 
 Błędy i niespójności (do decyzji autora, w Unity zachowaj zachowanie prototypu, chyba że opisano inaczej):
 1. **Zapis przy przegranej:** przy 0 kryształach `finishWave` nie zapisuje stanu `'summary'`, więc stary zapis `'build'` sprzed fali przeżywa; zamknięcie aplikacji na oknie `'over'` pozwala powtórzyć przegraną falę (1.11). Zalecenie: zapisać stan przegranej albo wyczyścić zapis.
-2. **"Jeszcze raz" omija etapy nauki:** `renderEnd` woła `newRun(false)`, czyli pełną grę (etap 4) bez `run.guided`, nawet gdy gracz jest w etapie 2 lub 3. Spójniej byłoby `startGuided()`, gdy `onbStage() <= 4`.
+2. **"Jeszcze raz" w pierwszych runach** (poprawione w 1.12.1): `renderEnd` woła `startGuided()`, gdy `onbStage() <= 4`, a w pełnej grze `newRun(false)`; w 1.12 zawsze `newRun(false)`, czyli pełną grę z pominięciem etapów nauki.
 3. **Karta `u-portrait` jest nieosiągalna:** na etapie 1 `onbOk('portrait')` jest fałszem, od etapu 2 portret jest już w `run.unlocked` (z `START_UNLOCKED`).
 4. **Wygrana po reklamie w fali 10 niemożliwa:** warunek wygranej sprawdza tylko `run.wave === RUN_WAVES`; kontynuacja po przegranej fali 10 przechodzi do fali 11 bez szansy na `run.won`.
 5. **Karty rosnące tracą licznik przy odłożeniu do schowka** (`recomputeMods` kasuje `run.stacks[id]`, gdy karty nie ma w talii), a tekst mówi tylko o sprzedaży ostatniej kopii.
