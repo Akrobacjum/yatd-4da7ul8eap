@@ -1297,19 +1297,82 @@ Kto nie widział i nie słyszał utraty kryształu, idzie dalej do wyjścia (my�
 Od 1.12.1 cierpliwość liczy osobny zegar `fl.patT` (`p6_loop.js: step`): rośnie o `dt`, a o `0,5 × dt`, gdy `fl.time < P.talkUntil` (narada, przygotowanie, inne rozmowy z postojem) albo trwa odpoczynek (`plan 'retreat'` i `restSince > 0`). Wszystkie progi poniżej (120 s, siatka bezpieczeństwa +60 s, limit szukania `tLimit` w 6.3.4) porównują `fl.patT`, nie `fl.time`. HUD pokazuje pozostały czas cierpliwości. Powód: dłuższe scenki nie mogą skracać zwiedzania.
 
 ```
-fl.fearless = true
-if plan już wyjściowy: return
+L = leader()
+if plan już wyjściowy: fl.fearless = true; return
+if P.council: return                                          // 1.17: narada trwa (step woła co krok, póki !fearless)
 prophet = żywy boss 'final' (bohater z przepowiedni), nie uciekający
 if !prophet:
-   fl.storm = false; P.plan = 'leave'; wszyscy needPlan, rest/talk -> walk; alive()[0]: SAY.leave (3); return     // wracają do domu
-fl.storm = true
+   if L && (heartP() || !P.councilMore):                      // 1.17: jest wybór -> narada (6.3.10a)
+      P.council = {stage: 'wait', t0: time}; stats.councils++; podpowiedź "naradzają się, co dalej"; return
+   goHome(L); return                                          // brak wyboru: serce nieznane przywódcy i +30 s już było
+fl.fearless = true; fl.storm = true; P.heartSaid = true
 if !fl.heartKnown:                                            // przepowiednia pokazuje drogę
-   fl.heartKnown = true; pola shortestPath() i pokój serca -> known; prophet: SAY.prophecy (4, dur 2.6)
-if fl.heartKnown: P.plan = 'assault'; rest/talk -> walk; needPlan; alive()[0]: SAY.impatient (3)
-else: P.plan = 'leave'; ...; SAY.leave (3)        // (nieosiągalne przy prophet, bo wyżej heartKnown = true)
+   fl.heartKnown = true; fl.heartBy = null; pola shortestPath() i pokój serca -> known; prophet: SAY.prophecy (4, dur 2.6)
+if fl.heartKnown: P.plan = 'assault'; rest/talk -> walk; needPlan; L: SAY.impatient (3)       // 1.17: L, było alive()[0]
+else: P.plan = 'leave'; ...; L: SAY.leave (3)        // (nieosiągalne przy prophet, bo wyżej heartKnown = true)
+
+goHome(L):                                                    // 1.17: dawny koniec cierpliwości, osobna funkcja
+   fl.fearless = true; fl.storm = false; tl('ip', 0); P.plan = 'leave'; P.council = null
+   wszyscy needPlan, rest/talk -> walk; L (jeśli jest): SAY.leave (3)
 ```
 
-Skutki `fl.fearless` (od tej chwili do końca fali): ścieżki bez kosztu zagrożeń, prędkość x1,3, próg ucieczki x1,3 (sekcja 05), brak rozmów (`talk`/`talkAs` nic nie robią), brak wahania, tarczy wojownika przed zagrożeniem, talizmanu "przed pułapką", przyspieszania przy zagrożeniu, przygotowań, objazdów, gubienia się, prac klasowych (`disarmJob`, `smashJob`, `blessJob`, `bombJob` zwracają `null`), szukania zgubionych, wołania barda; w `planHero` gałąź "fearless i assault" wyprzedza wszystkie prace i łupy. 60 s po końcu cierpliwości każdy żywy wychodzi natychmiast (`heroExit`, siatka bezpieczeństwa w `step`).
+Do 1.16 koniec cierpliwości bez przepowiedni zawsze oznaczał powrót do domu (`plan 'leave'`, tak zdecydował autor w 1.01). Od 1.17 (autor 21.10: po 2 minutach nie sztywny odwrót albo szarża, tylko decyzja, może wspólna, przez rozmowę) drużyna się naradza (6.3.10a); `goHome` zostaje dla sytuacji bez wyboru i dla wyniku "do domu". `fl.fearless` ustawia dopiero wynik narady (dom albo szturm), więc w trakcie narady i po "jeszcze chwila" drużyna zachowuje się normalnie. HUD pokazuje w trakcie narady "narada" zamiast czasu (sekcja 08).
+
+Skutki `fl.fearless` (od tej chwili do końca fali): ścieżki bez kosztu zagrożeń, prędkość x1,3, próg ucieczki x1,3 (sekcja 05), brak rozmów (`talk`/`talkAs` nic nie robią), brak wahania, tarczy wojownika przed zagrożeniem, talizmanu "przed pułapką", przyspieszania przy zagrożeniu, przygotowań, objazdów, gubienia się, prac klasowych (`disarmJob`, `smashJob`, `blessJob`, `bombJob` zwracają `null`), szukania zgubionych, wołania barda; w `planHero` gałąź "fearless i assault" wyprzedza wszystkie prace i łupy. 60 s po końcu cierpliwości każdy żywy wychodzi natychmiast (`heroExit`, siatka bezpieczeństwa w `step`; liczy się `fl.patT >= S.waveTime + 60`, więc po "jeszcze chwila" siatka przychodzi odpowiednio później).
+
+### 6.3.10a Narada na końcu cierpliwości (1.17, `p3_flow.js: becomeImpatient, goHome`, `p5_ai.js: councilThink, councilVote, councilDone`)
+
+Po 120 s cierpliwości (bez bohatera z przepowiedni) drużyna nie wraca już z automatu do domu: przywódca zwołuje naradę, każdy, kto stoi przy nim, głosuje według swojego stanu i charakteru, a decyzja wchodzi w życie po ostatniej kwestii.
+
+**Otwarcie** (`becomeImpatient`, 6.3.10): `P.council = {stage: 'wait', t0: time}`, gdy jest przywódca i jest wybór: przywódca wie, gdzie jest serce (`heartP()`), albo "jeszcze chwila" nie była użyta (`!P.councilMore`). Inaczej `goHome(L)` (stary powrót).
+
+**`councilThink(L)`** (każdy `partyThink`, póki `P.council`, krok 5b w 6.3.2):
+```
+if goingOut() || fl.ending !== null || fl.fearless || !L: P.council = null; return        // uciekli albo fala się skończyła
+if stage 'wait':
+   if time - t0 > 8: goHome(L); return                     // nie da się ich zebrać (lider zgubiony, w klatce...): do domu jak przed 1.17
+   g = talkGroup(L)
+   if ktoś z g rozmawia: do 4 s od otwarcia czeka na ciszę; potem ucina rozmowy (talkUntil = time)
+   g = L i ci z g, którzy nie niosą kryształu, nie wychodzą i nie panikują        // głosujący
+   opts = ['home'] + (heartP() ? ['storm'] : []) + (P.councilMore ? [] : ['more'])
+   votes = councilVote(o, opts) dla każdego z g
+   tally: głos lidera 1.5, elity (rank >= 2) 1.25, reszty 1
+   res = głos lidera; każda opcja z większą sumą wygrywa (remis: decyduje lider)
+   others = do 4 losowych z g bez lidera
+   kwestie: [L, councilOpen], każdy z others: voteHome / voteStorm / voteMore (wg głosu)
+            lider przegłosowany: [L, councilGiveIn]; potem [L, decideHome | decideStorm | decideMore]
+   leave = []; grumbles = 0
+   każdy z others, który głosował inaczej niż wynik:
+      chciał do domu && rand < min(0.85, 0.2 + (tchórz 0.35) + 0.3*clamp(fear/courage, 0, 1) + (hp < 0.35 max ? 0.25 : 0)):
+         leave.push(o); [o, goHomeAlone]                   // wraca sam
+      elif grumbles < 2 && rand < 0.6: grumbles++; [o, outvotedHome | outvotedStorm | outvotedMore]
+   if !talkAs(2, kwestie, L): return                       // nikogo nie ma (nie powinno się zdarzyć): spróbuje w następnym ticku
+   stage = 'talk'; res, endAt = P.talkUntil, votes; P.waitUntil = max(P.waitUntil, P.talkUntil); tl('cn', res, g.length, leave.length)
+elif time >= endAt: councilDone(C, L)
+```
+
+**`councilVote(h, opts)`**: `fr = clamp(fear/courage, 0, 1.5)`, `hp = hp/max`; dla każdej opcji wynik + `rand*0.8`, wygrywa najwyższy:
+```
+home  = 0.9 + 1.8*fr + 1.4*(1 - hp) + (tchórz 1.4 | ostrożny 0.4) + (złoto >= 2 ? 0.4 : 0) + (wstrząśnięty śmiercią ? 0.5 : 0)
+storm = 0.6 + (odważny 1 | chciwy 0.5 | tchórz -0.9) + (barbarzyńca 0.6) + (czempion albo łowca 0.8) + (hp > 0.6 ? 0.5 : 0)
+        + 0.2*rank - 1.4*fr + (P.plan === 'assault' ? 0.4 : 0)
+more  = 0.5 + (heartP() ? 0 : 0.7) + (chciwy 0.8 | odważny 0.2) + (łowca 0.6) - (hp < 0.4 ? 0.6 : 0) - fr
+```
+
+**`councilDone(C, L)`** (gdy skończy się ostatnia kwestia, `time >= endAt`):
+```
+P.council = null; stats['council' + Res]++              // councilHome / councilStorm / councilMore
+more:  P.councilMore = true; fl.patT = min(fl.patT, S.waveTime - 30)        // 30 s cierpliwości, potem druga narada już bez "more"
+storm: fl.fearless = true; fl.storm = true; P.plan = 'assault'; P.detour = null; tl('ip', 1); rest/talk -> walk; wszyscy needPlan
+home:  goHome(null)                                      // bez kwestii leave: decyzja już padła
+if res !== 'home': każdy z leave, który żyje, nie wyszedł, nie spada, nie niesie kryształu, nie siedzi w klatce i nie jest liderem:
+   o.goHome = true; o.split = false; needPlan; rest/talk -> walk; stats.goHome++; tl('gh', o.id); napis "Wraca sam" / "Wraca sama"
+```
+Bohater z `goHome` jest wychodzący (`exiting`), nie może zostać przywódcą (6.3.1), nie liczy się do czekania na maruderów (6.2.12), nie zostaje ratownikiem (6.5.9); w karcie bohatera ma stan "wraca sam do domu". Wynik narady przejmują od razu ci, którzy stoją przy przywódcy; reszta dostaje plan, gdy go zobaczy albo usłyszy (6.3.13). `fl.fearless` po szturmie działa jednak na wszystkich w lochu (sekcja 11).
+
+Zestawy kwestii: `councilOpen`, `voteHome`, `voteStorm`, `voteMore`, `councilGiveIn`, `decideHome`, `decideStorm`, `decideMore`, `goHomeAlone`, `outvotedHome`, `outvotedStorm`, `outvotedMore` (6.7.9 I); samotny przywódca mówi wersje `SOLO` (`councilOpen`, `decide*`) i decyduje sam (jego głos to cała narada). `CONVO` ma zestawy dla `goHomeAlone` i `councilGiveIn`, ale kwestie narady mówi się w trakcie rozmowy (`talkAs` ustawia głosującym `talkUntil`), a `convoStart` odmawia mówiącemu, który rozmawia (`talking(A)`, 6.7.5a), więc te wymiany zaczynają się tylko wtedy, gdy kwestia spóźni się poza koniec narady (rzadko).
+
+Test: `tests/t117_ai.py` (dzielna i zdrowa drużyna ze znanym sercem zwykle szturmuje, przestraszeni i ranni tchórze zwykle wracają, przy nieznanym sercu nigdy szturm, "jeszcze chwila" daje 20-31 s i drugi raz nie wypada, sekcja 09).
 
 ### 6.3.11 Zamknięta krata (`p5_ai.js: partyThink`, krok 19)
 
