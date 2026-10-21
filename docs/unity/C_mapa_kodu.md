@@ -1,6 +1,6 @@
 # Załącznik C: mapa kodu prototypu
 
-Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
+Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
 
 ## p1_config.js (dane i stałe)
 
@@ -108,7 +108,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16) z pierws
 | `comboLive` | brought (heart's share included), run.total = the harvest of the run. addPts returns what the event is worth at the multipliers now (the stats per element use it); the chain pays at least that, the extra from the... |
 | `addPts` |  |
 | `chainTick` | the chain ends: a trap chain when the combo clock runs out, a chain without a trap after 1,2 s without Groza (at most 4 s) |
-| `payChain` |  |
+| `payChain` | 1.01: a chain is cashed in: E = Groza x its greed x its combo; 1.16.1: fl.score += E - pre and essIn(E - pre), pre = what the heart already ate of it (C.fedLive) |
 | `heartLive` | 1.16.1: the hungry heart eats every event's worth at the multipliers of the moment, as it comes (the chain's payout only adds what the combo made on top) |
 | `heartFull` | 1.16.1: the heart is fed: fl.fed = need, fl.fedAt, 'Serce syte!' |
 | `essIn` | Esencja comes in: the hungry heart takes its share first, the rest goes to the purse (Obżarstwo: x1,25 once it is fed) |
@@ -313,6 +313,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16) z pierws
 | `lostChance` | The chance to lose the way once cut off from the leader: bigger dungeon and fog = more, experience and a thief's sense = less. |
 | `getLost` |  |
 | `startSplit` | 1.16: a deliberate split starts (scout, mate, 'wait here', rest scout, rookie errand): h.split, stats.splits, the 'Zwiad' float |
+| `onScout`, `splitting` | 1.16: the scout or his mate; anyone away on purpose (also a rookie on his errand) |
 | `nextScout` | 1.16: the scout's next opening: the nearest known way into the unknown that does not lead back towards the party |
 | `maybeDetour` | A wrong turn at a junction (a room with 3+ ways out): more likely in a big dungeon and in the fog, rarer for veterans who know the way. |
 | `powerReady` |  |
@@ -476,6 +477,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16) z pierws
 | `wallDressing` | what is on a standing block: its torch, the wall traps on its face (1.15: also the komnata's ornaments and the effect's wash) |
 | `kindWalls` | 1.15: which komnata each wall face and top belongs to (per map and set of komnaty) |
 | `kindTex`, `kindTopTex` | the face (128x218) and top (64x64) texture of a komnata's walls, painted once |
+| `kwStyle`, `texRand`, `per`, `facets`, `skullT`, `boneT` | wall-texture helpers: a block's WALL_STYLE, a seeded random, tiling along u, raw-rock facets, a skull and a bone for textures and crowns |
 | `kindFace` | one face of a komnata's block: its texture through faceMap, the E face darker, the forge's live glow |
 | `drawKindBlock` | a standing block of a komnata: faces, top, edges, crown (WALL_STYLE[k].crown) |
 | `drawKindLips` | the flattened walls of a komnata: its lip colour and top texture |
@@ -816,6 +818,8 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16) z pierws
 | `tutAdvance` |  |
 | `tutHoldOk` | 1.15.1: the guide's pause that a held finger ends (the ff step) |
 | `tutCheckHold` | 1.15.1: the guide's first check: the world stands while it waits (timeScale) |
+| `isOpenT` | 1.15: a tile can be used: unlocked, and a komnata only once one of its family is |
+| `subsOn`, `curSub` | 1.14: the sub-tabs with something for this stage, and the one picked (remembered per tab) |
 | `subStage` | 1.15.1: the run of learning a sub-tab's first tile comes in (a dimmed sub-tab says it) |
 | `tutTick` |  |
 | `tutEvent` |  |

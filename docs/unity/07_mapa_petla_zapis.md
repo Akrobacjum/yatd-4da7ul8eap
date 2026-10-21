@@ -1003,6 +1003,7 @@ Kody zdarzeń:
 | Kod | Argumenty | Znaczenie (źródło) |
 |---|---|---|
 | `sp` | id | bohater wszedł (`spawnHero`) |
+| `rz` | id, powód (`'scout'`, `'mate'`, `'ahead'`, `'rest'`, `'wander'`, w testach `'test'`) | 1.16: bohater celowo się rozdzielił (`startSplit`, sekcja 06, 6.2.10a) |
 | `rg` | ile w kolejce | druga grupa wchodzi po ucieczce pierwszej (`regroupAtDoor`) |
 | `br` | x, y | fala weszła wyłomem (`startWave`) |
 | `pl` | plan | zmiana planu drużyny (`partyThink`) |

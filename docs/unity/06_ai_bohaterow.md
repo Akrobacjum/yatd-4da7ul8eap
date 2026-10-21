@@ -883,13 +883,13 @@ elif cel się zmienił && rand < 0.35: partySay('explore', 1)
 **Narada na rozwidleniu** (`chooseTarget`, wersja 1.05): `P.lastTalkAt = time`, `P.junctions.add(room)`.
 ```
 lureAlt = jakiś widziany łup w odległości <= 6 od alt
-crewT   = inni niż lider: nie zgubieni, nie panikują, nie w klatce, nie uciekają
+crewT   = talkGroup(L) bez lidera (6.7.5): stoją z nim (samePlace), nie zgubieni, nie panikują, nie w klatce, nie uciekają, nie na zwiadzie (onScout), nie wychodzą
 greedy  = lureAlt ? pierwszy z crewT z cechą greedy albo łowca : null
 careful = pierwszy z crewT z cechą careful
 coward  = P.morale < 0.8 ? pierwszy z crewT z cechą coward : null
 brave   = coward ? pierwszy z crewT z cechą brave : null
 lines = [[L, deliberate]] + [greedy, argueLoot] + [careful, argueCareful] + [coward, argueCoward] + [brave, argueBrave] (tylko istniejący)
-if lines.length < 2: lines.push([null, deliberate])        // ktokolwiek
+if lines.length < 2 && crewT.length: lines.push([null, deliberate])   // ktokolwiek (1.13: sam lider nie spiera się sam ze sobą)
 if greedy:
    sway = L.trait === 'greedy' || L.hunter || L.rank === 0 || rand < 0.35
    if sway: P.target = alt.f; P.targetRoom = alt.room       // lider ulega chciwemu
@@ -904,7 +904,10 @@ if !greedy && vol && alive().length >= 3 && P.scoutId < 0 && rand < volP:
    if mate: P.scoutMate = mate.id; mate.needPlan = true; startSplit(mate, 'mate'); stats.scoutPairs++
             lines.push([mate, splitMate], [L, splitReply])  // "Idę z tobą." / "Dobra, rozdzielmy się. Ale na chwilę!"
    else:    lines.push([L, scoutReply])
+quiet = pierwszy z crewT, który jeszcze nic nie powiedział i nie jest złodziejem
+if quiet: lines.push([quiet, councilReply])                 // 1.12.1: ktoś jeszcze dorzuca słowo
 talkAs(1.4 + 0.45 * lines.length, lines)                   // drużyna staje i rozmawia (6.7.5)
+huddleUp(L)                                                 // podchodzą do lidera (6.7.5)
 ```
 
 Ostrożny i tchórz tylko mówią; o kierunku decyduje lider (i ewentualnie chciwy).
@@ -1678,7 +1681,7 @@ Bohaterowie w różnych pokojach (i dalej niż 7 pól) mówią jednocześnie. Bo
 ### 6.7.5 Rozmowy drużyny
 
 - **`partySay(k, prio, who)`** (`p5_ai.js`): ten sam klucz najwyżej co 5 s (`P.lastSay[k]`); mówi `who` albo lider; tekst losowy z `SAY[k]`. Używane dla: `rookieLead`, `explore`, `retreat`, `restDone`, `assault`, `regroup`.
-- **Kto rozmawia** (od 1.13, decyzja autora 20.10: drużyna stawała w miejscu wszędzie, w innych pokojach i na pułapkach): `talkGroup(c)` = `c` (zwykle lider) i ci, którzy stoją z nim w tym samym miejscu: `samePlace(a, b)` = ten sam pokój albo korytarz (`roomOf(tx, ty)` równe i >= 0) albo odległość <= 3,5 pola; bez zgubionych, panikujących, uwięzionych, uciekających, zwiadowcy i wychodzących. Tylko oni dostają `h.talkUntil` i stają; reszta robi swoje (idący za liderem dochodzą do niego jak zwykle). Dwie grupy mogą rozmawiać naraz. `P.talkUntil` = koniec najpóźniejszej rozmowy (cierpliwość 6.3.10, blokada rozmów 6.7.8).
+- **Kto rozmawia** (od 1.13, decyzja autora 20.10: drużyna stawała w miejscu wszędzie, w innych pokojach i na pułapkach): `talkGroup(c)` = `c` (zwykle lider) i ci, którzy stoją z nim w tym samym miejscu: `samePlace(a, b)` = ten sam pokój albo korytarz (`roomOf(tx, ty)` równe i >= 0) albo odległość <= 3,5 pola; bez zgubionych, panikujących, uwięzionych, uciekających, zwiadowcy i jego partnera (`onScout`, 1.16) i wychodzących. Tylko oni dostają `h.talkUntil` i stają; reszta robi swoje (idący za liderem dochodzą do niego jak zwykle). Dwie grupy mogą rozmawiać naraz. `P.talkUntil` = koniec najpóźniejszej rozmowy (cierpliwość 6.3.10, blokada rozmów 6.7.8).
 - **`talk(dur, lines, c = lider)`**: jeśli nie `fearless`, drużyna nie wychodzi, grupa niepusta i nikt z grupy już nie rozmawia: `koniec = time + max(dur, talkLen(lines))`, każdy z grupy `h.talkUntil = koniec`; linia `i` mówi `grupa[i % n]` (pierwsza: `c`) o `at = time + 0.65*i`. Zwraca grupę albo `null`.
 - **`talkAs(dur, lines, c = lider)`** (wersja 1.05): jak wyżej, ale każda linia ma mówcę (`[bohater, tekst]`, `null` = ktokolwiek z grupy wg `i`), `at = time + 0.7*i`; od 1.13 linia mówcy spoza grupy przepada (na rozwidleniu głos mają tylko ci, którzy stoją z liderem, i tylko złodziej z grupy może zaproponować zwiad). Używane: narada na rozwidleniu. Od 1.12.1 narada dostaje jeszcze głos kogoś, kto nic nie powiedział (nie złodziej): `councilReply`, a po niej `huddleUp(L)`.
 - **`talkLen(lines) = Σ (readT(t) + SAY_GAP) + 0,6`** (od 1.12.1; w 1.10-1.12 było `0.55 × Σ`, więc drużyna ruszała, zanim padła połowa kwestii): drużyna stoi tyle, ile trwa powiedzenie wszystkiego, jedno po drugim.
@@ -1839,7 +1842,11 @@ Oznaczenia w kolumnie "prio / tryb": liczba = `prio`; **G** = głośna (`how 'lo
 | `deliberate` | narada na rozwidleniu: otwiera lider; drugi raz "ktokolwiek", gdy nikt inny nie zabrał głosu | lider / ktoś | K (`talkAs`) |
 | `argueLoot`, `argueCareful`, `argueCoward`, `argueBrave` | narada: chciwy (łup przy drugiej drodze), ostrożny, tchórz (morale < 0,8), odważny (gdy tchórz mówił) | ci bohaterowie | K |
 | `decideYes`, `decideNo` | narada: lider ulega chciwemu albo nie | lider | K |
-| `scout`, `scoutReply` | narada: złodziej zgłasza się na zwiad, lider odpowiada | złodziej, lider | K |
+| `scout`, `scoutReply` | narada: złodziej (od 1.16 bez niego czasem odważny) zgłasza się na zwiad, lider odpowiada; `scoutReply` odpowiada też na `restScout` (+1,4 s) | zwiadowca, lider | K |
+| `splitMate`, `splitReply` | 1.16: narada, partner idzie ze zwiadowcą; lider odpowiada zamiast `scoutReply` | partner, lider | K |
+| `aheadScout`, `aheadReply` | 1.16: zwiad przodem przy wejściu do nowego pokoju; lider odpowiada po 1,3 s | złodziej, lider | 2 / kolejka |
+| `restScout` | 1.16: złodziej idzie się rozejrzeć na postoju | złodziej | 2 |
+| `councilReply` | narada: ktoś, kto jeszcze nic nie powiedział (nie złodziej), dorzuca słowo | ten bohater | K |
 | `scoutBack` | zwiadowca wraca (`partyThink`) | zwiadowca | 2 |
 | `wander` | nowicjusz odłącza się sam | on | 2 |
 | `hesitate` | lider waha się przed nieznanym polem (morale < 0,75) | z `talk()` | K |

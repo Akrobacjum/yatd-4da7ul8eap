@@ -95,7 +95,7 @@ Nie ma potrzeby zgodności liczb losowych z prototypem (JS i C# i tak losują w 
 
 Katalog `data/` (w repo: `docs/unity/data/`) zawiera eksport tabel z `src/p1_config.js` (opis plików: załącznik A):
 
-- `yatd_content_1.13.1.json`: wszystkie tabele w jednym pliku (`tables.ITEMS`, `tables.UPGRADES`, `tables.HEROES`...),
+- `yatd_content_1.16.1.json`: wszystkie tabele w jednym pliku (`tables.ITEMS`, `tables.UPGRADES`, `tables.HEROES`...),
 - te same tabele osobno (`ITEMS.json`, `UPGRADES.json`, ...),
 - `levelStats_1_30.json`: policzone statystyki poziomów 1-30,
 - `golden_1.13.1.json`: wartości policzone przez działający prototyp (skład i poziom fal 1-20, głód serca, krzywa chciwości, ceny, koszty narzędzi, domyślne `mods` i `S`).

@@ -174,7 +174,7 @@ Rząd wyśrodkowany, odstęp 4 px. Pięć pudełek (`.eq`): etykieta 9 px wersal
 | `#eq-c` Chciwość | w fali obecna chciwość minus lecące orby złote; poza falą chciwość na start | etykieta "Chciwość" w fali, "Chciwość start" poza |
 | `#eq-k` Combo | ×(1 + 0,25 × (krok combo - 1)) minus lecące orby lodowe; w serii jej combo | etykieta "Combo" |
 | `#eq-rop`, `#eq-r` Żyła | ×mods.regen | widoczne tylko, gdy karta Żyła esencji (`mods.regen ≠ 1`) |
-| `#eq-e` Esencja | "+E" serii (G × Chciwość × Combo × Żyła), po wypłacie "+E" wypłaty, inaczej "+0" | |
+| `#eq-e` Esencja | "+E" serii (G × Chciwość × Combo × Żyła × `S.essK`; do 1.16 bez `S.essK`, więc przy wypłacie liczba podskakiwała o ok. 10%), po wypłacie "+E" wypłaty, inaczej "+0" | |
 
 Stany całego rzędu: `idle` (nic się nie dzieje: Groza i Esencja w 45% krycia), `chain` (trwa seria: Groza z fioletową ramką `--violet-lo` i poświatą `rgba(160,140,232,0.25)`), `paid` (1,6 s po wypłacie: pudełko Esencji z ramką `#a3263a` i poświatą `rgba(255,70,85,0.45)`). Zmiana wartości w trakcie serii/wypłaty: liczba "pyka" (skala 1,3 → 1 w 0,3 s, nie częściej niż co 220 ms na pudełko). Orb dolatujący do pudełka: błysk ramki w jego kolorze 0,22 s (`gHit`, `cHit`, `kHit`). Stuknięcie rzędu (albo Enter/spacja) otwiera okno "Skąd Esencja" i pauzuje trwającą falę. Zasady liczenia: sekcja 03.
 
@@ -742,7 +742,7 @@ Rysowane na `#fx` (pełny ekran, nad HUD i mapą, pod oknami). `ORB_MAX = 90` na
 | greed | pole łupu (z 0,4) → Chciwość | `clamp(round(g/0,04), 1, 6)` | -0,07 s × i; 0,5-0,7 s | `rgba(236,200,120,0.6)`, `rgba(240,190,80,0.4)`, `#fff4d6` |
 | combo | pole pułapki → Combo | 3 na stopień (+0,25) | jw. | `rgba(169,212,218,0.6)`, `rgba(140,210,222,0.4)`, `#effcff` |
 | score | losowy punkt pudełka Esencja → duża liczba | `min(30, max(1, round(E/0,4)))` | -0,035 s × i - los 0,05; 0,5-0,7 s | `rgba(255,90,100,0.38)`, `rgba(255,70,85,0.32)`, `#ffe0e3` |
-| heart | pudełko Esencja → ♥ | `min(24, max(1, round(porcja/0,6)))` | jw. | jak score |
+| heart | pudełko Esencja → ♥ | `min(24, max(1, round(porcja/0,6)))`; od 1.16.1 w trakcie fali porcjami `fl.heartOrb` >= 0,6 (zwykle 1 orb, `heartLive`), a przy wypłacie dopłata combo | jw. | jak score |
 
 Tor: krzywa kwadratowa z punktem kontrolnym `(ox + 0,2(tx - ox), min(oy, ty) - 40)` (z równania: -18), postęp wygładzony smoothstep; rysunek: smuga 3 px od u-0,08 do u, krąg r 7, rdzeń r 2,6. Lądowanie: pudełko błyska (patrz 2.3), liczba w pudełku rośnie dopiero wtedy (wartości w HUD odejmują to, co jeszcze leci: `C.fly`, `fl.gFly`, `fl.kFly`, liczone osobno na serię, żeby orby starej serii nie psuły nowej). Brak orbów przy "mniej ruchu".
 

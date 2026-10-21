@@ -37,7 +37,7 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | Łowcy w podsumowaniu fali | UI liczy `huntersN(greedRep)` zamiast `huntersN(greedRaw(...))` i pokazuje łowców w etapach 1-3, gdzie ich nie ma |
 | Kradzież przy 0 kryształów | bohaterowie nadal mogą "ukraść" kryształ, a jego odzyskanie daje Grozę |
 | Kilka kart Post | chciwość może spaść poniżej 1, nawet do 0 |
-| Wyjście z runu w trakcie fali | otwarta seria combo nie jest wypłacana |
+| Wyjście z runu w trakcie fali | otwarta seria combo nie jest wypłacana (od 1.16.1 przepada tylko jej reszta ponad to, co serce zjadło na bieżąco) |
 | Bezpiecznik po 180 s | wyprowadza też niosącego kryształ, co liczy się jako utrata kryształu |
 
 ### Fale i bohaterowie (sekcja 04)
@@ -90,6 +90,7 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | `P.steal` | nie spada, gdy drużyna odejdzie od serca |
 | Wyjście z zapadni | nie przechodzi przez `getLost`, więc przywódca nie decyduje o szukaniu |
 | Objazd lidera po czasie (naprawione w 1.16) | do 1.15.1 `P.detour` czyściło tylko `planHero` lidera bez własnej pracy, więc lider zajęty łupem trzymał objazd po jego czasie (w powtórkach autora 3,7 s mgły wisiało do 13 s) i blokował nowe pomyłki i błądzenie we mgle; od 1.16 `partyThink` czyści go po `until` |
+| Okienko Esencji w równaniu (naprawione w 1.16.1) | do 1.16 "+E" otwartej serii liczono bez `S.essK`, a wypłatę z nim, więc przy wypłacie liczba podskakiwała o ok. 10% |
 | Esencja elementu na jego karcie (naprawione w 1.16.1) | do 1.16 "Ostatnia fala: ... Esencji" liczyło przyrost `fl.score` w czasie odpalenia, a ten rośnie tylko przy wypłacie serii, więc na karcie było prawie zawsze 0; od 1.16.1 liczy się przyrost `fl.prov` (wartość chwilowa Grozy z tego odpalenia, bez dopłaty combo wstecz) |
 | Zwiad w bardzo zabójczym lochu (1.16) | zwiad wymaga 3+ w załodze i zdrowego złodzieja; w powtórkach runów autora drużyna bywa przerzedzona po kilkunastu sekundach (złodziej często ginie pierwszy), więc zwiadów jest mało (0-0,75 na falę); w spokojniejszym lochu 12 pokoi ok. 2 na falę. Do decyzji autora, czy to wystarcza |
 | Mag i kapłan | rzucają czary także w panice |

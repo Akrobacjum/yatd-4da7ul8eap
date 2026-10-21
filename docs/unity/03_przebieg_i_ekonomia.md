@@ -178,7 +178,7 @@ fl.bRooms = computeBRooms()
 
 Uwaga: potwór zabity w fali jest usuwany z `fl.items` (`p4_traps.js: hurtMonster`), więc ginie na dobre, a wydana na niego Esencja przepada. Przeżyte potwory wracają z pełnym HP.
 
-`newStats()` (`p3_flow.js: newStats`) zawiera m.in. wszystkie liczniki Grozy z rozdziału 2.2 (`dmgPts`, `fearPts`, `scarePts`, `killPts`, `lootPts`, `crystalPts`, `wavePts`, `lostPts`, `lonePts`, `healPts`, `edgePts`), liczniki Esencji (`essBase`, `essFear`, `essSoul` (martwe), `essDrop`), `maxCombo: 1`, `souls`, `lootSeen`, `loot` oraz kilkadziesiąt liczników telemetrycznych. Pola dopisywane dynamicznie: `comboPts`, `essWave`, `essHeart`, `essGlut`, `treasureTale`, `greedKept`, `hungerAte`.
+`newStats()` (`p3_flow.js: newStats`) zawiera m.in. wszystkie liczniki Grozy z rozdziału 2.2 (`dmgPts`, `fearPts`, `scarePts`, `killPts`, `lootPts`, `crystalPts`, `wavePts`, `lostPts`, `lonePts`, `splitPts` (1.16), `healPts`, `edgePts`), liczniki Esencji (`essBase`, `essFear`, `essSoul` (martwe), `essDrop`), `maxCombo: 1`, `souls`, `lootSeen`, `loot` oraz kilkadziesiąt liczników telemetrycznych (od 1.16 m.in. `splitTime`, `splits`, `splitLost`, `restScouts`). Pola dopisywane dynamicznie: `comboPts`, `essWave`, `essHeart`, `essGlut`, `treasureTale`, `greedKept`, `hungerAte`, od 1.16 `scoutPairs`, `aheadScouts`, `scoutSteps`.
 
 ### 1.6 `startWave()` (`p3_flow.js: startWave`)
 
@@ -222,7 +222,7 @@ Uwaga: bohater "zniknięty" (spada w zapadni, `h.gone`) nie jest ani `dead`, ani
 1. Tylko gdy `fl.phase === 'raid'`. `fl.check = null; ff = false; fl.finishing = true` (blokuje karty samouczka).
 2. `payChain()`: niedokończona seria jest wypłacana przed rozliczeniem serca (2.4).
 3. `run.greedNext = fl.stats.treasureTale || 0` (2.6).
-4. Statystyki elementów fali na ich karty: `it.lf/lh/lp/lk` z `it.w`, potem `it.w = null` (UI, sekcja 08).
+4. Statystyki elementów fali na ich karty: `it.lf/lh/lp/lk` z `it.w` (`lp = round(w.p)`, od 1.16.1 `w.p` = przyrost `fl.prov` w odpaleniach, sekcja 05), potem `it.w = null` (UI, sekcja 08).
 5. `run.raidSec += fl.time`.
 6. Plotki (jeśli ktoś wyszedł żywy, `fl.anyOut`): sekcja 04/06. Wynik: `rr` (pokoje), `rt` (pułapki).
 7. `run.layout.breach.fresh = false` (sekcja 04).
@@ -251,7 +251,7 @@ Okno `'wave'` (`p8b_ui.js: renderWave`), dane ekonomiczne:
 - kafelki: sakiewka `run.essence`; serce `♥ need` (syte / zjadło kryształ) albo "-" ("głód od fali 2"); kryształy `crystals/maxCrystals`; zabici · przestraszeni;
 - rachunek: `Groza fl.base × (fl.score / fl.base) = fl.score`; serce `−need` albo `za mało: −fed · kryształ`; `dla Ciebie +mine (+lastIncome po fali)`, gdzie `heart = min(need, fl.fed)`, `mine = ate ? 0 : max(0, fl.score - heart)`;
 - wykres Esencji z fal, 2-3 ciekawostki (`waveFun`), panel następnej fali;
-- "Szczegóły" (`p8b_ui.js: waveDetails`): pasek "Skąd Esencja" z `dmgPts, fearPts, scarePts, killPts, lootPts, comboPts` i "Inne" = `crystalPts + lostPts + lonePts + healPts`; zakładki Co dalej / Bohaterowie / Elementy / Liczby.
+- "Szczegóły" (`p8b_ui.js: waveDetails`): pasek "Skąd Esencja" z `dmgPts, fearPts, scarePts, killPts, lootPts, comboPts` i "Inne" = `crystalPts + lostPts + lonePts + splitPts + healPts`; zakładki Co dalej / Bohaterowie / Elementy / Liczby.
 
 Przyciski: "Dalej: sklep przed falą N+1" (podpis: liczba darmowych kart = `pendingUpgrades.length + freePicks`, "(legendarna w ofercie)" gdy nagroda z bossa) -> `closeModal(); afterSummary()`. "Zapisz i wyjdź" (gdy kryształy > 0 i nie wygrana). "Zakończ run" (dwa stuknięcia) -> `endRun('Run zakończony przez gracza po fali N.', 'quit')`. Przy wygranej: "Graj dalej" (`run.victoryDone = true; afterSummary()`) i "Zakończ: zwycięstwo" (`endRun('Loch przetrwał wszystkie 10 fal.', 'win')`). "Pobierz wyniki": tylko prototyp (w Unity brak).
 
@@ -309,7 +309,7 @@ queueModal({ type: 'end' })
 
 Przypadek brzegowy: jeśli fala 10 skończy się z 0 kryształami, a gracz użyje reklamy, gra przechodzi do fali 11 i `run.won` już nigdy nie zostanie ustawione (warunek sprawdza tylko `run.wave === RUN_WAVES`). Run może się skończyć tylko wynikiem `'end'` albo `'quit'`.
 
-**Przerwanie.** `quitRun()` (`p3_flow.js: quitRun`, wywoływane z menu w trakcie gry): jeśli trwa fala, `recordWave(0, 0, true)` (rekord częściowy), `run.total += fl.score`, `logWave(true)`; potem `endRun('Run przerwany przez gracza.', 'quit')`. Otwarta seria combo nie jest wypłacana przed doliczeniem (drobna rozbieżność, patrz rozdział 6).
+**Przerwanie.** `quitRun()` (`p3_flow.js: quitRun`, wywoływane z menu w trakcie gry): jeśli trwa fala, `recordWave(0, 0, true)` (rekord częściowy), `run.total += fl.score`, `logWave(true)`; potem `endRun('Run przerwany przez gracza.', 'quit')`. Otwarta seria combo nie jest wypłacana przed doliczeniem (drobna rozbieżność, patrz rozdział 6); od 1.16.1 część serca z tej serii jest już w `fl.score` (`heartLive`), a przepada tylko reszta `E - pre` (dopłata combo i część dla sakiewki).
 
 **Ekran końca** (`p8b_ui.js: renderEnd`): opisany w rozdziale 4.
 
@@ -356,7 +356,7 @@ infMult() = 1, sizeMult() = 1, cardMultNow() = 1         // p3_flow.js; martwe
 depthMult(r)                                             // 2.3
 ```
 
-Każde źródło przechodzi przez `addPts(g, stat, h)` (2.4). Kolumna "stat" to klucz `fl.stats`, do którego trafia **wartość Esencji w chwili zdarzenia** `e = g × fl.greed × cm × mods.regen` (nie surowa Groza).
+Każde źródło przechodzi przez `addPts(g, stat, h)` (2.4). Kolumna "stat" to klucz `fl.stats`, do którego trafia **wartość Esencji w chwili zdarzenia** `e = g × fl.greed × cm × mods.regen × S.essK` (nie surowa Groza).
 
 | stat | Zdarzenie | Groza `g` | Źródło |
 |---|---|---|---|
@@ -588,7 +588,7 @@ S.hungerBase = 37, S.hungerGrowth = 1.25
 ```
 Bez kart: fala 2: 37, 3: 46, 4: 58, 5: 72, 6: 90, 7: 113, 8: 141, 9: 176, 10: 221, 11: 276, 12: 345, 13: 431, 14: 538, 15: 673. Fala 1 nie ma głodu. Komentarz projektowy: typowa fala przynosi ok. 73 × 1,257^(n-2), serce chce mniej więcej połowę.
 
-Modyfikatory: Zakład z sercem `hungerK ×1,3`, Post `hungerK ×0,85`, Spichlerz dusz: każda śmierć bohatera, gdy karta jest w talii, dodaje 1 do `run.stacks.granary` (`p3_flow.js: kill`), a potrzeba spada o `stacks × liczba kopii`. Potrzeba jest liczona przy każdej wypłacie, więc zabójstwo z Spichlerzem obniża ją jeszcze w tej samej fali.
+Modyfikatory: Zakład z sercem `hungerK ×1,3`, Post `hungerK ×0,85`, Spichlerz dusz: każda śmierć bohatera, gdy karta jest w talii, dodaje 1 do `run.stacks.granary` (`p3_flow.js: kill`), a potrzeba spada o `stacks × liczba kopii`. Potrzeba jest liczona przy każdym zdarzeniu (`heartLive`, od 1.16.1) i przy każdej wypłacie (`essIn`), więc zabójstwo z Spichlerzem obniża ją jeszcze w tej samej fali.
 
 **Wpływ Esencji** (`p3_flow.js: essIn`; od 1.16.1 dostaje z wypłaty tylko `E - pre`, bo resztę serce zjadło w `heartLive`, 2.4):
 ```
@@ -614,7 +614,7 @@ fl.hunger = { need, got: round1(fl.score), fedAmt: round1(fl.fed), fedAt: fl.fed
 fl.hunger.fed = fl.fed >= need - 0.001
 if !fed: run.crystals = max(0, run.crystals - 1); fl.hunger.ate = true; fl.stats.hungerAte = 1
 ```
-Fala, która nie nakarmiła serca: serce zjada wszystko, co dostało w tej fali (już zabrane w `essIn`), i jeden kryształ. Nie ma zapasu między falami (od 1.01). Jeżeli kryształy spadły do 0 przez kradzież w tej fali, rozliczenie głodu jest pomijane (`fl.hunger = null`).
+Fala, która nie nakarmiła serca: serce zjada wszystko, co dostało w tej fali (zjedzone na bieżąco w `heartLive` i przy wypłatach w `essIn`), i jeden kryształ. Nie ma zapasu między falami (od 1.01). Jeżeli kryształy spadły do 0 przez kradzież w tej fali, rozliczenie głodu jest pomijane (`fl.hunger = null`).
 
 HUD (sekcja 08): pasek ♥ pokazuje `min(fl.fed, need) / need` w fali (od 1.16.1 rośnie przy każdym zdarzeniu, nie dopiero przy wypłacie serii) i "serce chce N z fali" w budowie.
 
@@ -1037,7 +1037,7 @@ Tylko prototyp: `localStorage`. W Unity: plik zapisu profilu (sekcja 07) albo Pl
 ### 4.3 Co pokazują ekrany
 
 - **HUD:** sekcja 08 (sakiewka, "fala +fl.score", równanie z serią w toku albo ostatnią wypłatą przez 1,6 s, pasek ♥).
-- **Okno "Skąd Esencja"** (`p8b_ui.js: renderEsencja`, stuknięcie w równanie): tabela wartości `GZ`, części chciwości (`greedBonusParts` + `greedKeep`), opis combo, w fali i po niej rozbicie `dmgPts, fearPts, scarePts (liczba), killPts (liczba), lootPts, crystalPts, lostPts + lonePts, healPts, comboPts`, "Groza razem" `fl.base`, "Średnio na punkt Grozy" `fl.score / fl.base`, "= Esencja z fali" `fl.score`.
+- **Okno "Skąd Esencja"** (`p8b_ui.js: renderEsencja`, stuknięcie w równanie): tabela wartości `GZ`, części chciwości (`greedBonusParts` + `greedKeep`), opis combo, w fali i po niej rozbicie `dmgPts, fearPts, scarePts (liczba), killPts (liczba), lootPts, crystalPts, lostPts + lonePts, splitPts (wiersz "Zwiad (celowo osobno)", 1.16), healPts, comboPts`, "Groza razem" `fl.base`, "Średnio na punkt Grozy" `fl.score / fl.base`, "= Esencja z fali" `fl.score`.
 - **Podsumowanie fali:** 1.9.
 - **Ekran końca** (`p8b_ui.js: renderEnd`): tytuł "Zwycięstwo" / "Run przerwany" / "Loch upadł"; duża liczba `round(run.total)` "Esencji w runie"; powód + "Po wygranej fale bez końca: N"; ranga i następna; "Nowy rekord!" gdy `run.total > poprzedni best`; kafelki: fale (`held`), zabici (suma `stats.kills`), przestraszeni (suma `stats.scared`), zjedzone kryształy (fale z `hunger.ate`); wykres Esencji z fal; 5 najlepszych elementów runu według sumy `pts + passivePts + fearPts` z `w.items`; skład talii; rekordy. "Jeszcze raz" -> `onbStage() <= 4 ? startGuided() : newRun(false)` (od 1.12.1), "Menu".
 
@@ -1097,7 +1097,7 @@ Błędy i niespójności (do decyzji autora, w Unity zachowaj zachowanie prototy
 7. **Leczenie kapłana:** `healPts` dzieli wyleczone HP (często innych bohaterów) przez `max` HP kapłana, nie leczonego. Niepewne, czy zamierzone: sprawdź `p5_ai.js: heroAbilities`.
 8. **`edgePts`** jest zapisywane w jednostkach Grozy (0,5 × pts), a wszystkie inne `*Pts` w Esencji. Tylko statystyka, ale nie sumować go z resztą.
 9. **UI gildii pokazuje inną liczbę łowców:** `p8b_ui.js: waveDetails` używa `huntersN(run.greedRep)`, a `makeWave` `huntersN(greedRaw(run.greedRep))`; poza tym wiersz o łowcach pojawia się też na etapach 1-3, gdzie łowców nie ma.
-10. **`quitRun` w trakcie fali** nie wypłaca otwartej serii przed doliczeniem `fl.score` do `run.total`.
+10. **`quitRun` w trakcie fali** nie wypłaca otwartej serii przed doliczeniem `fl.score` do `run.total` (od 1.16.1 część serca z tej serii jest już w `fl.score`; przepada reszta `E - pre`).
 11. **Post w wielu kopiach** może zepchnąć chciwość poniżej 1, a nawet do zera lub poniżej (2.6). Brak ograniczenia.
 12. **Siatka bezpieczeństwa 180 s** wypycha nosiciela kryształu przez `heroExit`, co liczy się jak wyniesienie kryształu. Prawdopodobnie zamierzone, ale warto potwierdzić.
 13. **Tekst karty Zastrzyk Esencji** ("nawet ponad pojemność") i komentarz przy `roomCount` ("+3% points for every room over 5") są nieaktualne: limitu sakiewki nie ma, rozległość daje +0,05 chciwości za pokój ponad 5.
