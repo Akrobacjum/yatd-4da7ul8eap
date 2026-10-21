@@ -63,3 +63,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.14](1.14.html) | 21.10 | podzakładki Rany / Strach w pasku budowy, odkryte pułapki zostają między runami |
 | [Prototype 1.15](1.15.html) | 21.10 | komnaty: 12 rodzajów pokoi dla rodzin pułapek i potworów, drobne bryły w pokojach, ściany komnat, płaskie rzeczy lekko odstają |
 | [Prototype 1.15.1](1.15.1.html) | 21.10 | porady samouczka w fali zatrzymują grę, karta samouczka w sklepie zostaje, podzakładki zawsze widoczne |
+| [Prototype 1.16](1.16.html) | 21.10 | celowe rozdzielenie: zwiad na naradzie, przodem, na postoju, we dwójkę; zwiad nabija Grozę wolniej niż zgubienie |

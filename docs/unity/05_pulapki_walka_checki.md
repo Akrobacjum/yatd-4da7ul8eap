@@ -230,7 +230,7 @@ Bez gracza (bez tapnięcia, bez pamięci, bez `ff`) pułapka **nie odpala**: che
 14. Przeciążenie (5.2.4).
 15. Gdy wśród trafionych jest nowicjusz (`rank === 0`), z szansą 0,3 weteran (`rank >= 2`) w odległości < 7 rzuca ostrzeżenie.
 16. Chór: jeśli zebrano portrety, każdy odpala `fire(o, basePw * k, { choir: true })`, `k = 0,6 + 0,4 * (mods.choir - 1)`.
-17. Statystyki elementu `it.w`, `bt(type).hits`. Napis "Combo ×comboMult" gdy `hit > 0` i combo > 1; "pudło" gdy `hit === 0` i nie krata. Zwraca `true`.
+17. Statystyki elementu `it.w` (`f` odpalenia, `h` trafienia, `p` Esencja, `k` zabici), `bt(type).hits`. Od 1.16.1 `p` to przyrost `fl.prov` w tym odpaleniu (wartość chwilowa jego Grozy); wcześniej był to przyrost `fl.score`, który rośnie tylko przy wypłacie serii, więc na karcie było prawie zawsze 0 (w 4 falach testu `t1161_heart` na 1.16: suma 0). Napis "Combo ×comboMult" gdy `hit > 0` i combo > 1; "pudło" gdy `hit === 0` i nie krata. Zwraca `true`.
 
 `trapBoost(it)` (tylko `TRAPS`, potwory = 1):
 

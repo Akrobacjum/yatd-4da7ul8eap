@@ -745,8 +745,9 @@
   // 1.03 (author's idea, like the LEGO games): when the party is in two places too far apart to fit on one screen at a
   // readable size (16 px a tile), a line through the middle of the screen, square to the line between the two groups, splits
   // it. Each half follows its group, one zoom fits both groups, and the halves slide back into one when the groups meet.
+  // 1.16.1: the line is 19 px a tile (a gap about a fifth smaller than at 16); they join again at 19 x 1,12 = 21,3.
   const SPLIT = { k: 0, want: false, ang: 0, c: null, gid: new Map(), polys: null, tg: [null, null], cams: [null, null] };
-  const SPLIT_T = 16;
+  const SPLIT_T = 19;   // 1.16.1 (author: split a bit sooner, at a smaller distance between the groups): was 16 px a tile
   const splitSide = (sx, sy) => ((sx - cw / 2) * Math.cos(SPLIT.ang) + (sy - ch / 2) * Math.sin(SPLIT.ang)) > 0 ? 1 : 0;
   function splitPolys(ang) {   // the screen cut in two: [the side away from the direction, the side towards it]
     const n = [Math.cos(ang), Math.sin(ang)], c = [cw / 2, ch / 2], R = [[0, 0], [cw, 0], [cw, ch], [0, ch]];

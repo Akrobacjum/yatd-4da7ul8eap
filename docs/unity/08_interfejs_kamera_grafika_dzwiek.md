@@ -162,7 +162,7 @@ Warstwy (z-index): świeca/winieta 1, baner 2, coach 3, `#fx` 6, `#tip` 8, overl
 | `hungry` | fala/podsumowanie, niesyte | "serce X/N" (różowa `#ff9aa6`) | bicie 0,55 s; pasek czerwony gradient `#e0505c`→`#8a1a28`→`#5c0e16` z połyskiem 2,8 s |
 | `fed` | najedzone | "serce syte" (`--bile`) | ♥ `--bile`, bicie 1,8 s, pasek zielony `#b4dc84`→`#557a33`→`#34501f` |
 
-Wypełnienie paska = `fl.fed / need` (animacja szerokości 0,25 s). Orb dolatujący do ♥ powiększa je (`heartHit`, skala 1,55, 0,32 s). Element `#h-hmark` (znacznik progu) jest zawsze ukryty.
+Wypełnienie paska = `fl.fed / need` (animacja szerokości 0,25 s). Od 1.16.1 `fl.fed` rośnie przy każdym zdarzeniu Grozy (`heartLive`, sekcja 03, 2.4), więc pasek rusza od razu, a nie dopiero przy wypłacie serii; czerwone orby lecą wtedy z pola wyniku do ♥ co ok. 0,6 Esencji. Orb dolatujący do ♥ powiększa je (`heartHit`, skala 1,55, 0,32 s). Element `#h-hmark` (znacznik progu) jest zawsze ukryty.
 
 ### 2.3 Równanie Groza × Chciwość × Combo = Esencja (`updateHud`, `p0_head.html: .eqrow`)
 
@@ -551,7 +551,7 @@ Działa tylko w fali, gdy nie ma pauzy, pasek jest zwinięty i nie ma ręcznego 
 
 Pomysł autora (jak w grach LEGO): gdy drużyna rozejdzie się tak, że nie mieści się na ekranie w czytelnej skali, linia przez środek ekranu (prostopadła do kierunku między grupami) dzieli go na dwie połówki, każda z własną kamerą.
 
-- **Warunek** (`want`): ustawienie `split` ≠ 0, ≥ 2 żywych i widocznych bohaterów, `fitScale < SPLIT_T` (cały loch nie mieści się w 16 px na jednostkę) i skala potrzebna, żeby zmieścić wszystkich, `< SPLIT_T` (16) (×1,12 histerezy, gdy już podzielony).
+- **Warunek** (`want`): ustawienie `split` ≠ 0, ≥ 2 żywych i widocznych bohaterów, `fitScale < SPLIT_T` (cały loch nie mieści się w 19 px na jednostkę) i skala potrzebna, żeby zmieścić wszystkich, `< SPLIT_T` (19; do 1.16 było 16) (×1,12 histerezy, gdy już podzielony, czyli połówki łączą się przy 21,3). Od 1.16.1 (autor: dzielić trochę wcześniej) ekran dzieli się przy grupach ok. 1/5 bliżej siebie niż przy 16.
 - **Grupy**: k-średnie na 2 grupy, 4 rundy, start od poprzednich środków albo od dwóch najdalszych bohaterów. Pułapka trwającego checku dołącza do bliższej grupy.
 - **Kąt** linii: kierunek między środkami grup; po podziale obraca się najwyżej 2,4 rad/s.
 - **Kamery połówek**: każda kadruje swoją grupę w swoim wielokącie (margines 2,2, 0,9 dopasowania), wspólna skala `clamp(min(s0, s1), fitScale, 34)`, wygładzanie `1 - exp(-rdt × 3)`.

@@ -2496,8 +2496,25 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (comboLive()) C.trap = true;
     if (h && h.id != null) { C.who.set(h.id, (C.who.get(h.id) || 0) + g); h.accG = (h.accG || 0) + g; grozaOrbs(h, g); }   // the numbers over the heroes show Groza now (violet); 1.02: violet orbs fly to the equation
     if (stat) fl.stats[stat] = (fl.stats[stat] || 0) + e;
+    fl.prov = (fl.prov || 0) + e;   // 1.16.1: what the events were worth at the moment (an element's Esencja on its card)
+    heartLive(e, C);
     return e;
   }
+  // 1.16.1 (author: the heart's bar should not wait for the combo to end): the hungry heart eats every event's worth at the
+  // multipliers of the moment, as it comes. That much of the wave's Esencja is in at once (fl.score); when the chain is cashed
+  // in, only what the combo made on top of it is left to share out (the heart first, then your purse), so the totals are the
+  // same as before: the payout is never less than what the chain was worth as it went (greed and combo only go up in a chain).
+  function heartLive(e, C) {
+    const need = hungerNeed(run.wave);
+    if (!(e > 0) || !(need > 0) || fl.fed >= need || fl.phase !== 'raid') return;
+    const take = Math.min(e, need - fl.fed);
+    fl.fed += take; C.fedLive = (C.fedLive || 0) + take; fl.score += take; fl.stats.essHeart = (fl.stats.essHeart || 0) + take;
+    fl.heartOrb = (fl.heartOrb || 0) + take;
+    const full = fl.fed >= need - 1e-6;
+    if (fl.heartOrb >= 0.6 || full) { gainEssence('eq', 0, 'essWave', fl.heartOrb); fl.heartOrb = 0; }   // red orbs from the equation to the heart, a few, not one per event
+    if (full) heartFull(need);
+  }
+  function heartFull(need) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Serce syte!', '#ff9aa4', 16, -1.4); }
   // the chain ends: a trap chain when the combo clock runs out, a chain without a trap after 1,2 s without Groza (at most 4 s)
   function chainTick() {
     const C = fl.chain; if (!C) return;
@@ -2509,10 +2526,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     fl.chain = null;
     const e = C.g * C.greed * C.cm * mods.regen * S.essK;
     fl.stats.comboPts = (fl.stats.comboPts || 0) + Math.max(0, e - C.prov);
-    fl.score += e;
+    const pre = Math.min(e, C.fedLive || 0);   // 1.16.1: the heart's share it already ate as the chain went
+    fl.score += e - pre;
     fl.lastPay = { g: C.g, greed: C.greed, cm: C.cm, e, t: fl.time, n: ++payN };
     if (C.cm > 1 || e >= 1) tl('cp', Math.round(C.g * 100) / 100, Math.round(C.cm * 100) / 100, Math.round(e * 10) / 10);
-    essIn(e, C.who);
+    essIn(e - pre, C.who);
     if (e >= 1) tutPop('pay');
     return e;
   }
@@ -2523,7 +2541,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     let heart = 0;
     if (need > 0 && fl.fed < need) {
       heart = Math.min(e, need - fl.fed); fl.fed += heart;
-      if (fl.fed >= need - 1e-6) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Serce syte!', '#ff9aa4', 16, -1.4); }
+      if (fl.fed >= need - 1e-6) heartFull(need);
     }
     let rest = e - heart;
     if (rest > 0 && need > 0 && fl.fed >= need && mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
@@ -3070,7 +3088,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (run.returners) run.returners = run.returners.filter(r => r.used !== run.wave);   // the returners of this wave are in
     fl.base = 0; setGreed(greedStartNow());   // tales of gold, and gold already carried off, make them greedier
     run.greedNext = 0;   // the tales of treasure from the last wave are used up
-    fl.chain = null; fl.lastPay = null; fl.fed = 0; fl.fedAt = -1;   // 1.01: a fresh combo chain and an empty heart for this wave
+    fl.chain = null; fl.lastPay = null; fl.fed = 0; fl.fedAt = -1; fl.prov = 0; fl.heartOrb = 0;   // 1.01: a fresh combo chain and an empty heart for this wave
     applyRumors();
     chooseEntrance();
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && isRt(roomOf(m.x, m.y), 'crypt')) m.hp = Math.round(m.max * 1.25); });   // Krypta: +25% HP for this wave
@@ -3933,7 +3951,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function fireRaw(it, pw, opt) {
     pw = pw || 1; opt = opt || {};
     if (!fl || fl.phase !== 'raid' || !ACTIVE[it.type] || it.disabled || (it.cd > 0 && !opt.echo) || it.jamUntil > fl.time || (MONSTERS[it.type] && it.hp <= 0)) return false;
-    const basePw = pw, boost = trapBoost(it), s0 = fl.score, k0 = fl.stats.kills;
+    const basePw = pw, boost = trapBoost(it), s0 = fl.prov || 0, k0 = fl.stats.kills;   // 1.16.1: s0 counts what this firing is worth (fl.score only moves when a chain is cashed in, so a card nearly always said 0)
     if (calmReady(it) && !opt.echo) floatTile(it.x, it.y, 'Cisza przed burzą ×' + fmt2(1 + mods.calmStorm).replace(',00', ''), '#ffd27a', 13, -1.4);
     pw *= boost * lvlPow(it) * kindPow(it) * mods.pactPower;   // upgrade level, 1.15: its komnata, and Krwawa umowa
     if (TRAPS[it.type]) it.lastFire = fl.time;
@@ -4189,7 +4207,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       fl.stats.chorus = (fl.stats.chorus || 0) + chorus.length;
       chorus.forEach(o => fire(o, basePw * k, { choir: true }));
     }
-    const w = it.w || (it.w = { f: 0, h: 0, p: 0, k: 0 }); w.f++; w.h += Math.max(0, hit); w.p += fl.score - s0; w.k += fl.stats.kills - k0;
+    const w = it.w || (it.w = { f: 0, h: 0, p: 0, k: 0 }); w.f++; w.h += Math.max(0, hit); w.p += (fl.prov || 0) - s0; w.k += fl.stats.kills - k0;
     if (hit > 0) {
       bt(it.type).hits += hit;
       if (fl.combo > 1) floatTile(it.x, it.y, 'Combo ×' + fmt2(comboMult), '#cbb0ff', 14, -0.75, 'combo');
@@ -6703,8 +6721,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // 1.03 (author's idea, like the LEGO games): when the party is in two places too far apart to fit on one screen at a
   // readable size (16 px a tile), a line through the middle of the screen, square to the line between the two groups, splits
   // it. Each half follows its group, one zoom fits both groups, and the halves slide back into one when the groups meet.
+  // 1.16.1: the line is 19 px a tile (a gap about a fifth smaller than at 16); they join again at 19 x 1,12 = 21,3.
   const SPLIT = { k: 0, want: false, ang: 0, c: null, gid: new Map(), polys: null, tg: [null, null], cams: [null, null] };
-  const SPLIT_T = 16;
+  const SPLIT_T = 19;   // 1.16.1 (author: split a bit sooner, at a smaller distance between the groups): was 16 px a tile
   const splitSide = (sx, sy) => ((sx - cw / 2) * Math.cos(SPLIT.ang) + (sy - ch / 2) * Math.sin(SPLIT.ang)) > 0 ? 1 : 0;
   function splitPolys(ang) {   // the screen cut in two: [the side away from the direction, the side towards it]
     const n = [Math.cos(ang), Math.sin(ang)], c = [cw / 2, ch / 2], R = [[0, 0], [cw, 0], [cw, ch], [0, ch]];
@@ -11061,7 +11080,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.16 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.16.1 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -11111,9 +11130,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.16'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.16.1'));
     const ul2 = el('ul', 'conseq');
-    ['1.16: bohaterowie mogą się rozdzielić celowo. Na naradzie przy rozwidleniu złodziej (a gdy go nie ma, czasem ktoś odważny) idzie na zwiad, w drużynie 4+ czasem z kimś do pary ("Idę z tobą"). Przy wejściu do nowego pokoju złodziej może powiedzieć "Zaczekajcie tu, sprawdzę, co dalej" i pójść przodem, a drużyna czeka na niego do 8 s (to działa także w lochu bez rozwidleń). Zwiadowca, który zobaczy jedno przejście, idzie do następnego po swojej stronie, dopóki ma czas. Na postoju zdrowy złodziej może iść się rozejrzeć, a nowicjusz, który rusza sam "sprawdzić tamte drzwi", też jest na zwiadzie. Taki bohater ma turkusowy pierścień i znaczek ›, a w karcie bohatera "na zwiadzie".',
+    ['1.16.1: pasek serca nie czeka na koniec combo. Serce je każde zdarzenie od razu, według mnożników z tej chwili, a gdy combo się kończy, dochodzi tylko to, co combo dołożyło (najpierw serce, potem Twoja sakiewka). Sumy z fali są takie same jak wcześniej.',
+     '1.16.1: ekran dzieli się trochę wcześniej, gdy grupy są ok. 1/5 bliżej siebie niż dotąd (próg 19 zamiast 16 pikseli na pole).',
+     '1.16.1: Esencja na karcie pułapki ("Ostatnia fala: ... Esencji") to teraz to, ile były warte jej odpalenia. Wcześniej było tam prawie zawsze 0, bo Esencja wpływa przy wypłacie serii, a nie w chwili odpalenia.',
+     '1.16: bohaterowie mogą się rozdzielić celowo. Na naradzie przy rozwidleniu złodziej (a gdy go nie ma, czasem ktoś odważny) idzie na zwiad, w drużynie 4+ czasem z kimś do pary ("Idę z tobą"). Przy wejściu do nowego pokoju złodziej może powiedzieć "Zaczekajcie tu, sprawdzę, co dalej" i pójść przodem, a drużyna czeka na niego do 8 s (to działa także w lochu bez rozwidleń). Zwiadowca, który zobaczy jedno przejście, idzie do następnego po swojej stronie, dopóki ma czas. Na postoju zdrowy złodziej może iść się rozejrzeć, a nowicjusz, który rusza sam "sprawdzić tamte drzwi", też jest na zwiadzie. Taki bohater ma turkusowy pierścień i znaczek ›, a w karcie bohatera "na zwiadzie".',
      '1.16: zwiad nabija Grozę wolniej niż zgubienie: 0,04 na sekundę i lekki strach, dopóki zwiadowca jest z dala od drużyny (sam bez planu: 0,09; zgubiony: 0,12, zwykle do tego samotność i mocny strach). Zwiadowca, który zabłądzi we mgle, nie znajdzie drogi albo zgubi się w drodze powrotnej, staje się zgubionym i od razu płaci pełną stawkę. Pułapki, które polują na samotnych (oczy, cień), widzą samotnego zwiadowcę jako samotnego.',
      '1.16: podsumowanie fali ma wiersz Zwiad (celowo osobno), Szczegóły pokazują czas na zwiadzie, w samotności i zgubionych, a wśród ciekawostek może trafić się Rozdzieleni.',
      '1.16: zły skręt przywódcy i błądzenie we mgle kończą się po swoim czasie. Wcześniej potrafiły wisieć dłużej, gdy przywódca zbierał łup, i blokowały nowe pomyłki.',

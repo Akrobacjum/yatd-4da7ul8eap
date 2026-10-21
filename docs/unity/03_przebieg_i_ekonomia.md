@@ -16,9 +16,10 @@ Inne sekcje: generowanie bohaterów i fal, gildia, powracający, wyłom: **sekcj
 | Chciwość | `fl.greed` | Mnożnik. Startuje z wartości liczonej na początku fali, rośnie od łupu. Tylko rośnie w trakcie fali. |
 | Combo | `fl.combo` (stopień 1..7), mnożnik `1 + 0,25 × (combo - 1)` | Mnożnik serii różnych pułapek odpalonych w oknie czasowym. |
 | Esencja | `fl.essence` (sakiewka na żywo), `run.essence` (kopia do zapisu) | Jedyna waluta. Esencja = Groza × Chciwość × Combo (× Żyła esencji). |
-| Esencja z fali | `fl.score` | Suma wszystkich wypłat serii w tej fali (z częścią serca). Wyświetlana jako "+X Esencji z fali". |
+| Esencja z fali | `fl.score` | Suma wszystkich wypłat serii w tej fali (z częścią serca; od 1.16.1 część serca wpada w chwili zdarzenia, 2.4). Wyświetlana jako "+X Esencji z fali". |
 | Żniwo runu | `run.total` | Suma `fl.score` ze wszystkich fal. Wyznacza rangę i rekord. |
 | Serce syte | `fl.fed`, `fl.fedAt` | Ile Esencji z tej fali zjadło już serce i kiedy się najadło. |
+| Wartość chwilowa | `fl.prov`, `fl.heartOrb` | 1.16.1: suma wartości chwilowych zdarzeń fali (Esencja elementu na jego karcie) i zebrana część serca czekająca na czerwone orby. |
 
 Zasady portu ogólne:
 - JS `Math.round` zaokrągla połówki w górę (`floor(x + 0,5)`). W C# `Math.Round` domyślnie zaokrągla "do parzystej". Wszędzie, gdzie prototyp używa `Math.round`, w Unity użyj `Mathf.Floor(x + 0.5f)` albo `MidpointRounding.AwayFromZero`. Dotyczy m.in. `hungerNeed`, `priceOf`, `sellOf`.
@@ -192,7 +193,7 @@ run.returners = run.returners.filter(r => r.used !== run.wave)
 fl.base = 0
 setGreed(greedStartNow())          // 2.6
 run.greedNext = 0                  // opowieści zużyte
-fl.chain = null; fl.lastPay = null; fl.fed = 0; fl.fedAt = -1
+fl.chain = null; fl.lastPay = null; fl.fed = 0; fl.fedAt = -1; fl.prov = 0; fl.heartOrb = 0   // 1.16.1: prov, heartOrb
 applyRumors()                      // sekcja 04/06; widziany z plotek łup od razu podbija chciwość (2.6)
 chooseEntrance()                   // sekcja 04
 Krypta: potwory w krypcie dostają hp = round(max × 1,25) na tę falę
@@ -325,15 +326,16 @@ Luka: przy przegranej (kryształy 0) zapis `'summary'` nie powstaje, a zapis `'b
 ### 2.1 Model
 
 ```
-każde zdarzenie e (rana, strach, śmierć...) daje Grozę g(e) >= 0
+każde zdarzenie e (rana, strach, śmierć...) daje Grozę g(e) >= 0, warte teraz e = g × fl.greed × cm × mods.regen × S.essK
+1.16.1: dopóki serce nie jest syte, zjada e od razu (heartLive): fl.fed += take, fl.score += take, C.fedLive += take
 Groza zbiera się w serii (fl.chain) tak długo, jak trwa combo
-wypłata serii:  E = C.g × C.greed × C.cm × mods.regen
-fl.score += E
-essIn(E):  najpierw serce bierze do potrzeby hungerNeed(fala), reszta -> sakiewka (fl.essence)
+wypłata serii:  E = C.g × C.greed × C.cm × mods.regen × S.essK;  pre = min(E, C.fedLive)
+fl.score += E - pre
+essIn(E - pre):  najpierw serce bierze do potrzeby hungerNeed(fala), reszta -> sakiewka (fl.essence)
 po fali:   przychód (stały + karty) -> sakiewka
 ```
 
-Esencja trafia do sakiewki tylko z: wypłat serii (`essIn`, reszta po sercu), Obżarstwa, Żniw strachu, relikwii, odnawiania (`regenBase`, domyślnie 0), przychodu po fali, sprzedaży kart, zwrotów za zdjęte elementy i zasypane pokoje, karty Zastrzyk Esencji. `fl.score` i `run.total` liczą wyłącznie wypłaty serii (z częścią serca).
+Esencja trafia do sakiewki tylko z: wypłat serii (`essIn`, reszta po sercu), Obżarstwa, Żniw strachu, relikwii, odnawiania (`regenBase`, domyślnie 0), przychodu po fali, sprzedaży kart, zwrotów za zdjęte elementy i zasypane pokoje, karty Zastrzyk Esencji. `fl.score` i `run.total` liczą wyłącznie wypłaty serii (z częścią serca); od 1.16.1 część serca wpada do `fl.score` już w chwili zdarzenia, a wypłata dokłada resztę, więc suma po serii jest ta sama.
 
 ### 2.2 Źródła Grozy
 
@@ -413,7 +415,7 @@ isEdgeRoom(r) = fl.rooms[r].dist >= fl.maxD - 1
 ```
 if !(g > 0) || !fl: return 0
 cm = 1 + 0.25 × (comboNow() - 1)
-e  = g × fl.greed × cm × mods.regen                 // wartość chwilowa
+e  = g × fl.greed × cm × mods.regen × S.essK        // wartość chwilowa (S.essK = 1,1, 2.5)
 fl.base += g
 C = fl.chain || (fl.chain = { g: 0, prov: 0, cm: 1, greed: fl.greed, t0: fl.time, last: fl.time, trap: false, who: Map, n: 0 })
 C.g += g; C.prov += e; C.last = fl.time; C.n++
@@ -421,8 +423,22 @@ C.cm = max(C.cm, cm); C.greed = max(C.greed, fl.greed)
 if comboLive(): C.trap = true
 if h: C.who[h.id] += g; h.accG += g; grozaOrbs(h, g)    // UI
 if stat: fl.stats[stat] += e
+fl.prov += e                                         // 1.16.1: suma wartości chwilowych fali (Esencja elementu na jego karcie, 05)
+heartLive(e, C)                                      // 1.16.1
 return e
 ```
+
+`heartLive(e, C)` (`p3_flow.js`, od 1.16.1; autor: pasek serca nie ma czekać na koniec combo):
+```
+need = hungerNeed(run.wave)
+if !(e > 0) || !(need > 0) || fl.fed >= need || fl.phase !== 'raid': return
+take = min(e, need - fl.fed)
+fl.fed += take; C.fedLive += take; fl.score += take; fl.stats.essHeart += take
+fl.heartOrb += take
+if fl.heartOrb >= 0.6 || serce syte: gainEssence('eq', 0, 'essWave', fl.heartOrb); fl.heartOrb = 0   // czerwone kule do serca, kilka, nie jedna na zdarzenie
+if fl.fed >= need - 1e-6: heartFull(need)            // fl.fed = need; fl.fedAt = fl.time; tl('hg','full'); "Serce syte!"
+```
+Serce je według chwilowych mnożników; resztę, którą combo dokłada wstecz, dostaje przy wypłacie (`essIn`). Ponieważ `E >= C.prov >= C.fedLive`, serce nigdy nie zje więcej, niż seria w końcu jest warta, a sumy fali (`fl.score`, `essHeart`, `essWave`, `essGlut`) są takie same jak przy jedzeniu tylko przy wypłatach. `fl.prov` i `fl.heartOrb` zerowane w `startWave`.
 
 `chainTick()` (`p3_flow.js: chainTick`, wołane w każdym kroku `p6_loop.js: step`, zaraz po `fl.cclock += dt`):
 ```
@@ -438,14 +454,15 @@ Dodatkowo `p4_traps.js: fireRaw` wypłaca starą serię pułapkową, gdy nowa pu
 ```
 C = fl.chain; if !C: return 0
 fl.chain = null
-E = C.g × C.greed × C.cm × mods.regen
+E = C.g × C.greed × C.cm × mods.regen × S.essK
 fl.stats.comboPts += max(0, E - C.prov)
-fl.score += E
+pre = min(E, C.fedLive || 0)                                             // 1.16.1: co serce już zjadło z tej serii
+fl.score += E - pre
 fl.lastPay = { g: C.g, greed: C.greed, cm: C.cm, e: E, t: fl.time, n }   // HUD pokazuje wypłatę przez 1,6 s
-essIn(E, C.who)                                                          // 2.7
+essIn(E - pre, C.who)                                                    // 2.7
 ```
 
-Ponieważ `C.greed` i `C.cm` to maksima, `E >= C.prov` zawsze. Inwariant (do testów): `dmgPts + fearPts + scarePts + killPts + lootPts + crystalPts + lostPts + lonePts + healPts + comboPts == fl.score` (z dokładnością do zaokrągleń; `edgePts` jest poza tą sumą, bo jest w jednostkach Grozy i już zawiera się w `dmgPts`).
+Ponieważ `C.greed` i `C.cm` to maksima, `E >= C.prov` zawsze. Inwariant (do testów): `dmgPts + fearPts + scarePts + killPts + lootPts + crystalPts + lostPts + lonePts + splitPts + healPts + comboPts == fl.score` (z dokładnością do zaokrągleń; `edgePts` jest poza tą sumą, bo jest w jednostkach Grozy i już zawiera się w `dmgPts`).
 
 ### 2.5 Combo
 
@@ -573,21 +590,21 @@ Bez kart: fala 2: 37, 3: 46, 4: 58, 5: 72, 6: 90, 7: 113, 8: 141, 9: 176, 10: 22
 
 Modyfikatory: Zakład z sercem `hungerK ×1,3`, Post `hungerK ×0,85`, Spichlerz dusz: każda śmierć bohatera, gdy karta jest w talii, dodaje 1 do `run.stacks.granary` (`p3_flow.js: kill`), a potrzeba spada o `stacks × liczba kopii`. Potrzeba jest liczona przy każdej wypłacie, więc zabójstwo z Spichlerzem obniża ją jeszcze w tej samej fali.
 
-**Wpływ Esencji** (`p3_flow.js: essIn`):
+**Wpływ Esencji** (`p3_flow.js: essIn`; od 1.16.1 dostaje z wypłaty tylko `E - pre`, bo resztę serce zjadło w `heartLive`, 2.4):
 ```
 essIn(e):
     if !(e > 0): return
     need = hungerNeed(run.wave); heart = 0
     if need > 0 && fl.fed < need:
         heart = min(e, need - fl.fed); fl.fed += heart
-        if fl.fed >= need - 1e-6: fl.fed = need; fl.fedAt = fl.time      // "Serce syte!"
+        if fl.fed >= need - 1e-6: heartFull(need)                           // fl.fed = need; fl.fedAt = fl.time; "Serce syte!"
     rest = e - heart
     if rest > 0 && need > 0 && fl.fed >= need && mods.storeK > 1:     // Obżarstwo
         x = rest × (mods.storeK - 1); rest += x; fl.stats.essGlut += x
     fl.stats.essHeart += heart
     gainEssence('eq', rest, 'essWave', heart)
 ```
-Serce je pierwsze: dopóki nie jest syte, cała Esencja z wypłat idzie do serca, sakiewka nie dostaje nic. Część serca nie trafia do sakiewki, ale liczy się do `fl.score` i `run.total`. Bonus Obżarstwa trafia tylko do sakiewki (nie do `fl.score`). W fali 1 (`need = 0`) wszystko idzie do sakiewki, Obżarstwo nie działa.
+Serce je pierwsze: dopóki nie jest syte, cała Esencja (od 1.16.1 na bieżąco, w `heartLive`, a dopłata combo przy wypłacie) idzie do serca, sakiewka nie dostaje nic. Część serca nie trafia do sakiewki, ale liczy się do `fl.score` i `run.total`. Bonus Obżarstwa trafia tylko do sakiewki (nie do `fl.score`). W fali 1 (`need = 0`) wszystko idzie do sakiewki, Obżarstwo nie działa.
 
 **Rozliczenie na końcu fali** (`p3_flow.js: feedHeart`, w `finishWave` po `payChain`):
 ```
@@ -599,7 +616,7 @@ if !fed: run.crystals = max(0, run.crystals - 1); fl.hunger.ate = true; fl.stats
 ```
 Fala, która nie nakarmiła serca: serce zjada wszystko, co dostało w tej fali (już zabrane w `essIn`), i jeden kryształ. Nie ma zapasu między falami (od 1.01). Jeżeli kryształy spadły do 0 przez kradzież w tej fali, rozliczenie głodu jest pomijane (`fl.hunger = null`).
 
-HUD (sekcja 08): pasek ♥ pokazuje `min(fl.fed, need) / need` w fali i "serce chce N z fali" w budowie.
+HUD (sekcja 08): pasek ♥ pokazuje `min(fl.fed, need) / need` w fali (od 1.16.1 rośnie przy każdym zdarzeniu, nie dopiero przy wypłacie serii) i "serce chce N z fali" w budowie.
 
 ### 2.8 `gainEssence` i rodzaje wpływów (`p6_loop.js: gainEssence`)
 
@@ -614,7 +631,7 @@ gainEssence(from, amt, stat, heart):
 | `stat` | Źródło | Wywołanie |
 |---|---|---|
 | `essWave` | reszta wypłaty serii po sercu (+Obżarstwo) | `p3_flow.js: essIn` |
-| `essHeart` | część serca (nie trafia do sakiewki, tylko statystyka) | `p3_flow.js: essIn` |
+| `essHeart` | część serca (nie trafia do sakiewki, tylko statystyka) | `p3_flow.js: heartLive` (1.16.1), `essIn` |
 | `essGlut` | dodatek Obżarstwa (już wliczony w `essWave`) | `p3_flow.js: essIn` |
 | `essFear` | Żniwa strachu: `mods.fearHarvest` (2 na kopię) za przestraszonego uciekiniera, bez mnożników | `p3_flow.js: heroExit` |
 | `essDrop` | Relikwia zabrana (nie upuszczona przez bohatera): +4 | `p3_flow.js: pickup` |

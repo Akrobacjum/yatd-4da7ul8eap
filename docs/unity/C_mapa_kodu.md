@@ -109,6 +109,8 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16) z pierws
 | `addPts` |  |
 | `chainTick` | the chain ends: a trap chain when the combo clock runs out, a chain without a trap after 1,2 s without Groza (at most 4 s) |
 | `payChain` |  |
+| `heartLive` | 1.16.1: the hungry heart eats every event's worth at the multipliers of the moment, as it comes (the chain's payout only adds what the combo made on top) |
+| `heartFull` | 1.16.1: the heart is fed: fl.fed = need, fl.fedAt, 'Serce syte!' |
 | `essIn` | Esencja comes in: the hungry heart takes its share first, the rest goes to the purse (Obżarstwo: x1,25 once it is fed) |
 | `setGreed` |  |
 | `greedCurve` | half as hard as at x1, at x3 a third. Exactly: greed = sqrt(2 x raw - 1), where raw is the plain sum of what made it (the way greed was counted up to 1.09.1): raw 2 = x1,73, raw 3 = x2,24, raw 5,4 = x3,12. The greed... |

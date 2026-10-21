@@ -61,7 +61,7 @@ Czym gra NIE jest: bez energii i timerów, nie test refleksu (check to wyczucie 
 
 Rdzeń to skill check: gracz robi go setki razy w runie, więc ma bawić bez ulepszeń. Wyróżnik wobec konkurencji: ekonomia z cierpienia bohaterów (Groza × Chciwość × Combo), żywe reakcje bohaterów i checki w trakcie fali.
 
-## 1.4 Liczby w pigułce (Prototype 1.12.1)
+## 1.4 Liczby w pigułce (Prototype 1.16.1)
 
 | Rzecz | Wartość | Gdzie szczegóły |
 |---|---|---|
@@ -70,7 +70,7 @@ Rdzeń to skill check: gracz robi go setki razy w runie, więc ma bawić bez ule
 | Esencja na start | 30, z czego loch od razu stawia kolce i strzały (6), zostaje 24 | 03 |
 | Przychód po fali | +8 (`DEFAULTS.waveIncome`) plus karty | 03 |
 | Drużyna | 3 bohaterów w falach 1-3 (w pierwszym runie z przewodnikiem fala 1: 2 nowicjuszy), 4 w falach 4-10, czempion i legenda jako piąty, 5 od fali 11, 6 od fali 15 | 04 |
-| Głód serca | od fali 2: 37 × 1,25^(fala - 2) (37, 46, 58, 72, 90, 113, 141, 176, 221); serce zjada pierwsze porcje, fala poniżej progu oddaje wszystko i kryształ | 03 |
+| Głód serca | od fali 2: 37 × 1,25^(fala - 2) (37, 46, 58, 72, 90, 113, 141, 176, 221); serce zjada pierwsze porcje (od 1.16.1 na bieżąco, przy każdym zdarzeniu), fala poniżej progu oddaje wszystko i kryształ | 03 |
 | Chciwość | √(2 · surowa − 1), rośnie coraz wolniej | 03 |
 | Combo | różne pułapki pod rząd, każda w 3 s od poprzedniej (w ciszy zegar płynie 4 razy wolniej); Esencja ×(1 + 0,25 na stopień, max ×2,5); obrażenia i strach +12% na stopień (max combo 7) | 03, 05 |
 | Esencja z Grozy | Groza × Chciwość × Combo × 1,1 (`S.essK`, 1.12.1) | 03 |
@@ -79,7 +79,10 @@ Rdzeń to skill check: gracz robi go setki razy w runie, więc ma bawić bez ule
 | Pole | jeden bohater na polu, jak potwory; dzielą pole tylko przy mijaniu (1.12.1) | 06 |
 | Talia | 7 miejsc, schowek 3 | 03 |
 | Ceny kart | zwykła 6, rzadka 10, legendarna 16, odblokowanie 8 | 03 |
-| Pierwsze runy | 4 etapy odsłaniania gry (1.12) | 03, 08 |
+| Pierwsze runy | 4 etapy odsłaniania gry (1.12); porady przewodnika w fali zatrzymują grę do zatwierdzenia albo wykonania (1.15.1) | 03, 08 |
+| Komnaty | 12 rodzajów po 12 Esencji (1.15): elementy rodziny w pokoju swojej komnaty mają cechę 3. poziomu, a na 3. poziomie +25% mocy (`KIND_POW` 1,25); nakładają się z 9 efektami pokoi | 05 |
+| Rozdzielenie | Groza na sekundę: zwiad 0,04, sam 0,09, zgubiony 0,12 (12 s, zwykle też samotność); strach: 1 / 2,5 / 4 (1.16) | 03, 06 |
+| Dzielony ekran | gdy cała drużyna zmieściłaby się na jednym ekranie tylko w skali poniżej 19 px na pole (1.16.1; było 16) | 08 |
 
 Wartości policzone przez sam prototyp (do testów jednostkowych w Unity): `data/golden_1.13.1.json`.
 
@@ -108,12 +111,17 @@ Każda z nich zapadła po testach i ma swoje uzasadnienie w historii projektu (d
 | 20.10 | 1.13: skill check u góry mapy, bo na telefonie kciuk zasłaniał go na dole (odpowiedź to nadal stuknięcie w dowolne miejsce mapy); spokój (samo przyspieszenie i wolniejszy zegar combo) trwa też w trakcie odpoczynku i narad, gdy ktoś siedzi w zapadni i gdy wszyscy są w klatkach. |
 | 20.10 | Meta (kolekcja, serce lochu) poza prototypem; prototyp miał tylko udowodnić pętlę. Dźwięki zostają, autor je lubi. |
 | 20.10 | Wygląd, działanie i dźwięk prototypu autor ocenił jako "fenomenalna robota": wersja w Unity ma go wiernie odtworzyć, a nie wymyślać od nowa. |
+| 21.10 | 1.14: podzakładki w pasku budowy (Rany / Strach), odkryte kartą pułapki i potwory zostają na kolejne runy. |
+| 21.10 | 1.15: komnaty (rodzaj pokoju dla rodziny pułapek i potworów) nakładają się z efektami mechanicznie i graficznie; drobne wypukłe przedmioty i cząsteczki zamiast malowania podłóg; wszystko poza postaciami ma bryłę. |
+| 21.10 | 1.15.1: każda porada przewodnika w fali zatrzymuje grę do zatwierdzenia albo wykonania; podzakładki zawsze widoczne. |
+| 21.10 | 1.16: bohaterowie mogą się zgubić (Groza jak dotąd), ale mogą też rozdzielić się celowo, np. na zwiad, co nabija Grozę wolniej. |
+| 21.10 | 1.16.1: pasek serca nie czeka na koniec combo; ekran dzieli się trochę wcześniej. Tego dnia autor pierwszy raz od utrudnienia gry przeszedł 10 fal. |
 
 ## 1.6 Co jest w prototypie, a czego nie ma
 
 | W prototypie (do przeniesienia 1:1) | Planowane, poza prototypem |
 |---|---|
-| cały run 10 fal + fale bez końca, 6 klas, 16 pułapek, 8 potworów, 5 rodzajów łupu, 8 budowli-kontr, skrzynia, 9 typów pokoi, 113 kart | meta między runami: serce lochu (organy), kolekcja, trofea |
+| cały run 10 fal + fale bez końca, 6 klas, 16 pułapek, 8 potworów, 5 rodzajów łupu, 8 budowli-kontr, skrzynia, 9 efektów pokoi (dawne typy pokoi), 12 komnat, 113 kart | meta między runami: serce lochu (organy), kolekcja, trofea |
 | AI bohaterów z rozmowami, gildia, powracający, wyłom, plotki | Infamia jako poziomy trudności po wygranej (jak stawki w Balatro) |
 | sklep, talia, schowek, rangi, rekordy | waluty: monety (miękka) i Dusze (premium), nagrody |
 | pierwsze 4 runy z odsłanianiem, przewodnik, karty pierwszego spotkania | reklamy (odświeżenie oferty za reklamę jest tylko symulowane), kontynuacja za reklamę, zakupy |
@@ -123,7 +131,7 @@ Każda z nich zapadła po testach i ma swoje uzasadnienie w historii projektu (d
 
 | Co | Gdzie |
 |---|---|
-| Zachowanie gry (ostateczne) | kod prototypu: repo `Akrobacjum/yatd-4da7ul8eap`, katalog `src/` (Prototype 1.14, commit z 21.10.2026). Gdy GDD i kod się różnią, rację ma kod. |
+| Zachowanie gry (ostateczne) | kod prototypu: repo `Akrobacjum/yatd-4da7ul8eap`, katalog `src/` (Prototype 1.16.1, commit z 21.10.2026). Gdy GDD i kod się różnią, rację ma kod. |
 | Grywalny prototyp | https://akrobacjum.github.io/yatd-4da7ul8eap/ (najnowsza wersja) oraz `archiwum/` w repo (każda wersja jako jedna strona) |
 | Projekt i uzasadnienia | GDD "GDD - You are the dungeon" (dokument w Claude: https://claude.ai/code/artifact/c213e326-fe7e-4be8-b628-1b869b576d8d) |
 | Historia decyzji, rynek, harmonogram | dokument projektu `claude/analiza-rynku-i-plan.md` w projekcie Claude "You Are The Dungeon" |

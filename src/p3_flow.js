@@ -43,8 +43,25 @@
     if (comboLive()) C.trap = true;
     if (h && h.id != null) { C.who.set(h.id, (C.who.get(h.id) || 0) + g); h.accG = (h.accG || 0) + g; grozaOrbs(h, g); }   // the numbers over the heroes show Groza now (violet); 1.02: violet orbs fly to the equation
     if (stat) fl.stats[stat] = (fl.stats[stat] || 0) + e;
+    fl.prov = (fl.prov || 0) + e;   // 1.16.1: what the events were worth at the moment (an element's Esencja on its card)
+    heartLive(e, C);
     return e;
   }
+  // 1.16.1 (author: the heart's bar should not wait for the combo to end): the hungry heart eats every event's worth at the
+  // multipliers of the moment, as it comes. That much of the wave's Esencja is in at once (fl.score); when the chain is cashed
+  // in, only what the combo made on top of it is left to share out (the heart first, then your purse), so the totals are the
+  // same as before: the payout is never less than what the chain was worth as it went (greed and combo only go up in a chain).
+  function heartLive(e, C) {
+    const need = hungerNeed(run.wave);
+    if (!(e > 0) || !(need > 0) || fl.fed >= need || fl.phase !== 'raid') return;
+    const take = Math.min(e, need - fl.fed);
+    fl.fed += take; C.fedLive = (C.fedLive || 0) + take; fl.score += take; fl.stats.essHeart = (fl.stats.essHeart || 0) + take;
+    fl.heartOrb = (fl.heartOrb || 0) + take;
+    const full = fl.fed >= need - 1e-6;
+    if (fl.heartOrb >= 0.6 || full) { gainEssence('eq', 0, 'essWave', fl.heartOrb); fl.heartOrb = 0; }   // red orbs from the equation to the heart, a few, not one per event
+    if (full) heartFull(need);
+  }
+  function heartFull(need) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Serce syte!', '#ff9aa4', 16, -1.4); }
   // the chain ends: a trap chain when the combo clock runs out, a chain without a trap after 1,2 s without Groza (at most 4 s)
   function chainTick() {
     const C = fl.chain; if (!C) return;
@@ -56,10 +73,11 @@
     fl.chain = null;
     const e = C.g * C.greed * C.cm * mods.regen * S.essK;
     fl.stats.comboPts = (fl.stats.comboPts || 0) + Math.max(0, e - C.prov);
-    fl.score += e;
+    const pre = Math.min(e, C.fedLive || 0);   // 1.16.1: the heart's share it already ate as the chain went
+    fl.score += e - pre;
     fl.lastPay = { g: C.g, greed: C.greed, cm: C.cm, e, t: fl.time, n: ++payN };
     if (C.cm > 1 || e >= 1) tl('cp', Math.round(C.g * 100) / 100, Math.round(C.cm * 100) / 100, Math.round(e * 10) / 10);
-    essIn(e, C.who);
+    essIn(e - pre, C.who);
     if (e >= 1) tutPop('pay');
     return e;
   }
@@ -70,7 +88,7 @@
     let heart = 0;
     if (need > 0 && fl.fed < need) {
       heart = Math.min(e, need - fl.fed); fl.fed += heart;
-      if (fl.fed >= need - 1e-6) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Serce syte!', '#ff9aa4', 16, -1.4); }
+      if (fl.fed >= need - 1e-6) heartFull(need);
     }
     let rest = e - heart;
     if (rest > 0 && need > 0 && fl.fed >= need && mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
@@ -617,7 +635,7 @@
     if (run.returners) run.returners = run.returners.filter(r => r.used !== run.wave);   // the returners of this wave are in
     fl.base = 0; setGreed(greedStartNow());   // tales of gold, and gold already carried off, make them greedier
     run.greedNext = 0;   // the tales of treasure from the last wave are used up
-    fl.chain = null; fl.lastPay = null; fl.fed = 0; fl.fedAt = -1;   // 1.01: a fresh combo chain and an empty heart for this wave
+    fl.chain = null; fl.lastPay = null; fl.fed = 0; fl.fedAt = -1; fl.prov = 0; fl.heartOrb = 0;   // 1.01: a fresh combo chain and an empty heart for this wave
     applyRumors();
     chooseEntrance();
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && isRt(roomOf(m.x, m.y), 'crypt')) m.hp = Math.round(m.max * 1.25); });   // Krypta: +25% HP for this wave

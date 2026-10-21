@@ -78,7 +78,7 @@
   function fireRaw(it, pw, opt) {
     pw = pw || 1; opt = opt || {};
     if (!fl || fl.phase !== 'raid' || !ACTIVE[it.type] || it.disabled || (it.cd > 0 && !opt.echo) || it.jamUntil > fl.time || (MONSTERS[it.type] && it.hp <= 0)) return false;
-    const basePw = pw, boost = trapBoost(it), s0 = fl.score, k0 = fl.stats.kills;
+    const basePw = pw, boost = trapBoost(it), s0 = fl.prov || 0, k0 = fl.stats.kills;   // 1.16.1: s0 counts what this firing is worth (fl.score only moves when a chain is cashed in, so a card nearly always said 0)
     if (calmReady(it) && !opt.echo) floatTile(it.x, it.y, 'Cisza przed burzą ×' + fmt2(1 + mods.calmStorm).replace(',00', ''), '#ffd27a', 13, -1.4);
     pw *= boost * lvlPow(it) * kindPow(it) * mods.pactPower;   // upgrade level, 1.15: its komnata, and Krwawa umowa
     if (TRAPS[it.type]) it.lastFire = fl.time;
@@ -334,7 +334,7 @@
       fl.stats.chorus = (fl.stats.chorus || 0) + chorus.length;
       chorus.forEach(o => fire(o, basePw * k, { choir: true }));
     }
-    const w = it.w || (it.w = { f: 0, h: 0, p: 0, k: 0 }); w.f++; w.h += Math.max(0, hit); w.p += fl.score - s0; w.k += fl.stats.kills - k0;
+    const w = it.w || (it.w = { f: 0, h: 0, p: 0, k: 0 }); w.f++; w.h += Math.max(0, hit); w.p += (fl.prov || 0) - s0; w.k += fl.stats.kills - k0;
     if (hit > 0) {
       bt(it.type).hits += hit;
       if (fl.combo > 1) floatTile(it.x, it.y, 'Combo ×' + fmt2(comboMult), '#cbb0ff', 14, -0.75, 'combo');
