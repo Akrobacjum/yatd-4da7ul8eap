@@ -1,8 +1,8 @@
 # 06. AI bohaterów i rozmowy
 
-Ta sekcja opisuje "mózg" drużyny bohaterów z prototypu (Prototype 1.12.1): kto prowadzi, dokąd idą, co wiedzą, kiedy biorą łup, kiedy się wycofują, szturmują serce albo uciekają, jak każda klasa używa swoich umiejętności i przedmiotów, oraz cały system mowy (dymki, kolejki, rozmowy, katalog kluczy `SAY`).
+Ta sekcja opisuje "mózg" drużyny bohaterów z prototypu (Prototype 1.12.1, uzupełniane do 1.17): kto prowadzi, dokąd idą, co wiedzą, kiedy biorą łup, kiedy się wycofują, szturmują serce albo uciekają, jak każda klasa używa swoich umiejętności i przedmiotów, oraz cały system mowy (dymki, kolejki, rozmowy, katalog kluczy `SAY`). Od 1.17 także: co kto widzi i słyszy (percepcja, plan każdego bohatera, wieści, 6.3.13), ciekawość (rozglądanie się po pokoju i dźwięki zza ściany, 6.3.3a) i narada na końcu cierpliwości (6.3.10a).
 
-Źródła: `p5_ai.js` (w całości), z `p3_flow.js` części: mowa (`say`, `sayTick`, `earshot`...), spawn i start fali (`spawnHero`, `regroupAtDoor`, `becomeImpatient`, `heroExit`), strach w zachowaniu (`addFear`, `startFlee`, `partyFlee`, `dropCrystal`, `crystalReturns`, `kill`), łupy (`noticeLoot`, `pickup`, `giveItem`, `dropItem`, `itemValue`, `curse`); z `p6_loop.js`: `step`, `takeCrystal`, `stealNeed`, `GATE_T`; z `p2_state_map.js`: przejezdność, wiedza o mapie, `bfs`; z `p4_traps.js`: `learnTrap`, `rebuildThreat`, `disarmSpots`, klatka, zapadnia, potwory (tylko to, co dotyczy decyzji bohaterów).
+Źródła: `p5_ai.js` (w całości), z `p3_flow.js` części: mowa (`say`, `sayTick`, `earshot`...), spawn i start fali (`spawnHero`, `regroupAtDoor`, `becomeImpatient`, `goHome`, `heroExit`), strach w zachowaniu (`addFear`, `startFlee`, `partyFlee`, `dropCrystal`, `crystalReturns`, `kill`), łupy (`noticeLoot`, `pickup`, `giveItem`, `dropItem`, `itemValue`, `curse`); z `p6_loop.js`: `step`, `takeCrystal`, `stealNeed`, `GATE_T`; z `p2_state_map.js`: przejezdność, wiedza o mapie, `bfs`; z `p4_traps.js`: `learnTrap`, `rebuildThreat`, `disarmSpots`, klatka, zapadnia, potwory (tylko to, co dotyczy decyzji bohaterów); z `p1_config.js`: `nameGen`, `nameFill`, `pickS` i tabele kwestii.
 
 Dane (katalog `spec/data/`): `SAY.json`, `CHAT_REPLY.json`, `HEROES.json`, `HERO_TRAITS.json`, `levelStats_1_30.json`, `LEADER_ORDER.json`, `SMASHABLE_OBJ.json`, `HITEMS.json`, `LOOT_GREED.json`, `LOOT_KIND.json`, `ITEMS.json`, `DRIFT.json`, `SCARE.json`, `CURSED.json`, `DISARMABLE.json`, `BUILDINGS.json`, `DEFAULTS.json`, `GZ.json`.
 
@@ -27,8 +27,17 @@ Konwencje:
 | `alive()` | bohaterowie nie `dead`, nie `fled`, nie `gone` (spadający przez zapadnię nie należy do żywych) | `p3_flow.js: alive` |
 | `caged(h)` | `h.state === 'caged'` | `p3_flow.js: caged` |
 | `panicking(h)` | `fl.time < h.panicUntil` | `p5_ai.js` |
-| `goingOut()` | `P.plan` to `'flee'`, `'leave'` albo `'escape'` | `p5_ai.js` |
-| `exiting(h)` | `h.fleeing` albo `h.crystal` albo `goingOut()`: bohater idzie do wyjścia | `p5_ai.js` |
+| `goingOut()` | `P.plan` to `'flee'`, `'leave'` albo `'escape'` (plan drużyny, czyli przywódcy) | `p5_ai.js` |
+| `planOf(h)` | 1.17: plan, który zna ten bohater: `h.plan || P.plan` (6.3.13) | `p5_ai.js` |
+| `goingOutH(h)` | 1.17: `planOf(h)` to `'flee'`, `'leave'` albo `'escape'` | `p5_ai.js` |
+| `exiting(h)` | `h.fleeing` albo `h.crystal` albo `h.goHome` (1.17: przegłosowany na naradzie wraca sam) albo `goingOutH(h)` (do 1.16 `goingOut()`): bohater idzie do wyjścia | `p5_ai.js` |
+| `samePlace(a, b)` | ten sam pokój albo korytarz (`roomOf(tx, ty)` równe i >= 0) albo odległość <= 3,5 pola | `p5_ai.js` |
+| `canSee(o, v)` | 1.17: `o` widzi to, co dzieje się z `v`: żaden nie spada w zapadni i `samePlace(o, v)` | `p5_ai.js` |
+| `canHear(o, v)` | 1.17: `o` słyszy zwykły głos `v`: żaden nie spada, żaden nie stoi w Głuszy (`hushAt`), `earshot(o, v)` (6.7.4) | `p5_ai.js` |
+| `canHearShout(o, v)` | 1.17: `o` słyszy krzyk `v`: `canHear` albo do 14 kroków po polach przejezdnych (`stepsWithin`, prosta odległość najwyżej 14), żaden w Głuszy ani w pokoju z Kamieniem wyjcem | `p5_ai.js` |
+| `perceives(o, v, shout)` | 1.17: `o === v` albo `canSee` albo (`shout` ? `canHearShout` : `canHear`) | `p5_ai.js` |
+| `groupOf(L)` | 1.17: grupa przywódcy: `L` i żywi, nie zgubieni, nie w klatce, którzy go widzą albo słyszą (`canSee`/`canHear`) | `p5_ai.js` |
+| `heartP()` | 1.17: drużyna (przywódca) wie, gdzie jest serce: `fl.heartKnown && P.heartSaid` (6.3.13) | `p5_ai.js` |
 | `held(h)` | stan `fight/wait/talk/rest/disarm/boss/free`, klatka albo sieć (dla mnożników obrażeń, sekcja 05) | `p3_flow.js: held` |
 | `webbed(h)` | `fl.time < h.slowUntil` | `p3_flow.js: webbed` |
 | `hdist(a, b)` | odległość euklidesowa między `heroPos(a)` i `heroPos(b)` (pozycje interpolowane w ruchu, z drobnym przesunięciem, patrz 6.2.1) | `p5_ai.js: hdist` |
@@ -68,13 +77,13 @@ step(dt):
   sayTick()                                                 // kwestie czekające na swoją kolej
   (próbka do logu co 1 s: tylko prototyp)
   fl.disarmKeys = pola obszarów pułapek, które ktoś teraz rozbraja (state 'disarm', item.detected)
-  if !fl.gateOpen && fl.time >= GATE_T (1.8): fl.gateOpen = true; alive()[0] mówi SAY.gate
+  if !fl.gateOpen && fl.time >= GATE_T (1.8): fl.gateOpen = true; przywódca (1.17: leader(), wcześniej alive()[0]) mówi SAY.gate
   if fl.gateOpen:
     for h of fl.heroes (nie dead, nie fled): updateHero(h, dt)   // tu jest planHero i ruch
     checkTick()                                                  // skill checki (sekcja 05)
   monstersTick(dt)
-  kradzież kryształu przy sercu (6.3.9)
-  if !fl.fearless && fl.ending === null && fl.time >= S.waveTime: becomeImpatient()   // 6.3.10
+  kradzież kryształu przy sercu (6.3.9); 1.17: nikt przy sercu -> P.steal maleje o 0.5/s
+  if !fl.fearless && fl.ending === null && fl.patT >= S.waveTime: becomeImpatient()   // 6.3.10; od 1.17 otwiera naradę (6.3.10a)
   if fl.ending === null && fl.time >= S.waveTime + 60: każdy żywy -> heroExit (siatka bezpieczeństwa)
   if kolejka pusta i wszyscy dead/fled: fl.ending = 1.2
   dymki: bubble.until <= time -> bubble = null
@@ -96,7 +105,12 @@ Ważne:
 | rozglądanie się | co `1.6 + rand*2.8` s, tylko w stanie `talk`/`wait` | `p5_ai.js: glance` |
 | small talk | `P.chatT` start `6`, potem `7 + rand*6` s | `p5_ai.js: partyThink` |
 | wołanie zgubionego | pierwsze `5` s po zgubieniu, potem co `6 + 3*rand` s | `p5_ai.js: getLost, partyThink` |
-| wołanie o kapłana | najwyżej co `14` s na rannego | `p5_ai.js: partyThink` |
+| przywódca zauważa brak zgubionego (1.17) | najwcześniej `4` s po zgubieniu, gdy go nie słyszy; szukanie do `14` s (do 1.16: decyzja od razu, `12` s) | `p5_ai.js: perceiveThink, missLost` |
+| wieść o śmierci (1.17) | co `0.25` s najwyżej jedna para "wie - nie wie" na każdą śmierć | `p5_ai.js: perceiveThink` |
+| narada po cierpliwości (1.17) | czeka na ciszę do `4` s, bez grupy po `8` s do domu; "jeszcze chwila" = `30` s cierpliwości, raz na falę | `p5_ai.js: councilThink, councilDone` |
+| rozglądanie się (1.17) | rzut `0.9` s po wejściu przywódcy do pokoju (raz na pokój); trwa najwyżej `10` s, oglądanie rzeczy `1.5-3` s, potem przerwa `18` s | `p5_ai.js: lookRoll, lookThink` |
+| dźwięk zza ściany (1.17) | najwyżej jeden na `10` s (`P.soundCd`); przywódca pamięta go `25` s | `p5_ai.js: hearFar, chooseTarget` |
+| wołanie o kapłana | najwyżej co `14` s na rannego; od 1.17 kapłan idzie najpierw do wołającego przez `10` s (`healForUntil`) | `p5_ai.js: partyThink` |
 | ta sama kwestia drużyny (`partySay`) | najwyżej co `5` s na klucz | `p5_ai.js: partySay` |
 | kapłan | rozgląda się co `1` s (`h.cast`), modlitwa trwa `3` s; start `cast = 1.5` | `p5_ai.js: heroAbilities` |
 | mag | kula ognia `cast = 4` s, bez celu `0.5` s; rozproszenie sieci co `8` s; start `cast = 2` | `p5_ai.js: heroAbilities` |
@@ -139,19 +153,25 @@ Jeden obiekt `fl.party` (dalej `P`) na falę; tworzony w `setupFl`, częściowo 
 | `abandoned` | `Set` | uwięzieni porzuceni |
 | `lastTalkAt` | `-99` | czas ostatniej narady |
 | `chatT` | `6` | zegar small talku |
-| `heartSaid` | `false` | czy lider już skomentował znalezienie serca |
-| `queueSay` | `[]` | kolejka kwestii drużyny `{id, text, at, prio?, dur?, how?}` (6.7.3) |
+| `heartSaid` | `false` | czy lider już skomentował znalezienie serca; od 1.17 to też znak, że przywódca wie, gdzie jest serce (`heartP()`, 6.3.13): pada dopiero, gdy przywódca widzi albo słyszy tego, kto zobaczył serce, albo sam stoi w jego pokoju |
+| `queueSay` | `[]` | kolejka kwestii drużyny `{id, text, at, prio?, dur?, how?, cv?, late?}` (6.7.3) |
 | `prepped` | `Set` | pokoje, przed którymi już się przygotowywali |
 | `prep` | `null` | trwające przygotowanie `{room, until, pr, mg, th, wr}` |
 | `prepCd` | `0` | przerwa między przygotowaniami |
 | `rushUntil` | `-1` | do kiedy trwa bieg przez groźny pokój (+25% prędkości) |
-| `searchId`, `searchUntil` | `-1`, `-1` | zgubiony, którego lider szuka, i do kiedy |
+| `searchId`, `searchUntil` | `-1`, `-1` | zgubiony, którego lider szuka, i do kiedy (od 1.17 `time + 14`) |
 | `detour`, `detourCd` | `null`, `0` | zły skręt / błądzenie we mgle `{goal, until}` i przerwa |
 | `wantSearch` | `true` | czy jeszcze przeszukują znane pokoje (łupy) |
+| `council` | `null` | 1.17: trwająca narada na końcu cierpliwości `{stage, t0, res?, endAt?, votes?, leave?}`, `stage` = `'wait'` albo `'talk'` (6.3.10a) |
+| `councilMore` | `false` | 1.17: "jeszcze chwila" już wybrana w tej fali (drugi raz nie ma tej opcji) |
+| `look` | `null` | 1.17: trwające rozglądanie się `{room, t0, until, ids}` (6.3.3a) |
+| `lookCd` | `0` | 1.17: przed tym czasem nie ma nowego rozglądania (`time + 18` po końcu poprzedniego) |
+| `sound` | `null` | 1.17: dźwięk zza ściany, który słyszał przywódca `{x, y, t, room}` (wpływa na wybór celu przez 25 s) |
+| `soundCd` | `0` | 1.17: przed tym czasem `hearFar` nic nie robi (`time + 10`) |
 
-Pola dopisywane w trakcie: `rescuerId` (kto uwalnia), `fogDone` (pokoje mgły już "przebłądzone" przez lidera), `blockT`, `blockSaid`, `liftT` (zamknięta krata), `gateDetourUntil` (objazd przez kratę), `lootClaim` (Map: pole łupu -> id bohatera), `lootWaitId`, `lootWaitT` (lider czeka na zbierającego), `ambushSaid`, `loggedPlan` (do logu, tylko prototyp).
+Pola dopisywane w trakcie: `rescuerId` (kto uwalnia), `fogDone` (pokoje mgły już "przebłądzone" przez lidera), `blockT`, `blockSaid`, `liftT` (zamknięta krata), `gateDetourUntil` (objazd przez kratę), `lootClaim` (Map: pole łupu -> id bohatera), `lootWaitId`, `lootWaitT` (lider czeka na zbierającego), `ambushSaid`, `loggedPlan` (do logu, tylko prototyp). Od 1.17 także: `lookAsk` (`{room, at}`: przywódca wszedł do nowego pokoju, rzut na rozglądanie po 0,9 s), `lookRolled` (Set pokoi, w których już rzucano), `seen` (obiekt `id -> {x, y, t}`: gdzie przywódca ostatnio widział albo słyszał każdego), `searchGoal` (pole, do którego przywódca wraca po zgubionego: ostatnie znane miejsce), `rescueQ` (lista uwięzionych czekających na ratunek, gdy ratują już kogoś innego), `lastL` (id przywódcy z poprzedniego `partyThink`; nowy przywódca przynosi swój plan, 6.3.13), `queueCur` i `sayingQ` (kolejka w trakcie obsługi i kwestia właśnie mówiona, 6.7.3).
 
-`regroupAtDoor` zeruje tylko: `plan = 'explore'`, `leaderId`, `target`, `prep`, `steal`, `detour`, `searchId` (oraz `fl.holdT = 0`, `fl.secondGroup++`). Morale, `junctions`, `hesitated`, `prepped`, `fogDone`, `cageDecided`, `rescueId` przechodzą na drugą grupę.
+`regroupAtDoor` zeruje tylko: `plan = 'explore'`, `leaderId`, `target`, `prep`, `steal`, `detour`, `searchId` (oraz `fl.holdT = 0`, `fl.secondGroup++`). Morale, `junctions`, `hesitated`, `prepped`, `fogDone`, `cageDecided`, `rescueId` przechodzą na drugą grupę (od 1.17 także `council`, `councilMore`, `lookRolled`, `lookCd`, `seen`, `rescueQ`).
 
 ### 6.1.4 Pola bohatera używane przez AI (`p3_flow.js: spawnHero`)
 
@@ -170,6 +190,7 @@ Pola `R` używane przez AI: `avoid` (waga omijania zagrożeń), `learn` (szansa 
 | stany chwilowe | `slowUntil`, `burnUntil`, `cageUntil`, `cageIt`, `fallUntil`, `gone`, `fellFrom` (Set zapadni), `deepFall`, `napped`, `napUntil`, `restAt`, `dreamSaid`, `lullUntil/lullK/lullRoom`, `healCallT`, `glanceT` |
 | mowa | `bubble` (`{text, prio, at, until, loud}`), `saidUntil`, `sayQ` (lista kwestii czekających), flagi "raz na falę": `ghostSaid`, `shadeSaid`, `batSaid`, `spiderSaid`, `rumorSaid`, `saidTiming` (Set pułapek), `saidB` (Set: Okowy w pokoju) |
 | pamięć do karczmy | `felt` (Map: pułapka -> ile go zraniła/przestraszyła; sekcja 03), `fearBy`, `dmgBy`, `trauma`, `phobiaSeen`, `known` |
+| 1.17 (dopisywane w trakcie) | `plan` (plan drużyny, który zna ten bohater; brak = `P.plan`, 6.3.13), `goHome` (przegłosowany na naradzie wraca sam do domu, 6.3.10a), `look` (`{kind, sub, x, y, st, it, dwell, at, done}`: co ogląda przy rozglądaniu się, 6.3.3a), `lostAt`, `lostNoticed` (kiedy się zgubił i czy przywódca już to zauważył), `cagedAt` (kiedy zamknęła się klatka), `healFor`, `healForUntil` (kapłan: kto go wołał i do kiedy idzie najpierw do niego), `avoidM` (wojownik: potwór, którego omijanie już skomentował) |
 
 `h.rtSaid` jest tworzone, ale nieużywane (kod używa `fl.rtSaid`), patrz 6.8.
 
@@ -178,7 +199,7 @@ Pola `R` używane przez AI: `avoid` (waga omijania zagrożeń), `learn` (szansa 
 | Stan | Znaczenie | Wejście | Wyjście |
 |---|---|---|---|
 | `walk` | idzie ścieżką / planuje | domyślny | inne stany |
-| `wait` | stoi chwilę (`timer`) | brak ścieżki (`0.4` s), blisko lidera (`0.35` s), pole rozbrajane przez innego (`0.4` s) | `timer <= 0` -> `walk` + `needPlan` |
+| `wait` | stoi chwilę (`timer`) | brak ścieżki (`0.4` s), blisko lidera (`0.35` s), pole rozbrajane przez innego (`0.4` s), od 1.17 ogląda rzecz przy rozglądaniu się (do `0.5` s naraz, 6.3.3a) | `timer <= 0` -> `walk` + `needPlan` |
 | `talk` | drużyna stoi (rozmowa, narada, przygotowanie) albo lider czeka | `fl.time < P.talkUntil` lub (lider i `fl.time < P.waitUntil`); wahanie lidera | koniec obu czasów albo `exiting` |
 | `rest` | odpoczynek (odwrót) albo drzemka w Sanktuarium | w pokoju odwrotu; `nap` | plan nie `retreat` i drzemka minęła; panika; `exiting` |
 | `fight` | walka wręcz z potworem `h.foe` | następne pole ścieżki zajęte przez żywego potwora nie-unoszącego się | potwór martwy/zniknął, `exiting` |
@@ -202,7 +223,7 @@ Pola `R` używane przez AI: `avoid` (waga omijania zagrożeń), `learn` (szansa 
    |          |--(assault, obok serca)--> boss --(kryształ / plan / panika)--> walk
    |          |--(pułapka klatka)--> caged --(uwolniony / koniec)--> walk | śmierć
    |          +--(zapadnia)--> fallen (gone) --(landFallen)-------------> walk
-   +--- startFlee / partyFlee / takeCrystal / becomeImpatient: rest/talk/wait/boss(/disarm/free) -> walk
+   +--- startFlee / partyFlee / takeCrystal / becomeImpatient / goHome / councilDone: rest/talk/wait/boss(/disarm/free) -> walk
 ```
 
 ### 6.1.6 Intencje `h.intent`
@@ -212,9 +233,10 @@ Intencja to "po co idzie" (ustawiana w `planHero`, czytana przez innych):
 | Intencja | Kto | Cel ścieżki |
 |---|---|---|
 | `lead` | lider przy eksploracji | `P.target` |
-| `heart` | lider w `assault`, każdy przy `fl.fearless && assault` | `heartGoal()` |
+| `heart` | lider w `assault`, każdy przy `fl.fearless && planOf(h) === 'assault'` | `heartGoal()` |
 | `detour` | lider w objeździe / błądzeniu we mgle | `P.detour.goal` |
-| `search` | lider szuka zgubionego | pole zgubionego |
+| `search` | lider szuka zgubionego | od 1.17 `P.searchGoal` (gdzie go ostatnio widział), a gdy go słyszy, jego pole; do 1.16 zawsze bieżące pole zgubionego |
+| `look` | 1.17: ogląda coś przy rozglądaniu się (6.3.3a) | pole obok rzeczy (`h.look.st`) |
 | `follow` | reszta | pole lidera albo serce (6.2.12) |
 | `space` | stojący na tym samym polu co inny | sąsiednie wolne pole |
 | `retreat` | w odwrocie | najbliższe pole pokoju odwrotu |
@@ -240,22 +262,26 @@ Intencja to "po co idzie" (ustawiana w `planHero`, czytana przez innych):
 | `retreat` | idą do najbezpieczniejszego pokoju i odpoczywają |
 | `flee` | cała drużyna ucieka (strach) |
 | `escape` | mają kryształ: wszyscy do wyjścia |
-| `leave` | koniec cierpliwości albo serce ich odepchnęło: wracają do domu |
+| `leave` | koniec cierpliwości (narada zdecydowała "do domu" albo nie było wyboru) albo serce ich odepchnęło: wracają do domu |
 
 ```
-explore --(serce znane i przeszukali dość albo minął limit, avgHp >= 0.5)--> assault
-explore --(nic do odkrycia i serce znane)--> assault
+explore --(serce znane przywódcy: heartP(), przeszukali dość albo minął limit, avgHp grupy >= 0.5)--> assault
+explore --(nic do odkrycia i heartP())--> assault
 assault --(krata zamknięta, jest co przeszukać)--> explore (gateDetourUntil) --(koniec)--> assault
-explore/assault --(avgHp nisko, lider poz. 3+)--> retreat --(avgHp >= 0.7 i >= 10 s odpoczynku, albo 26 s; 1.12.1)--> assault|explore
+explore/assault --(avgHp grupy nisko, lider poz. 3+)--> retreat --(avgHp >= 0.7 i >= 10 s odpoczynku, albo 26 s; 1.12.1)--> assault|explore
 assault --(wyważyli kryształ: takeCrystal)--> escape
-escape --(niosący zginął, odważni i spokojni)--> assault ; (inaczej) --> flee
-dowolny nie-wyjściowy --(strach drużyny, morale, połowa ucieka)--> flee
+escape --(niosący zginął, grupa przywódcy odważna i spokojna)--> assault ; (inaczej) --> flee
+dowolny nie-wyjściowy --(strach grupy przywódcy, morale, połowa grupy ucieka)--> flee
 flee --(drugi oddział wchodzi: regroupAtDoor)--> explore
-dowolny --(cierpliwość: becomeImpatient)--> leave | assault (bohater z przepowiedni)
+dowolny --(cierpliwość: becomeImpatient)--> narada (1.17, 6.3.10a): leave | assault (szturm) | bez zmiany (+30 s)
+         ; bez wyboru (serce nieznane i +30 s już było) --> leave ; bohater z przepowiedni --> assault
 assault, fala 1 --(serce odpycha)--> leave
+nowy przywódca (1.17) --(miał inny plan, w lochu są jeszcze inni)--> jego plan (6.3.13)
 ```
 
-`flee`, `escape`, `leave` to plany "wyjściowe" (`goingOut()`): w nich `partyThink` nie zmienia już planu (poza `regroupAtDoor` i `crystalReturns`).
+`flee`, `escape`, `leave` to plany "wyjściowe" (`goingOut()`): w nich `partyThink` nie zmienia już planu (poza `regroupAtDoor`, `crystalReturns` i, od 1.17, nowym przywódcą z innym planem).
+
+**Plan drużyny a plan bohatera (1.17).** `P.plan` to plan przywódcy i tych, którzy go słyszą. Każdy bohater ma własne `h.plan` (`planOf(h)`): dostaje plan drużyny, gdy widzi albo słyszy przywódcę (`perceiveThink`, co `partyThink`), a krzyk (ucieczka, kryształ) sięga 14 kroków. Kto nie słyszał zmiany, robi dalej to, co robił, aż dołączy. Wyjście (`exiting`), odwrót i szturm w `planHero` czytają `planOf(h)`. Szczegóły: 6.3.13.
 
 ### 6.1.8 `updateHero(h, dt)`: kolejność (`p5_ai.js: updateHero`)
 
@@ -290,7 +316,7 @@ ruch: prędkość (6.2.2), ślizg (6.2.8), dotarcie -> onEnter(h)
 
 ### 6.1.9 Odwzorowanie w Unity
 
-- `Core/AI/PartyBrain` (odpowiednik `partyThink`, `leader`, `chooseTarget`, `decideCage`, `checkPrep/startPrep/finishPrep`, `maybeDetour`, `getLost`, `answerLost`), `Core/AI/HeroBrain` (`planHero`, prace klasowe, `updateHero`, `onEnter`, `heroAbilities`, `bardTick`), `Core/AI/Pathfinder` (`bfs`, `pathFrom`, `frontier`, mapa zagrożeń), `Core/Speech/SpeechSystem` (`say`, `sayTick`, `earshot`, kolejki, small talk, katalog kluczy). Czysty C#, bez MonoBehaviour (sekcja 02).
+- `Core/AI/PartyBrain` (odpowiednik `partyThink`, `leader`, `chooseTarget`, `decideCage`, `checkPrep/startPrep/finishPrep`, `maybeDetour`, `getLost`, `answerLost`; od 1.17 także `councilThink/councilVote/councilDone`, `lookRoll/lookThink`, `hearFar`, `missLost`), `Core/AI/Perception` (1.17: `canSee`, `canHear`, `canHearShout`, `perceives`, `groupOf`, `perceiveThink`, wieści o śmierci; jedno miejsce, które odpowiada na pytanie "czy on o tym wie"), `Core/AI/HeroBrain` (`planHero`, prace klasowe, `updateHero`, `onEnter`, `heroAbilities`, `bardTick`), `Core/AI/Pathfinder` (`bfs`, `pathFrom`, `frontier`, mapa zagrożeń), `Core/Speech/SpeechSystem` (`say`, `sayTick`, `earshot`, kolejki, small talk, katalog kluczy). Czysty C#, bez MonoBehaviour (sekcja 02).
 - Kolejność wywołań taka jak w 6.1.1 i 6.1.8; zachowaj flagi `needPlan`, `threatDirty`, `knowDirty` (Dijkstra liczona na żądanie, nie co klatkę).
 - Ścieżki: własny Dijkstra na siatce 4-kierunkowej z kopcem binarnym i tablicami z puli. **Nie** NavMesh (siatka pól, koszty zagrożenia, wiedza drużyny).
 - Losowanie: strumień `Rng` "AI" (sekcja 02). **Tylko prototyp:** `Math.random()`.
@@ -444,6 +470,7 @@ if r >= 0 && fl.rooms[r].kind === 'room':
    if !R.visited: R.visited = true
    if R.rt && !exiting(h) && r nie w fl.rtSaid: fl.rtSaid.add(r); say(h, SAY[RT_SAY[rt]], 3)   // pierwszy w pokoju z charakterem
    if changed && h jest liderem: maybeDetour(h, r)                                              // 6.2.11
+      1.17: if !P.detour: P.lookAsk = {room: r, at: time + 0.9}                                  // rzut na rozglądanie się (6.3.3a)
    if changed && !exiting(h): phobiaSight(h, r)                                                // sekcja 05
 if isExitTile(h.x,h.y) && exiting(h): heroExit(h); return
 if na polu łup && !h.crystal && !h.fleeing: pickup(h, it)                                     // każdy, kto wejdzie, nie tylko chętny
@@ -489,9 +516,9 @@ heartGoal()= nearestOf(B(), heartGoals()) jeśli osiągalne;
              inaczej -1
 
 if panicking(h):                         intent 'panic'; noDanger = true; goal = h.fleeing ? exitG() : randomKnownFar(h)
-elif exiting(h):                         intent = h.crystal ? 'carry' : 'exit'; goal = exitG()
-elif fl.fearless && P.plan === 'assault': intent 'heart'; goal = heartGoal()
-elif P.plan === 'retreat' && !h.lost && !onScout(h):     (1.16: zwiadowca z postoju nie siada)
+elif exiting(h):                         intent = h.crystal ? 'carry' : 'exit'; goal = exitG()     (1.17: wg planu bohatera i goHome)
+elif fl.fearless && planOf(h) === 'assault': intent 'heart'; goal = heartGoal()                   (1.17: planOf, było P.plan)
+elif planOf(h) === 'retreat' && P.plan === 'retreat' && !h.lost && !onScout(h):     (1.16: zwiadowca z postoju nie siada; 1.17: tylko ten, kto wie o odwrocie)
    intent 'retreat'
    spots = pola P.retreatRoom ze standOk i bez heroBlock                                  (1.13: wolne, bezpieczne miejsce)
    if roomOf(h.tx,h.ty) === P.retreatRoom && (standOk(h.x,h.y) || !spots.length): h.state = 'rest'; h.path = []; h.intent = intent; return
@@ -504,9 +531,11 @@ elif h.lost:                             zgubiony (6.2.10)
 elif h.wanderUntil > time && h.wanderTarget >= 0 && isFrontierTile(h.wanderTarget): intent 'wander'; goal = h.wanderTarget
 else:
    job = pierwsza pasująca (kolejność jest regułą):
-     1  ratunek z klatki: P.rescueId >= 0 i to nie on (6.5.9)
-     2  L !== h && L.state === 'fight' && L.foe żywy i !DRIFT          -> {fight, pole L.foe}   (wszyscy pomagają liderowi)
-     3  kapłan: najsłabszy (wg hp/max) inny z hp < 0.5 max i hdist > 2.5, z B().dist <= 12 -> {heal, jego pole}
+     1  ratunek z klatki: P.rescueId >= 0 i to nie on (6.5.9; 1.17: ratownik tylko spośród tych, którzy słyszą klatkę albo przywódcę)
+     2  L !== h && L.state === 'fight' && L.foe żywy i !DRIFT && !onScout(h) && canHear(h, L)   -> {fight, pole L.foe}
+        (pomagają liderowi; 1.17: tylko ci, którzy słyszą walkę, i nie zwiadowca ani jego partner)
+     3  kapłan: 1.17: najpierw ten, kto go wołał (h.healFor, do healForUntil = 10 s od wołania), jeśli żyje, hp < 0.5 max
+        i hdist > 2.5, z B().dist <= 20; inaczej najsłabszy (wg hp/max) inny z hp < 0.5 max i hdist > 2.5, z B().dist <= 12 -> {heal, jego pole}
      4  Sanktuarium: h.room typu 'haven' && hp < 0.6 max && !h.napped && !h.lost && plan != 'retreat' && nie płonie
         -> h.napped = true; h.napUntil = time + 5; h.restAt = time; h.dreamSaid = false; state 'rest'; path []; intent 'nap'; SAY.nap (2); return
      5  barbarzyńca: smashJob(h, B())           (6.5.6)
