@@ -1,6 +1,6 @@
 # 08. Interfejs, sterowanie, kamera, grafika, dźwięk i samouczek
 
-Wersja źródłowa: Prototype 1.13.4 (`LOG_VERSION = 58`). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
+Wersja źródłowa: Prototype 1.14 (`LOG_VERSION = 58`). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
@@ -205,6 +205,8 @@ Zasady: start fali zawsze zwija (`p3_flow.js: startWave`); start budowy rozwija 
 
 **Zakładki** (`#tabs`, `p1_config.js: TABS`): Pułapki, Potwory, Łup, Obiekty, Loch, Talia. Równe kolumny, tekst 12,5 px muted (11,5 ≤440 px, 10,5 ≤380, 9,5 ≤340); wybrana: `--ink`, delikatny gradient od dołu i biała kreska 2 px pod spodem (wjeżdża `scaleX` 0,2 s). Talia ma kolor `#d4b878` (wybrana `--gold-hi`). Zakładka, w której w obecnym etapie nauki nic nie ma, jest ukryta (1.12, `onbOk`). Wybrana zakładka i przewinięcie każdej zakładki są zapamiętane (`yatd-tab`, `trayScroll`).
 
+**Podzakładki** (1.14, `#subs`, `TABS[].subs`, `p8b_ui.js: subsOn`, `curSub`, `pickTab`): rząd pod zakładkami, wysokość 24 px (odstęp siatki 6 px, `margin-top: -1px`). Pułapki i Potwory mają dwie: **Rany** (`dmg`) i **Strach** (`fear`); w Ranach są też pułapki, które zatrzymują, rozdzielają i spowalniają (Sieć, Zapadnia, Klatka, Krata). Przycisk `.sub`: prostokąt z rogami `--r` jak kafelek, 12 px, 600, odstęp 0 14 px, tło `--panel`, ramka `--line`, tekst muted; wybrany: `--ink`, ramka i wewnętrzna obwódka `--gold`, tło `--panel3`. Pasek pokazuje kafelki tylko wybranej podzakładki. Wybór jest zapamiętany dla każdej zakładki (`yatd-sub`, JSON `{traps: 'fear', ...}`), a przewinięcie paska dla pary zakładka/podzakładka. Rząd jest pokazany tylko wtedy, gdy co najmniej dwie podzakładki mają coś z obecnego etapu nauki (`onbOk`); inaczej zakładka pokazuje wszystkie swoje kafelki. Na zakładkach bez podzakładek rząd zostaje pusty (`visibility: hidden`), żeby mapa nie zmieniała wysokości przy przełączaniu. Przewodnik, który wskazuje kafelek, przełącza na jego podzakładkę (`pickTab('traps', 'spikes')`).
+
 **Pasek kafelków** (`#tray`): jeden rząd przewijany w bok, wysokość 64 px, odstęp 6 px, przyciąganie do początku kafelka (`scroll-snap: x proximity`), bez paska przewijania. Na krawędziach, za którymi jest jeszcze coś, maska zanikania 28 px (`trayFade`). Zmiana zakładki "rozdaje" kafelki: każdy wjeżdża z dołu (10 px, skala 0,94 → 1) w 0,24 s z opóźnieniem 24 ms × indeks (do 9), klasa zdejmowana po 700 ms.
 
 **Anatomia kafelka** (`.item`, 74×60 px, `updateTray`):
@@ -280,7 +282,7 @@ W Unity: Canvas Scaler z rozdzielczością referencyjną 390×844, dopasowanie d
 
 ### 3.3 Start (`renderStart`, zrzut `01_start.png`)
 
-Od góry: podtytuł "Prototype 1.13.4 · 10 fal i finał"; h1 "You are the dungeon"; akapit wstępu; rekordy (jeśli są: "Twój rekord: N Esencji zebranej w runie (ranga: X) · najdalej: fala F · wygrane: W z R."); pole "Kto testuje (opcjonalnie)" (tylko prototyp); przyciski; wiersz web (tylko prototyp); rozwijane **Jak grać** (17 akapitów w tablicy literalnej w `renderStart`, zasady całej gry, do przeniesienia jako tekst lokalizowany) i **Co nowego w Prototype 1.13.4** (97 wpisów dziennika zmian od v14 do 1.13.4, druga tablica w `renderStart`); przycisk "Ustawienia" (dźwięk, wibracje, skill checki).
+Od góry: podtytuł "Prototype 1.14 · 10 fal i finał"; h1 "You are the dungeon"; akapit wstępu; rekordy (jeśli są: "Twój rekord: N Esencji zebranej w runie (ranga: X) · najdalej: fala F · wygrane: W z R."); pole "Kto testuje (opcjonalnie)" (tylko prototyp); przyciski; wiersz web (tylko prototyp); rozwijane **Jak grać** (17 akapitów w tablicy literalnej w `renderStart`, zasady całej gry, do przeniesienia jako tekst lokalizowany) i **Co nowego w Prototype 1.14** (99 wpisów dziennika zmian od v14 do 1.14, druga tablica w `renderStart`); przycisk "Ustawienia" (dźwięk, wibracje, skill checki).
 
 Przyciski (`startbtns`; `onbStage()` z rozdz. 8.1; `sv` = zapisany run):
 

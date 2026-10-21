@@ -287,11 +287,17 @@
   // 1.12: stage = which of the first runs this is (ONB_STAGES); the guide (tutorial) goes with the first one. Anything else is the full game.
   const stageOf = () => (run && run.stage) || ONB_FULL;
   const onbOk = (t, stg) => (ONB_ITEM[t] || 1) <= (stg || stageOf());
+  // 1.14 (author: the traps you discover stay discovered between runs): what an unlock card opened goes into this browser's
+  // collection; every later run starts with it (still only what the run's stage brings), so its card no longer comes up in
+  // the shop
+  const FOUND_KEY = 'yatd-found';
+  function loadFound() { try { const a = JSON.parse(localStorage.getItem(FOUND_KEY) || '[]'); return Array.isArray(a) ? a.filter(t => ITEMS[t]) : []; } catch (e) { return []; } }
+  function saveFound(t) { const a = loadFound(); if (!ITEMS[t] || a.includes(t)) return; a.push(t); try { localStorage.setItem(FOUND_KEY, JSON.stringify(a)); } catch (e) {} }
   function newRun(tutorial, stage) {
     stage = Math.max(1, Math.min(ONB_FULL, stage || (tutorial ? 1 : ONB_FULL)));
     coachHide();   // 1.12 (bug): the guide's card from a run left in the middle stayed on the screen in the next run
     run = { wave: 1, total: 0, waves: [], crystals: S.crystals, maxCrystals: S.crystals, grozaTotal: 0, greedRep: 1, returners: [], stash: [], freePicks: 0, shop: null, shopOwed: 1, stacks: {}, guild: null, resumed: 0, moleWave: 0, essence: S.essence,
-      items: new Map(), layout: null, rumor: { tiles: new Map(), traps: new Map(), loot: new Map(), heart: -1, gold: 0 }, upgrades: [], unlocked: new Set(START_UNLOCKED.filter(t => onbOk(t, stage))), stage,
+      items: new Map(), layout: null, rumor: { tiles: new Map(), traps: new Map(), loot: new Map(), heart: -1, gold: 0 }, upgrades: [], unlocked: new Set(START_UNLOCKED.concat(loadFound()).filter(t => onbOk(t, stage))), foundAtStart: loadFound().filter(t => onbOk(t, stage) && !START_UNLOCKED.includes(t)), stage,
       pendingUpgrades: [], continueUsed: false, startedAt: Date.now(), result: null, reason: '', checkHints: 3, tut: tutorial ? 0 : -1, tutorial: !!tutorial,
       mode: 'check', fires: 0, buildSec: 0, raidSec: 0, best: loadBest(), next: null, lastIncome: 0, afterModals: null, over: false,
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), thrIdx: 0, greedKeep: 0, greedNext: 0, waveDocs: [], won: false, logState: '', waveStart: null, deck: [], deckSize: S.deckSize || DECK_SIZE, freeDigs: 0, lastInterest: 0 };

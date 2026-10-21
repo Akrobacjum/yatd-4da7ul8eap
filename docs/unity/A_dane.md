@@ -14,8 +14,8 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 | Plik | Kształt | Pola i znaczenie |
 |---|---|---|
 | `ITEMS` | słownik `id -> element` (53) | `name` nazwa; `cost` koszt w Esencji; `slot` miejsce: `floor`, `wall`, `door`, `object`, `roomtype` (opis w `SLOT_LABEL`); `tag` krótka cecha pod nazwą kafelka; `desc` opis po przytrzymaniu; `cd` odnowienie w s; `hp`, `melee` dla potworów; `build: true` budowla-kontra (tylko między falami, w pokoju, jedna na pokój); `tool: true` narzędzie lochu (kopanie, typy pokoi); `rt` typ pokoju nadawany przez narzędzie; `rarity` dla łupu (1-3: zasięg widzenia); `mode` dla trybów (Ulepsz, Przenieś) |
-| `TABS` | lista zakładek paska | `id`, `label`, `items` (kolejność kafelków). `ITEM_ORDER` = wszystkie kafelki po kolei |
-| `START_UNLOCKED` | lista id | elementy dostępne od startu runu (reszta przez karty "Nowa pułapka/potwór") |
+| `TABS` | lista zakładek paska | `id`, `label`, `items` (kolejność kafelków), od 1.14 opcjonalnie `subs`: lista `{id, label, items}` (Pułapki i Potwory: `dmg` Rany, `fear` Strach; 08). `ITEM_ORDER` = wszystkie kafelki po kolei |
+| `START_UNLOCKED` | lista id | elementy dostępne od startu runu (reszta przez karty "Nowa pułapka/potwór"; od 1.14 odkryte zostają na stałe, 03 3.8) |
 | `TRAPS`, `MONSTERS`, `SCARE`, `CURSED`, `DRIFT`, `BUILDINGS`, `TOOLS`, `MODES`, `DISARMABLE`, `SMASHABLE_OBJ` | zbiory `id -> 1` | przynależność: pułapka, potwór, tylko straszy, przeklęte (kapłan zdejmuje), potwór dryfujący za bohaterami, budowla, narzędzie, tryb, da się rozbroić, barbarzyńca rozbija |
 | `LOOKS_TRAP` | funkcja | co bohaterowie biorą za pułapkę (pułapki i Wabik) |
 | `UPG_COST` | `[0, 0, 2, 4]` | mnożnik kosztu elementu przy ulepszeniu na poziom 2 i 3 |

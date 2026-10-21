@@ -13,6 +13,17 @@
   const upgCost = it => Math.ceil(ITEMS[it.type].cost * UPG_COST[(it.lvl || 1) + 1]);
   // v14.1: the tray is one row scrolled sideways; each tab remembers where it was scrolled to
   const trayScroll = {}; let trayTab = null;
+  // 1.14 (author: subcategories in the build bar, side by side like the tabs): the sub of each tab with subs (TABS[].subs),
+  // remembered in this browser; a row of sub-tabs under the tabs shows only when at least two of the tab's subs have something
+  // this stage brings (else all of the tab, as before). The row keeps its height on every tab, so the map does not jump.
+  let subOf = {};
+  try { subOf = JSON.parse(localStorage.getItem('yatd-sub') || '{}') || {}; } catch (e) {}
+  const subsOn = tb => (tb.subs || []).filter(s => s.items.some(t => onbOk(t)));
+  const curSub = tb => { const on = subsOn(tb); return on.length < 2 ? null : on.find(s => s.id === subOf[tb.id]) || on[0]; };
+  function pickTab(id, t) {   // to a tab, and to the sub that holds t (the guide points at a tile)
+    tab = id; const tb = TABS.find(x => x.id === id), s = tb && t && (tb.subs || []).find(x => x.items.includes(t));
+    if (s) subOf[id] = s.id; updateTray();
+  }
   function trayFade() { const t = $('#tray'); t.classList.toggle('fade-l', t.scrollLeft > 4); t.classList.toggle('fade-r', t.scrollLeft + t.clientWidth < t.scrollWidth - 4); }
   function updateTray() {
     const tray = $('#tray'), tabs = $('#tabs');
@@ -22,7 +33,7 @@
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'tab'; b.id = 'tab-' + tb.id; b.setAttribute('role', 'tab'); b.textContent = tb.label;
         b.addEventListener('click', () => {
-          trayScroll[tab] = tray.scrollLeft; tab = tb.id; try { localStorage.setItem('yatd-tab', tab); } catch (e) {} updateTray();
+          if (trayTab) trayScroll[trayTab] = tray.scrollLeft; tab = tb.id; try { localStorage.setItem('yatd-tab', tab); } catch (e) {} updateTray();
           if (tb.id === 'deck' && run) setHint('Talia: ' + run.deck.length + ' z ' + run.deckSize + ' kart. Stuknij kartę, żeby ją przeczytać albo sprzedać (sprzedaż tylko między falami).');
         });
         tabs.appendChild(b);
@@ -72,10 +83,25 @@
     if (!tabOn(TABS.find(tb => tb.id === tab) || TABS[0])) tab = 'traps';
     const cur = TABS.find(tb => tb.id === tab) || TABS[0];
     TABS.forEach(tb => { const tbb = $('#tab-' + tb.id); tbb.hidden = !tabOn(tb); tbb.setAttribute('aria-selected', String(tb === cur)); });
+    const cs = curSub(cur), sb = $('#subs'), view = cur.id + (cs ? '/' + cs.id : '');
+    sb.classList.toggle('none', !cs);
+    if (cs && sb.dataset.tab !== cur.id) {
+      sb.dataset.tab = cur.id; sb.innerHTML = '';
+      cur.subs.forEach(s => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'sub'; b.id = 'sub-' + s.id; b.dataset.sub = s.id; b.textContent = s.label;
+        b.addEventListener('click', () => {
+          if (trayTab) trayScroll[trayTab] = tray.scrollLeft;
+          subOf[cur.id] = s.id; try { localStorage.setItem('yatd-sub', JSON.stringify(subOf)); } catch (e) {}
+          updateTray();
+        });
+        sb.appendChild(b);
+      });
+    }
+    if (cs) sb.querySelectorAll('.sub').forEach(b => { const on = subsOn(cur).some(s => s.id === b.dataset.sub); b.hidden = !on; b.setAttribute('aria-pressed', String(b.dataset.sub === cs.id)); });
     let shown = 0;
     ITEM_ORDER.forEach(t => {
       const b = $('#item-' + t);
-      b.hidden = !cur.items.includes(t) || !onbOk(t);
+      b.hidden = !cur.items.includes(t) || !onbOk(t) || (cs && !cs.items.includes(t));
       if (!b.hidden) b.style.setProperty('--d', String(Math.min(9, shown++)));
       const cst = b.querySelector('.cost');
       cst.textContent = MODES[t] ? '' : String(costOf(t)); cst.classList.toggle('nocost', !!MODES[t]);
@@ -91,7 +117,7 @@
       if (!locked && lk) lk.remove();
     });
     renderDeckTiles(cur.id === 'deck' && !!run);
-    if (trayTab !== cur.id) { trayTab = cur.id; tray.scrollLeft = trayScroll[cur.id] || 0; tray.classList.remove('deal'); void tray.offsetWidth; tray.classList.add('deal'); clearTimeout(updateTray.dealT); updateTray.dealT = setTimeout(() => tray.classList.remove('deal'), 700); }   // 1.09: a new tab deals its tiles in
+    if (trayTab !== view) { trayTab = view; tray.scrollLeft = trayScroll[view] || 0; tray.classList.remove('deal'); void tray.offsetWidth; tray.classList.add('deal'); clearTimeout(updateTray.dealT); updateTray.dealT = setTimeout(() => tray.classList.remove('deal'), 700); }   // 1.09: a new tab deals its tiles in
     trayFade();
     if (fl && fl.phase === 'build') updateAction();
   }
@@ -103,7 +129,7 @@
     if (I.tag) box.appendChild(el('div', 'tg', I.tag));
     box.appendChild(el('p', null, I.desc));
     if (LOOT_KIND[t]) { const n = lootCount(t); box.appendChild(el('div', 'tg', 'Każdy kolejny taki łup w lochu: +25% ceny' + (n ? ' (leży już: ' + n + ', bazowo ' + I.cost + ')' : '') + '.')); }
-    if (run && !MODES[t] && !run.unlocked.has(t)) box.appendChild(el('div', 'tw', 'Zablokowany: odblokujesz go kartą ze sklepu.'));
+    if (run && !MODES[t] && !run.unlocked.has(t)) box.appendChild(el('div', 'tw', 'Zablokowany: odblokujesz go kartą ze sklepu (na stałe, także w kolejnych runach).'));
     box.hidden = false; box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
     box.style.bottom = Math.round(innerHeight - $('#drawer').getBoundingClientRect().top + 6) + 'px';
     tipFor = t; b.classList.add('holding');
@@ -500,7 +526,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.13.4 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.14 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -550,9 +576,11 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.13.4'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.14'));
     const ul2 = el('ul', 'conseq');
-    ['1.13.4: naprawione: złodziej prowadzący drużynę potrafił przestępować między dwoma polami przed pułapką ze strzałami i dostawać strzałę za strzałą (u jednego z testerów od 55 do 10 HP). Na miejscu rozbrajania gra uznawała, że pułapka nie leży już na drodze, więc ruszał dalej, a krok później wracał. Teraz drogą jest to, dokąd idzie drużyna, złodziej trzyma się wybranej pułapki, a gdy ta dwa razy odpali mu w twarz, odpuszcza. Tak samo poprawione: przywódca z bombą (podchodzi na bezpieczne pole w zasięgu rzutu) i odwrót, gdy przyjaciel odpoczywa tuż za drzwiami (reszta siada obok, zamiast przestępować w drzwiach).',
+    ['1.14: podkategorie w pasku budowy: Pułapki i Potwory mają pod zakładkami przełącznik Rany / Strach (pasek pamięta wybór dla każdej zakładki). Pułapki, które zatrzymują, rozdzielają i spowalniają, są w Ranach.',
+     '1.14: odkryte pułapki i potwory zostają na stałe: to, co odblokujesz kartą ze sklepu, masz od początku w kolejnych runach (w pierwszych runach nadal tylko to, co dany etap wprowadza), a jego karta nie wraca do sklepu. Liczy się od tej wersji.',
+     '1.13.4: naprawione: złodziej prowadzący drużynę potrafił przestępować między dwoma polami przed pułapką ze strzałami i dostawać strzałę za strzałą (u jednego z testerów od 55 do 10 HP). Na miejscu rozbrajania gra uznawała, że pułapka nie leży już na drodze, więc ruszał dalej, a krok później wracał. Teraz drogą jest to, dokąd idzie drużyna, złodziej trzyma się wybranej pułapki, a gdy ta dwa razy odpali mu w twarz, odpuszcza. Tak samo poprawione: przywódca z bombą (podchodzi na bezpieczne pole w zasięgu rzutu) i odwrót, gdy przyjaciel odpoczywa tuż za drzwiami (reszta siada obok, zamiast przestępować w drzwiach).',
      '1.13.3: krótsza scenka przed groźnym pokojem: mówi przywódca i najwyżej dwóch specjalistów (wcześniej każdy z nich, do 7 dymków i nawet ~19 s postoju). Pozostali specjaliści i tak robią swoje (osłona, zakłócenie, rozbrajanie, tarcza), a sygnałem do biegu jest okrzyk przywódcy na koniec. Średnio postój trwa ok. 8 s zamiast ok. 12,5 s.',
      '1.13.2: naprawione: drużyna potrafiła utknąć w ślepym przejściu (np. wąski pas łupu między skrzyniami): przywódca w środku, reszta gęsiego za nim, i całe najazdy mijały na przesuwaniu się o jedno pole w tę i z powrotem. Teraz ten, kto stoi bezczynnie na drodze idącego, a nie ma jak zejść w bok, zamienia się z nim miejscem (mijają się), a bohater idący po skarb może poprosić stojącego na nim, żeby się przesunął.',
      '1.13.1: sam bohater nie mówi do powietrza. Gdy nikt go nie słyszy, kwestie dla drużyny zamieniają się w myślenie na głos („Nie ma kogo zapytać. Idę tędy.”, „Usiądę na chwilę.”, „Mówię do siebie. To chyba zły znak.”), odpowiedzi i zachęty dla innych w ogóle nie padają, a samotny nie naradza się sam ze sobą. Okrzyki zostają okrzykami.',
@@ -1103,7 +1131,7 @@
         const r = shopBuy(i);
         if (r === 'ess') m.msg = 'Za mało Esencji (' + price + ').';
         else if (r === 'full') m.msg = 'Talia i schowek są pełne: sprzedaj albo odłóż kartę.';
-        else { m.sel = null; m.msg = r === 'stash' ? u.name + ': do schowka (talia pełna).' : u.kind === 'unlock' ? u.name + ': odblokowane.' : u.kind === 'instant' ? u.name + '.' : 'W talii: ' + u.name + '.'; }
+        else { m.sel = null; m.msg = r === 'stash' ? u.name + ': do schowka (talia pełna).' : u.kind === 'unlock' ? u.name + ': odblokowane na stałe.' : u.kind === 'instant' ? u.name + '.' : 'W talii: ' + u.name + '.'; }
         rerender();
       });
       b.appendChild(by); og.appendChild(b);
@@ -1223,7 +1251,7 @@
   }
   function addEss(n) { fl.essence += n; run.essence = fl.essence; updateTray(); }
   function applyUpgrade(u) {
-    if (u.kind === 'unlock') run.unlocked.add(u.unlock);
+    if (u.kind === 'unlock') { run.unlocked.add(u.unlock); saveFound(u.unlock); }   // 1.14: for good, in later runs too
     else if (u.kind === 'instant') u.apply();
     else { run.deck.push(u.id); recomputeMods(); }
     run.upgrades.push(u.id); updateTray();
@@ -1238,7 +1266,7 @@
   const slotsTxt = n => n + ' ' + plural(n, 'miejsce', 'miejsca', 'miejsc');
   const capFirst = t => t.charAt(0).toUpperCase() + t.slice(1);
   function kindLabel(u) {
-    if (u.kind === 'unlock') return 'Odblokowanie · bez miejsca w talii';
+    if (u.kind === 'unlock') return 'Odblokowanie na stałe · bez miejsca w talii';
     if (u.kind === 'instant') return capFirst(RAR_NAME[u.rar]) + ' · jednorazowa, bez miejsca w talii';
     const n = run.deck.filter(x => x === u.id).length;
     return capFirst(RAR_NAME[u.rar]) + ' karta' + (u.unique ? ' · tylko jedna' : '') + (n ? ' · w talii: ' + n : '');
@@ -1280,7 +1308,7 @@
   function takeCard(card, m, u) {
     if (u.kind === 'card' && run.deck.length >= run.deckSize) { card.innerHTML = ''; card.scrollTop = 0; renderReplace(card, m, u); return; }
     applyUpgrade(u); finishPick(m);
-    setHint(u.kind === 'unlock' ? u.name + ': odblokowane.' : u.kind === 'instant' ? u.name + '.' : 'Nowa karta w talii: ' + u.name + ' (' + run.deck.length + '/' + run.deckSize + ').');
+    setHint(u.kind === 'unlock' ? u.name + ': odblokowane na stałe.' : u.kind === 'instant' ? u.name + '.' : 'Nowa karta w talii: ' + u.name + ' (' + run.deck.length + '/' + run.deckSize + ').');
   }
   // Deck full: sell one card to make room, or pass on the new one (it is sold for you).
   function renderReplace(card, m, u) {
@@ -1683,6 +1711,8 @@
     if (run.nextFor == null) run.nextFor = run.wave;   // 1.05: a run saved by 1.04 (the next party was made at the start of the build)
     if (run.builtFor == null) run.builtFor = run.wave;
     if (run.stage >= 3) ['howl', 'shackles'].forEach(t => run.unlocked.add(t));   // 1.05: the new counter-buildings for a run saved before
+    (run.upgrades || []).forEach(id => { const u = UPG[id]; if (u && u.kind === 'unlock') saveFound(u.unlock); });   // 1.14: a run saved before keeps what it opened
+    loadFound().forEach(t => { if (onbOk(t, run.stage || ONB_FULL)) run.unlocked.add(t); });
     if (!sv.gv || sv.gv < 38) run.shop = null;
     run.deck = run.deck.filter(id => UPG[id]); run.stash = run.stash.filter(id => UPG[id]);
     mods = freshMods(); run.deck.forEach(id => { const u = UPG[id]; if (u && u.apply) u.apply(mods); });
@@ -1704,7 +1734,7 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 58;   // 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  const LOG_VERSION = 58;   // 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
@@ -1722,7 +1752,7 @@
     return { version: LOG_VERSION, runId: run.id, startedAt: new Date(run.startedAt).toISOString(), at: new Date().toISOString(),
       player: (playerName || '').slice(0, 40), device: deviceId, web: WEB ? 1 : 0, tutorial: run.tutorial, stage: run.stage || ONB_FULL, guided: !!run.guided, status: run.result || 'active', won: run.won, waves: run.waves.length,
       total: Math.round(run.total), best: loadBest(), resumed: run.resumed || 0, stacks: Object.assign({}, run.stacks), crystals: run.crystals, continueUsed: run.continueUsed,
-      upgrades: run.upgrades.slice(), deck: run.deck.slice(), deckSize: run.deckSize, sold: (run.sold || []).slice(), fires: run.fires, durationSec: Math.round((Date.now() - run.startedAt) / 1000), buildSec: Math.round(run.buildSec), raidSec: Math.round(run.raidSec),
+      upgrades: run.upgrades.slice(), deck: run.deck.slice(), deckSize: run.deckSize, found: (run.foundAtStart || []).slice(), sold: (run.sold || []).slice(), fires: run.fires, durationSec: Math.round((Date.now() - run.startedAt) / 1000), buildSec: Math.round(run.buildSec), raidSec: Math.round(run.raidSec),
       settings: Object.assign({}, S),
       waveMini: run.waves.map(w => ({ w: w.wave, sc: w.score, t: w.time, lost: w.crystalLost ? 1 : 0, k: w.stats.kills, s: w.stats.scared, lv: w.heroes.map(h => h.lvl), part: w.partial ? 1 : 0, fps: w.perf ? w.perf.fps : null, cpm: w.cpm, fz: w.frozen })),
       tut: run.tutorial ? Object.assign({ steps: TUT.length, now: run.tut }, run.tutLog || {}) : null };   // 1.05: how far the tutorial got
@@ -2182,9 +2212,9 @@
   const TUT = [
     { id: 'intro', text: 'To Twój loch. Bohaterowie przyjdą falami po kryształy z serca (ostatni pokój). Loch postawił za Ciebie dwie pułapki blisko serca, ale same nie wystarczą: dostawisz więcej.', next: true },
     { id: 'move', text: 'Stuknij pułapkę w kółku, żeby ją podnieść, a potem inne podświetlone pole, żeby ją przenieść (za darmo). Przytrzymanie palca zdejmuje element i oddaje Esencję.', tile: () => { const it = [...fl.items.values()].find(o => o.sys); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); }, done: () => !!tutFlags.moved, skip: true },
-    { id: 'spikes', text: 'Teraz dostaw więcej. Wybierz Kolce z paska na dole (zakładka Pułapki). Przytrzymaj kafelek, żeby zobaczyć, co robi.', hl: ['#tab-traps', '#item-spikes'], prep: () => { movingKey = null; movingObj = null; tab = 'traps'; updateTray(); setTrayOpen(true); }, done: () => selected === 'spikes' || countType('spikes') > (tutFlags.sp0 || 0) },
+    { id: 'spikes', text: 'Teraz dostaw więcej. Wybierz Kolce z paska na dole (zakładka Pułapki). Przytrzymaj kafelek, żeby zobaczyć, co robi.', hl: ['#tab-traps', '#item-spikes'], prep: () => { movingKey = null; movingObj = null; pickTab('traps', 'spikes'); updateTray(); setTrayOpen(true); }, done: () => selected === 'spikes' || countType('spikes') > (tutFlags.sp0 || 0) },
     { id: 'place', text: 'Postaw je na trasie bohaterów: stuknij pole z pulsującym kółkiem.', tile: () => tutPathTile(0.25, 'spikes'), done: () => countType('spikes') > (tutFlags.sp0 || 0) },
-    { id: 'arrows', text: 'Strzały idą na ściany: wybierz Strzały i stuknij ścianę przy trasie (kółko).', hl: ['#item-arrows'], prep: () => { tab = 'traps'; updateTray(); setTrayOpen(true); }, tile: () => tutWallTile('arrows'), done: () => countType('arrows') > (tutFlags.ar0 || 0) },
+    { id: 'arrows', text: 'Strzały idą na ściany: wybierz Strzały i stuknij ścianę przy trasie (kółko).', hl: ['#item-arrows'], prep: () => { pickTab('traps', 'arrows'); setTrayOpen(true); }, tile: () => tutWallTile('arrows'), done: () => countType('arrows') > (tutFlags.ar0 || 0) },
     { id: 'spend', text: () => 'Masz jeszcze ' + Math.floor(fl.essence) + ' Esencji. W pierwszej fali nie oszczędzaj: dostaw kolce i strzały przy trasie. Pokój mieści kilka pułapek (licznik w rogu).', hl: ['#tab-traps'], prep: () => { selected = null; tab = 'traps'; updateTray(); }, done: () => fl.phase !== 'build' || fl.essence < 3 || !tutAnySpot(), skip: true },
     { id: 'go', text: 'Gotowe. Wypuść falę przyciskiem w prawym dolnym rogu. Pasek budowy schowa się na czas fali, a w fali ▲ Budowa zatrzymuje grę, żebyś mógł spokojnie dostawić pułapki.', hl: ['#btn-action'], done: () => fl.phase === 'raid' },
     // the wave: one line at the top; the first check jumps to 'check' (after its card)
@@ -2367,7 +2397,7 @@
   requestAnimationFrame(frame);
 
   // Hook for automated checks; no effect on normal play.
-  window.__yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => W2S(x, y, z || 0), centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  window.__yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => W2S(x, y, z || 0), centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

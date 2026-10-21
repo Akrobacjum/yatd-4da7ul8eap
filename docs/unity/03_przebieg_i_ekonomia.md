@@ -88,7 +88,8 @@ Pola `run` ustawiane w `newRun` (pełna lista):
 | `layout` | null, potem `genStartLayout()` | Układ lochu (sekcja 07). |
 | `rumor` | `{ tiles: Map, traps: Map, loot: Map, heart: -1, gold: 0 }` | Plotki (sekcja 04/06). `rumor.gold` jest składnikiem chciwości startowej (2.6). |
 | `upgrades` | [] | Historia wszystkich wziętych kart (także do schowka). |
-| `unlocked` | `Set(START_UNLOCKED.filter(t => onbOk(t, stage)))` | Odblokowane elementy (rozdział 5). |
+| `unlocked` | `Set(START_UNLOCKED.concat(loadFound()).filter(t => onbOk(t, stage)))` | Odblokowane elementy (rozdział 5). Od 1.14 także odkryte w poprzednich runach (`loadFound`, 3.8). |
+| `foundAtStart` | `loadFound()` z `onbOk` i bez `START_UNLOCKED` | 1.14: z czym run zaczął z wcześniejszych odkryć (pole `found` w logu runu). |
 | `stage` | stage | Etap nauki 1..4 (rozdział 5). |
 | `pendingUpgrades` | [] | Nagrody za fale czekające na zamianę w darmowe karty. |
 | `continueUsed` | false | Czy użyto "Kontynuuj z 1 kryształem" (reklama). |
@@ -830,7 +831,7 @@ sellStash(i): usuń ze schowka, run.sold.push(id), addEss(sellOf(u))
 
 ```
 applyUpgrade(u):                                  // p8b_ui.js
-    unlock:  run.unlocked.add(u.unlock)
+    unlock:  run.unlocked.add(u.unlock); saveFound(u.unlock)        // 1.14: na stałe, także w kolejnych runach
     instant: u.apply()
     card:    run.deck.push(u.id); recomputeMods()
     run.upgrades.push(u.id)
@@ -848,6 +849,8 @@ Niektóre efekty są "zamrażane" przy postawieniu elementu: `mods.monster` (Wet
 
 Wpływ na `run` przy wczytaniu zapisu: `resumeRun` odtwarza `mods` tak samo (bez `updateTray`), odrzucając id kart, których nie ma w `UPG`.
 
+
+**Odkrycia na stałe (1.14, `p3_flow.js: loadFound`, `saveFound`):** każdy element odblokowany kartą `unlock` trafia do kolekcji tej przeglądarki (`localStorage` `yatd-found`, tablica id; `loadFound` odrzuca id, których nie ma w `ITEMS`). `newRun` dodaje kolekcję do `run.unlocked` (przez `onbOk` etapu runu, więc pierwsze runy dalej pokazują tylko swój etap), a karty takich elementów nie wypadają już w sklepie, bo `upgradePicks` i `shopRoll` biorą tylko `!run.unlocked.has(u.unlock)`. Wczytanie zapisanego runu (`resumeRun`) dopisuje do kolekcji odblokowania z `run.upgrades` (run sprzed 1.14) i dokłada kolekcję do `run.unlocked`. Samouczek od nowa nie czyści kolekcji. W Unity: kolekcja w profilu gracza (zapis lokalny i w chmurze), nie w zapisie runu.
 ### 3.9 Tabela pól `mods`
 
 Domyślne wartości z `p3_flow.js: freshMods`. Kolumna "Karty" podaje id karty i efekt za kopię. Kolumna "Czytane w" podaje `plik.js: funkcja`.

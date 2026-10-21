@@ -68,6 +68,8 @@ Krótkie, deterministyczne sytuacje z ustalonym ziarnem i ręcznie ustawionym lo
 | sklep | darmowa karta za falę, ceny, odświeżanie drożeje, schowek wyłącza kartę, sprzedaż | `t15_shop.py` |
 | pierwsze runy | zakładki i elementy etapu 1-4, karty nowości, przejście etapów | `t112_onb.py` |
 | przewodnik | 16 kroków w falach 1-3, zapis i wznowienie | `t151_tut.py`, `t10_tutsave.py`, `t10_tutsave2.py` |
+| podzakładki paska (1.14) | Rany / Strach w Pułapkach i Potworach filtrują kafelki, wybór zapamiętany dla zakładki, mapa nie zmienia wysokości między zakładkami, przy jednej podzakładce etapu rząd znika, przewodnik przełącza na podzakładkę swojego kafelka | `t114_subs.py` |
+| odkrycia na stałe (1.14) | karta odblokowania zapisuje element; następny run zaczyna z nim, jego karta nie wypada w sklepie, inne odblokowania tak; run etapu 1 nie pokazuje elementu z etapu 2 | `t114_found.py` |
 | złodziej przed pułapką ścienną (1.13.4) | fala 2 runu testera `mvh8nl1a0g9d` (układ i drużyna: złodziej 4, tchórzliwy wojownik 3, mag 3) zagrana 6 razy z modelem stukania: nikt nie przestępuje przez 6 s między dwoma polami (przed poprawką w 9 z 20 prób) | `t1134_disarm.py` |
 | scenka przygotowania (1.13.3) | czterech specjalistów przed groźnym pokojem: mówią lider i dwóch (scenka do 10 s), wszyscy czterej i tak działają; bez specjalisty odpowiada liderowi ktoś inny; sam lider mówi za siebie | `t1133_prep.py` |
 | ślepe przejście (1.13.2) | fala 7 runu autora `mvh4wnpcy54a` odtworzona 8 razy: drużyna może zebrać łup z wąskiego pasa, przygotować się przy drzwiach i odpocząć, ale nigdy nie spędza większości najazdu przy krypcie (na 1.13.1: 130 i 132 s z 132 s fali) | `t1132_deadend.py` |

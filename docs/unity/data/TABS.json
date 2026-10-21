@@ -19,6 +19,36 @@
    "creak",
    "coffin",
    "musicbox"
+  ],
+  "subs": [
+   {
+    "id": "dmg",
+    "label": "Rany",
+    "items": [
+     "spikes",
+     "arrows",
+     "web",
+     "trapdoor",
+     "cage",
+     "fire",
+     "gate",
+     "powder",
+     "mimic"
+    ]
+   },
+   {
+    "id": "fear",
+    "label": "Strach",
+    "items": [
+     "portrait",
+     "eyes",
+     "bones",
+     "mirror",
+     "creak",
+     "coffin",
+     "musicbox"
+    ]
+   }
   ]
  },
  {
@@ -33,6 +63,28 @@
    "ghost",
    "shade",
    "bats"
+  ],
+  "subs": [
+   {
+    "id": "dmg",
+    "label": "Rany",
+    "items": [
+     "goblin",
+     "archer",
+     "spider",
+     "ogre",
+     "shaman"
+    ]
+   },
+   {
+    "id": "fear",
+    "label": "Strach",
+    "items": [
+     "ghost",
+     "shade",
+     "bats"
+    ]
+   }
   ]
  },
  {

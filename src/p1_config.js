@@ -119,8 +119,14 @@
   const TABS = [
     // Prototype 1.01 (author's layout): what wounds and what scares together, every monster in one tab, loot apart,
     // Obiekty = what stands in a room like a crate (the crate and the counter-buildings), Loch = digging and room types.
-    { id: 'traps', label: 'Pułapki', items: ['spikes', 'arrows', 'web', 'trapdoor', 'cage', 'fire', 'gate', 'powder', 'mimic', 'portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox'] },
-    { id: 'monster', label: 'Potwory', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman', 'ghost', 'shade', 'bats'] },
+    // 1.14 (author: subcategories in the build bar, for now wounds and fear): a tab with subs shows one of them at a time
+    // (Rany also holds the traps that hold, split and slow: they work with the wounding ones)
+    { id: 'traps', label: 'Pułapki', items: ['spikes', 'arrows', 'web', 'trapdoor', 'cage', 'fire', 'gate', 'powder', 'mimic', 'portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox'],
+      subs: [{ id: 'dmg', label: 'Rany', items: ['spikes', 'arrows', 'web', 'trapdoor', 'cage', 'fire', 'gate', 'powder', 'mimic'] },
+             { id: 'fear', label: 'Strach', items: ['portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox'] }] },
+    { id: 'monster', label: 'Potwory', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman', 'ghost', 'shade', 'bats'],
+      subs: [{ id: 'dmg', label: 'Rany', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman'] },
+             { id: 'fear', label: 'Strach', items: ['ghost', 'shade', 'bats'] }] },
     { id: 'loot', label: 'Łup', items: ['loot', 'lpotion', 'loot2', 'loot3', 'lcursed'] },
     { id: 'object', label: 'Obiekty', items: ['crate', 'rune', 'altar', 'decoy', 'acid', 'howl', 'shackles', 'veil', 'fortify'] },
     { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish', 'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'] },   // no Przenieś (a tap moves), no Ulepsz (a double tap upgrades)

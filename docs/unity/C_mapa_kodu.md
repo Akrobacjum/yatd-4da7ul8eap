@@ -318,6 +318,9 @@ Spis funkcji z `src/` (Prototype 1.13) z pierwszym zdaniem komentarza, który je
 | `isFrontierTile` |  |
 | `randomKnownFar` |  |
 | `nearestOf` |  |
+| `loadFound` | 1.14: the traps you discover stay discovered between runs (this browser's collection, `yatd-found`). |
+| `saveFound` |  |
+| `pickTab` | 1.14: to a tab, and to the sub that holds a tile (the guide points at a tile). |
 | `planHero` | One hero decides what to do next and finds a path there (only through tiles the party knows). |
 | `partyWay` | 1.13.4: where the party is going: the leader's path while someone else leads and walks it, else the route to the party's goal (detour, heart in an assault, explore target). Not the hero's own path. |
 | `disarmJob` | The thief deals with known traps that still sit on the leader's way. Rookies are slow and sometimes set them off. |
