@@ -495,7 +495,7 @@
   function cageEnds(h) {
     const P = fl.party, it = h.cageIt;
     if (h.boss) { freeCaged(h, false, 'break'); say(h, pick(SAY.cageBreak), 4); floatHero(h, 'Wyłamał kraty!', '#ffd27a', 14, -0.9); return; }
-    const helper = P.rescueId === h.id && alive().some(o => o !== h && !caged(o) && !o.fleeing && !o.lost && !o.gone);
+    const helper = (P.rescueId === h.id && alive().some(o => o !== h && !caged(o) && !o.fleeing && !o.lost && !o.gone)) || (P.g2 && P.g2.plan === 'rescue' && P.g2.partner === h.id);   // 1.21: his pair on the way
     if (helper && fl.time < h.cageUntil + 8) return;   // someone is coming: wait for him (up to 8 s more)
     h.state = 'walk'; h.cageUntil = -1; h.cageIt = null; if (P.rescueId === h.id) P.rescueId = -1;
     tl('cf', h.id, 'death'); fl.stats.cageDeaths = (fl.stats.cageDeaths || 0) + 1;
@@ -596,7 +596,7 @@
         }
       }
       let dmgIn = 0;
-      fighters.forEach(h => { dmgIn += h.T.dps * h.R.dps * (h.type === 'warrior' ? 1.4 : 1) * (raging(h) ? 1.5 : 1) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt; });   // a weapon from your loot cuts monsters down faster; 1.05: so does fury
+      fighters.forEach(h => { dmgIn += h.T.dps * h.R.dps * (h.type === 'warrior' ? 1.4 : 1) * (raging(h) ? 1.5 : 1) * vowK(h) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt; });   // a weapon from your loot cuts monsters down faster; 1.05: so does fury; 1.21: a vow
       hurtMonster(m, dmgIn);
     });
   }

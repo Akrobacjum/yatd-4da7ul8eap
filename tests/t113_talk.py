@@ -8,7 +8,7 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   while (G.modalKind) G.closeModal(); G.setUser(false); G.newRun(false); while (G.modalKind) G.closeModal();
   G.run.wave = 4; G.startBuild(); G.fl.essence = 900;
   for (let k = 0; k < 3; k++) { const dm = G.toolMarkers('dig'); if (dm.length) G.applyTool(dm[0]); G.fl.essence = 900; }
-  G.run.next = G.makeWave(4); G.startWave();
+  G.run.next = G.makeWave(4); G.run.next.forEach(e => { e.bond = null; }); G.startWave();   // 1.21: no bonds (their words and griefs are not what is tested here)
   let g = 0; while (G.fl.queue.length && g++ < 400) G.step(0.05);
   for (let i = 0; i < 50; i++) G.step(0.05);
   const f = G.fl, A = G.alive(), P = f.party;

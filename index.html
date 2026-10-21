@@ -2418,46 +2418,50 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // 1.20 Ekwipunek i łup: the dead's things ({n} {g} = the dead one, whose gender the line does not know), a predecessor's pile,
     // looting a body (lootDead*: from the 1.21 dialogue pass, e121/R2), handing gear over, weight, who takes the loot ({n} {v} = the
     // one who is to take it), the lantern, the crowbar, a crit knocking gear out, the mimic's belly, bombs in a fire, a returner's trophy
-    lootFallen: ['Rzeczy {g}... zostały tu.', 'To plecak {g}. Nie zostawię go tak.', 'Dobytek {g}. Tyle z tego zostało.', 'Tu leżą rzeczy {g}. Ciężko na to patrzeć.',
-      'Plecak {g}... jeszcze ciepły.', 'To należało do {g}.', 'Nie myślał{em|am}, że {n} tak skończy.', 'Tyle zostało z {g}...'],
+    lootFallen: ['Rzeczy {g}... zostały tu.', 'To plecak {g}. Nie zostawię go tak.', 'Dobytek {g}. Tyle z tego zostało.',
+      'Tu leżą rzeczy {g}. Ciężko na to patrzeć.', 'Plecak {g}... jeszcze ciepły.', 'To należało do {g}.', 'Nie myślał{em|am}, że {n} tak skończy.',
+      'Tyle zostało z {g}...'],
     predecessorGear: ['To rzeczy {g}. Stąd nie wrócił nikt.', 'Plecak {g}... gildia o tym mówiła.', 'Więc tu skończyła się wyprawa {g}.',
       'Znam ten plecak. To rzeczy {g}.', 'W karczmie piliśmy za {a}. To tutaj...', 'Rzeczy {g}. Czyli plotki były prawdziwe.',
       'Ktoś tu zginął przed nami. {n}, z gildii.', 'Nikt nie pochował {g}. Zostały tylko rzeczy.'],
-    cursedKeep: ['Nie. To zostaje ze mną.', 'Nie dotykaj tego. To moje.', 'Nie oddam. Nawet nie proś.', 'Nie ruszaj. Ani palcem.', 'Nie wymienię tego za nic na świecie.',
-      'Odsuń się od moich rzeczy.'],
-    lootDead: ['Wybacz... tobie to już niepotrzebne.', 'Wezmę to. Na pamiątkę.', 'Zaniosę to twoim bliskim. Obiecuję.', 'Lepiej w moich rękach niż w ciemności.',
-      'Niech chociaż to wyjdzie z tego lochu.', 'Nie patrzcie tak. Zmarłym łupy niepotrzebne.', 'Spoczywaj. Resztą się zajmę.', 'Wybacz, że to biorę.',
-      'Tu by tylko przepadło.', 'Przyda się żywym.'],
-    lootDeadObject: ['Zostaw to, {v}! Miej serce!', '{v}! Ani się waż!', 'Hieno jedna... {v}, odłóż to.', 'To nie twoje, {v}. Odłóż.', '{v}, jak możesz?!',
-      'Na bogów, {v}, szacunek dla zmarłych!', 'Okradasz poległych, {v}? Wstydź się.', 'Nie wolno, {v}. To przynosi pecha.',
+    cursedKeep: ['Nie. To zostaje ze mną.', 'Nie dotykaj tego. To moje.', 'Nie oddam. Nawet nie proś.', 'Nie ruszaj. Ani palcem.',
+      'Nie wymienię tego za nic na świecie.', 'Odsuń się od moich rzeczy.'],
+    lootDead: ['Wybacz... tobie to już niepotrzebne.', 'Wezmę to. Na pamiątkę.', 'Zaniosę to twoim bliskim. Obiecuję.',
+      'Lepiej w moich rękach niż w ciemności.', 'Niech chociaż to wyjdzie z tego lochu.', 'Nie patrzcie tak. Zmarłym łupy niepotrzebne.',
+      'Spoczywaj. Resztą się zajmę.', 'Wybacz, że to biorę.', 'Tu by tylko przepadło.', 'Przyda się żywym.'],
+    lootDeadObject: ['Zostaw to, {v}! Miej serce!', '{v}! Ani się waż!', 'Hieno jedna... {v}, odłóż to.', 'To nie twoje, {v}. Odłóż.',
+      '{v}, jak możesz?!', 'Na bogów, {v}, szacunek dla zmarłych!', 'Okradasz poległych, {v}? Wstydź się.', 'Nie wolno, {v}. To przynosi pecha.',
       'Ręce precz od zmarłych, {v}.', '{v}, a jak ty padniesz, mam zrobić to samo?'],
-    lootDeadReply: ['Martwym już nic niepotrzebne.', 'Wolisz, żeby zgniło?', 'Gdybym padł{|a}, bierz moje. Bez żalu.', 'Przetrwanie przed szacunkiem.',
-      'Szacunek nas stąd nie wyprowadzi.', 'Oddam, jak wyjdziemy. Może.', 'Nie oceniaj mnie.', 'Nikomu tym nie ubliżam.', 'Zmilcz. Wiem, co robię.',
-      'Spokojnie. Biorę to z szacunkiem.'],
-    giveGear: ['Masz, tobie się bardziej przyda.', 'Weź to. Ja i tak nie umiem tym machać.', 'Trzymaj. W twoich rękach to coś warte.', 'Weź. Mnie tylko ciąży.',
-      'To dla ciebie. Mnie na nic.', 'Łap. Lepiej leży na tobie niż na mnie.', 'Nie patrz tak, bierz. Należy ci się.', 'Masz. Tylko oddaj, jak wyjdziemy.'],
-    giveGearThanks: ['Dzięki, oddam w karczmie.', 'O, to mi się przyda.', 'Dziękuję. Nie zapomnę.', 'Ha! Teraz to rozumiem.', 'Pasuje jak ulał.', 'Masz u mnie piwo.'],
+    lootDeadReply: ['Martwym już nic niepotrzebne.', 'Wolisz, żeby zgniło?', 'Gdybym padł{|a}, bierz moje. Bez żalu.',
+      'Przetrwanie przed szacunkiem.', 'Szacunek nas stąd nie wyprowadzi.', 'Oddam, jak wyjdziemy. Może.', 'Nie oceniaj mnie.',
+      'Nikomu tym nie ubliżam.', 'Zmilcz. Wiem, co robię.', 'Spokojnie. Biorę to z szacunkiem.'],
+    giveGear: ['Masz, tobie się bardziej przyda.', 'Weź to. Ja i tak nie umiem tym machać.', 'Trzymaj. W twoich rękach to coś warte.',
+      'Weź. Mnie tylko ciąży.', 'To dla ciebie. Mnie na nic.', 'Łap. Lepiej leży na tobie niż na mnie.', 'Nie patrz tak, bierz. Należy ci się.',
+      'Masz. Tylko oddaj, jak wyjdziemy.'],
+    giveGearThanks: ['Dzięki, oddam w karczmie.', 'O, to mi się przyda.', 'Dziękuję. Nie zapomnę.', 'Ha! Teraz to rozumiem.', 'Pasuje jak ulał.',
+      'Masz u mnie piwo.'],
     amuletGive: ['Trzymaj mój amulet! Oddychaj!', 'Weź amulet. Ściśnij go mocno.', 'Masz, to cię uspokoi.', 'Ściśnij to. Spokojnie, jestem obok.',
       'Amulet, łap! I nie panikuj!', 'Weź to. Pomoże na strach.'],
     tooHeavy: ['Za ciężkie dla mnie.', 'Tego nie udźwignę.', 'Ledwo niosę to, co mam.', 'Plecy mi pękną. Zostawiam.', 'Nie ma mowy, za ciężkie.',
       'Więcej nie uniosę.', 'Mam już pełne ręce. I plecy.', 'Ciężkie jak grzech. Nie biorę.'],
-    heavyLoad: ['Plecak ciągnie mnie do ziemi.', 'Uff... za dużo tego dźwigam.', 'Nogi mi się uginają.', 'Idę jak objuczony muł.', 'Ciężko... ale nie zostawię.',
-      'Po co ja to wszystko taszczę?'],
+    heavyLoad: ['Plecak ciągnie mnie do ziemi.', 'Uff... za dużo tego dźwigam.', 'Nogi mi się uginają.', 'Idę jak objuczony muł.',
+      'Ciężko... ale nie zostawię.', 'Po co ja to wszystko taszczę?'],
     lootAssign: ['{n}, ty to weź.', 'Zostaw, niech {n} bierze.', '{v}, to dla ciebie. Bierz.', 'Nie ty. {n} bardziej tego potrzebuje.',
       'Ty nie. {v}, chodź tu po to.', 'Stój. Niech {n} to weźmie.', '{v}! Twoje. Bierz i wracaj.', 'Dzielimy uczciwie: bierze {n}.'],
     lootOffer: ['Mnie się nie przyda. Komuś?', 'Tu leży coś dla kogoś innego.', 'Nie dla mnie. Kto chce?', 'Zostawiam. Może komuś się przyda.',
       'Ktoś chętny? Ja nie biorę.', 'Leży i czeka na właściciela. Nie na mnie.', 'Dobra rzecz, ale nie w moje ręce.',
       'Kto pierwszy, ten lepszy. Ja odpuszczam.'],
-    lootOfferTake: ['Daj, ja wezmę.', 'Moje! To znaczy... dzięki.', 'Ja to wezmę!', 'Zostaw, już idę.', 'Biorę, skoro nikt nie chce.', 'Dla mnie w sam raz.'],
-    lanternLight: ['Trzymajcie się światła!', 'Za latarnią, krok w krok.', 'Mgła gęsta, ale latarnia daje radę.', 'Blisko mnie! Tu jeszcze coś widać.',
-      'Światło! Nie odchodźcie od światła.', 'Ta mgła nie lubi latarni.'],
+    lootOfferTake: ['Daj, ja wezmę.', 'Moje! To znaczy... dzięki.', 'Ja to wezmę!', 'Zostaw, już idę.', 'Biorę, skoro nikt nie chce.',
+      'Dla mnie w sam raz.'],
+    lanternLight: ['Trzymajcie się światła!', 'Za latarnią, krok w krok.', 'Mgła gęsta, ale latarnia daje radę.',
+      'Blisko mnie! Tu jeszcze coś widać.', 'Światło! Nie odchodźcie od światła.', 'Ta mgła nie lubi latarni.'],
     lanternOut: ['Zgasła! Nic nie widzę!', 'Kto zgasił światło?!', 'Latarnia! Zgasła mi!', 'Ciemno! Gdzie krzesiwo?!', 'Coś zdmuchnęło płomień!',
       'Ciemność! Tylko nie to!'],
-    crowbarGate: ['Łom! Zaraz ją podważę.', 'Odsuńcie się, podważam.', 'Krata kontra łom. Zobaczymy.', 'Podważę te pręty. Chwila.', 'Na tę kratę mam łom.',
-      'Raz, dwa... ruszyła!'],
+    crowbarGate: ['Łom! Zaraz ją podważę.', 'Odsuńcie się, podważam.', 'Krata kontra łom. Zobaczymy.', 'Podważę te pręty. Chwila.',
+      'Na tę kratę mam łom.', 'Raz, dwa... ruszyła!'],
     crowbarCage: ['Mam łom! Wyłamuję pręty!', 'Pręty nie wytrzymają łomu.', 'Łom w szczelinę i... wolność!', 'Dobrze, że wziął{em|am} łom.'],
-    gearKnocked: ['Moje rzeczy! Wypadło mi!', 'Coś mi wybiło z ręki!', 'Upuścił{em|am}! Leży tam!', 'Wyleciało mi! Muszę to podnieść.', 'Poleciało! Moja rzecz!',
-      'Wytrącone! Akurat teraz!'],
+    gearKnocked: ['Moje rzeczy! Wypadło mi!', 'Coś mi wybiło z ręki!', 'Upuścił{em|am}! Leży tam!', 'Wyleciało mi! Muszę to podnieść.',
+      'Poleciało! Moja rzecz!', 'Wytrącone! Akurat teraz!'],
     gearBack: ['Mam z powrotem!', 'Moje. Już nie wypuszczę.', 'Odzyskane!', 'Wróciło do właściciela.', 'Tym razem trzymam mocno.', 'Uff, jest. Całe.'],
     mimicSpill: ['Wypluł wszystko, co zjadł!', 'W środku pełno cudzych rzeczy!', 'Ten mebel miał pełny brzuch!', 'Ile on tego połknął?!'],
     bombCook: ['Bomby! Gorą mi w plecaku!', 'Płonę, a mam przy sobie bomby!', 'Proch w plecaku! Odsuńcie się!', 'Zaraz wybuchnie! Wszystko!',
@@ -2465,7 +2469,89 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     bombFriendly: ['Uważaj, gdzie rzucasz!', 'Ej! Ja tu stoję!', 'Moje uszy! Celuj lepiej!', 'Swoich nie bombardujemy!', 'Mało mnie nie rozerwało!',
       'Następnym razem ostrzeż!'],
     returnGear: ['Wrócił{em|am}. I mam coś twojego, lochu.', 'Twoja błyskotka wróciła ze mną.', 'Pamiętasz to, lochu? Oddać ci?',
-      'Wziął{em|am} to stąd. Teraz po więcej.', 'Patrz, lochu. Twoje trofeum w moich rękach.', 'To stąd {wyniosłem|wyniosłam}. Wracam.']
+      'Wziął{em|am} to stąd. Teraz po więcej.', 'Patrz, lochu. Twoje trofeum w moich rękach.', 'To stąd {wyniosłem|wyniosłam}. Wracam.'],
+    // 1.21 Więzi i dramaty (e121/R2): a bond between two of them ({v} = the other one of the pair; the line never knows his gender)
+    bondFriend: ['Plecy w plecy, {v}. Jak za dawnych lat.', 'Pilnuję cię, {v}. Ty pilnuj mnie.', 'Nie pierwszy loch, co, {v}?',
+      'Razem weszliśmy, razem wyjdziemy, {v}.', '{v}, po wszystkim stawiam ci kufel.', 'Tylko nie rób nic głupiego, {v}.',
+      'Dobrze, że jesteś ze mną, {v}.', 'Jak wrócimy, opowiemy to w karczmie, {v}.', '{v}, tylko bez bohaterstwa. Obiecujesz?',
+      'Ty patrzysz w lewo, ja w prawo, {v}.'],
+    bondSibling: ['Mama kazała mi cię pilnować, {v}.', 'Krew z krwi, {v}. Trzymamy się razem.', 'Rodzina pierwsza, {v}. Łupy potem.',
+      'Nie waż się zginąć, {v}. Mama by mi nie darowała.', '{v}, pamiętasz stodołę u dziadka? Tu jest gorzej.',
+      'Znów razem w kłopotach, {v}. Rodzinna tradycja.', 'Jak tata mawiał, {v}: głowa nisko, oczy szeroko.',
+      'Nikomu cię nie oddam, {v}. Rodzina to rodzina.', '{v}, zostań przy mnie. Jesteśmy jednej krwi.',
+      'Jak w dzieciństwie, {v}. Ty i ja przeciw światu.'],
+    bondRival: ['Kto więcej wyniesie, {v}, ten stawia.', 'Tylko mi się nie plącz pod nogami, {v}.', 'Licz, {v}. Dziś cię wyprzedzę.',
+      '{v}, przegrany myje garnki przez tydzień.', 'Zobaczymy, kto pierwszy dotknie kryształu, {v}.', 'Nie płacz potem, {v}, jak cię znów pobiję.',
+      'Ten loch jest mój, {v}. Ty możesz popatrzeć.', '{v}, spróbuj tym razem nadążyć.', 'Zakład stoi, {v}? Kto mniej draśnięć, wygrywa.',
+      'Dziś pieśni będą o mnie, nie o tobie, {v}.'],
+    bondMentor: ['Oczy otwarte, usta zamknięte, {v}.', 'Nie pchaj się, {v}. Patrz, jak ja robię.', 'Zapamiętaj, {v}: cichy krok żyje dłużej.',
+      'Każdy loch kłamie, {v}. Ufaj nosowi.', 'Trzymaj się blisko i ucz się, {v}.', '{v}, łupy poczekają. Życie nie.',
+      'Gdy coś wygląda za łatwo, {v}, to jest pułapka.', 'Nie spiesz się, {v}. Pośpiech zabija.', 'Strach to dobry nauczyciel, {v}. Słuchaj go.',
+      'Patrz na ściany i na podłogę, {v}. Zawsze.'],
+    bondReply: ['Wiem, wiem.', 'Łapię cię za słowo.', 'Ty też uważaj.', 'Słyszę to za każdym razem.', 'Umowa stoi.', 'Nie martw się o mnie.',
+      'Ha! Marzenia.', 'Obiecuję. Na wszystko.', 'Mhm. Pilnuj lepiej siebie.', 'Jak zawsze, tak zawsze.'],
+    griefFriend: ['{v}! Nie... tylko nie ty!', 'Nie, nie, nie... {v}!', '{v}... obiecaliśmy sobie wrócić.', 'Dlaczego ty, {v}? Dlaczego nie ja?',
+      '{v}... kto mi teraz popilnuje pleców?', '{v}... to nie może być prawda.', 'Tyle lat razem, {v}. Tyle lat...', 'Bogowie, nie... {v}!',
+      '{v}... jeszcze ci nie oddał{em|am} długu.', 'Nie wierzę... nie wierzę, {v}...'],
+    griefSibling: ['{v}! Nie! Krew z mojej krwi!', 'Co ja powiem mamie, {v}?', '{v}... jak wrócę do domu bez ciebie?',
+      'Miał{em|am} cię pilnować, {v}...', 'Ojciec mi tego nie wybaczy... {v}...', 'Od kołyski razem, {v}. Do teraz.',
+      'Nie zabieraj mi rodziny, przeklęty lochu!', '{v}... dom będzie teraz taki pusty.', '{v}... rodzina się nie rozdziela. Nie tak.',
+      'Kto mi zostanie z rodziny, {v}?'],
+    griefMentor: ['{v}... kto mnie teraz nauczy?', 'Nie zdążył{em|am} ci podziękować, {v}...', 'Wszystko, co umiem, mam od ciebie, {v}.',
+      '{v}, nie zostawiaj mnie sam{ego|ą}...', 'Co teraz, {v}? Co mam robić?!', '{v}... przecież ty znasz każdy loch!',
+      'Nie! Bez ciebie nie dam rady, {v}!', 'Twoje lekcje zostaną ze mną, {v}. Przysięgam.', '{v}... jeszcze tyle chciał{em|am} się nauczyć.',
+      'Kto mi teraz powie, gdzie stawiać stopy, {v}?'],
+    griefRival: ['{v}... to nie tak miało się skończyć.', 'Z kim ja się teraz będę ścigać, {v}?', 'Nie dokończyliśmy zakładu, {v}...',
+      'Zawsze chciał{em|am} cię pokonać, {v}. Nie tak.', 'Kłóciliśmy się o wszystko, {v}. Wszystko...', 'Nie mam już z kim przegrywać, {v}...',
+      '{v}... nie zdążył{em|am} powiedzieć: szanuję cię.', 'Kto mi teraz powie, że jestem do niczego, {v}?', 'Psiakrew, {v}... nie ty.',
+      'Wygrana bez ciebie nic nie jest warta, {v}.'],
+    revengeVow: ['Ten loch zapłaci za ciebie, {v}. Przysięgam.', 'Zniszczę to, co ci to zrobiło, {v}.', 'Słyszysz mnie, lochu?! Zapłacisz!',
+      '{v}, rozwalę ten loch kamień po kamieniu.', 'Za ciebie, {v}. Wszystko teraz za ciebie.', 'Przysięgam na twoje imię, {v}: pomszczę cię.',
+      'To coś pożałuje, że cię tknęło, {v}.', 'Zemsta, {v}. Obiecuję ci zemstę.', 'Spalę serce tego lochu, {v}. Dla ciebie.', 'Krew za krew, {v}.'],
+    noLeave: ['Nigdzie bez ciebie nie idę, {v}!', '{v}! Wytrzymaj, nie odchodzę!', 'Rozkaz czy nie, {v}, zostaję!',
+      'Nie ma mowy! Nie bez ciebie, {v}!', 'Idźcie, jeśli chcecie. Ja zostaję, {v}!', '{v}! Słyszysz? Nie zostawię cię tu!',
+      'Nie odejdę bez ciebie, {v}. Nigdy.', '{v}, trzymaj się! Jestem tu!', 'Nie zostawia się swoich, {v}!', 'Prędzej sam{|a} tu zgniję, {v}!'],
+    noLeaveReply: ['Wiedział{em|am}, że nie odejdziesz.', 'Dzięki... nie zapomnę ci tego.', 'Uciekaj! Ratuj się!', 'Pospiesz się, proszę!',
+      'Nie musisz... ale dziękuję.', 'Bogom dzięki, że tu jesteś!', 'Zawsze można na ciebie liczyć.', 'Nie słuchaj ich! Zostań!',
+      'Odwdzięczę się. Przysięgam.', 'Już myślał{em|am}, że zostanę tu sam{|a}.'],
+    mentorWatch: ['Ostrożnie, {v}. Krok po kroku.', '{v}, wolniej! Patrz, gdzie stawiasz stopy.', 'Stój, {v}. Najpierw pomyśl.',
+      'Nie tutaj, {v}. Czujesz to?', '{v}, głowa nisko!', 'Pamiętasz, czego cię uczył{em|am}, {v}?', 'Tu giną nowicjusze, {v}. Uważaj.',
+      '{v}! Nie dotykaj niczego!', 'Słuchaj ciszy, {v}. Coś tu jest.', '{v}, trzymaj dystans. Ufaj mi.'],
+    apprenticeReply: ['Tak jest, rozumiem!', 'Jasne, już uważam.', 'Już, już... widzę.', 'Pamiętam, pamiętam!', 'Patrzę! Naprawdę patrzę!',
+      'Uczę się, przecież widać.', 'A skąd mam to wiedzieć?', 'Serce mi wali...', 'Nie zawiodę cię.', 'Ty widzisz to wszystko? Jak?'],
+    mentorProud: ['Dobra robota! Uczysz się.', 'No proszę. Jeszcze coś z ciebie będzie.', 'Tak to się robi.', 'Jestem z ciebie dumn{y|a}.',
+      'Moja szkoła!', 'Tak trzymaj.', 'Widzę, że słuchasz. Dobrze.', 'Lepiej niż ja za młodu.', 'Ha! Kiedyś mnie przerośniesz.',
+      'Żyjesz i się uczysz. O to chodzi.'],
+    rivalMock: ['Ała, {v}? Mnie by się to nie zdarzyło.', 'I kto tu jest najlepszy, {v}?', 'Plus jeden dla mnie, {v}.', 'Ups. Boli, {v}?',
+      'Uważaj, {v}, bo coś ci się stanie. A, już.', 'Zapiszę to w pieśni, {v}. Wesołej.', 'Tak wygląda mistrz, {v}? Ha!',
+      'Patrz i ucz się, {v}. Ode mnie.', 'Nogi z waty, {v}?', 'To się liczy jako przegrana, {v}.'],
+    rivalMockReply: ['Zamknij się.', 'Śmiej się, póki możesz.', 'To tylko draśnięcie!', 'Zobaczymy, kto się będzie śmiał na końcu.',
+      'Jeszcze ci oddam. Z nawiązką.', 'Ciebie by to zabiło.', 'Lepiej patrz pod własne nogi.', 'Nic mi nie jest! Nic!', 'Zapamiętam ci to.',
+      'Twoja kolej jeszcze przyjdzie.'],
+    quarrelStart: ['Ręce precz, {v}! To moje.', 'Ja był{em|am} pierwsz{y|a}, {v}!', '{v}, puść to. Natychmiast.', 'Nawet o tym nie myśl, {v}.',
+      'Ej! {v}, to moja zdobycz!', 'Odłóż to, {v}. Należy mi się.', 'Ostatnim razem wszystko poszło dla ciebie, {v}!',
+      'Moje oko pierwsze to wypatrzyło, {v}!', '{v}! Dzielimy się czy się bijemy?', 'Znów mi podbierasz, {v}?'],
+    quarrelReply: ['Akurat. Kto pierwszy, ten lepszy.', 'Śnij dalej.', 'Nie oddam.', 'Twoje? Gdzie tu twoje imię?', 'Spróbuj mi to zabrać.',
+      'Zawsze wszystko twoje, co?', 'Ja tu dosz{edłem|łam} pierwsz{y|a}!', 'Nie ma mowy. Moje.', 'Wymyślasz na poczekaniu.', 'Puść, bo pożałujesz.'],
+    quarrelWin: ['Moje. I kropka.', 'Ha! Szybsza ręka wygrywa.', 'Nie smuć się. Następnym razem.', 'No i po sprawie.',
+      'Grzecznie ustąpione. Dziękuję.', 'Mówił{em|am}, że moje.', 'Sprawiedliwości stało się zadość.', 'Łatwo poszło.',
+      'Ach, jak przyjemnie wygrywać.', 'Nie dąsaj się tak.'],
+    quarrelLose: ['Weź to sobie. Udław się.', 'Zapamiętam.', 'Niech ci będzie. Na razie.', 'Zawsze to samo...', 'Jeszcze się policzymy.',
+      'Bezczelność!', 'Odbiję to sobie przy następnym.', 'Ech. Zawsze mam pecha.', 'Bierz. Mam nadzieję, że ci zaciąży.',
+      'Świetnie. Ja tu tylko ryzykuję życie.'],
+    betStart: ['Moneta, że przejdę i się nie zadraśnię.', 'Kto się zakłada? Przechodzę tamtędy cał{y|a}.', 'Zakład? Przejdę tamtędy jak po rynku.',
+      'Dwie monety, że wyjdę z tego bez szwanku.', 'Kto stawia przeciw mnie? Przejdę tam.', 'Patrzcie i płaćcie. Idę tamtędy.',
+      'Założysz się? Przejdę i nic mi nie będzie.', 'Kufel piwa, że przejdę bez zadrapania.', 'To nic groźnego. Idę, a wy stawiajcie.',
+      'Nikt mi nie wierzy? To patrzcie. O monetę.'],
+    betTake: ['Przyjmuję, {v}. Szykuj sakiewkę.', 'Stoi, {v}! Moneta na pułapkę.', 'Zakład, {v}. I tak przegrasz.',
+      'Dobra, {v}. Ale zbierać cię nie będę.', '{v}, biorę. Łatwe pieniądze.', 'Wchodzę, {v}. Pokaż, co umiesz.', 'Ha! {v}, stawiam podwójnie.',
+      'Szkoda mi cię, {v}, ale biorę.', '{v}, twoja moneta już jest moja.', 'Zgoda, {v}. Patrzę uważnie.'],
+    betWin: ['Płać, {v}! Uczciwie wygrane.', 'I co, {v}? Ani draśnięcia!', '{v}, moneta. Do ręki.', 'Mówił{em|am}, {v}. Wyskakuj z pieniędzy.',
+      'Cał{y|a} i zdrow{y|a}, {v}. Należy mi się.', 'Ha! {v}, ucz się od mistrza.', 'Dług to dług, {v}.', 'Następnym razem nie wątp we mnie, {v}.',
+      '{v}, liczę do trzech. Płacisz.', 'Wygrał{em|am}, {v}! Słyszycie?'],
+    betLose: ['Ha! Płać, {v}. A potem się opatrz.', 'Mówił{em|am} ci, {v}. Pułapka zawsze wygrywa.', '{v}! Żyjesz? To dobrze. I tak płacisz.',
+      'Głupi zakład, {v}. Trzymaj się.', 'Zatrzymaj tę monetę, {v}. Tylko żyj.', 'Dobra lekcja za jedną monetę, {v}.',
+      '{v}, to nie było warte monety!', 'No i kto wygrał, {v}?', 'Bogowie, {v}... dość już takich zakładów.', 'Następnym razem stawiaj na loch, {v}.']
   };
   // 1.10: answers to the everyday lines (someone close by says one now and then)
   const CHAT_REPLY = {
@@ -3302,6 +3388,50 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       { bt: 'coward', l: [['B', 'Może ktoś za {A:nim|nią} pójdzie?'], ['C', 'Ty?'], ['B', '...Nie, ja nie.']] },
       { bv: 2, l: [['B', 'Znam ten typ. Wróci, jak zgłodnieje.'], ['C', 'Albo jak się wystraszy.']] },
       { b: 'priest', l: [['B', 'Niech bogowie {A:go|ją} strzegą. I uczą pokory.'], ['C', 'Pokory? {An}? Powodzenia.']] }
+    ],
+    // 1.21 Więzi i dramaty (e121/R2): grief, a quarrel over loot, a bet, a rival's jab, two friends (A = the one who said the line)
+    griefFriend: [
+      { b: 'priest', l: [['B', 'Niech bogowie przyjmą tę duszę.'], ['A', 'Niech lepiej mi ją oddadzą.'], ['B', 'Wiem. Przykro mi, {Av}.']] },
+      { bt: 'brave', l: [['B', '{Av}, opłaczemy później. Teraz trzymaj się.'], ['A', 'Jak mam się trzymać?'], ['B', 'Razem z nami. Krok za krokiem.']] },
+      { bt: 'coward', l: [['B', 'Zginiemy tu wszyscy... wszyscy!'], ['A', 'Zamknij się. Proszę.']] },
+      { b: 'bard', l: [['B', 'Ułożę o tym pieśń. Obiecuję.'], ['A', 'Niech będzie piękna. Na to zasługuje.'], ['B', 'Będzie. I prawdziwa.']] },
+      { l: [['B', 'Przykro mi, {Av}. Naprawdę.'], ['A', 'Wiem... dzięki.'], ['C', 'Ale ten loch nie śpi. Uważajmy.']] },
+      { bt: 'greedy', l: [['B', 'Zostało coś po... no wiesz?'], ['A', 'Nie teraz! Na bogów!'], ['C', 'Na bogów, miej trochę wstydu.']] },
+      { b: 'barbarian', l: [['B', 'Polegli w walce piją z przodkami.'], ['A', 'Oby tak było.'], ['B', 'Tak jest. Wypijemy za to.']] }
+    ],
+    quarrelStart: [
+      { l: [['B', 'Znowu? Jak dzieci.'], ['A', 'To moje i tyle!'], ['B', 'Dzielcie się, bo nikt nic nie dostanie.']] },
+      { bt: 'greedy', l: [['B', 'A może oddacie to mnie? Dla zgody.'], ['A', 'Nawet nie marz.'], ['C', 'Ha! Trzeci się znalazł.']] },
+      { b: 'priest', l: [['B', 'Chciwość to grzech. Opamiętajcie się.'], ['A', 'Grzech to oddać swoje.']] },
+      { bt: 'careful', l: [['B', 'Kłócicie się, a loch słucha.'], ['A', 'Niech słucha. To moje.'], ['B', 'Ciszej chociaż.']] },
+      { b: 'bard', l: [['B', 'Pieśń o dwóch upartych. Już się pisze.'], ['A', 'Nie wtrącaj się.'], ['B', 'Za późno. Mam refren.']] },
+      { l: [['B', 'Rzućcie monetą i po sprawie.'], ['A', 'Nie będę rzucać o swoje.'], ['C', 'Jak dwa osły nad jednym żłobem.']] }
+    ],
+    betStart: [
+      { bt: 'coward', l: [['B', 'Wariat. Kompletny wariat.'], ['A', 'Wariat, który zaraz zarobi.']] },
+      { bt: 'greedy', l: [['B', 'Stawiam na pułapkę. Dwie monety.'], ['A', 'Już je sobie liczę.'], ['C', 'Ja też stawiam na pułapkę.']] },
+      { b: 'priest', l: [['B', 'Nie kuś losu, {Av}. Bogowie słuchają.'], ['A', 'To niech patrzą uważnie.']] },
+      { bt: 'careful', l: [['B', 'Po co? Dla jednej monety?'], ['A', 'Dla sławy. Moneta to dodatek.'], ['B', 'Sława na cmentarzu.']] },
+      { l: [['B', 'Niech ktoś szykuje bandaże.'], ['A', 'Nie będą potrzebne.'], ['C', 'Zobaczymy, zobaczymy.']] },
+      { b: 'bard', l: [['B', 'Jak przejdziesz, zaśpiewam o tym.'], ['A', 'A jak nie?'], ['B', 'Też zaśpiewam. Smutniej.']] },
+      { b: 'barbarian', l: [['B', 'Ha! To lubię! Idź!'], ['A', 'Patrz i podziwiaj.']] }
+    ],
+    rivalMock: [
+      { l: [['B', 'Dajcie spokój, ktoś tu krwawi.'], ['A', 'Krwawi i przegrywa.']] },
+      { b: 'priest', l: [['B', 'Kpisz z rannego? Wstydź się.'], ['A', 'Z rywala. To co innego.']] },
+      { bt: 'brave', l: [['B', 'Kiedyś to ciebie spotka, {Av}.'], ['A', 'Ale nie dziś.']] },
+      { b: 'bard', l: [['B', 'Ten pojedynek to skarb dla pieśni.'], ['A', 'Zapisz wynik. Ja prowadzę.']] },
+      { l: [['B', 'Wy się kiedyś nawzajem pozabijacie.'], ['A', 'Nie kuś.'], ['C', 'Byle nie przy mnie.']] },
+      { bt: 'coward', l: [['B', 'Jak możesz się śmiać? Tu się umiera!'], ['A', 'Właśnie dlatego się śmieję.']] }
+    ],
+    bondFriend: [
+      { l: [['B', 'Miło patrzeć na taką przyjaźń.'], ['A', 'Rzadkość w tym fachu.']] },
+      { bt: 'greedy', l: [['B', 'Przyjaźń przyjaźnią, łup dzielimy po równo.'], ['A', 'Ty zawsze o jednym.']] },
+      { b: 'bard', l: [['B', 'Pieśń o wiernych druhach? Mam to!'], ['A', 'Tylko bez smutnego końca.'], ['B', 'Nic nie obiecuję.']] },
+      { bt: 'careful', l: [['B', 'Pilnujecie się nawzajem. Mądrze.'], ['A', 'Zawsze tak robimy.']] },
+      { l: [['B', 'A mnie kto popilnuje?'], ['A', 'Ty też trzymaj się blisko.'], ['C', 'Ja ciebie. Może.']] },
+      { b: 'barbarian', l: [['B', 'Dobrze mieć kogoś za plecami w boju!'], ['A', 'Najlepiej na świecie.']] },
+      { bv: 2, l: [['B', 'Widział{em|am} wiele takich przyjaźni. Dbajcie o nią.'], ['A', 'Mamy taki zamiar.']] }
     ]
   };
   // 1.13 (author: alone, they talked to the air): what a hero says instead when nobody can hear him (nobody in earshot).
@@ -3465,7 +3595,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       'Sam{|a} jestem. Każda rzecz się przyda.', 'Mnie to teraz bardziej potrzebne. Wybacz.'],
     cursedKeep: ['Nie zamienię. To zostaje przy mnie.', 'Inne? Nie. Mam swoje skarby.', 'Nikt mi tego nie zabierze.'],
     crowbarGate: ['Sam{|a} podważę tę kratę. Jakoś.', 'Łom w szparę i ciągnę...', 'No dalej, kraciska...'],
-    bombCook: ['Gorę... a te bomby zaraz...', 'Bomby się grzeją! Zaraz będzie po mnie!', 'Ogień i proch. Głupi{|a} ja.']
+    bombCook: ['Gorę... a te bomby zaraz...', 'Bomby się grzeją! Zaraz będzie po mnie!', 'Ogień i proch. Głupi{|a} ja.'],
+    // 1.21: alone ({v} = the dead one; said through bondText (p5), which fills the name)
+    griefFriend: ['{v}... i został{em|am} sam{|a}.', 'Nie ma cię, {v}. Nikogo nie ma.', 'Mówię do ciebie, {v}, a ty milczysz.',
+      'Jak mam iść dalej bez ciebie, {v}?', '{v}... cisza tu taka straszna.', 'Tylko ja i ten loch, {v}. Tylko ja.'],
+    revengeVow: ['Pomszczę cię, {v}. Choćbym miał{|a} paść.', 'Ten loch odpowie za ciebie, {v}.', 'Sam{|a}, ale nie bezbronn{y|a}. Za ciebie, {v}.',
+      'Słyszysz, przeklęty lochu? Odpłacę ci.', 'Obiecuję ci to, {v}. Zemstę.', 'Nikt nie słyszy tej przysięgi. Tylko ty, {v}.']
   };
   const SOLO_MUTE = new Set(['prepWard', 'prepJam', 'prepDisarm', 'prepShield', 'lootWait', 'friendHit', 'friendLow', 'rescue', 'scoutReply', 'councilReply', 'prepReply', 'restReply', 'restPriest', 'restScene',
     'argueLoot', 'argueCareful', 'argueCoward', 'argueBrave', 'decideYes', 'decideNo', 'argueSearch', 'replySearch', 'argueRetreat', 'agreeRetreat', 'reassure', 'surviveFirst',
@@ -3715,6 +3850,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       'Jak miód. Tylko mniej smaczne.', 'Spokojnie, {Av}. To tylko nici.', 'Nici mają właściciela!', 'Pajęczyna! Gdzie sieć, tam i pająk!',
       'Te nici się kleją... zaraz przyjdzie właściciel!']
   };
+  // 1.21: grief and a vow name a dead friend: only one who knows of that death says them (he is in its d.knows before he speaks)
+  ['griefFriend', 'griefSibling', 'griefMentor', 'griefRival', 'revengeVow'].forEach(k => LINE_NEEDS.death.push(...SAY[k], ...(SOLO[k] || [])));
   const gtext = (t, female) => t.replace(/\{([^|}]*)\|([^}]*)\}/g, (_, m, f) => female ? f : m);
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const pickS = a => Array.isArray(a) ? pick(a) : a;   // 1.17: a line or a list of lines
@@ -4468,7 +4605,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     let pool = null;
     if (fl.phase === 'raid' && aloneNow(h)) {   // 1.13: alone he talks to himself (SOLO) or keeps a line meant for others to himself
       const k = lineKey(text), b = k ? k.split(':')[0] : null;
-      if (k && (SOLO[k] || SOLO[b])) { pool = SOLO[k] || SOLO[b]; text = pick(pool); }
+      if (k && (SOLO[k] || SOLO[b])) { pool = (SOLO[k] || SOLO[b]).filter(x => !/\{[navg]\}/.test(x)); if (!pool.length) return true; text = pick(pool); }   // 1.21: not one with a name to fill
       else if (b && SOLO_MUTE.has(b)) return true;
     }
     if (fl.phase === 'raid') { text = fitLine(h, text, pool); if (!text) return true; }   // 1.17.1: only what he has seen (p5_ai.js)
@@ -4923,7 +5060,42 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         else if ([...run.items.values()].some(it => it.type === 'gate') && Math.random() < 0.3) { const c = list.filter(room); give(c.find(e => e.type === 'warrior' || e.type === 'barbarian') || (c.length ? pick(c) : null), 'crowbar'); }
       }
     }
+    makeBonds(list, n);   // 1.21
     return list;
+  }
+  // 1.21 Więzi i dramaty: some of them come in pairs. A party gets 0-2 bonds (the first 55%, a second 30%), one bond a hero at
+  // most, none for a returner (1.23 may give him one) and none in the tutorial's first wave: siblings 15%, a mentor (rank 1+) and
+  // his apprentice (a rookie) 25% when there is such a pair, rivals 25% (two of a kind: both greedy or brave, else any two),
+  // friends the rest. e.bond = { type, with: the other's index in this list, role: 'mentor' / 'apprentice' / null }; the hero
+  // gets h.bond = { type, id, role } (spawnHero: they come in in this order, so the index is his id).
+  function makeBonds(list, n) {
+    if (tutW1(n) || list.length < 2) return;
+    const tough = e => e.trait === 'greedy' || e.trait === 'brave' || e.hunter;
+    for (let k = 0; k < 2; k++) {
+      if (Math.random() >= (k ? 0.3 : 0.55)) break;
+      const f = list.map((e, i) => i).filter(i => !list[i].bond && !list[i].returning);
+      if (f.length < 2) break;
+      const ment = [], riv = [];
+      f.forEach(i => f.forEach(j => { if (i === j) return; if (list[i].rank >= 1 && list[j].rank === 0) ment.push([i, j]); if (i < j && tough(list[i]) && tough(list[j])) riv.push([i, j]); }));
+      const r = Math.random();
+      let type = 'friend', pr = null;
+      if (r < 0.15) type = 'sibling';
+      else if (r < 0.4) { if (ment.length) { type = 'mentor'; pr = pick(ment); } }
+      else if (r < 0.65) { type = 'rival'; if (riv.length) pr = pick(riv); }
+      if (!pr) { const a = pick(f); pr = [a, pick(f.filter(i => i !== a))]; }
+      list[pr[0]].bond = { type, with: pr[1], role: type === 'mentor' ? 'mentor' : null };
+      list[pr[1]].bond = { type, with: pr[0], role: type === 'mentor' ? 'apprentice' : null };
+    }
+  }
+  // what the other one is to him, by the other's gender: "Przyjaciel: Borys", "Rywalka: Wanda", "Mistrz: ..." (his mentor), "Uczeń: ..."
+  const BOND_NOUN = { friend: ['Przyjaciel', 'Przyjaciółka'], sibling: ['Brat', 'Siostra'], rival: ['Rywal', 'Rywalka'], mentor: ['Mistrz', 'Mistrzyni'], apprentice: ['Uczeń', 'Uczennica'] };
+  const bondLabel = (b, o) => BOND_NOUN[b.type === 'mentor' ? (b.role === 'mentor' ? 'apprentice' : 'mentor') : b.type][o.female ? 1 : 0] + ': ' + o.nm[0];
+  // the other one of an entry's pair: the hero in the dungeon, or his entry in the party list (before the wave, or not in yet)
+  function bondMate(e, live) {
+    if (!e || !e.bond) return null;
+    if (live && live.bond && fl && fl.heroes[live.bond.id]) return fl.heroes[live.bond.id];
+    const L = (run && run.next) || [];
+    return L.includes(e) ? L[e.bond.with] || null : null;
   }
   const TALE_PER = 0.04, TALE_LOOT = 4, TALE_CAP = 0.3;   // v15.1: +0,04 greed per treasure seen (up to 4) for every hero scared away, at most +0,3 a wave
   const greedStartNow = () => greedCurve(1 + mods.greedStart + run.rumor.gold + run.greedKeep + greedBonusNow());
@@ -5006,9 +5178,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       // v12: purse, curse, the priest's faith, powers in use, getting separated, shaken by a death
       gold: 0, cursed: false, faith: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithMax: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithT: 0,
       wardUntil: -1, wardK: 0, sprintUntil: -1, sprintK: 1, calmUntil: -1, giveCd: 0, sepT: 0, sepRolled: false, shakenUntil: -1, rtSaid: new Set(), lostCallT: 0, hunter: !!e.hunter,
-      phys: e.phys || null, phobia: e.phobia || null, known: new Set(e.known || []), returning: !!e.returning, scar: e.scar || null, trauma: {}, fearBy: {}, dmgBy: {}, phobiaSeen: new Set(), saw: new Set() };
+      phys: e.phys || null, phobia: e.phobia || null, known: new Set(e.known || []), returning: !!e.returning, scar: e.scar || null, trauma: {}, fearBy: {}, dmgBy: {}, phobiaSeen: new Set(), saw: new Set(),
+      bond: e.bond ? { type: e.bond.type, id: id + e.bond.with - Math.max(0, (run.next || []).indexOf(e)), role: e.bond.role || null } : null };   // 1.21
     h.inR = realNow;   // 1.09: pops in
     fl.heroes.push(h);
+    if (h.bond && bondOf(h)) { const st = fl.stats, by = st.bondsBy || (st.bondsBy = {}); st.bonds = (st.bonds || 0) + 1; by[h.bond.type] = (by[h.bond.type] || 0) + 1; tl('bo', h.bond.id, h.id, h.bond.type); }   // 1.21: the pair is in
     if (h.returning) tutPop('returner');   // 1.12: the first returner in the first runs
     tl('sp', h.id);
     reveal(h);
@@ -5467,7 +5641,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     feltBy(h, real / h.max);   // 1.05: what hurt him (told in the tavern)
     if (attr) { const b = bt(attr); if (kind === 'monster') b.passiveDmg += real; else b.dmg += real; }
     if (kind === 'trap') fl.party.morale = Math.max(0.15, fl.party.morale - 0.03);
-    if (h.hp <= 0) { h.hp = 0; h.dead = true; kill(h, kind, attr); return; }
+    if (h.hp <= 0) { h.hp = 0; h.dead = true; h.killer = kind === 'monster' ? src : null; kill(h, kind, attr); return; }   // 1.21: killer
+    bondHurt(h, real, kind, src);   // 1.21
     if (kind === 'trap' && real >= 0.25 * h.max && fl.time - (fl.party.lastSay.friendHit || -99) > 5) {   // 1.05: a friend sees it and reacts
       const o = alive().find(q => q !== h && !q.fleeing && !panicking(q) && !q.lost && hdist(q, h) <= 4);
       if (o) { fl.party.lastSay.friendHit = fl.time; fl.party.queueSay.push({ id: o.id, text: nameFill(pick(SAY.friendHit), h), at: fl.time + 0.5, how: 'loud' }); }
@@ -5527,7 +5702,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     }
     const barb = h.type === 'barbarian';
     h.rageUntil = fl.time + (barb ? 8 : 6); h.rageCd = fl.time + (barb ? 14 : 20); fl.stats.rages = (fl.stats.rages || 0) + 1; tl('rg2', h.id, why);
-    say(h, why === 'death' && dead ? nameFill(pick(SAY.revenge), dead) : why === 'panic' ? pick(SAY.rageNoPanic) : pick(SAY.rage), 4, 2.2);
+    say(h, why === 'vow' && dead ? bondText(h, 'revengeVow', dead) : why === 'death' && dead ? nameFill(pick(SAY.revenge), dead) : why === 'panic' ? pick(SAY.rageNoPanic) : pick(SAY.rage), 4, 2.2);   // 1.21: vow
     floatHero(h, 'Furia!', '#ff9a9a', 13, -0.8);
     return true;
   }
@@ -5622,6 +5797,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function kill(h, kind, attr) {
     const p = heroPos(h);
     h.acc = 0; h.foe = null; h.bubble = null; h.outR = realNow; h.outKind = 'dead';   // 1.09: he tips over
+    if (h.bet) betEnd(h, true);   // 1.21: a bet he did not live through
     fl.stats.kills++; buzz(14);
     if (kind === 'heart') fl.stats.killsHeart++; else if (kind === 'monster') fl.stats.killsMon++; else fl.stats.killsTrap++;
     if (attr) bt(attr).kills++;
@@ -5651,7 +5827,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // 1.17 (author: "they know about each other in other rooms, e.g. when someone dies"): only the ones who see it (the same
     // place) react in full; the ones who only hear the death cry (14 steps, not through a Głusza) get the smaller fright and no
     // name; the rest learn later from someone who knows (perceiveThink: news), and the party's morale drops when the leader knows
-    const d = { id: h.id, t: fl.time, crypt, knows: new Set(), x: h.tx, y: h.ty, room: h.room, hush: isRt(h.room, 'hush') }; (fl.deaths || (fl.deaths = [])).push(d);   // 1.18: where the body lies (Odnalezione ciało)
+    const d = { id: h.id, t: fl.time, crypt, knows: new Set(), x: h.tx, y: h.ty, room: h.room, hush: isRt(h.room, 'hush'), killer: kind === 'monster' ? h.killer : null }; (fl.deaths || (fl.deaths = [])).push(d);   // 1.18: where the body lies (Odnalezione ciało); 1.21: killer
     const echo = mods.farecho && isRt(h.room, 'grotto');   // 1.18 Niosące się echo: who hears a death in a Grota fears it like a witness
     const Lnow = leader();
     if (mods.lastGasp) alive().forEach(o => { if (o.room === h.room) addFear(o, mods.lastGasp * o.courage, null, 'death'); });   // Ostatnie tchnienie
@@ -5661,6 +5837,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       d.knows.add(o.id); if (near) sawAdd(o, ['blood']); if (o === Lnow && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
       const base = (near || echo ? Math.max(15 * o.R.panic, 0.12 * o.courage + 4) : 1.3 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (1 + mods.badnews)) * (crypt ? 2 : 1);   // v14: softer for rookies (was max(30 x panic, ...)); 1.18: Złe wieści x2 for one who only hears it, Niosące się echo
       o.shakenUntil = fl.time + (near ? 9 : 5);
+      if (bondOf(o) === h) { griefOf(o, h, base, d, 0); return; }   // 1.21: his pair (he knows the voice too): grief, maybe a vow
       if (hears) {   // a cry from somewhere: no name, no fury
         if (Math.random() < 0.55) say(o, pick(SAY.deathHeard), 3, 2);
         const f1 = o.fear; addFear(o, base * (o.trait === 'coward' ? 1.5 : 1), null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f1);
@@ -5826,11 +6003,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Picking it up: coins go to the purse, the rest is a real item (or the exact one that was dropped). No use or no room: it stays.
   function pickup(h, it) {
     const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, k = key(it.x, it.y);
+    if (lootBanned(h, it)) return false;   // 1.21: the loser of a quarrel over it (or everyone, when the leader stopped it) for 10 s
     // 1.20: a body's things: he kneels and goes through them (updateHero: the 'loot' state, then bodyLoot), not while running or
     // in a panic, and not again over a body he found nothing on
     if (it.body != null) {
       const m = h.lootMemo.get(k);
-      if ((m && m.body && !m.go && m.t > fl.time) || exiting(h) || panicking(h) || caged(h)) return false;
+      if ((m && m.body && !m.go && m.t > fl.time) || exiting(h) || panicking(h) || caged(h) || mateBody(h, it)) return false;   // 1.21: never his pair's
       h.state = 'loot'; h.timer = h.type === 'thief' ? 0.5 : 1.0; h.dur = h.timer; h.lootIt = it; h.path = [];
       return false;
     }
@@ -5855,6 +6033,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // in 1.19 it vanished and gave nothing; counted as loot it gave the replays +15-25% Esencja)
     if (it.knocked === h.id) { fl.party.queueSay.push({ id: h.id, text: pick(SAY.gearBack), at: fl.time + 0.2, prio: 2 }); fl.stats.gearBack = (fl.stats.gearBack || 0) + 1; tl('lp', h.id, 0, 'back'); replanAll(); return true; }
     h.loot++;
+    quarrelWon(h, k);   // 1.21
     if (h.offerKey === k) { fl.stats.lootOfferTaken = (fl.stats.lootOfferTaken || 0) + 1; h.offerKey = null; }   // 1.20: he took what he was offered
     const kg = LOOT_GREED[kind];
     // 1.03: taking it pulls less each time, like seeing it (Odwrotna chciwość x3 on top), and the greed that stays for good
@@ -5908,6 +6087,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     // what he left there he has looked at: he does not come back to kneel over it (60 s)
     piles.concat([it]).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o) h.lootMemo.set(key(o.x, o.y), { go: false, t: fl.time + 60, body: true }); });
     if (got.length) {
+      quarrelWon(h, key(it.x, it.y));   // 1.21
       sawAdd(h, ['gear']); floatHero(h, 'Zabiera rzeczy ' + nameGen(from), '#c9c2b8', 12, -0.7);
       if (mods.lootTrap > 0) damage(h, mods.lootTrap * 2, LOOTTRAP);
       vaultSnap(it, h); updateTray(); replanAll();
@@ -6431,7 +6611,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function cageEnds(h) {
     const P = fl.party, it = h.cageIt;
     if (h.boss) { freeCaged(h, false, 'break'); say(h, pick(SAY.cageBreak), 4); floatHero(h, 'Wyłamał kraty!', '#ffd27a', 14, -0.9); return; }
-    const helper = P.rescueId === h.id && alive().some(o => o !== h && !caged(o) && !o.fleeing && !o.lost && !o.gone);
+    const helper = (P.rescueId === h.id && alive().some(o => o !== h && !caged(o) && !o.fleeing && !o.lost && !o.gone)) || (P.g2 && P.g2.plan === 'rescue' && P.g2.partner === h.id);   // 1.21: his pair on the way
     if (helper && fl.time < h.cageUntil + 8) return;   // someone is coming: wait for him (up to 8 s more)
     h.state = 'walk'; h.cageUntil = -1; h.cageIt = null; if (P.rescueId === h.id) P.rescueId = -1;
     tl('cf', h.id, 'death'); fl.stats.cageDeaths = (fl.stats.cageDeaths || 0) + 1;
@@ -6532,7 +6712,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         }
       }
       let dmgIn = 0;
-      fighters.forEach(h => { dmgIn += h.T.dps * h.R.dps * (h.type === 'warrior' ? 1.4 : 1) * (raging(h) ? 1.5 : 1) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt; });   // a weapon from your loot cuts monsters down faster; 1.05: so does fury
+      fighters.forEach(h => { dmgIn += h.T.dps * h.R.dps * (h.type === 'warrior' ? 1.4 : 1) * (raging(h) ? 1.5 : 1) * vowK(h) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt; });   // a weapon from your loot cuts monsters down faster; 1.05: so does fury; 1.21: a vow
       hurtMonster(m, dmgIn);
     });
   }
@@ -6756,8 +6936,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     P.g2 = { leaderId: D.id, ids: new Set(all.map(o => o.id)), plan, target, born: fl.time, why, until: fl.time + (why === 'sulk' || why === 'mutiny' ? 25 : 40), said: false };
     all.forEach(o => { o.plan = plan; o.needPlan = true; o.split = false; startSplit(o, 'rift'); o.wanderUntil = -1; o.lootKey = null; });
     const st = fl.stats; st.rifts = (st.rifts || 0) + 1; st['rift_' + why] = (st['rift_' + why] || 0) + 1; tl('rf', D.id, all.length, why);
-    if (why !== 'sulk') setHint(why === 'council' ? 'Rozłam: część drużyny zostaje i szuka dalej.' : 'Rozłam: ' + all.length + (all.length > 1 ? ' bohaterów idzie' : ' idzie') + ' własną drogą. Wrócą, gdy spotkają resztę.');
-    floatHero(D, why === 'sulk' || why === 'mutiny' ? 'Obrażon' + (D.female ? 'a' : 'y') : 'Rozłam', '#e8b26a', 13, -0.9);
+    if (why === 'rescue') setHint(D.nm[0] + ' nie zostawi przyjaciela: wraca po niego sam' + (D.female ? 'a' : '') + '.');   // 1.21
+    else if (why !== 'sulk') setHint(why === 'council' ? 'Rozłam: część drużyny zostaje i szuka dalej.' : 'Rozłam: ' + all.length + (all.length > 1 ? ' bohaterów idzie' : ' idzie') + ' własną drogą. Wrócą, gdy spotkają resztę.');
+    floatHero(D, why === 'rescue' ? 'Nie zostawię!' : why === 'sulk' || why === 'mutiny' ? 'Obrażon' + (D.female ? 'a' : 'y') : 'Rozłam', '#e8b26a', 13, -0.9);   // 1.21: rescue
     return true;
   }
   function g2End(why) {
@@ -6784,7 +6965,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     mem.forEach(o => { if (o !== L2 && (canSee(o, L2) || canHear(o, L2)) && o.plan !== G.plan) { o.plan = G.plan; o.needPlan = true; } });
     if (!Lm) return;
     // the others run or go home and they hear it: they go too (a group that chose to stay at the council stays)
-    if (goingOut() && G.why !== 'council' && G.why !== 'sulk' && mem.some(o => canHearShout(o, Lm))) { g2End('out'); return; }
+    if (goingOut() && G.why !== 'council' && G.why !== 'sulk' && G.plan !== 'rescue' && mem.some(o => canHearShout(o, Lm))) { g2End('out'); return; }   // 1.21: not before the rescue is done
+    if (G.plan === 'rescue') { rescueThink(G, L2); return; }   // 1.21
     if (fl.fearless && fl.storm && G.plan !== 'assault' && mem.some(o => canHearShout(o, Lm))) { G.plan = 'assault'; mem.forEach(o => { o.plan = 'assault'; o.needPlan = true; }); }
     // they have to part first (out of each other's sight), else after 20 s it comes to nothing
     const near = mem.some(o => alive().some(m => !G.ids.has(m.id) && !m.lost && !caged(m) && samePlace(o, m)));
@@ -6856,9 +7038,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function riftThink(L, grp, dt) {
     const P = fl.party;
     if (P.g2 || P.council || P.plan !== 'explore' || fl.fearless || goingOut() || P.scoutId >= 0 || grp.length < 3 || fl.time < 20 || (fl.stats.rifts || 0) >= 2 || grp.some(talking) || fl.time - P.lastTalkAt < 8) return;
-    if (Math.random() > dt * 0.025 * (P.morale < 0.6 ? 1.5 : 1)) return;
-    const restless = o => o.trait === 'greedy' || o.trait === 'brave' || o.hunter || o.type === 'barbarian';
-    const D = grp.filter(o => o !== L && restless(o) && o.rank >= 1 && !o.crystal && !o.lost && o.hp > 0.5 * o.max && o.fear < 0.5 * o.courage).sort(() => Math.random() - 0.5)[0];
+    const rv = bondType(L, 'rival') ? bondOf(L) : null;   // 1.21: the leader's rival is a likelier dissenter (x1,5), restless or not
+    const restless = o => o.trait === 'greedy' || o.trait === 'brave' || o.hunter || o.type === 'barbarian' || o === rv;
+    const cands = grp.filter(o => o !== L && restless(o) && o.rank >= 1 && !o.crystal && !o.lost && o.hp > 0.5 * o.max && o.fear < 0.5 * o.courage);
+    if (Math.random() > dt * 0.025 * (P.morale < 0.6 ? 1.5 : 1) * (cands.includes(rv) ? 1.5 : 1)) return;
+    const D = cands.includes(rv) ? rv : cands.sort(() => Math.random() - 0.5)[0];
     if (!D) return;
     const t = g2Target(D, L); if (t < 0 || (P.target >= 0 && Math.hypot(t % WW - P.target % WW, ((t / WW) | 0) - ((P.target / WW) | 0)) < 6)) return;
     const like = o => restless(o) || o.rank === 0;
@@ -7083,8 +7267,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       const sp = new Set(t.l.map(l => l[0]));
       if (sp.has('A') && (A.gone || A.dead || A.fled)) return;
       if (!is(A.type, t.ac) || !is(A.trait, t.at) || !knows(A, t, 'A')) return;
-      const Bs = ears.filter(o => is(o.type, t.b) && is(o.trait, t.bt) && (t.br === undefined || o.rank <= t.br) && (t.bv === undefined || o.rank >= t.bv) && knows(o, t, 'B'));
-      if (!Bs.length || (sp.has('C') && ears.length < 2)) return;
+      let Bs = ears.filter(o => is(o.type, t.b) && is(o.trait, t.bt) && (t.br === undefined || o.rank <= t.br) && (t.bv === undefined || o.rank >= t.bv) && knows(o, t, 'B'));
+      if (sp.has('C')) Bs = Bs.filter(b => ears.some(o => o !== b && knows(o, t, 'C')));   // 1.21: a 3-voice exchange needs its C (it used to play without his lines)
+      if (!Bs.length) return;
       opts.push({ t, Bs, w: (t.w || 1) * (t.b || t.bt || t.br !== undefined || t.bv !== undefined || t.ac || t.at ? 1.6 : 1) });   // the fitting ones first
     });
     if (!opts.length) return why('fit');
@@ -7158,7 +7343,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Worth it? What the loot is worth to THIS hero (gold to the greedy, a potion to the wounded, gear he can use)
   // against the danger they know about on the way and around it.
   function lootDecision(h, it, b, idx) {
-    if (it.cursedKnown) return false;
+    if (it.cursedKnown || lootBanned(h, it) || mateBody(h, it)) return false;   // 1.21: a quarrel's 10 s, his pair's things
     const k = key(it.x, it.y), memo = h.lootMemo.get(k);
     if (memo && fl.time - memo.t < 8) return memo.go;
     const r = lootLevel(it), kind = LOOT_KIND[it.type], hurt = h.hp < 0.4 * h.max;
@@ -7229,15 +7414,17 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // the 1.21 quarrels; in 1.20 the first keeps it without a word)
   function lootReassign(h, cl, it, k, steps) {
     const P = fl.party;
-    if (steps < 0 || steps > 8 || Math.hypot(cl.tx - it.x, cl.ty - it.y) > 8 || claimScore(h, it) < claimScore(cl, it) + 0.8) return false;
+    if (steps < 0 || steps > 8 || Math.hypot(cl.tx - it.x, cl.ty - it.y) > 8) return false;
     const L = groupLeaderOf(h);
-    if (L && L !== h && L !== cl && L.rank >= 1 && !panicking(L) && earshot(L, h) && earshot(L, cl)) {
+    if (claimScore(h, it) >= claimScore(cl, it) + 0.8 && L && L !== h && L !== cl && L.rank >= 1 && !panicking(L) && earshot(L, h) && earshot(L, cl)) {
       P.lootClaim.set(k, h.id); cl.lootMemo.set(k, { go: false, t: fl.time + 7 }); cl.needPlan = true;
       P.queueSay.push({ id: L.id, text: nameFill(pick(SAY.lootAssign), h), at: fl.time + 0.3, prio: 2 });
       fl.stats.lootAssign = (fl.stats.lootAssign || 0) + 1; tl('qa', L.id, h.id, cl.id);
       return true;
     }
     if ((h.trait === 'greedy' || h.hunter) && (cl.trait === 'greedy' || cl.hunter)) onLootRival(h, cl, it, k);
+    // 1.21: one who wants it (greedy, a treasure hunter, or the claimant's rival) quarrels over it; the winner has the claim
+    if ((h.trait === 'greedy' || h.hunter || (bondOf(h) === cl && h.bond.type === 'rival')) && !lootBanned(h, it)) return quarrel(h, cl, it, k);
     return false;
   }
   // 1.20 (hook for 1.21: a quarrel over the loot): two greedy ones after the same thing, once a pair and a pile
@@ -7261,8 +7448,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     fl.stats.lootOffer = (fl.stats.lootOffer || 0) + 1; tl('qo', h.id, o.id);
     return true;
   }
-  // 1.20 (hook for 1.21: looting the dead, a friend's objection): called after every search of a body, taken or not. A friend of
-  // the dead who sees it may object (lootDeadObject, {v} = the looter) and the looter answers (lootDeadReply): words only in 1.20.
+  // 1.20 (hook for 1.21: looting the dead, a friend's objection): called after every search of a body, taken or not.
+  // 1.21: one who sees him take a dead friend's things objects (lootDeadObject, {v} = the looter; the looter's lootDeadReply): the
+  // dead one's pair always, a priest or a careful one who knows of that death half the time; it costs the party a little morale
+  // (-0,05). His pair never loots him (mateBody).
   function onLootDead(h, deadId, items, it) {
     const P = fl.party, wave = it ? it.fromWave : run.wave;
     (P.lootedDead || (P.lootedDead = [])).push({ by: h.id, dead: deadId, wave, t: fl.time, n: items.length });
@@ -7272,12 +7461,272 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     tl('bl', h.id, deadId, items.length);
     if (Math.random() < 0.6) say(h, pick(SAY.lootDead), 2);   // alone: SOLO.lootDead (say)
     const d = wave === run.wave ? (fl.deaths || []).find(x => x.id === deadId) : null;
-    const o = d && alive().find(x => x !== h && canSee(x, h) && d.knows.has(x.id) && x.trait !== 'greedy' && !x.hunter && !panicking(x) && !caged(x) && !exiting(x) &&
-      (x.type === 'priest' || x.trait === 'careful' || Math.random() < 0.3));
-    if (o && Math.random() < 0.5) {
+    const w = x => x !== h && !x.dead && !x.fled && !x.gone && canSee(x, h) && !panicking(x) && !caged(x) && !exiting(x) && !x.lost;
+    const dead = d ? byId(deadId) : null, mate = dead && bondOf(dead) && w(bondOf(dead)) ? bondOf(dead) : null;   // ids are this wave's: only a death of this wave has a pair here
+    const o = mate || (d && alive().find(x => w(x) && d.knows.has(x.id) && (x.type === 'priest' || x.trait === 'careful') && x.trait !== 'greedy' && !x.hunter));
+    if (o && (o === mate || Math.random() < 0.5)) {
       P.queueSay.push({ id: o.id, text: nameFill(pick(SAY.lootDeadObject), h), at: fl.time + 1.2, prio: 2 }, { id: h.id, text: pick(SAY.lootDeadReply), at: fl.time + 2.4, prio: 2 });
-      fl.stats.lootDeadObject = (fl.stats.lootDeadObject || 0) + 1;
+      fl.stats.lootDeadObject = (fl.stats.lootDeadObject || 0) + 1; P.morale = Math.max(0.15, P.morale - 0.05); tl('ob', o.id, h.id);
     }
+  }
+  // 1.21 Więzi i dramaty (author's plan): some heroes come in pairs (makeBonds, p3): friends, siblings, rivals, a mentor and his
+  // apprentice (h.bond = { type, id, role }). A bond shows in what they say (a word to the other early in the wave and now and
+  // then in the small talk), in grief and revenge when one dies, in one who will not leave the other in a cage or lost, in the
+  // mentor's eye on his apprentice, in a rival's jabs, in quarrels over loot and in bets. All of it only between two who see each
+  // other; lines with {v} name the other one (never his gender).
+  const BOND_KEY = { friend: 'bondFriend', sibling: 'bondSibling', rival: 'bondRival', mentor: 'bondMentor' };
+  function bondOf(h) {   // the other one of his pair, whatever became of him (null: no bond, or not in the dungeon yet)
+    const o = h && h.bond && fl ? fl.heroes[h.bond.id] : null;
+    return o && o !== h && o.bond && o.bond.id === h.id ? o : null;
+  }
+  const bondType = (h, t) => !!bondOf(h) && h.bond.type === t;
+  const calmFor = o => !!o && !o.dead && !o.fled && !o.gone && !o.lost && !caged(o) && !panicking(o) && !o.fleeing;
+  // a line naming the other one ({v}); alone, its SOLO version (say() itself only swaps in SOLO lines without a name)
+  const bondText = (h, k, o) => nameFill(pick(fl.phase === 'raid' && SOLO[k] && aloneNow(h) ? SOLO[k] : SAY[k]), o);
+  const pairKey = (a, b) => Math.min(a.id, b.id) + '|' + Math.max(a.id, b.id);
+  const mateBody = (h, it) => it.body != null && it.fromWave === run.wave && !!bondOf(h) && h.bond.id === it.body;
+  const lootBanned = (h, it) => !!it.qBan && fl.time < it.qBan.until && (!it.qBan.ids || it.qBan.ids.includes(h.id));
+  // a word to the other one (bondFriend... with his name) and, unless a talk starts from it, his answer (bondReply); the mentor
+  // speaks to his apprentice, not the other way round. gap: seconds since that pair's last word. q: through the party's queue (the
+  // first word of the wave: the door is full of talk, it waits for its turn; then the answer, 60%, or else a talk may start from
+  // it), otherwise now (the small talk picks a silent moment) or not at all.
+  function bondTalk(h, gap, q) {
+    const o = bondOf(h), P = fl.party;
+    if (!o || !calmFor(h) || !calmFor(o) || exiting(h) || exiting(o) || fl.fearless || (!q && talking(h)) || !canSee(h, o) || (h.bond.type === 'mentor' && h.bond.role !== 'mentor')) return false;
+    const T = P.bondT || (P.bondT = {}), pk = pairKey(h, o);
+    if (fl.time - (T[pk] == null ? -99 : T[pk]) < gap) return false;
+    const n0 = P.convoN || 0, text = nameFill(pick(SAY[BOND_KEY[h.bond.type]]), o), rep = Math.random() < 0.6;
+    P.convoNot = { key: BOND_KEY[h.bond.type], ids: new Set([o.id]) };   // the other one does not comment on what was said to him
+    if (q) { P.queueSay.push({ id: h.id, text, at: fl.time + 0.2, prio: 2, late: 8 }); if (rep) P.queueSay.push({ id: o.id, text: pick(SAY.bondReply), at: fl.time + 0.4, prio: 2, late: 10 }); }
+    else if (!say(h, text, 2, null, 'q')) return false;   // 'q': now or not at all
+    else if ((P.convoN || 0) === n0 && rep) P.queueSay.push({ id: o.id, text: pick(SAY.bondReply), at: fl.time + 0.2, prio: 2, late: 4 });
+    T[pk] = fl.time; fl.stats.bondLines = (fl.stats.bondLines || 0) + 1; tl('bk', h.id, o.id);
+    return true;
+  }
+  // his pair died and he knows it (kill: he saw it or heard the cry; perceiveThink: told, or he found the body): the grief line
+  // instead of the usual one (q: queued, after the one who told him). Friends, siblings, a mentor who lost his apprentice: half
+  // as much fear again, or (a brave one, a barbarian, a warrior half the time) fury and a vow: 30 s against the monster that did
+  // it (planHero) and +30% damage to monsters (vowK). The apprentice of a dead mentor: fear x1,5, and if he lives 20 s more he
+  // grows up (+15% courage for the rest of the wave, bondThink). A rival: a short shock (half the fear).
+  const GRIEF_KEY = { friend: 'griefFriend', sibling: 'griefSibling', rival: 'griefRival' };
+  function griefOf(o, dead, base, d, q) {
+    const P = fl.party, b = o.bond, st = fl.stats;
+    const k = b.type === 'mentor' ? (b.role === 'apprentice' ? 'griefMentor' : 'griefFriend') : GRIEF_KEY[b.type];
+    st.griefs = (st.griefs || 0) + 1; tl('gf', o.id, dead.id);
+    const line = () => { const t = bondText(o, k, dead); if (q) P.queueSay.push({ id: o.id, text: t, at: fl.time + q, prio: 3, late: 4 }); else say(o, t, 4, 2.2); };
+    const fear = m => { const f0 = o.fear; addFear(o, base * m * (o.trait === 'coward' ? 1.5 : 1), null, 'death'); st.deathFear += Math.max(0, o.fear - f0); };
+    if (b.type === 'rival') { line(); fear(0.5); return; }
+    if (b.role === 'apprentice') { line(); fear(1.5); o.growAt = fl.time + 20; return; }
+    if (!o.fleeing && (o.trait === 'brave' || o.type === 'barbarian' || (o.type === 'warrior' && Math.random() < 0.5)) && startRage(o, 'vow', dead)) {
+      o.vowUntil = fl.time + 30; o.vowOn = d && d.killer && MONSTERS[d.killer.type] && d.killer.hp > 0 ? d.killer : null; o.needPlan = true;
+      st.revengeVows = (st.revengeVows || 0) + 1; st.revenge = (st.revenge || 0) + 1; tl('vw', o.id, dead.id);
+      fear(0.3); return;
+    }
+    line(); fear(1.5);
+  }
+  const vowK = h => fl.time < (h.vowUntil || 0) ? 1.3 : 1;   // revenge: +30% damage to monsters
+  // a wound his pair sees: a rival's jab (a trap, 20%+ HP, 30%, once in 20 s), the mentor's warning when his apprentice is hurt
+  // (once in 25 s), or, when the hit leaves him under 30% HP and he lives, the mentor's praise 3 s later; a bet lost to the trap
+  function bondHurt(h, real, kind, src) {
+    if (h.bet && !h.bet.done && src === h.bet.trap) betEnd(h, true);
+    const o = bondOf(h), P = fl.party;
+    if (!o || (kind !== 'trap' && kind !== 'monster') || !calmFor(o) || !canSee(o, h)) return;
+    if (h.bond.type === 'rival') {
+      if (kind !== 'trap' || real < 0.2 * h.max || fl.time < (o.mockT || 0) || Math.random() >= 0.3) return;
+      o.mockT = fl.time + 20;
+      P.convoNot = { key: 'rivalMock', ids: new Set([h.id]) };
+      if (!say(o, nameFill(pick(SAY.rivalMock), h), 2)) return;
+      fl.stats.rivalMock = (fl.stats.rivalMock || 0) + 1; tl('rm', o.id, h.id);
+      P.queueSay.push({ id: h.id, text: pick(SAY.rivalMockReply), at: fl.time + 0.2, prio: 2, late: 4 });
+    } else if (h.bond.role === 'apprentice') {
+      if (h.hp < 0.3 * h.max) { if (!h.proudAt) h.proudAt = fl.time + 3; }
+      else if (real >= 0.1 * h.max) mentorWatch(o, h);
+    }
+  }
+  // the mentor's warning ({v} = the apprentice; once in 25 s) and the apprentice's answer
+  function mentorWatch(m, a) {
+    const P = fl.party;
+    if (fl.time < (m.watchT || 0) || !calmFor(m) || exiting(m) || !canSee(m, a)) return false;
+    m.watchT = fl.time + 25;
+    if (!say(m, nameFill(pick(SAY.mentorWatch), a), 2)) return false;
+    fl.stats.mentorWatch = (fl.stats.mentorWatch || 0) + 1; tl('mw', m.id, a.id);
+    if (Math.random() < 0.6) P.queueSay.push({ id: a.id, text: pick(SAY.apprenticeReply), at: fl.time + 0.2, prio: 2, late: 4 });
+    return true;
+  }
+  // the mentor's praise (his apprentice disarmed a trap, or lived through a hit that left him under 30% HP); once in 25 s
+  function mentorProud(a, q) {
+    const m = a.bond && a.bond.role === 'apprentice' ? bondOf(a) : null;
+    if (!m || a.dead || !calmFor(m) || !canSee(m, a) || fl.time < (m.proudT || 0)) return false;
+    m.proudT = fl.time + 25; fl.stats.mentorProud = (fl.stats.mentorProud || 0) + 1; tl('mp', m.id, a.id);
+    fl.party.queueSay.push({ id: m.id, text: pick(SAY.mentorProud), at: fl.time + (q || 0.3), prio: 2, late: 4 });
+    return true;
+  }
+  // an apprentice walks into a room where they know of a trap: the mentor warns him
+  function mentorRoom(h, r) {
+    const m = h.bond && h.bond.role === 'apprentice' ? bondOf(h) : null;
+    if (!m || exiting(h) || r < 0) return false;
+    for (const t of fl.items.values()) if (TRAPS[t.type] && t.detected && !t.disabled && slotRoom(t.type, t.x, t.y) === r) return mentorWatch(m, h);
+    return false;
+  }
+  const mentorNear = h => { const m = h.bond && h.bond.role === 'apprentice' ? bondOf(h) : null; return !!m && calmFor(m) && hdist(m, h) <= 3 && canSee(h, m); };
+  // 1.21: a quarrel over loot. One wants what another has claimed (he is greedy, a treasure hunter, or the claimant's rival) and
+  // they see each other: quarrelStart ({v} = the other), quarrelReply; the higher rank wins (greedy or a treasure hunter, a
+  // barbarian, the leader: +1 each; ties at random): the claim is his (quarrelWin when he picks it up), the loser keeps away 10 s
+  // (quarrelLose) and, greedy or a rival, may storm off (the 1.19 sulk, 30%). Once a pair a wave. The leader, when he sees both
+  // (40%), stops it (lootStop): nobody takes it for 10 s. Returns true when h won it.
+  function quarrel(h, cl, it, k) {
+    const P = fl.party, st = fl.stats, seen = P.quarrels || (P.quarrels = new Set()), pk = pairKey(h, cl);
+    if (seen.has(pk) || !canSee(h, cl) || !calmFor(h) || !calmFor(cl) || exiting(h) || exiting(cl) || talking(h) || talking(cl)) return false;
+    seen.add(pk); st.quarrels = (st.quarrels || 0) + 1;
+    const n0 = P.convoN || 0;
+    P.convoNot = { key: 'quarrelStart', ids: new Set([cl.id]) };   // the onlookers comment, not the other one
+    say(h, nameFill(pick(SAY.quarrelStart), cl), 3);
+    P.queueSay.push({ id: cl.id, text: pick(SAY.quarrelReply), at: fl.time + 0.2, prio: 2, late: 4 });   // before the onlookers' talk, if one starts
+    const tEnd = (P.convoN || 0) !== n0 ? Math.max(fl.time + 2.8, (P.convoT || 0) - 1.2) : fl.time + 2.8;
+    const L = groupLeaderOf(h), claims = P.lootClaim || (P.lootClaim = new Map());
+    if (L && L !== h && L !== cl && calmFor(L) && canSee(L, h) && canSee(L, cl) && Math.random() < 0.4) {
+      claims.delete(k); it.qBan = { until: fl.time + 10, ids: null };
+      [h, cl].forEach(o => { o.lootMemo.set(k, { go: false, t: fl.time + 2 }); o.needPlan = true; });
+      P.queueSay.push({ id: L.id, text: pick(SAY.lootStop), at: tEnd, prio: 2, late: 6 });
+      st.quarrelStops = (st.quarrelStops || 0) + 1; tl('qq', h.id, cl.id, -1);
+      return false;
+    }
+    const sc = o => o.rank + (o.trait === 'greedy' || o.hunter ? 1 : 0) + (o.type === 'barbarian' ? 1 : 0) + (o === L ? 1 : 0) + Math.random() * 0.5;
+    const W = sc(h) > sc(cl) ? h : cl, Lo = W === h ? cl : h;
+    claims.set(k, W.id); it.qBan = { until: fl.time + 10, ids: [Lo.id] }; W.qWin = k;
+    Lo.lootMemo.set(k, { go: false, t: fl.time + 2 }); Lo.needPlan = true; if (Lo.lootKey === k) Lo.lootKey = null;
+    P.queueSay.push({ id: Lo.id, text: pick(SAY.quarrelLose), at: tEnd, prio: 2, late: 6 });
+    tl('qq', h.id, cl.id, W.id);
+    if ((Lo.trait === 'greedy' || Lo.hunter || bondType(Lo, 'rival')) && Lo.id !== P.leaderId && !P.g2 && !P.sulkAfter && !Lo.crystal && Math.random() < 0.3) {
+      P.queueSay.push({ id: Lo.id, text: pick(SAY.sulkOff), at: tEnd + 1.5, prio: 2, late: 4 }); P.sulkAfter = { id: Lo.id, at: tEnd + 2.2 }; st.quarrelSulks = (st.quarrelSulks || 0) + 1;
+    }
+    return W === h;
+  }
+  // the winner picks up what they quarrelled over
+  function quarrelWon(h, k) {
+    if (h.qWin !== k) return;
+    h.qWin = null; fl.stats.quarrelWins = (fl.stats.quarrelWins || 0) + 1;
+    fl.party.queueSay.push({ id: h.id, text: pick(SAY.quarrelWin), at: fl.time + 0.3, prio: 2, late: 4 });
+  }
+  // 1.21 "Nie zostawię cię": the leader leaves a friend, a brother or sister, an apprentice or a mentor behind (in a cage, or
+  // lost): the other one of the pair, if he hears it, will not have it (noLeave {v} = the friend; the caged one answers,
+  // noLeaveReply) and goes back for him alone: a second group of one (g2Start, plan 'rescue') to the cage, to open it, or to
+  // where the lost one was last seen and then to his voice; then the two go back to the others ('regroup', rescueThink). It ends
+  // like any second group (40 s at most). goal: the tile to go to.
+  function noLeave(c, L, goal) {
+    const P = fl.party, m = bondOf(c);
+    if (!m || m.bond.type === 'rival' || !calmFor(m) || exiting(m) || m.crystal || P.g2 || m.id === P.leaderId || onScout(m) || goal < 0) return false;
+    if (!(L && (m === L || canHear(m, L))) && !perceives(m, c, true)) return false;
+    if (!g2Start(m, [], 'rescue', goal, 'rescue')) return false;
+    P.g2.partner = c.id; P.g2.apart = true; P.abandoned.delete(c.id);
+    fl.stats.noLeave = (fl.stats.noLeave || 0) + 1; tl('nl', m.id, c.id);
+    P.queueSay.push({ id: m.id, text: nameFill(pick(SAY.noLeave), c), at: fl.time + 1.6, prio: 3, late: 4 });
+    if (caged(c)) P.queueSay.push({ id: c.id, text: pick(SAY.noLeaveReply), at: fl.time + 2.6, prio: 2, late: 4 });
+    return true;
+  }
+  // the rescue group's progress (g2Think): the lost one found (he is close and sees him), the caged one free: he joins and they
+  // go back to the others; the friend dead, gone, or the time up: back to the others
+  function rescueThink(G, L2) {
+    const P = fl.party, c = byId(G.partner);
+    if (c && c.lost && !c.dead && samePlace(c, L2) && hdist(c, L2) <= 2.5) {
+      c.lost = false; c.hearUntil = -1; c.noPathT = 0; c.sepT = 0; c.sepRolled = false; c.needPlan = true; if (P.searchId === c.id) P.searchId = -1;
+      say(c, pick(SAY.found), 3);
+    }
+    if (c && !c.dead && !c.fled && !c.gone && (caged(c) || c.lost) && fl.time <= G.until) return;
+    if (c && !c.dead && !c.fled && !c.gone && !c.lost && !caged(c) && !c.fleeing && hdist(c, L2) <= 6) { G.ids.add(c.id); fl.stats.noLeaveSaved = (fl.stats.noLeaveSaved || 0) + 1; tl('ns', L2.id, c.id); }
+    G.plan = 'regroup'; alive().forEach(o => { if (G.ids.has(o.id)) { o.plan = 'regroup'; o.needPlan = true; } });
+  }
+  // the rescuer's way (planHero, the second group's leader with the plan 'rescue'): next to the cage (then he opens it), or to
+  // where the lost one was last seen, then to his voice (any way, known or not, like a lost one following a voice)
+  function rescueJob(h, G, B, setB) {
+    const c = byId(G.partner); if (!c) return null;
+    if (caged(c)) {
+      if (Math.abs(h.x - c.x) + Math.abs(h.y - c.y) <= 1) return { free: c };
+      const g = nearestOf(B(), DIRS.map(d => [c.x + d[0], c.y + d[1]]).filter(t => walkable(t[0], t[1])).map(t => t[1] * WW + t[0]));
+      return g >= 0 ? { intent: 'rescue', goal: g } : null;
+    }
+    if (!c.lost) return null;
+    if (G.target >= 0 && tIdx(h) === G.target) G.target = -1;   // where he was last seen: not here, so to his voice
+    if (G.target >= 0 && !canSee(h, c) && !canHear(h, c) && B().dist[G.target] >= 0) return { intent: 'search', goal: G.target };
+    const bv = bfs(h.x, h.y, {}), g = tIdx(c);
+    if (bv.dist[g] < 0) return null;
+    setB(bv); return { intent: 'search', goal: g };
+  }
+  // 1.21 Zakład: a brave one or a rival (rank 1+, 60%+ HP) in a room with a known, loaded trap on the party's way bets he walks
+  // through it unhurt (betStart); his rival, or anyone who sees him, takes it (betTake {v} = the bettor). For 8 s he walks across
+  // its reach, danger or not (planHero: his goal is its far tile). Out of it unhurt: betWin ({v} = the taker), a coin from the
+  // taker; hit by it: the taker's betLose ({v} = the bettor), a coin from the bettor. Once a wave, and a 70% roll for each bettor
+  // and trap that could (about one bet in 3-4 waves; 30% gave one in 8): it is good for you (he walks into a trap on purpose), so it stays rare.
+  function betThink(crew, L) {
+    const P = fl.party, st = fl.stats;
+    crew.forEach(h => { if (h.bet && !h.bet.done && fl.time > h.bet.until + 4) betEnd(h, false); });
+    if (P.betDone || fl.fearless || goingOut() || !L || P.plan === 'retreat' || fl.time < 10 || P.convoT > fl.time + 3) return;
+    for (const h of crew) {
+      if (h === L || h.rank < 1 || h.hp <= 0.6 * h.max || !calmFor(h) || exiting(h) || inG2(h) || onScout(h) || h.split || talking(h) || h.state !== 'walk' || h.room < 0 || h.crystal) continue;
+      const rv = bondType(h, 'rival') && calmFor(bondOf(h)) && canSee(bondOf(h), h) ? bondOf(h) : null;
+      if ((h.trait !== 'brave' && !rv) || fl.time < (h.betLookT || 0)) continue;
+      h.betLookT = fl.time + 1;   // a look once a second (the party's way is a path search)
+      const tried = P.betTried || (P.betTried = new Set());
+      const ts = [...fl.items.values()].filter(x => TRAPS[x.type] && x.detected && !x.disabled && x.cd <= 0 && slotRoom(x.type, x.x, x.y) === h.room && !tried.has(h.id + ':' + key(x.x, x.y)));
+      if (!ts.length) continue;
+      const way = new Set(L.path.concat(h.path).map(p => p[1] * WW + p[0])); partyWay(h, bfs(h.x, h.y, { known: true }), 0).forEach(k => { const [x, y] = k.split(',').map(Number); way.add(y * WW + x); });   // the party's way too
+      const t = ts.find(x => areaOf(x).some(q => way.has(q[1] * WW + q[0])));
+      if (!t) continue;
+      tried.add(h.id + ':' + key(t.x, t.y));   // one roll for each bettor and trap
+      if (Math.random() >= 0.7) continue;
+      const tk2 = rv || crew.find(o => o !== h && calmFor(o) && canSee(o, h) && !talking(o));
+      if (!tk2 || !betStart(h, tk2, t)) continue;
+      return;
+    }
+  }
+  function betStart(h, tk2, t) {
+    const P = fl.party, area = areaOf(t).filter(q => walkable(q[0], q[1]));
+    if (!area.length) return false;
+    const far = area.slice().sort((a, b) => Math.hypot(b[0] - h.tx, b[1] - h.ty) - Math.hypot(a[0] - h.tx, a[1] - h.ty))[0];
+    P.betDone = true; fl.stats.bets = (fl.stats.bets || 0) + 1; tl('bt', h.id, tk2.id, t.type);
+    h.bet = { trap: t, taker: tk2.id, until: fl.time + 8, goal: far[1] * WW + far[0], keys: new Set(area.map(q => q[1] * WW + q[0])), inside: false, done: false };
+    P.convoNot = { key: 'betStart', ids: new Set([tk2.id]) };
+    say(h, pick(SAY.betStart), 3);
+    P.queueSay.push({ id: tk2.id, text: nameFill(pick(SAY.betTake), h), at: fl.time + 0.2, prio: 2, late: 4 });
+    h.needPlan = true; h.path = []; floatHero(h, 'Zakład!', '#ffd27a', 13, -0.8);
+    return true;
+  }
+  // the bet is settled: hit by that trap (lost), out of its reach after walking into it (won), or he never went in (off)
+  function betEnd(h, hit) {
+    const b = h.bet; if (!b || b.done) return;
+    b.done = true; h.needPlan = true;
+    const tk = byId(b.taker), P = fl.party, st = fl.stats, pay = (a, c) => { if (a && c && a.gold > 0 && !a.dead && !c.dead) { a.gold--; c.gold++; } };
+    if (hit || h.dead) {   // killed on the way counts as lost too
+      st.betsLost = (st.betsLost || 0) + 1; tl('be', h.id, 0);
+      if (tk && calmFor(tk) && !h.dead) { P.queueSay.push({ id: tk.id, text: nameFill(pick(SAY.betLose), h), at: fl.time + 0.6, prio: 2, late: 4 }); pay(h, tk); }
+    } else if (b.inside) {
+      st.betsWon = (st.betsWon || 0) + 1; tl('be', h.id, 1);
+      if (tk && !tk.dead && !tk.fled) { P.queueSay.push({ id: h.id, text: nameFill(pick(SAY.betWin), tk), at: fl.time + 0.2, prio: 2, late: 4 }); pay(tk, h); }
+      floatHero(h, 'Wygrany zakład', '#ffd27a', 12, -0.8);
+    } else { st.betsOff = (st.betsOff || 0) + 1; tl('be', h.id, -1); }
+  }
+  // a step of the bettor (onEnter): into the trap's reach, and out of it again unhurt = won
+  function betStep(h) {
+    const b = h.bet; if (!b || b.done) return;
+    const i = h.y * WW + h.x;
+    if (b.keys.has(i)) b.inside = true;
+    else if (b.inside) betEnd(h, false);
+  }
+  // every party tick: the first word of each pair (4-25 s into the wave, once the gate is open, at a random moment), the
+  // mentor's praise after a near miss, the apprentice growing up after his mentor's death, the bet
+  function bondThink(crew, L) {
+    const P = fl.party, st = fl.stats, at = P.bondAt || (P.bondAt = {});
+    crew.forEach(h => {
+      if (h.growAt && fl.time >= h.growAt) { h.growAt = 0; h.courage = Math.round(h.courage * 1.15); st.grownUp = (st.grownUp || 0) + 1; tl('gu', h.id); floatHero(h, 'Dorasta', '#9fe0cf', 12, -0.8); }
+      if (h.proudAt && fl.time >= h.proudAt) { h.proudAt = 0; mentorProud(h); }
+      const o = bondOf(h); if (!o || o.id < h.id || !fl.gateOpen) return;
+      const pk = pairKey(h, o); if (at[pk] === undefined) at[pk] = 4 + Math.random() * 16;
+      if (at[pk] < 0 || fl.time < at[pk]) return;
+      if (fl.time > 25) { at[pk] = -1; return; }
+      const sp = h.bond.type === 'mentor' ? (h.bond.role === 'mentor' ? h : o) : Math.random() < 0.5 ? h : o;
+      if (bondTalk(sp, 0, true)) at[pk] = -1;
+    });
+    betThink(crew, L);
   }
   // 1.20 Dzielenie się (author: they share nothing but potions): once a second. 1) In a crisis a calm one hands his ready amulet to
   // a friend about to panic (2 tiles, they see each other) and it works at once. 2) At ease (a talk, a rest, the stop before a
@@ -7415,8 +7864,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       // the other way, and 1-2 like him go too; the leader lets them go. Two groups explore apart until they meet again.
       if (!P.g2 && P.plan === 'explore' && !fl.fearless && fl.time > 15 && P.scoutId < 0 && crewT.length >= 3 && (fl.stats.rift_fork || 0) < 2) {
         const swayed = P.target === alt.f;
-        const D = greedy && !swayed ? greedy : crewT.find(o => (o.trait === 'brave' || o.trait === 'greedy' || o.hunter) && o.rank >= 1 && !o.crystal && o.hp > 0.5 * o.max);
-        if (D && Math.random() < (D === greedy ? 0.5 : 0.2) * (P.morale < 0.6 ? 1.3 : 1)) {
+        const rv = bondType(L, 'rival') && crewT.includes(bondOf(L)) ? bondOf(L) : null;   // 1.21: the leader's rival is a likelier dissenter (x1,5)
+        const D = greedy && !swayed ? greedy : rv && rv.rank >= 1 && !rv.crystal && rv.hp > 0.5 * rv.max ? rv : crewT.find(o => (o.trait === 'brave' || o.trait === 'greedy' || o.hunter) && o.rank >= 1 && !o.crystal && o.hp > 0.5 * o.max);
+        if (D && Math.random() < (D === greedy ? 0.5 : 0.2) * (P.morale < 0.6 ? 1.3 : 1) * (D === rv ? 1.5 : 1)) {
           const like = o => o.trait === 'greedy' || o.trait === 'brave' || o.hunter || o.type === 'barbarian' || o.rank === 0;
           const joiners = crewT.filter(o => o !== D && !o.crystal && !caged(o) && like(o)).sort(() => Math.random() - 0.5).slice(0, Math.min(2, crewT.length - 2));
           if (g2Start(D, joiners, 'explore', swayed ? best.f : alt.f, 'fork')) {
@@ -7465,7 +7915,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const others = alive().filter(o => o !== c && !o.fleeing && !caged(o));
     if (!others.length || goingOut()) return;
     const grpC = groupOf(L).filter(o => o !== c && !o.fleeing), fearR = (grpC.length ? grpC : others).reduce((a, o) => a + o.fear / o.courage, 0) / (grpC.length || others.length);   // 1.17: the leader's group
-    const rescue = L.rank >= 2 || (fearR < 0.6 && Math.random() < (L.rank === 0 ? 0.5 : 0.8));
+    const rescue = L.rank >= 2 || (bondOf(c) === L && L.bond.type !== 'rival') || (fearR < 0.6 && Math.random() < (L.rank === 0 ? 0.5 : 0.8));   // 1.21: not his own pair
     const who = L === c ? others[0] : L;
     tl('rs', c.id, rescue ? 1 : 0);
     if (rescue) {   // 1.17 (6.8 #14): a second one caged while they free the first waits his turn (it took the first one's rescuer)
@@ -7473,7 +7923,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (cur && caged(cur) && cur !== c) (P.rescueQ || (P.rescueQ = [])).push(c.id); else { P.rescueId = c.id; P.rescuerId = -1; }
       say(who, nameFill(pick(SAY.rescue), c), 3);
     }
-    else { P.abandoned.add(c.id); fl.stats.abandons++; say(who, nameFill(pick(SAY.abandon), c), 3); P.queueSay.push({ id: c.id, text: pick(SAY.abandoned), at: fl.time + 1 }); addFear(c, 15, 'cage'); }
+    else { P.abandoned.add(c.id); fl.stats.abandons++; say(who, nameFill(pick(SAY.abandon), c), 3); P.queueSay.push({ id: c.id, text: pick(SAY.abandoned), at: fl.time + 1 }); addFear(c, 15, 'cage'); noLeave(c, L, tIdx(c)); }   // 1.21: noLeave
   }
   // Runs a few times per second: who leads, where they go, retreat, push for the crystal or run, who got separated.
   function partyThink(dt) {
@@ -7613,6 +8063,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       floatHero(f, 'Mikstura!', '#8be38f', 14, -0.7);
     });
     shareThink(crew, L, dt);   // 1.20: an amulet in a crisis, gear handed over at ease
+    bondThink(crew, L);   // 1.21
     if (!L) return;
     if (P.prep && fl.time >= P.prep.until) finishPrep();
     else if (!P.prep) checkPrep(L);
@@ -7756,7 +8207,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (P.chatT <= 0) {
       P.chatT = P.plan === 'retreat' ? 3.5 + Math.random() * 3 : 7 + Math.random() * 6;   // 1.12.1: at rest they talk more
       const pool = crew.filter(o => !o.bubble && !panicking(o) && !caged(o) && !o.lost && o.state !== 'fight' && o.state !== 'smash' && !floorBusy(o));   // 1.10: small talk only into a silence
-      const h = pool.length ? pick(pool) : null, lines = [];
+      const h0 = pool.length ? pick(pool) : null, h = h0 && Math.random() < 0.25 && bondTalk(h0, 30) ? null : h0, lines = [];   // 1.21: a word to his pair instead
       let mood = null;
       if (h && aloneNow(h) && !(h.fleeing || h.crystal || goingOut())) lines.push(...SOLO.chat, ...(h.trait === 'brave' && h.fear > 0.5 * h.courage ? [] : SOLO['chat_' + h.trait] || []), ...(SOLO['chat_' + h.type] || []));   // 1.13: alone he talks to himself (1.17: a scared brave one does not boast)
       else if (h && (h.fleeing || h.crystal || goingOut())) {
@@ -7875,7 +8326,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // The chance to lose the way once cut off from the leader: bigger dungeon and fog = more, experience and a thief's sense = less.
   function lostChance(h) {
     const p = 0.12 + 0.03 * Math.max(0, roomCount() - 6) + (isRt(h.room, 'fog') ? (lanternNear(h) ? 0.15 : 0.45) : 0) - 0.01 * h.lvl - (h.type === 'thief' ? 0.1 : 0);   // 1.20: a lantern close by
-    return clamp(p, 0.02, 0.6);
+    return clamp(p * (mentorNear(h) ? 0.7 : 1), 0.02, 0.6);   // 1.21: his mentor close by
   }
   // 1.20 Latarnia: the fog's roll on one a step away from the leader; a lit lantern within 2 tiles cuts it to 30% (lanternSaves)
   function fogRoll(h, dt) {
@@ -7904,7 +8355,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       P.searchId = h.id; P.searchUntil = fl.time + 14; P.searchGoal = ls.y * WW + ls.x; fl.stats.searches++; tl('se', h.id);
       P.queueSay.push({ id: L.id, text: nameFill(pick(SAY.searchLost), h), at: fl.time + 0.3 });
       L.needPlan = true;
-    } else P.queueSay.push({ id: L.id, text: nameFill(pick(SAY.leaveLost), h), at: fl.time + 0.3 });
+    } else { P.queueSay.push({ id: L.id, text: nameFill(pick(SAY.leaveLost), h), at: fl.time + 0.3 }); if (ls) noLeave(h, L, ls.y * WW + ls.x); }   // 1.21: noLeave
   }
   // 1.17: who knows what. Every party tick: the leader's plan reaches those who see or hear him (h.plan); where each one was
   // last seen by the leader (P.seen); a death reaches those who did not see or hear it when they meet one who knows (one at a
@@ -7935,11 +8386,13 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       crew.forEach(o => {
         if (d.knows.has(o.id) || panicking(o) || caged(o) || o.gone || !samePlace(o, at)) return;
         d.knows.add(o.id); sawAdd(o, ['blood']);   // he knows it before he says it (the line needs the death)
-        const k = (d.hush ? 2 : 1) * (d.crypt ? 2 : 1) * (1 + 0.5 * (mods.body - 1)) * (o.trait === 'coward' ? 1.5 : 1);
-        o.shakenUntil = fl.time + 9; const f0 = o.fear; addFear(o, Math.max(15 * o.R.panic, 0.12 * o.courage + 4) * k, null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0);
+        const k = (d.hush ? 2 : 1) * (d.crypt ? 2 : 1) * (1 + 0.5 * (mods.body - 1)) * (o.trait === 'coward' ? 1.5 : 1), mate = bondOf(o) === dead;   // 1.21: his pair's body
+        o.shakenUntil = fl.time + 9;
+        if (mate) griefOf(o, dead, Math.max(15 * o.R.panic, 0.12 * o.courage + 4) * k / (o.trait === 'coward' ? 1.5 : 1), d, 0.2);
+        else { const f0 = o.fear; addFear(o, Math.max(15 * o.R.panic, 0.12 * o.courage + 4) * k, null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0); }
         if (o === L && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
         fl.stats.bodies = (fl.stats.bodies || 0) + 1; tl('bf', o.id, d.id);
-        P.queueSay.push({ id: o.id, text: nameFill(pick(SAY.bodyFound), dead), at: fl.time + 0.2, prio: 3, late: 3 });
+        if (!mate) P.queueSay.push({ id: o.id, text: nameFill(pick(SAY.bodyFound), dead), at: fl.time + 0.2, prio: 3, late: 3 });
       });
     });
     (fl.deaths || []).forEach(d => {
@@ -7949,8 +8402,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         const k = crew.find(t => t !== o && d.knows.has(t.id) && !panicking(t) && (canSee(o, t) || canHear(o, t)));
         if (!k) continue;
         d.knows.add(o.id);
-        P.queueSay.push({ id: k.id, text: nameFill(pick(SAY.tellDeath), dead), at: fl.time + 0.2, prio: 3, late: 3 }, { id: o.id, text: pick(SAY.newsDeath), at: fl.time + 0.4, prio: 3, late: 4 });
-        o.shakenUntil = fl.time + 5; const f0 = o.fear; addFear(o, 0.6 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (d.crypt ? 2 : 1) * (1 + mods.badnews), null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0);   // 1.18: Złe wieści
+        const mate = bondOf(o) === dead, nb = 0.6 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (d.crypt ? 2 : 1) * (1 + mods.badnews);   // 1.21: his pair
+        P.queueSay.push({ id: k.id, text: nameFill(pick(SAY.tellDeath), dead), at: fl.time + 0.2, prio: 3, late: 3 });
+        o.shakenUntil = fl.time + 5;
+        if (mate) griefOf(o, dead, nb, d, 0.4);
+        else { P.queueSay.push({ id: o.id, text: pick(SAY.newsDeath), at: fl.time + 0.4, prio: 3, late: 4 }); const f0 = o.fear; addFear(o, nb, null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0); }   // 1.18: Złe wieści
         if (o === L && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
         fl.stats.newsDeaths = (fl.stats.newsDeaths || 0) + 1;
         break;   // one at a time
@@ -8349,13 +8805,22 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       intent = 'wander'; goal = h.wanderTarget;
     } else {
       let job = null;
+      // 1.21: back for his pair alone (noLeave): to the cage, then he opens it; to the lost one
+      if (G2 && h === L && G2.plan === 'rescue') {
+        const rj = rescueJob(h, G2, B, bv => { b = bv; });
+        if (rj && rj.free) { const c = rj.free; h.state = 'free'; h.timer = hasCrowbar(h) ? (h.type === 'thief' ? 0.5 : 0.6) : h.type === 'thief' ? 0.8 : 1.8; h.dur = h.timer; h.freeT = c.id; h.path = []; h.intent = 'rescue'; return; }
+        if (rj) job = rj;
+      }
+      // 1.21: a bet: across the trap's reach, its danger is nothing to him now
+      if (!job && h.bet && !h.bet.done && fl.time < h.bet.until && tIdx(h) !== h.bet.goal) { noDanger = true; b = null; if (B().dist[h.bet.goal] >= 0) job = { intent: 'bet', goal: h.bet.goal }; }
       // a friend in a cage
-      if (P.rescueId >= 0 && P.rescueId !== h.id) {
+      if (!job && P.rescueId >= 0 && P.rescueId !== h.id) {
         const c = byId(P.rescueId);
         if (c && caged(c)) {
           let rs = byId(P.rescuerId);
           if (!rs || rs.dead || rs.fled || rs.gone || caged(rs) || rs.fleeing || rs.lost || rs.goHome) {   // 1.17: a rescuer who got lost or went home is replaced
-            const cand = alive().filter(o => o !== c && !caged(o) && !o.fleeing && !o.lost && !o.goHome && !onScout(o) && (canHearShout(o, c) || o === leader() || canHear(o, leader()))).sort((a, o) => ((o.type === 'thief') - (a.type === 'thief')) || (hdist(a, c) - hdist(o, c)));
+            const mt = bondOf(c) && c.bond.type !== 'rival' ? bondOf(c) : null;   // 1.21: his pair goes first
+            const cand = alive().filter(o => o !== c && !caged(o) && !o.fleeing && !o.lost && !o.goHome && !onScout(o) && (canHearShout(o, c) || o === leader() || canHear(o, leader()))).sort((a, o) => ((o === mt) - (a === mt)) || ((o.type === 'thief') - (a.type === 'thief')) || (hdist(a, c) - hdist(o, c)));
             rs = cand[0]; P.rescuerId = rs ? rs.id : -1;
           }
           if (rs === h) {
@@ -8366,6 +8831,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         }
       }
       if (!job && L && L !== h && L.state === 'fight' && L.foe && L.foe.hp > 0 && !DRIFT[L.foe.type] && !onScout(h) && canHear(h, L)) job = { intent: 'fight', goal: L.foe.y * WW + L.foe.x };   // 1.17: a fight he can hear
+      // 1.21: a vow of revenge: the monster that killed his friend, when it is in his room (30 s)
+      if (!job && h.vowOn && fl.time < (h.vowUntil || 0)) {
+        const m = h.vowOn, i = m.y * WW + m.x;
+        if (m.hp > 0 && fl.items.get(key(m.x, m.y)) === m && !DRIFT[m.type] && roomOf(m.x, m.y) === h.room && B().dist[i] > 0) { job = { intent: 'fight', goal: i }; if (!h.vowFought) { h.vowFought = true; fl.stats.revengeFights = (fl.stats.revengeFights || 0) + 1; } }
+      }
       if (!job && h.type === 'priest') {
         const cl = fl.time < (h.healForUntil || 0) ? byId(h.healFor) : null;   // 1.17: the one who called him comes first
         const hurt = cl && !cl.dead && !cl.fled && !cl.gone && cl.hp < 0.5 * cl.max && hdist(cl, h) > 2.5 ? cl : alive().filter(o => o !== h && o.hp < 0.5 * o.max && hdist(o, h) > 2.5).sort((a, c) => a.hp / a.max - c.hp / c.max)[0];
@@ -8448,13 +8918,16 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         else { intent = 'lead'; goal = P.target; }
       } else if (L) {
         intent = 'follow';
-        const lt = tIdx(L), d = B().dist[lt];
+        // 1.21: an apprentice keeps to his mentor while the mentor walks with the leader (6 tiles of him) and he sees him
+        const M = h.bond && h.bond.role === 'apprentice' ? bondOf(h) : null;
+        const F = M && M !== L && calmFor(M) && !M.split && inG2(M) === inG2(h) && M.intent === 'follow' && hdist(M, L) <= 6 && canSee(h, M) ? M : L;
+        const lt = tIdx(F), d = B().dist[lt];
         const gap = h.type === 'priest' || h.type === 'mage' ? 3.5 : 2.5;   // the back line keeps a step behind
         if (d >= 0 && d <= gap && L.state !== 'boss') {
           // 1.10: a group, not a heap: one standing on a friend's tile steps aside onto a free, safe tile still close to the leader
-          if (!h.lost && ((L.x === h.x && L.y === h.y) || alive().some(o => o !== h && o.id < h.id && o.nx === null && o.x === h.x && o.y === h.y))) {
+          if (!h.lost && ((F.x === h.x && F.y === h.y) || alive().some(o => o !== h && o.id < h.id && o.nx === null && o.x === h.x && o.y === h.y))) {
             const sp = DIRS.map(q => [h.x + q[0], h.y + q[1]]).filter(t => walkable(t[0], t[1]) && fl.known[t[1] * WW + t[0]] && !fl.danger[t[1] * WW + t[0]] && !fl.items.has(key(t[0], t[1])) &&
-              Math.hypot(t[0] - L.x, t[1] - L.y) <= gap + 0.5 && !alive().some(o => o !== h && ((o.x === t[0] && o.y === t[1]) || (o.nx === t[0] && o.ny === t[1]))));
+              Math.hypot(t[0] - F.x, t[1] - F.y) <= gap + 0.5 && !alive().some(o => o !== h && ((o.x === t[0] && o.y === t[1]) || (o.nx === t[0] && o.ny === t[1]))));
             if (sp.length) { h.intent = 'space'; h.lootKey = null; h.path = [pick(sp)]; return; }
           }
           h.intent = intent; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.35; return;
@@ -8717,8 +9190,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (tileAt(Math.floor(tx) + dx, Math.floor(ty) + dy) === FLOOR) area.push([Math.floor(tx) + dx, Math.floor(ty) + dy]);
     fxTiles(area, '255,140,50', 0.45);
     say(h, pick(SAY.fireball), 1);
-    if (DRIFT[target.type]) hurtMonster(target, 30 * h.R.pow);
-    area.forEach(t => { const m = fl.items.get(key(t[0], t[1])); if (m && MONSTERS[m.type] && !DRIFT[m.type]) hurtMonster(m, 30 * h.R.pow); });
+    if (DRIFT[target.type]) hurtMonster(target, 30 * h.R.pow * vowK(h));   // 1.21: a vow
+    area.forEach(t => { const m = fl.items.get(key(t[0], t[1])); if (m && MONSTERS[m.type] && !DRIFT[m.type]) hurtMonster(m, 30 * h.R.pow * vowK(h)); });
   }
   // 1.10: standing, a hero looks around now and then: at a friend, at loot they saw, at a trap they know, or just away
   function glance(h) {
@@ -8814,7 +9287,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (rkL && !exiting(h) && !(fl.rkSaid || (fl.rkSaid = new Set())).has(r)) { fl.rkSaid.add(r); fl.stats.rkEnter = (fl.stats.rkEnter || 0) + 1; if (rt) P.queueSay.push({ id: h.id, text: pick(rkL), at: fl.time + 0.2, prio: 2, late: 5 }); else say(h, pick(rkL), 3); }   // 1.18: after the effect line, not dropped by it
       if (changed && h.id === P.leaderId) { maybeDetour(h, r); if (!P.detour) P.lookAsk = { room: r, at: fl.time + 0.9 }; }   // 1.17: look around? (lookThink)
       if (changed && !exiting(h)) phobiaSight(h, r);
+      if (changed) mentorRoom(h, r);   // 1.21
     }
+    if (h.bet) betStep(h);   // 1.21
     if (isExitTile(h.x, h.y) && exiting(h)) { heroExit(h); return; }
     const it = fl.items.get(key(h.x, h.y));
     if (it && isLoot(it.type) && !h.crystal && !h.fleeing) { pickup(h, it); if (h.state === 'loot') return; }   // 1.20: he kneels by a body
@@ -8918,6 +9393,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
           } else {
             it.disabled = true; fl.threatDirty = true; fl.stats[CURSED[it.type] ? 'blessed' : 'disarmed']++; bt(it.type).disarmed++;
             floatTile(it.x, it.y, CURSED[it.type] ? (it.type === 'portrait' ? 'Odczyniony' : 'Odczynione') : 'Rozbrojone', '#a69bbb', 14); say(h, pick(CURSED[it.type] ? SAY.blessDone : SAY.disarmDone), 2); tl('ds', h.id, it.type, it.x, it.y, 0);   // 1.17: the priest's own words
+            mentorProud(h, 1.6);   // 1.21
           }
         }
         h.state = 'walk'; h.item = null; h.disarmT = null; h.needPlan = true;
@@ -13398,7 +13874,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       ctx.strokeStyle = R0.color; ctx.lineWidth = 1.6; ctx.stroke();
       drawClassIcon(e.type, 16, y, 9.5, '#1a1424');
       ctx.fillStyle = R0.color; ctx.font = '600 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText(e.nm[0] + ' · poz. ' + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][e.female ? 1 : 0] : R0.name[e.female ? 1 : 0]).toLowerCase() + (e.returning ? ' · wraca' : e.hunter ? ' · łowca' : e.recruit ? ' · rekrut' : '') + (e.phobia && ((e.known || []).includes('phobia') || mods.revealAll) ? ' · boi się: ' + PHOBIAS[e.phobia].name : ''), 25, y, w - 24);
+      ctx.fillText(e.nm[0] + ' · poz. ' + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][e.female ? 1 : 0] : R0.name[e.female ? 1 : 0]).toLowerCase() + (e.returning ? ' · wraca' : e.hunter ? ' · łowca' : e.recruit ? ' · rekrut' : '') + (e.bond && list[e.bond.with] ? ' · ' + bondLabel(e.bond, list[e.bond.with]).toLowerCase() : '') + (e.phobia && ((e.known || []).includes('phobia') || mods.revealAll) ? ' · boi się: ' + PHOBIAS[e.phobia].name : ''), 25, y, w - 24);   // 1.21: the bond
     });
     if (fl.breach) { ctx.fillStyle = '#ff8a8a'; ctx.font = '700 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText(run.layout.breach && run.layout.breach.fresh ? 'Wejdą przez wyłom! (czerwony znacznik)' : 'Wyłom otwarty: wybiorą wejście', 12, 26 + list.length * rowH, w - 16); }
   }
@@ -14167,7 +14643,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.20 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.21 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -14217,9 +14693,16 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.20'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.21'));
     const ul2 = el('ul', 'conseq');
-    ['1.20: ekwipunek i łup. Rzeczy poległego bohatera to już nie relikwie, tylko jego rzeczy: leżą jako zwykły ekwipunek (relikwią zostaje tylko relikwia z Twojego lochu) i ciągną chciwość o połowę słabiej. Kto wie o tej śmierci, mówi, czyje to; nowa drużyna czasem rozpozna rzeczy kogoś z poprzedniej wyprawy i trochę się boi.',
+    ['1.21: więzi. Część bohaterów przychodzi parami: przyjaciele, rodzeństwo, rywale, mistrz z uczniem (rekrutem). Para pokazuje się na liście następnej drużyny i na karcie bohatera ("Przyjaciel: Borys", "Rywalka: Wanda"); na początku fali i czasem w pogawędce mówią coś do siebie.',
+     '1.21: żałoba i zemsta. Gdy ginie ktoś z pary, drugi (jeśli to widzi, słyszy albo się dowie) opłakuje go po imieniu i boi się o połowę bardziej. Odważny, barbarzyńca, a czasem wojownik przysięga zemstę: furia, przez 30 s rzuca się na potwora, który zabił, i bije potwory o 30% mocniej. Uczeń po śmierci mistrza boi się bardziej, ale jeśli przeżyje 20 s, dorasta (+15% odwagi). Rywal przeżywa krótki szok.',
+     '1.21: "Nie zostawię cię". Gdy przywódca zostawia kogoś z pary w klatce albo zgubionego, drugi się nie zgadza i wraca po niego sam (druga grupa, jednoosobowa): otwiera klatkę albo szuka zgubionego, a potem obaj wracają do drużyny. Przy ratowaniu z klatki para idzie pierwsza.',
+     '1.21: mistrz i uczeń. Mistrz ostrzega ucznia, gdy ten wchodzi do pokoju ze znaną pułapką albo oberwie, i chwali go za rozbrojoną pułapkę albo przeżyty ciężki cios; uczeń trzyma się blisko mistrza i rzadziej się gubi.',
+     '1.21: rywale i kłótnie o łup. Rywal kpi, gdy drugiego zrani pułapka. Gdy chciwy, łowca albo rywal chce łupu, po który idzie już ktoś inny, a się widzą, kłócą się: wygrywa wyższy rangą (chciwy, barbarzyńca i przywódca +1), przegrany odpuszcza na 10 s, czasem się obraża i odchodzi; przywódca może przerwać kłótnię i wtedy nikt tego nie bierze przez 10 s. Rywal przywódcy częściej odchodzi własną drogą (Rozłam).',
+     '1.21: grabienie poległych. Kto bierze rzeczy z ciała, słyszy sprzeciw pary zmarłego (zawsze) albo kapłana czy ostrożnego, który wie o tej śmierci (co drugi raz); sprzeciw trochę obniża morale. Para nigdy nie grabi swojego zmarłego.',
+     '1.21: zakłady. Odważny albo rywal (weteran, zdrowy) zakłada się o monetę, że przejdzie przez znaną, naładowaną pułapkę bez draśnięcia, i idzie prosto przez nią (rzadko, mniej więcej raz na 3 fale): dobra okazja dla Ciebie. Liczby: nowa komórka "Więzi". Poprawka: rozmowa na trzy głosy nie zaczyna się bez trzeciego, który mógłby powiedzieć swoje kwestie.',
+     '1.20: ekwipunek i łup. Rzeczy poległego bohatera to już nie relikwie, tylko jego rzeczy: leżą jako zwykły ekwipunek (relikwią zostaje tylko relikwia z Twojego lochu) i ciągną chciwość o połowę słabiej. Kto wie o tej śmierci, mówi, czyje to; nowa drużyna czasem rozpozna rzeczy kogoś z poprzedniej wyprawy i trochę się boi.',
      '1.20: ciało do przeszukania. Kto wejdzie na rzeczy poległego, klęka przy nich na sekundę (złodziej pół) i zabiera to, co mu się przyda; trafiony w tym czasie nie wstaje. Kapłan i ten, kto widział śmierć, rzadziej idą po rzeczy zmarłych, złodziej i chciwy chętniej; przyjaciel zmarłego może zaprotestować.',
      '1.20: dzielenie się. Na postoju bohaterowie, którzy się widzą, podają sobie to, co komuś innemu bardziej się przyda (zbroja do wojownika, bomby do maga), albo się wymieniają; spokojny podaje swój amulet temu, kto zaraz wpadnie w panikę. Kto znajdzie coś, czego nie weźmie, mówi o tym, a ten, komu się przyda, idzie po to. Przywódca może przydzielić łup temu, kto go bardziej potrzebuje.',
      '1.20: udźwig. Każdy przedmiot coś waży (zbroja 6 kg, bomba 2, amulet 0,5), a każda klasa unosi inaczej (barbarzyńca 16 kg, mag 8, +0,3 kg na poziom). Ponad 60% udźwigu bohater zwalnia (strzałka pod plecakiem) i częściej poślizgnie się na Lodowni; za ciężkiego nie weźmie.',
@@ -14602,6 +15085,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (e.hunter) { const b = el('i', 'tg bag'); b.innerHTML = classIconSvg('bag', '#f2b94b', 'gi'); b.title = 'łowca skarbów'; l1.appendChild(b); }
     if (e.returning) { const b = el('i', 'tg back', '↺'); b.title = 'wraca z blizną'; l1.appendChild(b); }
     if (e.recruit) l1.appendChild(el('i', 'tg', 'rekrut'));
+    { const bm = bondMate(e, null); if (bm) l1.appendChild(el('i', 'tg', bondLabel(e.bond, bm))); }   // 1.21: his bond
     r.appendChild(l1);
     const kit = el('div', 'kit');
     if (!e.inv.length) kit.appendChild(el('small', null, 'bez sprzętu'));
@@ -14785,6 +15269,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       cell('Słyszane zza ściany / wieści o śmierci', (s.heard || 0) + ' / ' + (s.newsDeaths || 0));
       cell('Rozłam: grupy / bunty (udane) / obrażeni / powroty', (s.rifts || 0) + ' / ' + (s.mutinies || 0) + ' (' + (s.mutinyWins || 0) + ') / ' + (s.sulks || 0) + ' / ' + (s.merges || 0));   // 1.19
       cell('Ekwipunek: z ciał / podane (amulety) / przydział / oferty / za ciężkie / latarnia ratuje / łom', (s.bodyLoot || 0) + ' / ' + (s.gearGiven || 0) + ' (' + (s.amuletGiven || 0) + ') / ' + (s.lootAssign || 0) + ' / ' + (s.lootOffer || 0) + ' / ' + (s.tooHeavy || 0) + ' / ' + (s.lanternSaves || 0) + ' / ' + ((s.crowbarGate || 0) + (s.crowbarCage || 0)));   // 1.20
+      cell('Więzi: pary / żałoba (zemsta) / nie zostawię (uratowani) / mistrz: uwagi, pochwały / kpiny / kłótnie (przerwane) / sprzeciw nad ciałem / zakłady: wygrane-przegrane',
+        (s.bonds || 0) + ' / ' + (s.griefs || 0) + ' (' + (s.revengeVows || 0) + ') / ' + (s.noLeave || 0) + ' (' + (s.noLeaveSaved || 0) + ') / ' + (s.mentorWatch || 0) + ', ' + (s.mentorProud || 0) + ' / ' + (s.rivalMock || 0) + ' / ' +
+        (s.quarrels || 0) + ' (' + (s.quarrelStops || 0) + ') / ' + (s.lootDeadObject || 0) + ' / ' + (s.betsWon || 0) + '-' + (s.betsLost || 0));   // 1.21
       cell('Kwestie o tym, co widzieli / zamienione / pominięte', (s.sawTalk || 0) + ' / ' + (s.lineSwap || 0) + ' / ' + (s.lineDrop || 0));   // 1.17.1
     }
     fitList(list);
@@ -15235,6 +15722,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       add('Teraz: ' + st + '.');
     }
     add('Charakter: ' + (e.trait ? HERO_TRAITS[e.trait].name[fem ? 1 : 0] + ' (' + TRAIT_TEXT[e.trait] + ')' : 'zwyczajny') + '.');
+    { const bm = bondMate(e, live); if (bm) add(bondLabel(e.bond, bm) + (bm.dead ? (bm.female ? ' (zginęła)' : ' (zginął)') : '') + '.'); }   // 1.21: his bond
     add('Umie: ' + CLASS_SKILL[e.type] + '.');
     add('Klasa: ' + CLASS_RES_TEXT[e.type] + '.');
     if (e.hunter) add('Łowca skarbów: idzie po łup, nawet gdy to groźne (znak sakiewki).');
@@ -15473,7 +15961,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 58;   // 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  const LOG_VERSION = 58;   // 1.21 adds heroes[].bond (type[:role]:id) and stats: bonds, bondsBy, bondLines, griefs, revengeVows, revengeFights, grownUp, noLeave, noLeaveSaved, mentorWatch, mentorProud, rivalMock, quarrels, quarrelStops, quarrelWins, quarrelSulks, bets, betsWon, betsLost, betsOff; timeline bo bk gf vw gu rm mw mp qq nl ns ob bt be. 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
@@ -15501,7 +15989,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const w = run.waves[run.waves.length - 1];
     const doc = { version: LOG_VERSION, runId: run.id, wave: run.wave, at: new Date().toISOString(), partial: !!partial, summary: w,
       heroes: fl.heroes.map(h => ({ id: h.id, name: h.nm[0], female: h.female, type: h.type, lvl: h.lvl, boss: h.boss, trait: h.trait, max: h.max, courage: h.courage,
-        kit: h.entry.inv.map(i => i.type + i.r), end: h.inv.map(i => i.type + i.r), endSrc: h.inv.map(i => (i.src || 'kit')[0]), took: h.loot || 0, load: Math.round(loadOf(h) * 10) / 10, gold: h.gold || 0,   // 1.20: endSrc, took, load cursed: h.cursed ? 1 : 0, lost: h.lost ? 1 : 0, hunter: h.hunter ? 1 : 0,
+        kit: h.entry.inv.map(i => i.type + i.r), end: h.inv.map(i => i.type + i.r), endSrc: h.inv.map(i => (i.src || 'kit')[0]), took: h.loot || 0, load: Math.round(loadOf(h) * 10) / 10, gold: h.gold || 0, cursed: h.cursed ? 1 : 0, lost: h.lost ? 1 : 0, hunter: h.hunter ? 1 : 0,   // 1.20: endSrc, took, load (1.21: the comment stood before cursed, lost and hunter and cut them off)
+        bond: h.bond ? h.bond.type + (h.bond.role ? ':' + h.bond.role : '') + ':' + h.bond.id : null,   // 1.21
         out: h.dead ? 'dead' : h.carriedOut ? 'crystal' : h.fleeing ? 'scared' : h.fled ? 'left' : 'inside' })),
       entry: fl.spawnAt || 'ent', checkShapes: CHECK_SHAPE,
       layout: run.waveStart, timeline: fl.tl ? { ev: fl.tl.ev, smp: fl.tl.smp } : null, upgrades: run.upgrades.slice(), deck: run.deck.slice(), deckSize: run.deckSize, mods: Object.assign({}, mods) };
@@ -16147,6 +16636,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
     resolveCheck: p => resolveCheck(p), skipCheck: () => skipCheck(), clearCheck: () => clearCheck(), areaOf, slotOf, shortestPath, frontier, toolMarkers, applyTool, toolCost, get WW() { return WW; }, get WH() { return WH; }, TUT, UPGRADES, UPG, ITEMS, startBuild, applyUpgrade, makeWave, levelStats, recomputeMods, sellCard, upgradePicks, cardMultNow, openModal, queueModal, renderDeckTiles, saveRun, loadSave, resumeRun, clearSave, upgradeItem, removeItem, waveCurve, waveBase, computeBRooms, inB, decoyAlarm, guildAdapt, quietNow, setUser: v => { userStarted = v; }, get userStarted() { return userStarted; }, ignite, trapBoost, calmReady, landFallen, fall, planBreach: () => planBreach(), tutAnySpot, galleryK, stealNeed, portraitRooms, addFear, setTab: t => { tab = t; updateTray(); }, undo, pushUndo, get undoN() { return undoStack.length; }, setTrayOpen, UI, moveItem, moveTarget, setMode: (m, k) => { selected = m; movingKey = k || null; updateTray(); }, get selected() { return selected; }, get movingKey() { return movingKey; }, rankOf, dungeonBounds, regroupAtDoor: () => regroupAtDoor(),
     lookDone, councilDone, chooseTarget, canHearShout, answerLost, perceiveThink: (L, c) => perceiveThink(L, c), startFlee, cardFit, CARD_NEEDS, monstersTick, rebuildThreat, updateHero, onEnter, hiddenAmbush, skullK, cellLand, vaultSnap, riseGhost, restockForge, stripGear, framesWake, falseCall, taintedSip, reqOk, freshMods, shoutRange,   // 1.18
+    makeBonds, bondOf, bondLabel, bondMate, bondTalk, griefOf, bondHurt, mentorWatch, mentorProud, quarrel, quarrelWon, noLeave, rescueThink, betThink, betStart, betEnd, bondThink, decideCage, missLost, lootBanned, mateBody, vowK, convoStart, riftThink, CONVO, raging, cageHero,   // 1.21
     shareThink, loadOf, carryOf, burden, claimScore, lootReassign, onLootDead, onLootRival, lanternNear, litLantern, dropAt, bodyLoot, CLASS_FIT, CARRY, fitOf, canTake, lootOffer, mimicSpill, douseLantern, bombCook, fogRoll, hasCrowbar, srcText, smashDone, bombJob, heroAbilities, scanTraps, LOOT_GREED, itemLabel, canSee, setGreed, freeCaged, SOLO,   // 1.20
     patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, startSplit, onScout, splitting, lookRoll, lookSpots, hearFar, councilVote, nameGen, g2Start, g2End, g2Think, g2Leader, inG2, groupLeaderOf, mutinyThink, sulkThink, councilDone, lineOk, lineTags, fitLine, TRAPS, MONSTERS, isLoot, SAY, knowsTag, sawSweep, sawItem, sawAdd, itemTags, sayNow, LINE_NEEDS, setSayHook: f => { sayHook = f; }, say, nameFill, GZ, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, t3, kindPow, inKind, slotRoom, servedRooms, kindProps, PROP, PROP_PLAN, KIND_WALL3D, snapshotLayout, KINDS, KIND_INFO, KIND_OF, RT_INFO, nbrRooms, roomCount, sizeMult,
     rollItem, curse, comboNow, get orbs() { return orbs; }, boxOrbs, tileScreen, bfs, say: (h, t, p, d, how) => say(h, t, p, d, how), sayTick, floorBusy, readT, talkAs: (d, l) => talkAs(d, l), greedCurve, greedRaw, addGreed, waveSize, partySize, safestRoom: h => safestRoom(h), planHero: h => planHero(h), lootSeen: it => lootSeen(it), kill: (h, k, a) => kill(h, k, a), damage, loadRecords, BREACH_PATCH, HITEMS, LOOT_KIND, noticeLoot, lootDecision, leader, alive, heroExit, driftTarget, SCARE, CURSED, DRIFT, TABS, objTargetOk, roomOf, dropCarry, holdRemove, buildTap, onbStage, setOnb, onbDone, startGuided, endRun: (r, x) => endRun(r, x), revealPhobia, revealPhys, ONB_STAGES, ONB_CARD, ONB_ITEM, comboHp, onbOk, coachDone,

@@ -213,7 +213,7 @@
     let pool = null;
     if (fl.phase === 'raid' && aloneNow(h)) {   // 1.13: alone he talks to himself (SOLO) or keeps a line meant for others to himself
       const k = lineKey(text), b = k ? k.split(':')[0] : null;
-      if (k && (SOLO[k] || SOLO[b])) { pool = SOLO[k] || SOLO[b]; text = pick(pool); }
+      if (k && (SOLO[k] || SOLO[b])) { pool = (SOLO[k] || SOLO[b]).filter(x => !/\{[navg]\}/.test(x)); if (!pool.length) return true; text = pick(pool); }   // 1.21: not one with a name to fill
       else if (b && SOLO_MUTE.has(b)) return true;
     }
     if (fl.phase === 'raid') { text = fitLine(h, text, pool); if (!text) return true; }   // 1.17.1: only what he has seen (p5_ai.js)
@@ -668,7 +668,42 @@
         else if ([...run.items.values()].some(it => it.type === 'gate') && Math.random() < 0.3) { const c = list.filter(room); give(c.find(e => e.type === 'warrior' || e.type === 'barbarian') || (c.length ? pick(c) : null), 'crowbar'); }
       }
     }
+    makeBonds(list, n);   // 1.21
     return list;
+  }
+  // 1.21 Więzi i dramaty: some of them come in pairs. A party gets 0-2 bonds (the first 55%, a second 30%), one bond a hero at
+  // most, none for a returner (1.23 may give him one) and none in the tutorial's first wave: siblings 15%, a mentor (rank 1+) and
+  // his apprentice (a rookie) 25% when there is such a pair, rivals 25% (two of a kind: both greedy or brave, else any two),
+  // friends the rest. e.bond = { type, with: the other's index in this list, role: 'mentor' / 'apprentice' / null }; the hero
+  // gets h.bond = { type, id, role } (spawnHero: they come in in this order, so the index is his id).
+  function makeBonds(list, n) {
+    if (tutW1(n) || list.length < 2) return;
+    const tough = e => e.trait === 'greedy' || e.trait === 'brave' || e.hunter;
+    for (let k = 0; k < 2; k++) {
+      if (Math.random() >= (k ? 0.3 : 0.55)) break;
+      const f = list.map((e, i) => i).filter(i => !list[i].bond && !list[i].returning);
+      if (f.length < 2) break;
+      const ment = [], riv = [];
+      f.forEach(i => f.forEach(j => { if (i === j) return; if (list[i].rank >= 1 && list[j].rank === 0) ment.push([i, j]); if (i < j && tough(list[i]) && tough(list[j])) riv.push([i, j]); }));
+      const r = Math.random();
+      let type = 'friend', pr = null;
+      if (r < 0.15) type = 'sibling';
+      else if (r < 0.4) { if (ment.length) { type = 'mentor'; pr = pick(ment); } }
+      else if (r < 0.65) { type = 'rival'; if (riv.length) pr = pick(riv); }
+      if (!pr) { const a = pick(f); pr = [a, pick(f.filter(i => i !== a))]; }
+      list[pr[0]].bond = { type, with: pr[1], role: type === 'mentor' ? 'mentor' : null };
+      list[pr[1]].bond = { type, with: pr[0], role: type === 'mentor' ? 'apprentice' : null };
+    }
+  }
+  // what the other one is to him, by the other's gender: "Przyjaciel: Borys", "Rywalka: Wanda", "Mistrz: ..." (his mentor), "Uczeń: ..."
+  const BOND_NOUN = { friend: ['Przyjaciel', 'Przyjaciółka'], sibling: ['Brat', 'Siostra'], rival: ['Rywal', 'Rywalka'], mentor: ['Mistrz', 'Mistrzyni'], apprentice: ['Uczeń', 'Uczennica'] };
+  const bondLabel = (b, o) => BOND_NOUN[b.type === 'mentor' ? (b.role === 'mentor' ? 'apprentice' : 'mentor') : b.type][o.female ? 1 : 0] + ': ' + o.nm[0];
+  // the other one of an entry's pair: the hero in the dungeon, or his entry in the party list (before the wave, or not in yet)
+  function bondMate(e, live) {
+    if (!e || !e.bond) return null;
+    if (live && live.bond && fl && fl.heroes[live.bond.id]) return fl.heroes[live.bond.id];
+    const L = (run && run.next) || [];
+    return L.includes(e) ? L[e.bond.with] || null : null;
   }
   const TALE_PER = 0.04, TALE_LOOT = 4, TALE_CAP = 0.3;   // v15.1: +0,04 greed per treasure seen (up to 4) for every hero scared away, at most +0,3 a wave
   const greedStartNow = () => greedCurve(1 + mods.greedStart + run.rumor.gold + run.greedKeep + greedBonusNow());
@@ -751,9 +786,11 @@
       // v12: purse, curse, the priest's faith, powers in use, getting separated, shaken by a death
       gold: 0, cursed: false, faith: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithMax: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithT: 0,
       wardUntil: -1, wardK: 0, sprintUntil: -1, sprintK: 1, calmUntil: -1, giveCd: 0, sepT: 0, sepRolled: false, shakenUntil: -1, rtSaid: new Set(), lostCallT: 0, hunter: !!e.hunter,
-      phys: e.phys || null, phobia: e.phobia || null, known: new Set(e.known || []), returning: !!e.returning, scar: e.scar || null, trauma: {}, fearBy: {}, dmgBy: {}, phobiaSeen: new Set(), saw: new Set() };
+      phys: e.phys || null, phobia: e.phobia || null, known: new Set(e.known || []), returning: !!e.returning, scar: e.scar || null, trauma: {}, fearBy: {}, dmgBy: {}, phobiaSeen: new Set(), saw: new Set(),
+      bond: e.bond ? { type: e.bond.type, id: id + e.bond.with - Math.max(0, (run.next || []).indexOf(e)), role: e.bond.role || null } : null };   // 1.21
     h.inR = realNow;   // 1.09: pops in
     fl.heroes.push(h);
+    if (h.bond && bondOf(h)) { const st = fl.stats, by = st.bondsBy || (st.bondsBy = {}); st.bonds = (st.bonds || 0) + 1; by[h.bond.type] = (by[h.bond.type] || 0) + 1; tl('bo', h.bond.id, h.id, h.bond.type); }   // 1.21: the pair is in
     if (h.returning) tutPop('returner');   // 1.12: the first returner in the first runs
     tl('sp', h.id);
     reveal(h);
@@ -1212,7 +1249,8 @@
     feltBy(h, real / h.max);   // 1.05: what hurt him (told in the tavern)
     if (attr) { const b = bt(attr); if (kind === 'monster') b.passiveDmg += real; else b.dmg += real; }
     if (kind === 'trap') fl.party.morale = Math.max(0.15, fl.party.morale - 0.03);
-    if (h.hp <= 0) { h.hp = 0; h.dead = true; kill(h, kind, attr); return; }
+    if (h.hp <= 0) { h.hp = 0; h.dead = true; h.killer = kind === 'monster' ? src : null; kill(h, kind, attr); return; }   // 1.21: killer
+    bondHurt(h, real, kind, src);   // 1.21
     if (kind === 'trap' && real >= 0.25 * h.max && fl.time - (fl.party.lastSay.friendHit || -99) > 5) {   // 1.05: a friend sees it and reacts
       const o = alive().find(q => q !== h && !q.fleeing && !panicking(q) && !q.lost && hdist(q, h) <= 4);
       if (o) { fl.party.lastSay.friendHit = fl.time; fl.party.queueSay.push({ id: o.id, text: nameFill(pick(SAY.friendHit), h), at: fl.time + 0.5, how: 'loud' }); }
@@ -1272,7 +1310,7 @@
     }
     const barb = h.type === 'barbarian';
     h.rageUntil = fl.time + (barb ? 8 : 6); h.rageCd = fl.time + (barb ? 14 : 20); fl.stats.rages = (fl.stats.rages || 0) + 1; tl('rg2', h.id, why);
-    say(h, why === 'death' && dead ? nameFill(pick(SAY.revenge), dead) : why === 'panic' ? pick(SAY.rageNoPanic) : pick(SAY.rage), 4, 2.2);
+    say(h, why === 'vow' && dead ? bondText(h, 'revengeVow', dead) : why === 'death' && dead ? nameFill(pick(SAY.revenge), dead) : why === 'panic' ? pick(SAY.rageNoPanic) : pick(SAY.rage), 4, 2.2);   // 1.21: vow
     floatHero(h, 'Furia!', '#ff9a9a', 13, -0.8);
     return true;
   }
@@ -1367,6 +1405,7 @@
   function kill(h, kind, attr) {
     const p = heroPos(h);
     h.acc = 0; h.foe = null; h.bubble = null; h.outR = realNow; h.outKind = 'dead';   // 1.09: he tips over
+    if (h.bet) betEnd(h, true);   // 1.21: a bet he did not live through
     fl.stats.kills++; buzz(14);
     if (kind === 'heart') fl.stats.killsHeart++; else if (kind === 'monster') fl.stats.killsMon++; else fl.stats.killsTrap++;
     if (attr) bt(attr).kills++;
@@ -1396,7 +1435,7 @@
     // 1.17 (author: "they know about each other in other rooms, e.g. when someone dies"): only the ones who see it (the same
     // place) react in full; the ones who only hear the death cry (14 steps, not through a Głusza) get the smaller fright and no
     // name; the rest learn later from someone who knows (perceiveThink: news), and the party's morale drops when the leader knows
-    const d = { id: h.id, t: fl.time, crypt, knows: new Set(), x: h.tx, y: h.ty, room: h.room, hush: isRt(h.room, 'hush') }; (fl.deaths || (fl.deaths = [])).push(d);   // 1.18: where the body lies (Odnalezione ciało)
+    const d = { id: h.id, t: fl.time, crypt, knows: new Set(), x: h.tx, y: h.ty, room: h.room, hush: isRt(h.room, 'hush'), killer: kind === 'monster' ? h.killer : null }; (fl.deaths || (fl.deaths = [])).push(d);   // 1.18: where the body lies (Odnalezione ciało); 1.21: killer
     const echo = mods.farecho && isRt(h.room, 'grotto');   // 1.18 Niosące się echo: who hears a death in a Grota fears it like a witness
     const Lnow = leader();
     if (mods.lastGasp) alive().forEach(o => { if (o.room === h.room) addFear(o, mods.lastGasp * o.courage, null, 'death'); });   // Ostatnie tchnienie
@@ -1406,6 +1445,7 @@
       d.knows.add(o.id); if (near) sawAdd(o, ['blood']); if (o === Lnow && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
       const base = (near || echo ? Math.max(15 * o.R.panic, 0.12 * o.courage + 4) : 1.3 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (1 + mods.badnews)) * (crypt ? 2 : 1);   // v14: softer for rookies (was max(30 x panic, ...)); 1.18: Złe wieści x2 for one who only hears it, Niosące się echo
       o.shakenUntil = fl.time + (near ? 9 : 5);
+      if (bondOf(o) === h) { griefOf(o, h, base, d, 0); return; }   // 1.21: his pair (he knows the voice too): grief, maybe a vow
       if (hears) {   // a cry from somewhere: no name, no fury
         if (Math.random() < 0.55) say(o, pick(SAY.deathHeard), 3, 2);
         const f1 = o.fear; addFear(o, base * (o.trait === 'coward' ? 1.5 : 1), null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f1);
@@ -1571,11 +1611,12 @@
   // Picking it up: coins go to the purse, the rest is a real item (or the exact one that was dropped). No use or no room: it stays.
   function pickup(h, it) {
     const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, k = key(it.x, it.y);
+    if (lootBanned(h, it)) return false;   // 1.21: the loser of a quarrel over it (or everyone, when the leader stopped it) for 10 s
     // 1.20: a body's things: he kneels and goes through them (updateHero: the 'loot' state, then bodyLoot), not while running or
     // in a panic, and not again over a body he found nothing on
     if (it.body != null) {
       const m = h.lootMemo.get(k);
-      if ((m && m.body && !m.go && m.t > fl.time) || exiting(h) || panicking(h) || caged(h)) return false;
+      if ((m && m.body && !m.go && m.t > fl.time) || exiting(h) || panicking(h) || caged(h) || mateBody(h, it)) return false;   // 1.21: never his pair's
       h.state = 'loot'; h.timer = h.type === 'thief' ? 0.5 : 1.0; h.dur = h.timer; h.lootIt = it; h.path = [];
       return false;
     }
@@ -1600,6 +1641,7 @@
     // in 1.19 it vanished and gave nothing; counted as loot it gave the replays +15-25% Esencja)
     if (it.knocked === h.id) { fl.party.queueSay.push({ id: h.id, text: pick(SAY.gearBack), at: fl.time + 0.2, prio: 2 }); fl.stats.gearBack = (fl.stats.gearBack || 0) + 1; tl('lp', h.id, 0, 'back'); replanAll(); return true; }
     h.loot++;
+    quarrelWon(h, k);   // 1.21
     if (h.offerKey === k) { fl.stats.lootOfferTaken = (fl.stats.lootOfferTaken || 0) + 1; h.offerKey = null; }   // 1.20: he took what he was offered
     const kg = LOOT_GREED[kind];
     // 1.03: taking it pulls less each time, like seeing it (Odwrotna chciwość x3 on top), and the greed that stays for good
@@ -1653,6 +1695,7 @@
     // what he left there he has looked at: he does not come back to kneel over it (60 s)
     piles.concat([it]).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o) h.lootMemo.set(key(o.x, o.y), { go: false, t: fl.time + 60, body: true }); });
     if (got.length) {
+      quarrelWon(h, key(it.x, it.y));   // 1.21
       sawAdd(h, ['gear']); floatHero(h, 'Zabiera rzeczy ' + nameGen(from), '#c9c2b8', 12, -0.7);
       if (mods.lootTrap > 0) damage(h, mods.lootTrap * 2, LOOTTRAP);
       vaultSnap(it, h); updateTray(); replanAll();

@@ -31,7 +31,7 @@ LIB = r"""() => {
   T.deck = ids => { G.run.deck = ids.slice(); G.recomputeMods(); };
   // the wave: these classes, plain (no trait, no boss), all in, then made unbreakable (no deaths, no flight, nothing carried)
   T.raid = types => {
-    const nx = G.makeWave(4).slice(0, types.length); nx.forEach((e, i) => { e.type = types[i]; e.trait = null; e.boss = null; e.lvl = 5; e.returning = false; }); G.run.next = nx;
+    const nx = G.makeWave(4).slice(0, types.length); nx.forEach((e, i) => { e.type = types[i]; e.trait = null; e.boss = null; e.lvl = 5; e.returning = false; e.bond = null; }); G.run.next = nx;   // 1.21: no bonds
     G.startWave(); const f = G.fl;
     for (let i = 0; i < 600 && f.queue.length; i++) T.stepS(0.05);
     T.stepS(0.3);

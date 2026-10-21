@@ -218,8 +218,9 @@
     P.g2 = { leaderId: D.id, ids: new Set(all.map(o => o.id)), plan, target, born: fl.time, why, until: fl.time + (why === 'sulk' || why === 'mutiny' ? 25 : 40), said: false };
     all.forEach(o => { o.plan = plan; o.needPlan = true; o.split = false; startSplit(o, 'rift'); o.wanderUntil = -1; o.lootKey = null; });
     const st = fl.stats; st.rifts = (st.rifts || 0) + 1; st['rift_' + why] = (st['rift_' + why] || 0) + 1; tl('rf', D.id, all.length, why);
-    if (why !== 'sulk') setHint(why === 'council' ? 'Rozłam: część drużyny zostaje i szuka dalej.' : 'Rozłam: ' + all.length + (all.length > 1 ? ' bohaterów idzie' : ' idzie') + ' własną drogą. Wrócą, gdy spotkają resztę.');
-    floatHero(D, why === 'sulk' || why === 'mutiny' ? 'Obrażon' + (D.female ? 'a' : 'y') : 'Rozłam', '#e8b26a', 13, -0.9);
+    if (why === 'rescue') setHint(D.nm[0] + ' nie zostawi przyjaciela: wraca po niego sam' + (D.female ? 'a' : '') + '.');   // 1.21
+    else if (why !== 'sulk') setHint(why === 'council' ? 'Rozłam: część drużyny zostaje i szuka dalej.' : 'Rozłam: ' + all.length + (all.length > 1 ? ' bohaterów idzie' : ' idzie') + ' własną drogą. Wrócą, gdy spotkają resztę.');
+    floatHero(D, why === 'rescue' ? 'Nie zostawię!' : why === 'sulk' || why === 'mutiny' ? 'Obrażon' + (D.female ? 'a' : 'y') : 'Rozłam', '#e8b26a', 13, -0.9);   // 1.21: rescue
     return true;
   }
   function g2End(why) {
@@ -246,7 +247,8 @@
     mem.forEach(o => { if (o !== L2 && (canSee(o, L2) || canHear(o, L2)) && o.plan !== G.plan) { o.plan = G.plan; o.needPlan = true; } });
     if (!Lm) return;
     // the others run or go home and they hear it: they go too (a group that chose to stay at the council stays)
-    if (goingOut() && G.why !== 'council' && G.why !== 'sulk' && mem.some(o => canHearShout(o, Lm))) { g2End('out'); return; }
+    if (goingOut() && G.why !== 'council' && G.why !== 'sulk' && G.plan !== 'rescue' && mem.some(o => canHearShout(o, Lm))) { g2End('out'); return; }   // 1.21: not before the rescue is done
+    if (G.plan === 'rescue') { rescueThink(G, L2); return; }   // 1.21
     if (fl.fearless && fl.storm && G.plan !== 'assault' && mem.some(o => canHearShout(o, Lm))) { G.plan = 'assault'; mem.forEach(o => { o.plan = 'assault'; o.needPlan = true; }); }
     // they have to part first (out of each other's sight), else after 20 s it comes to nothing
     const near = mem.some(o => alive().some(m => !G.ids.has(m.id) && !m.lost && !caged(m) && samePlace(o, m)));
@@ -318,9 +320,11 @@
   function riftThink(L, grp, dt) {
     const P = fl.party;
     if (P.g2 || P.council || P.plan !== 'explore' || fl.fearless || goingOut() || P.scoutId >= 0 || grp.length < 3 || fl.time < 20 || (fl.stats.rifts || 0) >= 2 || grp.some(talking) || fl.time - P.lastTalkAt < 8) return;
-    if (Math.random() > dt * 0.025 * (P.morale < 0.6 ? 1.5 : 1)) return;
-    const restless = o => o.trait === 'greedy' || o.trait === 'brave' || o.hunter || o.type === 'barbarian';
-    const D = grp.filter(o => o !== L && restless(o) && o.rank >= 1 && !o.crystal && !o.lost && o.hp > 0.5 * o.max && o.fear < 0.5 * o.courage).sort(() => Math.random() - 0.5)[0];
+    const rv = bondType(L, 'rival') ? bondOf(L) : null;   // 1.21: the leader's rival is a likelier dissenter (x1,5), restless or not
+    const restless = o => o.trait === 'greedy' || o.trait === 'brave' || o.hunter || o.type === 'barbarian' || o === rv;
+    const cands = grp.filter(o => o !== L && restless(o) && o.rank >= 1 && !o.crystal && !o.lost && o.hp > 0.5 * o.max && o.fear < 0.5 * o.courage);
+    if (Math.random() > dt * 0.025 * (P.morale < 0.6 ? 1.5 : 1) * (cands.includes(rv) ? 1.5 : 1)) return;
+    const D = cands.includes(rv) ? rv : cands.sort(() => Math.random() - 0.5)[0];
     if (!D) return;
     const t = g2Target(D, L); if (t < 0 || (P.target >= 0 && Math.hypot(t % WW - P.target % WW, ((t / WW) | 0) - ((P.target / WW) | 0)) < 6)) return;
     const like = o => restless(o) || o.rank === 0;
@@ -545,8 +549,9 @@
       const sp = new Set(t.l.map(l => l[0]));
       if (sp.has('A') && (A.gone || A.dead || A.fled)) return;
       if (!is(A.type, t.ac) || !is(A.trait, t.at) || !knows(A, t, 'A')) return;
-      const Bs = ears.filter(o => is(o.type, t.b) && is(o.trait, t.bt) && (t.br === undefined || o.rank <= t.br) && (t.bv === undefined || o.rank >= t.bv) && knows(o, t, 'B'));
-      if (!Bs.length || (sp.has('C') && ears.length < 2)) return;
+      let Bs = ears.filter(o => is(o.type, t.b) && is(o.trait, t.bt) && (t.br === undefined || o.rank <= t.br) && (t.bv === undefined || o.rank >= t.bv) && knows(o, t, 'B'));
+      if (sp.has('C')) Bs = Bs.filter(b => ears.some(o => o !== b && knows(o, t, 'C')));   // 1.21: a 3-voice exchange needs its C (it used to play without his lines)
+      if (!Bs.length) return;
       opts.push({ t, Bs, w: (t.w || 1) * (t.b || t.bt || t.br !== undefined || t.bv !== undefined || t.ac || t.at ? 1.6 : 1) });   // the fitting ones first
     });
     if (!opts.length) return why('fit');
@@ -620,7 +625,7 @@
   // Worth it? What the loot is worth to THIS hero (gold to the greedy, a potion to the wounded, gear he can use)
   // against the danger they know about on the way and around it.
   function lootDecision(h, it, b, idx) {
-    if (it.cursedKnown) return false;
+    if (it.cursedKnown || lootBanned(h, it) || mateBody(h, it)) return false;   // 1.21: a quarrel's 10 s, his pair's things
     const k = key(it.x, it.y), memo = h.lootMemo.get(k);
     if (memo && fl.time - memo.t < 8) return memo.go;
     const r = lootLevel(it), kind = LOOT_KIND[it.type], hurt = h.hp < 0.4 * h.max;
@@ -691,15 +696,17 @@
   // the 1.21 quarrels; in 1.20 the first keeps it without a word)
   function lootReassign(h, cl, it, k, steps) {
     const P = fl.party;
-    if (steps < 0 || steps > 8 || Math.hypot(cl.tx - it.x, cl.ty - it.y) > 8 || claimScore(h, it) < claimScore(cl, it) + 0.8) return false;
+    if (steps < 0 || steps > 8 || Math.hypot(cl.tx - it.x, cl.ty - it.y) > 8) return false;
     const L = groupLeaderOf(h);
-    if (L && L !== h && L !== cl && L.rank >= 1 && !panicking(L) && earshot(L, h) && earshot(L, cl)) {
+    if (claimScore(h, it) >= claimScore(cl, it) + 0.8 && L && L !== h && L !== cl && L.rank >= 1 && !panicking(L) && earshot(L, h) && earshot(L, cl)) {
       P.lootClaim.set(k, h.id); cl.lootMemo.set(k, { go: false, t: fl.time + 7 }); cl.needPlan = true;
       P.queueSay.push({ id: L.id, text: nameFill(pick(SAY.lootAssign), h), at: fl.time + 0.3, prio: 2 });
       fl.stats.lootAssign = (fl.stats.lootAssign || 0) + 1; tl('qa', L.id, h.id, cl.id);
       return true;
     }
     if ((h.trait === 'greedy' || h.hunter) && (cl.trait === 'greedy' || cl.hunter)) onLootRival(h, cl, it, k);
+    // 1.21: one who wants it (greedy, a treasure hunter, or the claimant's rival) quarrels over it; the winner has the claim
+    if ((h.trait === 'greedy' || h.hunter || (bondOf(h) === cl && h.bond.type === 'rival')) && !lootBanned(h, it)) return quarrel(h, cl, it, k);
     return false;
   }
   // 1.20 (hook for 1.21: a quarrel over the loot): two greedy ones after the same thing, once a pair and a pile
@@ -723,8 +730,10 @@
     fl.stats.lootOffer = (fl.stats.lootOffer || 0) + 1; tl('qo', h.id, o.id);
     return true;
   }
-  // 1.20 (hook for 1.21: looting the dead, a friend's objection): called after every search of a body, taken or not. A friend of
-  // the dead who sees it may object (lootDeadObject, {v} = the looter) and the looter answers (lootDeadReply): words only in 1.20.
+  // 1.20 (hook for 1.21: looting the dead, a friend's objection): called after every search of a body, taken or not.
+  // 1.21: one who sees him take a dead friend's things objects (lootDeadObject, {v} = the looter; the looter's lootDeadReply): the
+  // dead one's pair always, a priest or a careful one who knows of that death half the time; it costs the party a little morale
+  // (-0,05). His pair never loots him (mateBody).
   function onLootDead(h, deadId, items, it) {
     const P = fl.party, wave = it ? it.fromWave : run.wave;
     (P.lootedDead || (P.lootedDead = [])).push({ by: h.id, dead: deadId, wave, t: fl.time, n: items.length });
@@ -734,12 +743,272 @@
     tl('bl', h.id, deadId, items.length);
     if (Math.random() < 0.6) say(h, pick(SAY.lootDead), 2);   // alone: SOLO.lootDead (say)
     const d = wave === run.wave ? (fl.deaths || []).find(x => x.id === deadId) : null;
-    const o = d && alive().find(x => x !== h && canSee(x, h) && d.knows.has(x.id) && x.trait !== 'greedy' && !x.hunter && !panicking(x) && !caged(x) && !exiting(x) &&
-      (x.type === 'priest' || x.trait === 'careful' || Math.random() < 0.3));
-    if (o && Math.random() < 0.5) {
+    const w = x => x !== h && !x.dead && !x.fled && !x.gone && canSee(x, h) && !panicking(x) && !caged(x) && !exiting(x) && !x.lost;
+    const dead = d ? byId(deadId) : null, mate = dead && bondOf(dead) && w(bondOf(dead)) ? bondOf(dead) : null;   // ids are this wave's: only a death of this wave has a pair here
+    const o = mate || (d && alive().find(x => w(x) && d.knows.has(x.id) && (x.type === 'priest' || x.trait === 'careful') && x.trait !== 'greedy' && !x.hunter));
+    if (o && (o === mate || Math.random() < 0.5)) {
       P.queueSay.push({ id: o.id, text: nameFill(pick(SAY.lootDeadObject), h), at: fl.time + 1.2, prio: 2 }, { id: h.id, text: pick(SAY.lootDeadReply), at: fl.time + 2.4, prio: 2 });
-      fl.stats.lootDeadObject = (fl.stats.lootDeadObject || 0) + 1;
+      fl.stats.lootDeadObject = (fl.stats.lootDeadObject || 0) + 1; P.morale = Math.max(0.15, P.morale - 0.05); tl('ob', o.id, h.id);
     }
+  }
+  // 1.21 Więzi i dramaty (author's plan): some heroes come in pairs (makeBonds, p3): friends, siblings, rivals, a mentor and his
+  // apprentice (h.bond = { type, id, role }). A bond shows in what they say (a word to the other early in the wave and now and
+  // then in the small talk), in grief and revenge when one dies, in one who will not leave the other in a cage or lost, in the
+  // mentor's eye on his apprentice, in a rival's jabs, in quarrels over loot and in bets. All of it only between two who see each
+  // other; lines with {v} name the other one (never his gender).
+  const BOND_KEY = { friend: 'bondFriend', sibling: 'bondSibling', rival: 'bondRival', mentor: 'bondMentor' };
+  function bondOf(h) {   // the other one of his pair, whatever became of him (null: no bond, or not in the dungeon yet)
+    const o = h && h.bond && fl ? fl.heroes[h.bond.id] : null;
+    return o && o !== h && o.bond && o.bond.id === h.id ? o : null;
+  }
+  const bondType = (h, t) => !!bondOf(h) && h.bond.type === t;
+  const calmFor = o => !!o && !o.dead && !o.fled && !o.gone && !o.lost && !caged(o) && !panicking(o) && !o.fleeing;
+  // a line naming the other one ({v}); alone, its SOLO version (say() itself only swaps in SOLO lines without a name)
+  const bondText = (h, k, o) => nameFill(pick(fl.phase === 'raid' && SOLO[k] && aloneNow(h) ? SOLO[k] : SAY[k]), o);
+  const pairKey = (a, b) => Math.min(a.id, b.id) + '|' + Math.max(a.id, b.id);
+  const mateBody = (h, it) => it.body != null && it.fromWave === run.wave && !!bondOf(h) && h.bond.id === it.body;
+  const lootBanned = (h, it) => !!it.qBan && fl.time < it.qBan.until && (!it.qBan.ids || it.qBan.ids.includes(h.id));
+  // a word to the other one (bondFriend... with his name) and, unless a talk starts from it, his answer (bondReply); the mentor
+  // speaks to his apprentice, not the other way round. gap: seconds since that pair's last word. q: through the party's queue (the
+  // first word of the wave: the door is full of talk, it waits for its turn; then the answer, 60%, or else a talk may start from
+  // it), otherwise now (the small talk picks a silent moment) or not at all.
+  function bondTalk(h, gap, q) {
+    const o = bondOf(h), P = fl.party;
+    if (!o || !calmFor(h) || !calmFor(o) || exiting(h) || exiting(o) || fl.fearless || (!q && talking(h)) || !canSee(h, o) || (h.bond.type === 'mentor' && h.bond.role !== 'mentor')) return false;
+    const T = P.bondT || (P.bondT = {}), pk = pairKey(h, o);
+    if (fl.time - (T[pk] == null ? -99 : T[pk]) < gap) return false;
+    const n0 = P.convoN || 0, text = nameFill(pick(SAY[BOND_KEY[h.bond.type]]), o), rep = Math.random() < 0.6;
+    P.convoNot = { key: BOND_KEY[h.bond.type], ids: new Set([o.id]) };   // the other one does not comment on what was said to him
+    if (q) { P.queueSay.push({ id: h.id, text, at: fl.time + 0.2, prio: 2, late: 8 }); if (rep) P.queueSay.push({ id: o.id, text: pick(SAY.bondReply), at: fl.time + 0.4, prio: 2, late: 10 }); }
+    else if (!say(h, text, 2, null, 'q')) return false;   // 'q': now or not at all
+    else if ((P.convoN || 0) === n0 && rep) P.queueSay.push({ id: o.id, text: pick(SAY.bondReply), at: fl.time + 0.2, prio: 2, late: 4 });
+    T[pk] = fl.time; fl.stats.bondLines = (fl.stats.bondLines || 0) + 1; tl('bk', h.id, o.id);
+    return true;
+  }
+  // his pair died and he knows it (kill: he saw it or heard the cry; perceiveThink: told, or he found the body): the grief line
+  // instead of the usual one (q: queued, after the one who told him). Friends, siblings, a mentor who lost his apprentice: half
+  // as much fear again, or (a brave one, a barbarian, a warrior half the time) fury and a vow: 30 s against the monster that did
+  // it (planHero) and +30% damage to monsters (vowK). The apprentice of a dead mentor: fear x1,5, and if he lives 20 s more he
+  // grows up (+15% courage for the rest of the wave, bondThink). A rival: a short shock (half the fear).
+  const GRIEF_KEY = { friend: 'griefFriend', sibling: 'griefSibling', rival: 'griefRival' };
+  function griefOf(o, dead, base, d, q) {
+    const P = fl.party, b = o.bond, st = fl.stats;
+    const k = b.type === 'mentor' ? (b.role === 'apprentice' ? 'griefMentor' : 'griefFriend') : GRIEF_KEY[b.type];
+    st.griefs = (st.griefs || 0) + 1; tl('gf', o.id, dead.id);
+    const line = () => { const t = bondText(o, k, dead); if (q) P.queueSay.push({ id: o.id, text: t, at: fl.time + q, prio: 3, late: 4 }); else say(o, t, 4, 2.2); };
+    const fear = m => { const f0 = o.fear; addFear(o, base * m * (o.trait === 'coward' ? 1.5 : 1), null, 'death'); st.deathFear += Math.max(0, o.fear - f0); };
+    if (b.type === 'rival') { line(); fear(0.5); return; }
+    if (b.role === 'apprentice') { line(); fear(1.5); o.growAt = fl.time + 20; return; }
+    if (!o.fleeing && (o.trait === 'brave' || o.type === 'barbarian' || (o.type === 'warrior' && Math.random() < 0.5)) && startRage(o, 'vow', dead)) {
+      o.vowUntil = fl.time + 30; o.vowOn = d && d.killer && MONSTERS[d.killer.type] && d.killer.hp > 0 ? d.killer : null; o.needPlan = true;
+      st.revengeVows = (st.revengeVows || 0) + 1; st.revenge = (st.revenge || 0) + 1; tl('vw', o.id, dead.id);
+      fear(0.3); return;
+    }
+    line(); fear(1.5);
+  }
+  const vowK = h => fl.time < (h.vowUntil || 0) ? 1.3 : 1;   // revenge: +30% damage to monsters
+  // a wound his pair sees: a rival's jab (a trap, 20%+ HP, 30%, once in 20 s), the mentor's warning when his apprentice is hurt
+  // (once in 25 s), or, when the hit leaves him under 30% HP and he lives, the mentor's praise 3 s later; a bet lost to the trap
+  function bondHurt(h, real, kind, src) {
+    if (h.bet && !h.bet.done && src === h.bet.trap) betEnd(h, true);
+    const o = bondOf(h), P = fl.party;
+    if (!o || (kind !== 'trap' && kind !== 'monster') || !calmFor(o) || !canSee(o, h)) return;
+    if (h.bond.type === 'rival') {
+      if (kind !== 'trap' || real < 0.2 * h.max || fl.time < (o.mockT || 0) || Math.random() >= 0.3) return;
+      o.mockT = fl.time + 20;
+      P.convoNot = { key: 'rivalMock', ids: new Set([h.id]) };
+      if (!say(o, nameFill(pick(SAY.rivalMock), h), 2)) return;
+      fl.stats.rivalMock = (fl.stats.rivalMock || 0) + 1; tl('rm', o.id, h.id);
+      P.queueSay.push({ id: h.id, text: pick(SAY.rivalMockReply), at: fl.time + 0.2, prio: 2, late: 4 });
+    } else if (h.bond.role === 'apprentice') {
+      if (h.hp < 0.3 * h.max) { if (!h.proudAt) h.proudAt = fl.time + 3; }
+      else if (real >= 0.1 * h.max) mentorWatch(o, h);
+    }
+  }
+  // the mentor's warning ({v} = the apprentice; once in 25 s) and the apprentice's answer
+  function mentorWatch(m, a) {
+    const P = fl.party;
+    if (fl.time < (m.watchT || 0) || !calmFor(m) || exiting(m) || !canSee(m, a)) return false;
+    m.watchT = fl.time + 25;
+    if (!say(m, nameFill(pick(SAY.mentorWatch), a), 2)) return false;
+    fl.stats.mentorWatch = (fl.stats.mentorWatch || 0) + 1; tl('mw', m.id, a.id);
+    if (Math.random() < 0.6) P.queueSay.push({ id: a.id, text: pick(SAY.apprenticeReply), at: fl.time + 0.2, prio: 2, late: 4 });
+    return true;
+  }
+  // the mentor's praise (his apprentice disarmed a trap, or lived through a hit that left him under 30% HP); once in 25 s
+  function mentorProud(a, q) {
+    const m = a.bond && a.bond.role === 'apprentice' ? bondOf(a) : null;
+    if (!m || a.dead || !calmFor(m) || !canSee(m, a) || fl.time < (m.proudT || 0)) return false;
+    m.proudT = fl.time + 25; fl.stats.mentorProud = (fl.stats.mentorProud || 0) + 1; tl('mp', m.id, a.id);
+    fl.party.queueSay.push({ id: m.id, text: pick(SAY.mentorProud), at: fl.time + (q || 0.3), prio: 2, late: 4 });
+    return true;
+  }
+  // an apprentice walks into a room where they know of a trap: the mentor warns him
+  function mentorRoom(h, r) {
+    const m = h.bond && h.bond.role === 'apprentice' ? bondOf(h) : null;
+    if (!m || exiting(h) || r < 0) return false;
+    for (const t of fl.items.values()) if (TRAPS[t.type] && t.detected && !t.disabled && slotRoom(t.type, t.x, t.y) === r) return mentorWatch(m, h);
+    return false;
+  }
+  const mentorNear = h => { const m = h.bond && h.bond.role === 'apprentice' ? bondOf(h) : null; return !!m && calmFor(m) && hdist(m, h) <= 3 && canSee(h, m); };
+  // 1.21: a quarrel over loot. One wants what another has claimed (he is greedy, a treasure hunter, or the claimant's rival) and
+  // they see each other: quarrelStart ({v} = the other), quarrelReply; the higher rank wins (greedy or a treasure hunter, a
+  // barbarian, the leader: +1 each; ties at random): the claim is his (quarrelWin when he picks it up), the loser keeps away 10 s
+  // (quarrelLose) and, greedy or a rival, may storm off (the 1.19 sulk, 30%). Once a pair a wave. The leader, when he sees both
+  // (40%), stops it (lootStop): nobody takes it for 10 s. Returns true when h won it.
+  function quarrel(h, cl, it, k) {
+    const P = fl.party, st = fl.stats, seen = P.quarrels || (P.quarrels = new Set()), pk = pairKey(h, cl);
+    if (seen.has(pk) || !canSee(h, cl) || !calmFor(h) || !calmFor(cl) || exiting(h) || exiting(cl) || talking(h) || talking(cl)) return false;
+    seen.add(pk); st.quarrels = (st.quarrels || 0) + 1;
+    const n0 = P.convoN || 0;
+    P.convoNot = { key: 'quarrelStart', ids: new Set([cl.id]) };   // the onlookers comment, not the other one
+    say(h, nameFill(pick(SAY.quarrelStart), cl), 3);
+    P.queueSay.push({ id: cl.id, text: pick(SAY.quarrelReply), at: fl.time + 0.2, prio: 2, late: 4 });   // before the onlookers' talk, if one starts
+    const tEnd = (P.convoN || 0) !== n0 ? Math.max(fl.time + 2.8, (P.convoT || 0) - 1.2) : fl.time + 2.8;
+    const L = groupLeaderOf(h), claims = P.lootClaim || (P.lootClaim = new Map());
+    if (L && L !== h && L !== cl && calmFor(L) && canSee(L, h) && canSee(L, cl) && Math.random() < 0.4) {
+      claims.delete(k); it.qBan = { until: fl.time + 10, ids: null };
+      [h, cl].forEach(o => { o.lootMemo.set(k, { go: false, t: fl.time + 2 }); o.needPlan = true; });
+      P.queueSay.push({ id: L.id, text: pick(SAY.lootStop), at: tEnd, prio: 2, late: 6 });
+      st.quarrelStops = (st.quarrelStops || 0) + 1; tl('qq', h.id, cl.id, -1);
+      return false;
+    }
+    const sc = o => o.rank + (o.trait === 'greedy' || o.hunter ? 1 : 0) + (o.type === 'barbarian' ? 1 : 0) + (o === L ? 1 : 0) + Math.random() * 0.5;
+    const W = sc(h) > sc(cl) ? h : cl, Lo = W === h ? cl : h;
+    claims.set(k, W.id); it.qBan = { until: fl.time + 10, ids: [Lo.id] }; W.qWin = k;
+    Lo.lootMemo.set(k, { go: false, t: fl.time + 2 }); Lo.needPlan = true; if (Lo.lootKey === k) Lo.lootKey = null;
+    P.queueSay.push({ id: Lo.id, text: pick(SAY.quarrelLose), at: tEnd, prio: 2, late: 6 });
+    tl('qq', h.id, cl.id, W.id);
+    if ((Lo.trait === 'greedy' || Lo.hunter || bondType(Lo, 'rival')) && Lo.id !== P.leaderId && !P.g2 && !P.sulkAfter && !Lo.crystal && Math.random() < 0.3) {
+      P.queueSay.push({ id: Lo.id, text: pick(SAY.sulkOff), at: tEnd + 1.5, prio: 2, late: 4 }); P.sulkAfter = { id: Lo.id, at: tEnd + 2.2 }; st.quarrelSulks = (st.quarrelSulks || 0) + 1;
+    }
+    return W === h;
+  }
+  // the winner picks up what they quarrelled over
+  function quarrelWon(h, k) {
+    if (h.qWin !== k) return;
+    h.qWin = null; fl.stats.quarrelWins = (fl.stats.quarrelWins || 0) + 1;
+    fl.party.queueSay.push({ id: h.id, text: pick(SAY.quarrelWin), at: fl.time + 0.3, prio: 2, late: 4 });
+  }
+  // 1.21 "Nie zostawię cię": the leader leaves a friend, a brother or sister, an apprentice or a mentor behind (in a cage, or
+  // lost): the other one of the pair, if he hears it, will not have it (noLeave {v} = the friend; the caged one answers,
+  // noLeaveReply) and goes back for him alone: a second group of one (g2Start, plan 'rescue') to the cage, to open it, or to
+  // where the lost one was last seen and then to his voice; then the two go back to the others ('regroup', rescueThink). It ends
+  // like any second group (40 s at most). goal: the tile to go to.
+  function noLeave(c, L, goal) {
+    const P = fl.party, m = bondOf(c);
+    if (!m || m.bond.type === 'rival' || !calmFor(m) || exiting(m) || m.crystal || P.g2 || m.id === P.leaderId || onScout(m) || goal < 0) return false;
+    if (!(L && (m === L || canHear(m, L))) && !perceives(m, c, true)) return false;
+    if (!g2Start(m, [], 'rescue', goal, 'rescue')) return false;
+    P.g2.partner = c.id; P.g2.apart = true; P.abandoned.delete(c.id);
+    fl.stats.noLeave = (fl.stats.noLeave || 0) + 1; tl('nl', m.id, c.id);
+    P.queueSay.push({ id: m.id, text: nameFill(pick(SAY.noLeave), c), at: fl.time + 1.6, prio: 3, late: 4 });
+    if (caged(c)) P.queueSay.push({ id: c.id, text: pick(SAY.noLeaveReply), at: fl.time + 2.6, prio: 2, late: 4 });
+    return true;
+  }
+  // the rescue group's progress (g2Think): the lost one found (he is close and sees him), the caged one free: he joins and they
+  // go back to the others; the friend dead, gone, or the time up: back to the others
+  function rescueThink(G, L2) {
+    const P = fl.party, c = byId(G.partner);
+    if (c && c.lost && !c.dead && samePlace(c, L2) && hdist(c, L2) <= 2.5) {
+      c.lost = false; c.hearUntil = -1; c.noPathT = 0; c.sepT = 0; c.sepRolled = false; c.needPlan = true; if (P.searchId === c.id) P.searchId = -1;
+      say(c, pick(SAY.found), 3);
+    }
+    if (c && !c.dead && !c.fled && !c.gone && (caged(c) || c.lost) && fl.time <= G.until) return;
+    if (c && !c.dead && !c.fled && !c.gone && !c.lost && !caged(c) && !c.fleeing && hdist(c, L2) <= 6) { G.ids.add(c.id); fl.stats.noLeaveSaved = (fl.stats.noLeaveSaved || 0) + 1; tl('ns', L2.id, c.id); }
+    G.plan = 'regroup'; alive().forEach(o => { if (G.ids.has(o.id)) { o.plan = 'regroup'; o.needPlan = true; } });
+  }
+  // the rescuer's way (planHero, the second group's leader with the plan 'rescue'): next to the cage (then he opens it), or to
+  // where the lost one was last seen, then to his voice (any way, known or not, like a lost one following a voice)
+  function rescueJob(h, G, B, setB) {
+    const c = byId(G.partner); if (!c) return null;
+    if (caged(c)) {
+      if (Math.abs(h.x - c.x) + Math.abs(h.y - c.y) <= 1) return { free: c };
+      const g = nearestOf(B(), DIRS.map(d => [c.x + d[0], c.y + d[1]]).filter(t => walkable(t[0], t[1])).map(t => t[1] * WW + t[0]));
+      return g >= 0 ? { intent: 'rescue', goal: g } : null;
+    }
+    if (!c.lost) return null;
+    if (G.target >= 0 && tIdx(h) === G.target) G.target = -1;   // where he was last seen: not here, so to his voice
+    if (G.target >= 0 && !canSee(h, c) && !canHear(h, c) && B().dist[G.target] >= 0) return { intent: 'search', goal: G.target };
+    const bv = bfs(h.x, h.y, {}), g = tIdx(c);
+    if (bv.dist[g] < 0) return null;
+    setB(bv); return { intent: 'search', goal: g };
+  }
+  // 1.21 Zakład: a brave one or a rival (rank 1+, 60%+ HP) in a room with a known, loaded trap on the party's way bets he walks
+  // through it unhurt (betStart); his rival, or anyone who sees him, takes it (betTake {v} = the bettor). For 8 s he walks across
+  // its reach, danger or not (planHero: his goal is its far tile). Out of it unhurt: betWin ({v} = the taker), a coin from the
+  // taker; hit by it: the taker's betLose ({v} = the bettor), a coin from the bettor. Once a wave, and a 70% roll for each bettor
+  // and trap that could (about one bet in 3-4 waves; 30% gave one in 8): it is good for you (he walks into a trap on purpose), so it stays rare.
+  function betThink(crew, L) {
+    const P = fl.party, st = fl.stats;
+    crew.forEach(h => { if (h.bet && !h.bet.done && fl.time > h.bet.until + 4) betEnd(h, false); });
+    if (P.betDone || fl.fearless || goingOut() || !L || P.plan === 'retreat' || fl.time < 10 || P.convoT > fl.time + 3) return;
+    for (const h of crew) {
+      if (h === L || h.rank < 1 || h.hp <= 0.6 * h.max || !calmFor(h) || exiting(h) || inG2(h) || onScout(h) || h.split || talking(h) || h.state !== 'walk' || h.room < 0 || h.crystal) continue;
+      const rv = bondType(h, 'rival') && calmFor(bondOf(h)) && canSee(bondOf(h), h) ? bondOf(h) : null;
+      if ((h.trait !== 'brave' && !rv) || fl.time < (h.betLookT || 0)) continue;
+      h.betLookT = fl.time + 1;   // a look once a second (the party's way is a path search)
+      const tried = P.betTried || (P.betTried = new Set());
+      const ts = [...fl.items.values()].filter(x => TRAPS[x.type] && x.detected && !x.disabled && x.cd <= 0 && slotRoom(x.type, x.x, x.y) === h.room && !tried.has(h.id + ':' + key(x.x, x.y)));
+      if (!ts.length) continue;
+      const way = new Set(L.path.concat(h.path).map(p => p[1] * WW + p[0])); partyWay(h, bfs(h.x, h.y, { known: true }), 0).forEach(k => { const [x, y] = k.split(',').map(Number); way.add(y * WW + x); });   // the party's way too
+      const t = ts.find(x => areaOf(x).some(q => way.has(q[1] * WW + q[0])));
+      if (!t) continue;
+      tried.add(h.id + ':' + key(t.x, t.y));   // one roll for each bettor and trap
+      if (Math.random() >= 0.7) continue;
+      const tk2 = rv || crew.find(o => o !== h && calmFor(o) && canSee(o, h) && !talking(o));
+      if (!tk2 || !betStart(h, tk2, t)) continue;
+      return;
+    }
+  }
+  function betStart(h, tk2, t) {
+    const P = fl.party, area = areaOf(t).filter(q => walkable(q[0], q[1]));
+    if (!area.length) return false;
+    const far = area.slice().sort((a, b) => Math.hypot(b[0] - h.tx, b[1] - h.ty) - Math.hypot(a[0] - h.tx, a[1] - h.ty))[0];
+    P.betDone = true; fl.stats.bets = (fl.stats.bets || 0) + 1; tl('bt', h.id, tk2.id, t.type);
+    h.bet = { trap: t, taker: tk2.id, until: fl.time + 8, goal: far[1] * WW + far[0], keys: new Set(area.map(q => q[1] * WW + q[0])), inside: false, done: false };
+    P.convoNot = { key: 'betStart', ids: new Set([tk2.id]) };
+    say(h, pick(SAY.betStart), 3);
+    P.queueSay.push({ id: tk2.id, text: nameFill(pick(SAY.betTake), h), at: fl.time + 0.2, prio: 2, late: 4 });
+    h.needPlan = true; h.path = []; floatHero(h, 'Zakład!', '#ffd27a', 13, -0.8);
+    return true;
+  }
+  // the bet is settled: hit by that trap (lost), out of its reach after walking into it (won), or he never went in (off)
+  function betEnd(h, hit) {
+    const b = h.bet; if (!b || b.done) return;
+    b.done = true; h.needPlan = true;
+    const tk = byId(b.taker), P = fl.party, st = fl.stats, pay = (a, c) => { if (a && c && a.gold > 0 && !a.dead && !c.dead) { a.gold--; c.gold++; } };
+    if (hit || h.dead) {   // killed on the way counts as lost too
+      st.betsLost = (st.betsLost || 0) + 1; tl('be', h.id, 0);
+      if (tk && calmFor(tk) && !h.dead) { P.queueSay.push({ id: tk.id, text: nameFill(pick(SAY.betLose), h), at: fl.time + 0.6, prio: 2, late: 4 }); pay(h, tk); }
+    } else if (b.inside) {
+      st.betsWon = (st.betsWon || 0) + 1; tl('be', h.id, 1);
+      if (tk && !tk.dead && !tk.fled) { P.queueSay.push({ id: h.id, text: nameFill(pick(SAY.betWin), tk), at: fl.time + 0.2, prio: 2, late: 4 }); pay(tk, h); }
+      floatHero(h, 'Wygrany zakład', '#ffd27a', 12, -0.8);
+    } else { st.betsOff = (st.betsOff || 0) + 1; tl('be', h.id, -1); }
+  }
+  // a step of the bettor (onEnter): into the trap's reach, and out of it again unhurt = won
+  function betStep(h) {
+    const b = h.bet; if (!b || b.done) return;
+    const i = h.y * WW + h.x;
+    if (b.keys.has(i)) b.inside = true;
+    else if (b.inside) betEnd(h, false);
+  }
+  // every party tick: the first word of each pair (4-25 s into the wave, once the gate is open, at a random moment), the
+  // mentor's praise after a near miss, the apprentice growing up after his mentor's death, the bet
+  function bondThink(crew, L) {
+    const P = fl.party, st = fl.stats, at = P.bondAt || (P.bondAt = {});
+    crew.forEach(h => {
+      if (h.growAt && fl.time >= h.growAt) { h.growAt = 0; h.courage = Math.round(h.courage * 1.15); st.grownUp = (st.grownUp || 0) + 1; tl('gu', h.id); floatHero(h, 'Dorasta', '#9fe0cf', 12, -0.8); }
+      if (h.proudAt && fl.time >= h.proudAt) { h.proudAt = 0; mentorProud(h); }
+      const o = bondOf(h); if (!o || o.id < h.id || !fl.gateOpen) return;
+      const pk = pairKey(h, o); if (at[pk] === undefined) at[pk] = 4 + Math.random() * 16;
+      if (at[pk] < 0 || fl.time < at[pk]) return;
+      if (fl.time > 25) { at[pk] = -1; return; }
+      const sp = h.bond.type === 'mentor' ? (h.bond.role === 'mentor' ? h : o) : Math.random() < 0.5 ? h : o;
+      if (bondTalk(sp, 0, true)) at[pk] = -1;
+    });
+    betThink(crew, L);
   }
   // 1.20 Dzielenie się (author: they share nothing but potions): once a second. 1) In a crisis a calm one hands his ready amulet to
   // a friend about to panic (2 tiles, they see each other) and it works at once. 2) At ease (a talk, a rest, the stop before a
@@ -877,8 +1146,9 @@
       // the other way, and 1-2 like him go too; the leader lets them go. Two groups explore apart until they meet again.
       if (!P.g2 && P.plan === 'explore' && !fl.fearless && fl.time > 15 && P.scoutId < 0 && crewT.length >= 3 && (fl.stats.rift_fork || 0) < 2) {
         const swayed = P.target === alt.f;
-        const D = greedy && !swayed ? greedy : crewT.find(o => (o.trait === 'brave' || o.trait === 'greedy' || o.hunter) && o.rank >= 1 && !o.crystal && o.hp > 0.5 * o.max);
-        if (D && Math.random() < (D === greedy ? 0.5 : 0.2) * (P.morale < 0.6 ? 1.3 : 1)) {
+        const rv = bondType(L, 'rival') && crewT.includes(bondOf(L)) ? bondOf(L) : null;   // 1.21: the leader's rival is a likelier dissenter (x1,5)
+        const D = greedy && !swayed ? greedy : rv && rv.rank >= 1 && !rv.crystal && rv.hp > 0.5 * rv.max ? rv : crewT.find(o => (o.trait === 'brave' || o.trait === 'greedy' || o.hunter) && o.rank >= 1 && !o.crystal && o.hp > 0.5 * o.max);
+        if (D && Math.random() < (D === greedy ? 0.5 : 0.2) * (P.morale < 0.6 ? 1.3 : 1) * (D === rv ? 1.5 : 1)) {
           const like = o => o.trait === 'greedy' || o.trait === 'brave' || o.hunter || o.type === 'barbarian' || o.rank === 0;
           const joiners = crewT.filter(o => o !== D && !o.crystal && !caged(o) && like(o)).sort(() => Math.random() - 0.5).slice(0, Math.min(2, crewT.length - 2));
           if (g2Start(D, joiners, 'explore', swayed ? best.f : alt.f, 'fork')) {
@@ -927,7 +1197,7 @@
     const others = alive().filter(o => o !== c && !o.fleeing && !caged(o));
     if (!others.length || goingOut()) return;
     const grpC = groupOf(L).filter(o => o !== c && !o.fleeing), fearR = (grpC.length ? grpC : others).reduce((a, o) => a + o.fear / o.courage, 0) / (grpC.length || others.length);   // 1.17: the leader's group
-    const rescue = L.rank >= 2 || (fearR < 0.6 && Math.random() < (L.rank === 0 ? 0.5 : 0.8));
+    const rescue = L.rank >= 2 || (bondOf(c) === L && L.bond.type !== 'rival') || (fearR < 0.6 && Math.random() < (L.rank === 0 ? 0.5 : 0.8));   // 1.21: not his own pair
     const who = L === c ? others[0] : L;
     tl('rs', c.id, rescue ? 1 : 0);
     if (rescue) {   // 1.17 (6.8 #14): a second one caged while they free the first waits his turn (it took the first one's rescuer)
@@ -935,7 +1205,7 @@
       if (cur && caged(cur) && cur !== c) (P.rescueQ || (P.rescueQ = [])).push(c.id); else { P.rescueId = c.id; P.rescuerId = -1; }
       say(who, nameFill(pick(SAY.rescue), c), 3);
     }
-    else { P.abandoned.add(c.id); fl.stats.abandons++; say(who, nameFill(pick(SAY.abandon), c), 3); P.queueSay.push({ id: c.id, text: pick(SAY.abandoned), at: fl.time + 1 }); addFear(c, 15, 'cage'); }
+    else { P.abandoned.add(c.id); fl.stats.abandons++; say(who, nameFill(pick(SAY.abandon), c), 3); P.queueSay.push({ id: c.id, text: pick(SAY.abandoned), at: fl.time + 1 }); addFear(c, 15, 'cage'); noLeave(c, L, tIdx(c)); }   // 1.21: noLeave
   }
   // Runs a few times per second: who leads, where they go, retreat, push for the crystal or run, who got separated.
   function partyThink(dt) {
@@ -1075,6 +1345,7 @@
       floatHero(f, 'Mikstura!', '#8be38f', 14, -0.7);
     });
     shareThink(crew, L, dt);   // 1.20: an amulet in a crisis, gear handed over at ease
+    bondThink(crew, L);   // 1.21
     if (!L) return;
     if (P.prep && fl.time >= P.prep.until) finishPrep();
     else if (!P.prep) checkPrep(L);
@@ -1218,7 +1489,7 @@
     if (P.chatT <= 0) {
       P.chatT = P.plan === 'retreat' ? 3.5 + Math.random() * 3 : 7 + Math.random() * 6;   // 1.12.1: at rest they talk more
       const pool = crew.filter(o => !o.bubble && !panicking(o) && !caged(o) && !o.lost && o.state !== 'fight' && o.state !== 'smash' && !floorBusy(o));   // 1.10: small talk only into a silence
-      const h = pool.length ? pick(pool) : null, lines = [];
+      const h0 = pool.length ? pick(pool) : null, h = h0 && Math.random() < 0.25 && bondTalk(h0, 30) ? null : h0, lines = [];   // 1.21: a word to his pair instead
       let mood = null;
       if (h && aloneNow(h) && !(h.fleeing || h.crystal || goingOut())) lines.push(...SOLO.chat, ...(h.trait === 'brave' && h.fear > 0.5 * h.courage ? [] : SOLO['chat_' + h.trait] || []), ...(SOLO['chat_' + h.type] || []));   // 1.13: alone he talks to himself (1.17: a scared brave one does not boast)
       else if (h && (h.fleeing || h.crystal || goingOut())) {
@@ -1337,7 +1608,7 @@
   // The chance to lose the way once cut off from the leader: bigger dungeon and fog = more, experience and a thief's sense = less.
   function lostChance(h) {
     const p = 0.12 + 0.03 * Math.max(0, roomCount() - 6) + (isRt(h.room, 'fog') ? (lanternNear(h) ? 0.15 : 0.45) : 0) - 0.01 * h.lvl - (h.type === 'thief' ? 0.1 : 0);   // 1.20: a lantern close by
-    return clamp(p, 0.02, 0.6);
+    return clamp(p * (mentorNear(h) ? 0.7 : 1), 0.02, 0.6);   // 1.21: his mentor close by
   }
   // 1.20 Latarnia: the fog's roll on one a step away from the leader; a lit lantern within 2 tiles cuts it to 30% (lanternSaves)
   function fogRoll(h, dt) {
@@ -1366,7 +1637,7 @@
       P.searchId = h.id; P.searchUntil = fl.time + 14; P.searchGoal = ls.y * WW + ls.x; fl.stats.searches++; tl('se', h.id);
       P.queueSay.push({ id: L.id, text: nameFill(pick(SAY.searchLost), h), at: fl.time + 0.3 });
       L.needPlan = true;
-    } else P.queueSay.push({ id: L.id, text: nameFill(pick(SAY.leaveLost), h), at: fl.time + 0.3 });
+    } else { P.queueSay.push({ id: L.id, text: nameFill(pick(SAY.leaveLost), h), at: fl.time + 0.3 }); if (ls) noLeave(h, L, ls.y * WW + ls.x); }   // 1.21: noLeave
   }
   // 1.17: who knows what. Every party tick: the leader's plan reaches those who see or hear him (h.plan); where each one was
   // last seen by the leader (P.seen); a death reaches those who did not see or hear it when they meet one who knows (one at a
@@ -1397,11 +1668,13 @@
       crew.forEach(o => {
         if (d.knows.has(o.id) || panicking(o) || caged(o) || o.gone || !samePlace(o, at)) return;
         d.knows.add(o.id); sawAdd(o, ['blood']);   // he knows it before he says it (the line needs the death)
-        const k = (d.hush ? 2 : 1) * (d.crypt ? 2 : 1) * (1 + 0.5 * (mods.body - 1)) * (o.trait === 'coward' ? 1.5 : 1);
-        o.shakenUntil = fl.time + 9; const f0 = o.fear; addFear(o, Math.max(15 * o.R.panic, 0.12 * o.courage + 4) * k, null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0);
+        const k = (d.hush ? 2 : 1) * (d.crypt ? 2 : 1) * (1 + 0.5 * (mods.body - 1)) * (o.trait === 'coward' ? 1.5 : 1), mate = bondOf(o) === dead;   // 1.21: his pair's body
+        o.shakenUntil = fl.time + 9;
+        if (mate) griefOf(o, dead, Math.max(15 * o.R.panic, 0.12 * o.courage + 4) * k / (o.trait === 'coward' ? 1.5 : 1), d, 0.2);
+        else { const f0 = o.fear; addFear(o, Math.max(15 * o.R.panic, 0.12 * o.courage + 4) * k, null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0); }
         if (o === L && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
         fl.stats.bodies = (fl.stats.bodies || 0) + 1; tl('bf', o.id, d.id);
-        P.queueSay.push({ id: o.id, text: nameFill(pick(SAY.bodyFound), dead), at: fl.time + 0.2, prio: 3, late: 3 });
+        if (!mate) P.queueSay.push({ id: o.id, text: nameFill(pick(SAY.bodyFound), dead), at: fl.time + 0.2, prio: 3, late: 3 });
       });
     });
     (fl.deaths || []).forEach(d => {
@@ -1411,8 +1684,11 @@
         const k = crew.find(t => t !== o && d.knows.has(t.id) && !panicking(t) && (canSee(o, t) || canHear(o, t)));
         if (!k) continue;
         d.knows.add(o.id);
-        P.queueSay.push({ id: k.id, text: nameFill(pick(SAY.tellDeath), dead), at: fl.time + 0.2, prio: 3, late: 3 }, { id: o.id, text: pick(SAY.newsDeath), at: fl.time + 0.4, prio: 3, late: 4 });
-        o.shakenUntil = fl.time + 5; const f0 = o.fear; addFear(o, 0.6 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (d.crypt ? 2 : 1) * (1 + mods.badnews), null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0);   // 1.18: Złe wieści
+        const mate = bondOf(o) === dead, nb = 0.6 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (d.crypt ? 2 : 1) * (1 + mods.badnews);   // 1.21: his pair
+        P.queueSay.push({ id: k.id, text: nameFill(pick(SAY.tellDeath), dead), at: fl.time + 0.2, prio: 3, late: 3 });
+        o.shakenUntil = fl.time + 5;
+        if (mate) griefOf(o, dead, nb, d, 0.4);
+        else { P.queueSay.push({ id: o.id, text: pick(SAY.newsDeath), at: fl.time + 0.4, prio: 3, late: 4 }); const f0 = o.fear; addFear(o, nb, null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0); }   // 1.18: Złe wieści
         if (o === L && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
         fl.stats.newsDeaths = (fl.stats.newsDeaths || 0) + 1;
         break;   // one at a time
@@ -1811,13 +2087,22 @@
       intent = 'wander'; goal = h.wanderTarget;
     } else {
       let job = null;
+      // 1.21: back for his pair alone (noLeave): to the cage, then he opens it; to the lost one
+      if (G2 && h === L && G2.plan === 'rescue') {
+        const rj = rescueJob(h, G2, B, bv => { b = bv; });
+        if (rj && rj.free) { const c = rj.free; h.state = 'free'; h.timer = hasCrowbar(h) ? (h.type === 'thief' ? 0.5 : 0.6) : h.type === 'thief' ? 0.8 : 1.8; h.dur = h.timer; h.freeT = c.id; h.path = []; h.intent = 'rescue'; return; }
+        if (rj) job = rj;
+      }
+      // 1.21: a bet: across the trap's reach, its danger is nothing to him now
+      if (!job && h.bet && !h.bet.done && fl.time < h.bet.until && tIdx(h) !== h.bet.goal) { noDanger = true; b = null; if (B().dist[h.bet.goal] >= 0) job = { intent: 'bet', goal: h.bet.goal }; }
       // a friend in a cage
-      if (P.rescueId >= 0 && P.rescueId !== h.id) {
+      if (!job && P.rescueId >= 0 && P.rescueId !== h.id) {
         const c = byId(P.rescueId);
         if (c && caged(c)) {
           let rs = byId(P.rescuerId);
           if (!rs || rs.dead || rs.fled || rs.gone || caged(rs) || rs.fleeing || rs.lost || rs.goHome) {   // 1.17: a rescuer who got lost or went home is replaced
-            const cand = alive().filter(o => o !== c && !caged(o) && !o.fleeing && !o.lost && !o.goHome && !onScout(o) && (canHearShout(o, c) || o === leader() || canHear(o, leader()))).sort((a, o) => ((o.type === 'thief') - (a.type === 'thief')) || (hdist(a, c) - hdist(o, c)));
+            const mt = bondOf(c) && c.bond.type !== 'rival' ? bondOf(c) : null;   // 1.21: his pair goes first
+            const cand = alive().filter(o => o !== c && !caged(o) && !o.fleeing && !o.lost && !o.goHome && !onScout(o) && (canHearShout(o, c) || o === leader() || canHear(o, leader()))).sort((a, o) => ((o === mt) - (a === mt)) || ((o.type === 'thief') - (a.type === 'thief')) || (hdist(a, c) - hdist(o, c)));
             rs = cand[0]; P.rescuerId = rs ? rs.id : -1;
           }
           if (rs === h) {
@@ -1828,6 +2113,11 @@
         }
       }
       if (!job && L && L !== h && L.state === 'fight' && L.foe && L.foe.hp > 0 && !DRIFT[L.foe.type] && !onScout(h) && canHear(h, L)) job = { intent: 'fight', goal: L.foe.y * WW + L.foe.x };   // 1.17: a fight he can hear
+      // 1.21: a vow of revenge: the monster that killed his friend, when it is in his room (30 s)
+      if (!job && h.vowOn && fl.time < (h.vowUntil || 0)) {
+        const m = h.vowOn, i = m.y * WW + m.x;
+        if (m.hp > 0 && fl.items.get(key(m.x, m.y)) === m && !DRIFT[m.type] && roomOf(m.x, m.y) === h.room && B().dist[i] > 0) { job = { intent: 'fight', goal: i }; if (!h.vowFought) { h.vowFought = true; fl.stats.revengeFights = (fl.stats.revengeFights || 0) + 1; } }
+      }
       if (!job && h.type === 'priest') {
         const cl = fl.time < (h.healForUntil || 0) ? byId(h.healFor) : null;   // 1.17: the one who called him comes first
         const hurt = cl && !cl.dead && !cl.fled && !cl.gone && cl.hp < 0.5 * cl.max && hdist(cl, h) > 2.5 ? cl : alive().filter(o => o !== h && o.hp < 0.5 * o.max && hdist(o, h) > 2.5).sort((a, c) => a.hp / a.max - c.hp / c.max)[0];
@@ -1910,13 +2200,16 @@
         else { intent = 'lead'; goal = P.target; }
       } else if (L) {
         intent = 'follow';
-        const lt = tIdx(L), d = B().dist[lt];
+        // 1.21: an apprentice keeps to his mentor while the mentor walks with the leader (6 tiles of him) and he sees him
+        const M = h.bond && h.bond.role === 'apprentice' ? bondOf(h) : null;
+        const F = M && M !== L && calmFor(M) && !M.split && inG2(M) === inG2(h) && M.intent === 'follow' && hdist(M, L) <= 6 && canSee(h, M) ? M : L;
+        const lt = tIdx(F), d = B().dist[lt];
         const gap = h.type === 'priest' || h.type === 'mage' ? 3.5 : 2.5;   // the back line keeps a step behind
         if (d >= 0 && d <= gap && L.state !== 'boss') {
           // 1.10: a group, not a heap: one standing on a friend's tile steps aside onto a free, safe tile still close to the leader
-          if (!h.lost && ((L.x === h.x && L.y === h.y) || alive().some(o => o !== h && o.id < h.id && o.nx === null && o.x === h.x && o.y === h.y))) {
+          if (!h.lost && ((F.x === h.x && F.y === h.y) || alive().some(o => o !== h && o.id < h.id && o.nx === null && o.x === h.x && o.y === h.y))) {
             const sp = DIRS.map(q => [h.x + q[0], h.y + q[1]]).filter(t => walkable(t[0], t[1]) && fl.known[t[1] * WW + t[0]] && !fl.danger[t[1] * WW + t[0]] && !fl.items.has(key(t[0], t[1])) &&
-              Math.hypot(t[0] - L.x, t[1] - L.y) <= gap + 0.5 && !alive().some(o => o !== h && ((o.x === t[0] && o.y === t[1]) || (o.nx === t[0] && o.ny === t[1]))));
+              Math.hypot(t[0] - F.x, t[1] - F.y) <= gap + 0.5 && !alive().some(o => o !== h && ((o.x === t[0] && o.y === t[1]) || (o.nx === t[0] && o.ny === t[1]))));
             if (sp.length) { h.intent = 'space'; h.lootKey = null; h.path = [pick(sp)]; return; }
           }
           h.intent = intent; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.35; return;
@@ -2179,8 +2472,8 @@
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (tileAt(Math.floor(tx) + dx, Math.floor(ty) + dy) === FLOOR) area.push([Math.floor(tx) + dx, Math.floor(ty) + dy]);
     fxTiles(area, '255,140,50', 0.45);
     say(h, pick(SAY.fireball), 1);
-    if (DRIFT[target.type]) hurtMonster(target, 30 * h.R.pow);
-    area.forEach(t => { const m = fl.items.get(key(t[0], t[1])); if (m && MONSTERS[m.type] && !DRIFT[m.type]) hurtMonster(m, 30 * h.R.pow); });
+    if (DRIFT[target.type]) hurtMonster(target, 30 * h.R.pow * vowK(h));   // 1.21: a vow
+    area.forEach(t => { const m = fl.items.get(key(t[0], t[1])); if (m && MONSTERS[m.type] && !DRIFT[m.type]) hurtMonster(m, 30 * h.R.pow * vowK(h)); });
   }
   // 1.10: standing, a hero looks around now and then: at a friend, at loot they saw, at a trap they know, or just away
   function glance(h) {
@@ -2276,7 +2569,9 @@
       if (rkL && !exiting(h) && !(fl.rkSaid || (fl.rkSaid = new Set())).has(r)) { fl.rkSaid.add(r); fl.stats.rkEnter = (fl.stats.rkEnter || 0) + 1; if (rt) P.queueSay.push({ id: h.id, text: pick(rkL), at: fl.time + 0.2, prio: 2, late: 5 }); else say(h, pick(rkL), 3); }   // 1.18: after the effect line, not dropped by it
       if (changed && h.id === P.leaderId) { maybeDetour(h, r); if (!P.detour) P.lookAsk = { room: r, at: fl.time + 0.9 }; }   // 1.17: look around? (lookThink)
       if (changed && !exiting(h)) phobiaSight(h, r);
+      if (changed) mentorRoom(h, r);   // 1.21
     }
+    if (h.bet) betStep(h);   // 1.21
     if (isExitTile(h.x, h.y) && exiting(h)) { heroExit(h); return; }
     const it = fl.items.get(key(h.x, h.y));
     if (it && isLoot(it.type) && !h.crystal && !h.fleeing) { pickup(h, it); if (h.state === 'loot') return; }   // 1.20: he kneels by a body
@@ -2380,6 +2675,7 @@
           } else {
             it.disabled = true; fl.threatDirty = true; fl.stats[CURSED[it.type] ? 'blessed' : 'disarmed']++; bt(it.type).disarmed++;
             floatTile(it.x, it.y, CURSED[it.type] ? (it.type === 'portrait' ? 'Odczyniony' : 'Odczynione') : 'Rozbrojone', '#a69bbb', 14); say(h, pick(CURSED[it.type] ? SAY.blessDone : SAY.disarmDone), 2); tl('ds', h.id, it.type, it.x, it.y, 0);   // 1.17: the priest's own words
+            mentorProud(h, 1.6);   // 1.21
           }
         }
         h.state = 'walk'; h.item = null; h.disarmT = null; h.needPlan = true;
