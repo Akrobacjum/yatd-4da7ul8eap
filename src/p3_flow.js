@@ -206,14 +206,17 @@
   // 1.13 (author: alone, they talked to the air): nobody in earshot (the ones down a trapdoor do not count)
   const aloneNow = h => !(fl.queue.length && Math.hypot(h.tx - fl.ent.x, h.ty - fl.ent.y) <= 5) &&   // the rest are still coming in at the door
     !fl.heroes.some(o => o !== h && !o.dead && !o.fled && !o.gone && earshot(h, o));
+  let sayHook = null;
   function say(h, text, prio, dur, how) {
     if (!h || h.dead || h.fled || h.gone || !text || !fl) return false;
     prio = prio || 1;
+    let pool = null;
     if (fl.phase === 'raid' && aloneNow(h)) {   // 1.13: alone he talks to himself (SOLO) or keeps a line meant for others to himself
       const k = lineKey(text), b = k ? k.split(':')[0] : null;
-      if (k && (SOLO[k] || SOLO[b])) text = pick(SOLO[k] || SOLO[b]);
+      if (k && (SOLO[k] || SOLO[b])) { pool = SOLO[k] || SOLO[b]; text = pick(pool); }
       else if (b && SOLO_MUTE.has(b)) return true;
     }
+    if (fl.phase === 'raid') { text = fitLine(h, text, pool); if (!text) return true; }   // 1.17.1: only what he has seen (p5_ai.js)
     const loud = how === 'loud' || prio >= 4 || inChaos(h), b = h.bubble;
     if (b && b.until > fl.time && b.prio > prio) return false;
     if (b && b.until > fl.time && b.prio === prio && fl.time - b.at < 0.7) return false;
@@ -227,6 +230,8 @@
     const hush = h.room >= 0 && isRt(h.room, 'hush');   // 1.10: Głusza: the mouth moves, nothing comes out
     const t = hush ? (loud ? '…!' : '…') : gtext(text, h.female), len = hush ? 1.4 : loud ? (dur || 1.9) : Math.max(dur || 1.9, readT(t));
     h.bubble = { text: t, prio, at: fl.time, until: fl.time + len, loud }; h.saidUntil = fl.time + len;
+    if (sayHook) sayHook(h, text, SAY_NOW);   // tests
+    if ((lineKey(text) || '').startsWith('saw:')) fl.stats.sawTalk = (fl.stats.sawTalk || 0) + 1;   // 1.17.1
     fl.stats.lines++;
     if (!hush) convoAfter(h, text);   // 1.13: a line can start a conversation
     if (!loud) {   // he turns to the nearest one listening, and they turn to him
@@ -703,7 +708,7 @@
       // v12: purse, curse, the priest's faith, powers in use, getting separated, shaken by a death
       gold: 0, cursed: false, faith: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithMax: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithT: 0,
       wardUntil: -1, wardK: 0, sprintUntil: -1, sprintK: 1, calmUntil: -1, giveCd: 0, sepT: 0, sepRolled: false, shakenUntil: -1, rtSaid: new Set(), lostCallT: 0, hunter: !!e.hunter,
-      phys: e.phys || null, phobia: e.phobia || null, known: new Set(e.known || []), returning: !!e.returning, scar: e.scar || null, trauma: {}, fearBy: {}, dmgBy: {}, phobiaSeen: new Set() };
+      phys: e.phys || null, phobia: e.phobia || null, known: new Set(e.known || []), returning: !!e.returning, scar: e.scar || null, trauma: {}, fearBy: {}, dmgBy: {}, phobiaSeen: new Set(), saw: new Set() };
     h.inR = realNow;   // 1.09: pops in
     fl.heroes.push(h);
     if (h.returning) tutPop('returner');   // 1.12: the first returner in the first runs
@@ -1097,7 +1102,7 @@
     fl.items.forEach(it => {
       if (!F.sees.includes(it.type) || h.phobiaSeen.has(it) || slotRoom(it.type, it.x, it.y) !== r || it.disabled) return;
       if (TRAPS[it.type] && !it.detected && !SCARE[it.type] && it.type !== 'fire') return;   // hidden traps scare nobody (the scary things are there to be seen)
-      h.phobiaSeen.add(it); addFear(h, 0.15 * h.courage * (1 + (mods.phobiaK || 0) / 2), null, 'phobia'); revealPhobia(h);
+      h.phobiaSeen.add(it); sawAdd(h, itemTags(it)); sayNow(itemTags(it), () => { addFear(h, 0.15 * h.courage * (1 + (mods.phobiaK || 0) / 2), null, 'phobia'); revealPhobia(h); });   // 1.17.1: he has seen it
     });
   }
   function bt(type) { return fl.byType[type] || (fl.byType[type] = { placed: 0, spent: 0, checks: 0, crit: 0, ok: 0, miss: 0, skip: 0, fires: 0, hits: 0, dmg: 0, pts: 0, fear: 0, fearPts: 0, kills: 0, disarmed: 0, died: 0, passiveDmg: 0, passivePts: 0, skipLethal: 0, slept: 0 }); }
@@ -1110,8 +1115,19 @@
   // 1.13 (author: they stood and rested in traps): a hero remembers where a trap just got him (the whole reach of it, for
   // half a minute), even if the party learnt nothing; he will not stand still there (p5_ai.js: unsafeAt, toSafety)
   function markOuch(h, it) { if (it && it.x !== undefined && ITEMS[it.type] && fl.items.get(key(it.x, it.y)) === it) h.ouch = { until: fl.time + 30, tiles: new Set(areaOf(it).map(t => t[1] * WW + t[0]).concat([it.y * WW + it.x])) }; }
+  // 1.17.1: what hurts him is the thing of the moment for every line it wakes (trauma, weakness, phobia, death cries), and he
+  // has felt it (bleeding from spikes is not fire: before 1.17.1 it counted as fire damage, hence a hero dreaming of flames
+  // where there were none)
+  const BURN_TAGS = { spikes: ['spikes', 'blood'], arrows: ['arrows', 'fire'], powder: ['blast', 'fire'], fire: ['fire'], archer: ['archer', 'monster', 'fire'], trapdoor: ['trapdoor', 'fire'] };
+  const hurtTags = (h, src) => { const k = srcKind(src); return k === 'burn' ? BURN_TAGS[h.burnBy] || ['fire'] : k === 'trap' || k === 'monster' ? itemTags(src, true) : null; };
   function damage(h, amt, src, comboMult) {
     if (h.dead || h.fled || amt <= 0 || fl.ending !== null) return;
+    const now = hurtTags(h, src);
+    if (!now) return damageRaw(h, amt, src, comboMult);
+    sawAdd(h, now); if (srcKind(src) === 'burn') sawNear(h, now);   // the others see him burn or bleed
+    return sayNow(now, () => damageRaw(h, amt, src, comboMult));
+  }
+  function damageRaw(h, amt, src, comboMult) {
     if (fl.firing) markOuch(h, fl.firing);
     const kind = srcKind(src);
     comboMult = comboMult || 1; amt *= comboMult;   // 1.12: a combo makes the wounds hit harder too
@@ -1131,13 +1147,14 @@
     } else if (caged(h)) amt *= 1.5;
     if (h.cursed && kind !== 'heart') amt *= 1.3;   // a cursed treasure: everything hurts more
     // v14: the damage type against the hero's class, body and scars (a weakness shows the first time it bites)
-    const dtp = kind === 'burn' ? 'fire' : kind === 'heart' ? null : DMG_OF[tkey || (src && src.type) || (kind === 'loot' ? 'loot' : '')] || null;
+    const dtp = kind === 'burn' ? (h.burnBy === 'spikes' ? 'pierce' : 'fire') : kind === 'heart' ? null : DMG_OF[tkey || (src && src.type) || (kind === 'loot' ? 'loot' : '')] || null;
     if (dtp) { const tk = typeMult(h, dtp); amt *= tk; if (tk !== 1) revealPhys(h, dtp, tk); }
     const attr = tkey || (kind === 'monster' ? src.type : kind === 'burn' ? (h.burnBy || 'fire') : kind === 'loot' ? 'loot' : null);
     const real = Math.min(h.hp + h.shield, amt);
     let rest = amt;
     if (h.shield > 0) { const ab = Math.min(h.shield, rest * (inB('acid', h.room) ? 0.5 : 1)); h.shield -= ab; rest -= ab; }   // acid eats through half of a ward
     h.hp -= rest; h.flash = 0.12; h.hurtAt = fl.time;
+    if (h.hp < 0.4 * h.max && kind !== 'heart') sawNear(h, ['blood']);   // 1.17.1: badly hurt: the others see the blood
     fl.heroes.forEach(o => { if (o !== h && !o.dead && !o.fled && !o.gone && Math.abs(o.tx - h.tx) + Math.abs(o.ty - h.ty) <= 5) lookAt(o, h.x, h.y); });   // 1.10: the others turn to him
     if (kind !== 'heart') h.playerDmg += real * (kind === 'monster' ? MON_FACTOR : 1);
     feltBy(h, real / h.max);   // 1.05: what hurt him (told in the tavern)
@@ -1324,7 +1341,7 @@
     alive().forEach(o => {
       const near = canSee(o, h), hears = !near && canHearShout(o, h);
       if (!near && !hears) return;
-      d.knows.add(o.id); if (o === Lnow && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
+      d.knows.add(o.id); if (near) sawAdd(o, ['blood']); if (o === Lnow && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
       const base = (near ? Math.max(15 * o.R.panic, 0.12 * o.courage + 4) : 1.3 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2)) * (crypt ? 2 : 1);   // v14: softer for rookies (was max(30 x panic, ...))
       o.shakenUntil = fl.time + (near ? 9 : 5);
       if (hears) {   // a cry from somewhere: no name, no fury
@@ -1417,8 +1434,12 @@
     const g = LOOT_GREED[kind][0] * mods.greedMult * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
     greedOrbs(it.x, it.y, addGreed(g)); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
     floatTile(it.x, it.y, 'Chciwość ×' + fmt2(fl.greed), '#f2b94b', 14, -0.6, 'greed');
-    if (by && (by.fleeing || by.crystal || panicking(by) || goingOut())) { if (r >= 2) say(by, pick(SAY.lootFlee), 2); }   // 1.05: running for his life, he has no joy for gold
-    else if (by) say(by, kind === 'potion' ? pick(SAY.lootPotionSeen) : pick(SAY['loot' + Math.min(3, r)]), r >= 2 ? 3 : 2);
+    if (!by) return;
+    sawAdd(by, itemTags(it));   // 1.17.1
+    sayNow(itemTags(it), () => {
+      if (by.fleeing || by.crystal || panicking(by) || goingOut()) { if (r >= 2) say(by, pick(SAY.lootFlee), 2); }   // 1.05: running for his life, he has no joy for gold
+      else say(by, kind === 'potion' ? pick(SAY.lootPotionSeen) : pick(SAY['loot' + Math.min(3, r)]), r >= 2 ? 3 : 2);
+    });
   }
   // Picking it up: coins go to the purse, the rest is a real item (or the exact one that was dropped). No use or no room: it stays.
   function pickup(h, it) {
@@ -1439,7 +1460,8 @@
     if (!it.dropped) { const keep = 0.5 * kg[0] * mods.greedMult / (1 + 0.5 * run.greedKeep); run.greedKeep += keep; fl.stats.greedKept = (fl.stats.greedKept || 0) + keep; }   // part of its pull stays for good
     const pts = addPts(GZ.loot * r * depthMult(roomOf(it.x, it.y)), 'lootPts', h); fl.stats.loot++;
     floatTile(it.x, it.y, '+' + fmtE(pts) + ' łup', '#ff7a86', 16);
-    if (kind === 'gold') { const n = Math.max(1, it.gold || 1); h.gold += n; fl.stats.goldPicked += n; say(h, pick(h.gold >= 3 ? SAY.goldHeavy : SAY.gold), 2); }
+    sawAdd(h, itemTags(it));
+    if (kind === 'gold') { const n = Math.max(1, it.gold || 1); h.gold += n; fl.stats.goldPicked += n; sayNow(['gold'], () => say(h, pick(h.gold >= 3 ? SAY.goldHeavy : SAY.gold), 2)); }
     if (kind === 'cursed') curse(h, item);
     if (mods.lootTrap > 0) damage(h, mods.lootTrap * r, LOOTTRAP);
     if (kind === 'relic' && !it.dropped) gainEssence(null, 4, 'essDrop');
@@ -1450,6 +1472,6 @@
   function curse(h, item) {
     h.cursed = true; fl.stats.cursed++; tl('cu', h.id);
     if (item) giveItem(h, item, true);   // he keeps the (cursed) gear if he has room
-    say(h, pick(SAY.cursedPick), 3, 2.2); floatHero(h, 'Klątwa!', '#b48cff', 15, -0.8);
+    sawAdd(h, ['cursed']); sayNow(['cursed', 'gear'], () => say(h, pick(SAY.cursedPick), 3, 2.2)); floatHero(h, 'Klątwa!', '#b48cff', 15, -0.8);
     const p = heroPos(h); burst(p.x, p.y, '#b48cff', 12);
   }

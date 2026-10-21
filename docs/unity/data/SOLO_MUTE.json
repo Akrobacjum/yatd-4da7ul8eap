@@ -37,5 +37,6 @@
  "chat_coward",
  "chat_brave",
  "chat_careful",
- "chat_greedy"
+ "chat_greedy",
+ "saw"
 ]

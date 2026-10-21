@@ -1,4 +1,9 @@
 {
+ "staunch": [
+  "Krew stanęła. Dobrze.",
+  "Zatamowane. Mogę iść dalej.",
+  "Rana zamknięta. Dzięki ci, światło."
+ ],
  "enter": [
   "No to idę.",
   "Sam{|a} tam nie wejdę... A jednak wchodzę.",

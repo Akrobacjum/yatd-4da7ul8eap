@@ -50,7 +50,7 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   ok(out.solo1 && out.solo1 !== 'Lewo czy prawo?', 'alone, a council line becomes thinking aloud');
   me.bubble = null; me.saidUntil = -9; G.say(me, 'Bierz to, poczekamy.', 2); out.solo2 = me.bubble && me.bubble.text;
   ok(!out.solo2, 'alone, nobody answers nobody');
-  me.bubble = null; me.saidUntil = -9; G.say(me, 'Kolce!', 3, 1.4, 'loud'); out.solo3 = me.bubble && me.bubble.text;
+  me.bubble = null; me.saidUntil = -9; G.sawAdd(me, ['spikes']); G.say(me, 'Kolce!', 3, 1.4, 'loud'); out.solo3 = me.bubble && me.bubble.text;
   ok(out.solo3 === 'Kolce!', 'a shout stays a shout');
   others.forEach(o => { o.gone = false; });
   return { out, fails }; }'''

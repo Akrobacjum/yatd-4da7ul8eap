@@ -76,5 +76,7 @@
  "alone": 0.6,
  "seenBuilt": 0.7,
  "gateWait": 0.6,
- "crystalDrop": 0.8
+ "crystalDrop": 0.8,
+ "saw": 0.45,
+ "rkEnter": 0.4
 }

@@ -6,14 +6,14 @@
     if (it.detected) return;
     it.detected = true; fl.threatDirty = true;
     if (how === 'seen') { fl.stats.learned++; floatTile(it.x, it.y, 'Zapamiętali', '#ffe066', 12, -0.5); }
-    if (by) say(by, how === 'seen' ? pick(SAY.learn) : (gearR(by, 'amulet') && by.type !== 'thief' ? pick(SAY.amulet) : pick(SAY.detect)), 2);
+    if (by) { sawAdd(by, itemTags(it)); sayNow(itemTags(it), () => say(by, how === 'seen' ? pick(SAY.learn) : (gearR(by, 'amulet') && by.type !== 'thief' ? pick(SAY.amulet) : pick(SAY.detect)), 2)); }   // 1.17.1: he sees what he found
     else if (how === 'seen' && fl.party && Math.random() < 0.5) {   // 1.17 (6.8 #1: never said): one who saw it go off tells the others, after the shout
       const r = slotRoom(it.type, it.x, it.y), w = alive().find(h => h.room === r && !h.lost && !panicking(h) && !caged(h));
       if (w) fl.party.queueSay.push({ id: w.id, text: pick(SAY.learn), at: fl.time + 1.2, prio: 2, late: 3 });
     }
     if (t3(it)) {   // a level 3 trap makes an impression
       const r = slotRoom(it.type, it.x, it.y), w = by || alive().find(h => h.room === r);
-      if (w && Math.random() < 0.7) say(w, pick(SAY.nastyTrap), 3);
+      if (w && Math.random() < 0.7) sayNow(itemTags(it), () => say(w, pick(SAY.nastyTrap), 3));
     }
   }
   // Path cost: known loaded traps hard, reloading ones barely; rumoured traps that are not there count as real;
@@ -74,10 +74,10 @@
     floatTile(it.x, it.y, 'Alarm!', '#ff9a3c', 17, -1); shake = Math.max(shake, 0.18);
     fl.items.forEach(o => { if (TRAPS[o.type] && slotRoom(o.type, o.x, o.y) === r && !o.disabled && o.cd <= 0 && fire(o, 1)) n++; });
     fl.stats.alarms = (fl.stats.alarms || 0) + 1; tl('al', it.x, it.y, n);
-    const w = by && !by.dead ? by : alive().find(h => h.room === r); if (w) say(w, pick(SAY.bDecoy), 4);
+    const w = by && !by.dead ? by : alive().find(h => h.room === r); sawItem(it, w ? [w] : null, ['decoy']); if (w) { sayNow(['decoy'], () => say(w, pick(SAY.bDecoy), 4)); }
   }
   // 1.05: while a trap fires, the wounds and the fright it causes are remembered by each hero (what he will tell in the tavern)
-  function fire(it, pw, opt) { const prev = fl.firing; fl.firing = it; try { return fireRaw(it, pw, opt); } finally { fl.firing = prev; } }
+  function fire(it, pw, opt) { const prev = fl.firing; fl.firing = it; try { return sayNow(itemTags(it, true), () => fireRaw(it, pw, opt)); } finally { fl.firing = prev; } }   // 1.17.1: what went off is the thing of the moment
   function feltBy(h, v) { const it = fl && fl.firing; if (!it || !h.felt || !(v > 0)) return; const k = key(it.x, it.y); h.felt.set(k, (h.felt.get(k) || 0) + v); }
   function fireRaw(it, pw, opt) {
     pw = pw || 1; opt = opt || {};
@@ -115,6 +115,7 @@
     let list = heroesOn(keys);
     if (opt.lock && opt.lock.length) list = [...new Set(list.concat(opt.lock.filter(h => !h.dead && !h.fled && !h.gone && !h.fleeing)))];   // 1.09: a check's targets stay its targets
     fl.surprise = TRAPS[it.type] && !it.detected;
+    sawItem(it, list);   // 1.17.1: whoever sees it go off (or gets it) remembers it
     if (TRAPS[it.type]) hearFar(it, list);   // 1.17: heard from another room
     if (TRAPS[it.type]) {
       const rooms = new Set(area.map(t => roomOf(t[0], t[1])));
@@ -474,12 +475,12 @@
     alive().forEach(h => {
       const q = heroPos(h), dd = Math.hypot(q.x - m.gx, q.y - m.gy);
       if (m.type === 'ghost') {   // chills everyone close
-        if (dd <= (t3(m) ? 2.6 : 1.6)) { addFear(h, 10 * dt * mods.ghostAura * galleryK(m), 'ghost'); if (!h.ghostSaid) { h.ghostSaid = true; say(h, pick(SAY.ghost), 3, null, 'loud'); if (h.type === 'warrior') say(h, pick(SAY.ghostOnly), 2); } }
+        if (dd <= (t3(m) ? 2.6 : 1.6)) { sawAdd(h, itemTags(m)); addFear(h, 10 * dt * mods.ghostAura * galleryK(m), 'ghost'); if (!h.ghostSaid) { h.ghostSaid = true; say(h, pick(SAY.ghost), 3, null, 'loud'); if (h.type === 'warrior') say(h, pick(SAY.ghostOnly), 2); } }
         if (dd <= 0.8) damage(h, 5 * monDmg(m) * dt, m);
       } else if (m.type === 'shade') {   // a cold breath on the neck, twice as bad for the lonely
-        if (dd <= 1.4) { addFear(h, 7 * dt * (h.alone || h.lost ? 2 : 1), 'shade'); if (!h.shadeSaid) { h.shadeSaid = true; say(h, pick(SAY.shade), 3, null, 'loud'); } }
+        if (dd <= 1.4) { sawAdd(h, itemTags(m)); addFear(h, 7 * dt * (h.alone || h.lost ? 2 : 1), 'shade'); if (!h.shadeSaid) { h.shadeSaid = true; say(h, pick(SAY.shade), 3, null, 'loud'); } }
       } else if (dd <= (t3(m) ? 1.6 : 1.0)) {   // bats: tiny bites and wings in the face
-        addFear(h, 4 * dt, 'bats'); damage(h, 3 * monDmg(m) * dt, m);
+        sawAdd(h, itemTags(m)); addFear(h, 4 * dt, 'bats'); damage(h, 3 * monDmg(m) * dt, m);
         if (!h.batSaid) { h.batSaid = true; say(h, pick(SAY.bats), 3, null, 'loud'); }
       }
     });
@@ -510,7 +511,7 @@
         if (m.webT <= 0) {
           m.webT = 3; const t = fighters[0];
           if (mods.spiderNest || t3(m)) { const tiles = areaOf(m); fl.zones.push({ keys: new Set(tiles.map(q => key(q[0], q[1]))), tiles, until: fl.time + 3, src: m }); }
-          if (t) { t.slowUntil = fl.time + 2.5; if (!t.spiderSaid) { t.spiderSaid = true; say(t, pick(SAY.spider), 2, null, 'loud'); } }
+          if (t) { t.slowUntil = fl.time + 2.5; sawAdd(t, ['web', 'spider', 'monster']); if (!t.spiderSaid) { t.spiderSaid = true; say(t, pick(SAY.spider), 2, null, 'loud'); } }
         }
       }
       let dmgIn = 0;

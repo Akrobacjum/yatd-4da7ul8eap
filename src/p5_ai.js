@@ -59,6 +59,129 @@
   }
   const perceives = (o, v, shout) => o === v || canSee(o, v) || (shout ? canHearShout(o, v) : canHear(o, v));
   const groupOf = L => alive().filter(o => o === L || (!o.lost && !caged(o) && (canSee(o, L) || canHear(o, L))));   // the leader's group: who decides and counts
+  // 1.17.1 (author: "a warrior said those flames would haunt his dreams, and there was no fire anywhere on the board; let them
+  // talk about the rooms, effects, monsters, loot and traps they see or have seen"): each hero remembers what he has seen or
+  // felt this wave (h.saw, the tags of LINE_NEEDS in the config): the effect, komnata and buildings of every room he stands in,
+  // the heart, the monsters, loot, scare props and known traps in sight (sawSweep each party tick, sawRoom the moment he walks
+  // in), a trap going off in sight or on him and what wounded him (sawItem), someone bleeding or dying next to him ('blood'),
+  // and a death he knows of ('death', from fl.deaths). A line that mentions a thing (LINE_TAGS) is said only by a hero who
+  // knows it, otherwise another line of the same set, or none (fitLine, in say()). A line about the thing of the moment
+  // (SAY_NOW: the loot he looks at, the trap that went off, the monster he goes for, what just hurt him) must name the right
+  // one: the traps, monsters and loot it mentions must be the ones of the moment, not just ones he saw before.
+  const TAG_CAT = {};
+  ['fire', 'blast', 'spikes', 'arrows', 'gate', 'trapdoor', 'cage', 'web', 'mimic', 'portrait', 'mirror', 'coffin', 'bones', 'eyes', 'musicbox', 'creak',
+    'goblin', 'archer', 'spider', 'ogre', 'shaman', 'ghost', 'shade', 'bats', 'monster', 'gold', 'potion', 'gear', 'relic', 'cursed'].concat(Object.keys(BUILDINGS)).forEach(t => { TAG_CAT[t] = 1; });
+  let SAY_NOW = null;
+  function sayNow(tags, f) { const prev = SAY_NOW; SAY_NOW = tags && tags.length ? new Set(tags) : null; try { return f(); } finally { SAY_NOW = prev; } }
+  // what a thing is to the eye (fired: what it does when it goes off: burning arrows, a fiery keg)
+  function itemTags(it, fired) {
+    const t = it && it.type; if (!t) return [];
+    if (MONSTERS[t]) return [t, 'monster'];
+    if (t === 'lcursed') return it.cursedKnown ? ['cursed', 'gear'] : ['gear'];   // it looks like gear till a priest feels the curse
+    if (LOOT_KIND[t]) return [LOOT_KIND[t]];
+    if (t === 'powder') return fired && t3(it) ? ['blast', 'fire'] : ['blast'];
+    if (t === 'arrows' && fired && mods.arrowBurn) return ['arrows', 'fire'];
+    if (TRAPS[t] || BUILDINGS[t]) return [t];
+    return [];
+  }
+  const sawOf = h => h.saw || (h.saw = new Set());
+  function sawAdd(h, tags) { if (h && tags && tags.length) { const s = sawOf(h), at = h.sawAt || (h.sawAt = new Map()); tags.forEach(t => { if (!s.has(t)) { s.add(t); at.set(t, fl.time); } }); } }
+  // the things to talk about: the two he saw last and one more from earlier (each with its SAY.saw lines)
+  function sawTalk(h) {
+    if (!h.saw || !SAY.saw) return [];
+    const at = h.sawAt || new Map(), ts = [...h.saw].filter(t => SAY.saw[t]).sort((a, b) => (at.get(b) || 0) - (at.get(a) || 0));
+    const pickT = ts.slice(0, 2).concat(ts.length > 2 ? [pick(ts.slice(2))] : []);
+    return pickT.flatMap(t => SAY.saw[t]);
+  }
+  // the hero card: what he has seen this wave, in the order he saw it
+  const SAW_NAME = { blast: 'wybuch prochu', gold: 'monety', potion: 'mikstura', gear: 'ekwipunek', relic: 'relikwia', cursed: 'przeklęty łup', heartSeen: 'serce lochu', blood: 'krew' };
+  function sawName(t) {
+    if (SAW_NAME[t]) return SAW_NAME[t];
+    if (t.startsWith('k_')) { const K = KIND_INFO[t.slice(2)]; return K ? K.name.toLowerCase() : ''; }
+    const I = ITEMS[t] || ITEMS['r_' + t]; return I ? I.name.toLowerCase() : '';
+  }
+  function sawNames(h) { const at = h.sawAt || new Map(); return [...(h.saw || [])].filter(t => t !== 'monster').sort((a, b) => (at.get(a) || 0) - (at.get(b) || 0)).map(sawName).filter(Boolean).join(', '); }
+  const itemSpot = it => MONSTERS[it.type] && it.gx !== undefined ? [Math.floor(it.gx), Math.floor(it.gy)] : [it.x, it.y];
+  const itemRooms = it => { if (TRAPS[it.type]) return servedRooms(it.type, it.x, it.y); const p = itemSpot(it); return [roomOf(p[0], p[1])]; };
+  // in a room he sees his room (a door thing from both its rooms); in a corridor, a few steps around him
+  function seesSpot(h, x, y, rooms) { const r = roomOf(h.tx, h.ty); return r >= 0 ? rooms.includes(r) : Math.hypot(h.tx - x, h.ty - y) <= 3.5; }
+  function sawItem(it, also, tags) {
+    tags = tags || itemTags(it, true); if (!tags.length) return;
+    const p = itemSpot(it), rooms = itemRooms(it);
+    fl.heroes.forEach(h => { if (!h.dead && !h.fled && !h.gone && ((also && also.includes(h)) || seesSpot(h, p[0], p[1], rooms))) sawAdd(h, tags); });
+  }
+  function sawNear(h, tags) {   // he and the ones who see him (burning, bleeding, dying)
+    fl.heroes.forEach(o => { if (!o.dead && !o.fled && !o.gone && (o === h || canSee(o, h))) sawAdd(o, tags); });
+  }
+  // what can be seen of a thing: a monster alive, loot, a building, a scare prop, the fire (it burns in the open), a shut gate,
+  // and a trap they know of; a hidden trap only when it goes off (sawItem in fireRaw)
+  function sawVisible(it) {
+    const t = it.type;
+    if (MONSTERS[t]) return it.hp > 0;
+    if (t === 'decoy') return !!it.alarmed;   // it looks like spikes till the alarm
+    if (LOOT_KIND[t] || BUILDINGS[t]) return true;
+    if (!TRAPS[t]) return false;
+    if (t === 'gate') { const d = fl.doors.get(key(it.x, it.y)); return !!it.detected || !!(d && d.closedUntil > fl.time); }
+    if (t === 'musicbox' || t === 'creak') return false;   // these are heard when they go off, not seen
+    return !!it.detected || !!SCARE[t] || t === 'fire';
+  }
+  function sawRoomTags(h, r) {
+    if (r < 0 || !fl.rooms[r]) return;
+    const R = fl.rooms[r], a = [];
+    if (R.rt) a.push(R.rt); if (R.rk) a.push('k_' + R.rk);
+    if (r === fl.heart.room) a.push('heartSeen');
+    for (const b in BUILDINGS) if (b !== 'decoy' && inB(b, r)) a.push(b);
+    sawAdd(h, a);
+  }
+  function sawRoom(h, r) {
+    sawRoomTags(h, r);
+    fl.items.forEach(it => { if (sawVisible(it) && itemRooms(it).includes(r)) sawAdd(h, itemTags(it)); });
+  }
+  function sawSweep() {
+    const hs = fl.heroes.filter(h => !h.dead && !h.fled && !h.gone); if (!hs.length) return;
+    hs.forEach(h => sawRoomTags(h, roomOf(h.tx, h.ty)));
+    fl.items.forEach(it => {
+      if (!sawVisible(it)) return;
+      const tags = itemTags(it); if (!tags.length) return;
+      const p = itemSpot(it), rooms = itemRooms(it);
+      hs.forEach(h => { if (seesSpot(h, p[0], p[1], rooms)) sawAdd(h, tags); });
+    });
+  }
+  let LINE_TAGS = null, TAG_RX = null;
+  function lineTags(t) {
+    if (!LINE_TAGS) {
+      LINE_TAGS = new Map(); TAG_RX = [];
+      const add = (x, tag) => { const a = LINE_TAGS.get(x) || []; if (!a.includes(tag)) a.push(tag); LINE_TAGS.set(x, a); };
+      for (const [tag, lines] of Object.entries(LINE_NEEDS)) lines.forEach(x => add(x, tag));
+      for (const [tag, lines] of Object.entries(SAY.saw || {})) [].concat(lines).forEach(x => add(x, tag));   // talk about a thing needs the thing
+      LINE_TAGS.forEach((a, x) => { if (/\{[navg]\}/.test(x)) TAG_RX.push([new RegExp('^' + x.replace(/[.*+?^$()|[\]\\]/g, '\\$&').replace(/\{[navg]\}/g, '.+?').replace(/[{}]/g, '\\$&') + '$'), a]); });
+    }
+    const a = LINE_TAGS.get(t); if (a) return a;
+    for (const [rx, aa] of TAG_RX) if (rx.test(t)) return aa;
+    return null;
+  }
+  function knowsTag(h, t) {
+    if (t === 'death') return (fl.deaths || []).some(d => d.knows.has(h.id));
+    if ((t === 'gold' && h.gold > 0) || (t === 'cursed' && h.cursed)) return true;   // what he carries
+    return !!(SAY_NOW && SAY_NOW.has(t)) || !!(h.saw && h.saw.has(t));
+  }
+  function lineOk(h, t) {
+    const tg = lineTags(t); if (!tg) return true;
+    return tg.every(x => SAY_NOW && TAG_CAT[x] ? SAY_NOW.has(x) : knowsTag(h, x));
+  }
+  const linePool = k => { if (!k) return null; const i = k.indexOf(':'), v = i < 0 ? SAY[k] : SAY[k.slice(0, i)] && SAY[k.slice(0, i)][k.slice(i + 1)]; return v ? [].concat(v) : null; };
+  function fitLine(h, text, pool) {
+    let t = text;
+    if (!lineOk(h, t)) {
+      const st = fl.stats, k = lineKey(t);
+      const alt = (pool || linePool(k) || []).filter(x => !/\{[navg]\}/.test(x) && lineOk(h, x));
+      if (!alt.length) { st.lineDrop = (st.lineDrop || 0) + 1; const dk = st.lineDropK || (st.lineDropK = {}); dk[k || '?'] = (dk[k || '?'] || 0) + 1; return null; }
+      st.lineSwap = (st.lineSwap || 0) + 1; t = pick(alt);
+    }
+    if (SAY_NOW) { const tg = lineTags(t); if (tg) sawAdd(h, tg.filter(x => SAY_NOW.has(x))); }   // what he talks about now, he knows of
+    return t;
+  }
+  const okLines = (h, a) => a.filter(x => lineOk(h, x));
   const heartGoals = () => fl.heartAdj.map(t => t[1] * WW + t[0]);
   const exitGoals = () => fl.breach ? [fl.ent.y * WW + fl.ent.x, fl.breach.y * WW + fl.breach.x] : [fl.ent.y * WW + fl.ent.x];
   const exitGoal = () => { const g = exitGoals(); return g.length > 1 && planB ? (nearestOf(planB, g) >= 0 ? nearestOf(planB, g) : g[0]) : g[0]; };
@@ -244,19 +367,20 @@
     const ears = alive().filter(o => o !== A && !o.lost && !caged(o) && !inChaos(o) && !talking(o) && earshot(A, o));
     if (!ears.length) return why('alone');
     const is = (o, v) => !v || [].concat(v).includes(o);
+    const knows = (o, t, r) => t.l.every(l => l[0] !== r || lineOk(o, l[1]));   // 1.17.1: each one only says what he has seen
     const opts = [];
     set.forEach(t => {
       const sp = new Set(t.l.map(l => l[0]));
       if (sp.has('A') && (A.gone || A.dead || A.fled)) return;
-      if (!is(A.type, t.ac) || !is(A.trait, t.at)) return;
-      const Bs = ears.filter(o => is(o.type, t.b) && is(o.trait, t.bt) && (t.br === undefined || o.rank <= t.br) && (t.bv === undefined || o.rank >= t.bv));
+      if (!is(A.type, t.ac) || !is(A.trait, t.at) || !knows(A, t, 'A')) return;
+      const Bs = ears.filter(o => is(o.type, t.b) && is(o.trait, t.bt) && (t.br === undefined || o.rank <= t.br) && (t.bv === undefined || o.rank >= t.bv) && knows(o, t, 'B'));
       if (!Bs.length || (sp.has('C') && ears.length < 2)) return;
       opts.push({ t, Bs, w: (t.w || 1) * (t.b || t.bt || t.br !== undefined || t.bv !== undefined || t.ac || t.at ? 1.6 : 1) });   // the fitting ones first
     });
     if (!opts.length) return why('fit');
     let r = Math.random() * opts.reduce((a, o) => a + o.w, 0), pickO = opts[0];
     for (const o of opts) { r -= o.w; if (r <= 0) { pickO = o; break; } }
-    const B = pick(pickO.Bs), C = pick(ears.filter(o => o !== B)) || null, who = { A, B, C };
+    const B = pick(pickO.Bs), C = pick(ears.filter(o => o !== B && knows(o, pickO.t, 'C'))) || null, who = { A, B, C };
     // all its lines are due at once (so nobody in earshot cuts in: othersWaiting), they come in order (the queue holds the
     // later ones till the earlier is said), and a line more than 3,5 s past its expected moment is stale: the exchange ends
     const t0 = Math.max(fl.time + 0.3, (A.saidUntil || 0) + SAY_GAP), cv = (P.convoN = (P.convoN || 0) + 1);   // from when the line that started it ends
@@ -317,7 +441,7 @@
     const pr = alive().find(h => h.type === 'priest' && h.lvl >= 6 && !h.lost && !h.fleeing && Math.hypot(h.tx - it.x, h.ty - it.y) <= 6);
     if (!pr) return;
     it.cursedKnown = true; fl.stats.cursedSeen = (fl.stats.cursedSeen || 0) + 1; tl('cw', it.x, it.y);
-    say(pr, pick(SAY.cursedWarn), 4, 2.2); floatTile(it.x, it.y, 'Przeklęte!', '#b48cff', 14, -0.6);
+    sayNow(['cursed', 'gear'], () => say(pr, pick(SAY.cursedWarn), 4, 2.2)); floatTile(it.x, it.y, 'Przeklęte!', '#b48cff', 14, -0.6);
     replanAll();
   }
   // Worth it? What the loot is worth to THIS hero (gold to the greedy, a potion to the wounded, gear he can use)
@@ -573,7 +697,7 @@
         if (!inB(t, h.room) || fl.bSaid.has(kk)) return;
         const pref = { altar: 'priest', rune: 'mage', acid: 'warrior', howl: 'bard', shackles: 'barbarian' }[t];
         if (pref && h.type !== pref && crew.some(o => o.type === pref && o.room === h.room)) return;
-        fl.bSaid.add(kk); say(h, pick(SAY['b' + t.charAt(0).toUpperCase() + t.slice(1)]), 3);
+        fl.bSaid.add(kk); sawAdd(h, [t]); sayNow([t], () => say(h, pick(SAY['b' + t.charAt(0).toUpperCase() + t.slice(1)]), 3));
       });
       // caged with nobody coming: the fear builds until he tears the bars apart and runs
       if (caged(h) && (P.abandoned.has(h.id) || !crew.some(o => o !== h && !caged(o) && !o.fleeing && !o.lost))) addFear(h, 8 * dt * mods.cageFear, 'cage', 'cageAlone');
@@ -732,14 +856,14 @@
         const moved = P.plan === 'explore' && P.target >= 0 && (P.target !== before || wasPlan !== 'explore');
         if (!moved && wasPlan === 'assault') { P.plan = 'assault'; P.gateDetourUntil = 0; }
         if (moved) fl.stats.reroutes = (fl.stats.reroutes || 0) + 1;
-        say(L, pick(moved ? SAY.gateReroute : SAY.gateWait), 3, 2.2);
+        sayNow(['gate'], () => say(L, pick(moved ? SAY.gateReroute : SAY.gateWait), 3, 2.2));
         if (!moved) P.liftT = 0;
       }
       if (P.blockSaid && P.plan !== 'explore') {   // waiting at the gate: a thief next to it levers it up in 3 s
         const door = [...fl.doors.values()].filter(d => d.closedUntil > fl.time).sort((a, b) => Math.hypot(a.x - L.tx, a.y - L.ty) - Math.hypot(b.x - L.tx, b.y - L.ty))[0];
         const it = door && fl.items.get(key(door.x, door.y)), th = door && alive().find(h => h.type === 'thief' && !panicking(h) && !h.fleeing && Math.hypot(h.tx - door.x, h.ty - door.y) <= 1.6);
         if (it && it.type === 'gate' && th) {
-          if (!P.liftT) say(th, pick(SAY.gateLever), 3, 2);
+          if (!P.liftT) { sawAdd(th, ['gate']); sayNow(['gate'], () => say(th, pick(SAY.gateLever), 3, 2)); }
           P.liftT = (P.liftT || 0) + dt * (th.lvl >= 6 ? 1.5 : 1);
           if (P.liftT >= 3) {
             door.closedUntil = fl.time; it.disabled = true; it.detected = true; fl.threatDirty = true; P.liftT = 0;
@@ -782,7 +906,12 @@
         if (h.rank === 0 && !scared) lines.push(...SAY.rookie); else if (h.rank >= 2) lines.push(...SAY.elite);
         lines.push(...SAY.chatIdle);
       }
-      const line = h && lines.length ? pick(lines) : null;
+      // 1.17.1: only what he has seen; and now and then about something he saw this wave (two of the things he remembers)
+      const sl = h && !aloneNow(h) && !(h.fleeing || h.crystal || goingOut()) ? sawTalk(h) : [];
+      lines.push(...sl);
+      const fit = h ? (sl.length && Math.random() < 0.45 ? sl : okLines(h, lines)) : [];   // almost half the time it is about what they saw
+      const line = fit.length ? pick(fit) : null;
+      fl.stats.chatTry = (fl.stats.chatTry || 0) + 1; if (line) fl.stats.chatPick = (fl.stats.chatPick || 0) + 1;
       if (line && say(h, line, 1, 2.2)) {
         // an answer now and then: courage for the scared, sense for the greedy
         const fearLine = mood === 'fear' && (SAY.shaken.includes(line) || SAY.chatScared.includes(line));
@@ -791,7 +920,8 @@
         if (ans && Math.random() < 0.6) P.queueSay.push({ id: ans.id, text: pick(fearLine ? SAY.reassure : SAY.surviveFirst), at: fl.time + 1.6 });
         else if (!ans && CHAT_REPLY[line] && Math.random() < 0.55) {   // 1.10: someone close by answers the everyday lines too
           const o = crew.find(x => x !== h && !x.lost && !panicking(x) && !caged(x) && earshot(x, h));
-          if (o) P.queueSay.push({ id: o.id, text: pick(CHAT_REPLY[line]), at: fl.time + 0.4, prio: 1 });
+          const rep = o ? okLines(o, CHAT_REPLY[line]) : [];   // 1.17.1: an answer about what he has seen
+          if (rep.length) P.queueSay.push({ id: o.id, text: pick(rep), at: fl.time + 0.4, prio: 1 });
         }
       }
     }
@@ -882,6 +1012,7 @@
   // missed after 4 s; one left behind when the rest are gone takes the plan and says so.
   function perceiveThink(L, crew) {
     const P = fl.party, seen = P.seen || (P.seen = {});
+    sawSweep();   // 1.17.1: what each one sees
     // a new leader from somewhere else brings what he knows: the party goes by his plan (unless he is the last one in there)
     if (L && P.lastL !== L.id) { P.lastL = L.id; if (L.plan !== undefined && L.plan !== P.plan && crew.length > 1 && !L.crystal && !fl.stats.crystalTaken && !fl.fearless && !crew.some(o => o !== L && o.plan === P.plan)) P.plan = L.plan; }   // only when nobody who knew the old plan is left (never after a theft or once patience is over)
     crew.forEach(o => {
@@ -1054,7 +1185,7 @@
     }
     if (!SEARCH_GOLD[lk.sub]) return;
     if (Math.random() < (h.trait === 'greedy' || h.type === 'thief' ? 0.3 : 0.18)) {
-      h.gold = (h.gold || 0) + 1; fl.stats.goldFound = (fl.stats.goldFound || 0) + 1; floatHero(h, '+1 złota', '#f2c94c', 12, -0.7);
+      h.gold = (h.gold || 0) + 1; sawAdd(h, ['gold']); fl.stats.goldFound = (fl.stats.goldFound || 0) + 1; floatHero(h, '+1 złota', '#f2c94c', 12, -0.7);
       fl.party.queueSay.push({ id: h.id, text: pick(SAY.lookFind), at: fl.time + 0.1, prio: 2, late: 2.5 });
     } else if (Math.random() < 0.45) fl.party.queueSay.push({ id: h.id, text: pick(SAY.lookNothing), at: fl.time + 0.1, prio: 1, late: 2.5 });
   }
@@ -1173,7 +1304,7 @@
       const alt = inB('altar', r);
       const frac = (0.15 + 0.012 * pr.lvl) * (alt ? 0.5 : 1), brave0 = Math.pow(0.85, 1 + pr.lvl / 5), brave = alt ? 1 - (1 - brave0) / 2 : brave0;
       alive().forEach(o => { o.shield = Math.max(o.shield, o.max * frac); o.braveUntil = fl.time + 10; o.braveK = brave; });
-      if (alt) { say(pr, pick(SAY.bAltar), 4); fl.stats.altarBlocks = (fl.stats.altarBlocks || 0) + 1; }
+      if (alt) { sayNow(['altar'], () => say(pr, pick(SAY.bAltar), 4)); fl.stats.altarBlocks = (fl.stats.altarBlocks || 0) + 1; }
       if (pr.lvl >= 6) {
         fl.items.forEach(m => { if ((m.type === 'ghost' || m.type === 'shade') && m.hp > 0 && roomOf(m.x, m.y) === r) { hurtMonster(m, 40 * pr.R.pow * (alt ? 0.5 : 1)); burst(m.gx || m.x + 0.5, m.gy || m.y + 0.5, '#fff2c0', 12); } });   // exorcism (half as strong at the altar)
         let nb = 2 + Math.floor((pr.lvl - 6) / 2);   // and a few known portraits there lose their curse for this wave (half as many at the altar)
@@ -1185,7 +1316,7 @@
     }
     if (mg && inB('rune', r)) {   // the rune stone swallows the spell
       mg.jamCd = fl.time + 12; fl.stats.runeBlocks = (fl.stats.runeBlocks || 0) + 1;
-      say(mg, pick(SAY.bRune), 4); floatTile((R.x0 + R.x1) >> 1, (R.y0 + R.y1) >> 1, 'Runa tłumi czar', '#9fd0ff', 14, -0.6);
+      sayNow(['rune'], () => say(mg, pick(SAY.bRune), 4)); floatTile((R.x0 + R.x1) >> 1, (R.y0 + R.y1) >> 1, 'Runa tłumi czar', '#9fd0ff', 14, -0.6);
     } else if (mg) {   // every trap in that room goes quiet for a few seconds
       const dur = 2 + 0.25 * mg.lvl;
       fl.items.forEach(it => { if (TRAPS[it.type] && slotRoom(it.type, it.x, it.y) === r) it.jamUntil = fl.time + dur; });
@@ -1329,16 +1460,16 @@
         if (best >= 0) { job = { intent: 'loot', goal: best }; h.lootKey = bestK; if (bestK) claims.set(bestK, h.id); }
       }
       if (!job && h.type === 'warrior') {   // rookies charge anything; veterans pick fights they can win or must fight
-        let best = -1, bd = 1e9, skip = null;
+        let best = -1, bd = 1e9, skip = null, bm = null;
         fl.items.forEach(m => {
           if (!MONSTERS[m.type] || DRIFT[m.type] || m.hp <= 0 || roomOf(m.x, m.y) !== h.room) return;
           const i = m.y * WW + m.x, d = B().dist[i];
           const smart = h.rank === 0 || m.type === 'archer' || (h.hp > 0.6 * h.max && m.type !== 'ogre');
           if (!smart) { skip = m; return; }
-          if (d > 0 && d <= 6 && d < bd) { bd = d; best = i; }
+          if (d > 0 && d <= 6 && d < bd) { bd = d; best = i; bm = m; }
         });
-        if (best >= 0) { job = { intent: 'fight', goal: best }; if (h.intent !== 'fight') say(h, pick(SAY.fight), 2); }
-        else if (skip && h.avoidM !== skip && Math.random() < 0.3) { say(h, pick(SAY.avoid), 2); h.avoidM = skip; }   // 1.17 (6.8 #4): once a monster, not at every plan
+        if (best >= 0) { job = { intent: 'fight', goal: best }; if (h.intent !== 'fight') { sawAdd(h, itemTags(bm)); sayNow(itemTags(bm), () => say(h, pick(SAY.fight), 2)); } }   // 1.17.1: about the one he goes for
+        else if (skip && h.avoidM !== skip && Math.random() < 0.3) { sawAdd(h, itemTags(skip)); sayNow(itemTags(skip), () => say(h, pick(SAY.avoid), 2)); h.avoidM = skip; }   // 1.17 (6.8 #4): once a monster, not at every plan
       }
       if (!job && P.scoutId === h.id && h.scoutTarget >= 0) job = { intent: 'scout', goal: h.scoutTarget };
       if (!job && P.scoutMate === h.id) {   // 1.16: the mate keeps a step behind the scout
@@ -1457,7 +1588,7 @@
     if (!best) return null;
     if (b.dist[spot] === 0) {
       h.state = 'smash'; h.timer = rage ? 0.8 : 1.8; h.dur = h.timer; h.smashIt = best; h.path = [];
-      say(h, pick(best.kind === 'b' ? SAY.smashB : SAY.smash), 3);
+      sayNow(best.kind === 'b' ? [best.ref.type] : null, () => say(h, pick(best.kind === 'b' ? SAY.smashB : SAY.smash), 3));
       return { intent: 'smash', goal: -1 };
     }
     return { intent: 'smash', goal: spot };
@@ -1493,7 +1624,7 @@
     });
     h.disarmT = tBest;
     if (!tBest) return null;
-    if (tCost === 0) { const alt = inB('altar', slotRoom(tBest.type, tBest.x, tBest.y)); h.faith--; h.state = 'disarm'; h.timer = 1.5 * h.R.disarm * (alt ? 2 : 1); h.dur = h.timer; h.item = tBest; h.path = []; say(h, pick(alt ? SAY.bAltar : SAY.bless), 3); if (alt) fl.stats.altarBlocks = (fl.stats.altarBlocks || 0) + 1; return { intent: 'bless', goal: -1 }; }
+    if (tCost === 0) { const alt = inB('altar', slotRoom(tBest.type, tBest.x, tBest.y)); h.faith--; h.state = 'disarm'; h.timer = 1.5 * h.R.disarm * (alt ? 2 : 1); h.dur = h.timer; h.item = tBest; h.path = []; sayNow(alt ? ['altar'] : null, () => say(h, pick(alt ? SAY.bAltar : SAY.bless), 3)); if (alt) fl.stats.altarBlocks = (fl.stats.altarBlocks || 0) + 1; return { intent: 'bless', goal: -1 }; }
     return { intent: 'bless', goal: tSpot };
   }
   // Anyone with a bomb throws it at a known trap blocking the leader's way, from up to 3 tiles.
@@ -1538,7 +1669,7 @@
     const lost = alive().filter(o => o.lost && o !== h && !(o.hearUntil > fl.time && o.hearId === h.id));
     if (lost.length && h.callCd <= 0 && !goingOut() && !fl.fearless) {
       h.callCd = 9;
-      if (inB('howl', h.room)) { say(h, pick(SAY.bHowl), 3); fl.stats.howlBlocks = (fl.stats.howlBlocks || 0) + 1; return; }
+      if (inB('howl', h.room)) { sayNow(['howl'], () => say(h, pick(SAY.bHowl), 3)); fl.stats.howlBlocks = (fl.stats.howlBlocks || 0) + 1; return; }
       const b = bfs(h.x, h.y, {}); let n = 0;
       lost.forEach(o => { const d = b.dist[tIdx(o)]; if (d < 0 || d > 26 || inB('howl', o.room)) return; o.hearUntil = fl.time + 8; o.hearId = h.id; o.needPlan = true; n++; P.queueSay.push({ id: o.id, text: pick(SAY.lostHear), at: fl.time + 1.3 }); });
       say(h, nameFill(pick(SAY.bardCall), lost[0]), 3); fl.stats.bardCalls = (fl.stats.bardCalls || 0) + 1; if (n) fl.stats.bardHeard = (fl.stats.bardHeard || 0) + n; tl('bc', h.id, n);
@@ -1550,7 +1681,7 @@
     const fearR = near.reduce((a, o) => a + o.fear / o.courage, 0) / Math.max(1, near.length);
     if (!(P.morale < 0.65 || near.some(o => fl.time < o.shakenUntil) || fearR > 0.45)) return;
     h.songCd = 16;
-    if (inB('howl', h.room)) { say(h, pick(SAY.bHowl), 3); fl.stats.howlBlocks = (fl.stats.howlBlocks || 0) + 1; h.songCd = 6; return; }
+    if (inB('howl', h.room)) { sayNow(['howl'], () => say(h, pick(SAY.bHowl), 3)); fl.stats.howlBlocks = (fl.stats.howlBlocks || 0) + 1; h.songCd = 6; return; }
     h.songs--;
     const k = (0.06 + 0.012 * h.lvl) * Math.min(1, itemPow(h) + 0.5);
     near.forEach(o => { o.fear = Math.max(0, o.fear - k * o.courage); if (o.shakenUntil > fl.time) o.shakenUntil = fl.time + 1; });
@@ -1601,13 +1732,13 @@
       if ((burning || worst < 0.75 || missing > 0.6 * h.max) && spend(1)) {
         h.cast = 3;
         near.forEach(o => {
-          if (fl.time < o.burnUntil) { o.burnUntil = fl.time; cleansed = true; return; }   // putting out a fire takes the heal
+          if (fl.time < o.burnUntil) { cleansed = cleansed === 'fire' || o.burnBy !== 'spikes' ? 'fire' : 'blood'; o.burnUntil = fl.time; return; }   // putting out a fire (1.17.1: or stopping the bleeding) takes the heal
           if (o.hp < o.max) { const a = Math.min(22 * h.R.pow * ak, o.max - o.hp); o.hp += a; healed += a; }
         });
       }
       if (ghosts.length && (h.cast === 3 || h.faith > 0)) { h.cast = 3; ghosts.forEach(m => { hurtMonster(m, 25 * h.R.pow * ak); burst(m.gx, m.gy, '#fff2c0', 8); }); }
-      if (alt && healed > 0) { fl.stats.altarHeals = (fl.stats.altarHeals || 0) + 1; if (Math.random() < 0.25) say(h, pick(SAY.bAltar), 2); }
-      if (cleansed) { fl.stats.cleanses++; say(h, pick(SAY.cleanse), 3); }
+      if (alt && healed > 0) { fl.stats.altarHeals = (fl.stats.altarHeals || 0) + 1; if (Math.random() < 0.25) sayNow(['altar'], () => say(h, pick(SAY.bAltar), 2)); }
+      if (cleansed) { fl.stats.cleanses++; sayNow(cleansed === 'fire' ? ['fire'] : ['spikes', 'blood'], () => say(h, pick(cleansed === 'fire' ? SAY.cleanse : SAY.staunch), 3)); }
       // a barrier for everyone around (ambush, or someone close to dying): 3 faith
       if (h.barrierCd <= 0 && near.length >= 2 && (fl.time - fl.party.ambushT < 2 || near.some(o => o.hp < 0.45 * o.max)) && h.faith >= 3 && spend(3)) {
         near.forEach(o => { o.shield = Math.max(o.shield, 12 * h.R.pow * ak); }); h.barrierCd = 14; fl.stats.barriers++; say(h, pick(SAY.barrier), 3); h.cast = 3;
@@ -1725,10 +1856,13 @@
     const r = roomOf(h.x, h.y), changed = r >= 0 && r !== h.enteredRoom;
     if (r >= 0) { h.room = r; h.enteredRoom = r; }
     reveal(h);
+    if (changed) sawRoom(h, r);   // 1.17.1: what he sees as he walks in
     if (r >= 0 && fl.rooms[r].kind === 'room') {
       if (!fl.rooms[r].visited) { fl.rooms[r].visited = true; fl.stats.roomsVisited++; }
       const rt = fl.rooms[r].rt;   // the first one into a room with a character says what it is
       if (rt && !exiting(h) && !(fl.rtSaid || (fl.rtSaid = new Set())).has(r)) { fl.rtSaid.add(r); say(h, pick(SAY[RT_SAY[rt]]), 3); }
+      const rk = fl.rooms[r].rk, rkL = rk && SAY.rkEnter && SAY.rkEnter['k_' + rk];   // 1.17.1: and what the room is for (a komnata)
+      if (rkL && !exiting(h) && !(fl.rkSaid || (fl.rkSaid = new Set())).has(r)) { fl.rkSaid.add(r); fl.stats.rkEnter = (fl.stats.rkEnter || 0) + 1; say(h, pick(rkL), rt ? 2 : 3); }
       if (changed && h.id === P.leaderId) { maybeDetour(h, r); if (!P.detour) P.lookAsk = { room: r, at: fl.time + 0.9 }; }   // 1.17: look around? (lookThink)
       if (changed && !exiting(h)) phobiaSight(h, r);
     }

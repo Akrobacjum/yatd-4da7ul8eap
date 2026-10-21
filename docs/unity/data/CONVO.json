@@ -6764,5 +6764,323 @@
     ]
    ]
   }
+ ],
+ "saw": [
+  {
+   "l": [
+    [
+     "B",
+     "Nie przypominaj mi."
+    ],
+    [
+     "A",
+     "Ktoś musi pamiętać."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Ja tam nic nie widział{em|am}."
+    ],
+    [
+     "A",
+     "To patrz uważniej."
+    ],
+    [
+     "C",
+     "Albo wcale. Zdrowiej."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Mów ciszej. Jeszcze usłyszy."
+    ],
+    [
+     "A",
+     "Kto?"
+    ],
+    [
+     "B",
+     "Loch."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "I ty się dziwisz? To loch."
+    ],
+    [
+     "A",
+     "Wiem. A i tak się dziwię."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Gadanie nic nie pomoże."
+    ],
+    [
+     "A",
+     "Mnie pomaga."
+    ],
+    [
+     "C",
+     "Mnie nie. Cicho już."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Następnym razem idę z tyłu."
+    ],
+    [
+     "A",
+     "Z tyłu wcale nie jest lepiej."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Dalej będzie gorzej. Wiem to."
+    ],
+    [
+     "A",
+     "Dzięki. Bardzo pomagasz."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Zapamiętaj to. Takie rzeczy wracają."
+    ],
+    [
+     "A",
+     "Już zapamiętał{em|am}. Na zawsze."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "A złota przy tym nie było?"
+    ],
+    [
+     "A",
+     "Ty tylko o jednym."
+    ],
+    [
+     "B",
+     "Ktoś tu musi myśleć o przyszłości."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Dobre na pieśń. Straszne, ale dobre."
+    ],
+    [
+     "A",
+     "Tylko nie śpiewaj o tym teraz."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Ha! Ja bym się z tym chętnie zmierzył{|a}."
+    ],
+    [
+     "A",
+     "Ty byś się zmierzył{B:|a} z lawiną."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Niech bogowie nas przed tym strzegą."
+    ],
+    [
+     "A",
+     "Na razie słabo im to idzie."
+    ]
+   ]
+  },
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Widział{em|am} gorsze rzeczy."
+    ],
+    [
+     "A",
+     "Gdzie?"
+    ],
+    [
+     "B",
+     "Nie chcesz wiedzieć."
+    ]
+   ]
+  },
+  {
+   "br": 0,
+   "l": [
+    [
+     "B",
+     "Ojej. A ja myślał{em|am}, że to bajki."
+    ],
+    [
+     "A",
+     "Witaj w lochu, młod{B:y|a}."
+    ]
+   ]
+  },
+  {
+   "at": "coward",
+   "l": [
+    [
+     "B",
+     "Daj spokój, {Av}. To już za nami."
+    ],
+    [
+     "A",
+     "W tym lochu nic nie jest za nami."
+    ]
+   ]
+  }
+ ],
+ "rkEnter": [
+  {
+   "l": [
+    [
+     "B",
+     "Kto urządza loch jak dom?"
+    ],
+    [
+     "A",
+     "Ktoś, kto tu mieszka."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Mogę poczekać za drzwiami?"
+    ],
+    [
+     "A",
+     "Za drzwiami też jest loch."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Takie pokoje zawsze coś skrywają."
+    ],
+    [
+     "A",
+     "Właśnie tego się boję."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Złe miejsce. Czuję to."
+    ],
+    [
+     "A",
+     "Ja też. A nie jestem kapłan{em|ką}."
+    ]
+   ]
+  },
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Widział{em|am} gorsze. Niewiele, ale tak."
+    ],
+    [
+     "A",
+     "Pociesz mnie jeszcze."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Ten loch ma coraz dziwniejsze pokoje."
+    ],
+    [
+     "A",
+     "I coraz mniej wyjść."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Ciekawe, kto tu sprząta."
+    ],
+    [
+     "A",
+     "Wolę nie zgadywać."
+    ],
+    [
+     "C",
+     "Może zaraz przyjdzie."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Ładnie tu. Szkoda będzie rozwalać."
+    ],
+    [
+     "A",
+     "Ty byś wszystko rozwalił{B:|a}."
+    ]
+   ]
+  }
  ]
 }

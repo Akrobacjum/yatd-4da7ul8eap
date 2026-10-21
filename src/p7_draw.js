@@ -3161,7 +3161,8 @@
     }
     const ph = drawPixelFigure(h.type, x, feet, PH, face, fo);
     if (h.boss) { const cy = feet - ph * (h.type === 'mage' ? 0.98 : 0.86), cs = Math.max(3, H * 0.12); ctx.fillStyle = '#d9b44a'; ctx.beginPath(); ctx.moveTo(x - cs, cy); ctx.lineTo(x - cs, cy - cs * 0.9); ctx.lineTo(x - cs * 0.4, cy - cs * 0.45); ctx.lineTo(x, cy - cs * 1.1); ctx.lineTo(x + cs * 0.4, cy - cs * 0.45); ctx.lineTo(x + cs, cy - cs * 0.9); ctx.lineTo(x + cs, cy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = 'rgba(30,20,10,0.7)'; ctx.lineWidth = 1; ctx.stroke(); }
-    if (fl.time < h.burnUntil) { ctx.fillStyle = Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x + face * W * 0.5, mid - H * 0.12, Math.max(2.5, H * 0.07), 0, Math.PI * 2); ctx.fill(); }
+    if (fl.time < h.burnUntil) { ctx.fillStyle = h.burnBy === 'spikes' ? (Math.sin(realNow * 12) > 0 ? '#d8434f' : '#ff6b6b') : Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a';   // 1.17.1: bleeding is red, not a flame
+      ctx.beginPath(); ctx.arc(x + face * W * 0.5, mid - H * 0.12, Math.max(2.5, H * 0.07), 0, Math.PI * 2); ctx.fill(); }
     if (fl.time < h.wardUntil) {   // talisman ward around the body
       ctx.strokeStyle = 'rgba(127,184,255,' + (0.6 + 0.3 * Math.sin(realNow * 12)).toFixed(2) + ')'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(x, mid, W * 1.45, H * 0.6, 0, 0, Math.PI * 2); ctx.stroke();
