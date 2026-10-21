@@ -15,7 +15,7 @@
   // until they stand with the party again. Getting lost on the way (fog, no way, a roll on the way back) ends it: then he pays
   // as a lost one. Traps that hunt the lonely (eyes, the shade) still see him alone, he is.
   const onScout = h => !!h && !!fl.party && (h.id === fl.party.scoutId || h.id === fl.party.scoutMate);
-  const splitting = h => onScout(h) || (h.wanderUntil > fl.time && h.wanderTarget >= 0 && isFrontierTile(h.wanderTarget));
+  const splitting = h => onScout(h) || inG2(h) || (h.wanderUntil > fl.time && h.wanderTarget >= 0 && isFrontierTile(h.wanderTarget));
   function startSplit(h, why) {
     if (!h || h.split) return;
     h.split = true; fl.stats.splits = (fl.stats.splits || 0) + 1; tl('rz', h.id, why);
@@ -190,11 +190,163 @@
   const exitGoals = () => fl.breach ? [fl.ent.y * WW + fl.ent.x, fl.breach.y * WW + fl.breach.x] : [fl.ent.y * WW + fl.ent.x];
   const exitGoal = () => { const g = exitGoals(); return g.length > 1 && planB ? (nearestOf(planB, g) >= 0 ? nearestOf(planB, g) : g[0]) : g[0]; };
   let planB = null;   // the current hero's path search, so the nearest way out can be picked
+  // 1.19 Rozłam (author: "plan rozbudowy bohaterów: rozłam"): the party can break in two. A second group (P.g2: its leader,
+  // its members, its own plan and goal) explores on its own and joins the rest again when they meet; it is born at a fork
+  // (one of them will not go the leader's way and 1-2 like him follow), at the council (2+ who wanted more stay while the
+  // rest go home), or from a quarrel (a mutiny, a sulk: a group of one). Its members are away on purpose (h.split: Groza of
+  // a scout, GZ.split) until they are back with the others. One second group at a time.
+  const inG2 = h => !!(h && fl.party && fl.party.g2 && fl.party.g2.ids.has(h.id));
+  function g2Leader() {
+    const P = fl.party, G = P.g2; if (!G) return null;
+    let L = byId(G.leaderId);
+    if (!L || L.dead || L.fled || L.gone || L.lost || caged(L) || panicking(L) || L.goHome || L.fleeing || !G.ids.has(L.id)) {
+      const was = L, c = alive().filter(o => G.ids.has(o.id) && !o.lost && !caged(o) && !panicking(o) && !o.goHome && !o.fleeing);
+      if (!c.length) { g2End('gone'); return null; }
+      c.sort((a, b) => b.rank - a.rank); L = c[0]; G.leaderId = L.id;
+      if (was && G.plan !== 'regroup') {   // the group lost its head: back to the others
+        G.plan = 'regroup'; c.forEach(o => { o.plan = 'regroup'; o.needPlan = true; });
+        const t = pick((aloneNow(L) ? SOLO.g2LeaderDown : null) || SAY.g2LeaderDown);
+        P.queueSay.push({ id: L.id, text: nameFill(t, was), at: fl.time + 0.4, prio: 3, late: 4 });
+      }
+    }
+    return L;
+  }
+  const groupLeaderOf = h => (inG2(h) && g2Leader()) || leader();
+  function g2Start(D, joiners, plan, target, why) {
+    const P = fl.party; if (P.g2 || !D) return false;
+    const all = [D].concat(joiners);
+    P.g2 = { leaderId: D.id, ids: new Set(all.map(o => o.id)), plan, target, born: fl.time, why, until: fl.time + (why === 'sulk' || why === 'mutiny' ? 25 : 40), said: false };
+    all.forEach(o => { o.plan = plan; o.needPlan = true; o.split = false; startSplit(o, 'rift'); o.wanderUntil = -1; o.lootKey = null; });
+    const st = fl.stats; st.rifts = (st.rifts || 0) + 1; st['rift_' + why] = (st['rift_' + why] || 0) + 1; tl('rf', D.id, all.length, why);
+    if (why !== 'sulk') setHint(why === 'council' ? 'Rozłam: część drużyny zostaje i szuka dalej.' : 'Rozłam: ' + all.length + (all.length > 1 ? ' bohaterów idzie' : ' idzie') + ' własną drogą. Wrócą, gdy spotkają resztę.');
+    floatHero(D, why === 'sulk' || why === 'mutiny' ? 'Obrażon' + (D.female ? 'a' : 'y') : 'Rozłam', '#e8b26a', 13, -0.9);
+    return true;
+  }
+  function g2End(why) {
+    const P = fl.party, G = P.g2; if (!G) return;
+    P.g2 = null;
+    alive().forEach(o => { if (G.ids.has(o.id)) { o.needPlan = true; if (why === 'merge') o.plan = P.plan; } });
+    const st = fl.stats; st['g2end_' + why] = (st['g2end_' + why] || 0) + 1; st.g2Time = (st.g2Time || 0) + (fl.time - G.born); if (why === 'merge') st.merges = (st.merges || 0) + 1; tl('rj', why, Math.round(fl.time - G.born));
+  }
+  // where the second group goes: an opening of its own, away from where the others are going
+  function g2Target(L2, Lm) {
+    const P = fl.party, b = bfs(L2.x, L2.y, { known: true, avoid: L2.R.avoid }), away = P.target >= 0 ? P.target : (Lm ? tIdx(Lm) : -1);
+    let best = -1, bs = 1e9;
+    frontier().forEach(f => {
+      const d = b.dist[f]; if (d < 0) return;
+      const ax = away >= 0 ? Math.hypot(f % WW - away % WW, ((f / WW) | 0) - ((away / WW) | 0)) : 0;
+      const sc = d - 0.6 * Math.min(ax, 12) + Math.random() * 2; if (sc < bs) { bs = sc; best = f; }
+    });
+    return best;
+  }
+  function g2Think(Lm) {
+    const P = fl.party, G = P.g2; if (!G) return;
+    const L2 = g2Leader(); if (!L2 || !P.g2) return;
+    const mem = alive().filter(o => G.ids.has(o.id));
+    mem.forEach(o => { if (o !== L2 && (canSee(o, L2) || canHear(o, L2)) && o.plan !== G.plan) { o.plan = G.plan; o.needPlan = true; } });
+    if (!Lm) return;
+    // the others run or go home and they hear it: they go too (a group that chose to stay at the council stays)
+    if (goingOut() && G.why !== 'council' && G.why !== 'sulk' && mem.some(o => canHearShout(o, Lm))) { g2End('out'); return; }
+    if (fl.fearless && fl.storm && G.plan !== 'assault' && mem.some(o => canHearShout(o, Lm))) { G.plan = 'assault'; mem.forEach(o => { o.plan = 'assault'; o.needPlan = true; }); }
+    // they have to part first (out of each other's sight), else after 20 s it comes to nothing
+    const near = mem.some(o => alive().some(m => !G.ids.has(m.id) && !m.lost && !caged(m) && samePlace(o, m)));
+    if (!G.apart) { if (!near) G.apart = true; else if (fl.time - G.born > 20) { g2End('fizzle'); return; } }
+    // meeting again
+    if (G.apart && fl.time - G.born > 8 && mem.some(o => alive().some(m => !G.ids.has(m.id) && !m.lost && !caged(m) && samePlace(o, m) && (canSee(o, m) || canHear(o, m))))) {
+      const sulk = G.why === 'sulk' || G.why === 'mutiny';
+      const a = sulk ? L2 : pick(mem), b2 = alive().find(m => !G.ids.has(m.id) && !m.lost && !caged(m) && samePlace(a, m));
+      if (sulk) P.queueSay.push({ id: a.id, text: pick(SAY.sulkBack), at: fl.time + 0.2, prio: 2, late: 3 });
+      else {
+        P.queueSay.push({ id: a.id, text: pick(SAY.mergeG2), at: fl.time + 0.2, prio: 2, late: 3 });
+        if (b2 && Math.random() < 0.7) P.queueSay.push({ id: b2.id, text: pick(SAY.mergeReply), at: fl.time + 1.4, prio: 2, late: 4 });
+      }
+      g2End('merge'); return;
+    }
+    // time is up, or nothing left to explore: back to the others
+    if (G.plan === 'explore' && (fl.time > G.until || !frontier().length)) { G.plan = 'regroup'; mem.forEach(o => { o.plan = 'regroup'; o.needPlan = true; }); }
+    if (G.plan === 'assault' && !fl.heartKnown) G.plan = 'explore';
+    if (G.plan === 'explore' && (G.target < 0 || !isFrontierTile(G.target) || tIdx(L2) === G.target)) { G.target = g2Target(L2, Lm); L2.needPlan = true; if (G.target < 0) G.plan = 'regroup'; }
+    if (!G.said && fl.time - G.born > 5 && mem.length > 1 && !talking(L2)) { G.said = true; say(L2, pick(SAY.g2Lead), 2); }
+  }
+  // the goal of the second group's leader
+  function g2Goal(h, heartGoal) {
+    const G = fl.party.g2, Lm = leader();
+    if (G.plan === 'assault') return heartGoal();
+    if (G.plan === 'regroup') return Lm && Lm !== h ? tIdx(Lm) : -1;
+    return G.target;
+  }
+  // 1.19 Bunt: when things go badly (a death the leader knows of, heavy wounds or fear, low morale) and the leader pushes on,
+  // a braver or higher-ranked one challenges him in front of the group. They take sides (the scared and the hurt with the
+  // challenger, the brave and the lower ranks with the leader); the winner leads. A proud loser may storm off on his own.
+  function mutinyThink(L, grp, dt, avgHp, fearR) {
+    const P = fl.party;
+    if (P.mutinyDone || P.council || P.g2 || goingOut() || fl.fearless || !L || grp.length < 3 || fl.time < 30 || P.morale > 0.55 || grp.some(talking) || fl.time - P.lastTalkAt < 6) return;
+    const dead = (fl.deaths || []).some(d => d.knows.has(L.id));
+    if (!dead && avgHp > 0.55 && fearR < 0.45) return;
+    if (Math.random() > dt * 0.1) return;
+    const C = grp.filter(o => o !== L && !o.lost && !o.crystal && o.hp > 0.5 * o.max && o.fear < 0.5 * o.courage && (o.rank > L.rank || (o.trait === 'brave' && o.rank >= L.rank) || (L.rank === 0 && o.rank >= 1)))
+      .sort((a, b) => (b.rank - a.rank) || ((b.trait === 'brave') - (a.trait === 'brave')))[0];
+    if (!C) return;
+    P.mutinyDone = true; P.lastTalkAt = fl.time;
+    const rest = grp.filter(o => o !== L && o !== C);
+    const side = o => { const fr = clamp(o.fear / Math.max(1, o.courage), 0, 1.5); return 0.4 + fr + (1 - o.hp / o.max) + (o.trait === 'coward' || o.trait === 'careful' ? 0.5 : 0) - (o.trait === 'brave' ? 0.5 : 0) + 0.25 * (C.rank - L.rank) + (Math.random() - 0.5) * 0.8 > 0.9; };
+    let forC = C.rank >= 2 ? 1.25 : 1, forL = 1.5; const lines = [[C, nameFill(pick(SAY.mutinyStart), L)]];
+    rest.forEach((o, i) => { const s = side(o); if (s) forC += 1; else forL += 1; if (i < 3) lines.push([o, pick(s ? SAY.mutinyBack : SAY.mutinyStay)]); });
+    const win = forC > forL, proud = L.trait === 'brave' || L.trait === 'greedy' || L.hunter || L.rank >= 2;
+    const st = fl.stats; st.mutinies = (st.mutinies || 0) + 1; tl('mu', C.id, L.id, win ? 1 : 0);
+    P.convoNot = { key: 'mutinyStart', ids: new Set([L.id]) };
+    if (win) {
+      const refuse = proud && Math.random() < 0.6;
+      lines.push([L, pick(refuse ? SAY.mutinyRefuse : SAY.mutinyYield)], [C, pick(SAY.mutinyWin)]);
+      if (refuse) lines.push([L, pick(SAY.sulkOff)]);
+      st.mutinyWins = (st.mutinyWins || 0) + 1;
+      talkAs(2, lines, L);
+      P.leaderId = C.id; P.lastL = C.id;
+      if (fearR > 0.55 || avgHp < 0.45 || C.trait === 'coward' || C.trait === 'careful') P.mutinyHome = fl.time + Math.max(3, P.talkUntil - fl.time);   // they go home once it is said
+      if (refuse) { P.sulkAfter = { id: L.id, at: P.talkUntil }; }
+    } else {
+      lines.push([C, pick(SAY.mutinyLose)]);
+      const sulk = (C.trait === 'brave' || C.trait === 'greedy') && Math.random() < 0.45;
+      if (sulk) { lines.push([C, pick(SAY.sulkOff)]); P.sulkAfter = { id: C.id, at: 0 }; }
+      talkAs(2, lines, L);
+      if (sulk) P.sulkAfter.at = P.talkUntil;
+    }
+    floatHero(C, 'Bunt!', '#e8b26a', 14, -0.9);
+  }
+  // 1.19: a restless one (greedy, brave, a treasure hunter, a barbarian; not a rookie) tired of the leader's pace says he goes his
+  // own way, now and then, when there is more than one way into the unknown; 1-2 like him go too
+  function riftThink(L, grp, dt) {
+    const P = fl.party;
+    if (P.g2 || P.council || P.plan !== 'explore' || fl.fearless || goingOut() || P.scoutId >= 0 || grp.length < 3 || fl.time < 20 || (fl.stats.rifts || 0) >= 2 || grp.some(talking) || fl.time - P.lastTalkAt < 8) return;
+    if (Math.random() > dt * 0.025 * (P.morale < 0.6 ? 1.5 : 1)) return;
+    const restless = o => o.trait === 'greedy' || o.trait === 'brave' || o.hunter || o.type === 'barbarian';
+    const D = grp.filter(o => o !== L && restless(o) && o.rank >= 1 && !o.crystal && !o.lost && o.hp > 0.5 * o.max && o.fear < 0.5 * o.courage).sort(() => Math.random() - 0.5)[0];
+    if (!D) return;
+    const t = g2Target(D, L); if (t < 0 || (P.target >= 0 && Math.hypot(t % WW - P.target % WW, ((t / WW) | 0) - ((P.target / WW) | 0)) < 6)) return;
+    const like = o => restless(o) || o.rank === 0;
+    const joiners = grp.filter(o => o !== L && o !== D && !o.crystal && !caged(o) && !o.lost && like(o)).sort(() => Math.random() - 0.5).slice(0, Math.min(2, grp.length - 3));
+    P.lastTalkAt = fl.time;
+    if (!g2Start(D, joiners, 'explore', t, 'restless')) return;
+    const lines = [[D, nameFill(pick(SAY.riftStart), L)]]; joiners.forEach(j => lines.push([j, pick(SAY.riftJoin)])); lines.push([L, nameFill(pick(SAY.riftLeader), D)]);
+    P.convoNot = { key: 'riftStart', ids: new Set(joiners.map(o => o.id)) };
+    talkAs(1.4, lines, L);
+  }
+  // a sulker leaves when the quarrel has been said (a group of one, he comes back when he meets them)
+  function sulkThink(Lm) {
+    const P = fl.party;
+    if (P.mutinyHome && fl.time >= P.mutinyHome) { P.mutinyHome = 0; if (!goingOut() && !fl.fearless) { goHome(leader()); fl.stats.mutinyHomes = (fl.stats.mutinyHomes || 0) + 1; } }
+    const S = P.sulkAfter; if (!S || fl.time < S.at) return;
+    P.sulkAfter = null;
+    const h = byId(S.id); if (!h || h.dead || h.fled || h.gone || h.lost || caged(h) || P.g2 || h.crystal) return;
+    if (P.leaderId === h.id) return;
+    if (g2Start(h, [], fl.heartKnown && (h.trait === 'brave' || h.hunter) ? 'assault' : 'explore', -1, 'sulk')) { fl.stats.sulks = (fl.stats.sulks || 0) + 1; if (aloneNow(h)) say(h, pick(SOLO.sulkOff), 2); }
+  }
   function leader() {
     const P = fl.party;
     let L = byId(P.leaderId);
-    if (!L || L.dead || L.fled || L.gone || L.lost || L.goHome || panicking(L) || caged(L) || (L.fleeing && P.plan !== 'flee')) {
-      const c = alive().filter(o => !o.lost && !o.goHome && !panicking(o) && !caged(o) && !(o.fleeing && P.plan !== 'flee'));
+    if (!L || L.dead || L.fled || L.gone || L.lost || L.goHome || panicking(L) || caged(L) || (L.fleeing && P.plan !== 'flee') || inG2(L)) {
+      const c = alive().filter(o => !o.lost && !o.goHome && !panicking(o) && !caged(o) && !(o.fleeing && P.plan !== 'flee') && !inG2(o));
+      if (!c.length && P.g2 && alive().some(inG2)) { g2End('last'); return leader(); }   // 1.19: only the second group is left: it is the party now
       const away = o => onScout(o) || o.split ? 1 : 0;   // 1.17: one off on his own errand takes the lead only if nobody else can
       c.sort((a, b) => (away(a) - away(b)) || (b.rank - a.rank) || (LEADER_ORDER.indexOf(a.type) - LEADER_ORDER.indexOf(b.type)));
       L = c[0] || alive()[0] || null;
@@ -285,9 +437,19 @@
       others.forEach(o => {
         const v = votes.get(o); if (v === res) return;
         const fr = clamp(o.fear / Math.max(1, o.courage), 0, 1), hp = o.hp / o.max;
-        if (v === 'home' && Math.random() < Math.min(0.85, 0.2 + (o.trait === 'coward' ? 0.35 : 0) + 0.3 * fr + (hp < 0.35 ? 0.25 : 0))) { C.leave.push(o.id); lines.push([o, pick(SAY.goHomeAlone)]); }
+        if (v === 'home' && Math.random() < Math.min(0.85, 0.2 + (o.trait === 'coward' ? 0.35 : 0) + 0.3 * fr + (hp < 0.35 ? 0.25 : 0) + (C.leave.length ? 0.2 : 0))) {   // 1.19: easier with one already going
+          C.leave.push(o.id); lines.push([o, C.leave.length > 1 ? nameFill(pick(SAY.homeTogether), byId(C.leave[0])) : pick(SAY.goHomeAlone)]);
+        }
         else if (grumbles < 2 && Math.random() < 0.6) { grumbles++; lines.push([o, pick(SAY[v === 'home' ? 'outvotedHome' : v === 'storm' ? 'outvotedStorm' : 'outvotedMore'])]); }
       });
+      // 1.19: going home, but 2+ who wanted more (or the storm) stay together and go on as a second group
+      if (res === 'home' && !P.g2 && alive().length >= 4) for (const v of ['storm', 'more']) {
+        const mino = g.filter(o => o !== L && votes.get(o) === v && !C.leave.includes(o.id) && !o.crystal && o.hp > 0.4 * o.max);
+        if (mino.length >= 2 && Math.random() < (mino.some(o => o.trait === 'brave' || o.trait === 'greedy' || o.hunter) ? 0.65 : 0.35)) {
+          C.rift = { ids: mino.slice(0, 3).map(o => o.id), plan: v === 'storm' && heartP() ? 'assault' : 'explore' };
+          lines.push([mino[0], pick(v === 'storm' ? SAY.riftCouncilStorm : SAY.riftCouncilMore)]); break;
+        }
+      }
       if (!talkAs(2, lines, L)) return;   // nobody there (should not happen): try again next tick
       C.stage = 'talk'; C.res = res; C.endAt = P.talkUntil; C.votes = g.map(o => votes.get(o));
       P.waitUntil = Math.max(P.waitUntil, P.talkUntil);
@@ -306,7 +468,10 @@
       fl.fearless = true; fl.storm = true; P.plan = 'assault'; P.detour = null; tl('ip', 1);
       crew.forEach(h => { if (h.state === 'rest' || h.state === 'talk') h.state = 'walk'; h.needPlan = true; });
       setHint('Narada: szturm. Bohaterowie idą po kryształ i mniej uważają na pułapki.');
-    } else { goHome(null); setHint('Narada: wracają do domu.'); }
+    } else {
+      goHome(null); setHint('Narada: wracają do domu.');
+      if (C.rift) { const m = C.rift.ids.map(byId).filter(o => o && !o.dead && !o.fled && !o.gone && !caged(o)); if (m.length >= 2 && g2Start(m[0], m.slice(1), C.rift.plan, -1, 'council')) setHint('Narada: wracają do domu, ale ' + m.length + ' zostaje i szuka dalej.'); }   // 1.19
+    }
     if (C.res !== 'home') C.leave.forEach(id => {
       const o = byId(id);
       if (!o || o.dead || o.fled || o.gone || o.crystal || caged(o) || o === leader()) return;
@@ -370,7 +535,8 @@
     if (!set) return false;
     if (Math.random() > (CONVO_P[key] ?? CONVO_P[alias] ?? CONVO_P[base] ?? 0.5)) return why('luck');
     if (A.room >= 0 && isRt(A.room, 'hush')) return why('hush');
-    const ears = alive().filter(o => o !== A && !o.lost && !caged(o) && !inChaos(o) && !talking(o) && earshot(A, o));
+    const ex = P.convoNot && P.convoNot.key === base ? P.convoNot.ids : null;   // 1.19: the old leader does not comment on his own mutiny, a joiner on his own rift
+    const ears = alive().filter(o => o !== A && !o.lost && !caged(o) && !inChaos(o) && !talking(o) && earshot(A, o) && !(ex && ex.has(o.id)));
     if (!ears.length) return why('alone');
     const is = (o, v) => !v || [].concat(v).includes(o);
     const knows = (o, t, r) => t.l.every(l => l[0] !== r || lineOk(o, l[1]));   // 1.17.1: each one only says what he has seen
@@ -488,7 +654,13 @@
           fl.party.queueSay.push({ id: L.id, text: pick(SAY.lootStop), at: fl.time + 0.8 });
           fl.party.queueSay.push({ id: h.id, text: pick(defy ? SAY.lootReply : SAY.lootObey), at: fl.time + 1.8 });
           fl.stats.lootArgue = (fl.stats.lootArgue || 0) + 1;
-          if (!defy) { fl.stats.lootObey = (fl.stats.lootObey || 0) + 1; h.lootMemo.set(k, { go: false, t: fl.time + 7 }); return false; }
+          if (!defy) {
+            fl.stats.lootObey = (fl.stats.lootObey || 0) + 1; h.lootMemo.set(k, { go: false, t: fl.time + 7 });
+            h.obeyN = (h.obeyN || 0) + 1;   // 1.19: told twice to leave the loot, he may storm off on his own for a while
+            const P = fl.party;
+            if (h.obeyN >= 2 && h.trait !== 'careful' && h.trait !== 'coward' && !P.g2 && !P.sulkAfter && !h.crystal && Math.random() < 0.4) { P.queueSay.push({ id: h.id, text: pick(SAY.sulkOff), at: fl.time + 2.9, prio: 2, late: 3 }); P.sulkAfter = { id: h.id, at: fl.time + 3.6 }; }
+            return false;
+          }
         }
       } else {
         fl.stats.lootSkipped++;
@@ -563,7 +735,7 @@
     if (room < 0) for (const d of DIRS) { const r = roomOf(L.tx + d[0], L.ty + d[1]); if (r >= 0 && !P.junctions.has(r)) { room = r; break; } }
     if (alt && room >= 0 && !P.junctions.has(room) && !fl.fearless && fl.time - P.lastTalkAt > 6) {
       P.lastTalkAt = fl.time;
-      P.junctions.add(room);
+      P.junctions.add(room); fl.stats.forkTalks = (fl.stats.forkTalks || 0) + 1;
       // 1.05: a council with characters: the greedy want the loot next door, the careful want it slow, a coward wants out and a
       // brave one shames him. The leader decides; a greedy or green leader gives in to the loot.
       const lureAlt = seenLoot.some(it => Math.hypot(it.x - alt.fx, it.y - alt.fy) <= 6);
@@ -581,11 +753,25 @@
         if (sway) { P.target = alt.f; P.targetRoom = alt.room; }
         lines.push([L, pick(sway ? SAY.decideYes : SAY.decideNo)]); fl.stats.disputes = (fl.stats.disputes || 0) + 1; tl('dp', greedy.id, sway ? 1 : 0);
       }
+      // 1.19 Rozłam: one who will not go the leader's way (a greedy one he did not listen to, or a brave or greedy veteran) takes
+      // the other way, and 1-2 like him go too; the leader lets them go. Two groups explore apart until they meet again.
+      if (!P.g2 && P.plan === 'explore' && !fl.fearless && fl.time > 15 && P.scoutId < 0 && crewT.length >= 3 && (fl.stats.rift_fork || 0) < 2) {
+        const swayed = P.target === alt.f;
+        const D = greedy && !swayed ? greedy : crewT.find(o => (o.trait === 'brave' || o.trait === 'greedy' || o.hunter) && o.rank >= 1 && !o.crystal && o.hp > 0.5 * o.max);
+        if (D && Math.random() < (D === greedy ? 0.5 : 0.2) * (P.morale < 0.6 ? 1.3 : 1)) {
+          const like = o => o.trait === 'greedy' || o.trait === 'brave' || o.hunter || o.type === 'barbarian' || o.rank === 0;
+          const joiners = crewT.filter(o => o !== D && !o.crystal && !caged(o) && like(o)).sort(() => Math.random() - 0.5).slice(0, Math.min(2, crewT.length - 2));
+          if (g2Start(D, joiners, 'explore', swayed ? best.f : alt.f, 'fork')) {
+            lines.push([D, nameFill(pick(SAY.riftStart), L)]); joiners.forEach(j => lines.push([j, pick(SAY.riftJoin)])); lines.push([L, nameFill(pick(SAY.riftLeader), D)]);
+            P.convoNot = { key: 'riftStart', ids: new Set(joiners.map(o => o.id)) };
+          }
+        }
+      }
       const thief = crewT.find(h => h.type === 'thief');
       // 1.16: with no (healthy) thief a brave one may offer, less often; in a party of 4+ somebody may go with the scout
       const vol = thief && thief.hp > 0.5 * thief.max ? thief : crewT.find(o => o.trait === 'brave' && o.type !== 'priest' && o.hp > 0.6 * o.max && !o.crystal);
       const volP = vol && vol === thief ? (lureAlt ? 0.9 : 0.55) : (lureAlt ? 0.5 : 0.3);
-      if (!greedy && vol && alive().length >= 3 && P.scoutId < 0 && Math.random() < volP) {
+      if (!greedy && vol && alive().length >= 3 && P.scoutId < 0 && !P.g2 && Math.random() < volP) {
         P.scoutId = vol.id; vol.scoutTarget = alt.f; vol.scoutUntil = fl.time + 16; vol.needPlan = true; fl.stats.scouts++; startSplit(vol, 'scout');
         lines.push([vol, pick(SAY.scout)]);   // 1.05: the thief himself offers (it used to be anyone)
         // the mate: anyone close by (the talk group is often just the ones right at the leader's side), not the priest, not a coward
@@ -665,6 +851,7 @@
     if (P.detour && fl.time > P.detour.until) { P.detour = null; if (L) L.needPlan = true; }
     perceiveThink(L, crew);   // 1.17: who knows what
     if (P.council) councilThink(L);   // 1.17: the council at the end of patience
+    g2Think(L); sulkThink(L);   // 1.19: the second group, a sulker leaving, a mutiny's way home
     if (P.rescueId >= 0) { const c = byId(P.rescueId); if (!c || !caged(c)) { P.rescueId = -1; P.rescuerId = -1; } }   // 1.17: freed or gone: the next one in the queue
     while (P.rescueId < 0 && P.rescueQ && P.rescueQ.length) { const c = byId(P.rescueQ.shift()); if (c && caged(c)) { P.rescueId = c.id; P.rescuerId = -1; } }
     lookThink(L, crew);   // 1.17: curiosity
@@ -723,7 +910,8 @@
         }
       }
       if (h === L) { h.lost = false; h.sepT = 0; return; }
-      const d = L ? hdist(h, L) : 0;
+      const Lh = inG2(h) && g2Leader() && g2Leader() !== h ? g2Leader() : L;   // 1.19: one of the second group is with his own leader
+      const d = Lh ? hdist(h, Lh) : 0;
       const hr = h.lost && h.hearUntil > fl.time ? byId(h.hearId) : null;   // 1.05: the one whose voice he follows counts as finding the party
       if (h.lost) { if (d < (isRt(h.room, 'fog') || isRt(L ? L.room : -1, 'fog') ? 1.6 : 4.5) || (hr && !hr.dead && !hr.fled && !hr.lost && hdist(h, hr) < 2.5)) { h.lost = false; h.hearUntil = -1; h.noPathT = 0; h.sepT = 0; h.sepRolled = false; say(h, pick(SAY.found), 3); h.needPlan = true; if (P.searchId === h.id) P.searchId = -1; } }
       else if (!fl.fearless && !exiting(h) && !caged(h) && splitting(h)) {
@@ -772,6 +960,7 @@
     const grp = groupOf(L);   // 1.17 (no knowledge through walls): the leader's group's wounds and fear decide retreat and flight
     const avgHp = grp.reduce((a, h) => a + h.hp / h.max, 0) / grp.length;
     const fearR = grp.reduce((a, h) => a + h.fear / h.courage, 0) / grp.length;
+    mutinyThink(L, grp, dt, avgHp, fearR); riftThink(L, grp, dt);   // 1.19
     // scout coming back
     const sc = byId(P.scoutId);
     // 1.16: he has seen that opening: on to the next one on his side (further from the party than he is), while his time lasts
@@ -957,7 +1146,7 @@
       } else P.lootWaitId = -1;
     }
     if (P.plan !== 'retreat' && !fl.fearless && !goingOut() && L.R.coord) {
-      const far = crew.filter(h => h !== L && !h.lost && !onScout(h) && !panicking(h) && h.state !== 'fight' && !caged(h) && !exiting(h) && hdist(h, L) > 7);   // 1.17: not for one on his way out
+      const far = crew.filter(h => h !== L && !h.lost && !onScout(h) && !inG2(h) && !panicking(h) && h.state !== 'fight' && !caged(h) && !exiting(h) && hdist(h, L) > 7);   // 1.17: not for one on his way out
       if (far.length && fl.time > P.waitUntil + 2) { P.waitUntil = fl.time + 1.6; fl.stats.regroups++; partySay('regroup', 2, L); }
     }
     // rookies wander off on their own
@@ -1055,14 +1244,15 @@
     if (L && P.lastL !== L.id) { P.lastL = L.id; if (L.plan !== undefined && L.plan !== P.plan && crew.length > 1 && !L.crystal && !fl.stats.crystalTaken && !fl.fearless && !crew.some(o => o !== L && o.plan === P.plan)) P.plan = L.plan; }   // only when nobody who knew the old plan is left (never after a theft or once patience is over)
     crew.forEach(o => {
       if (o.plan === undefined) o.plan = P.plan;
-      if (o === L || canSee(o, L) || canHear(o, L)) {
+      if (inG2(o)) { /* 1.19: the second group goes by its own leader's plan (g2Think) */ }
+      else if (o === L || canSee(o, L) || canHear(o, L)) {
         if (o.plan !== P.plan) {
           const was = o.plan; o.plan = P.plan; o.needPlan = true;
           if (o === L && crew.length === 1 && goingOut() && !(was === 'flee' || was === 'leave' || was === 'escape')) say(o, pick(SAY.leftBehind), 3);
         }
       }
       if (L && (o === L || canSee(L, o) || canHear(L, o))) seen[o.id] = { x: o.tx, y: o.ty, t: fl.time };
-      if (o.lost && !o.lostNoticed && fl.time - (o.lostAt || 0) >= 4 && L && !canHear(L, o)) missLost(o, L);
+      if (o.lost && !o.lostNoticed && fl.time - (o.lostAt || 0) >= 4 && L && !canHear(L, o) && !inG2(o)) missLost(o, L);
     });
     // 1.18 Odnalezione ciało: one who comes upon the body of a friend whose death he did not know of learns it there and then and
     // fears it like a witness (x2 when it lies in a Głusza, +50% a second copy)
@@ -1442,7 +1632,7 @@
     if (h.huddle) { if (h.path.length && talking(h)) return; h.huddle = false; }   // 1.12.1: on his way into the huddle
     if (h.toSafe) { if (h.path.length) return; h.toSafe = false; }   // 1.13: on his way off a trap
     if (h.gone || caged(h)) { h.path = []; return; }
-    const P = fl.party, L = leader();
+    const P = fl.party, L = groupLeaderOf(h), G2 = inG2(h) ? P.g2 : null;   // 1.19: one of the second group follows its own leader
     let goal = -1, intent = 'follow', noDanger = false, b = null;
     const B = () => b || (b = bfs(h.x, h.y, { known: true, noDanger, avoid: h.R.avoid * (h.fleeing ? 0.6 : 1) * (h.trait === 'careful' ? 1.3 : h.trait === 'greedy' ? 0.85 : 1) }));
     planB = null;
@@ -1564,6 +1754,7 @@
         if (lj) job = lj;
       }
       if (job) { intent = job.intent; goal = job.goal; }
+      else if (G2 && h === L) { intent = 'lead'; goal = g2Goal(h, heartGoal); }   // 1.19: the second group's own way
       else if (h === L) {
         const dt = P.detour;
         if (dt && (fl.time > dt.until || tIdx(h) === dt.goal || B().dist[dt.goal] < 0)) { P.detour = null; if (tIdx(h) === dt.goal) say(h, pick(SAY.detourBack), 2); }

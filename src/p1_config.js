@@ -1038,9 +1038,12 @@
       'Tu się nie chodzi, tu się jeździ.', 'Jeden zły krok i jadę na drugi koniec.', 'Zęby mi dzwonią z zimna.', 'Małymi kroczkami... małymi.'],
     slip: ['Ślisko!', 'Łoo!', 'Nie mogę stanąć!', 'Jadę!', 'Uaaa!', 'Ojej!', 'Lecę!', 'Ślizgawka!', 'Oj, oj, oj!', 'Nogi mi uciekają!',
       'Stój, stój, stój!'],
-    bodyFound: ['Ciało! To {n}...', 'Znalazł{em|am} {a}. Już nie żyje.', 'Nie... {n} tu leży. Nikt nic nie słyszał?', '{v}?! Kiedy to się stało?', 'Ktoś tu leży... to {n}! Nie...', 'Nikt nie słyszał, jak {n} umiera...'],   // 1.18: Odnalezione ciało (found a friend's body, a death he did not know of)
-    lullNap: ['Ta kołysanka... oczy same się zamykają...', 'Tylko na chwilkę... ta melodia...', 'Mama tak nuciła... śpię...', 'Tak cicho gra... zasypiam...'],   // 1.18: Usypianka (falls asleep to the lullaby)
-    lullDream: ['Pozytywka gra mi w głowie... nie mogę się obudzić!', 'Śni mi się ta melodia... i coś w ciemności...', 'Kołysanka... ktoś nuci mi do ucha...', 'Obudźcie mnie! Ta muzyka nie przestaje!'],   // 1.18: Usypianka (the nightmare in his sleep)
+    bodyFound: ['Ciało! To {n}...', 'Znalazł{em|am} {a}. Już nie żyje.', 'Nie... {n} tu leży. Nikt nic nie słyszał?', '{v}?! Kiedy to się stało?',
+      'Ktoś tu leży... to {n}! Nie...', 'Nikt nie słyszał, jak {n} umiera...'],   // 1.18: Odnalezione ciało (found a friend's body, a death he did not know of)
+    lullNap: ['Ta kołysanka... oczy same się zamykają...', 'Tylko na chwilkę... ta melodia...', 'Mama tak nuciła... śpię...',
+      'Tak cicho gra... zasypiam...'],   // 1.18: Usypianka (falls asleep to the lullaby)
+    lullDream: ['Pozytywka gra mi w głowie... nie mogę się obudzić!', 'Śni mi się ta melodia... i coś w ciemności...',
+      'Kołysanka... ktoś nuci mi do ucha...', 'Obudźcie mnie! Ta muzyka nie przestaje!'],   // 1.18: Usypianka (the nightmare in his sleep)
     nap: ['Chwila odpoczynku...', 'Tylko przymknę oczy.', 'Usiądę na moment.', 'Muszę przysiąść. Tylko na chwilkę.', 'Pięć oddechów i wstaję.',
       'Rany pieką... przysiądę.', 'Oczy mi się kleją...', 'Krótki postój. Nikt nie zauważy.', 'Święty spokój. Dosłownie.'],
     nightmare: ['Koszmary... nie mogę spać.', 'Ktoś szepcze mi do ucha...', 'To miejsce nie jest święte...', 'Coś tu nie chce, żebym spał{|a}.',
@@ -1086,7 +1089,8 @@
     phobia: { fire: ['Ogień! Nie, tylko nie ogień!', 'Boję się płomieni... od dziecka.', 'Ogień! Jak wtedy, kiedy spłonął dom...',
         'Ten syk... ten żar... nie!', 'Nienawidzę ognia! Nienawidzę!', 'Znowu ten ogień z moich snów!'],
       spiders: ['Pająki! Nienawidzę pająków!', 'Nie, nie, tylko nie pająki!', 'Pająki... czuję je na skórze!', 'Coś mi chodzi po plecach!',
-        'Tylko nie te włochate nogi...', 'Mama mówiła, że pająki nie gryzą. Kłamała!', 'Pajęczyna! Gdzie sieć, tam i pająk!', 'Te nici się kleją... zaraz przyjdzie właściciel!'],
+        'Tylko nie te włochate nogi...', 'Mama mówiła, że pająki nie gryzą. Kłamała!', 'Pajęczyna! Gdzie sieć, tam i pająk!',
+        'Te nici się kleją... zaraz przyjdzie właściciel!'],
       closed: ['Tu jest za ciasno... nie mogę oddychać!', 'Ściany się zamykają!', 'Nie dam się zamknąć! Nie!', 'Powietrza! Brakuje mi powietrza!',
         'Ciasno... jak w trumnie...', 'Gdzie wyjście?! Muszę widzieć wyjście!'],
       ghosts: ['Duchy... wiedział{em|am}, że tu są duchy!', 'Ten wzrok... on patrzy na mnie!', 'Coś stoi za mną... czuję to!',
@@ -1537,6 +1541,10 @@
       fortify: ['Te mury tam... Ktoś je wzmocnił. Solidnie.', 'Przez takie ściany żaden wyłom nie przejdzie.', 'Ciosany kamień, jak w twierdzy.',
         'Ktoś tu się boi, że wejdziemy przez ścianę.', 'Bastion w lochu. Loch się przed nami broni.', 'Kilofem byś tam nic nie wskórał.',
         'Takie mury stawia ten, kto coś ukrywa.', 'Gildia by się na tych murach połamała.', 'Tamte ściany wyglądały na nowe. Za nowe.'] },   // 1.17.1: small talk about what he has seen this wave (by tag)
+    riftStart: ['Nie, {v}. Ja idę tamtędy. Kto ze mną?', 'Tam jest skarb, czuję to w kościach. Kto idzie?',
+      'Dość słuchania, {v}. Idę w drugą stronę.', 'Wasza droga to strata czasu. Kto mądry, za mną.', 'Ty sobie idź, {v}. Ja wybieram tamtą.',
+      'Tamtędy łup, tędy nuda. Kto ze mną po złoto?', 'Nie będę dreptać za tobą, {v}. Rozdzielamy się.', 'Głosu nie mam? To mam nogi. Idę tamtędy.',
+      'Tam coś jest, mówię wam. Kto wierzy, ten idzie.'],   // 1.19: Rozłam (lines from e119)
     rkEnter: { k_goblin: ['Nora goblinów. Czuć dym i grzyby.', 'Ognisko i totem z czaszką. Gobliny.', 'Fuj. Goblinie legowisko.',
         'Ziemia, korzenie i smród. Nora jak się patrzy.', 'Ktoś tu obozuje. I wcale się nie myje.', 'Świecące grzybki... Goblinia spiżarnia?',
         'Odciski zielonych dłoni... Goblinie znaki.', 'Krąg kamieni, patyki... Obozowisko.', 'Goblinia nora. Oby nikogo w domu.'],
@@ -1572,7 +1580,69 @@
         'Galeria! Tylko nie dotykać.', 'Adamaszek na ścianach. W lochu!', 'Ile tu sztuki... I ile złota.'],
       k_nursery: ['Pokój dziecięcy? Tu?!', 'Kolorowo jak na jarmarku. Za kolorowo.', 'Bączki na dywanie. Ktoś się tu bawił.',
         'Zabawki w lochu. Nie podoba mi się to.', 'Miś mnie obserwuje.', 'Tapeta w paski i bazgroły. Dziecięcy pokój.',
-        'Bębenek i piłka. Gdzie dzieciarnia?', 'Ktoś tu ułożył wieżę z klocków.', 'Najstraszniejszy pokój, jaki widział{em|am}.'] }   // 1.17.1: the first one into a room of a komnata says what it is
+        'Bębenek i piłka. Gdzie dzieciarnia?', 'Ktoś tu ułożył wieżę z klocków.', 'Najstraszniejszy pokój, jaki widział{em|am}.'] },   // 1.17.1: the first one into a room of a komnata says what it is
+    // 1.17: split keys (shieldLead: the leading warrior; deliberate2: the second voice at a fork; blessDone/blessHit: the priest), curseSelf
+    riftJoin: ['Czekaj, idę z tobą!', 'Ja też wolę tamtą drogę.', 'Ktoś musi ci pilnować pleców.', 'Skoro tam skarb, to ja się piszę.',
+      'Też mi się tu nie podoba. Idę z tobą.', 'Dwie pary oczu lepsze niż jedna. Idę.', 'Za tobą. Byle nie za nimi.',
+      'Mam to samo przeczucie. Prowadź.', 'Licz na mnie. Idziemy.', 'Dobra, ja też. Tamtędy.'],
+    riftLeader: ['Rób, jak chcesz, {v}. Spotkamy się po drodze.', 'Twoja wola, {v}. Tylko nie płacz potem.',
+      'Idźcie. Ale nie liczcie, że będziemy was szukać.', 'Uważaj tam, {v}. Ten loch nie wybacza.', 'Uparciuch... Dobrze, idźcie.',
+      'Nie zatrzymuję. Wołajcie, jak będzie źle.', '{v}, jak coś znajdziecie, dzielimy się po równo.', 'Idźcie z bogami. My idziemy swoją drogą.',
+      'Głupota, {v}. Ale twoja głupota, nie moja.'],
+    riftCouncilMore: ['Idźcie do domu. My zostajemy jeszcze chwilę.', 'Nie wracamy z pustymi rękami. Zostajemy.',
+      'Dobrej drogi. My jeszcze się rozejrzymy.', 'Wracajcie, jak chcecie. Nas tu jeszcze coś trzyma.',
+      'Jeszcze nie koniec. Przynajmniej nie dla nas.', 'Zostajemy. Zobaczymy się w karczmie.', 'My tu jeszcze pomyszkujemy. Do zobaczenia.',
+      'Na górę wy. My jeszcze zajrzymy w parę kątów.', 'Szkoda drogi na nic. Szukamy dalej.', 'Idźcie. Kto zostaje, ten więcej znajdzie.'],
+    riftCouncilStorm: ['Wracajcie. My idziemy po kryształ.', 'Serce jest blisko. Nie odpuścimy teraz.', 'Idźcie do domu. Kryształ będzie nasz.',
+      'Tak blisko i zawracać? Bez nas.', 'My szturmujemy serce. Zobaczymy się na górze.', 'Wy do wyjścia, my do serca.',
+      'Bez wyrzutów. Kryształ weźmiemy sami.', 'W karczmie opowiecie, że zostaliśmy.', 'Teraz albo nigdy. Idziemy na serce.',
+      'Wasza strata. Chwała będzie nasza.'],
+    homeTogether: ['Idę z tobą, {v}. Mam dość.', '{v}, czekaj! Wracam z tobą.', 'Razem raźniej, {v}. Też wracam.',
+      'Razem łatwiej dojść do wyjścia. Idę, {v}.', 'Mnie też ten loch wystarczy. Prowadź, {v}.', '{v}, weź mnie ze sobą. Nie zostanę tu.',
+      'Ty masz rację, {v}. Wracajmy, póki żyjemy.', 'Też się zbieram. Nie zostawiaj mnie, {v}.', 'Dość tego. {v}, idziemy razem.'],
+    mergeG2: ['No proszę, żyjecie!', 'Jesteście! A już myślał{em|am}...', 'I co, znaleźliście coś?', 'Nareszcie! Gdzieście się podziewali?',
+      'Proszę, proszę. Zgubione owieczki wracają.', 'Wszyscy cali? Policzyć się!', 'Ha! Wiedział{em|am}, że się spotkamy.',
+      'No i co? Tamta droga lepsza?', 'Dobrze was widzieć. Naprawdę.', 'Razem znowu. I niech tak zostanie.'],
+    mergeReply: ['Nie ma o czym mówić.', 'A wy? Też nic?', 'Nie chcesz wiedzieć.', 'Żyjemy. To już coś.', 'Opowiem w karczmie. Przy piwie.',
+      'Mieliśmy rację. Prawie.', 'Też się cieszę. Nie mów nikomu.', 'Tęskniliście? Przyznajcie.', 'Długa historia. Idziemy dalej?',
+      'Mogło być gorzej. Mogło być lepiej.'],
+    g2Lead: ['Dobra, teraz ja prowadzę. Tędy.', 'Trzymajcie się blisko. Nikt nas tu nie poratuje.', 'Nasza droga, nasze tempo. Naprzód.',
+      'Mniej nas, to ciszej. Idziemy.', 'Pokażemy im, kto miał rację.', 'Oczy otwarte. Teraz wszystko na nas.', 'Nie oglądać się. Naprzód.',
+      'Mała grupa, mniej kłótni. Dalej.', 'Za mną. I bez gadania.', 'Teraz bez wahania. Idziemy.'],
+    g2LeaderDown: ['{v}... Wracamy do reszty.', 'Bez ciebie, {v}, nie damy rady. Do pozostałych!', 'Wybacz, {v}. Musimy znaleźć resztę.',
+      '{v}?! Nie... Wracajmy do naszych.', 'Tak się kończy upór, {v}. Wracamy.', 'Straciliśmy przewodnika. Do reszty, szybko!',
+      '{v}, to był zły pomysł od początku.', 'Sami tu zginiemy. Do pozostałych, już!', 'Przepraszam, {v}. Nie możemy tu zostać.'],
+    mutinyStart: ['Stój, {v}. Tak dalej nie będzie.', '{v}, chcesz nas wszystkich tu pogrzebać?',
+      'Mam dość twoich rozkazów, {v}. Teraz ja prowadzę.', 'Słuchajcie! {v} nas wykończy. Kto idzie za mną?', 'Oddaj dowodzenie, {v}. Po dobroci.',
+      'Koniec tego. Od teraz słuchacie mnie.', '{v}, spójrz na nas. To drużyna czy stado na rzeź?', 'Głosujmy. Albo {v}, albo ja.',
+      'Nie zginę za twoją dumę, {v}.'],
+    mutinyBack: ['Ma rację. Dość tego.', 'Popieram. Zmiana i to już.', 'Wreszcie ktoś to powiedział.', 'Tak! Prowadź ty.', 'Głosuję za zmianą.',
+      'Też mam dość. Jestem z tobą.', 'Lepiej późno niż wcale. Popieram.', 'Prowadź. Gorzej i tak nie będzie.', 'Myślał{em|am} to samo od dawna.',
+      'Z tobą. Bez dwóch zdań.'],
+    mutinyStay: ['Ja zostaję przy starym dowódcy.', 'Bunt w środku lochu? Głupota.', 'Nie zmienia się przewodnika w pół drogi.',
+      'Uspokój się i nie mąć.', 'Głosuję za tym, co było.', 'Dowódcy się nie zmienia, bo ktoś ma zły dzień.', 'Ja ufam naszemu dowódcy.',
+      'Kłótnia nas wykończy prędzej niż loch.', 'Nie. Trzymam z dowódcą.', 'Odwagi ci nie brak. Rozumu już tak.'],
+    mutinyYield: ['Dobrze. Prowadź. Zobaczymy, czy lepiej.', 'Niech będzie. Mam już dość dźwigania tego.', 'Weź to dowodzenie. Ciężkie jest.',
+      'Skoro wszyscy tak chcą... prowadź.', 'Nie będę się bić z własną drużyną.', 'Przegrał{em|am}. Twoja kolej.',
+      'Dobrze. Ale nie myśl, że to zapomnę.', 'Prowadź. Ja popatrzę, jak to się robi.', 'Ustępuję. Oby ci szło lepiej niż mnie.',
+      'Zgoda. Tylko nie zgub nas wszystkich.'],
+    mutinyRefuse: ['Tak? To prowadźcie się sami. Ja idę swoją drogą.', 'Nie będę słuchać buntowników. Radźcie sobie.', 'Po tym wszystkim? Żegnam.',
+      'Zdrada! Dobrze, idę bez was.', 'Wybieracie nowego? To ja odchodzę.', 'Niewdzięcznicy. Pójdę dalej sam{|a}.',
+      'Nikt mi nie będzie rozkazywał. Bywajcie.', 'Dobrze. Zobaczymy, kto pierwszy dojdzie.', 'Ja tu prowadzę albo nikt. Odchodzę.',
+      'Obejdę się bez was.'],
+    mutinyWin: ['Dobrze. Od teraz robimy po mojemu.', 'Słuchajcie: spokojnie i z głową. Żadnych głupot.', 'Dziękuję. Postaram się was nie zawieść.',
+      'Teraz trzymamy się razem. Wszyscy.', 'Nowe porządki. Słuchacie mnie.', 'Nie zawiodę was. Przysięgam.',
+      'Dobrze. Teraz ja odpowiadam za wasze głowy.', 'Głowy do góry. Wyjdziemy z tego.', 'Pierwszy rozkaz: nikt nie ginie.',
+      'Ufacie mi? To pokażę, że słusznie.'],
+    mutinyLose: ['Dobra. Wasza wola. Ale ja ostrzegał{em|am}.', 'Jak chcecie. Zobaczymy, kto miał rację.', 'Przegrał{em|am}. Ale nie zapomnę tego.',
+      'Głupcy. Wszyscy.', 'Niech będzie. Milczę.', 'Pamiętajcie, że próbował{em|am}.', 'No to prowadź dalej. Na zgubę.',
+      'Owce. Idźcie, gdzie was pędzą.', 'Dobrze. Połknę to. Na razie.', 'Trudno. Ale to nie koniec rozmowy.'],
+    sulkOff: ['Radźcie sobie beze mnie.', 'Skoro tak, to idę się przewietrzyć. Sam{|a}.', 'Nie szukajcie mnie.', 'Dobrze wam tak. Idę.',
+      'Nie będę stać i słuchać. Na razie.', 'Mam was dość. Wrócę, jak mi przejdzie.', 'Pocałujcie mnie... a, nieważne. Idę.',
+      'Zostawcie mnie w spokoju!', 'Ja się tu nie liczę? Proszę bardzo.', 'Idę sam{|a}. Przynajmniej nikt nie gada.'],
+    sulkBack: ['No... to co, idziemy dalej?', 'Nic się nie stało. Jasne?', 'Wrócił{em|am}. Tylko bez min.', 'Przemyślał{em|am} sprawę. Trochę.',
+      'Ktoś musi was pilnować, nie?', 'Nie gadajmy o tym.', 'Samemu nudno. Jestem.', 'Co się gapicie? Jestem z powrotem.', 'Przepraszam. Prawie.',
+      'Dobra, było, minęło.']
   };
   // 1.10: answers to the everyday lines (someone close by says one now and then)
   const CHAT_REPLY = {
@@ -2368,6 +2438,47 @@
       { l: [['B', 'Ten loch ma coraz dziwniejsze pokoje.'], ['A', 'I coraz mniej wyjść.']] },
       { l: [['B', 'Ciekawe, kto tu sprząta.'], ['A', 'Wolę nie zgadywać.'], ['C', 'Może zaraz przyjdzie.']] },
       { b: 'barbarian', l: [['B', 'Ładnie tu. Szkoda będzie rozwalać.'], ['A', 'Ty byś wszystko rozwalił{B:|a}.']] }
+    ],
+    // 1.17: talk about what they look at, news of a death, the council
+    riftStart: [
+      { l: [['B', 'Rozdzielać się w takim miejscu? Szaleństwo.'], ['A', 'Szaleństwem jest iść za stadem.']] },
+      { bt: 'coward', l: [['B', 'Nie róbcie tego... razem jest bezpieczniej!'], ['A', 'To chodź z nami.'], ['B', 'Ja? Nie, nie...']] },
+      { bt: 'greedy', l: [['B', 'Jak tam jest skarb, to dzielimy się, jasne?'], ['A', 'Kto znajdzie, ten bierze.'], ['B', 'Tak nie było umowy!']] },
+      { b: 'priest', l: [['B', 'Niech bogowie mają was w opiece.'], ['A', 'Niech raczej mają oko na was.']] },
+      { b: 'bard', l: [['B', 'Rozłam w drużynie! Będzie z tego pieśń.'], ['A', 'Byle nie żałobna.']] },
+      { bt: 'careful', l: [['B', 'Złe miejsce na kłótnie. Bardzo złe.'], ['A', 'To nie kłótnia. To wybór.'], ['C', 'Kłótnia. Wierz mi.']] },
+      { l: [['B', 'Niech idą. Szybciej zrozumieją.'], ['C', 'Albo szybciej znajdą skarb.'], ['B', 'To by było najgorsze.']] },
+      { b: 'barbarian', l: [['B', 'Ha! Upart{A:y|a} jak osioł. Podoba mi się.'], ['A', 'Osioł przynajmniej wie, dokąd idzie.']] }
+    ],
+    mutinyStart: [
+      { l: [['B', 'Bunt? Tu, teraz?'], ['A', 'Lepiej teraz niż nad grobem.']] },
+      { bt: 'coward', l: [['B', 'Przestańcie się kłócić, błagam...'], ['C', 'Cicho. To ważne.']] },
+      { bt: 'brave', l: [['B', 'Śmiało powiedziane, {Av}.'], ['A', 'Ktoś musiał.']] },
+      { b: 'bard', l: [['B', 'Bunt na pokładzie! Uwielbiam.'], ['C', 'To nie statek, głupcze.'], ['B', 'Ale bunt prawdziwy.']] },
+      { bt: 'careful', l: [['B', 'Spokojnie. Ochłońmy wszyscy.'], ['A', 'Ochłoniemy w grobie.']] },
+      { b: 'priest', l: [['B', 'Bogowie, dajcie nam zgodę...'], ['A', 'Bogowie dali mi rozum. Używam go.']] },
+      { bv: 2, l: [['B', 'Widział{em|am} już takie bunty. Kończą się źle.'], ['A', 'Ten skończy się dobrze.'], ['B', 'Każdy buntownik tak mówi.']] },
+      { bt: 'greedy', l: [['B', 'A kto potem dzieli łup?'], ['C', 'Naprawdę? W takiej chwili?']] }
+    ],
+    mergeG2: [
+      { l: [['B', 'Znowu razem. Dziwnie mi ulżyło.'], ['A', 'Mnie też. Nie mów nikomu.']] },
+      { b: 'bard', l: [['B', 'Rozstanie i powrót! Klasyka ballad.'], ['A', 'Tylko bez ballady o pogrzebie.'], ['B', 'Zobaczymy, jak się skończy.']] },
+      { bt: 'greedy', l: [['B', 'No to kto znalazł więcej?'], ['A', 'Liczymy później.'], ['B', 'Liczymy teraz.']] },
+      { bt: 'careful', l: [['B', 'I po co było się rozdzielać?'], ['A', 'Żeby było o czym gadać.']] },
+      { b: 'barbarian', l: [['B', 'Ha! Wszyscy w kupie. Tak lubię.'], ['A', 'Bo w tłoku łatwiej o bójkę.']] },
+      { l: [['B', 'Następnym razem nikt się nie odłącza.'], ['A', 'Powiedz to tym upartym.'], ['C', 'Patrzę właśnie na jednego.']] },
+      { bt: 'coward', l: [['B', 'Nigdy więcej rozdzielania. Nigdy.'], ['A', 'Zgoda. Tym razem zgoda.']] },
+      { b: 'priest', l: [['B', 'Dzięki bogom, że się odnaleźliśmy.'], ['A', 'Bogom i moim nogom.']] }
+    ],
+    sulkOff: [
+      { l: [['B', 'Obraził{A:|a} się.'], ['C', 'Przejdzie {A:mu|jej}.'], ['B', 'Oby zanim coś {A:go|ją} zje.']] },
+      { l: [['A', 'I nie idźcie za mną!'], ['B', 'Nikt nie zamierzał.']] },
+      { bt: 'greedy', l: [['B', 'Jak nie wróci, kto weźmie {A:jego|jej} działkę?'], ['C', 'Wstydu nie masz.']] },
+      { bt: 'careful', l: [['B', 'Sam{A:|a} w tym lochu? Głupota.'], ['C', 'Duma zawsze jest głupia.']] },
+      { b: 'bard', l: [['B', '{A:Odszedł|Odeszła} w gniew i mrok... Ładne.'], ['C', 'Nie układaj teraz pieśni.']] },
+      { bt: 'coward', l: [['B', 'Może ktoś za {A:nim|nią} pójdzie?'], ['C', 'Ty?'], ['B', '...Nie, ja nie.']] },
+      { bv: 2, l: [['B', 'Znam ten typ. Wróci, jak zgłodnieje.'], ['C', 'Albo jak się wystraszy.']] },
+      { b: 'priest', l: [['B', 'Niech bogowie {A:go|ją} strzegą. I uczą pokory.'], ['C', 'Pokory? {An}? Powodzenia.']] }
     ]
   };
   // 1.13 (author: alone, they talked to the air): what a hero says instead when nobody can hear him (nobody in earshot).
@@ -2375,6 +2486,8 @@
   // are his small talk when alone. Lines that only make sense with others around and have no solo version here are not
   // said alone at all (SOLO_MUTE).
   const SOLO = {
+    sulkOff: ['Niewdzięczni... wszyscy co do jednego.', 'Pokażę im. Sam{|a} sobie poradzę.', 'Nikt mnie nie słucha. Nigdy.',
+      'Głupia kłótnia... głupi loch...', 'I dobrze. Przynajmniej cisza.', 'Jeszcze będą mnie prosić...'],   // 1.19
     bodyFound: ['Ciało... to ktoś od nas.', 'Nie... Leży tu, a nikt o tym nie wie.', 'Sam{|a} z ciałem przyjaciela... Nie wytrzymam.'],   // 1.18
     staunch: ['Krew stanęła. Dobrze.', 'Zatamowane. Mogę iść dalej.', 'Rana zamknięta. Dzięki ci, światło.'],   // 1.17.1
     enter: ['No to idę.', 'Sam{|a} tam nie wejdę... A jednak wchodzę.', 'Cicho, krok po kroku.', 'Dobra. Wchodzę, zanim zmienię zdanie.',
@@ -2518,7 +2631,12 @@
       'Ciepło tu. Dziwnie ciepło.', 'Cisza. Nawet loch tu milknie.', 'Mógł{bym|abym} tu zostać. Nie, nie mogę.'],
     shieldLead: ['Tarcza w górę. Idę pierwsz{y|a}, i tak nie ma nikogo innego.', 'Za tarczą. Krok po kroku.', 'Blacha przodem, ja za nią.'],
     hearSound: ['Co to było? Tam, za ścianą...', 'Coś huknęło. Nie podoba mi się to.', 'Tam coś się dzieje. Beze mnie, mam nadzieję.'],
-    hearScream: ['Ktoś krzyczy... to chyba jeden z naszych!', 'Ten krzyk... znam ten głos.', 'Krzyk! Gdzieś blisko...']
+    hearScream: ['Ktoś krzyczy... to chyba jeden z naszych!', 'Ten krzyk... znam ten głos.', 'Krzyk! Gdzieś blisko...'],
+    // 1.17: keys that can be said with nobody around
+    g2LeaderDown: ['Został{em|am} sam{|a}. Muszę znaleźć resztę.', 'I co teraz? Do pozostałych, póki się da.', 'Trzeba było zostać z resztą...',
+      'Nikogo. Tylko ja i ten loch. Wracam do swoich.', 'Spokojnie. Znajdę ich. Muszę ich znaleźć.', 'Ten upór drogo nas kosztował. Wracam.'],
+    sulkBack: ['Dobra... sam{|a} tu długo nie pociągnę.', 'Wrócę. Ale nie przeproszę.', 'Chyba przesadził{em|am}. Trochę.',
+      'Gdzie oni są? Trzeba ich znaleźć.', 'Ech. Duma dumą, a życie życiem.', 'Za cicho tu bez nich. Wracam.']
   };
   const SOLO_MUTE = new Set(['prepWard', 'prepJam', 'prepDisarm', 'prepShield', 'lootWait', 'friendHit', 'friendLow', 'rescue', 'scoutReply', 'councilReply', 'prepReply', 'restReply', 'restPriest', 'restScene',
     'argueLoot', 'argueCareful', 'argueCoward', 'argueBrave', 'decideYes', 'decideNo', 'argueSearch', 'replySearch', 'argueRetreat', 'agreeRetreat', 'reassure', 'surviveFirst',

@@ -3135,7 +3135,7 @@
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.ellipse(x, feet, W * 0.95, W * 0.32, 0, 0, Math.PI * 2); ctx.fill();
     const ring = (color, w, dash, a0, a1, k) => { ctx.strokeStyle = color; ctx.lineWidth = w; if (dash) ctx.setLineDash(dash); ctx.beginPath(); ctx.ellipse(x, feet, W * (k || 1.25), W * (k || 1.25) * 0.38, 0, a0 || 0, a1 === undefined ? Math.PI * 2 : a1); ctx.stroke(); if (dash) ctx.setLineDash([]); };
     if (fl.time < h.slowUntil) ring('#a9c6ff', 2);
-    if (h.split && fl.phase === 'raid') ring('rgba(140,224,200,0.85)', 1.5, [2, 3], 0, Math.PI * 2, 1.5);   // 1.16: away on purpose (a scout)
+    if (h.split && fl.phase === 'raid') ring(inG2(h) ? 'rgba(232,178,106,0.9)' : 'rgba(140,224,200,0.85)', 1.5, [2, 3], 0, Math.PI * 2, 1.5);   // 1.16: away on purpose (a scout)
     else if (h.alone && fl.phase === 'raid') ring('rgba(255,179,92,0.85)', 1.5, [4, 3], 0, Math.PI * 2, 1.5);
     if (h.hp / h.max < 0.3 && h.state !== 'rest') ring('rgba(255,90,90,' + (0.55 + 0.4 * Math.sin(realNow * 12)).toFixed(2) + ')', 2, null, 0, Math.PI * 2, 1.1);
     if (h.state === 'disarm') ring('#ffe066', 2.5, null, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur), 1.4);
