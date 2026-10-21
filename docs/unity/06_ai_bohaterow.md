@@ -547,13 +547,19 @@ else:
      11 zwiadowca: P.scoutId === h.id && h.scoutTarget >= 0 -> {scout, h.scoutTarget}
      12 partner (1.16): P.scoutMate === h.id, zwiadowca istnieje i nie jest zgubiony; sd = B().dist[pole zwiadowcy]:
         sd w 0..1.5 -> intent 'scout', path [], state 'wait', timer 0.3, return;  sd > 0 -> {scout, pole zwiadowcy}
+     13 rozglądanie się (1.17): h.look -> lookJob(h, B) (6.3.3a): stoi i ogląda -> intent 'look', path [], state 'wait',
+        timer = min(0.5, reszta oglądania), return; idzie -> {look, pole obok rzeczy}; nic (koniec, za daleko) -> dalej
    if job: intent, goal = job
    elif h === L:                                  // lider
       dt = P.detour
       if dt && (time > dt.until || tIdx(h) === dt.goal || B().dist[dt.goal] < 0): P.detour = null; jeśli doszedł do celu: SAY.detourBack (2)
       sc = P.searchId >= 0 ? byId(P.searchId) : null
       if P.detour:                                   intent 'detour'; goal = P.detour.goal     // reszta idzie za nim
-      elif sc && sc.lost && B().dist[tIdx(sc)] >= 0: intent 'search'; goal = tIdx(sc)
+      elif sc && sc.lost:                            // 1.17: wraca tam, gdzie go ostatnio widział, a gdy go słyszy, idzie na głos
+         g = canHear(h, sc) ? tIdx(sc) : P.searchGoal
+         if g >= 0 && B().dist[g] >= 0 && g !== tIdx(h): intent 'search'; goal = g
+         else: if g === tIdx(h): P.searchId = -1; kolejka h: SAY.searchFail (+0.2, prio 2)    // doszedł, a tu nikogo
+               intent 'lead'; goal = P.target
       elif P.plan === 'assault':                     intent 'heart'; goal = heartGoal(); jeśli poprzednia intencja != 'heart': SAY.assault (2)
       else:                                          intent 'lead'; goal = P.target
    elif L:                                         // reszta: podążanie (6.2.12)
@@ -566,6 +572,8 @@ if B().dist[goal] < 0:
    h.path = []; h.blocked = fl.time; return        // cel nieosiągalny (np. zamknięta krata)
 h.blocked = -1; h.path = pathFrom(B(), goal); h.noPathT = 0
 ```
+
+Do 1.16 lider szukał zgubionego na jego bieżącym polu, odświeżanym przy każdym planie (jak GPS), i decydował o szukaniu w chwili zgubienia; od 1.17 decyzja zapada, gdy go zauważy (6.2.10), a celem jest ostatnie miejsce, w którym go widział albo słyszał.
 
 `randomKnownFar(h)` (`p5_ai.js`): 40 losowych pól; spośród znanych i przejezdnych bierze to z największym `hypot(pole - h) - 0.3 * hypot(pole - wejście)`: daleko od siebie, z lekką skłonnością w stronę wejścia. Tam biegnie spanikowany, który jeszcze nie ucieka.
 
@@ -592,13 +600,23 @@ lostChance(h) = clamp(0.12 + 0.03*max(0, roomCount()-6) + (isRt(h.room,'fog') ? 
 **`getLost(h, why)`** (`p5_ai.js`):
 ```
 if h.lost: return
-h.lost = true; h.sepRolled = true; h.lostT = 0; h.lostCallT = time + 5; h.needPlan = true; SAY.lost (3)
-L = leader(); if !L || L === h || P.searchId >= 0 || goingOut() || fl.fearless: return
-fearR = średnia fear/courage żywych
-if L.rank >= 1 && fearR < 0.6 && rand < 0.6:
-   P.searchId = h.id; P.searchUntil = time + 12; kolejka: L mówi SAY.searchLost (+0.8 s)     // wracamy po niego
-else: kolejka: L mówi SAY.leaveLost (+0.8 s)                                              // sam trafi
+h.lost = true; h.sepRolled = true; h.lostT = 0; h.lostCallT = time + 5; h.needPlan = true
+h.split -> split = false, stats.splitLost++ (1.16); h.wanderUntil = -1; stats.gotLost++; SAY.lost (3)
+h.lostAt = time; h.lostNoticed = false                    // 1.17: decyzji przywódcy jeszcze nie ma
 ```
+
+Do 1.16 `getLost` od razu decydował za przywódcę (szukamy albo nie), choć przywódca był zwykle pokoje dalej i nie mógł nic wiedzieć. Od 1.17 przywódca **zauważa brak** w `perceiveThink` (6.3.13): gdy od zgubienia minęły co najmniej 4 s, zgubiony nie został jeszcze zauważony, a przywódca go teraz nie słyszy (`!canHear(L, h)`), woła **`missLost(h, L)`**:
+```
+h.lostNoticed = true
+if !L || L === h || P.searchId >= 0 || goingOut() || fl.fearless: return
+fearR = średnia fear/courage grupy przywódcy (groupOf(L))
+ls = P.seen[h.id]                                       // gdzie przywódca ostatnio go widział albo słyszał
+if L.rank >= 1 && fearR < 0.6 && rand < 0.6 && ls:
+   P.searchId = h.id; P.searchUntil = time + 14; P.searchGoal = pole ls; stats.searches++
+   kolejka: L mówi SAY.searchLost z imieniem (+0.3 s); L.needPlan            // wracamy po niego
+else: kolejka: L mówi SAY.leaveLost z imieniem (+0.3 s)                      // sam trafi
+```
+Przywódca idzie do `P.searchGoal`, a gdy usłyszy zgubionego, na jego głos (6.2.9). Gdy stanie na `P.searchGoal`, a zgubionego tam nie ma: `SAY.searchFail`, koniec szukania. Zgubiony, który wyszedł z zapadni (`landFallen`), nie ma `lostAt`, więc jest zauważany od razu przy pierwszym `partyThink`, w którym przywódca go nie słyszy (o ile `lostNoticed` nie zostało prawdą z wcześniejszego zgubienia w tej fali, bo odnalezienie go nie zeruje).
 
 **Co robi zgubiony** (`p5_ai.js: planHero`, gałąź `lost`):
 ```
@@ -636,7 +654,7 @@ Bard dodatkowo sam woła zgubionych co 9 s (6.5.5).
 
 Lider nigdy nie jest zgubiony: w `partyThink` liderowi zawsze `lost = false`, `sepT = 0`; zgubiony nie może zostać liderem (6.3.1).
 
-**Szukanie zgubionego przez lidera** kończy się (`P.searchId = -1`), gdy szukany nie istnieje, nie jest już zgubiony, nie żyje, zbiegł, minęło `searchUntil` albo drużyna wychodzi.
+**Szukanie zgubionego przez lidera** kończy się (`P.searchId = -1`), gdy szukany nie istnieje, nie jest już zgubiony, nie żyje, zbiegł, minęło `searchUntil` albo drużyna wychodzi; od 1.17 także, gdy lider dojdzie do ostatniego znanego miejsca i nikogo tam nie ma (`SAY.searchFail`).
 
 **Lider błądzi we mgle** (`partyThink`, Prototype 1.01): gdy lider (nie wychodzą, nie `fearless`, brak `P.detour`) jest w pokoju typu `fog`, raz na pokój mgły na falę (`P.fogDone`): cel = losowe `walkable` pole tego pokoju w odległości co najmniej 2 od lidera, `P.detour = {goal, until: time + 3 + 0.25*max(0, 8 - L.lvl/2)}`, lider mówi jedną z trzech kwestii zaszytych w kodzie (prio 3, 6.7.8). Cała drużyna idzie za nim (6.2.12).
 
