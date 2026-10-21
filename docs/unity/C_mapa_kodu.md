@@ -810,6 +810,9 @@ Spis funkcji z `src/` (Prototype 1.13) z pierwszym zdaniem komentarza, który je
 | `tutShow` |  |
 | `tutTarget` |  |
 | `tutAdvance` |  |
+| `tutHoldOk` | 1.15.1: the guide's pause that a held finger ends (the ff step) |
+| `tutCheckHold` | 1.15.1: the guide's first check: the world stands while it waits (timeScale) |
+| `subStage` | 1.15.1: the run of learning a sub-tab's first tile comes in (a dimmed sub-tab says it) |
 | `tutTick` |  |
 | `tutEvent` |  |
 | `tutOnBuild` | 1.12: a new wave's build jumps to its first step (what was left of the wave before is let go) |

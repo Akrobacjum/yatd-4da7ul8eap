@@ -521,7 +521,7 @@
   /* ================= main loop (real time) ================= */
   function timeScale() {
     if (!fl || modalOpen || fl.phase !== 'raid' || paused) return 0;
-    if (fl.check && !fl.check.result) return CHECK_SLOW;   // 1.09 (author: more time to watch the heroes): slowed, not stopped (was 0.06)
+    if (fl.check && !fl.check.result) return tutCheckHold() ? 0 : CHECK_SLOW;   // 1.09 (author: more time to watch the heroes): slowed, not stopped (was 0.06); 1.15.1: the guide's first check stops the world
     const sp = 1;   // v14: no speed button; holding the finger speeds up
     if (ff) return Math.max(S.ffSpeed, sp);
     return Math.max(sp, ffAuto);   // nothing happening: the game hurries on by itself (1.02: speeds up smoothly, slows down at once)

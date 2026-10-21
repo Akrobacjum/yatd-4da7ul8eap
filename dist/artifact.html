@@ -298,6 +298,11 @@ body {
 .subtabs .sub[hidden] { display: none; }
 .sub { font: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r); background-color: var(--panel); color: var(--muted); cursor: pointer; box-shadow: inset 0 1px 0 var(--edge), 0 1px 0 #000; transition: color 0.15s, border-color 0.15s; }
 .sub:active { transform: translateY(1px); }
+.sub { display: flex; align-items: center; gap: 5px; position: relative; }
+.sub .lock { display: none; width: 10px; height: 10px; color: var(--dim); }
+.sub.off { opacity: 0.5; }   /* 1.15.1: nothing in it in this stage of learning yet */
+.sub.off .lock { display: block; }
+.sub.nope { animation: nope 0.32s; }
 .sub[aria-pressed="true"] { color: var(--ink); border-color: var(--gold); background-color: var(--panel3); box-shadow: inset 0 0 0 1px var(--gold), 0 1px 0 #000; }
 .tray.fade-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 .tray.fade-l { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px); mask-image: linear-gradient(to right, transparent, #000 28px); }
@@ -463,6 +468,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .scr-body > * { flex: none; }
 .scr-foot { flex: none; display: grid; gap: 6px; position: relative; }
 .shopmsg { position: absolute; left: 8px; right: 8px; bottom: calc(100% + 6px); padding: 6px 10px; border-radius: var(--r); background: rgba(12, 10, 9, 0.94); border: 1px solid var(--line); color: var(--ink); font-size: 13px; text-align: center; pointer-events: none; animation: shopmsg 2.8s ease-out forwards; z-index: 2; }   /* 1.12.1 */
+/* 1.15.1: the tutorial's card in the shop: like the guide's card on the map, over the top of the shop until it is read */
+.shoptip { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 6; background-color: rgba(16, 17, 21, 0.98); border: 1px solid var(--line2); border-left: 3px solid var(--gold-hi); border-radius: var(--r); padding: 10px 12px; font-size: 14px; line-height: 1.38; display: grid; gap: 8px; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(196, 160, 82, 0.35), inset 0 1px 0 var(--edge); animation: rise 0.25s ease-out; }
+.shoptip .crow { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.shoptip .step { color: var(--muted); font-size: 12px; }
+.shoptip .next { font: inherit; font-size: 14px; border-radius: var(--r); padding: 6px 12px; cursor: pointer; background: linear-gradient(180deg, var(--gold-hi), var(--gold)); color: #141210; border: 0; font-weight: 700; box-shadow: 0 2px 0 #000; }
 @keyframes shopmsg { 0% { opacity: 0; transform: translateY(4px); } 8% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
 .scr-foot .note { text-align: center; font-size: 11.5px; min-height: 14px; }
 .panel { background-color: var(--panel2); border: 1px solid var(--line); border-radius: var(--r); padding: 7px 10px 8px; min-width: 0; box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 rgba(0, 0, 0, 0.4); }
@@ -6356,7 +6366,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   /* ================= main loop (real time) ================= */
   function timeScale() {
     if (!fl || modalOpen || fl.phase !== 'raid' || paused) return 0;
-    if (fl.check && !fl.check.result) return CHECK_SLOW;   // 1.09 (author: more time to watch the heroes): slowed, not stopped (was 0.06)
+    if (fl.check && !fl.check.result) return tutCheckHold() ? 0 : CHECK_SLOW;   // 1.09 (author: more time to watch the heroes): slowed, not stopped (was 0.06); 1.15.1: the guide's first check stops the world
     const sp = 1;   // v14: no speed button; holding the finger speeds up
     if (ff) return Math.max(S.ffSpeed, sp);
     return Math.max(sp, ffAuto);   // nothing happening: the game hurries on by itself (1.02: speeds up smoothly, slows down at once)
@@ -10424,7 +10434,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   let subOf = {};
   try { subOf = JSON.parse(localStorage.getItem('yatd-sub') || '{}') || {}; } catch (e) {}
   const subsOn = tb => (tb.subs || []).filter(s => s.items.some(t => onbOk(t)));
-  const curSub = tb => { const on = subsOn(tb); return on.length < 2 ? null : on.find(s => s.id === subOf[tb.id]) || on[0]; };
+  // 1.15.1 (author: the sub-tabs did not show in the first run, so there was nothing to switch): a tab with sub-tabs always shows
+  // them; one with nothing of this stage of learning yet is dimmed with a lock and says in which run it comes (subStage)
+  const curSub = tb => { const on = subsOn(tb); return !on.length ? null : on.find(s => s.id === subOf[tb.id]) || on[0]; };
+  const subStage = s => Math.min(...s.items.map(t => ONB_ITEM[t] || 1));
   function pickTab(id, t) {   // to a tab, and to the sub that holds t (the guide points at a tile)
     tab = id; const tb = TABS.find(x => x.id === id), s = tb && t && (tb.subs || []).find(x => x.items.includes(t));
     if (s) subOf[id] = s.id; updateTray();
@@ -10494,8 +10507,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (cs && sb.dataset.tab !== cur.id) {
       sb.dataset.tab = cur.id; sb.innerHTML = '';
       cur.subs.forEach(s => {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'sub'; b.id = 'sub-' + s.id; b.dataset.sub = s.id; b.textContent = s.label;
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'sub'; b.id = 'sub-' + s.id; b.dataset.sub = s.id; b.innerHTML = '<span class="sl"></span>' + LOCK; b.querySelector('.sl').textContent = s.label;
         b.addEventListener('click', () => {
+          if (b.classList.contains('off')) { nope(b, s.label + ': od ' + subStage(s) + '. runu'); return; }   // 1.15.1: not in this stage yet
           if (trayTab) trayScroll[trayTab] = tray.scrollLeft;
           subOf[cur.id] = s.id; try { localStorage.setItem('yatd-sub', JSON.stringify(subOf)); } catch (e) {}
           updateTray();
@@ -10503,7 +10517,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         sb.appendChild(b);
       });
     }
-    if (cs) sb.querySelectorAll('.sub').forEach(b => { const on = subsOn(cur).some(s => s.id === b.dataset.sub); b.hidden = !on; b.setAttribute('aria-pressed', String(b.dataset.sub === cs.id)); });
+    if (cs) sb.querySelectorAll('.sub').forEach(b => { const s = cur.subs.find(q => q.id === b.dataset.sub), on = subsOn(cur).includes(s); b.hidden = false; b.classList.toggle('off', !on); b.setAttribute('aria-disabled', String(!on)); b.title = on ? '' : s.label + ': od ' + subStage(s) + '. runu nauki'; b.setAttribute('aria-pressed', String(b.dataset.sub === cs.id)); });
     let shown = 0;
     ITEM_ORDER.forEach(t => {
       const b = $('#item-' + t);
@@ -10933,7 +10947,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.15 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.15.1 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -10983,9 +10997,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.15'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.15.1'));
     const ul2 = el('ul', 'conseq');
-    ['1.15: komnaty. Zakładka Loch dzieli się teraz na Kopanie (kopanie, tunel, poszerzanie, burzenie), Komnaty i Efekty (dawne typy pokoi: Mgła, Bagno, Grota i reszta). Komnata mówi, komu pokój służy: Goblinia nora, Leże pająków, Jaskinia ogra, Nawiedzona sala, Gniazdo nietoperzy, Kaplica czaszek, Zbrojownia, Kuźnia, Więzienie, Graciarnia, Galeria i Pokój dziecięcy. Każda pułapka i każdy potwór należy do jednej z nich.',
+    ['1.15.1: każda porada samouczka w fali zatrzymuje grę, dopóki jej nie zatwierdzisz albo nie zrobisz tego, o co prosi. Pierwsza (o nowicjuszach) ma przycisk Rozumiem; przy pierwszym skill checku świat stoi, dopóki nie stukniesz; porada o karcie bohatera czeka, aż go stukniesz, a porada o przyspieszaniu, aż przytrzymasz palec (gra rusza wtedy od razu przyspieszona). Wcześniej pierwsza porada nie zatrzymywała gry.',
+     '1.15.1: porada samouczka w sklepie to kartka u góry sklepu, która zostaje, aż stukniesz Rozumiem albo weźmiesz kartę. Wcześniej gasła po ok. 2 s i zasłaniała talię.',
+     '1.15.1: podzakładki są widoczne zawsze. Ta, w której na tym etapie nauki nic jeszcze nie ma, jest wyszarzona z kłódką, a po stuknięciu mówi, od którego runu się pojawi (np. Strach od 2. runu, Komnaty i Efekty od 3.). Wcześniej w pierwszym runie rząd podzakładek znikał.',
+     '1.15: komnaty. Zakładka Loch dzieli się teraz na Kopanie (kopanie, tunel, poszerzanie, burzenie), Komnaty i Efekty (dawne typy pokoi: Mgła, Bagno, Grota i reszta). Komnata mówi, komu pokój służy: Goblinia nora, Leże pająków, Jaskinia ogra, Nawiedzona sala, Gniazdo nietoperzy, Kaplica czaszek, Zbrojownia, Kuźnia, Więzienie, Graciarnia, Galeria i Pokój dziecięcy. Każda pułapka i każdy potwór należy do jednej z nich.',
      '1.15: pułapki i potwory z rodziny komnaty, postawione w jej pokoju (pułapka na ścianie liczy się w pokoju, w który patrzy), mają cechę 3. poziomu bez ulepszania, a te już na 3. poziomie dostają +25% mocy. Komnata kosztuje 12 Esencji, nie zajmuje miejsca w pokoju i może być w pokoju razem z efektem. Stuknięcie pokoju, który już ma tę komnatę, zdejmuje ją (wraca połowa), a inna komnata ją zastępuje. Komnata jest zablokowana, dopóki nie odblokujesz nikogo z jej rodziny.',
      '1.15: w każdej komnacie stoją drobne przedmioty w 3D: w norze świecące grzybki, kamienie, totem i ognisko z polanami, w leżu kokony, skupiska jaj i małe pająki, u ogra kocioł z bulgoczącą zupą i stosy kości, w nawiedzonej sali świece z niebieskim płomieniem i przewrócone krzesła, u nietoperzy stalagmity, w kaplicy piramidki czaszek i świece, w zbrojowni stojaki z bronią, tarcze, strzały w podłodze i tarcza strzelecka, w kuźni kowadło, palenisko, wiadra i sztaby, w więzieniu wiadra, snopki słomy, kajdany i szczur, w graciarni skrzynki, beczki, butelki i książki, w galerii popiersia, wazy, kandelabry i słupki z liną, w pokoju dziecięcym klocki, piłki, bębenki, bączki i miś. Bohaterowie chodzą za nimi i przed nimi, a nic nie stoi na polu z pułapką, potworem albo meblem. Do tego trochę życia (zarodniki, para, iskry, ogniki, kurz, krople, nutki) i poświata w kolorze komnaty pod każdym elementem jej rodziny.',
      '1.15: ściany komnaty są z innego materiału, mają inny kształt i rzeczy, które z nich wystają: belki i korzenie w norze, zwisający jedwab i kokony w leżu, bryły skał i czaszka na kolcu u ogra, kinkiety z niebieską świecą w nawiedzonej sali, sople skalne i wiszące nietoperze, kości wystające ze ściany czaszek, tarcze na skrzyżowanych włóczniach i blanki w zbrojowni, okap paleniska i kominy w kuźni, łańcuchy z kajdanami i kolce w więzieniu, półki ze słojami w graciarni, złocone ramy, kinkiety i gzyms w galerii, półeczki z zabawkami w pokoju dziecięcym.',
@@ -11524,7 +11541,15 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const free = run.freePicks > 0, rerender = () => { card.classList.remove('enter'); card.innerHTML = ''; renderShop(card, m); };
     scrHead(card, 'Przed falą ' + run.wave, 'Sklep', String(Math.floor(fl.essence)), free ? 'Esencji · darmowe: ' + run.freePicks : 'Esencji');
     if (!build) { card.appendChild(el('p', 'note', 'Sklep działa między falami.')); card.appendChild(btn('primary', 'Zamknij', null, closeModal)); return; }
-    if (run.tutorial && !run.shopTipShown) { run.shopTipShown = true; m.msg = 'Samouczek: po każdej fali bierzesz tu darmową kartę (Weź); inne kupisz za Esencję.'; }
+    // 1.15.1 (author: the tutorial's tip in the shop was gone at once, before it could be read): a card over the top of the shop
+    // that stays until Rozumiem or until a card is taken (it was a message over the big button, fading after 2 s)
+    if (run.tutorial && !run.shopTipDone) {
+      const tip = el('div', 'shoptip'); tip.id = 'shop-tip';
+      tip.appendChild(el('div', null, 'Po każdej fali jedną kartę bierzesz tu za darmo (Weź za darmo), a kolejne kupisz za Esencję. Wzięta karta trafia do talii na dole i działa do końca runu. Odblokowanie (fioletowy pasek) daje nową pułapkę albo potwora na stałe.'));
+      const row = el('div', 'crow'); row.appendChild(el('span', 'step', 'Samouczek'));
+      const ok = el('button', 'next', 'Rozumiem'); ok.type = 'button'; ok.id = 'shop-tip-ok'; ok.addEventListener('click', () => { run.shopTipDone = true; rerender(); }); row.appendChild(ok);
+      tip.appendChild(row); card.appendChild(tip);
+    }
     const body = el('div', 'scr-body'); card.appendChild(body);
     const sel = m.sel && (m.sel.k === 'd' || m.sel.k === 's') ? m.sel : null;
     // Prototype 1.0: four offers, always in the same four places. Each shows its whole text (the letters shrink a little for a long one)
@@ -11545,7 +11570,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         const r = shopBuy(i);
         if (r === 'ess') m.msg = 'Za mało Esencji (' + price + ').';
         else if (r === 'full') m.msg = 'Talia i schowek są pełne: sprzedaj albo odłóż kartę.';
-        else { m.sel = null; m.msg = r === 'stash' ? u.name + ': do schowka (talia pełna).' : u.kind === 'unlock' ? u.name + ': odblokowane na stałe.' : u.kind === 'instant' ? u.name + '.' : 'W talii: ' + u.name + '.'; }
+        else { m.sel = null; run.shopTipDone = true; m.msg = r === 'stash' ? u.name + ': do schowka (talia pełna).' : u.kind === 'unlock' ? u.name + ': odblokowane na stałe.' : u.kind === 'instant' ? u.name + '.' : 'W talii: ' + u.name + '.'; }
         rerender();
       });
       b.appendChild(by); og.appendChild(b);
@@ -12515,8 +12540,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
           holdTimer = setTimeout(() => { if (gesture && !gesture.moved && pointers.size === 1 && fl.phase === 'build' && !modalOpen) { gesture.handled = true; holdRemove(t); } holdInfo = null; }, HOLD_DEL * 1000);
         }
       }
-      if (fl.phase === 'raid' && !paused) holdTimer = setTimeout(() => {   // hold still = fast-forward
-        if (gesture && !gesture.moved && pointers.size === 1 && fl.phase === 'raid' && !paused) { ff = true; gesture.handled = true; tutFlags.ffUsed = true; tl('ff', 1); }
+      if (fl.phase === 'raid' && (!paused || tutHoldOk())) holdTimer = setTimeout(() => {   // hold still = fast-forward (1.15.1: also the hold the guide asks for, which lets the game go)
+        if (gesture && !gesture.moved && pointers.size === 1 && fl.phase === 'raid' && (!paused || tutHoldOk())) { if (paused) { tutPausedIt = false; setPaused(false, true); } if (paused) return; ff = true; gesture.handled = true; tutFlags.ffUsed = true; tl('ff', 1); }
       }, 280);
     } else if (pointers.size === 2) {
       ff = false; clearTimeout(holdTimer); holdInfo = null;
@@ -12576,7 +12601,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (!fl || modalOpen || (e.target && e.target.tagName === 'INPUT')) return;
     if (e.code === 'Space' && fl.phase === 'raid') { e.preventDefault(); if (fl.check && !fl.check.result) resolveCheck(); }
     if (e.code === 'KeyP' && fl.phase === 'raid' && !tutPopNow) setTrayOpen(!trayIsOpen(), true);
-    if (e.code === 'KeyF' && fl.phase === 'raid' && !paused && !ff) { ff = true; tutFlags.ffUsed = true; tl('ff', 1); }
+    if (e.code === 'KeyF' && fl.phase === 'raid' && (!paused || tutHoldOk()) && !ff) { if (paused) { tutPausedIt = false; setPaused(false, true); } if (!paused) { ff = true; tutFlags.ffUsed = true; tl('ff', 1); } }
     if (e.code === 'Escape' && (selected || movingKey || movingObj)) { selected = null; movingKey = null; movingObj = null; updateTray(); setHint('Wybierz element i stuknij pasujące miejsce.'); }
     if (e.code === 'KeyZ' && (e.ctrlKey || e.metaKey) && fl.phase === 'build') { e.preventDefault(); undo(); }
   });
@@ -12602,7 +12627,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 
   /* ================= interactive tutorial ================= */
   // A coach panel over the bottom of the map, one step at a time. Each step waits for the thing it asks for.
-  let tutFlags = {}, tutT = 0, tutLast = 0;
+  let tutFlags = {}, tutT = 0, tutLast = 0, tutPausedIt = false;   // 1.15.1: the game stands because a step of the guide said so
   const countType = t => [...fl.items.values()].filter(it => it.type === t).length;
   function tutPathTile(frac, type) {
     const P = shortestPath();
@@ -12634,10 +12659,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     { id: 'spend', text: () => 'Masz jeszcze ' + Math.floor(fl.essence) + ' Esencji. W pierwszej fali nie oszczędzaj: dostaw kolce i strzały przy trasie. Pokój mieści kilka pułapek (licznik w rogu).', hl: ['#tab-traps'], prep: () => { selected = null; tab = 'traps'; updateTray(); }, done: () => fl.phase !== 'build' || fl.essence < 3 || !tutAnySpot(), skip: true },
     { id: 'go', text: 'Gotowe. Wypuść falę przyciskiem w prawym dolnym rogu. Pasek budowy schowa się na czas fali, a w fali ▲ Budowa zatrzymuje grę, żebyś mógł spokojnie dostawić pułapki.', hl: ['#btn-action'], done: () => fl.phase === 'raid' },
     // the wave: one line at the top; the first check jumps to 'check' (after its card)
-    { id: 'novice', text: 'Nadchodzą nowicjusze. Każda rana to Groza, a linia u góry zamienia ją w Esencję: Groza × Chciwość × Combo.', hl: ['#h-eq'], raid: true, hideAfter: 9 },
+    { id: 'novice', text: 'Nadchodzą nowicjusze. Każda rana to Groza, a linia u góry zamienia ją w Esencję: Groza × Chciwość × Combo.', hl: ['#h-eq'], raid: true, ack: true },   // 1.15.1: the game stands until Rozumiem (was: gone after 9 s, the game going on)
     { id: 'check', text: 'Stuknij w mapę, gdy koralik będzie w obwódce (draśnięcie) albo w pełnym polu (krytyk). Trafiony wynik pułapka pamięta (znaczek w rogu pola), także w kolejnych falach.', raid: true, done: () => tutFlags.resolved || (!fl.check && tutT > 2) },
-    { id: 'herocard', text: 'Stuknij bohatera (albo listę w rogu): zobaczysz jego kartę i klasę. Gra stoi, dopóki ją czytasz.', raid: true, skip: true, done: () => tutFlags.heroCard },
-    { id: 'ff', text: 'Teraz przytrzymaj palec na mapie: gra przyspiesza, a pułapki biją same (z zapamiętaną siłą albo jak draśnięcie). Gdy nic się nie dzieje, gra przyspiesza sama (▶▶ spokój).', raid: true, skip: true, done: () => tutFlags.ffUsed },
+    { id: 'herocard', text: 'Stuknij bohatera (albo listę w rogu): zobaczysz jego kartę i klasę. Gra stoi, dopóki jej nie przeczytasz.', raid: true, skip: true, done: () => tutFlags.heroCard },
+    { id: 'ff', text: 'Teraz przytrzymaj palec na mapie: gra ruszy przyspieszona, a pułapki biją same (z zapamiętaną siłą albo jak draśnięcie). Gdy nic się nie dzieje, gra przyspiesza sama (▶▶ spokój).', raid: true, skip: true, hold: true, done: () => tutFlags.ffUsed },
     // wave 2 (after the first card from the shop and the card about the heart)
     { id: 'loot', wave: 2, text: 'Serce chce Esencji, a Esencję mnoży chciwość. Łup wabi bohaterów i ją podbija (złote orby w równaniu). Postaw Monety z zakładki Łup w pokoju, przez który przejdą.', build: true, hl: ['#tab-loot', '#item-loot'], prep: () => { tab = 'loot'; updateTray(); setTrayOpen(true); if (fl.essence < costOf('loot')) fl.essence = costOf('loot'); }, done: () => [...fl.items.values()].some(o => isLoot(o.type) && !o.dropped), skip: true },   // not what the dead left behind
     { id: 'upgrade', wave: 2, text: () => { const it = tutUpTarget(); return 'Dwa szybkie stuknięcia w element to ulepszenie: mocniej bije i ma szersze strefy checku. Stuknij dwa razy ' + (it ? ITEMS[it.type].name.toLowerCase() : 'pułapkę') + ' w kółku (koszt: ' + (it ? upgCost(it) : 6) + ' Esencji).'; }, build: true, tile: () => { const it = tutUpTarget(); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); const it = tutUpTarget(); if (it && fl.essence < upgCost(it)) fl.essence = upgCost(it); }, done: () => !!tutFlags.upgraded, skip: true },
@@ -12735,23 +12760,26 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     { const lg = tutLogOf(); lg.max = Math.max(lg.max, run.tut + 1); }
     if (tutPopNow) return;   // a card is up: the step shows when it is closed
     const raid = fl.phase === 'raid';
-    if ((st.build && raid) || (st.raid && !raid) || (st.wave && run.wave < st.wave)) { box.hidden = true; coachSync(); return; }   // 1.04: a step of the other phase waits out of sight (1.12: and one of a later wave)
+    const letGo = () => { if (tutPausedIt) { tutPausedIt = false; if (paused) setPaused(false, true); } };
+    if ((st.build && raid) || (st.raid && !raid) || (st.wave && run.wave < st.wave) || (st.acked && raid)) { letGo(); box.hidden = true; coachSync(); return; }   // 1.04: a step of the other phase waits out of sight (1.12: and one of a later wave; 1.15.1: and one already read)
     if (st.prep) st.prep();
     box.classList.toggle('top', raid);   // 1.04: in a wave the coach sits at the top of the map (1.12.1: and the check right under it)
     box.innerHTML = '';
     box.appendChild(el('div', null, typeof st.text === 'function' ? st.text() : st.text));
     const row = el('div', 'crow');
-    row.appendChild(el('span', 'step', 'Samouczek ' + (run.tut + 1) + '/' + TUT.length));
+    const holds = raid && st.raid;   // 1.15.1 (author: every tip stops the game until you confirm it or do what it says)
+    row.appendChild(el('span', 'step', holds ? (st.id === 'check' ? 'Gra czeka na Twój ruch' : 'Gra stoi') : 'Samouczek ' + (run.tut + 1) + '/' + TUT.length));
     const right = el('span'); right.style.display = 'flex'; right.style.alignItems = 'center'; right.style.whiteSpace = 'nowrap';
     const end = el('button', 'skip', 'Zakończ'); end.type = 'button';
     end.addEventListener('click', () => { tutLogOf().ended = 'quit@' + (st.id || run.tut); tutEnd(); });
     if (run.tut < TUT.length - 1) right.appendChild(end);
     if (st.skip) { const sk = el('button', 'skip', 'Pomiń krok'); sk.type = 'button'; sk.style.marginLeft = '12px'; sk.addEventListener('click', () => { tutLogOf().skipped.push(st.id || run.tut); tutAdvance(); }); right.appendChild(sk); }
+    if (st.ack) { const ok = el('button', 'next', 'Rozumiem'); ok.type = 'button'; ok.style.marginLeft = '12px'; ok.addEventListener('click', () => { st.acked = true; tutClearHl(); letGo(); box.hidden = true; coachSync(); }); right.appendChild(ok); }
     if (st.next) { const nx = el('button', 'next', run.tut === TUT.length - 1 ? 'Gramy!' : 'Dalej'); nx.type = 'button'; nx.style.marginLeft = '12px'; nx.addEventListener('click', () => { if (st.pause) setPaused(false, true); if (run.tut === TUT.length - 1) tutLogOf().ended = 'done'; tutAdvance(); }); right.appendChild(nx); }
     row.appendChild(right); box.appendChild(row);
     box.hidden = false; coachSync();
     (st.hl || []).forEach(sel => { const e = $(sel); if (e) { e.classList.add('tut-hl'); if (e.classList.contains('item') && e.parentElement) { const t = e.parentElement; t.scrollLeft = Math.max(0, e.offsetLeft - 8); } } });   // a highlighted tile scrolls into view
-    if (st.pause && fl.phase === 'raid') setPaused(true, true);
+    if (holds && st.id !== 'check') { if (!paused) setPaused(true, true); tutPausedIt = true; } else letGo();   // the check step: the world stands while the check waits (timeScale)
     const t = tutTarget(); if (t && fl.phase === 'build') { centerOn(t[0] + 0.5, t[1] + 0.5); cam.oy += ch * 0.14; clampCam(); cam.manualUntil = 0; }   // 1.07: the target a bit above the middle (the coach is at the bottom)
   }
   function tutTarget() {
@@ -12761,6 +12789,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     return st.cached;
   }
   function tutAdvance() { run.tut++; tutShow(); }
+  const tutHoldOk = () => !!run && run.tut >= 0 && !!TUT[run.tut] && !!TUT[run.tut].hold && tutPausedIt && !modalOpen;   // the guide's pause that a held finger ends
+  const tutCheckHold = () => !!run && run.tut >= 0 && !!TUT[run.tut] && TUT[run.tut].id === 'check';   // the guide's first check: the world stands
   function tutTick() {
     const st = TUT[run.tut];
     if (!st) return;
@@ -12768,7 +12798,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (st.raid && fl.phase !== 'raid') return;
     if (st.build && fl.phase !== 'build') return;
     if (st.wave && run.wave < st.wave) return;
-    if (st.next || tutPopNow) return;
+    if (st.next || tutPopNow || (st.ack && !st.acked)) return;
     if (st.hideAfter && tutT >= st.hideAfter && !$('#coach').hidden) { $('#coach').hidden = true; tutClearHl(); coachSync(); }   // said; the step waits for its event
     if ((st.done && st.done()) || (st.wait && tutT >= st.wait)) tutAdvance();
   }
@@ -12804,7 +12834,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     }
     return tutSpotVal;
   }
-  function tutEnd() { if (run) run.tut = -1; try { localStorage.setItem(COACH_KEY, '1'); } catch (e) {} tutClearHl(); tutPopNow = null; tutPopQ.length = 0; const box = $('#coach'); box.hidden = true; box.classList.remove('top', 'pop'); coachSync(); if (paused) setPaused(false, true); }
+  function tutEnd() { tutPausedIt = false; if (run) run.tut = -1; try { localStorage.setItem(COACH_KEY, '1'); } catch (e) {} tutClearHl(); tutPopNow = null; tutPopQ.length = 0; const box = $('#coach'); box.hidden = true; box.classList.remove('top', 'pop'); coachSync(); if (paused) setPaused(false, true); }
 
   /* ================= boot ================= */
   // An example dungeon sits behind the start screen so the page is never empty.

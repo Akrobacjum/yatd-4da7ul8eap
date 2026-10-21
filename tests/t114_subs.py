@@ -1,7 +1,7 @@
 # 1.14 (author: subcategories in the build bar, side by side): Pułapki and Potwory have sub-tabs Rany / Strach in a row under
 # the tabs; a sub shows only its tiles, the choice is remembered per tab; the row keeps its height on every tab (the map does
-# not jump); in a stage with only one sub's tiles the row is hidden and the tab shows everything; the guide goes to the sub
-# of the tile it points at.
+# not jump); the guide goes to the sub of the tile it points at. 1.15.1: in a stage with only one sub's tiles the row still
+# shows, the other subs dimmed with a lock (1.14 hid the row).
 import asyncio, json
 from playwright.async_api import async_playwright
 BASE = 'file:///tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scratchpad/test/page15.html'
@@ -39,12 +39,20 @@ async def main():
         await page.evaluate("() => __yatd.pickTab('traps', 'spikes')"); await page.clock.run_for(300)
         out['guide'] = await page.evaluate(vis)
         ok('spikes' in out['guide'] and 'portrait' not in out['guide'], 'the guide shows the sub of its tile')
-        # a stage that brings only wounding traps: no row, everything of the tab
-        one = await page.evaluate("""() => { const T = __yatd.TABS.find(t => t.id === 'traps'), keep = T.subs[1].items.slice(); T.subs[1].items = [];
-            document.querySelector('#tab-loot').click(); document.querySelector('#tab-traps').click();
-            const r = { none: document.querySelector('#subs').classList.contains('none'), vis: [...document.querySelectorAll('#tray > .item')].filter(b => !b.hidden).map(b => b.id.slice(5)) };
-            T.subs[1].items = keep; return r; }""")
-        ok(one['none'] and 'spikes' in one['vis'] and 'portrait' in one['vis'], 'one sub only: no row, the whole tab')
+        # 1.15.1 (author: in the first run the sub-tabs did not show, so they could not be switched): a stage with only one
+        # sub's tiles still shows the row; the other sub is dimmed with a lock, a tap on it says when it comes and switches nothing
+        await page.evaluate("() => { const G = __yatd; G.newRun(false, 1); while (G.modalKind) G.closeModal(); G.startBuild(); }"); await page.clock.run_for(300)
+        await page.click('#tab-traps'); await page.clock.run_for(300)
+        one = await page.evaluate("""() => ({ none: document.querySelector('#subs').classList.contains('none'), fearOff: document.querySelector('#sub-fear').classList.contains('off'), fearHidden: document.querySelector('#sub-fear').hidden,
+            dmgOn: document.querySelector('#sub-dmg').getAttribute('aria-pressed'), vis: [...document.querySelectorAll('#tray > .item')].filter(b => !b.hidden).map(b => b.id.slice(5)) })""")
+        ok(not one['none'] and one['fearOff'] and not one['fearHidden'] and one['dmgOn'] == 'true', 'stage 1: the row shows, Strach dimmed with a lock, Rany chosen (%s)' % one)
+        ok('spikes' in one['vis'] and 'portrait' not in one['vis'], 'stage 1: Rany shows its tiles')
+        await page.click('#sub-fear', force=True); await page.clock.run_for(100)   # aria-disabled: a finger still taps it
+        one['tap'] = await page.evaluate("() => [document.querySelector('#sub-dmg').getAttribute('aria-pressed'), document.querySelector('#sub-fear').textContent]")
+        ok(one['tap'][0] == 'true' and 'od 2. runu' in one['tap'][1], 'a tap on the dimmed Strach says when it comes and switches nothing (%s)' % one['tap'])
+        await page.click('#tab-dungeon'); await page.clock.run_for(300)
+        one['loch'] = await page.evaluate("() => ['dig', 'kind', 'effect'].map(id => { const b = document.querySelector('#sub-' + id); return b ? (b.classList.contains('off') ? 'off' : 'on') : 'none'; })")
+        ok(one['loch'] == ['on', 'off', 'off'], 'stage 1 Loch: Kopanie on, Komnaty and Efekty dimmed (%s)' % one['loch'])
         out['one'] = one
         print(json.dumps(out, ensure_ascii=False))
         print('FAILS', fails + (['page errors %s' % errs[:2]] if errs else []))

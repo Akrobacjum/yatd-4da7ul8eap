@@ -58,6 +58,9 @@ async def main():
             await page.clock.run_for(200)
             s = await step(page)
             if await page.evaluate("__yatd.tutPopNow"): await page.click('#coach .next'); await page.clock.run_for(200); continue
+            if s['id'] == 'novice' and await page.evaluate("!document.querySelector('#coach').hidden && !!document.querySelector('#coach .next')"):   # 1.15.1: the first tip of the wave stands until Rozumiem
+                if not await page.evaluate("__yatd.paused"): fails.append('the first tip of the wave stops the game')
+                await page.click('#coach .next'); await page.clock.run_for(200); continue
             if s['modal'] == 'hero' and (hero or s['id'] != 'herocard'): await page.evaluate("__yatd.closeModal(); __yatd.setPaused(false)"); await page.clock.run_for(100); continue
             if s['check'] and not got_check:
                 await page.clock.run_for(500); await page.mouse.click(W / 2, 420); got_check = True; await page.clock.run_for(300); continue

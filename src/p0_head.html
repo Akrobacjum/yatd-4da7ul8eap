@@ -298,6 +298,11 @@ body {
 .subtabs .sub[hidden] { display: none; }
 .sub { font: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r); background-color: var(--panel); color: var(--muted); cursor: pointer; box-shadow: inset 0 1px 0 var(--edge), 0 1px 0 #000; transition: color 0.15s, border-color 0.15s; }
 .sub:active { transform: translateY(1px); }
+.sub { display: flex; align-items: center; gap: 5px; position: relative; }
+.sub .lock { display: none; width: 10px; height: 10px; color: var(--dim); }
+.sub.off { opacity: 0.5; }   /* 1.15.1: nothing in it in this stage of learning yet */
+.sub.off .lock { display: block; }
+.sub.nope { animation: nope 0.32s; }
 .sub[aria-pressed="true"] { color: var(--ink); border-color: var(--gold); background-color: var(--panel3); box-shadow: inset 0 0 0 1px var(--gold), 0 1px 0 #000; }
 .tray.fade-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 .tray.fade-l { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px); mask-image: linear-gradient(to right, transparent, #000 28px); }
@@ -463,6 +468,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .scr-body > * { flex: none; }
 .scr-foot { flex: none; display: grid; gap: 6px; position: relative; }
 .shopmsg { position: absolute; left: 8px; right: 8px; bottom: calc(100% + 6px); padding: 6px 10px; border-radius: var(--r); background: rgba(12, 10, 9, 0.94); border: 1px solid var(--line); color: var(--ink); font-size: 13px; text-align: center; pointer-events: none; animation: shopmsg 2.8s ease-out forwards; z-index: 2; }   /* 1.12.1 */
+/* 1.15.1: the tutorial's card in the shop: like the guide's card on the map, over the top of the shop until it is read */
+.shoptip { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 6; background-color: rgba(16, 17, 21, 0.98); border: 1px solid var(--line2); border-left: 3px solid var(--gold-hi); border-radius: var(--r); padding: 10px 12px; font-size: 14px; line-height: 1.38; display: grid; gap: 8px; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(196, 160, 82, 0.35), inset 0 1px 0 var(--edge); animation: rise 0.25s ease-out; }
+.shoptip .crow { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.shoptip .step { color: var(--muted); font-size: 12px; }
+.shoptip .next { font: inherit; font-size: 14px; border-radius: var(--r); padding: 6px 12px; cursor: pointer; background: linear-gradient(180deg, var(--gold-hi), var(--gold)); color: #141210; border: 0; font-weight: 700; box-shadow: 0 2px 0 #000; }
 @keyframes shopmsg { 0% { opacity: 0; transform: translateY(4px); } 8% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
 .scr-foot .note { text-align: center; font-size: 11.5px; min-height: 14px; }
 .panel { background-color: var(--panel2); border: 1px solid var(--line); border-radius: var(--r); padding: 7px 10px 8px; min-width: 0; box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 rgba(0, 0, 0, 0.4); }
