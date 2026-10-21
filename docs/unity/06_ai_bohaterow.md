@@ -656,7 +656,7 @@ Lider nigdy nie jest zgubiony: w `partyThink` liderowi zawsze `lost = false`, `s
 
 **Szukanie zgubionego przez lidera** kończy się (`P.searchId = -1`), gdy szukany nie istnieje, nie jest już zgubiony, nie żyje, zbiegł, minęło `searchUntil` albo drużyna wychodzi; od 1.17 także, gdy lider dojdzie do ostatniego znanego miejsca i nikogo tam nie ma (`SAY.searchFail`).
 
-**Lider błądzi we mgle** (`partyThink`, Prototype 1.01): gdy lider (nie wychodzą, nie `fearless`, brak `P.detour`) jest w pokoju typu `fog`, raz na pokój mgły na falę (`P.fogDone`): cel = losowe `walkable` pole tego pokoju w odległości co najmniej 2 od lidera, `P.detour = {goal, until: time + 3 + 0.25*max(0, 8 - L.lvl/2)}`, lider mówi jedną z trzech kwestii zaszytych w kodzie (prio 3, 6.7.8). Cała drużyna idzie za nim (6.2.12).
+**Lider błądzi we mgle** (`partyThink`, Prototype 1.01): gdy lider (nie wychodzą, nie `fearless`, brak `P.detour`) jest w pokoju typu `fog`, raz na pokój mgły na falę (`P.fogDone`): cel = losowe `walkable` pole tego pokoju w odległości co najmniej 2 od lidera, `P.detour = {goal, until: time + 3 + 0.25*max(0, 8 - L.lvl/2)}`, lider mówi `SAY.fogGrope` (prio 3; do 1.16 trzy kwestie zaszyte w kodzie, 6.7.8). Cała drużyna idzie za nim (6.2.12).
 
 W mgle także: brak wykrywania wzrokiem (`scanTraps` pomija pułapki w pokoju mgły), mag nie "czuje" pułapek, strach +15% (sekcja 05).
 
@@ -711,7 +711,7 @@ Porównanie (stawki bazowe na sekundę; strach daje dodatkowo Grozę `strach / c
 | zwiad na postoju | złodziej z hp > 70%, 3 s po początku odpoczynku, 3+ w załodze; jeden rzut na postój | `0.5` |
 | wypad nowicjusza | jak dotąd (6.2.12) | jak dotąd |
 
-**Widać to**: turkusowy przerywany pierścień pod bohaterem zamiast pomarańczowego samotności (`p7_draw.js`), znak `›` w pasku bohaterów, w karcie bohatera stan `na zwiadzie`, w podsumowaniu fali wiersz `Zwiad (celowo osobno)`, w Szczegółach wiersz `Osobno: na zwiadzie / sam / zgubiony (s)`, ciekawostka `Rozdzieleni` (gdy co najmniej 4 s zwiadu), strach ze źródła `'split'` opisany jako `rozdzielenie (zwiad)`.
+**Widać to**: turkusowy przerywany pierścień pod bohaterem zamiast pomarańczowego samotności (`p7_draw.js`), znak `›` w pasku bohaterów, w karcie bohatera stan `na zwiadzie`, w podsumowaniu fali wiersz `Zwiad (celowo osobno)` (okno "Skąd Esencja"), wiersz `Osobno: na zwiadzie / sam / zgubiony (s)` w `statsTable` (ta funkcja nie jest nigdzie wołana, więc wiersza w grze nie widać, sekcja 08), ciekawostka `Rozdzieleni` (gdy co najmniej 4 s zwiadu), strach ze źródła `'split'` opisany jako `rozdzielenie (zwiad)`.
 
 ### 6.2.11 Zły skręt na rozwidleniu (`p5_ai.js: maybeDetour`)
 
@@ -742,18 +742,19 @@ if d >= 0 && d <= gap && L.state !== 'boss':
            nikt na nich nie stoi i nikt tam nie idzie (nx,ny)
       if sp: h.intent = 'space'; h.lootKey = null; h.path = [losowe z sp]; return    // grupa, nie kupa
    h.intent = intent; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.35; return
-goal = ((L.state === 'boss' || P.plan === 'assault') && !P.detour && P.searchId < 0) ? heartGoal() : lt
+goal = ((L.state === 'boss' || planOf(h) === 'assault') && !P.detour && P.searchId < 0) ? heartGoal() : lt     // 1.17: planOf
 if goal < 0: goal = lt
 ```
 
-- Gdy lider wyważa kryształ albo plan to `assault`, reszta idzie od razu do serca (bez objazdu i szukania), i nie zatrzymuje się przy liderze, gdy ten jest w stanie `boss`.
-- Lider czeka na maruderów: `partyThink` (gdy plan nie `retreat`, nie `fearless`, nie wychodzą, `L.R.coord`): `far` = inni (nie zgubieni, nie na zwiadzie: `!onScout`, nie panikują, nie walczą, nie w klatce) z `hdist > 7`; jeśli są i `time > P.waitUntil + 2`: `P.waitUntil = time + 1.6`, `partySay('regroup', 2)`. Lider w tym czasie stoi w stanie `talk` (6.1.8).
+- Gdy lider wyważa kryształ albo bohater zna plan `assault`, idzie od razu do serca (bez objazdu i szukania), i nie zatrzymuje się przy liderze, gdy ten jest w stanie `boss`.
+- Idący za liderem zna zawsze jego **bieżące** pole, także gdy go nie widzi ani nie słyszy (pokoje dalej). To zostało w 1.17 jak było (jak GPS); łapie go tylko rzut na zgubienie (6.2.10). Znane ograniczenie, sekcja 11.
+- Lider czeka na maruderów: `partyThink` (gdy plan nie `retreat`, nie `fearless`, nie wychodzą, `L.R.coord`): `far` = inni (nie zgubieni, nie na zwiadzie: `!onScout`, nie panikują, nie walczą, nie w klatce, od 1.17 nie wychodzą: `!exiting`, np. uciekający albo przegłosowany wracający sam) z `hdist > 7`; jeśli są i `time > P.waitUntil + 2`: `P.waitUntil = time + 1.6`, `partySay('regroup', 2)`. Lider w tym czasie stoi w stanie `talk` (6.1.8).
 - Nowicjusz odłącza się sam (`partyThink`, plan `explore`): dla każdego rangi 0, nie lidera, nie zgubionego, nie wędrującego, nie w klatce, z szansą `0.004` na wywołanie (`partyThink` 4 razy na sekundę, ok. 1,6% na sekundę): losowe pole granicy dalej niż 4 od niego, `wanderUntil = time + 10`, `SAY.wander` (2), od 1.16 `startSplit(h, 'wander')`. Wędrujący nie staje do rozmów; od 1.16 nie ma rzutu za odcięcie, ale może się zgubić we mgle i bez drogi (6.2.10, 6.2.10a).
 
 ### 6.2.13 Wejście do lochu: spawn, czekanie, drugi oddział
 
 - Bohaterowie wchodzą co `0.3` s z kolejki fali (`p6_loop.js: step`) na pole wejścia albo wyłomu (`spawnPt`, sekcja 07). `spawnHero` od razu odsłania okolicę (`reveal`) i mówi kwestię otwarcia (6.7.9 A).
-- **Czekanie przy wejściu** (`GATE_T = 1.8` s, `p6_loop.js`): do tego czasu nikt się nie rusza i nie ma skill checków (testerzy nie zdążali reagować); `partyThink` już działa. Po otwarciu `alive()[0]` mówi `SAY.gate` (2, dur 1.6).
+- **Czekanie przy wejściu** (`GATE_T = 1.8` s, `p6_loop.js`): do tego czasu nikt się nie rusza i nie ma skill checków (testerzy nie zdążali reagować); `partyThink` już działa. Po otwarciu przywódca (od 1.17 `leader()`, bo kwestie typu "za mną" ma mówić ten, kto prowadzi; do 1.16 `alive()[0]`, pierwszy w kolejności wejścia) mówi `SAY.gate` (2, dur 1.6).
 - **Drugi oddział** (`p6_loop.js: step`, `p3_flow.js: regroupAtDoor`): jeśli w kolejce są jeszcze bohaterowie, a drużyna w środku ucieka (`P.plan === 'flee'`), pozostali czekają na zewnątrz, dopóki ktoś jest w środku, najwyżej 8 s (`fl.holdT`). Potem `regroupAtDoor()` (plan `explore`, nowy lider, `fl.secondGroup++`) i wchodzą dalej. Każdy wchodzący w drugim oddziale ma od razu `fear = 0.2 * courage` i mówi `SAY.secondGroup` (3), gdy jest jedynym żywym z wpisu fali albo z szansą 0,3.
 
 ### 6.2.14 Wyjście z lochu (`p3_flow.js: heroExit`)
@@ -845,13 +846,17 @@ scenka odpoczynku (restScene): mówią tylko ci, którzy już siedzą razem (sam
 ```
 leader():
   L = byId(P.leaderId)
-  if !L || L.dead || L.fled || L.gone || L.lost || panicking(L) || caged(L) || (L.fleeing && P.plan !== 'flee'):
-     c = alive() bez: zgubionych, panikujących, w klatce, uciekających (uciekający dopuszczeni tylko w planie 'flee')
-     c.sort: rank malejąco, przy remisie indeks typu w LEADER_ORDER rosnąco
+  if !L || L.dead || L.fled || L.gone || L.lost || L.goHome || panicking(L) || caged(L) || (L.fleeing && P.plan !== 'flee'):
+     c = alive() bez: zgubionych, wracających samotnie (goHome, 1.17), panikujących, w klatce, uciekających
+         (uciekający dopuszczeni tylko w planie 'flee')
+     away(o) = onScout(o) || o.split ? 1 : 0                // 1.17: kto jest na własnym wypadzie, prowadzi tylko, gdy nie ma nikogo innego
+     c.sort: away rosnąco, potem rank malejąco, przy remisie indeks typu w LEADER_ORDER rosnąco
      L = c[0] || alive()[0] || null
      P.leaderId = L ? L.id : -1
   return L
 ```
+
+Od 1.17 nowy przywódca przynosi swoją wiedzę: gdy w `perceiveThink` przywódca jest inny niż w poprzednim `partyThink` (`P.lastL`), ma własny plan różny od `P.plan`, nie niesie kryształu, a w lochu jest ktoś jeszcze, drużyna przejmuje jego plan (`P.plan = L.plan`, 6.3.13). Przywódca wybierany jest nadal spośród wszystkich żywych, nie tylko z grupy starego przywódcy (znane ograniczenie, 6.3.13).
 
 - `LEADER_ORDER.json`: `warrior, barbarian, priest, bard, mage, thief`.
 - Liczy się ranga (przedział poziomów), nie poziom: elita poz. 6 wojownik wygrywa z elitą poz. 9 magiem. Boss fali ma zwykle najwyższą rangę (sekcja 04).
@@ -862,13 +867,17 @@ leader():
 ### 6.3.2 `partyThink(dt)`: kolejność (`p5_ai.js: partyThink`, co 0,25 s)
 
 ```
- 1  kolejka kwestii P.queueSay (6.7.3)
+ 1  kolejka kwestii P.queueSay (6.7.3; od 1.17 obsługiwana jako P.queueCur, nowe kwestie trafiają do świeżej P.queueSay)
  2  lootSeen(it) dla każdego łupu na mapie (6.4.1)
  3  crew = alive(); if !crew.length: return
  4  L = leader()
  5  P.morale = min(1, P.morale + (bard w drużynie, nie zgubiony, nie w klatce ? 0.02 : 0.012) * dt)
     1.16: if P.detour && time > P.detour.until: P.detour = null; L.needPlan = true     (dawniej objazd czyścił tylko
         planHero lidera bez własnej pracy, więc lider zajęty łupem trzymał stary objazd i blokował nowe pomyłki, mgłę i zwiad przodem)
+ 5a 1.17: perceiveThink(L, crew): plan bohaterów, ostatnie znane miejsca, zauważenie zgubionego, wieści o śmierci (6.3.13)
+ 5b 1.17: if P.council: councilThink(L) (6.3.10a)
+ 5c 1.17: ratowany już nie w klatce (albo nie żyje) -> P.rescueId = P.rescuerId = -1; następny z P.rescueQ, który wciąż siedzi (6.5.9)
+ 5d 1.17: lookThink(L, crew): rzut na rozglądanie się (P.lookAsk), przebieg i koniec (6.3.3a)
  6  lider błądzi we mgle (6.2.10)
  7  dla każdego h z crew: rozdzielenie (6.2.10a) albo samotność, rany, klątwa, kołysanka, klatka (6.6.5); reakcja na kontr-budowlę (6.3.12);
     if h === L: h.lost = false; h.sepT = 0; dalej następny
@@ -876,18 +885,19 @@ leader():
  8  podanie mikstury przyjacielowi (6.5.8)
  9  if !L: return
 10  if P.prep && time >= P.prep.until: finishPrep() else if !P.prep: checkPrep(L)          (6.3.8)
-11  każdy w klatce, a nie w P.cageDecided: decideCage(h, L); P.rescueId nieważny -> -1        (6.5.9)
-12  avgHp = średnia hp/max załogi; fearR = średnia fear/courage załogi
+11  każdy w klatce, a nie w P.cageDecided: decideCage(h, L), od 1.17 tylko gdy przywódca słyszy krzyk z klatki
+    (canHearShout(L, h)) albo minęło 20 s od zamknięcia (h.cagedAt); P.rescueId nieważny -> -1        (6.5.9)
+12  grp = groupOf(L) (1.17; wcześniej cała załoga); avgHp = średnia hp/max grupy; fearR = średnia fear/courage grupy
 13  zwiadowca: następna granica albo powrót (6.3.3); zwiad przodem (6.3.3); koniec czekania na zwiadowcę; partner (6.2.10a)
 14  zmiana planu:
       goingOut():        nic (wszyscy do wyjścia)
-      elif fl.fearless:  if plan != 'assault' && fl.heartKnown: plan = 'assault'; replanAll()
+      elif fl.fearless:  if plan != 'assault' && heartP(): plan = 'assault'; replanAll()     (1.17: heartP, było fl.heartKnown)
       elif plan 'retreat': koniec odpoczynku? (6.3.7)
       elif decyzja o odwrocie (6.3.7)
 15  if !goingOut() && (fearR > [0.75, 0.85, 0.95, 1][L.rank] || (P.morale < 0.2 && L.rank < 2)): partyFlee()   (6.6.3)
 16  przeszukanie i decyzja o szturmie (6.3.4)
 17  P.searchId nieważny -> -1 (6.2.10)
-18  plan 'explore': cel ważny? inaczej chooseTarget(L) (6.3.3); brak celu i serce znane -> assault
+18  plan 'explore': cel ważny? inaczej chooseTarget(L) (6.3.3); brak celu i heartP() -> assault
 19  zamknięta krata (6.3.11)
 20  zasadzka (6.3.12)
 21  small talk (6.7.6)
@@ -908,9 +918,15 @@ P.targetRoom = -1
 if !fr && !st: P.target = -1; return
 b = bfs(L.x, L.y, {known: true, avoid: L.R.avoid})
 seenLoot = łupy z seenWave === bieżąca fala
+tr = L.trait                                                  // 1.17: charakter przywódcy widać w tym, dokąd idzie
+deep = tr brave ? 0.24 : tr coward ? 0.1 : 0.18               // odważny ciągnie w głąb, tchórz trzyma się bliżej wyjścia
+whim = tr brave ? 2.5 : tr careful ? 1 : 1.5                  // odważny częściej idzie "na czuja", ostrożny prawie nigdy
+snd  = P.sound, jeśli time - P.sound.t < 25 (dźwięk zza ściany, który słyszał przywódca, 6.3.3a)
+sndK = (tr brave || tr greedy || L.rank === 0) ? -2.5 : (tr careful || tr coward) ? +2 : -1
 add(f, room, bonus):
    d = b.dist[f]; if d < 0: pomiń
-   sc = d - 0.18 * manhattan(f, wejście) + rand*1.5 + bonus     // lekko woli głąb lochu
+   sc = d * (tr careful ? 1.15 : 1) - deep * manhattan(f, wejście) + rand*whim + bonus     // do 1.16: d - 0.18*manhattan + rand*1.5
+   if snd && hypot(snd - f) <= 7: sc += sndK                  // odważny, chciwy, zielony idzie sprawdzić; ostrożny i tchórz omijają
    dla każdego łupu z seenLoot w odległości <= 6 od f: sc -= 3 * rarity(łup)
    if room >= 0 && pokój typu 'vault': sc -= 4                // Sezam przyciąga
 granica: add(f, -1, 0); cele przeszukania: add(t.i, t.room, 2)   // nieznane kusi bardziej niż pokój, o którym słyszeli
@@ -936,7 +952,8 @@ careful = pierwszy z crewT z cechą careful
 coward  = P.morale < 0.8 ? pierwszy z crewT z cechą coward : null
 brave   = coward ? pierwszy z crewT z cechą brave : null
 lines = [[L, deliberate]] + [greedy, argueLoot] + [careful, argueCareful] + [coward, argueCoward] + [brave, argueBrave] (tylko istniejący)
-if lines.length < 2 && crewT.length: lines.push([null, deliberate])   // ktokolwiek (1.13: sam lider nie spiera się sam ze sobą)
+if lines.length < 2 && crewT.length: lines.push([null, deliberate2])  // ktokolwiek (1.13: sam lider nie spiera się sam ze sobą;
+                                                                       // 1.17: drugi głos ma własny klucz, do 1.16 drugi raz deliberate)
 if greedy:
    sway = L.trait === 'greedy' || L.hunter || L.rank === 0 || rand < 0.35
    if sway: P.target = alt.f; P.targetRoom = alt.room       // lider ulega chciwemu
@@ -974,20 +991,89 @@ Partner (krok 13, po zwiadowcy): gdy `P.scoutId < 0`, nie żyje, zbiegł, zgubio
 
 **Zwiad przodem** (1.16, krok 13, także w lochu bez rozwidleń): `if P.plan === 'explore' && !fearless && !goingOut() && P.scoutId < 0 && !P.detour && P.searchId < 0 && L.room >= 0 && L.room !== P.aheadRoom`: `P.aheadRoom = L.room`; dalej, gdy to pokój (`kind 'room'`), `L.rank >= 1`, `time > (P.aheadCd || 15)`, załoga 3+, `P.target >= 0`, `rand < 0.4`: `th` = złodziej, nie lider, `hp > 0.6 max`, bez kryształu, nie w klatce, nie zgubiony, nie panikuje, `hdist(th, L) <= 8`; jeśli jest i cel jest co najmniej 3 pola od lidera: `P.scoutId = th.id`, `scoutTarget = P.target`, `scoutUntil = time + 12`, `stats.scouts++`, `stats.aheadScouts++`, `P.aheadCd = time + 40`, `P.aheadUntil = time + 8`, `P.waitUntil = max(P.waitUntil, P.aheadUntil)`, `P.aheadWait = th.id`, `startSplit(th, 'ahead')`, `SAY.aheadScout` (2), lider po 1,3 s `SAY.aheadReply`. Drużyna stoi (lider w stanie `talk`). Gdy zwiad się skończy (`P.scoutId !== P.aheadWait`): `P.aheadWait = -1` i jeśli `P.waitUntil <= P.aheadUntil`, czekanie kończy się od razu.
 
+### 6.3.3a Ciekawość: rozglądanie się po pokoju i dźwięki zza ściany (1.17, `p5_ai.js: lookSpots, lookPref, lookRoll, lookThink, lookJob, lookArrive, lookDone, hearFar`)
+
+Autor (21.10): bardziej naturalne zwiedzanie, ciekawość, niech się rozglądają. Przywódca, który wchodzi do nowego pokoju, czasem pozwala drużynie obejrzeć, co w nim jest: każdy podchodzi do czegoś, patrzy chwilę i mówi, co widzi; meble są przeszukiwane.
+
+**Rzut** (`onEnter` lidera -> `P.lookAsk = {room, at: time + 0.9}`, gdy nie zaczął się zły skręt; `lookThink` po czasie woła `lookRoll(L, room)`, jeśli w tym pokoju jeszcze nie rzucano i lider wciąż w nim jest). `lookRoll` zawsze dopisuje pokój do `P.lookRolled` (jeden rzut na pokój w fali), a potem:
+```
+stop, gdy: plan != 'explore' || fearless || goingOut() || P.council || P.detour || P.prep || P.aheadWait >= 0
+           || time < P.lookCd || L.lost || talking(L)
+        || fl.patT > 0.8 * waveTime || P.morale < 0.45 || ktoś z groupOf(L) panikuje albo walczy || lider nie stoi w tym pokoju
+        || w pokoju jest żywy potwór
+spots = lookSpots(r, L); objs = liczba miejsc innych niż goła ściana
+p = {careful 0.5, greedy 0.55, brave 0.35, coward 0.15}[L.trait] (bez cechy 0.4)
+    + (L.rank === 0 ? 0.15 : 0) + (objs >= 2 ? 0.2 : objs ? 0.1 : -0.2) + (komnata R.rk ? 0.15 : 0)
+    - (średnie hp/max wszystkich żywych < 0.5 ? 0.25 : 0) - (fl.patT > 0.6 * waveTime ? 0.15 : 0)
+g = talkGroup(L)
+if rand >= p:                                            // nie ma czasu na zwiedzanie
+   w = (w pokoju jest mebel) && rand < 0.3 ? ktoś z g (nie L) chciwy albo nowicjusz, nie rozmawia : null
+   if w: talkAs(1.5, [[w, lookWant], [L, lookHurry]]); stats.lookNo++
+   return
+lookers = g bez L, bez niosącego kryształ, wychodzących, panikujących, w klatce, na zwiadzie (onScout), rozmawiających, z hp <= 30%
+if lookers puste: lookers = [L]                           // sam rozgląda się sam
+dla każdego z lookers w losowej kolejności:
+   tchórz (nie L) z szansą 0.6 zostaje przy liderze (z tego 40% powie lookStay, tylko jeśli ktoś inny naprawdę idzie oglądać)
+   inaczej miejsce z najmniejszym  d - lookPref(o, s) + rand*3  (d = Manhattan do najbliższego pola stania; tchórz tylko d <= 3)
+   o.look = {kind, sub, x, y, st, it, dwell: 1.5 + rand*1.5, at: -1, done: false}; o.needPlan; miejsce zajęte
+if nikt nie dostał miejsca: return
+P.look = {room: r, t0: time, until: time + 10, ids}; stats.looks++; tl('lk', r, ids.length)
+lider nie ogląda sam -> P.waitUntil = max(P.waitUntil, time + 1); lider mówi lookStart (2)
+```
+
+**Miejsca** (`lookSpots(r, L)`; pole stania = sąsiad 4-kierunkowy w tym pokoju, znany, `standOk`):
+- meble `fl.objects` w pokoju (beczka, skrzynia, posąg, półka), pomijając mebel ze znaną, nierozbrojoną pułapką; jeśli stoi na nim mimik, beczka prochu albo pozytywka (`SEARCH_TRAP`), miejsce pamięta ten element (`it`);
+- straszaki `LOOK_PROP` (portret, lustro, oczy na ścianie, trumna, kości) w tym pokoju (`slotRoom`), jeszcze nieznane; dla ściennych pole stania przed ścianą (`wallDirs`);
+- środek komnaty (`R.rk`, gdy jest dla niej `SAY.lookKind`): pole obok środka albo sam środek;
+- 2 losowe pola przy gołej ścianie (patrzy na ścianę).
+
+**Upodobania** `lookPref(h, s)` (`LOOK_LIKE`, im więcej, tym chętniej; suma dla charakteru i klasy, po `kind` i `sub`): chciwy: meble 2,5; złodziej: meble 1,5; kapłan: trumna, kości, Kaplica czaszek 2,5, Nawiedzona sala 1,5; mag: lustro 2, oczy 2, Nawiedzona sala 1,5; barbarzyńca: Zbrojownia 2,5, Kuźnia 2,5, Jaskinia ogra 1,5; bard: posąg 2, Galeria 2,5, Pokój dziecięcy 1,5, portret 1,5; wojownik: Zbrojownia 2, posąg 1; goła ściana zawsze -1,5.
+
+**Oglądanie** (`lookJob`, praca nr 13 w `planHero`, 6.2.9): bohater idzie (najwyżej 12 kroków, inaczej rezygnuje: `done`) do najbliższego pola stania; na miejscu raz `lookArrive` (kwestia `lookObj[sub]` / `lookProp[sub]` / `lookKind[sub]` / `lookWall` przez kolejkę, prio 1, z szansą 0,8, przy ścianie 0,5), potem stoi twarzą do rzeczy (`lookAt`, stan `wait`) przez `dwell`; na koniec `lookDone`:
+```
+look.done = true
+tylko mebel:
+  it (mimik / pozytywka / proch) wciąż na miejscu, nie wyłączony, nieznany, gotowy (cd <= 0) && rand < SEARCH_TRAP[typ]
+     (mimik 0.55, pozytywka 0.45, proch 0.2) -> fire(it, 1); stats.lookTraps++; tl('lt', h.id, typ, x, y); koniec
+  skrzynia, beczka, półka (SEARCH_GOLD): rand < (chciwy albo złodziej ? 0.3 : 0.18) -> h.gold++, stats.goldFound++,
+     napis "+1 złota", kolejka lookFind (prio 2); inaczej z szansą 0.45 lookNothing (prio 1)
+```
+Mebel z mimikiem, prochem albo pozytywką odpala dopiero na końcu oglądania, więc gracz ma najpierw własną szansę (skill check, gdy bohater stoi w zasięgu).
+
+**Przebieg i koniec** (`lookThink`, co `partyThink`): koniec, gdy wszyscy z `ids` skończyli (albo są zgubieni lub w klatce), po 10 s albo od razu (`stop`) przy: zmianie planu z `explore`, `fearless`, wychodzeniu, naradzie, braku lidera albo zgubionym liderze, pułapce, która odpaliła od początku rozglądania w tym pokoju (`fl.lastTrapRoom`) albo którą przywódca słyszał zza ściany (`P.sound.t > t0`), ranie, panice albo walce kogoś z grupy przywódcy. Wtedy `P.look = null`, `P.lookCd = time + 18`, wszyscy `look = null` i przeplanowują, `P.waitUntil` się kończy, a gdy to nie był `stop`, lider mówi `lookEnd` (kolejka +0,4 s). W trakcie lider, który sam nie ogląda, czeka (`P.waitUntil = time + 0,5`).
+
+**Dźwięk zza ściany** (`hearFar(it, hit)`, wołane z `p4_traps.js: fireRaw` przy każdym odpaleniu pułapki `TRAPS`, przed świadkami):
+```
+stop, gdy: brak drużyny, nie fala, time < P.soundCd, goingOut(), pokój pułapki (slotRoom) to Głusza
+c = żywi: nie zgubieni, nie panikują, nie w klatce, nie wychodzą, nie w pokoju pułapki, nie w Głuszy,
+    w odległości <= 12 (od środka pola pułapki), nie trafieni tą pułapką
+if c puste: return
+h = najbliższy z c; v = pierwszy żywy trafiony (jeśli jest)
+P.soundCd = time + 10
+if h jest przywódcą albo przywódca go słyszy (canHear): P.sound = {x, y, t: time, room}     // tylko wtedy przywódca kieruje się dźwiękiem
+stats.heard++; tl('hs', h.id, typ)
+v ? kolejka h: hearScream z imieniem v (prio 2) : z szansą 0.65 kolejka h: hearSound (prio 2)
+każdy nie zgubiony, nie panikujący, nie w klatce, który jest h albo w earshot(o, h): lookAt(pułapka), glanceT = 2.5   // odwracają się w tę stronę
+```
+`P.sound` przez 25 s zmienia wybór celu (6.3.3): odważny, chciwy albo zielony przywódca idzie sprawdzić, co to było, ostrożny i tchórz to omijają. Pułapka, którą przywódca słyszał, przerywa też rozglądanie się.
+
+Widać to: w karcie bohatera stan "rozgląda się", ciekawostka "Zwiedzali" (od 2 rozglądań w fali), statystyki `looks`, `lookNo`, `lookTraps`, `goldFound`, `heard` (sekcje 07 i 08).
+
 ### 6.3.4 Ile przeszukać przed szturmem (`p5_ai.js: partyThink`, krok 16)
 
 ```
 rooms     = pokoje (kind 'room')
 seenShare = Σ (R.visited ? 1 : R.seen ? 0.3 : 0) / rooms.length
-if fl.heartKnown && !P.heartSaid && !goingOut():
-   P.heartSaid = true; L mówi (seenShare < 0.65 && L.rank > 0 ? SAY.heartLater : SAY.heartSeen) (3)
 need   = min(0.85, (L.rank === 0 ? 0.5 : 0.6) + 0.1 * clamp(greedRaw(fl.greed) - 1, 0, 2) - (L.rank >= 2 ? 0.1 : 0))
+if fl.heartKnown && !P.heartSaid && !goingOut() && heartTold(L):            // 1.17: heartTold (6.3.13)
+   P.heartSaid = true; L mówi (seenShare < need && L.rank > 0 && !fl.fearless ? SAY.heartLater : SAY.heartSeen) (3)
+   // 1.17: "najpierw reszta" tylko, gdy naprawdę jeszcze szukają (do 1.16 stały próg 0,65 i padało też w szturmie z przepowiedni)
 tLimit = S.waveTime * min(0.6, 0.45 + 0.01 * max(0, rooms.length - 6))      // duży loch: więcej czasu
 detourG = P.gateDetourUntil > time                                          // krata kazała obejść (6.3.11)
-P.wantSearch = (seenShare < need && time < tLimit) || detourG               // zmiana -> fl.knowDirty = true
-if P.plan === 'explore' && !detourG && fl.heartKnown && avgHp >= 0.5 && (seenShare >= need || time > tLimit):
+P.wantSearch = (seenShare < need && fl.patT < tLimit) || detourG            // zmiana -> fl.knowDirty = true
+if P.plan === 'explore' && !detourG && heartP() && avgHp >= 0.5 && (seenShare >= need || fl.patT > tLimit):   // avgHp grupy przywódcy
    P.plan = 'assault'; P.detour = null; partySay('assault', 3); replanAll()
-   gr = inny niż lider chciwy albo łowca, nie zgubiony, nie panikuje
+   gr = inny niż lider chciwy albo łowca, nie zgubiony, nie panikuje, od 1.17 słyszy przywódcę (canHear)
    if gr && seenShare < 0.85: kolejka gr: SAY.argueSearch (+1), L: SAY.replySearch (+2)
 ```
 
@@ -999,7 +1085,8 @@ Im bardziej chciwi (globalna Chciwość `fl.greed`, sekcja 03), tym więcej loch
 ```
 witnesses = żywi, których pokój (h.room) jest jednym z pokoi obszaru pułapki
 if witnesses:
-   if !it.detected: (list[0] || witnesses[0]) krzyczy SAY.trap[it.type] || 'Pułapka!' (3, dur 1.4, 'loud')
+   if !it.detected: (list[0] || witnesses[0]) krzyczy pickS(SAY.trap[it.type] || SAY.trapGeneric) (3, dur 1.4, 'loud')
+                    // 1.17: SAY.trap[typ] to lista (pickS losuje), trapGeneric zastąpił zaszyte 'Pułapka!'
    p = max(h.R.learn dla świadków)                       // R.learn = 1 - 0.5 * 0.7^(lvl-1): poz. 1 = 0.5, poz. 5 = 0.88
    if pułapka w pokoju 'hush':  nikt nie zapamięta (Głusza: nie da się ostrzec innych)
    elif rand < p:               learnTrap(it, 'seen', null)          // napis "Zapamiętali"
@@ -1022,7 +1109,9 @@ każda nieznana, nierozbrojona LOOKS_TRAP z max(|it.x - h.tx|, |it.y - h.ty|) <=
 
 **Zapadnia**: kto spadł, zna ją (`p4_traps.js: fall`, `learnTrap`) i nie spadnie przez nią drugi raz w tej fali (`h.fellFrom`).
 
-**`learnTrap(it, how, by)`** (`p4_traps.js`): `it.detected = true`, `fl.threatDirty = true`; dla `how 'seen'` napis "Zapamiętali"; jeśli jest `by`: kwestia (`'seen'` -> `SAY.learn`, inaczej `SAY.amulet`/`SAY.detect`, prio 2); pułapka poz. 3: z szansą 0,7 `by` (albo ktoś w jej pokoju) mówi `SAY.nastyTrap` (3). Uwaga: wszystkie wywołania z `'seen'` podają `by = null`, więc `SAY.learn` nigdy nie pada (6.8).
+**`learnTrap(it, how, by)`** (`p4_traps.js`): `it.detected = true`, `fl.threatDirty = true`; dla `how 'seen'` napis "Zapamiętali"; jeśli jest `by`: kwestia (`'seen'` -> `SAY.learn`, inaczej `SAY.amulet`/`SAY.detect`, prio 2); od 1.17, gdy `by` brak i `how 'seen'` (wszystkie takie wywołania: odpalenie przy świadkach, upadek w zapadnię, pułapka postawiona na ich oczach), z szansą 0,5 pierwszy żywy w pokoju pułapki (`slotRoom`), nie zgubiony, nie panikujący, nie w klatce, mówi przez kolejkę `SAY.learn` (+1,2 s, po okrzyku, prio 2); pułapka poz. 3: z szansą 0,7 `by` (albo ktoś w jej pokoju) mówi `SAY.nastyTrap` (3). Do 1.16 `SAY.learn` nigdy nie padało (6.8).
+
+**Wiedza wspólna (1.17 jej nie dzieli).** Mapa (`fl.known`), wiedza o pułapkach (`detected`, `fl.danger`, `fl.knownTypes`) i o łupach (`seenWave`) zostają wspólne dla całej drużyny, także dla zwiadowcy i zgubionego pokoje dalej: to świadoma abstrakcja (sekcja 11). Percepcja z 1.17 (6.3.13) dotyczy zdarzeń i decyzji: śmierci, krzyków, planu, serca.
 
 **Plotki z karczmy** (`p3_flow.js: applyRumors`, na start fali; zapis plotek po fali w sekcji 03):
 ```
@@ -1047,13 +1136,14 @@ pułapka z plotki: jeśli rand <= uptake:
 |---|---|---|
 | start fali | `1` | `freshParty` |
 | upływ czasu | `+0.012/s`, z bardem (nie zgubionym, nie w klatce) `+0.02/s`; max 1 | `p5_ai.js: partyThink` |
-| każde obrażenie od pułapki | `-0.03`, min `0.15` | `p3_flow.js: damage` |
-| śmierć bohatera | `-0.25`, min `0.15` | `p3_flow.js: kill` |
+| każde obrażenie od pułapki (także pokoje dalej, bez sprawdzania percepcji) | `-0.03`, min `0.15` | `p3_flow.js: damage` |
+| śmierć bohatera | `-0.25`, min `0.15`; od 1.17 raz na śmierć i dopiero, gdy wie o niej przywódca (widział, słyszał krzyk albo dostał wieść, 6.3.13) | `p3_flow.js: kill`, `p5_ai.js: perceiveThink` |
 | pieśń barda | `+0.25` | `p5_ai.js: bardTick` |
 
 | Próg | Skutek |
 |---|---|
 | `< 0.2` i lider rangi 0-1 | cała drużyna ucieka (6.6.3) |
+| `< 0.45` | 1.17: przywódca nie pozwala się rozglądać (6.3.3a) |
 | `< 0.65` | bard śpiewa (6.5.5) |
 | `< 0.75` | lider rangi 1+ waha się przed każdym nowym polem granicy (`SAY.hesitate`) |
 | `< 0.8` | tchórz zabiera głos na naradzie |
@@ -1063,14 +1153,15 @@ pułapka z plotki: jeśli rand <= uptake:
 **Decyzja o odwrocie** (`partyThink` krok 14, gdy plan nie wyjściowy, nie `fearless`, nie `retreat`):
 ```
 if L.R.coord (lider poz. 3+) && time > P.retreatLock
-   && (avgHp < (P.plan === 'assault' ? 0.32 : 0.42) || (ktoś ma hp < 0.22 max && w załodze nie ma kapłana)):
+   && (avgHp < (P.plan === 'assault' ? 0.32 : 0.42) || (ktoś z grupy ma hp < 0.22 max && w załodze nie ma kapłana)):
+   // 1.17: avgHp i "ktoś ciężko ranny" liczone w grupie przywódcy (groupOf), kapłan w całej załodze
    room = safestRoom(L)
    if room >= 0:
       P.plan = 'retreat'; P.retreatRoom = room; P.restSince = -1; partySay('retreat', 3); replanAll()
-      br = inny niż lider odważny (brave) albo barbarzyńca, nie panikuje -> kolejka SAY.argueRetreat (+1)
-      cw = inny niż lider tchórz, nie panikuje -> kolejka SAY.agreeRetreat (+2 jeśli był br, inaczej +1)
+      br = inny niż lider odważny (brave) albo barbarzyńca, nie panikuje, 1.17: słyszy lidera -> kolejka SAY.argueRetreat (+1)
+      cw = inny niż lider tchórz, nie panikuje, 1.17: słyszy lidera -> kolejka SAY.agreeRetreat (+2 jeśli był br, inaczej +1)
 ```
-Lider-nowicjusz (poz. 1-2) nigdy nie zarządza odwrotu. Protest odważnego nic nie zmienia.
+Lider-nowicjusz (poz. 1-2) nigdy nie zarządza odwrotu. Protest odważnego nic nie zmienia. Od 1.17 do pokoju odwrotu idą tylko ci, którzy znają ten plan (`planOf(h) === 'retreat'`, 6.2.9); reszta dostaje go, gdy zobaczy albo usłyszy przywódcę.
 
 **`safestRoom(from)`** (`p5_ai.js`):
 ```
@@ -1096,7 +1187,7 @@ if (P.plan !== 'retreat' && !nap) || panicking(h) || exiting(h): state 'walk', n
 
 **Zwiad na postoju** (1.16, `partyThink`, plan `retreat`): gdy `restSince > 0`, `!P.restScouted`, minęły 3 s odpoczynku, `P.scoutId < 0`, załoga 3+ i jest złodziej (nie lider) z `hp > 0.7 max`, bez kryształu, nie w klatce, nie zgubiony, nie panikuje: `P.restScouted = true` (jeden rzut na postój, także gdy rzut nie wyjdzie); z szansą `0.5`: `f` = najbliższa granica wg `bfs(th, {known})`; jeśli jest i ścieżka ma do 18 pól: `P.scoutId = th.id`, `scoutTarget = f`, `scoutUntil = time + 14`, `state 'walk'`, `restAt = -1`, `stats.scouts++`, `stats.restScouts++`, `startSplit(th, 'rest')`, `SAY.restScout` (2), lider po 1,4 s `SAY.scoutReply`. `planHero` nie sadza zwiadowcy (`P.plan === 'retreat' && !onScout(h)`). `P.restScouted = false` przy nowym odwrocie i przy końcu odpoczynku.
 
-**Koniec odpoczynku** (`partyThink`, od 1.12.1): `restT = restSince > 0 ? time - restSince : 0`; koniec, gdy `(avgHp >= 0.7 && (restT >= 10 || (restSince < 0 && avgHp >= 0.85))) || restT > 26` (do 1.12: `avgHp >= 0.7` albo 20 s od `restSince`). Po końcu: `plan = fl.heartKnown ? 'assault' : 'explore'`, `P.retreatLock = time + 15`, `P.restSince = -1`, `partySay('restDone', 2)`, odpoczywający wstają, `needPlan` wszystkim.
+**Koniec odpoczynku** (`partyThink`, od 1.12.1): `restT = restSince > 0 ? time - restSince : 0`; koniec, gdy `(avgHp >= 0.7 && (restT >= 10 || (restSince < 0 && avgHp >= 0.85))) || restT > 26` (do 1.12: `avgHp >= 0.7` albo 20 s od `restSince`). `avgHp` od 1.17 to średnia grupy przywódcy. Po końcu: `plan = heartP() ? 'assault' : 'explore'` (do 1.16 `fl.heartKnown`), `P.retreatLock = time + 15`, `P.restSince = -1`, `partySay('restDone', 2)`, odpoczywający wstają, `needPlan` wszystkim.
 
 **Drzemka w Sanktuarium** (wersja 1.10, `planHero` praca nr 4): ranny (`hp < 0.6 max`) przechodzący przez pokój typu `haven` siada na 5 s raz na falę, reszta idzie dalej (wtedy łatwo się odłączyć). Te same koszmary co wyżej.
 
@@ -1117,7 +1208,8 @@ dla i < min(5, L.path.length): r = roomOf(L.path[i])
 **`startPrep(r)`**: załoga = grupa lidera (`talkGroup(L)`, od 1.13; wcześniej wszyscy żywi, nie zgubieni, nie w klatce, nie uciekający); gdy ktoś z niej już rozmawia, przygotowania nie ma. `P.prepped.add(r)`. Uczestnicy: kapłan poz. 3+ z `faith >= 2`, mag poz. 5+ z gotowym `jamCd`, złodziej poz. 4+, wojownik poz. 3+ (pierwszy pasujący każdej klasy). Scenka (od 1.13.3):
 ```
 kwestie = [[L, prepStart]]
-spec = [[kapłan, prepWard], [mag, prepJam], [złodziej, prepDisarm], [wojownik, prepShield]] bez brakujących
+trapsKnown = w pokoju r jest znana, nierozbrojona LOOKS_TRAP (slotRoom)       // 1.17: pokój może mieć same potwory
+spec = [[kapłan, prepWard], [trapsKnown && mag, prepJam], [trapsKnown && złodziej, prepDisarm], [wojownik, prepShield]] bez brakujących
 tasowanie Fisher-Yates (Math.random), mówią pierwsi 2 ze spec           // pozostali i tak działają w finishPrep
 if kwestie.length === 1:                                                  // nie mówi żaden specjalista
    rep = ktoś z załogi poza L
@@ -1126,7 +1218,7 @@ dur = max(3, talkLen(kwestie)); P.prep = {room, until: time + dur, pr, mg, th, w
 P.talkUntil = max(P.talkUntil, time + dur); załoga: talkUntil = time + dur
 kolejka: kwestia i o czasie time + 0.5*i; huddleUp(L) (6.7.5)
 ```
-Sygnałem do biegu jest okrzyk lidera `SAY.rush` w `finishPrep`. Długość scenki (średnie `readT` + przerwy): bez specjalisty ok. 5,8 s (sam lider ok. 6,2 s), z jednym ok. 6,5 s, z dwoma lub więcej ok. 9,3 s; w powtórkach dwóch runów (72 fale) średnio 8,0 s na przygotowanie. W 1.12.1-1.13.2 mówił każdy specjalista, a potem lider `prepGo` i ktoś `prepReply` (do 7 kwestii, 8-19 s, średnio 12,5 s w tych samych powtórkach; autor: za długie). Do 1.12 było stałe 2,4 s i większość kwestii nie zdążyła paść ("Plan!" i bezruch). Każdy poz. 4+ z `hp < 0.7 max` wypija najlepszą miksturę.
+Mag i złodziej nadal działają w `finishPrep` (zagłuszenie, rozbrojenie), nawet gdy w scenie nic nie powiedzieli. Od 1.17 kwestie specjalistów (`prepWard`, `prepJam`, `prepDisarm`, `prepShield`) są w `SOLO_MUTE`: samotny specjalista ich nie mówi. Sygnałem do biegu jest okrzyk lidera `SAY.rush` w `finishPrep`. Długość scenki (średnie `readT` + przerwy): bez specjalisty ok. 5,8 s (sam lider ok. 6,2 s), z jednym ok. 6,5 s, z dwoma lub więcej ok. 9,3 s; w powtórkach dwóch runów (72 fale) średnio 8,0 s na przygotowanie. W 1.12.1-1.13.2 mówił każdy specjalista, a potem lider `prepGo` i ktoś `prepReply` (do 7 kwestii, 8-19 s, średnio 12,5 s w tych samych powtórkach; autor: za długie). Do 1.12 było stałe 2,4 s i większość kwestii nie zdążyła paść ("Plan!" i bezruch). Każdy poz. 4+ z `hp < 0.7 max` wypija najlepszą miksturę.
 
 **`finishPrep()`** (po `dur`):
 ```
@@ -1164,18 +1256,23 @@ if atHeart && P.plan === 'assault' && fl.ending === null:
       if P.steal >= 0.85 * stealNeed():
          P.steal = 0.85 * stealNeed(); atHeart[0]: SAY.heartRepel (4)
          każdy przy sercu: strach 0.4 * courage, startFlee
-         P.plan = 'leave'; wszyscy needPlan; rest/talk/boss -> walk; pierwszy nieuciekający: SAY.leave (3)
+         P.plan = 'leave'; wszyscy needPlan; rest/talk/boss -> walk
+         SAY.leave (3) mówi nieuciekający przy sercu, a gdy wszyscy przy sercu uciekają, nieuciekający, który słyszy
+         kogoś przy sercu (1.17; do 1.16 pierwszy nieuciekający w kolejności wejścia, gdziekolwiek był)
    if P.steal >= stealNeed(): takeCrystal(żywi w stanie 'boss')
+if nikt nie stoi przy sercu && P.steal > 0: P.steal = max(0, P.steal - 0.5 * dt)     // 1.17: napoczęty kryształ osiada z powrotem
 stealNeed() = 4 / 2^mods.glass                                // Szklane serce
 ```
-`P.steal` nie spada, gdy odejdą od serca (zeruje go tylko `takeCrystal`, `regroupAtDoor` i powrót do szturmu w `crystalReturns`).
+Do 1.16 `P.steal` nie spadał, gdy odeszli od serca (np. w panice), więc kolejne podejście zaczynało od poprzedniego postępu; od 1.17 maleje o 0,5/s, gdy nikt nie stoi przy sercu. Zerują go też `takeCrystal`, `regroupAtDoor` i powrót do szturmu w `crystalReturns`.
 
 **`takeCrystal(atHeart)`** (`p6_loop.js`):
 ```
 carrier = ten z atHeart, kto ma najwięcej HP
 carrier.crystal = true; carrier.fleeing = false; P.carrierId = carrier.id; P.plan = 'escape'; P.steal = 0
 carrier: SAY.steal (4, dur 2.2)
-każdy żywy: boss/rest/talk -> walk; needPlan; inni z szansą 0.4: SAY.escape (2)
+1.17: tylko niosący i ci, którzy go widzą albo słyszą jego krzyk (perceives(h, carrier, true), 14 kroków):
+   h.plan = 'escape'; boss/rest/talk -> walk; needPlan; inni niż niosący z szansą 0.4: SAY.escape (2)
+   (do 1.16 każdy żywy w lochu; reszta dowiaduje się, gdy dołączy, 6.3.13)
 ```
 
 **Ucieczka z kryształem**: plan `escape` jest wyjściowy, więc wszyscy idą do wyjścia (`intent 'carry'` dla niosącego, `'exit'` dla reszty). Nie ma osobnej eskorty: pozostali po prostu wychodzą tą samą drogą i ich wyjście liczy się jako zwykłe (nie przestraszone). Niosący: prędkość `x0.9 * mods.carrierSlow`, strach od karty `mods.carrierFear`, używa butów, w small talku `chatCarrier`. Kryształ wraca, gdy:
@@ -1187,11 +1284,13 @@ Niosący, który spadł przez zapadnię bez tej karty, wychodzi z niej możliwie
 **`crystalReturns(h)`** (`p3_flow.js`):
 ```
 h.crystal = false; P.carrierId = -1; Groza za odzyskany kryształ (sekcja 03)
-każdy żywy: SAY.crystalDrop (4)
-if żywych >= 2 && średnia fear/courage < 0.55 && nikt nie ucieka: P.plan = 'assault'; P.steal = 0     // próbują jeszcze raz
+1.17: tylko ci, którzy widzą niosącego albo słyszą krzyk (perceives(o, h, true)): SAY.crystalDrop (4), needPlan
+crew = groupOf(leader()) (1.17; do 1.16 wszyscy żywi)
+if crew >= 2 && średnia fear/courage crew < 0.55 && nikt z crew nie ucieka:
+   P.plan = 'assault'; P.steal = 0; każdy z crew: plan = 'assault', needPlan          // próbują jeszcze raz
 else: partyFlee()
-wszyscy needPlan
 ```
+Kto nie widział i nie słyszał utraty kryształu, idzie dalej do wyjścia (myśli, że kryształ jest przed nim), aż dołączy do przywódcy i dostanie jego plan (6.3.13). Niosący, który spadł w Bezdenną studnię, jest już "zniknięty" (`gone`), więc nikt go nie widzi i nikt nie krzyczy.
 
 ### 6.3.10 Cierpliwość (`p3_flow.js: becomeImpatient`, `S.waveTime` = 120 s)
 

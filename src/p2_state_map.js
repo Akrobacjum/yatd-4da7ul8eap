@@ -483,7 +483,7 @@
     let n = false;
     if (R.kind === 'room') {
       for (let y = R.y0 - 1; y <= R.y1 + 1; y++) for (let x = R.x0 - 1; x <= R.x1 + 1; x++) n = markKnown(x, y) || n;
-      if (!R.seen) { R.seen = true; fl.stats.rooms++; if (r === fl.heart.room && !fl.heartKnown) { fl.heartKnown = true; } }
+      if (!R.seen) { R.seen = true; fl.stats.rooms++; if (r === fl.heart.room && !fl.heartKnown) { fl.heartKnown = true; fl.heartBy = fl.revealBy; } }   // 1.17: who saw it
     }
     return n;
   }
@@ -498,7 +498,7 @@
     return n;
   }
   function reveal(h) {
-    const x = h.tx, y = h.ty;
+    const x = h.tx, y = h.ty; fl.revealBy = h.id;
     let n = false;
     const r = roomOf(x, y);
     if (tileAt(x, y) === DOOR) {

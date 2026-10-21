@@ -7,6 +7,10 @@
     it.detected = true; fl.threatDirty = true;
     if (how === 'seen') { fl.stats.learned++; floatTile(it.x, it.y, 'Zapamiętali', '#ffe066', 12, -0.5); }
     if (by) say(by, how === 'seen' ? pick(SAY.learn) : (gearR(by, 'amulet') && by.type !== 'thief' ? pick(SAY.amulet) : pick(SAY.detect)), 2);
+    else if (how === 'seen' && fl.party && Math.random() < 0.5) {   // 1.17 (6.8 #1: never said): one who saw it go off tells the others, after the shout
+      const r = slotRoom(it.type, it.x, it.y), w = alive().find(h => h.room === r && !h.lost && !panicking(h) && !caged(h));
+      if (w) fl.party.queueSay.push({ id: w.id, text: pick(SAY.learn), at: fl.time + 1.2, prio: 2, late: 3 });
+    }
     if (t3(it)) {   // a level 3 trap makes an impression
       const r = slotRoom(it.type, it.x, it.y), w = by || alive().find(h => h.room === r);
       if (w && Math.random() < 0.7) say(w, pick(SAY.nastyTrap), 3);
@@ -91,7 +95,7 @@
     // combo: a different trap within the window (on the combo clock, which waits while the party walks through empty rooms)
     if (fl.cclock - fl.lastTrapC < (fl.comboWinNow || S.comboWin)) { if ((fl.lastTrapType !== it.type || isRt(slotRoom(it.type, it.x, it.y), 'gears')) && fl.combo < 7) { fl.combo++; comboOrbs(it.x, it.y); } }   // 1.10: in Zębatki the same trap again counts too   // only a different type builds combo (1.10: its orbs fly to the Combo box)
     else { if (fl.chain && fl.chain.trap) payChain(); fl.combo = 1; comboReset(); }   // 1.01: the old chain is cashed in before a new one starts
-    fl.lastTrapAt = fl.time; fl.lastTrapC = fl.cclock; fl.lastTrapType = it.type;
+    fl.lastTrapAt = fl.time; fl.lastTrapC = fl.cclock; fl.lastTrapType = it.type; fl.lastTrapRoom = slotRoom(it.type, it.x, it.y);
     fl.comboWinNow = S.comboWin * (isRt(slotRoom(it.type, it.x, it.y), 'grotto') ? 1.5 : 1);   // Grota: the echo holds the combo longer
     bt(it.type).fires++;
     fl.stats.maxCombo = Math.max(fl.stats.maxCombo, fl.combo);
@@ -102,7 +106,7 @@
     run.fires++;
     fl.heroes.forEach(h => {
       if (h.item !== it || h.state !== 'disarm') return;
-      h.state = 'walk'; h.item = null; h.needPlan = true; say(h, pick(SAY.disarmHit), 3, null, 'loud');
+      h.state = 'walk'; h.item = null; h.needPlan = true; say(h, pick(CURSED[it.type] ? SAY.blessHit : SAY.disarmHit), 3, null, 'loud');   // 1.17: a priest's broken prayer
       // 1.13.4: he keeps trying the trap he chose (disarmJob), but not forever: the 2nd time it goes off in his face he leaves it
       const hm = h.disarmHits || (h.disarmHits = new Map()), n = (hm.get(it) || 0) + 1; hm.set(it, n);
       if (n >= 2) { h.disarmT = null; fl.stats.disarmQuit = (fl.stats.disarmQuit || 0) + 1; }
@@ -111,11 +115,12 @@
     let list = heroesOn(keys);
     if (opt.lock && opt.lock.length) list = [...new Set(list.concat(opt.lock.filter(h => !h.dead && !h.fled && !h.gone && !h.fleeing)))];   // 1.09: a check's targets stay its targets
     fl.surprise = TRAPS[it.type] && !it.detected;
+    if (TRAPS[it.type]) hearFar(it, list);   // 1.17: heard from another room
     if (TRAPS[it.type]) {
       const rooms = new Set(area.map(t => roomOf(t[0], t[1])));
       const witnesses = alive().filter(h => rooms.has(h.room));
       if (witnesses.length) {
-        if (!it.detected) say(list[0] || witnesses[0], SAY.trap[it.type] || 'Pułapka!', 3, 1.4, 'loud');   // 1.10: a shout, over anyone
+        if (!it.detected) say(list[0] || witnesses[0], pickS(SAY.trap[it.type] || SAY.trapGeneric), 3, 1.4, 'loud');   // 1.10: a shout, over anyone
         const p = Math.max(...witnesses.map(h => h.R.learn));
         if (isRt(slotRoom(it.type, it.x, it.y), 'hush')) { if (!it.detected) fl.stats.hushUnlearned = (fl.stats.hushUnlearned || 0) + 1; }   // 1.10: Głusza: nobody can call out what he saw
         else if (Math.random() < p) learnTrap(it, 'seen', null);
@@ -124,7 +129,8 @@
       if (it.detected) fl.threatDirty = true;
       // two traps on the party within a couple of seconds = an ambush: they stop and their nerves fray
       const P = fl.party;
-      if (list.length) { if (fl.time - P.ambushT < 3) P.ambushN++; else P.ambushN = 1; P.ambushT = fl.time; }
+      const Lh = leader();   // 1.17: only traps on the leader's group make an ambush
+      if (list.some(h => Lh && (h === Lh || canSee(h, Lh) || canHear(h, Lh)))) { if (fl.time - P.ambushT < 3) P.ambushN++; else P.ambushN = 1; P.ambushT = fl.time; }
     }
     const cdBase = cdOf(it.type) * (isRt(slotRoom(it.type, it.x, it.y), 'gears') ? 0.75 : 1);   // 1.10: Zębatki
     let hit = 0;
@@ -173,7 +179,7 @@
         it.cd = cdBase; it.anim = 0.8;
         fxTiles(area, '170,120,255', 0.5);
         list.forEach(h => { addFear(h, 22 * pw * mods.portraitFear * cpow, 'portrait'); floatHero(h, 'Groza!', '#c3b2ff', 14, -0.5); hit++; });
-        if (list.length) say(list[0], SAY.trap.portrait, 3);
+        if (list.length) say(list[0], pickS(SAY.trap.portrait), 3);
         if (mods.choir && !opt.choir) {   // Chór potępionych: the other ready portraits in the room join in
           const r = slotRoom('portrait', it.x, it.y);
           fl.items.forEach(o => { if (o !== it && o.type === 'portrait' && !o.disabled && o.cd <= 0 && !(o.jamUntil > fl.time) && slotRoom('portrait', o.x, o.y) === r) chorus.push(o); });
@@ -194,7 +200,7 @@
         it.cd = cdBase; it.anim = 0.8;
         fxTiles(area, '190,220,255', 0.4);
         list.forEach(h => { const k = 1 + 1.5 * clamp(h.fear / h.courage, 0, 1); addFear(h, 12 * k * pw * cpow, 'mirror'); floatHero(h, k >= 1.75 ? 'Odbicie!' : 'Groza!', '#bfe0ff', 13, -0.5); hit++; });
-        if (list.length) say(list[0], SAY.trap.mirror, 3);
+        if (list.length) say(list[0], pickS(SAY.trap.mirror), 3);
         break;
       case 'creak':
         it.cd = cdBase; it.anim = 0.7;
@@ -390,7 +396,7 @@
   function cageHero(h, it, dur, fearK) {
     if (h.nx !== null) { if (h.prog >= 0.5) { h.x = h.nx; h.y = h.ny; } h.nx = null; h.ny = null; h.prog = 0; }
     h.tx = h.x; h.ty = h.y;
-    h.state = 'caged'; h.cageUntil = fl.time + dur; h.cageIt = it; h.path = []; h.foe = null; h.item = null;
+    h.state = 'caged'; h.cageUntil = fl.time + dur; h.cagedAt = fl.time; h.cageIt = it; h.path = []; h.foe = null; h.item = null;
     fl.stats.cages++; say(h, pick(SAY.cage), 4); tl('cg', h.id);
     addFear(h, 20 * mods.cageFear * (fearK || 1), 'cage');
     fl.party.cageDecided.delete(h.id);

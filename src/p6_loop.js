@@ -423,7 +423,10 @@
     fl.stats.crystalTaken++; tl('ct', carrier.id); buzz(70);
     floatTile(fl.heart.x, fl.heart.y, 'Kryształ skradziony!', '#ff6b6b', 18, -1.2); shake = Math.max(shake, 0.2);
     say(carrier, pick(SAY.steal), 4, 2.2);
-    alive().forEach(h => { if (h.state === 'boss' || h.state === 'rest' || h.state === 'talk') h.state = 'walk'; h.needPlan = true; if (h !== carrier && Math.random() < 0.4) say(h, pick(SAY.escape), 2); });
+    alive().forEach(h => {   // 1.17: those who see it or hear it head out (h.plan); the rest learn when they rejoin
+      if (h !== carrier && !perceives(h, carrier, true)) return;
+      h.plan = 'escape'; if (h.state === 'boss' || h.state === 'rest' || h.state === 'talk') h.state = 'walk'; h.needPlan = true; if (h !== carrier && Math.random() < 0.4) say(h, pick(SAY.escape), 2);
+    });
     if (!tutPop('theft')) setHint('Kryształ skradziony! Zabij niosącego, zanim dojdzie do wyjścia, a kryształ wróci do serca.');
   }
   const stealNeed = () => 4 / Math.pow(2, mods.glass);   // Szklane serce: the crystal comes loose 2 times faster per copy
@@ -479,7 +482,7 @@
     fl.heroes.forEach(h => { if (h.state === 'disarm' && h.item && !h.dead && h.item.detected) { fl.disarmKeys = fl.disarmKeys || new Set(); areaOf(h.item).forEach(t => fl.disarmKeys.add(key(t[0], t[1]))); } });
     // 1.04: the party gathers at the door while "Fala N" shows, then goes in (testers met the first check 0,1-0,9 s after
     // the start and often missed it): no hero moves and no trap fires until then
-    if (!fl.gateOpen && fl.time >= GATE_T) { fl.gateOpen = true; const L = alive()[0]; if (L) say(L, pick(SAY.gate), 2, 1.6); }
+    if (!fl.gateOpen && fl.time >= GATE_T) { fl.gateOpen = true; const L = leader(); if (L) say(L, pick(SAY.gate), 2, 1.6); }   // 1.17: the leader ('za mną'), not the first one in
     if (fl.gateOpen) {
       fl.heroes.forEach(h => { if (!h.dead && !h.fled) updateHero(h, dt); });
       checkTick();
@@ -487,6 +490,7 @@
     monstersTick(dt);
     // at the heart: they pry a crystal loose while the heart burns them
     const P = fl.party, atHeart = alive().filter(h => h.state === 'boss');
+    if (!atHeart.length && P.steal > 0) P.steal = Math.max(0, P.steal - 0.5 * dt);   // 1.17 (6.8 #12): pried loose half way and left, the crystal settles back
     if (atHeart.length && P.plan === 'assault' && fl.ending === null) {
       P.steal += dt * (1 + 0.5 * (atHeart.length - 1));
       fl.heartHit = 0.12;
@@ -501,7 +505,7 @@
           say(atHeart[0], pick(SAY.heartRepel), 4, 2.2); floatTile(fl.heart.x, fl.heart.y, 'Serce ich odpycha!', '#ff9ab0', 15, -1);
           atHeart.forEach(h => { addFear(h, 0.4 * h.courage, null, 'heart'); if (!h.fleeing && !h.dead) startFlee(h); });
           P.plan = 'leave'; alive().forEach(h => { h.needPlan = true; if (h.state === 'rest' || h.state === 'talk' || h.state === 'boss') h.state = 'walk'; });
-          const L = alive().find(h => !h.fleeing); if (L) say(L, pick(SAY.leave), 3);
+          const L = atHeart.find(h => !h.fleeing && !h.dead) || alive().find(h => !h.fleeing && atHeart.some(a => canHear(h, a))); if (L) say(L, pick(SAY.leave), 3);   // 1.17: one who was there
         }
       }
       // 1.04: the heart's burn can kill the last one prying in this very tick (a bot found it: the step threw, the game froze)

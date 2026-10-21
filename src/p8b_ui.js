@@ -275,7 +275,7 @@
     const out = fl.party && fl.party.carrierId >= 0 && fl.phase === 'raid' ? 1 : 0;
     setText('h-cry', '◆'.repeat(Math.max(0, run.crystals - out)) + (out ? '◈' : '') + '◇'.repeat(Math.max(0, run.maxCrystals - run.crystals)));
     { const c = 2 * run.crystals - out; if (SC.cry != null && c < SC.cry && fl.phase !== 'build') crystalAlarm(); SC.cry = c; }   // stolen or eaten: the crystals shake, the map flashes red
-    setText('h-time', fl.phase === 'build' ? 'budowa' : fl.phase === 'raid' ? (paused ? 'pauza' : fl.fearless ? (fl.storm ? 'szturm!' : 'odwrót') : mmss(Math.max(0, S.waveTime - (fl.patT || 0)))) : 'koniec');
+    setText('h-time', fl.phase === 'build' ? 'budowa' : fl.phase === 'raid' ? (paused ? 'pauza' : fl.fearless ? (fl.storm ? 'szturm!' : 'odwrót') : fl.party && fl.party.council ? 'narada' : mmss(Math.max(0, S.waveTime - (fl.patT || 0)))) : 'koniec');
     const bar = $('#h-bar'); bar.style.width = (fl.phase === 'raid' ? Math.min(1, (fl.patT || 0) / S.waveTime) * 100 : 0).toFixed(1) + '%'; bar.classList.toggle('ok', false);
     const pipsOn = fl.phase !== 'raid';
     if (hudCache.pipsOn !== pipsOn) { hudCache.pipsOn = pipsOn; $('#h-barwrap').hidden = pipsOn; $('#h-pips').hidden = !pipsOn; }
@@ -534,7 +534,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.16.1 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.17 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -584,9 +584,15 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.16.1'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.17'));
     const ul2 = el('ul', 'conseq');
-    ['1.16.1: pasek serca nie czeka na koniec combo. Serce je każde zdarzenie od razu, według mnożników z tej chwili, a gdy combo się kończy, dochodzi tylko to, co combo dołożyło (najpierw serce, potem Twoja sakiewka). Sumy z fali są takie same jak wcześniej.',
+    ['1.17: bohaterowie zwiedzają. Gdy przywódca wejdzie do nowego pokoju, czasem pozwala się rozejrzeć: każdy podchodzi do czegoś (mebel, portret, lustro, trumna, kości, środek komnaty, goła ściana), ogląda to przez chwilę i mówi, co widzi. Meble przeszukują: czasem znajdą monetę, a mimik, beczka prochu albo pozytywka na meblu może przy tym odpalić (pod koniec, więc pierwsza szansa jest Twoja). Tchórz woli zostać przy przywódcy, a chciwy może poprosić o przeszukanie i usłyszeć "Nie ma czasu".',
+     '1.17: po 2 minutach nie ma już sztywnego odwrotu, tylko narada. Każdy, kto stoi przy przywódcy, głosuje według swojego stanu i charakteru: do domu, szturm na serce (tylko gdy wiedzą, gdzie jest) albo "jeszcze chwila" (+30 s, raz na falę). Przegłosowany przywódca ustępuje, a przegłosowany tchórz albo ranny może sam wrócić do domu. Bohater z przepowiedni dalej prowadzi szturm jak dotąd.',
+     '1.17: bohaterowie wiedzą tylko to, co widzą i słyszą. Na śmierć w pełni reagują ci, którzy ją widzieli; kto tylko usłyszał krzyk, boi się mniej i nie wie, kto zginął; reszta dowiaduje się, gdy spotka kogoś, kto wie ("Straciliśmy Borysa." - "Co?! Nie..."). Tak samo z ucieczką drużyny, kryształem, klatką, wołaniem kapłana i sercem wypatrzonym przez zwiadowcę. Zgubionego przywódca zauważa po chwili i wraca tam, gdzie go ostatnio widział. Kto nie usłyszał decyzji, robi swoje, dopóki nie dołączy do reszty.',
+     '1.17: dymków jest kilka razy więcej: ok. 2500 kwestii (było ok. 680), ok. 500 rozmów (było 143), ok. 430 kwestii w samotności (było 89) i ok. 200 odpowiedzi na small talk (było 31). Rozmowy zaczynają się też od kwestii mówionych po kolei w scenkach. Kwestie poprawiono tak, żeby mówiły prawdę: "Za mną" woła tylko wojownik, który naprawdę prowadzi, kapłan przy egzorcyzmie ma własne słowa, po miksturę nikt nie woła "Złoto!", a kto mówi, że coś zrobi, zwykle to robi.',
+     '1.17: pułapka odpalona w pokoju obok jest słyszana ("Słyszeliście?"): bohaterowie odwracają się w tę stronę, a odważny, chciwy albo zielony przywódca idzie sprawdzić, co to było (ostrożny i tchórz to omijają). Charakter przywódcy wpływa też na to, którędy idą.',
+     '1.17: poprawki AI: uwięziony w klatce nie ucieka już razem z drużyną (wcześniej nikt go potem nie uwalniał), przywódca, który każe zostawić łup, zwykle zostaje posłuchany (chciwy, łowca skarbów i nowicjusz się kłócą i idą), mag i kapłan nie czarują w panice, napoczęty kryształ powoli osiada z powrotem, gdy nikt przy nim nie stoi, druga osoba w klatce czeka na swoją kolej ratunku, a kapłan wezwany na pomoc idzie do tego, kto wołał.',
+     '1.16.1: pasek serca nie czeka na koniec combo. Serce je każde zdarzenie od razu, według mnożników z tej chwili, a gdy combo się kończy, dochodzi tylko to, co combo dołożyło (najpierw serce, potem Twoja sakiewka). Sumy z fali są takie same jak wcześniej.',
      '1.16.1: ekran dzieli się trochę wcześniej, gdy grupy są ok. 1/5 bliżej siebie niż dotąd (próg 19 zamiast 16 pikseli na pole).',
      '1.16.1: okienko Esencji w równaniu u góry pokazuje w trakcie serii tę samą wartość co przy wypłacie (wcześniej bez mnożnika ×1,1, więc przy wypłacie podskakiwało o ok. 10%).',
      '1.16.1: Esencja na karcie pułapki ("Ostatnia fala: ... Esencji") to teraz to, ile były warte jej odpalenia. Wcześniej było tam prawie zawsze 0, bo Esencja wpływa przy wypłacie serii, a nie w chwili odpalenia.',
@@ -974,6 +980,8 @@
     if (ck >= 3) pool.push({ k: 'crit', l: 'Krytyki', v: s.checkCrit + ' z ' + ck, d: 'checków w tej fali' });
     if (s.gotLost >= 1) pool.push({ k: 'lost', l: 'Zgubieni', v: String(s.gotLost), d: Math.round(s.loneTime || 0) + ' s samotności' });
     if (s.splits >= 1 && (s.splitTime || 0) >= 4) pool.push({ k: 'split', l: 'Rozdzieleni', v: s.splits + (s.splits === 1 ? ' raz' : ' razy'), d: Math.round(s.splitTime) + ' s na zwiadzie' + (s.splitLost ? ', zabłądzili: ' + s.splitLost : '') });   // 1.16
+    if ((s.looks || 0) >= 2) pool.push({ k: 'look', l: 'Zwiedzali', v: s.looks + ' razy', d: (s.goldFound ? 'znaleźli ' + s.goldFound + ' ' + (s.goldFound === 1 ? 'monetę' : s.goldFound < 5 ? 'monety' : 'monet') : 'nic nie znaleźli') + (s.lookTraps ? ', obudzili pułapkę: ' + s.lookTraps : '') });
+    if (s.councils) pool.push({ k: 'council', l: 'Narada', v: s.councilStorm ? 'szturm' : s.councilMore ? 'jeszcze chwila' : 'do domu', d: s.goHome ? 'przegłosowani wrócili sami: ' + s.goHome : 'zdecydowali razem' });
     if (s.disarmed >= 2) pool.push({ k: 'dis', l: 'Rozbrojone', v: s.disarmed + (s.disarmed >= 5 ? ' pułapek' : ' pułapki'), d: 'wyłączyli bohaterowie' });
     if (s.lootSeen >= 2) pool.push({ k: 'loot', l: 'Łup', v: s.loot + ' z ' + s.lootSeen, d: 'skarbów, które zobaczyli, zabrali' });
     shuffle(pool); while (out.length < 3 && pool.length) out.push(pool.shift());
@@ -1539,7 +1547,7 @@
     const add = t => { if (t) ul.appendChild(el('li', null, t)); };
     if (live) {
       const st = live.dead ? (fem ? 'Zginęła.' : 'Zginął.') : live.fled ? (live.carriedOut ? 'Wyniósł kryształ.' : live.fleeing ? 'Uciekł ze strachu.' : 'Wyszedł z lochu.') :
-        [live.fleeing ? 'UCIEKA' : '', live.crystal ? 'NIESIE KRYSZTAŁ' : '', caged(live) ? 'w klatce' : '', live.lost ? 'zgubiony' : live.split ? 'na zwiadzie' : live.alone ? 'sam' : '', fl.time < live.burnUntil ? 'płonie' : '', live.cursed ? 'przeklęty' : '', fl.time < live.shakenUntil ? 'wstrząśnięty śmiercią' : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
+        [live.fleeing ? 'UCIEKA' : '', live.crystal ? 'NIESIE KRYSZTAŁ' : '', caged(live) ? 'w klatce' : '', live.lost ? 'zgubiony' : live.goHome ? 'wraca sam do domu' : live.split ? 'na zwiadzie' : live.look && !live.look.done ? 'rozgląda się' : live.alone ? 'sam' : '', fl.time < live.burnUntil ? 'płonie' : '', live.cursed ? 'przeklęty' : '', fl.time < live.shakenUntil ? 'wstrząśnięty śmiercią' : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
       add('Teraz: ' + st + '.');
     }
     add('Charakter: ' + (e.trait ? HERO_TRAITS[e.trait].name[fem ? 1 : 0] + ' (' + TRAIT_TEXT[e.trait] + ')' : 'zwyczajny') + '.');
@@ -1640,6 +1648,9 @@
     [['Skill checki: krytyk / draśnięcie / pudło / odpuszczone', s.checkCrit + ' / ' + s.checkOk + ' / ' + s.checkMiss + ' / ' + s.checkSkip],
      ['Łup: zobaczony / zabrany / odpuszczony (ryzyko)', s.lootSeen + ' / ' + s.loot + ' / ' + s.lootSkipped],
      ['Narady · zwiady · samotne wypady · zbiórki · odwroty', s.talks + ' · ' + s.scouts + ' · ' + s.wanders + ' · ' + s.regroups + ' · ' + s.retreats],
+     ['Zwiedzanie: rozglądania / odmowy / znalezione monety / pułapki odpalone przy szukaniu', (s.looks || 0) + ' / ' + (s.lookNo || 0) + ' / ' + (s.goldFound || 0) + ' / ' + (s.lookTraps || 0)],
+     ['Narada po 2 min: do domu / szturm / jeszcze chwila · wrócili sami', (s.councilHome || 0) + ' / ' + (s.councilStorm || 0) + ' / ' + (s.councilMore || 0) + ' · ' + (s.goHome || 0)],
+     ['Wieści: pułapki usłyszane zza ściany / śmierć przekazana później / łup zostawiony na rozkaz', (s.heard || 0) + ' / ' + (s.newsDeaths || 0) + ' / ' + (s.lootObey || 0)],
      ['Osobno: na zwiadzie / sam / zgubiony (s)', Math.round(s.splitTime || 0) + ' / ' + Math.round(s.loneTime || 0) + ' / ' + Math.round(s.lostTime || 0) + (s.splitLost ? ' · zabłądzili ze zwiadu: ' + s.splitLost : '')],
      ['Paniki · ucieczki · ucieczki całej drużyny', s.panics + ' · ' + s.flees + ' · ' + s.partyFlees],
      ['Pułapki zapamiętane / niezapamiętane / wykryte', s.learned + ' / ' + s.notLearned + ' / ' + s.detected],
@@ -2445,7 +2456,7 @@
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
     resolveCheck: p => resolveCheck(p), skipCheck: () => skipCheck(), clearCheck: () => clearCheck(), areaOf, slotOf, shortestPath, frontier, toolMarkers, applyTool, toolCost, get WW() { return WW; }, get WH() { return WH; }, TUT, UPGRADES, UPG, ITEMS, startBuild, applyUpgrade, makeWave, levelStats, recomputeMods, sellCard, upgradePicks, cardMultNow, openModal, queueModal, renderDeckTiles, saveRun, loadSave, resumeRun, clearSave, upgradeItem, removeItem, waveCurve, waveBase, computeBRooms, inB, decoyAlarm, guildAdapt, quietNow, setUser: v => { userStarted = v; }, get userStarted() { return userStarted; }, ignite, trapBoost, calmReady, landFallen, fall, planBreach: () => planBreach(), tutAnySpot, galleryK, stealNeed, portraitRooms, addFear, setTab: t => { tab = t; updateTray(); }, undo, pushUndo, get undoN() { return undoStack.length; }, setTrayOpen, UI, moveItem, moveTarget, setMode: (m, k) => { selected = m; movingKey = k || null; updateTray(); }, get selected() { return selected; }, get movingKey() { return movingKey; }, rankOf, dungeonBounds, regroupAtDoor: () => regroupAtDoor(),
-    patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, startSplit, onScout, splitting, GZ, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, t3, kindPow, inKind, slotRoom, servedRooms, kindProps, PROP, PROP_PLAN, KIND_WALL3D, snapshotLayout, KINDS, KIND_INFO, KIND_OF, RT_INFO, nbrRooms, roomCount, sizeMult,
+    patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, startSplit, onScout, splitting, lookRoll, lookSpots, hearFar, councilVote, nameGen, nameFill, GZ, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, t3, kindPow, inKind, slotRoom, servedRooms, kindProps, PROP, PROP_PLAN, KIND_WALL3D, snapshotLayout, KINDS, KIND_INFO, KIND_OF, RT_INFO, nbrRooms, roomCount, sizeMult,
     rollItem, curse, comboNow, get orbs() { return orbs; }, boxOrbs, tileScreen, bfs, say: (h, t, p, d, how) => say(h, t, p, d, how), sayTick, floorBusy, readT, talkAs: (d, l) => talkAs(d, l), greedCurve, greedRaw, addGreed, waveSize, partySize, safestRoom: h => safestRoom(h), planHero: h => planHero(h), lootSeen: it => lootSeen(it), kill: (h, k, a) => kill(h, k, a), damage, loadRecords, BREACH_PATCH, HITEMS, LOOT_KIND, noticeLoot, lootDecision, leader, alive, heroExit, driftTarget, SCARE, CURSED, DRIFT, TABS, objTargetOk, roomOf, dropCarry, holdRemove, buildTap, onbStage, setOnb, onbDone, startGuided, endRun: (r, x) => endRun(r, x), revealPhobia, revealPhys, ONB_STAGES, ONB_CARD, ONB_ITEM, comboHp, onbOk, coachDone,
     get movingObj() { return movingObj; }
   };

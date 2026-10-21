@@ -1,4 +1,8 @@
 [
+ "prepWard",
+ "prepJam",
+ "prepDisarm",
+ "prepShield",
  "lootWait",
  "friendHit",
  "friendLow",

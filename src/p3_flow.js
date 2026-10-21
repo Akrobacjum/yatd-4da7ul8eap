@@ -198,7 +198,7 @@
   // a new line also waits for the lines already waiting around him (a talk going on, an answer due): first come, first said
   function othersWaiting(h, prio) {
     for (const o of fl.heroes) if (o.sayQ && o.sayQ.length && !o.dead && !o.fled && !o.gone && o.sayQ.some(e => e.exp > fl.time && e.prio >= prio) && earshot(h, o)) return true;
-    const Q = fl.party && fl.party.queueSay;
+    const P = fl.party, Q = P && (P.queueCur ? P.queueCur.filter(q => !q.done && q !== P.sayingQ).concat(P.queueSay) : P.queueSay);   // 1.17: also while the queue is being worked through
     if (Q && Q.length) for (const q of Q) { if (q.at > fl.time) continue; const o = fl.heroes.find(x => x.id === q.id); if (o && !o.dead && !o.fled && !o.gone && earshot(h, o)) return true; }
     return false;
   }
@@ -363,7 +363,8 @@
     return { plan: 'explore', target: -1, leaderId: -1, talkUntil: -1, waitUntil: -1, retreatRoom: -1, retreatLock: -99, restSince: -1, morale: 1, scoutId: -1, scoutMate: -1, aheadWait: -1, aheadUntil: -1,
       junctions: new Set(), hesitated: new Set(), thinkT: 0, lastSay: {}, ambushT: -9, ambushN: 0, steal: 0, carrierId: -1, rescueId: -1,
       cageDecided: new Set(), abandoned: new Set(), lastTalkAt: -99, chatT: 6, heartSaid: false, queueSay: [], prepped: new Set(), prep: null, prepCd: 0, rushUntil: -1,
-      searchId: -1, searchUntil: -1, detour: null, detourCd: 0, wantSearch: true, targetRoom: -1 };
+      searchId: -1, searchUntil: -1, detour: null, detourCd: 0, wantSearch: true, targetRoom: -1,
+      council: null, councilMore: false, look: null, lookCd: 0, sound: null, soundCd: 0 };   // 1.17
   }
   // A fresh wave state around the dungeon as it stands (used by the build phase, and by a run resumed after a wave summary).
   function setupFl(phase) {
@@ -735,23 +736,28 @@
     P.plan = 'explore'; P.leaderId = -1; P.target = -1; P.prep = null; P.steal = 0; P.detour = null; P.searchId = -1;
     fl.holdT = 0; fl.secondGroup = (fl.secondGroup || 0) + 1; fl.stats.regroupsDoor = (fl.stats.regroupsDoor || 0) + 1; tl('rg', fl.queue.length);
   }
-  // Patience runs out. Prototype 1.01 (author's decision): the party retreats and goes home, heart known or not (the old
-  // "szarża" is gone). Only the hero of the prophecy never goes home: the prophecy shows the way and the party storms the heart.
+  // Patience runs out. Prototype 1.01 (author's decision): the party went home, heart known or not (the old "szarża" was gone).
+  // 1.17 (author: after 2 minutes not a rigid retreat or charge: let them decide, maybe together, by talking it over): they
+  // hold a council (p5_ai.js: councilThink) and vote: home, storm the heart (only when they know where it is) or "a little
+  // longer" (+30 s, once a wave). With one choice left (heart unknown and the extra time used up) they just go home. Only the
+  // hero of the prophecy never goes home: the prophecy shows the way and the party storms the heart, as before.
   function becomeImpatient() {
-    fl.fearless = true;
-    const P = fl.party, L = alive()[0];
-    if (P.plan === 'escape' || P.plan === 'flee' || P.plan === 'leave') return;
+    const P = fl.party, L = leader();
+    if (P.plan === 'escape' || P.plan === 'flee' || P.plan === 'leave') { fl.fearless = true; return; }
+    if (P.council) return;
     const prophet = alive().find(h => h.boss === 'final' && !h.fleeing);
     if (!prophet) {
-      fl.storm = false; tl('ip', 0); P.plan = 'leave';
-      alive().forEach(h => { h.needPlan = true; if (h.state === 'rest' || h.state === 'talk') h.state = 'walk'; });
-      if (L) say(L, pick(SAY.leave), 3);
-      setHint('Bohaterom skończyła się cierpliwość: odwrót, wracają do domu.');
+      if (L && (heartP() || !P.councilMore)) {
+        P.council = { stage: 'wait', t0: fl.time }; fl.stats.councils = (fl.stats.councils || 0) + 1;
+        setHint('Bohaterom kończy się cierpliwość: naradzają się, co dalej.');
+        return;
+      }
+      goHome(L);
       return;
     }
-    fl.storm = true;
+    fl.fearless = true; fl.storm = true; P.heartSaid = true;
     if (prophet && !fl.heartKnown) {
-      fl.heartKnown = true; fl.stats.prophecy = 1;
+      fl.heartKnown = true; fl.heartBy = null; P.heartSaid = true; fl.stats.prophecy = 1;   // 1.17: the prophet knows and says so
       shortestPath().forEach(t => { fl.known[t[1] * WW + t[0]] = 1; });
       const HR = fl.rooms[fl.heart.room]; if (HR) HR.tiles.forEach(t => { fl.known[t[1] * WW + t[0]] = 1; });
       say(prophet, pick(SAY.prophecy), 4, 2.6);
@@ -760,6 +766,14 @@
     if (fl.heartKnown) { P.plan = 'assault'; alive().forEach(h => { if (h.state === 'rest' || h.state === 'talk') h.state = 'walk'; h.needPlan = true; }); if (L) say(L, pick(SAY.impatient), 3); }
     else { P.plan = 'leave'; alive().forEach(h => { h.needPlan = true; if (h.state === 'rest' || h.state === 'talk') h.state = 'walk'; }); if (L) say(L, pick(SAY.leave), 3); }
     setHint(fl.heartKnown ? 'Bohaterom skończyła się cierpliwość: szturmują serce i mniej uważają na pułapki.' : 'Bohaterom skończyła się cierpliwość: nie znaleźli serca i wracają do domu.');
+  }
+  // the old end of patience: everyone goes home
+  function goHome(L) {
+    const P = fl.party;
+    fl.fearless = true; fl.storm = false; tl('ip', 0); P.plan = 'leave'; P.council = null;
+    alive().forEach(h => { h.needPlan = true; if (h.state === 'rest' || h.state === 'talk') h.state = 'walk'; });
+    if (L) say(L, pick(SAY.leave), 3);
+    setHint('Bohaterom skończyła się cierpliwość: odwrót, wracają do domu.');
   }
   // A hero walks out of the dungeon. With a crystal it is your loss; scared out of his wits it is your win. Either way, he talks.
   function heroExit(h) {
@@ -1137,7 +1151,7 @@
     if (h.type === 'barbarian' && real >= 0.2 * h.max && kind !== 'heart' && fl.time > h.rageCd && !raging(h)) startRage(h, 'hit');   // 1.05: a hard blow wakes the fury
     if (h.boss === 'final' && !h.raged && h.hp < 0.5 * h.max) {   // the hero of the prophecy, half dead, gets back up angrier
       h.raged = true; h.hp = Math.min(h.max, h.hp + 0.2 * h.max); h.shield = Math.max(h.shield, 0.2 * h.max); fl.stats.rage = 1;
-      alive().forEach(o => { if (o !== h) o.fear = Math.max(0, o.fear - 0.2 * o.courage); });
+      alive().forEach(o => { if (o !== h && canHearShout(o, h)) o.fear = Math.max(0, o.fear - 0.2 * o.courage); });   // 1.17: those who hear him
       say(h, pick(SAY.finalRage), 4, 2.4); floatHero(h, 'Gniew!', '#ff6b6b', 16, -1); shake = Math.max(shake, 0.25);
     }
     if (dtp && real > 0) {
@@ -1174,7 +1188,7 @@
     if (attr && fl.knownTypes && fl.knownTypes.has(attr)) k *= 0.6;   // they knew about it: less of a shock
     if (fl.heroes.some(o => o !== h && o.type === 'priest' && o.rank >= 1 && !o.dead && !o.fled && !o.gone && hdist(o, h) <= 3)) k *= inB('altar', h.room) ? 0.875 : 0.75;   // a priest calms those around him (half as well at the altar)
     if (fl.heroes.some(o => o !== h && o.boss === 'final' && !o.dead && !o.fled && !o.gone && hdist(o, h) <= 3)) k *= 0.75;   // the prophecy walks with them
-    if (fl.heroes.some(o => o.boss && !o.dead && !o.fled)) k *= 0.85;
+    if (fl.heroes.some(o => o.boss && !o.dead && !o.fled && !o.gone && !caged(o) && (o === h || canSee(h, o) || canHear(h, o)))) k *= 0.85;   // 1.17: a boss he is with
     if (fl.time < (h.braveUntil || 0)) k *= h.braveK;   // a priest's blessing before a deadly room
     if (fl.time < h.calmUntil) k *= 0.7;   // an amulet just steadied the nerves (a power with a cooldown, see useAmulet)
     return k;
@@ -1235,15 +1249,15 @@
     say(h, pick(h.trait === 'coward' ? SAY.cowardRun : SAY.flee), 4, 2);
     floatHero(h, 'Ucieka!', '#c3b2ff', 14, -0.8);
     // the champion will not have it: a battle cry steadies everyone else (once every 15 s)
-    const ch = fl.heroes.find(o => o.boss === 'champion' && o !== h && !o.dead && !o.fled && !o.gone && !o.fleeing && !caged(o));
+    // 1.17: only when he sees or hears the one who bolts; his cry steadies those who hear it
+    const ch = fl.heroes.find(o => o.boss === 'champion' && o !== h && !o.dead && !o.fled && !o.gone && !o.fleeing && !caged(o) && perceives(o, h, true));
     if (ch && fl.time > (ch.shoutCd || 0)) {
       ch.shoutCd = fl.time + 15; fl.stats.shouts = (fl.stats.shouts || 0) + 1;
       say(ch, pick(SAY.champShout), 4, 2.2); floatHero(ch, 'Okrzyk!', '#ffd27a', 15, -0.9);
-      alive().forEach(o => { if (o !== h && !o.fleeing) o.fear = Math.max(0, o.fear - 0.25 * o.courage); });
+      alive().forEach(o => { if (o !== h && !o.fleeing && canHearShout(o, ch)) o.fear = Math.max(0, o.fear - 0.25 * o.courage); });
     }
-    const P = fl.party, crew = alive();
-    const L = leader();
-    if (L && L !== h && L.R.coord && Math.random() < 0.6) say(L, pick(SAY.fleeShout), 2);
+    const P = fl.party, L = leader(), crew = L ? groupOf(L) : alive();   // 1.17: "half of us run" counts the leader's group
+    if (L && L !== h && L.R.coord && Math.random() < 0.6 && perceives(L, h)) say(L, pick(SAY.fleeShout), 2);
     if (P.plan !== 'flee' && P.plan !== 'escape' && crew.filter(o => o.fleeing).length >= Math.max(2, Math.ceil(crew.length / 2))) partyFlee();
     if (mods.panic) {   // Panika: a hero who bolts scares everyone close by (and they may bolt too)
       fl.stats.panicked = (fl.stats.panicked || 0) + 1;
@@ -1254,8 +1268,16 @@
     const P = fl.party;
     if (P.plan === 'flee' || P.plan === 'escape') return;
     P.plan = 'flee'; fl.stats.partyFlees++;
-    alive().forEach(o => { if (!o.crystal) { o.fleeing = true; } o.needPlan = true; if (o.state === 'rest' || o.state === 'talk' || o.state === 'boss' || o.state === 'wait') o.state = 'walk'; });
-    const L = leader(); if (L) say(L, pick(SAY.partyFlee), 4, 2.2);
+    // 1.17: a caged one is not marked fleeing (nobody could free him then, 6.8 #6), and the champion who just swore he never runs
+    // walks out with them instead of fleeing
+    // 1.17: the cry reaches whoever hears the leader (14 steps); the others learn of the flight when they rejoin (h.plan)
+    const L = leader();
+    alive().forEach(o => {
+      if (L && o !== L && !canHearShout(o, L) && !o.fleeing) return;
+      o.plan = 'flee'; if (!o.crystal && !caged(o) && o.boss !== 'champion') { o.fleeing = true; }
+      o.needPlan = true; if (o.state === 'rest' || o.state === 'talk' || o.state === 'boss' || o.state === 'wait') o.state = 'walk';
+    });
+    if (L) say(L, pick(SAY.partyFlee), 4, 2.2);
   }
   // The carrier loses the crystal (killed, or down a bottomless well): it rolls back to the heart and the others decide what now.
   function crystalReturns(h) {
@@ -1263,11 +1285,12 @@
     h.crystal = false; P.carrierId = -1; fl.stats.crystalSaved++; tl('cs', h.id);
     const cp = addPts(GZ.crystal, 'crystalPts');
     floatTile(fl.heart.x, fl.heart.y, 'Kryształ wraca! +' + fmtE(cp) + ' Esencji', '#ff7a86', 17, -1);
-    const crew = alive();
-    crew.forEach(o => say(o, pick(SAY.crystalDrop), 4));
-    if (crew.length >= 2 && crew.reduce((a, o) => a + o.fear / o.courage, 0) / crew.length < 0.55 && !crew.some(o => o.fleeing)) { P.plan = 'assault'; P.steal = 0; }
+    // 1.17: only those who see it or hear the cry shout and turn back; the decision is the leader's group's, and the others learn
+    // of it when they rejoin (h.plan; meanwhile they walk on towards the exit, thinking the crystal is ahead of them)
+    const L = leader(), crew = L ? groupOf(L) : alive();
+    alive().forEach(o => { if (perceives(o, h, true)) { say(o, pick(SAY.crystalDrop), 4); o.needPlan = true; } });
+    if (crew.length >= 2 && crew.reduce((a, o) => a + o.fear / o.courage, 0) / crew.length < 0.55 && !crew.some(o => o.fleeing)) { P.plan = 'assault'; P.steal = 0; crew.forEach(o => { o.plan = 'assault'; o.needPlan = true; }); }
     else partyFlee();
-    crew.forEach(o => { o.needPlan = true; });
   }
   // A dead hero: points, a soul for the dungeon, a louder legend (Infamy), panic among the others. His secrets die with him.
   function kill(h, kind, attr) {
@@ -1291,12 +1314,23 @@
     h.inv = []; h.gold = 0;
     // the others react: a death scares everyone (a lot up close, more in a crypt, cowards most), less than a scare trap does,
     // and it stays with them for a while (fear fades slowly when shaken). Veterans feel it too: it scales with courage.
-    P.morale = Math.max(0.15, P.morale - 0.25);
+    // 1.17 (author: "they know about each other in other rooms, e.g. when someone dies"): only the ones who see it (the same
+    // place) react in full; the ones who only hear the death cry (14 steps, not through a Głusza) get the smaller fright and no
+    // name; the rest learn later from someone who knows (perceiveThink: news), and the party's morale drops when the leader knows
+    const d = { id: h.id, t: fl.time, crypt, knows: new Set() }; (fl.deaths || (fl.deaths = [])).push(d);
+    const Lnow = leader();
     if (mods.lastGasp) alive().forEach(o => { if (o.room === h.room) addFear(o, mods.lastGasp * o.courage, null, 'death'); });   // Ostatnie tchnienie
     alive().forEach(o => {
-      const q = heroPos(o), near = Math.hypot(q.x - p.x, q.y - p.y) < 8;
-      const base = (near ? Math.max(15 * o.R.panic, 0.12 * o.courage + 4) : Math.max(5 * o.R.panic, 0.05 * o.courage + 2)) * (crypt ? 2 : 1);   // v14: softer for rookies (was max(30 x panic, ...))
+      const near = canSee(o, h), hears = !near && canHearShout(o, h);
+      if (!near && !hears) return;
+      d.knows.add(o.id); if (o === Lnow && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
+      const base = (near ? Math.max(15 * o.R.panic, 0.12 * o.courage + 4) : 1.3 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2)) * (crypt ? 2 : 1);   // v14: softer for rookies (was max(30 x panic, ...))
       o.shakenUntil = fl.time + (near ? 9 : 5);
+      if (hears) {   // a cry from somewhere: no name, no fury
+        if (Math.random() < 0.55) say(o, pick(SAY.deathHeard), 3, 2);
+        const f1 = o.fear; addFear(o, base * (o.trait === 'coward' ? 1.5 : 1), null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f1);
+        return;
+      }
       // a brave one (and now and then a warrior) turns grief into fury instead of fear
       if (!o.fleeing && (o.trait === 'brave' || o.type === 'barbarian' || (o.type === 'warrior' && Math.random() < 0.3)) && startRage(o, 'death', h)) {
         fl.stats.revenge = (fl.stats.revenge || 0) + 1;
@@ -1383,7 +1417,7 @@
     greedOrbs(it.x, it.y, addGreed(g)); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
     floatTile(it.x, it.y, 'Chciwość ×' + fmt2(fl.greed), '#f2b94b', 14, -0.6, 'greed');
     if (by && (by.fleeing || by.crystal || panicking(by) || goingOut())) { if (r >= 2) say(by, pick(SAY.lootFlee), 2); }   // 1.05: running for his life, he has no joy for gold
-    else if (by) say(by, kind === 'potion' ? pick(['Mikstura!', 'Tam leży mikstura.', 'Lekarstwo!']) : pick(SAY['loot' + Math.min(3, r)]), r >= 2 ? 3 : 2);
+    else if (by) say(by, kind === 'potion' ? pick(SAY.lootPotionSeen) : pick(SAY['loot' + Math.min(3, r)]), r >= 2 ? 3 : 2);
   }
   // Picking it up: coins go to the purse, the rest is a real item (or the exact one that was dropped). No use or no room: it stays.
   function pickup(h, it) {

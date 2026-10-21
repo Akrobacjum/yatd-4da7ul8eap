@@ -2,1150 +2,3184 @@
  "enter": [
   "Wchodzimy. Trzymajcie się razem.",
   "Gdzieś tu są kryształy.",
-  "Cicho, idziemy."
+  "Cicho, idziemy.",
+  "Oczy szeroko, ręce przy broni.",
+  "Kryształ, łupy i do domu. Prosty plan.",
+  "Nie rozdzielać się, cokolwiek usłyszycie.",
+  "Każdy loch ma swoje sztuczki. Ten też.",
+  "Nie wiemy, co tam siedzi. Powoli.",
+  "Zbroje dopięte? To do środka."
  ],
  "gate": [
   "Wchodzimy!",
   "Za mną!",
   "Do środka!",
-  "Naprzód!"
+  "Naprzód!",
+  "Otwarte! Ruszamy!",
+  "No to w drogę.",
+  "W imię chwały, do środka!",
+  "Nie ma na co czekać. Idziemy!",
+  "Bogowie, miejcie nas w opiece.",
+  "Ruszać się, ruszać!",
+  "Dalej, za próg!",
+  "Pierwszy krok jest najgorszy..."
  ],
  "champion": [
-  "Za mną! Ten loch padnie!",
+  "Ten loch padnie! Zobaczycie.",
   "Pokażę wam, jak to się robi.",
-  "Kryształ będzie nasz."
+  "Kryształ będzie nasz.",
+  "Dziś ten loch klęknie.",
+  "Słyszysz, lochu? Idę po ciebie!",
+  "Niech pułapki drżą, nie my.",
+  "Widział{em|am} gorsze nory.",
+  "Kto się boi, niech wraca do karczmy.",
+  "Serce tego lochu wyrwę gołymi rękami."
  ],
  "explore": [
   "Idziemy tędy.",
-  "Sprawdźmy te drzwi.",
+  "Sprawdźmy, co tam jest.",
   "Dalej, w głąb!",
-  "Tędy chyba prowadzi dalej."
+  "Tędy chyba prowadzi dalej.",
+  "Tam jeszcze nie byliśmy.",
+  "Zobaczmy, co jest dalej.",
+  "W tę stronę. Trzymać szyk.",
+  "Nie ma co sterczeć. Ruszamy.",
+  "Następny kąt do sprawdzenia.",
+  "Idziemy dalej, oczy dookoła głowy.",
+  "Teraz tam. Za mną.",
+  "Kierunek: nieznane. Jak zwykle."
  ],
  "rookieLead": [
-  "Za mną!",
   "Tędy, na pewno tędy!",
-  "Ja prowadzę!"
+  "Ja prowadzę!",
+  "Czuję, że to tędy!",
+  "Spokojnie, wiem, co robię!",
+  "Narady są dla starych. Naprzód!",
+  "Mapa? Po co komu mapa?",
+  "Tamtędy! Albo... nie, tamtędy!",
+  "Bohater{|ka} prowadzi! Czyli ja!"
  ],
  "deliberate": [
   "Lewo czy prawo?",
-  "Ja bym sz{edł|ła} tędy.",
   "Mam złe przeczucia...",
-  "Rozdzielmy się?",
-  "Nie, trzymajmy się razem.",
-  "Słyszę coś za tymi drzwiami."
+  "Słyszę coś za tymi drzwiami.",
+  "Dwie drogi. Którą bierzemy?",
+  "Chwila. Pomyślmy.",
+  "Obie wyglądają tak samo paskudnie.",
+  "Ktoś ma lepszy pomysł?",
+  "Stójcie. Tu się drogi rozchodzą.",
+  "Zaraz, zaraz. Dokąd my właściwie idziemy?",
+  "Hm. Tu czy tam?"
  ],
  "scout": [
-  "Sprawdzę tamte drzwi!",
+  "Sprawdzę, co tam jest!",
   "Pójdę na zwiad.",
-  "Zaraz wracam!"
+  "Zaraz wracam!",
+  "Skoczę tam na moment.",
+  "Sprawdzę tę drugą drogę.",
+  "Rozejrzę się tam po cichu.",
+  "Ja zerknę na tamtą odnogę.",
+  "Wy idźcie, ja obejrzę tamto.",
+  "Kto pierwszy wie, ten dłużej żyje. Idę."
  ],
  "scoutReply": [
   "Tylko szybko!",
   "Uważaj na siebie.",
-  "Nie oddalaj się."
+  "Nie oddalaj się za bardzo.",
+  "Wracaj w jednym kawałku.",
+  "Idź. Tylko bez bohaterstwa.",
+  "Krzycz, jakby co.",
+  "Niech będzie. Patrz pod nogi.",
+  "Tylko się nie zgub.",
+  "Zgoda. Nie ruszaj niczego, co błyszczy."
  ],
  "scoutBack": [
   "Wracam do was!",
-  "Tam nic ciekawego."
+  "Wracam, starczy.",
+  "Dość tego. Wracam.",
+  "Starczy zwiadu.",
+  "Wracam, zanim coś mnie zje.",
+  "Czas wracać do reszty."
  ],
  "splitMate": [
   "Idę z tobą.",
   "We dwoje będzie raźniej.",
-  "Ktoś musi pilnować ci pleców."
+  "Ktoś musi pilnować ci pleców.",
+  "Poczekaj, idę też!",
+  "Idę za tobą krok w krok.",
+  "Dwie pary oczu to nie jedna.",
+  "Ja też idę. Tu się nudzę.",
+  "Nie puszczę cię tam bez obstawy.",
+  "Jak coś cię złapie, to i mnie. Idę."
  ],
  "splitReply": [
   "Dobra, rozdzielmy się. Ale na chwilę!",
   "Wracajcie szybko.",
-  "Uważajcie na siebie."
+  "Uważajcie na siebie.",
+  "Dobrze, idźcie we dwoje.",
+  "Tylko się nie rozdzielajcie.",
+  "Nie róbcie głupstw.",
+  "Zgoda. My idziemy dalej.",
+  "Pilnujcie się nawzajem.",
+  "Macie chwilę. Potem do nas."
  ],
  "aheadScout": [
   "Zaczekajcie tu, sprawdzę, co dalej.",
   "Pójdę przodem, zaraz wracam.",
-  "Stójcie. Rozejrzę się pierwsz{y|a}."
+  "Stójcie. Rozejrzę się pierwsz{y|a}.",
+  "Stop. Najpierw ja, potem wy.",
+  "Stójcie tu. Zaraz dam znać.",
+  "Poczekajcie, sprawdzę drogę.",
+  "Ani kroku, póki nie wrócę.",
+  "Na palcach, jak zawsze. Czekajcie.",
+  "Moja robota. Wy postójcie chwilę."
  ],
  "aheadReply": [
   "Dobra, czekamy.",
   "Tylko nie przesadź.",
-  "Masz chwilę."
+  "Masz chwilę.",
+  "Idź, poczekamy.",
+  "Czekamy. Nie zwlekaj.",
+  "Krzyknij, jak coś zobaczysz.",
+  "Dobra. Postoimy, popatrzymy.",
+  "Tylko wracaj, nie zwiedzaj.",
+  "Nie każ nam tu sterczeć."
  ],
  "restScout": [
   "Odpoczywajcie, ja się rozejrzę.",
   "Sprawdzę, co dalej. Zaraz wracam.",
-  "Nie usiedzę. Pójdę na zwiad."
+  "Nie usiedzę. Pójdę na zwiad.",
+  "Siedźcie, ja zerknę, co dalej.",
+  "Nie umiem siedzieć bezczynnie.",
+  "Rozprostuję nogi i rozejrzę się.",
+  "Wy łapcie oddech, ja się przejdę.",
+  "Rzucę okiem na to, co przed nami.",
+  "Ktoś musi wiedzieć, co tam jest. Idę."
  ],
  "wander": [
-  "Ja sprawdzę tamte drzwi!",
+  "Ja sprawdzę tamto przejście!",
   "Idę sam{|a}, dam radę!",
-  "Zobaczę, co tam jest!"
+  "Zobaczę, co tam jest!",
+  "Ja tylko zerknę!",
+  "Sam{|a} sobie poradzę!",
+  "Ciekawe, dokąd to prowadzi...",
+  "Przygoda czeka!",
+  "Odkryję coś pierwsz{y|a}!",
+  "Nikt mi nie będzie mówił, gdzie iść!"
  ],
  "trap": {
-  "spikes": "Kolce!",
-  "arrows": "Strzały!",
-  "fire": "Ogień!",
-  "gate": "Krata!",
-  "powder": "Wybuch!",
-  "mimic": "Ta skrzynia gryzie!",
-  "web": "Sieć!",
-  "trapdoor": "Zapadnia!",
-  "cage": "Klatka!",
-  "portrait": "Ten obraz się rusza!",
-  "eyes": "Coś na mnie patrzy ze ściany!",
-  "bones": "Te kości... ruszają się!",
-  "mirror": "To nie jest moje odbicie!",
-  "creak": "Drzwi same skrzypią!",
-  "coffin": "Trumna się otwiera!",
-  "musicbox": "Skąd ta melodia?!"
+  "spikes": [
+   "Kolce!",
+   "Ostrza w posadzce!",
+   "Kolce z podłogi!"
+  ],
+  "arrows": [
+   "Strzały!",
+   "Strzelają ze ściany!",
+   "Lecą! Kryć się!"
+  ],
+  "fire": [
+   "Ogień!",
+   "Płomienie!",
+   "Ściana zionie ogniem!"
+  ],
+  "gate": [
+   "Krata!",
+   "Krata opadła!",
+   "Odcięło przejście!"
+  ],
+  "powder": [
+   "Wybuch!",
+   "Ależ huknęło!",
+   "Proch! Wszystko w powietrze!"
+  ],
+  "mimic": [
+   "Ten mebel gryzie!",
+   "Mimik!",
+   "Ten mebel ma zęby!"
+  ],
+  "web": [
+   "Sieć!",
+   "Pajęczyna!",
+   "Lepkie nici! Wszędzie!"
+  ],
+  "trapdoor": [
+   "Zapadnia!",
+   "Podłoga się zapadła!",
+   "Dziura w podłodze!"
+  ],
+  "cage": [
+   "Klatka!",
+   "Klatka się zatrzasnęła!",
+   "Uwaga, kraty!"
+  ],
+  "portrait": [
+   "Ten obraz się rusza!",
+   "Portret ożył!",
+   "Ta twarz na obrazie się krzywi!"
+  ],
+  "eyes": [
+   "Coś na mnie patrzy ze ściany!",
+   "Ściana ma oczy!",
+   "Oczy! W kamieniu są oczy!"
+  ],
+  "bones": [
+   "Te kości... ruszają się!",
+   "Kości grzechoczą!",
+   "Słyszę stukot gnatów!"
+  ],
+  "mirror": [
+   "W lustrze coś jest!",
+   "W lustrze ktoś stoi!",
+   "To odbicie ma cudzą twarz!"
+  ],
+  "creak": [
+   "Drzwi same skrzypią!",
+   "Kto tam skrzypi?!",
+   "Zawiasy jęczą jak potępieńcy!"
+  ],
+  "coffin": [
+   "Trumna się otwiera!",
+   "Wieko się rusza!",
+   "Coś jest w tej trumnie!"
+  ],
+  "musicbox": [
+   "Skąd ta melodia?!",
+   "Pozytywka gra sama!",
+   "Kołysanka? Tutaj?!"
+  ]
  },
  "learn": [
   "Zapamiętajcie to miejsce.",
   "Tędy nie idziemy.",
-  "Omijamy to."
+  "Omijamy to.",
+  "Już wiem, gdzie to siedzi.",
+  "Drugi raz nas to nie zaskoczy.",
+  "Dobrze, teraz wiemy.",
+  "Omijać szerokim łukiem!",
+  "Zapisane w głowie.",
+  "To miejsce ma już złą sławę."
  ],
  "noLearn": [
   "Co to było?",
   "Pewnie przypadek.",
-  "Nic się nie stało!"
+  "Chyba nic...",
+  "Skąd to się wzięło?",
+  "Zdawało mi się.",
+  "Hę? Coś mignęło...",
+  "Nieważne. Loch trzeszczy.",
+  "Nie mam pojęcia, co to było.",
+  "Ech, pewnie tak miało być."
  ],
  "detect": [
   "Tu jest pułapka, omijajcie.",
   "Widzę mechanizm.",
-  "Stop, coś tu jest."
+  "Uwaga, coś tu jest.",
+  "Pułapka. Nie stawać tam.",
+  "Mam cię, paskudo.",
+  "Ktoś tu zastawił niespodziankę.",
+  "Ha! Widzę, gdzie siedzi.",
+  "Uwaga, tu jest zastawione.",
+  "Sprytne. Ale nie dość sprytne."
  ],
  "disarm": [
-  "Rozbroję to, czekajcie.",
+  "Rozbroję to, chwila.",
   "Dajcie mi chwilę.",
-  "Spokojnie, znam ten typ."
+  "Spokojnie, znam ten typ.",
+  "Delikatnie, delikatnie...",
+  "Zobaczmy, co tu mamy.",
+  "Znam takie cacka.",
+  "Wytrychu, nie zawiedź.",
+  "Spokojna ręka, spokojna głowa.",
+  "Tylko nie kichnąć..."
  ],
  "disarmDone": [
   "Gotowe, czysto.",
-  "Rozbrojone!"
+  "Rozbrojone!",
+  "Po sprawie.",
+  "Tego już nie trzeba się bać.",
+  "Z głowy. Następne?",
+  "Ha! Lżej się oddycha."
  ],
  "disarmHit": [
   "Au! Prawie miał{em|am}!",
-  "Zacięło się!"
+  "Odpaliło mi w twarz!",
+  "Psiakrew!",
+  "Odpaliło mi pod nosem!",
+  "Przerwało mi!",
+  "Ono żyje!"
  ],
  "disarmFail": [
   "Ups...",
   "Oj, chyba nie ten drut!",
-  "To miało tak kliknąć?"
+  "To miało tak kliknąć?",
+  "Ręka mi się omsknęła!",
+  "Kto tak buduje?!",
+  "No to się narobiło.",
+  "Za szybko... za szybko!",
+  "Tego nie było w planie!",
+  "Klik. Niedobry klik."
  ],
  "bless": [
-  "Odczyniam ten obraz.",
-  "Precz, zły duchu!"
+  "Odczyniam to plugastwo.",
+  "Precz, zły duchu!",
+  "Niech klątwa odejdzie.",
+  "Światło, oczyść to miejsce.",
+  "Święte słowa, nie zawiedźcie."
  ],
  "shield": [
   "Tarcza!",
-  "Za mną, osłonię was!"
+  "Zasłona!",
+  "Niech walą w tarczę!",
+  "Blacha przyjmie!",
+  "Coś tu jest. Tarcza!"
  ],
  "dodge": [
   "Unik!",
   "Pudło!",
-  "Za wolno!"
+  "Za wolno!",
+  "Hop!",
+  "Nie tym razem!",
+  "Ledwo!",
+  "Ha, obok!",
+  "Mnie nie trafisz!",
+  "Jak węgorz!"
  ],
  "heal": [
   "Leczę!",
-  "Trzymaj się!",
-  "Światło, ulecz ich."
+  "Światło, ulecz rany.",
+  "Światło, zamknij rany.",
+  "Niech ciało się zrośnie.",
+  "Bogowie, dajcie siły.",
+  "Modlitwa za żywych.",
+  "Mniej krwi, więcej życia.",
+  "Łasko, spłyń na nas."
  ],
  "cleanse": [
   "Gaszę ogień!",
-  "Nie ruszaj się, gaszę!"
+  "Gaszę! Już!",
+  "Zgaśnij!",
+  "Płomienie, precz!",
+  "Ogień, odstąp!",
+  "Już, już, zgaszone!"
  ],
  "barrier": [
   "Bariera!",
-  "Osłona dla wszystkich!"
+  "Osłona dla wszystkich!",
+  "Tarcza światła!",
+  "Niech światło nas osłoni!",
+  "Święty krąg!",
+  "Bogowie, okryjcie nas!"
  ],
  "dispel": [
   "Rozpraszam sieć!",
-  "Precz, pajęczyno!"
+  "Precz, pajęczyno!",
+  "Nici, w proch!",
+  "Rozplątuję czarem!",
+  "Sieć znika na moje słowo.",
+  "Lepkie paskudztwo, zniknij!"
  ],
  "fireball": [
   "Kula ognia!",
-  "Spłoń!"
+  "Spłoń!",
+  "Masz, gorąco ci będzie!",
+  "Ognisty pocisk!",
+  "Zobaczmy, jak się palisz!",
+  "Popiół z ciebie zostanie!"
  ],
  "fight": [
   "Biorę go!",
   "Na potwora!",
-  "Ja się nim zajmę."
+  "Ja się nim zajmę.",
+  "Chodź tu, bestio!",
+  "Do mnie, paskudo!",
+  "Stal na ciebie czeka!",
+  "Mój jest!",
+  "Za tarczą i do przodu!",
+  "Na pohybel!"
  ],
  "avoid": [
-  "Omijamy tego potwora.",
-  "Nie wdawajmy się w bójkę."
+  "Tego nie ruszam.",
+  "Nie wdawajmy się w bójkę.",
+  "Lepiej go nie drażnić.",
+  "Nie zaczepiam. Niech on też nie zaczepia.",
+  "Mądr{y|a} wojowni{k|czka} wie, kiedy nie walczyć."
  ],
  "loot1": [
   "Złoto!",
   "Coś błyszczy.",
-  "Moje!"
+  "Moje!",
+  "Coś tu leży!",
+  "Ktoś tu coś zgubił!",
+  "Drobiazg, ale zawsze coś.",
+  "Coś za darmo? W lochu?",
+  "To się przyda.",
+  "Nie pogardzę."
  ],
  "loot2": [
   "Rzadki łup!",
   "Ooo, to coś cennego.",
-  "Widzę rzadki skarb!"
+  "Widzę rzadki skarb!",
+  "Porządny sprzęt!",
+  "Oho, to nie byle co.",
+  "Ktoś tu zostawił dobry ekwipunek.",
+  "Ten łup jest coś wart!",
+  "Takie rzeczy nie leżą na ulicy.",
+  "Wygląda na robotę mistrza."
  ],
  "loot3": [
   "Legendarny skarb!!",
   "Widzicie to?!",
-  "To musi być moje!"
+  "To musi być moje!",
+  "Relikwia! Prawdziwa relikwia!",
+  "Coś tam lśni jak słońce!",
+  "O tym będą śpiewać pieśni!",
+  "Ja śnię?!",
+  "Na wszystkich bogów, co za blask!",
+  "Warto było tu wleźć!"
  ],
  "lootRisk": [
-  "Za dużo pułapek przy tym złocie.",
-  "Nie warto, to pułapka.",
-  "Zostawmy to."
+  "Nie warto ryzykować.",
+  "Nie warto. Nie tym razem.",
+  "Zostawmy to.",
+  "Szkoda zachodu.",
+  "To może poczekać.",
+  "Moja skóra jest więcej warta.",
+  "Kusi... ale nie.",
+  "Nie dla mnie.",
+  "Innym razem."
  ],
  "lootGo": [
   "Warto zaryzykować!",
-  "Biorę, osłaniajcie mnie!"
+  "Biorę, osłaniajcie mnie!",
+  "Raz się żyje!",
+  "Kto nie ryzykuje, ten nie ma.",
+  "Przemknę tam i z powrotem.",
+  "Ryzyko? Niech będzie."
  ],
  "lootRookie": [
-  "Złoto! Moje!",
+  "Moje! Moje!",
   "Bogactwo!",
-  "Kto pierwszy, ten lepszy!"
+  "Kto pierwszy, ten lepszy!",
+  "Biorę! Biorę!",
+  "Moje! Nikt nie rusza!",
+  "Ale szczęście!",
+  "Łup! Prawdziwy łup!",
+  "Zaraz to wezmę!",
+  "Ha! Kto by pomyślał!"
  ],
  "potion": [
   "Piję miksturę!",
-  "Mikstura, szybko!"
+  "Mikstura, szybko!",
+  "Do dna!",
+  "Gorzkie, ale pomaga.",
+  "Łyk życia, szybko!",
+  "Na zdrowie. Dosłownie."
  ],
  "charm": [
   "Talizman mnie osłonił!",
-  "Talizman zadziałał!"
+  "Talizman zadziałał!",
+  "Talizman przyjął cios.",
+  "Dobrze, że go noszę.",
+  "Coś mnie osłoniło!",
+  "Szczęśliwy talizman. Nie kłamali."
  ],
  "amulet": [
   "Amulet drży...",
-  "Amulet coś wyczuwa."
+  "Amulet coś wyczuwa.",
+  "Kamień w amulecie pociemniał.",
+  "Mój amulet nie lubi tego miejsca.",
+  "Czuję to przez amulet. Pułapka.",
+  "Amulet ostrzega. Uwaga."
  ],
  "bomb": [
   "Bomba!",
-  "Padnij!"
+  "Padnij!",
+  "Rzucam!",
+  "Leci!",
+  "Zaraz będzie głośno!",
+  "Masz, dławij się!"
  ],
  "retreat": [
   "Odwrót!",
   "Wycofujemy się, opatrzmy rany.",
-  "Za dużo ran, wracamy!"
+  "Za dużo ran, wracamy!",
+  "Cofamy się. Trzeba złapać oddech.",
+  "Najpierw rany, potem reszta.",
+  "Szukamy spokojnego kąta.",
+  "Dość krwi. Odpoczynek!",
+  "Wycofać się, ale bez paniki!",
+  "W tym stanie nie damy rady. Odwrót."
  ],
  "restDone": [
   "Dobra, ruszamy.",
   "Jestem got{ów|owa}.",
-  "Lepiej. Idziemy."
+  "Lepiej. Idziemy.",
+  "Wstawać, loch czeka.",
+  "Koniec odpoczynku.",
+  "Dość leżenia. W drogę.",
+  "Zbierać się, ruszamy dalej.",
+  "Odpoczęliśmy. Teraz do roboty.",
+  "Nogi odpoczęły? To idziemy."
  ],
  "regroup": [
   "Zbiórka!",
   "Czekajcie na resztę!",
-  "Trzymajmy się razem!"
+  "Trzymajmy się razem!",
+  "Stać! Ktoś został z tyłu.",
+  "Poczekajmy na maruderów.",
+  "Nie rozłazić się!",
+  "Gdzie się wleczecie?!",
+  "Hej, tam z tyłu! Szybciej!",
+  "Razem albo wcale."
  ],
  "lost": [
   "Gdzie jesteście?!",
   "Halo?!",
   "Chyba się zgubił{em|am}...",
-  "Który to był korytarz?"
+  "Który to był korytarz?",
+  "Nic nie poznaję...",
+  "Którędy do reszty?",
+  "Zabłądził{em|am}!",
+  "Gdzie się wszyscy podziali?!",
+  "Wszędzie te same ściany...",
+  "Zgubił{em|am} drogę... i was.",
+  "Tylko spokojnie. Gdzieś tu są.",
+  "Ten loch mnie połknął..."
  ],
  "found": [
   "Jesteście!",
   "Uff, znalazł{em|am} was.",
-  "Już myślał{em|am}, że po mnie."
+  "Już myślał{em|am}, że po mnie.",
+  "Nareszcie swoi!",
+  "Ależ się cieszę na wasz widok!",
+  "Nigdy więcej się nie oddalam.",
+  "Wrócił{em|am}! Ktoś tęsknił?",
+  "Żyję! I znowu z wami!",
+  "Wasze gęby! Piękniejsze niż złoto!"
  ],
  "panic": [
   "Uciekać!",
   "Nie chcę umierać!",
   "To loch śmierci!",
-  "Ratunku!"
+  "Ratunku!",
+  "Nie, nie, nie!",
+  "Matko jedyna!",
+  "Precz ode mnie!",
+  "Gdzie się schować?!",
+  "Dość! Dość!",
+  "Ja chcę stąd wyjść!",
+  "Nie dam rady! Nie dam!",
+  "Serce mi wyskoczy!"
  ],
  "death": [
   "Nie! {n}!",
   "Straciliśmy {a}!",
-  "Pomścimy cię, {v}!"
+  "Pomścimy cię, {v}!",
+  "{v}! Wstawaj! Wstawaj!",
+  "Tylko nie {n}...",
+  "{n} nie żyje...",
+  "Ten loch zabrał {a}!",
+  "Jak to? {n}?!",
+  "Żegnaj, {v}."
  ],
  "alone": [
-  "Został{em|am} sam{|a}...",
+  "Nikogo przy mnie...",
   "Jest tu ktoś?",
-  "Nie podoba mi się ta cisza."
+  "Nie podoba mi się ta cisza.",
+  "Nikogo w pobliżu...",
+  "Tylko ja i moje kroki.",
+  "Ktokolwiek? Halo?",
+  "Słyszę tylko własny oddech.",
+  "Ej... Jest tu kto z naszych?",
+  "Nie lubię być sam{|a}. Nie tutaj."
  ],
  "heartSeen": [
   "Serce lochu! Tam są kryształy!",
-  "Widzę kryształy!"
+  "Wiem, gdzie są kryształy!",
+  "Tam bije serce lochu!",
+  "Serce lochu... Nareszcie wiem, gdzie.",
+  "Kryształ tam jest. Czuję to.",
+  "Ile tam może być kryształu..."
  ],
  "heartLater": [
-  "Serce! Ale najpierw przeszukajmy resztę."
+  "Serce! Ale najpierw przeszukajmy resztę.",
+  "Serce nie ucieknie.",
+  "Serce już znam. Reszty lochu jeszcze nie."
  ],
  "assault": [
   "Po kryształ!",
   "Do serca!",
-  "Bierzemy kryształ!"
+  "Bierzemy kryształ!",
+  "Na serce lochu!",
+  "Teraz serce. Naprzód!",
+  "Idziemy po swoje!",
+  "Kryształ czeka. Ruszamy!",
+  "Prosto do serca!",
+  "Za mną, do kryształu!"
  ],
  "steal": [
   "Mam kryształ! Uciekamy!",
-  "Kryształ jest nasz! Do wyjścia!"
+  "Kryształ jest nasz! Do wyjścia!",
+  "Jest! Kryształ w garści!",
+  "Wyrwał{em|am} go! W nogi!",
+  "Mam go! Teraz tylko wyjść!",
+  "Ciężki, ale mój! Do wyjścia!"
  ],
  "heartRepel": [
   "Ono parzy! Kryształ ani drgnie!",
   "Serce nas odpycha!",
-  "Nie da się go wyrwać, za gorąco!"
+  "Nie da się go wyrwać, za gorąco!",
+  "Parzy! Puszczam!",
+  "Moje ręce! Nie utrzymam!",
+  "Ten kamień płonie żywym ogniem!",
+  "Nie wyrwę go! Uciekam!",
+  "Serce się broni!",
+  "Skóra mi schodzi z dłoni!"
  ],
  "crystalDrop": [
   "Kryształ! Nie!",
-  "Zgubiliśmy kryształ!"
+  "Zgubiliśmy kryształ!",
+  "Nie! Wrócił do serca!",
+  "Przepadł! Cały trud na nic!",
+  "Loch odebrał nam kryształ!",
+  "Tak blisko było!"
  ],
  "escape": [
   "Do wyjścia!",
   "Szybciej, zanim nas dopadnie!",
-  "Osłaniajcie niosącego!"
+  "Osłaniajcie niosącego!",
+  "Mamy go! Biegiem!",
+  "Nie zatrzymywać się!",
+  "Teraz tylko wyjść stąd żywo.",
+  "Szybko, zanim loch się wścieknie!",
+  "Do drzwi, bez oglądania się!",
+  "Pilnujcie kryształu jak oka w głowie!"
  ],
  "flee": [
   "Wynoszę się stąd!",
   "Mam dość, wracam!",
   "Nie zapłacą mi za to!",
-  "Mamo!"
+  "Mamo!",
+  "Dość! Wychodzę stąd!",
+  "Nie umrę tu! Nie dziś!",
+  "Żadne złoto nie jest tego warte!",
+  "To nie dla mnie! Uciekam!",
+  "Starczy mi tego lochu!",
+  "Nogi, ratujcie!",
+  "Tego nie było w umowie!",
+  "Precz stąd, póki żyję!"
  ],
  "partyFlee": [
   "Odwrót! Wynosimy się!",
   "Wszyscy do wyjścia!",
-  "To nie na nasze siły, uciekamy!"
+  "To nie na nasze siły, uciekamy!",
+  "Uciekać! Natychmiast!",
+  "Koniec wyprawy! Do wyjścia!",
+  "Do drzwi, póki jeszcze można!",
+  "Ten loch to śmierć! Precz stąd!",
+  "Za dużo tego! Uciekać, ile sił!",
+  "Wszystko stracone! Byle żyć!"
  ],
  "fleeShout": [
   "Wracaj, tchórzu!",
-  "Nie zostawiaj nas!"
+  "Nie zostawiaj nas!",
+  "Stój! Dokąd to?!",
+  "Uciekasz?! Teraz?!",
+  "Hańba! Wróć natychmiast!",
+  "Zostań! Razem mamy szansę!"
  ],
  "hesitate": [
   "Coś tu nie gra...",
   "Za cicho tu...",
   "Ostrożnie...",
-  "Ja pierws{zy|za} nie wchodzę."
+  "Nie chcę tam wchodzić... ale trzeba.",
+  "Chwila... Nie podoba mi się ta cisza.",
+  "Stać. Coś słyszę.",
+  "Moment. Niech się rozejrzę.",
+  "Tam jest ciemno jak w grobie...",
+  "Czuję, że coś tam czeka.",
+  "Raz kozie śmierć...",
+  "Coś mi mówi, żeby zawrócić...",
+  "Ta podłoga... nie ufam jej."
  ],
  "ambush": [
   "Zasadzka!",
   "Ostrożnie, to pułapka!",
-  "Cofnąć się!"
+  "Stać! Ani kroku!",
+  "Pułapka za pułapką!",
+  "Ten loch na nas polował!",
+  "Wpadliśmy prosto w sidła!",
+  "Wszystko tu na nas czyha!",
+  "Ktoś to wszystko zaplanował!"
  ],
  "gateBlocked": [
-  "Krata! Utknęliśmy.",
+  "Krata! Zamknęło się przed nosem!",
   "Zamknęło się!",
-  "Odcięło mnie!"
+  "Krata spadła tuż obok!",
+  "Krata spadła!",
+  "Żelazna krata! Skąd?!",
+  "Przejście zamknięte!",
+  "Ktoś spuścił kratę!",
+  "Loch zatrzaskuje drzwi!",
+  "Pręty z sufitu!"
  ],
  "impatient": [
   "Dość tego! Po kryształ!",
-  "Koniec zabawy!"
+  "Koniec zabawy!",
+  "Dość łażenia! Prosto do serca!",
+  "Koniec ostrożności!",
+  "Do diabła z pułapkami! Naprzód!",
+  "Przepowiednia nie czeka!"
  ],
  "secondGroup": [
   "Uciekli? Tchórze. Idziemy sami!",
   "Słyszałeś te krzyki? ...Idziemy, ale ostrożnie.",
-  "Nie wierzę w duchy. Za mną!"
+  "Nie wierzę w duchy. Idziemy.",
+  "Co oni tam zobaczyli?",
+  "Krzyczeli, jakby ich obdzierano ze skóry...",
+  "Ich strach to nie mój strach.",
+  "Zobaczymy, czego się tak przestraszyli.",
+  "Słychać ich było aż tutaj...",
+  "Pierwsi stchórzyli. Ja nie zamierzam."
  ],
  "prophecy": [
   "Przepowiednia wskazuje drogę do serca!",
-  "Czuję serce lochu. Za mną, do końca!"
+  "Czuję serce lochu. Wiem, dokąd iść.",
+  "Widzę drogę! Przepowiednia się spełnia!",
+  "Tak zapisano. Serce jest tam.",
+  "Przeznaczenie prowadzi mnie do serca.",
+  "Teraz wszystko jasne. Wiem, dokąd iść!"
  ],
  "leave": [
   "Nic tu po nas. Wracamy.",
-  "Szkoda czasu, idziemy stąd."
+  "Szkoda czasu, idziemy stąd.",
+  "Na dziś wystarczy. Do wyjścia.",
+  "Dość tego lochu. Do domu.",
+  "Spróbujemy innym razem. Wracamy.",
+  "Zbieramy się. Tu już nic nie ugramy."
  ],
  "hurt": [
   "Ał!",
   "Uch!",
-  "To boli!"
+  "To boli!",
+  "Oberwał{em|am}!",
+  "Ała, ała!",
+  "Zaraza jasna!",
+  "Niech to szlag!",
+  "Ech, zabolało..."
  ],
  "rumor": [
-  "W karczmie mówili o tej pułapce.",
+  "W karczmie mówili o tym pokoju.",
   "Słyszał{em|am}, że tu coś jest.",
   "Ten pokój znam z opowieści.",
-  "Omijamy, ostrzegali nas."
+  "Ostrzegali przed tym miejscem.",
+  "Ten pokój opisywali w karczmie.",
+  "Poprzednia wyprawa dobrze to opisała.",
+  "Za opis tej sali postawił{em|am} komuś piwo.",
+  "Zgadza się z tym, co mówili ocaleni.",
+  "Ocaleni źle mówili o tym pokoju.",
+  "Pijak z karczmy jednak nie zmyślał.",
+  "Wszystko tak, jak mówili. Na razie.",
+  "Już tu kiedyś był{em|am}... w opowieściach."
  ],
  "rumorFalse": [
   "Tu miało coś być...",
   "Plotki kłamały.",
-  "Nic tu nie ma?"
+  "Nic tu nie ma?",
+  "Gdzie ta pułapka z opowieści?",
+  "Pusto. A tyle gadania...",
+  "Ktoś w karczmie zmyślał.",
+  "Ani śladu mechanizmu.",
+  "Ktoś to stąd zabrał? Dziwne...",
+  "Przepłacił{em|am} za te plotki."
  ],
  "rookie": [
   "Co robi ten guzik?",
-  "Ja pójdę pierws{zy|za}!",
+  "Następnym razem to ja prowadzę!",
   "Łatwizna!",
-  "To mój pierwszy loch!"
+  "To mój pierwszy loch!",
+  "Zawsze chciał{em|am} to zobaczyć!",
+  "Mistrz mówił, że to będzie łatwe.",
+  "A jak się pozna, że coś jest pułapką?",
+  "Czy to normalne, że tak tu cuchnie?",
+  "Ile płacą za taki kryształ? Tak tylko pytam.",
+  "Ciekawe, czy mieszka tu jakiś smok.",
+  "Kiedy zacznie się ta prawdziwa przygoda?",
+  "Wszystko mam nowe, prosto od kupca!"
  ],
  "elite": [
-  "Ostrożnie, sprawdzam podłogę.",
+  "Ostrożnie. Podłoga w lochu lubi kłamać.",
   "Krok po kroku.",
-  "Patrzcie na ściany."
+  "Patrzcie na ściany.",
+  "Bywał{em|am} w gorszych lochach. W niewielu.",
+  "Najgroźniejsza jest pułapka, której nie widać.",
+  "Cisza w lochu nigdy nie wróży dobrze.",
+  "Nie dotykać, nie podnosić, nie ufać.",
+  "Najpierw oczy, potem nogi. Zawsze.",
+  "Młodzi zawsze idą za szybko."
  ],
  "timing": [
   "Teraz, przeładowuje się!",
-  "Biegiem, póki stoi!"
+  "Przechodzę, póki stoi!",
+  "Ładuje się. Przechodzę!",
+  "Znam ten rytm. Teraz!",
+  "Ma przerwę. Korzystam.",
+  "Zanim znów ruszy... już!"
  ],
  "cage": [
   "Wypuśćcie mnie!",
-  "Pomocy, klatka!"
+  "Pomocy, klatka!",
+  "Klatka?! Nie, nie, nie!",
+  "Zamknięt{y|a} jak zwierzę!",
+  "Puszczaj, przeklęte żelastwo!",
+  "Pręty! Wszędzie pręty!"
  ],
  "rescue": [
   "Ratujemy {a}!",
-  "Trzymaj się, {v}!"
+  "Trzymaj się, {v}!",
+  "Nie zostawimy cię, {v}!",
+  "Idziemy po {a}!",
+  "Wyciągniemy cię stamtąd, {v}!",
+  "Nikt nie zostaje w klatce! Po {a}!"
  ],
  "abandon": [
   "Zostawiamy {a}!",
-  "Nie ma czasu, idziemy!"
+  "Nie ma czasu na ratunek.",
+  "Nie uratujemy {a}. Nie tym razem.",
+  "Klatka trzyma {a}. Nic nie poradzę.",
+  "Za późno na {a}...",
+  "Zostawić {a}? Nie ma wyjścia..."
  ],
  "abandoned": [
   "Nie zostawiajcie mnie!",
-  "Wracajcie!"
+  "Wracajcie!",
+  "Ej! Ja tu wciąż jestem!",
+  "Tak się nie robi przyjaciołom!",
+  "Nie! Błagam, nie!",
+  "Zapamiętam to, jeśli przeżyję!"
  ],
  "freed": [
   "Wolny!",
-  "Dzięki!"
+  "Dzięki!",
+  "Wiedział{em|am}, że przyjdziesz!",
+  "Nareszcie! Już myślał{em|am}, że po mnie.",
+  "Mam u ciebie dług!",
+  "Nigdy więcej klatek!"
  ],
  "cageBreak": [
   "Wyrwał{em|am} się!",
   "Precz z tą klatką!",
-  "Nie zostanę tu!"
+  "Nie zostanę tu!",
+  "Żadne kraty mnie nie zatrzymają!",
+  "Pręty jak słoma!",
+  "Myślał loch, że mnie zamknie?",
+  "Nie takie klatki rozginał{em|am}!",
+  "Za słaba klatka na mnie!",
+  "Ha! Wygięte jak drut!"
  ],
  "cageDie": [
   "Nikt... nie wróci...",
-  "Zostawili mnie...",
-  "Tak tu ciemno..."
+  "Nikt nie zdążył...",
+  "Tak tu ciemno...",
+  "Zimno... tak zimno...",
+  "To już... koniec...",
+  "Nie tak... miało być...",
+  "Ktokolwiek... proszę...",
+  "Światło... gaśnie...",
+  "Pręty... coraz bliżej..."
  ],
  "crystalFear": [
   "Bierzcie sobie ten kamień!",
   "Nie chcę go! Uciekam!",
-  "Przeklęty kryształ!"
+  "Przeklęty kryształ!",
+  "Masz swój kamień, lochu!",
+  "Życie mi milsze! Precz z nim!",
+  "Ani kroku dalej z tym przeklęństwem!",
+  "Nie jest wart mojej skóry!",
+  "Rzucam go! Rzucam!",
+  "Niech go bierze, kto chce!"
  ],
  "sapped": [
   "Rozmontowane, nie odpali już nigdy.",
   "Zabieram mechanizm na pamiątkę.",
-  "Ta pułapka jest już moja."
+  "Ta pułapka jest już moja.",
+  "I po pułapce. Na zawsze.",
+  "Rozebrana do ostatniej śrubki.",
+  "Ta już nikomu nie zaszkodzi.",
+  "Ładna robota. Szkoda, że już nie działa.",
+  "Części się przydadzą. Biorę.",
+  "Kto to składał? Partacz."
  ],
  "sense": [
   "Czuję tu magię pułapek.",
-  "Stop. Widzę, gdzie są mechanizmy.",
-  "Ten pokój jest zaminowany."
+  "Widzę, gdzie czai się mechanizm.",
+  "W tym pokoju czai się pułapka.",
+  "Mrowi mnie w palcach. Tu coś jest.",
+  "Nie ukryjesz się przede mną.",
+  "Eter drży. Ktoś tu coś zastawił.",
+  "Magia zdradza każdą pułapkę.",
+  "Sztuczki lochu widzę jak na dłoni.",
+  "Coś tu czyha w ukryciu. Czuję to."
  ],
  "prepStart": [
   "Stop. Za tymi drzwiami jest pokój śmierci.",
-  "Słyszeliśmy o tym pokoju. Przygotujmy się.",
-  "Tam czeka masa pułapek. Potrzebujemy planu."
+  "Ten pokój to śmiertelna pułapka. Przygotujmy się.",
+  "Tam jest śmiertelnie groźnie. Potrzebujemy planu.",
+  "Ten pokój przed nami to rzeźnia.",
+  "Nikt nie wchodzi tam bez planu.",
+  "Chwila. Tam czeka coś paskudnego.",
+  "Tam trzeba wejść z głową.",
+  "Za progiem łatwo zginąć.",
+  "Następny pokój nie wybacza błędów."
  ],
  "prepGo": [
-  "Wszyscy wiedzą, co robić?",
-  "Na mój znak. Raz, dwa...",
-  "Dobra. Razem i szybko."
+  "Dobra. Wiem, co robić.",
+  "Raz, dwa... trzy.",
+  "Dobra. Szybko i bez zatrzymywania.",
+  "Głęboki wdech... i naprzód.",
+  "Liczę do trzech. Raz...",
+  "Bogowie, miejcie mnie w opiece.",
+  "Przebiegnę, zanim loch się zorientuje.",
+  "Tylko się nie zatrzymywać.",
+  "Serce wali... Dobra, idę."
  ],
  "prepReply": [
   "Tak jest.",
   "Got{ów|owa}.",
   "Miejmy to za sobą.",
-  "Nie podoba mi się to."
+  "Nie podoba mi się to.",
+  "Rozumiem.",
+  "Daj znak, a pobiegnę.",
+  "Byle szybko.",
+  "Mam co do tego złe przeczucia.",
+  "Na mnie możesz liczyć.",
+  "Choćby i do piekła.",
+  "Już się trzęsę...",
+  "Zrobi się."
  ],
  "councilReply": [
   "Zgoda.",
   "Mnie tam wszystko jedno.",
-  "Byle nie pod te kolce.",
+  "Byle nie przez pułapki.",
   "Prowadź.",
   "Ostatnio też tak było.",
-  "Dobra, ale ja idę na końcu."
+  "Dobra, ale ja nie idę pierwsz{y|a}.",
+  "Ty tu dowodzisz.",
+  "Byle nie w ślepy zaułek.",
+  "Lewo, prawo... Pułapka i tak gdzieś czeka.",
+  "Rzućmy monetą.",
+  "Obojętnie. Byle nie stać w miejscu.",
+  "Oby tym razem bez niespodzianek.",
+  "Mam przeczucie, ale kto by mnie słuchał.",
+  "Słusznie.",
+  "Każdy korytarz wygląda tu tak samo...",
+  "Idę tam, gdzie reszta.",
+  "Szybciej, zanim coś nas usłyszy.",
+  "Byle w stronę złota."
  ],
  "restStart": [
   "Siadamy. Opatrzmy rany.",
   "Tu jest spokojnie. Odpoczynek.",
-  "Stop. Złapmy oddech."
+  "Stop. Złapmy oddech.",
+  "Tu przeczekamy. Siadać.",
+  "Chwila wytchnienia. Należy nam się.",
+  "Plecy do ściany i oddychać.",
+  "Tu chyba bezpiecznie. Odpocznijmy.",
+  "Dość na teraz. Liżemy rany.",
+  "Odłóżcie broń, ale nie za daleko."
  ],
  "restPriest": [
   "Pokażcie rany, pomodlę się.",
   "Światło was opatrzy, siedźcie spokojnie.",
-  "Kto najbardziej krwawi? Do mnie."
+  "Kto najbardziej krwawi? Pokażcie rany.",
+  "Odpocznijcie. Pomodlę się za was.",
+  "Niech Światło zasklepi wasze rany.",
+  "Siedźcie. Modlitwa nie lubi pośpiechu.",
+  "Każda rana się zagoi, z wiarą szybciej.",
+  "Oddychajcie spokojnie. Światło czuwa.",
+  "Krew zatamujemy. Strach też."
  ],
  "restScene": [
-  "Auć! Delikatniej z tym bandażem!",
   "Nogi mi odpadają.",
   "Zjadł{bym|abym} coś ciepłego.",
   "Ten loch nas powoli zjada.",
-  "Nie zasypiać mi tu!",
+  "Tylko nikt mi tu nie zaśnie.",
   "Słyszeliście to skrzypienie?",
   "Ile jeszcze tych pokoi?",
   "Kto wziął ostatni bandaż?",
-  "Moja zbroja jest cała we krwi. Nie mojej. Chyba.",
-  "Jeszcze chwila i ruszamy."
+  "Cał{y|a} jestem we krwi. Nie mojej. Chyba.",
+  "Jeszcze chwila i ruszamy.",
+  "Plecy mnie bolą od tego plecaka.",
+  "Oddał{bym|abym} całe złoto za kufel piwa.",
+  "Mam w butach pół tego lochu.",
+  "Wszędzie ten kurz. Nawet w zębach.",
+  "Nie czuję już palców u stóp.",
+  "Przypomnijcie mi, czemu się na to zgodził{em|am}.",
+  "Następnym razem zostaję w karczmie.",
+  "Pachnie mi pieczenią. To już chyba majaki.",
+  "Język mi przysechł do podniebienia.",
+  "Czy w tym lochu zawsze jest tak zimno?",
+  "Matka chciała, żebym piek{ł|ła} chleb...",
+  "Ile już tu jesteśmy? Godzinę? Dzień?",
+  "Ktoś pamięta drogę powrotną?",
+  "Całkiem tu przytulnie. Jak w grobowcu.",
+  "Zdjął{bym|abym} buty, ale boję się, co zobaczę.",
+  "Mam dość tego lochu. Szczerze dość.",
+  "Jak wrócimy, stawiam wszystkim kolejkę.",
+  "Kiedy ostatnio spał{em|am} w łóżku?",
+  "Burczy mi w brzuchu. Zaraz coś nas usłyszy.",
+  "Śni mi się ten loch, a przecież nie śpię."
  ],
  "restReply": [
   "Cicho, odpoczywam.",
-  "Też to słyszał{em|am}.",
-  "Wytrzymaj, zaraz ruszamy.",
+  "Wytrzymaj jeszcze trochę.",
   "Nie marudź.",
-  "Ja też.",
-  "Lepiej nie pytaj."
+  "Ech, każdy z nas.",
+  "Lepiej nie pytaj.",
+  "Mhm...",
+  "Daj odetchnąć.",
+  "Mów ciszej, ściany mają uszy.",
+  "Pogadamy w karczmie.",
+  "Oszczędzaj siły.",
+  "Wolał{bym|abym} tego nie słyszeć.",
+  "Ciszej, głowa mi pęka.",
+  "Może i racja.",
+  "Szkoda gadać.",
+  "Oj, przestań.",
+  "Odpoczywaj, póki możesz.",
+  "Każdy ma swoje zmartwienia."
  ],
  "prepWard": [
   "Błogosławię was. Osłona na wszystkich!",
   "Światło, chroń nas!",
-  "Odwagi! Światło jest z nami."
+  "Odwagi! Światło jest z nami.",
+  "Pomodlę się o osłonę.",
+  "Światło, okryj nas swoim płaszczem.",
+  "Chwila modlitwy przed rzezią.",
+  "Niech wiara będzie tarczą.",
+  "Światło, stań między nami a śmiercią.",
+  "Błogosławieństwo, zanim ruszymy."
  ],
  "prepJam": [
-  "Zagłuszę ich mechanizmy. Biegniemy na mój znak!",
-  "Zakłócam pułapki, szybko przez pokój!"
+  "Zagłuszę ich mechanizmy. Biegnijcie, gdy ucichną.",
+  "Zakłócam pułapki, szybko przez pokój!",
+  "Rzucę czar ciszy na tamten pokój.",
+  "Każdy mechanizm w środku na chwilę zaśnie.",
+  "Chwila skupienia... i zaklęcie gotowe.",
+  "Magia na moment zatrzyma ich sztuczki."
  ],
  "prepDisarm": [
   "Rozbroję, co się da, z progu.",
-  "Dajcie mi chwilę przy drzwiach."
+  "Dajcie mi chwilę przy drzwiach.",
+  "Z progu sięgnę, ile zdołam.",
+  "Zobaczę, co da się rozbroić stąd.",
+  "Wytrych w dłoń. Chwila ciszy.",
+  "Najpierw ja i moje narzędzia."
  ],
  "prepShield": [
-  "Za mną, pod tarczą!",
-  "Idę pierwsz{y|a}, trzymajcie się za mną."
+  "Tarcza w górę! Osłonię, kogo zdołam.",
+  "Podniosę tarczę, gdy tylko ruszymy.",
+  "Tarcza pójdzie w górę, gdy ruszymy.",
+  "Niech bije w tarczę, nie we mnie.",
+  "Zbroja dopięta, tarcza w dłoni.",
+  "Stal wytrzyma. Jestem got{ów|owa}."
  ],
  "rush": [
   "Teraz! Biegiem!",
   "Naprzód, póki cisza!",
-  "Już! Przez pokój!"
+  "Już! Przez pokój!",
+  "Pędem! Nie oglądać się!",
+  "Raz, dwa, trzy! Już!",
+  "Nie stawać, choćby nie wiem co!",
+  "Naprzód i nie zwalniać!",
+  "Prędko, póki jest szansa!",
+  "Ruszamy! Ile sił w nogach!"
  ],
  "fall": [
   "Aaaa!",
-  "Podłoga zniknęła!"
+  "Podłoga zniknęła!",
+  "Leeecę!",
+  "Ratunkuuu!",
+  "W dół?! Nieee!",
+  "Ziemia się rozstąpiła!"
  ],
  "landed": [
   "Gdzie ja jestem?!",
   "Ciemno tu...",
-  "Halo? Jest tu kto?"
+  "Halo? Jest tu kto?",
+  "Żyję? Żyję!",
+  "Kości całe... chyba.",
+  "Gdzie mnie wyrzuciło?",
+  "Och, moja głowa...",
+  "Wydostał{em|am} się. Tylko gdzie?",
+  "Ta dziura miała drugi koniec. Uff."
  ],
  "ghost": [
   "Duch!",
-  "Coś zimnego mnie dotknęło!"
+  "Coś zimnego mnie dotknęło!",
+  "Zjawa!",
+  "Upiór! Przy mnie!",
+  "Krew mi zamarza...",
+  "Coś tu nie żyje i się rusza!"
  ],
  "ghostOnly": [
   "Na ducha tylko kapłan!",
-  "Mieczem go nie tkniesz!"
+  "Mieczem go nie tkniesz!",
+  "Stal na zjawy nie pomoże.",
+  "Tego nie przetnę...",
+  "Ostrze przejdzie przez niego jak przez mgłę.",
+  "Tu nie tarcza, tu modlitwa potrzebna."
  ],
  "shade": [
   "Ktoś szepcze moje imię...",
   "Ten cień idzie za mną!",
-  "Kto tam? Kto szepcze?"
+  "Kto tam? Kto szepcze?",
+  "Mój cień... to nie mój cień!",
+  "Ciemność ma oczy!",
+  "Coś czai się w mroku!",
+  "Zimno... i coś tuż za mną.",
+  "Cienie się ruszają!",
+  "Nie odwracaj się... nie odwracaj..."
  ],
  "bats": [
   "Nietoperze!",
   "Precz! Precz ode mnie!",
-  "Moje włosy! Zabierzcie je!"
+  "Moje włosy! Wplątały się!",
+  "Skrzydła! Wszędzie skrzydła!",
+  "Gryzą! One gryzą!",
+  "Chmara! Nad głową!",
+  "Zostawcie mnie, paskudy!",
+  "Fuj! Futro i zęby!",
+  "Piszczą! Uszy mi pękną!"
  ],
  "lull": [
   "Ta melodia... skądś ją znam...",
-  "Przestańcie grać! Przestańcie!"
+  "Przestańcie grać! Przestańcie!",
+  "Mama mi to nuciła...",
+  "Ta melodia wchodzi mi do głowy...",
+  "Gra samo z siebie... Nie podoba mi się to."
  ],
  "batScatter": [
   "Uciekam!",
-  "Nie widzę, gdzie biegnę!"
+  "Nie widzę, gdzie biegnę!",
+  "Na oślep, byle dalej!",
+  "W oczy mi lecą!",
+  "Nic nie widzę przez te skrzydła!",
+  "Dość! Uciekam od nich!"
  ],
  "spider": [
   "Pająk!",
-  "Fuj, pająk!"
+  "Fuj, pająk!",
+  "Lepi się! Wszystko się lepi!",
+  "Oplątał mnie, paskudnik!",
+  "Osiem nóg, a ja w sieci!",
+  "Ugrz{ązłem|ęzłam} w pajęczynie!"
  ],
  "seenBuilt": [
-  "Widział{em|am} to! Ściana się ruszyła!",
+  "Widział{em|am} to! Coś tam wyrosło!",
   "Coś tam się pojawiło!",
-  "Loch zastawia na nas pułapki!"
+  "Loch zastawia pułapki na moich oczach!",
+  "Tego tam przed chwilą nie było!",
+  "Loch żyje! I stawia pułapki!",
+  "Na moich oczach! Znikąd!",
+  "Ktoś tu przestawia loch!",
+  "Przysiągł{bym|abym}, że tam było pusto!",
+  "Wyczarowane z powietrza!"
  ],
  "gateReroute": [
   "Krata! Szukamy innej drogi.",
   "Zamknięte. Obejdziemy to.",
-  "Tędy nie przejdziemy, wracamy na rozwidlenie."
+  "Tędy nie przejdziemy, szukamy innej drogi.",
+  "Krata. Trzeba szukać obejścia.",
+  "Zamknięte? To pójdzie się inaczej.",
+  "Żelazo nie ustąpi. Inna droga.",
+  "Tędy nie. Gdzie indziej musi być przejście.",
+  "Loch ma więcej korytarzy niż jeden.",
+  "Nie będę czekać pod kratą."
  ],
  "gateWait": [
   "Nie ma innej drogi, czekamy na kratę.",
-  "Utknęliśmy. Poczekajmy, aż się podniesie."
+  "Utknęliśmy. Poczekajmy, aż się podniesie.",
+  "Nic innego nie zostało. Czekamy.",
+  "Krata kiedyś się podniesie. Stoimy.",
+  "Przeklęte żelazo. Czekamy, aż puści.",
+  "Cierpliwości. Ona musi się otworzyć."
  ],
  "lootPetty": [
   "Zwykłe błyskotki, szkoda czasu.",
-  "Takie drobne? Nie schylam się."
+  "Takie drobne? Nie schylam się.",
+  "Garść monet? Niech leży.",
+  "Dla drobnicy nie zginam karku.",
+  "Widział{em|am} większe skarby.",
+  "Niech to zbierają żółtodzioby."
  ],
  "lootLegend": [
   "Legendarne! Choćby przez piekło!",
-  "Po to tu przyszliśmy!"
+  "Po to tu przyszliśmy!",
+  "Relikwia! Muszę ją mieć!",
+  "Taki skarb trafia się raz w życiu!",
+  "Legenda na wyciągnięcie ręki!",
+  "Ten blask... idę po niego!"
  ],
  "lootGreedy": [
   "Moje! Wszystko moje!",
-  "Złoto woła mnie po imieniu!"
+  "Skarb woła mnie po imieniu!",
+  "Łapy precz, to moje!",
+  "Błyszczy? Znaczy, że moje.",
+  "Nikt mi tego nie sprzątnie sprzed nosa!",
+  "Do mnie, maleństwo!"
  ],
  "lootCareful": [
   "Za łatwo leży. To pułapka.",
-  "Nie ruszam, coś tu śmierdzi."
+  "Nie ruszam, coś tu śmierdzi.",
+  "Za ładnie to wygląda. Nie ruszam.",
+  "Ręce przy sobie, tak się dłużej żyje.",
+  "Każdy skarb ma swoją cenę. Nie płacę.",
+  "Kto się schyla po łup, ten ginie."
  ],
  "lootWait": [
   "Bierz to, poczekamy.",
-  "Tylko szybko!",
   "Dobra, łap to i idziemy.",
-  "Weź to, osłaniam cię."
+  "Weź to, poczekam.",
+  "No dalej, zbieraj!",
+  "Migiem, nie mamy całego dnia!",
+  "Czekam, ale nie wiecznie.",
+  "Tylko niczego nie nadepnij!",
+  "Bierz i wracaj.",
+  "Masz chwilę. Nie zmarnuj jej.",
+  "Patrz pod nogi, zanim sięgniesz.",
+  "Pospiesz się, ten loch nie śpi."
  ],
  "lootStop": [
-  "Zostaw to złoto!",
+  "Zostaw to!",
   "Wracaj, to przynęta!",
-  "Nie teraz, trzymaj się planu!"
+  "Nie teraz, trzymaj się planu!",
+  "Stój! To za ryzykowne!",
+  "Zostaw! Życie cenniejsze!",
+  "Nie ruszaj tego!",
+  "Chcesz zginąć dla błyskotki?!",
+  "Ja tu dowodzę! Zostaw to!",
+  "Tam jest niebezpiecznie, słyszysz?!"
  ],
  "lootReply": [
-  "Tylko szybko!",
+  "Szybko się uwinę!",
   "Sekunda, zaraz wracam!",
-  "Nie zostawię tego!"
+  "Nie zostawię tego!",
+  "Zdążę, zobaczysz!",
+  "Za taki łup warto oberwać!",
+  "Nie będziesz mi rozkazywać!",
+  "Później mi podziękujesz!"
  ],
  "revenge": [
   "Pomszczę cię, {v}!",
-  "Za {a}! Do ataku!",
-  "Zapłacą za {a}!"
+  "Za {a}! Bez litości!",
+  "Zapłacą za {a}!",
+  "{v}... Teraz jestem naprawdę zł{y|a}.",
+  "Za {a} rozniosę ten loch w pył!",
+  "Krew za {a}! Twoja krew, lochu!",
+  "Nie daruję ci tego, lochu!",
+  "Śpij, {v}. Ja jeszcze nie skończył{em|am}.",
+  "Bez litości! To za {a}!"
  ],
  "cowardRun": [
   "Ja tu nie zostaję!",
-  "Każdy za siebie!"
+  "Każdy za siebie!",
+  "Nie, nie, nie! Ja stąd uciekam!",
+  "Bohater{em|ką} będę kiedy indziej!",
+  "Kryształ? Niech go sobie bierze, kto chce!"
  ],
  "cautious": [
   "Spokojnie, krok po kroku.",
-  "Najpierw patrzę, potem idę."
+  "Najpierw patrzę, potem idę.",
+  "Nie spieszmy się. Loch nigdzie nie ucieknie.",
+  "Patrzę na każdą płytę, zanim na nią stanę.",
+  "Pośpiech to najkrótsza droga do grobu.",
+  "Wolę wyjść stąd późno niż wcale."
  ],
  "rumorStart": [
-  "W karczmie mówili o {k} pułapkach w środku.",
+  "W karczmie liczyli pułapki. Wyszło: {k}.",
   "Uciekinierzy opowiadali o tym lochu. Uważajcie.",
-  "Podobno w środku czeka {k} pułapek."
+  "Ile pułapek? Podobno {k}.",
+  "Ile pułapek? Karczma mówi, że {k}.",
+  "Pułapki według plotek? Sztuk {k}.",
+  "Uciekinierzy wciąż gadają o tych pułapkach.",
+  "Plotki to nie mapa, ale lepsze to niż nic.",
+  "Słyszał{em|am} o pułapkach. Oby karczma kłamała.",
+  "Część pułapek znamy. Resztę poznamy sami."
  ],
  "heartRumor": [
-  "Wiemy, gdzie jest serce. Idziemy prosto.",
-  "Mapa z karczmy prowadzi do serca."
+  "Wiemy, gdzie jest serce. To już połowa sukcesu.",
+  "Mapa z karczmy prowadzi do serca.",
+  "Karczma wie, gdzie bije serce tego lochu.",
+  "Ktoś już tu był i widział serce. Teraz my.",
+  "Kryształ czeka tam, gdzie mówili w karczmie.",
+  "Znamy drogę do serca. Prawie."
  ],
  "fame1": [
   "O tym lochu już się mówi.",
-  "Słyszałem, że stąd wracają nieliczni."
+  "Słyszał{em|am}, że stąd wracają nieliczni.",
+  "W karczmach zaczynają szeptać o tym miejscu.",
+  "Mówią, że ten loch ma zęby.",
+  "Ten loch ma już swoją złą sławę.",
+  "Słyszał{em|am}, że ten loch lubi gości. Na obiad."
  ],
  "fame2": [
   "Ten loch to żywa legenda...",
   "Mówią, że stąd nikt nie wraca.",
-  "Bardowie śpiewają o tym miejscu."
+  "Bardowie śpiewają o tym miejscu.",
+  "Matki straszą tym lochem dzieci.",
+  "Weterani piją na odwagę, zanim tu zejdą.",
+  "Wróżbitka mi odradzała. Trzy razy.",
+  "O tym lochu śpiewają nawet na północy.",
+  "Ten loch zjada drużyny jak chleb.",
+  "Kto stąd wróci, nie zapłaci już za piwo."
  ],
  "rookieBoast": [
   "Pierwszy raz w lochu, ale dam radę!",
   "Zobaczycie, wrócę z kryształem!",
-  "Mama by była dumna!"
+  "Mama by była dumna!",
+  "Patrzcie i uczcie się!",
+  "Trenował{em|am} na kukłach całe lato!",
+  "Kryształ? Wezmę go jedną ręką!",
+  "Nauczyciel mówił, że mam talent!",
+  "Ja się nie boję. Prawie wcale.",
+  "Wrócę stąd jako bohater{|ka}!"
  ],
  "vetWarn": [
   "Mówił{em|am}: patrz pod nogi!",
-  "Uważaj, młody!",
-  "Nowicjusze..."
+  "Młodzi... zawsze to samo!",
+  "Nowicjusze...",
+  "Nowicjusze... zawsze w pierwszą lepszą.",
+  "Każdy młody musi raz oberwać.",
+  "Tego nie uczą w żadnej karczmie.",
+  "Ile razy można powtarzać to samo...",
+  "Stara sztuczka. Młodzi zawsze się nabierają.",
+  "Kiedyś też się tak nabrał{em|am}. Raz."
  ],
  "nastyTrap": [
   "Ta pułapka wygląda paskudnie...",
   "Ktoś tu się postarał.",
-  "To nie jest zwykły mechanizm."
+  "To nie jest zwykła pułapka.",
+  "Paskudna robota. Ale porządna.",
+  "Tego nie zbudował amator.",
+  "Ten loch zna się na rzeczy...",
+  "Aż mi ciarki przeszły po plecach.",
+  "Piękne. I zabójcze.",
+  "Ktoś tu bardzo nie lubi gości."
  ],
  "guildFear": [
-  "Gildia przysłała kapłanów. Nie damy się nastraszyć!",
-  "Mamy amulety. Strach na nas nie działa!"
+  "Gildia o nas zadbała. Nie damy się nastraszyć!",
+  "Mamy amulet i modlitwę. Strach nas nie złamie!",
+  "Tamtych loch zastraszył. Nas nie zdoła.",
+  "Tu podobno straszy. Mamy na to modlitwę.",
+  "Strachy na lachy. Gildia o nas zadbała.",
+  "Ponoć ludzie wybiegają stąd siwi. Nie my."
  ],
  "guildKill": [
-  "Gildia dała nam tarcze. Nie zginiemy jak tamci.",
-  "Wojownicy przodem, tym razem przeżyjemy."
+  "Gildia dała nam talizman. Nie zginiemy jak tamci.",
+  "Tym razem przeżyjemy. Gildia o to zadbała.",
+  "Tamtą drużynę loch przetrzebił. Nas nie zdoła.",
+  "Ten loch zabija. Tym razem jesteśmy gotowi.",
+  "Gildia ma dość pogrzebów. Ja też.",
+  "Mamy talizman od gildii. Niech loch spróbuje."
  ],
  "guildTraps": [
-  "Złodzieje przodem, tu jest pełno pułapek.",
-  "Gildia mówi: pułapka na pułapce. Biorę zestaw do rozbrajania."
+  "Tu jest pełno pułapek. Patrzcie pod nogi.",
+  "Gildia mówi: pułapka na pułapce. Będzie co rozbrajać.",
+  "Ponoć tu każda płyta coś skrywa.",
+  "Gildia ostrzegała: tu się chodzi na palcach.",
+  "Pułapek tu więcej niż kamieni. Tak mówią.",
+  "Patrzcie pod nogi. Tu podobno wszystko kąsa."
  ],
  "guildMonsters": [
-  "Mamy maga na potwory.",
-  "Tym razem potwory spłoną."
+  "Mamy magię na potwory.",
+  "Tym razem potwory spłoną.",
+  "Ponoć roi się tu od potworów.",
+  "Gildia mówi: bestie. My mówimy: ogień.",
+  "Kto tu karmi te wszystkie bestie?",
+  "Na bestie najlepszy ogień. Mamy go."
  ],
  "guildLost": [
-  "Gildia dała nam barda. Tym razem nikt się nie zgubi.",
-  "Mamy lutnię. Trzymajcie się dźwięku."
+  "Mamy muzykę. Tym razem nikt się nie zgubi.",
+  "Mamy lutnię. Trzymajcie się dźwięku.",
+  "Tu ludzie gubią się i giną sami. Nie my.",
+  "Kto się odłączy, przepadnie. Tak mówi gildia.",
+  "Jak się zgubicie, idźcie na muzykę.",
+  "Ten loch rozdziela drużyny. Pilnujmy się."
  ],
  "guildBlock": [
   "Gildia przysłała barbarzyńcę. Skrzynie nas nie zatrzymają.",
-  "Topór przodem, tu wszystko zastawione!"
+  "Mamy topór, a tu wszystko zastawione!",
+  "Ponoć wszystkie przejścia tu zastawione.",
+  "Zapory? Barykady? Mamy na to sposób.",
+  "Przejść tu nie ma? To się je zrobi.",
+  "Kto tu tak lubi zastawiać drogę?"
  ],
  "bRune": [
-  "Runa! Moje zaklęcia tu nie sięgają.",
-  "Ten kamień zjada magię..."
+  "Runa! Zaklęcia tu nie sięgają.",
+  "Ten kamień zjada magię...",
+  "Runa na kamieniu... czary tu gasną.",
+  "Ten znak tłumi czary. Paskudna rzecz.",
+  "Ta runa... powietrze tu jakieś martwe.",
+  "Przeklęty znak. Przy nim czar się dusi."
  ],
  "bAltar": [
-  "Bluźnierczy ołtarz... moja modlitwa tu nie sięga!",
-  "To miejsce jest przeklęte, bogowie mnie nie słyszą."
+  "Bluźnierczy ołtarz... modlitwy tu słabną.",
+  "To miejsce jest przeklęte, bogowie stąd odeszli.",
+  "Czarny ołtarz... aż zimno od niego bije.",
+  "Tu świętość słabnie. Czuć to w kościach.",
+  "Ktoś tu odprawiał bluźniercze obrzędy.",
+  "Przy tym ołtarzu modlitwy więdną."
  ],
  "bAcid": [
-  "Kwas! Tarcza mi się topi!",
-  "Ten opar przeżera osłony..."
+  "Kwas! Tarcze tu na nic!",
+  "Ten opar przeżera osłony...",
+  "Kwas! Czuć go w gardle.",
+  "Tu nawet żelazo długo nie wytrzyma.",
+  "Śmierdzi kwasem. Oczy pieką.",
+  "Kwas w lochu? Kto wpada na takie pomysły?!"
  ],
  "bVeil": [
   "Tego pokoju nie było w opowieściach...",
-  "Nikt nam nie mówił o tym miejscu!"
+  "Nikt nam nie mówił o tym miejscu!",
+  "Ten pokój jakby się rozmywał...",
+  "Zasłona... coś tu mąci w głowie.",
+  "Ten pokój jest jak sen. Zaraz o nim zapomnę.",
+  "Był{em|am} tu już? Nie pamiętam..."
  ],
  "bDecoy": [
   "To była zmyłka!",
   "Pułapka w pułapce!",
-  "Alarm! Wszystko odpala!"
+  "Alarm! To była przynęta!",
+  "Podstęp!",
+  "Nabrali nas!",
+  "Przynęta! A niech to!",
+  "Fałszywa pułapka!",
+  "Zadzwoniło! To alarm!",
+  "Psiakrew! Zasadzka!"
  ],
  "bHowl": [
-  "Ten kamień wyje... zagłusza mi lutnię!",
+  "Ten kamień wyje... zagłuszy każdą lutnię!",
   "Nic nie słychać przez to wycie!",
-  "Wiatr gra głośniej niż ja..."
+  "Wiatr gra tu głośniej niż niejeden bard...",
+  "Co tak wyje w tym kamieniu?!",
+  "To wycie świdruje uszy!",
+  "Wiatr w kamieniu... jak potępieniec.",
+  "Własnych myśli nie słyszę!",
+  "Zatkał{bym|abym} uszy, gdyby to coś dało.",
+  "Ten kamień zagłuszy każdą pieśń."
  ],
  "bShackles": [
-  "Łańcuchy... czuję, jak furia gaśnie.",
-  "Okowy! Nie mogę się wściec!",
-  "Te kajdany... ręce mi ciążą."
+  "Łańcuchy... tu każda furia gaśnie.",
+  "Okowy! Tu nikt się nie wścieknie!",
+  "Te kajdany... ręce mi ciążą.",
+  "W tym pokoju gniew nie ma dokąd pójść.",
+  "Tu nawet złość ma kajdany.",
+  "Ktoś tu kogoś długo trzymał na łańcuchu.",
+  "Te okowy dławią każdą furię.",
+  "Brzęk łańcuchów... aż ręce opadają.",
+  "Jakby coś mnie trzymało za ręce..."
  ],
  "song": [
   "Zagram wam coś na odwagę!",
   "Głowy do góry! Ballada o tych, co wrócili!",
   "Słuchajcie! Pieśń o bohaterach!",
-  "Raz, dwa... śpiewajcie ze mną!"
+  "Raz, dwa... śpiewajcie ze mną!",
+  "Pieśń o rycerzu, co pokonał smoka!",
+  "Kto śpiewa, ten się nie boi!",
+  "Strach lubi ciszę. To mu jej nie damy!",
+  "Loch gra nam na nerwach? To my zagramy jemu!",
+  "Zaśpiewam o tym, jak stąd wyjdziemy!",
+  "Ta piosenka nie raz mnie uratowała.",
+  "Nuta na odwagę, prosto z gór!",
+  "Nie płakać! Śpiewać!"
  ],
  "songThanks": [
   "Od razu raźniej.",
   "Graj dalej!",
-  "Dzięki, bardzie.",
-  "Dobra, dam radę."
+  "Dzięki za pieśń.",
+  "Dobra, dam radę.",
+  "Lżej mi na sercu.",
+  "Ładnie. Strach jakby zmalał.",
+  "Jeszcze jedną, proszę!",
+  "Tego mi było trzeba.",
+  "Zanucił{bym|abym}, ale fałszuję.",
+  "Pięknie. Prawie zapomniał{em|am}, gdzie jestem.",
+  "Ta melodia zostanie mi w głowie.",
+  "Dobrze, że cię mamy."
  ],
  "bardCall": [
   "{n}! Idź na moją lutnię!",
   "Gram głośniej! {n}, idź za dźwiękiem!",
-  "Słyszysz mnie, {n}? Tędy!"
+  "Słyszysz mnie, {n}? Tędy!",
+  "{n}! Słuchaj melodii, ona cię przyprowadzi!",
+  "To ja gram, {n}! Wracaj do nas!",
+  "{n}! Ta piosenka zna drogę!",
+  "Na dźwięk lutni, {n}! Nie zbaczaj!",
+  "Hej, {n}! Słyszysz tę nutę?",
+  "{n}, idź na muzykę, nie na echo!"
  ],
  "lostHear": [
   "Słyszę lutnię! Idę!",
-  "To nasz bard! Tędy!",
-  "Muzyka... tam są!"
+  "To nasza lutnia! Tędy!",
+  "Muzyka... tam są!",
+  "Lutnia! Jednak mnie szukają!",
+  "Znam tę melodię! Idę!",
+  "Muzyka z tamtej strony! Za nią!",
+  "Ta piosenka... Już idę, już!",
+  "Nigdy nie kochał{em|am} muzyki tak jak teraz!",
+  "Gra! Ktoś gra! Idę na dźwięk!"
  ],
  "answer": [
   "Tutaj! Na mój głos!",
   "Jesteśmy tu! Idź na głos!",
-  "{n}! Tędy!"
+  "{n}! Tędy!",
+  "{n}! Słyszę cię! Wołaj dalej!",
+  "Hej, {n}! Chodź tutaj, do nas!",
+  "{n}! Żyjesz? To dobrze! Tutaj!",
+  "Głos masz zdrowy, {n}! Teraz ruszaj nogami!",
+  "{n}, spokojnie! Słychać cię stąd!",
+  "{n}! Po tej stronie!"
  ],
  "hearVoice": [
-  "Słyszę ich! Idę na głos!",
-  "To oni! Już idę!"
+  "Słyszę głos! Idę!",
+  "To oni! Już idę!",
+  "Głos! Ktoś woła! Idę!",
+  "Znam ten głos! Nareszcie!",
+  "Tam! Ktoś odpowiedział!",
+  "Nie jestem sam{|a}! Idę za głosem!"
  ],
  "echoLost": [
   "To echo... skąd to idzie?!",
   "Głosy ze wszystkich stron!",
-  "Wołają, ale skąd?!"
+  "Ktoś woła czy to echo?!",
+  "Echo przedrzeźnia mój głos!",
+  "To ja wołam, czy ktoś inny?!",
+  "Wycie i echo... nic nie rozróżnię!",
+  "Ten kamień kradnie mi głos!",
+  "Głupie echo! Zamilcz!",
+  "Słyszę... siebie? Tylko siebie?"
  ],
  "rage": [
   "AAARGH!",
   "Krew za krew!",
   "Teraz się wściekł{em|am}!",
-  "Rozwalę ten loch!"
+  "Rozwalę ten loch!",
+  "To bolało! Teraz moja kolej!",
+  "Krew! Moja krew! Ktoś za to zapłaci!",
+  "Myślisz, że mnie przewrócisz?!",
+  "Czerwono mi przed oczami!",
+  "Kto mnie drasnął?!",
+  "Ból mnie tylko budzi!",
+  "Grrraaah!",
+  "Dobrze! Teraz się zacznie!"
  ],
  "rageNoPanic": [
   "Nie uciekam! Wściekam się!",
   "Strach? Strach mnie tylko wkurza!",
-  "Bój się mnie, lochu!"
+  "Bój się mnie, lochu!",
+  "Nogi chcą uciekać. Topór chce walczyć!",
+  "Nie ze mną te strachy!",
+  "Straszysz mnie, lochu? Doigrałeś się!",
+  "Serce wali? To bębny wojny!",
+  "Ręce mi drżą... z wściekłości!",
+  "Prędzej się wścieknę, niż ucieknę!"
  ],
  "smash": [
-  "Z drogi, skrzynio!",
+  "Z drogi, graty!",
   "Rozwalę to!",
   "Topór lepszy niż klucz!",
-  "Drzazgi!"
+  "Drzazgi!",
+  "Drewno! Mój ulubiony wróg!",
+  "Na opał z tym!",
+  "Ciach i po meblu!",
+  "Kto tu nastawiał tych gratów?!",
+  "Jeden zamach. Może dwa.",
+  "Lubię dźwięk pękającego drewna.",
+  "Za długo stało. Teraz poleży.",
+  "Rąbanie uspokaja."
  ],
  "smashB": [
   "Precz z tym kamieniem!",
   "Zaraz z tego będzie gruz!",
-  "Nic mnie nie zatrzyma!"
+  "Nic mnie nie zatrzyma!",
+  "Twoje sztuczki, lochu? Na gruz!",
+  "Rozbiję to w drobny mak!",
+  "Nie wiem, co to. Ale zaraz tego nie będzie.",
+  "Topór na czary!",
+  "Stoi? Zaraz będzie leżeć!",
+  "Wszystko pęka, jak się mocno uderzy."
  ],
  "bardIdle": [
   "Ułożę o tym balladę...",
   "Ten loch to dobry temat na pieśń.",
-  "Rym do \"kolce\"? Hmm..."
+  "Rym do kolców? Hmm...",
+  "Loch, groch... Nie, tego nie zaśpiewam.",
+  "Ta cisza aż prosi o lutnię.",
+  "Jeśli zginę, niech ktoś dokończy moją pieśń.",
+  "Zwrotka trzecia: bohaterowie schodzą głębiej...",
+  "W balladzie będziemy wyżsi i odważniejsi.",
+  "Akustyka jak w świątyni. Tylko widownia gorsza."
  ],
  "barbIdle": [
   "Za cicho. Chcę się bić.",
   "Gdzie te potwory?",
-  "Mój topór się nudzi."
+  "Mój topór się nudzi.",
+  "Za dużo chodzenia, za mało bicia.",
+  "Pułapki to tchórzostwo. Niech coś stanie i walczy!",
+  "W mojej wiosce takie lochy to plac zabaw.",
+  "Ręce mnie swędzą. Trzeba coś rozwalić.",
+  "Te ściany... Rozwalił{bym|abym} którąś. Dla zasady.",
+  "Głodn{y|a} jestem. I zł{y|a}. Głównie zł{y|a}."
  ],
  "champShout": [
   "Stać! Nikt nie ucieka!",
-  "Do mnie! Trzymamy szyk!",
-  "Tchórze nie dostaną złota!"
+  "Stać! Trzymamy szyk!",
+  "Tchórze nie dostaną złota!",
+  "Ani kroku w tył!",
+  "Kto ucieka, ginie w plecy!",
+  "Patrzcie na mnie, nie na wyjście!",
+  "Póki stoję, stoimy wszyscy!",
+  "Wstyd! Do szeregu!",
+  "Strach to tylko wiatr! Stać!"
  ],
  "finalRage": [
   "Nie zatrzymasz przeznaczenia!",
-  "Teraz zobaczysz prawdziwą siłę!"
+  "Teraz zobaczysz prawdziwą siłę!",
+  "Przepowiednia nie kończy się tutaj!",
+  "To wszystko, lochu?!",
+  "Wstaję silniejsz{y|a}! Słyszysz, lochu?!",
+  "Przeznaczenie jest silniejsze od murów!"
  ],
  "finalAura": [
   "Jestem z wami. Nie lękajcie się.",
-  "Przepowiednia nas prowadzi."
+  "Przepowiednia nas prowadzi.",
+  "To dzień zapisany w gwiazdach.",
+  "Blisko mnie strach słabnie.",
+  "Ten loch czekał na mnie od wieków.",
+  "Proroctwo mówi, że kryształ będzie nasz."
  ],
  "shaken": [
-  "Widział{em|am}, jak zginął... Ręce mi się trzęsą.",
+  "Ręce mi się trzęsą... Nie mogę uwierzyć.",
   "To mogł{em|am} być ja.",
   "Nie mogę przestać o tym myśleć.",
-  "Ten loch zabija."
+  "Ten loch zabija.",
+  "Jeszcze rano jedliśmy razem śniadanie...",
+  "Kto będzie następny?",
+  "Nie tak to miało wyglądać...",
+  "Nawet nie zdążył{em|am} się pożegnać.",
+  "Kto powie rodzinie?",
+  "Nogi mam jak z waty.",
+  "Dobrze, że to nie ja. Wstyd mi, że tak myślę.",
+  "Loch upomniał się o swoje."
  ],
  "hurtScared": [
   "Krwawię... Długo tak nie pociągnę.",
   "Jeszcze jedno takie i po mnie.",
-  "Wszystko mnie boli."
+  "Wszystko mnie boli.",
+  "Kręci mi się w głowie...",
+  "Zaraz padnę... zaraz padnę...",
+  "To już koniec? Nie, jeszcze nie...",
+  "Ciemno mi przed oczami...",
+  "Nie tu... nie w tym lochu...",
+  "Ręce mi się trzęsą... ledwo żyję."
  ],
  "potionGive": [
   "Masz, pij! Szybko!",
   "Trzymaj moją miksturę!",
-  "Łap, nie umieraj mi tu!"
+  "Łap, nie umieraj mi tu!",
+  "Pij do dna!",
+  "Masz. Oddasz mi w karczmie.",
+  "Wypij, zanim zemdlejesz!",
+  "Nie dyskutuj, tylko pij!",
+  "Gorzkie, ale postawi cię na nogi!",
+  "Trzymaj flaszkę! Duszkiem!"
  ],
  "potionThanks": [
   "Dzięki, ratujesz mi skórę!",
-  "Ratunek w samą porę!"
+  "Ratunek w samą porę!",
+  "Dług wdzięczności. Nie zapomnę.",
+  "Ohyda... ale działa!",
+  "Postawię ci za to beczkę piwa!",
+  "Był{em|am} już jedną nogą w grobie."
  ],
  "swap": [
   "Biorę lepsze, stare zostawiam.",
   "To mi się bardziej przyda.",
-  "Wymiana! Stare niech tu leży."
+  "Wymiana! Stare niech tu leży.",
+  "To lepsze. Stare zostawiam lochowi.",
+  "O, to jest coś! Tamto może zostać.",
+  "Nie szkoda mi starego.",
+  "Stare na ziemię, nowe do ręki.",
+  "Lepiej wykonane niż moje.",
+  "Ktoś tu zgubił lepsze rzeczy ode mnie."
  ],
  "full": [
   "Nie mam już miejsca.",
   "Plecak pełny, zostawiam.",
-  "Nic więcej nie uniosę."
+  "Nic więcej nie uniosę.",
+  "Więcej nie zmieszczę.",
+  "Ręce mam tylko dwie.",
+  "Szkoda, ale nie ma gdzie tego wsadzić.",
+  "Następnym razem wezmę większy plecak.",
+  "Plecak trzeszczy w szwach.",
+  "Albo to, albo moje rzeczy. Wolę moje."
  ],
  "noNeed": [
-  "Mam lepsze.",
+  "Mam już coś takiego.",
   "Na co mi to?",
-  "Nie potrzebuję."
+  "Nie potrzebuję.",
+  "Już mam takie. I nie gorsze.",
+  "Po co mi dwa?",
+  "Moje jest co najmniej tak dobre.",
+  "Dwa razy to samo? Nie będę dźwigać.",
+  "Niech leży, mam swoje.",
+  "Nie zamienię swojego na to."
  ],
  "gold": [
   "Złoto! Do sakwy!",
   "Ciężkie, ale moje!",
-  "Liczę: jedna, dwie... wszystkie moje!"
+  "Liczę: jedna, dwie... wszystkie moje!",
+  "Brzęczy! Uwielbiam ten dźwięk.",
+  "Do sakiewki, maleństwo.",
+  "Zawsze coś.",
+  "Na czarną godzinę.",
+  "Mała rzecz, a cieszy.",
+  "Złoto lubi mnie, a ja złoto."
  ],
  "goldHeavy": [
   "Ta sakwa mnie spowalnia...",
-  "Ciężko się biega ze złotem."
+  "Ciężko się biega ze złotem.",
+  "Brzęczy przy każdym kroku. Piękny dźwięk.",
+  "Sakiewka ciągnie mnie do ziemi.",
+  "Ciężkie to bogactwo. Ale nie oddam.",
+  "Nogi mam z ołowiu, a sakwę ze złota."
  ],
  "cursedPick": [
   "Coś jest nie tak... zimno mi.",
   "Ten skarb szepcze...",
-  "Czemu nie mogę go puścić?"
+  "Czemu nie mogę go puścić?",
+  "Moje... tylko moje...",
+  "Palce same się zaciskają...",
+  "Słyszę swoje imię. Skąd?",
+  "Ciężkie... cięższe niż powinno.",
+  "Nie oddam. Nikomu.",
+  "Czemu ciągle na to patrzę?"
  ],
  "cursedWarn": [
   "Nie ruszać! Ten skarb jest przeklęty!",
   "Czuję klątwę. Zostawcie to.",
-  "To przynęta lochu, przeklęta!"
+  "To przynęta lochu, przeklęta!",
+  "Klątwa! Czuję ją stąd.",
+  "Tego nikt nie tknie. Przeklęte.",
+  "Na tym skarbie siedzi coś złego.",
+  "Światło się od tego odwraca.",
+  "Błyszczy, kusi i jest przeklęte.",
+  "To dzieło ciemności. Nie dotykać."
  ],
  "curseLift": [
   "Zdejmuję z ciebie klątwę!",
-  "Światło, oczyść {a}!"
+  "Światło, oczyść {a}!",
+  "Klątwo, precz! W imię światła!",
+  "Niech ciemność puści swoją zdobycz.",
+  "Odejdź, złe! Tu nie masz władzy!",
+  "Pękaj, klątwo! Światło jest silniejsze!"
  ],
  "faithLow": [
   "Moja wiara słabnie...",
   "Nie mam już sił na modlitwy.",
-  "Bogowie milczą..."
+  "Bogowie milczą...",
+  "Światło we mnie ledwo się tli.",
+  "Modlę się, a odpowiada tylko echo.",
+  "Muszę odczekać, aż łaska wróci.",
+  "Za dużo modlitw, za mało cudów.",
+  "Składam ręce, a nic się nie dzieje.",
+  "Bogowie, jeszcze tylko jedna iskra..."
  ],
  "charmUse": [
   "Talizman, chroń mnie!",
   "Osłona talizmanu!",
-  "Teraz, talizmanie!"
+  "Teraz, talizmanie!",
+  "Na szczęście!",
+  "Ciepły... działa!",
+  "Osłoń mnie, maleńki!",
+  "Niech odbija, co leci!",
+  "Ty mnie chronisz, ja cię noszę!",
+  "Talizman błysnął! Jestem osłonięt{y|a}!"
  ],
  "amuletUse": [
   "Amulecie, uspokój mnie...",
   "Oddycham... spokojnie.",
-  "Amulet grzeje. Lepiej."
+  "Amulet grzeje. Lepiej.",
+  "Strach odpływa... powoli.",
+  "Serce zwalnia. Dobrze.",
+  "Nie dam się. Nie teraz.",
+  "Trzymaj mnie, amulecie... trzymaj.",
+  "Ręce przestają drżeć.",
+  "Cisza w głowie. Nareszcie."
  ],
  "bootsUse": [
   "Biegiem!",
   "Buty, nie zawiedźcie!",
-  "Szybciej niż wiatr!"
+  "Szybciej niż wiatr!",
+  "Hop i już mnie nie ma!",
+  "Zaczarowane podeszwy, do dzieła!",
+  "Pędzę!",
+  "Ziemia pali się pod nogami!",
+  "Kto mnie dogoni?!",
+  "Lekko jak piórko!"
  ],
  "detour": [
   "Chyba tędy...",
   "Ten korytarz wygląda znajomo.",
   "Skręćmy tu, na pewno tędy.",
-  "Zaufajcie mi, znam drogę."
+  "Zaufajcie mi, znam drogę.",
+  "Tędy. Czuję to w kościach.",
+  "Te drzwi wyglądają obiecująco.",
+  "Coś mi mówi, że tędy będzie szybciej.",
+  "Skrót! Na pewno skrót.",
+  "Znam ten zapach. Tędy.",
+  "Tamte drzwi mnie wołają.",
+  "Na wyczucie. Tędy!",
+  "Gdybym był{|a} szczurem, posz{edłbym|łabym} tędy."
  ],
  "detourBack": [
-  "Ślepa uliczka. Wracamy.",
+  "Nie tędy. Zawracamy.",
   "Chyba zabłądziliśmy...",
-  "To nie ta droga!"
+  "To nie ta droga!",
+  "Ktoś tu źle skręcił...",
+  "Tędy donikąd.",
+  "Hm. To nie to miejsce.",
+  "Tu nic. Szkoda nóg.",
+  "Zły skręt. Zdarza się najlepszym.",
+  "No to się przeszło na darmo."
  ],
  "searchLost": [
   "Gdzie jest {n}? Szukamy!",
   "Wracamy po {a}!",
-  "Nie zostawimy {a}!"
+  "Zostawić {a}? Nigdy!",
+  "Idę po {a}. Nikogo tu nie zostawiam.",
+  "Najpierw {n}, potem kryształ.",
+  "Ktoś musi iść po {a}. Ja pójdę.",
+  "Wracam po {a}. Loch obejdzie się smakiem.",
+  "Swoich się nie zostawia. Gdzie {n}?",
+  "{n} gdzieś tam błądzi. Ruszam!"
  ],
  "leaveLost": [
   "{n} nas dogoni.",
-  "Nie ma czasu szukać {a}.",
-  "Trudno, idziemy bez {a}."
+  "Nie ma czasu szukać {g}.",
+  "Trudno, idziemy bez {g}.",
+  "{n} zna drogę. Da sobie radę.",
+  "Czekanie na {a} to śmierć dla wszystkich.",
+  "Ten loch wypluje {a}. Albo nie.",
+  "Każdy odpowiada za siebie. Dalej.",
+  "Nie wrócę po {a}. Za duże ryzyko.",
+  "{n} da radę. Musi."
  ],
  "lostCall": [
   "Halo?! Gdzie wy jesteście?!",
   "Słyszy mnie ktoś?!",
-  "Który to był korytarz?!",
-  "Wszystkie te pokoje wyglądają tak samo..."
+  "Wszystkie te pokoje wyglądają tak samo...",
+  "Hej! Ktokolwiek?!",
+  "Odezwijcie się!",
+  "Tutaj jestem! Tutaj!",
+  "Nie zostawiajcie mnie tu!",
+  "Krzyknijcie coś! Cokolwiek!",
+  "Chyba chodzę w kółko...",
+  "Zgubił{em|am} drogę! Pomocy!",
+  "Ten sam róg... czy już tu był{em|am}?"
  ],
  "rtFog": [
   "Nic nie widać w tej mgle...",
   "Trzymajcie się blisko, mgła!",
-  "Gdzie podłoga, gdzie pułapka?"
+  "Gdzie podłoga, gdzie pułapka?",
+  "Mgła! Nie widzę własnych rąk.",
+  "Mgła gęsta jak mleko...",
+  "Ledwo widzę na dwa kroki.",
+  "Coś tam jest, w tej mgle?",
+  "Mgła... łatwo tu zabłądzić.",
+  "Nie lubię, jak nie widzę podłogi."
  ],
  "rtSwamp": [
   "Grzęzniemy w tym błocie!",
   "Fuj, bagno...",
-  "Nogi mi się zapadają!"
+  "Nogi mi się zapadają!",
+  "Błoto po kolana!",
+  "Każdy krok jak przez smołę.",
+  "Buty mi tu zassie!",
+  "Bagno w lochu? Kto to wymyślił?",
+  "Cuchnie zgnilizną...",
+  "Coś pływa w tej brei?"
  ],
  "rtGrotto": [
   "Słyszycie to echo?",
   "Każdy krzyk tu wraca...",
-  "Cicho! Echo niesie."
+  "Cicho! Echo niesie.",
+  "Hej! ...ej... ej...",
+  "Tu każdy szept niesie się daleko.",
+  "Tu ściany powtarzają każde słowo.",
+  "Echo... jakby ktoś szedł za mną.",
+  "Jeden krzyk i usłyszy mnie cały loch.",
+  "Kroki dudnią tu jak w bębnie."
  ],
  "rtCrypt": [
   "Krypta... Tu leżą umarli.",
   "Nie podoba mi się ta cisza grobów.",
-  "Coś tu patrzy z trumien."
+  "Coś tu patrzy z trumien.",
+  "Ciii... niech umarli śpią.",
+  "Pachnie tu starą śmiercią.",
+  "Tu nawet cisza jest martwa.",
+  "Ilu tu leży? Lepiej nie liczyć.",
+  "Byle nie dołączyć do lokatorów...",
+  "Umarli nie lubią gości."
  ],
  "rtHaven": [
-  "Tu jest spokojnie. Odpocznijmy.",
+  "Tu jest spokojnie... podejrzanie spokojnie.",
   "Kaplica! Tu nic nam nie grozi.",
-  "Wreszcie bezpieczne miejsce."
+  "Wreszcie bezpieczne miejsce.",
+  "Sanktuarium? W takim miejscu?",
+  "Czuję tu spokój. Dziwne.",
+  "Święte miejsce. Tu loch nie sięga.",
+  "Jak tu cicho i ciepło...",
+  "Można by tu przysiąść... na chwilę.",
+  "Za spokojnie tu... za ładnie."
  ],
  "rtGears": [
   "Słyszycie te tryby?",
   "Cały pokój tyka...",
-  "Mechanizm! Patrzcie pod nogi."
+  "Mechanizm! Patrzcie pod nogi.",
+  "Zębatki w ścianach... Po co komu?",
+  "Tik, tak, tik, tak...",
+  "Ten loch to jakiś wielki zegar.",
+  "Ktoś to wszystko nakręca...",
+  "Zgrzyta jak w krasnoludzkiej kuźni.",
+  "Coś tu się kręci. Wszędzie wokół."
  ],
  "rtHush": [
   "...",
   "Nic nie słyszę...",
-  "(cisza)"
+  "(cisza)",
+  "Nie słyszę własnego głosu...",
+  "Uszy mi zatkało?",
+  "Taka cisza, że aż dzwoni w uszach.",
+  "Mówię... czy tylko ruszam ustami?",
+  "Nawet moich kroków nie słychać.",
+  "Ej?... Nic. Ani dźwięku."
  ],
  "rtIce": [
   "Ślisko! Ostrożnie!",
   "Lód! Trzymajcie się ściany.",
-  "Zimno tu jak w grobie."
+  "Zimno tu jak w grobie.",
+  "Brr! Lodownia...",
+  "Podłoga jak szkło!",
+  "Tu się nie chodzi, tu się jeździ.",
+  "Jeden zły krok i jadę na drugi koniec.",
+  "Zęby mi dzwonią z zimna.",
+  "Małymi kroczkami... małymi."
  ],
  "slip": [
   "Ślisko!",
   "Łoo!",
   "Nie mogę stanąć!",
-  "Jadę!"
+  "Jadę!",
+  "Uaaa!",
+  "Ojej!",
+  "Lecę!",
+  "Ślizgawka!",
+  "Oj, oj, oj!",
+  "Nogi mi uciekają!",
+  "Stój, stój, stój!"
  ],
  "nap": [
   "Chwila odpoczynku...",
   "Tylko przymknę oczy.",
-  "Usiądę na moment."
+  "Usiądę na moment.",
+  "Muszę przysiąść. Tylko na chwilkę.",
+  "Pięć oddechów i wstaję.",
+  "Rany pieką... przysiądę.",
+  "Oczy mi się kleją...",
+  "Krótki postój. Nikt nie zauważy.",
+  "Święty spokój. Dosłownie."
  ],
  "nightmare": [
   "Koszmary... nie mogę spać.",
   "Ktoś szepcze mi do ucha...",
-  "To miejsce nie jest święte..."
+  "To miejsce nie jest święte...",
+  "Coś tu nie chce, żebym spał{|a}.",
+  "Śniła mi się moja śmierć. Tutaj.",
+  "Te ściany szepczą przez sen...",
+  "To nie odpoczynek, to męka.",
+  "Zamykam oczy i coś na mnie patrzy.",
+  "Zimny pot... Już nie zasnę."
  ],
  "rtVault": [
-  "Skarbiec! Ile tu złota!",
+  "Skarbiec! Tu musi być złoto!",
   "Tu musi być fortuna!",
-  "Bogactwo! Rozglądajcie się!"
+  "Bogactwo! Rozglądajcie się!",
+  "Pachnie złotem!",
+  "Takie pokoje nie stoją puste.",
+  "Sezamie, otwórz się!",
+  "Za pięknie tu... To może być przynęta.",
+  "Jeśli tu jest złoto, to już moje.",
+  "Skarbiec! Ktoś tu trzymał majątek."
  ],
  "breachUse": [
   "Idziemy przez wyłom! Krócej.",
-  "Wyłom! Ominiemy ich pułapki."
+  "Wyłom! Ominiemy ich pułapki.",
+  "Gildia przebiła tunel. Korzystamy.",
+  "Wyłomem! Niech drzwi pilnują same siebie.",
+  "Dziura w ścianie? Lepsze to niż drzwi.",
+  "Przez wyłom. Niech loch się zdziwi."
  ],
  "doorUse": [
   "Drzwiami. Wyłom to pułapka.",
-  "Przez wyłom? Nie, za ciasno. Drzwiami."
+  "Przez wyłom? Nie, za ciasno. Drzwiami.",
+  "Drzwi to drzwi. Po co się przeciskać?",
+  "Kto wie, co czeka w tym wyłomie. Drzwiami.",
+  "Wejdziemy jak ludzie, drzwiami.",
+  "Stara droga jest pewniejsza."
  ],
  "returnBack": [
-  "Wrócił{em|am}. Tym razem wiem, gdzie stąpać.",
-  "Pamiętam cię, lochu. Pamiętam każdą pułapkę.",
+  "Wrócił{em|am}. Tym razem będę uważniejsz{y|a}.",
+  "Pamiętam cię, lochu. Pamiętam ten strach.",
   "Znowu tu... ale teraz jestem gotow{y|a}.",
-  "Uciekł{em|am} raz. Drugi raz nie ucieknę."
+  "Wysz{edłem|łam} stąd raz. Wyjdę i drugi.",
+  "Znowu ty, lochu. Tęskniłeś?",
+  "Wysz{edłem|łam} stąd żyw{y|a}. Wyjdę i teraz.",
+  "Śniłeś mi się, lochu. Co noc.",
+  "Mam z tym miejscem rachunki do wyrównania.",
+  "Obiecał{em|am} sobie, że nie wrócę. I proszę.",
+  "Ręce mi drżą, ale wrócił{em|am}.",
+  "Tym razem to ja cię przestraszę, lochu.",
+  "Nikt nie wierzył, że tu wrócę."
  ],
  "trauma": {
   "pierce": [
    "Krwawię... nie chcę więcej ostrzy!",
-   "Te kolce... nie, nie znowu!"
+   "Znowu coś mnie przebiło... nie!",
+   "Dziurawią mnie jak sito!",
+   "Nic ostrego więcej! Błagam!",
+   "Krew leci... ile jej jeszcze mam?",
+   "Czuję każdą dziurę w sobie..."
   ],
   "blunt": [
    "Moje kości... coś pękło!",
-   "Jeszcze jeden taki cios i po mnie."
+   "Jeszcze jeden taki cios i po mnie.",
+   "Nie czuję żeber!",
+   "Wszystko mi w środku pękło...",
+   "Głowa mi huczy... świat wiruje.",
+   "Zmiażdżon{y|a}... ledwo dycham."
   ],
   "fire": [
    "Płonę! Tylko nie ogień, nie znowu!",
-   "Czuję jeszcze ten żar..."
+   "Czuję jeszcze ten żar...",
+   "Skóra mi schodzi! Nigdy więcej ognia!",
+   "Czuć ode mnie spaleniznę...",
+   "Ten żar... ja się jeszcze tlę!",
+   "Każdy płomień będzie mi się śnił..."
   ],
   "poison": [
-   "Jad... cała drżę od środka.",
-   "Trucizna... robi mi się ciemno."
+   "Jad... cał{y|a} drżę od środka.",
+   "Trucizna... robi mi się ciemno.",
+   "Jad krąży... czuję go w żyłach.",
+   "Wszystko mi się rozmywa...",
+   "Gorączka... trucizna mnie zżera.",
+   "Usta mi drętwieją..."
   ]
  },
  "weakHit": {
   "pierce": [
    "Stare rany się otwierają!",
-   "Zawsze mnie biorą ostrza..."
+   "Zawsze mnie biorą ostrza...",
+   "Ała! Stara blizna pękła!",
+   "Znowu w to samo miejsce!",
+   "Moje dawne rany... krwawią na nowo!",
+   "Każde ukłucie czuję podwójnie!"
   ],
   "blunt": [
    "Moje kości! Zawsze były kruche...",
-   "To boli bardziej niż powinno!"
+   "To boli bardziej niż powinno!",
+   "Trzasnęło! To chyba kość!",
+   "Moje biedne gnaty!",
+   "Medyk mówił, żebym uważał{|a} na kości...",
+   "Kruch{y|a} jak gliniany dzban!"
   ],
   "fire": [
    "Dawne oparzenia znowu palą!",
-   "Nie znoszę ognia, skóra mi pęka!"
+   "Nie znoszę ognia, skóra mi pęka!",
+   "Ogień zawsze znajdzie moje blizny.",
+   "Pali jak wtedy... jak wtedy!",
+   "Skóra pamięta ogień. I krzyczy!",
+   "Parzy dwa razy mocniej!"
   ],
   "poison": [
    "Jestem wrażliw{y|a} na jady!",
-   "Trucizna działa na mnie od razu..."
+   "Trucizna działa na mnie od razu...",
+   "Puchnę od tego jadu!",
+   "Gardło mi się zaciska!",
+   "Swędzi, piecze, puchnie!",
+   "Matka mówiła, że jady mnie kiedyś zabiją..."
   ]
  },
  "resistHit": {
   "pierce": [
    "Ha! Mam grubą skórę.",
-   "Ledwo drasnęło."
+   "Ledwo drasnęło.",
+   "Mnie tak łatwo nie przedziurawisz!",
+   "Skóra jak podeszwa, ha!",
+   "Tylko tyle? Mam skórę jak dzik.",
+   "Gruba skóra to błogosławieństwo."
   ],
   "blunt": [
    "Wytrzymam więcej!",
-   "Krzepk{i|a} jestem, nie przewrócisz mnie."
+   "Krzepk{i|a} jestem, nie przewrócisz mnie.",
+   "Tward{y|a} jestem jak dąb!",
+   "Mnie się nie łamie. Najwyżej gnie.",
+   "Ha! Kości mam z żelaza.",
+   "W karczmie dostawał{em|am} mocniej."
   ],
   "fire": [
    "Ogień? Był{em|am} już w gorszych piecach.",
-   "Hartowan{y|a} w ogniu, nie strasznie mi."
+   "Hartowan{y|a} w ogniu. Niestraszny mi żar.",
+   "Ogień i ja to starzy znajomi.",
+   "Parzy? Mnie tylko grzeje.",
+   "Kuźnia hartowała mnie latami.",
+   "Nie takie płomienie lizały mi skórę."
   ],
   "poison": [
    "Jady mnie nie biorą.",
-   "Pił{em|am} gorsze trucizny."
+   "Pił{em|am} gorsze trucizny.",
+   "Jad? Smakuje jak zepsute wino.",
+   "Moja krew sama sobie z tym radzi.",
+   "Trochę mnie mdli. I tyle.",
+   "Wyrosł{em|am} wśród żmij. Jad mi nie straszny."
   ]
  },
  "phobia": {
   "fire": [
    "Ogień! Nie, tylko nie ogień!",
-   "Boję się płomieni... od dziecka."
+   "Boję się płomieni... od dziecka.",
+   "Ogień! Jak wtedy, kiedy spłonął dom...",
+   "Ten syk... ten żar... nie!",
+   "Nienawidzę ognia! Nienawidzę!",
+   "Znowu ten ogień z moich snów!"
   ],
   "spiders": [
    "Pająki! Nienawidzę pająków!",
-   "Nie, nie, tylko nie pająki!"
+   "Nie, nie, tylko nie pająki!",
+   "Pająki... czuję je na skórze!",
+   "Coś mi chodzi po plecach!",
+   "Tylko nie te włochate nogi...",
+   "Mama mówiła, że pająki nie gryzą. Kłamała!"
   ],
   "closed": [
    "Tu jest za ciasno... nie mogę oddychać!",
-   "Ściany się zamykają!"
+   "Ściany się zamykają!",
+   "Nie dam się zamknąć! Nie!",
+   "Powietrza! Brakuje mi powietrza!",
+   "Ciasno... jak w trumnie...",
+   "Gdzie wyjście?! Muszę widzieć wyjście!"
   ],
   "ghosts": [
    "Duchy... wiedział{em|am}, że tu są duchy!",
-   "Ten wzrok... on patrzy na mnie!"
+   "Ten wzrok... on patrzy na mnie!",
+   "Coś stoi za mną... czuję to!",
+   "Zjawy! A mówili, że to bajki!",
+   "Zimno... to duch, na pewno duch!",
+   "Umarli tu nie śpią... oni patrzą!"
   ],
   "blood": [
    "Tyle krwi... robi mi się słabo.",
-   "Kości... nie chcę tu skończyć jak oni!"
+   "Kości... nie chcę tu skończyć jak oni!",
+   "Krew... nie mogę na to patrzeć!",
+   "Kręci mi się w głowie... krew...",
+   "Tak wygląda śmierć... tak wygląda!",
+   "Martwe ciało... nie, nie, nie!"
   ],
   "dark": [
    "Nic nie widzę... ciemność mnie zjada!",
-   "Sam{|a} w ciemności... nie, nie!"
+   "W ciemności... nie, nie!",
+   "Ciemno... gdzie jest światło?!",
+   "Nie widzę nic... a coś widzi mnie!",
+   "Ciemność oddycha! Słyszę ją!",
+   "Światła! Choć odrobinę światła!"
   ]
  },
  "hunters": [
   "Słyszał{em|am} o złocie w tym lochu!",
   "Gdzie te skarby, o których śpiewają?",
-  "Przyszł{em|am} po złoto, nie po kryształy."
+  "Przysz{edłem|łam} po złoto, nie po kryształy.",
+  "Mówią, że tu złoto leży na podłodze.",
+  "Kryształy dla gildii, złoto dla mnie.",
+  "Moja sakwa jest głodna.",
+  "Pierwsza skrzynia jest moja!",
+  "Ktoś tu ukrył majątek. Czuję to.",
+  "Wrócę bogat{y|a} albo wcale."
  ],
  "friendLow": [
-  "Trzymaj się, {n}!",
-  "{n}, wycofaj się!",
-  "Osłońcie {a}!"
+  "{n}, uważaj na siebie!",
+  "Uważajmy na {a}.",
+  "{n} ledwo się trzyma.",
+  "{n} długo tak nie pociągnie.",
+  "Martwię się o {a}.",
+  "Jak tak dalej pójdzie, stracimy {a}.",
+  "Miejcie {a} na oku.",
+  "{n} wygląda coraz gorzej."
  ],
  "chatFlee": [
   "Szybciej!",
-  "Nie oglądaj się!",
-  "Już blisko wyjścia!",
+  "Nie oglądać się!",
+  "Do wyjścia, byle do wyjścia!",
   "Byle dalej stąd...",
-  "Biegiem, biegiem!"
+  "Biegiem, biegiem!",
+  "Wyjście, gdzie jest to przeklęte wyjście?",
+  "Nogi, nie zawiedźcie mnie teraz!",
+  "Nigdy więcej lochów.",
+  "Nie patrzeć za siebie. Nie patrzeć.",
+  "Którędy wchodziliśmy?!",
+  "Chcę zobaczyć niebo.",
+  "Tylko się nie potknąć...",
+  "Szybko, zanim loch się rozmyśli.",
+  "Ten loch mnie nie dostanie!",
+  "Oddech, krok, oddech, krok..."
  ],
  "chatCarrier": [
-  "Mam go! Osłaniajcie mnie!",
-  "Kryształ jest ciężki... nie zatrzymujcie się!"
+  "Niosę go! Osłaniajcie mnie!",
+  "Kryształ jest ciężki... nie zatrzymujcie się!",
+  "Ten kryształ pulsuje jak serce...",
+  "Kryształ ciągnie z powrotem. Czuję to.",
+  "Nikt mi go nie odbierze!",
+  "Kryje mnie ktoś? Bo ręce mam zajęte!"
  ],
  "chatHurtOut": [
   "Ledwo idę...",
-  "Nie zostawiajcie mnie!"
+  "Dojdę. Muszę dojść.",
+  "Niech mnie ktoś podtrzyma...",
+  "Każdy krok boli jak diabli.",
+  "Jeszcze nie umieram. Jeszcze nie."
  ],
  "chatRest": [
   "Opatrzmy rany.",
   "Chwila oddechu...",
   "Kto ma bandaże?",
-  "Nie siadaj na tej płycie!"
+  "Tylko nie siadaj byle gdzie!",
+  "Wreszcie chwila spokoju.",
+  "Ciszej. Niech loch myśli, że nas nie ma.",
+  "Uszy otwarte, nawet na postoju.",
+  "Nie zdejmujcie butów. Nigdy nie wiadomo.",
+  "Dalej nie idziemy, póki nie odsapniemy.",
+  "Tu chyba nic nas nie zje.",
+  "Oddychajcie głęboko. I powoli.",
+  "Kto ma jeszcze wodę, niech się podzieli."
  ],
  "chat_coward": [
   "Może jednak wrócimy?",
   "Ja tu tylko noszę bagaże...",
-  "Czemu zawsze ja idę w środku?"
+  "Czemu zawsze ja idę w środku?",
+  "Ktoś jeszcze słyszy, jak mi serce wali?",
+  "Jakby co, to ja nic nie dotykał{em|am}.",
+  "Gdzie było wyjście? Pytam na wszelki wypadek.",
+  "Mama mówiła: nie chodź do lochów.",
+  "Jak coś wyskoczy, ja krzyczę, a wy walczycie.",
+  "To mój ostatni loch. Przysięgam."
  ],
  "chat_brave": [
   "Nie bój się, jestem z tobą.",
   "Niech tylko coś wyskoczy!",
-  "Idziemy dalej, głowa do góry."
+  "Idziemy dalej, głowa do góry.",
+  "Strach to tylko słowo.",
+  "Ten loch jeszcze nauczy się nas bać.",
+  "Lubię, kiedy jest trudno.",
+  "Nie po to tu przysz{edłem|łam}, żeby się trząść.",
+  "Za kilka dni będą o nas śpiewać.",
+  "Jak coś nas zaatakuje, tym gorzej dla niego."
  ],
  "chat_careful": [
   "Patrzcie, gdzie stawiacie stopy.",
-  "Ta płyta jest luźna. Omijamy.",
-  "Powoli, nie ma pośpiechu."
+  "Tu każdy kamień może się ruszyć.",
+  "Powoli, nie ma pośpiechu.",
+  "Każda płyta może być pułapką.",
+  "Nie dotykajcie niczego, co błyszczy.",
+  "Sprawdzam wszystko dwa razy. Dlatego żyję.",
+  "Lepiej stracić chwilę niż nogę.",
+  "Zapamiętujcie drogę. Może się przydać.",
+  "Jeden zły krok i po nas. Pamiętajcie."
  ],
  "chat_greedy": [
   "Gdzieś tu musi być skarbiec.",
   "Czuję złoto.",
-  "Podział po równo, tak?"
+  "Podział po równo, tak?",
+  "Ciekawe, ile da się wynieść w butach.",
+  "Kto znajdzie skarb, bierze więcej. Umowa?",
+  "Złoto nie śmierdzi. Ten loch owszem.",
+  "Każdy grosz się liczy. Każdy.",
+  "Za kryształ kupię sobie zamek.",
+  "Myślicie, że w ścianach są ukryte skrytki?"
  ],
  "reassure": [
   "Spokojnie, damy radę.",
   "Trzymaj się mnie.",
-  "Nie panikuj, jesteśmy razem."
+  "Nie panikuj, jesteśmy razem.",
+  "Oddychaj. Jestem obok.",
+  "Strach jest dobry. Trzyma przy życiu.",
+  "Patrz na mnie, nie na cienie.",
+  "Wyjdziemy stąd. Razem.",
+  "Każdy się boi. Ważne, żeby iść dalej.",
+  "Nikt cię tu nie zostawi."
  ],
  "surviveFirst": [
   "Najpierw przeżyjmy, potem liczmy.",
-  "Złoto nic nie da w grobie."
+  "Złoto nic nie da w grobie.",
+  "Bogaci i żywi. W tej kolejności.",
+  "Złoto poczeka. Pułapki nie.",
+  "Martwi nie wydają pieniędzy.",
+  "Licz kroki, nie monety."
  ],
  "friendHit": [
   "Uważaj, {n}!",
   "{n}! Żyjesz?",
-  "Trzymaj się, {n}!",
-  "Cofnij się, {n}!"
+  "Cofnij się, {n}!",
+  "{n}! Dasz radę?!",
+  "{n}, odezwij się!",
+  "Na bogów, {n}!",
+  "{n}! Oddychaj!",
+  "{n}! Nie umieraj mi tu!",
+  "Ała... {n}, to musiało boleć.",
+  "Przeklęty loch! {n}!",
+  "{n}! Ręce, nogi, wszystko masz?"
  ],
  "callHealer": [
   "{n}, tutaj! Krwawię!",
   "{n}! Potrzebuję leczenia!",
-  "Pomóż mi, {n}!"
+  "Pomóż mi, {n}!",
+  "{n}! Modlitwy, szybko!",
+  "{n}! Potrzebuję twojego światła!",
+  "{n}, ratuj! Długo nie wytrzymam!",
+  "{n}! Pomódl się za mnie, tylko szybko!",
+  "{n}! Tutaj! Zostało mi niewiele!",
+  "Hej, {n}! Leczenia, nim padnę!"
  ],
  "healerReply": [
   "Idę, wytrzymaj!",
   "Już biegnę!",
-  "Nie ruszaj się, zaraz będę!"
+  "Nie ruszaj się, zaraz będę!",
+  "Słyszę cię! Trzymaj się!",
+  "Wytrzymaj! Światło cię nie opuści.",
+  "Tylko mi tam nie umieraj!",
+  "Wiem, wiem! Zaciśnij zęby!",
+  "Jeszcze nie twój czas!",
+  "Wytrwaj! Bogowie patrzą."
  ],
  "lootFlee": [
   "Nie ma czasu na złoto!",
   "Zostawiam to! Uciekam!",
-  "Złoto? Życie ważniejsze!"
+  "Skarb? Życie ważniejsze!",
+  "Szkoda... Ale życie mam jedno.",
+  "Nie teraz! Nie teraz!",
+  "Niech to zabierze następny głupiec.",
+  "Skarb? Pal go licho!",
+  "Serce mi pęka, ale nie!",
+  "Nie zatrzymuję się! Nie dla tego!"
  ],
  "deathFlee": [
   "{n} nie żyje! Uciekać!",
   "Straciliśmy {a}! Szybciej!",
-  "Nie! {n}! ...Biegiem!"
+  "Nie! {n}! ...Biegiem!",
+  "Loch pożarł {a}! W nogi!",
+  "To zabiło {a}! Zabije i mnie!",
+  "To mogł{em|am} być ja! Szybciej!",
+  "Wybacz, {n}... muszę żyć!",
+  "{n} już nie wstanie... Nie oglądam się!",
+  "Śmierć zabrała {a}! Byle dalej!"
  ],
  "argueLoot": [
   "Tam coś błyszczy! Idźmy tamtędy!",
   "Po złoto! Pokój obok!",
-  "Tamte drzwi, tam był skarb!"
+  "Tamte drzwi, tam był skarb!",
+  "Po co tędy, skoro tam leży skarb?",
+  "Kryształ nie ucieknie. Łup może.",
+  "Skarb leży obok, a my w drugą stronę?",
+  "Dwa kroki w bok i jesteśmy bogaci!",
+  "Przecież tam coś się świeciło!",
+  "Zboczmy trochę. Opłaci się, zobaczycie."
  ],
  "argueCareful": [
   "Wolniej. Którędy bezpieczniej?",
   "Nie pchajmy się na ślepo.",
-  "Najpierw sprawdźmy podłogę."
+  "Najpierw sprawdźmy podłogę.",
+  "Każda płyta może być pułapką. Pamiętajcie.",
+  "Kto się śpieszy, ten ginie.",
+  "Najpierw myśl, potem krok.",
+  "Rozglądajmy się. Ten loch lubi niespodzianki.",
+  "Obie drogi mi się nie podobają.",
+  "Wybierajcie mądrze. Drugiej szansy nie ma."
  ],
  "argueCoward": [
   "A może po prostu wróćmy?",
   "Mam złe przeczucia, chodźmy stąd.",
-  "Ja dalej nie idę..."
+  "Ja bym dalej nie sz{edł|ła}...",
+  "A gdyby tak... zawrócić?",
+  "Nikt mi nie płaci za umieranie.",
+  "Kryształ nie jest wart mojej skóry.",
+  "Którędy do wyjścia? Pytam z ciekawości.",
+  "Ja bym już wracał{|a}...",
+  "Może ktoś inny pójdzie pierwszy?"
  ],
  "argueBrave": [
   "Tchórzysz? Idziemy dalej!",
-  "Nie po to tu szliśmy, żeby zawrócić!"
+  "Nie po to tu szliśmy, żeby zawrócić!",
+  "Strach ma wielkie oczy. Naprzód!",
+  "Kto się boi, niech idzie z tyłu.",
+  "Nie po to przysz{edłem|łam}, żeby się trząść.",
+  "Wracać? Po tym wszystkim?"
  ],
  "decideYes": [
   "Dobra, sprawdźmy tamto. Szybko!",
   "Niech będzie, po złoto.",
-  "Zgoda, ale trzymamy się razem."
+  "Zgoda, ale trzymamy się razem.",
+  "Niech ci będzie. Idziemy po łup.",
+  "Łup to łup. Tamtędy.",
+  "Zgoda. Ale jak to pułapka, to twoja wina.",
+  "Kusisz... No dobrze, tamtędy.",
+  "Raz się żyje. Prowadzę tam.",
+  "Skoro tam błyszczy, to sprawdźmy."
  ],
  "decideNo": [
   "Nie. Idziemy tędy.",
   "Złoto poczeka. Za mną.",
-  "Ja prowadzę. Tędy."
+  "Ja prowadzę. Tędy.",
+  "Nie dam się skusić. Tędy.",
+  "Łup to przynęta. Idziemy swoją drogą.",
+  "Chciwość zabiła więcej ludzi niż smoki.",
+  "Bogaty trup to wciąż trup.",
+  "Później. Jeśli przeżyjemy.",
+  "Ja tu decyduję. Nie zbaczamy."
  ],
  "argueSearch": [
   "Jeszcze nie przeszukaliśmy wszystkiego!",
-  "A skarby? Szliśmy tu po złoto!"
+  "A skarby? Szliśmy tu po złoto!",
+  "Tyle pokoi, a my prosto do serca?",
+  "Wyjdziemy z kryształem i pustą sakwą?",
+  "Jeszcze jeden pokój! Tylko jeden!",
+  "Tam mogą być skrzynie pełne złota!"
  ],
  "replySearch": [
   "Kryształ jest ważniejszy.",
   "Później. Najpierw serce.",
-  "Nie ma czasu, idziemy do serca."
+  "Nie ma czasu, idziemy do serca.",
+  "Za kryształ zapłacą więcej niż za skrzynie.",
+  "Każda chwila tu to ryzyko. Do serca.",
+  "Bez dyskusji. Prowadzę do serca.",
+  "Złoto nic ci nie da w grobie.",
+  "Gildia płaci za kryształ, nie za błyskotki.",
+  "Kryształ to dopiero skarb. Idziemy."
  ],
  "argueRetreat": [
   "Nie cofamy się przed byle pułapką!",
-  "Odwrót? Teraz?!"
+  "Odwrót? Teraz?!",
+  "Rany się zagoją. Wstyd zostanie.",
+  "Ja bym walczył{|a} dalej!",
+  "Nikt nie zaśpiewa o naszym odwrocie.",
+  "Cofać się? Jeszcze stoimy na nogach!"
  ],
  "agreeRetreat": [
   "Nareszcie ktoś rozsądny.",
-  "Tak, tak, wycofajmy się!"
+  "Tak, tak, wycofajmy się!",
+  "Najlepszy pomysł, jaki dziś słyszę!",
+  "Na to czekał{em|am} od wejścia!",
+  "Odpoczynek? Tak, tak, tak!",
+  "Jak najdalej od tego wszystkiego."
+ ],
+ "fogGrope": [
+  "Nic nie widać... gdzie są drzwi?",
+  "Trzymajcie się blisko, ta mgła...",
+  "Którędy? Nie widzę ściany!",
+  "Dokąd ja idę? Chyba tędy...",
+  "Ściana? Nie... drzwi? Też nie.",
+  "Po omacku... krok, i jeszcze krok.",
+  "Gdzieś tu były drzwi. Gdzieś...",
+  "Mgła mnie prowadzi, nie ja ją.",
+  "Nie widzę, dokąd prowadzę..."
+ ],
+ "gateLever": [
+  "Podważę ją, osłaniajcie mnie!",
+  "Krata? Dajcie mi chwilę.",
+  "Ciężka bestia... ale ustąpi."
+ ],
+ "trapGeneric": [
+  "Pułapka!",
+  "Uwaga! Pułapka!",
+  "A niech to! Co to?!"
+ ],
+ "chatHurt": [
+  "Ledwo stoję...",
+  "Potrzebuję chwili.",
+  "Bywało lepiej. Dużo lepiej.",
+  "Nie patrz tak na mnie. Wiem, jak wyglądam.",
+  "Trzymam się. Ledwo, ale się trzymam."
+ ],
+ "chatScared": [
+  "Nie podoba mi się to wszystko.",
+  "Wracajmy, póki możemy...",
+  "Coś na nas patrzy. Czuję to.",
+  "Ta cisza mnie dobija...",
+  "Każdy cień wygląda jak potwór.",
+  "Chcę do domu."
+ ],
+ "chatGold": [
+  "Jeszcze trochę złota i wracam do domu.",
+  "Z tym złotem kupię sobie kawałek ziemi.",
+  "Już mi starczy na porządne buty."
+ ],
+ "chatRich": [
+  "Ile tu złota!",
+  "Wszyscy będziemy bogaci.",
+  "Ten loch aż pachnie bogactwem.",
+  "Wyjdziemy stąd jako panowie!",
+  "Co krok, to błysk złota.",
+  "Starczy dla każdego. I jeszcze zostanie."
+ ],
+ "chatIdle": [
+  "Słyszycie to?",
+  "Trzymajcie się blisko.",
+  "Patrzcie pod nogi.",
+  "Czuć tu przeciąg. Skąd?",
+  "Ktoś już tu był przed nami.",
+  "Gdzieś kapie woda...",
+  "Ciekawe, kto to wszystko zbudował.",
+  "Mam wrażenie, że ten loch się zmienia.",
+  "Pachnie tu stęchlizną. I czymś gorszym."
+ ],
+ "councilOpen": [
+  "Długo tu już łazimy. Co robimy?",
+  "Czas nam się kończy. Decydujmy.",
+  "Dość krążenia. Wracamy czy idziemy dalej?",
+  "Stać. Trzeba się naradzić.",
+  "Cierpliwość się kończy. Co dalej?",
+  "Narada, zanim loch zdecyduje za nas.",
+  "Kręcimy się w kółko. Mówcie, co dalej.",
+  "No dobrze. Pora coś postanowić.",
+  "Za długo to trwa. Głosujmy."
+ ],
+ "voteHome": [
+  "Wracajmy. Mam dość tego lochu.",
+  "Do domu. Póki jeszcze mamy nogi.",
+  "Głosuję za powrotem. Złoto nie przyda się trupowi.",
+  "Wynośmy się, póki chodzimy.",
+  "Ja mówię: do domu.",
+  "Szkoda skóry. Wracajmy.",
+  "Dość szczęścia na jeden dzień.",
+  "Wolę wrócić z niczym niż wcale.",
+  "Wyjście. Mój głos na wyjście."
+ ],
+ "voteStorm": [
+  "Wiemy, gdzie jest serce. Bierzmy kryształ!",
+  "Teraz albo nigdy. Po kryształ!",
+  "Szkoda drogi z pustymi rękami. Do serca!",
+  "Na co czekamy? Do serca!",
+  "Po to tu przyszliśmy. Szturm!",
+  "Kryształ albo nic!",
+  "Bierzmy, co nasze. Prosto do serca.",
+  "Głosuję za szturmem. Dziś.",
+  "Droga znana, serce czeka. Idźmy!"
+ ],
+ "voteMore": [
+  "Jeszcze chwila. Nie wszystko przeszukaliśmy.",
+  "Dajmy sobie jeszcze moment.",
+  "Tu musi być coś więcej. Poszukajmy.",
+  "Jeszcze trochę. Nie wszystko widzieliśmy.",
+  "Za wcześnie na decyzje.",
+  "Chwilka. Coś tu jeszcze na nas czeka.",
+  "Jeszcze jeden pokój. Albo dwa.",
+  "Nie spieszmy się. Jeszcze moment.",
+  "Daj nam chwilę. Coś znajdziemy."
+ ],
+ "councilGiveIn": [
+  "Dobra, przegłosowaliście mnie.",
+  "Nie podoba mi się to, ale niech wam będzie.",
+  "Większość decyduje. Trudno.",
+  "Wasza wola. Ja bym zrobił{|a} inaczej.",
+  "Skoro tak chcecie... niech będzie.",
+  "Przegrał{em|am}. Robimy po waszemu.",
+  "Nie będę się kłócić z większością.",
+  "Zapamiętam to głosowanie.",
+  "Ustępuję. Ale tylko tym razem."
+ ],
+ "decideHome": [
+  "Postanowione. Wracamy do domu.",
+  "Zbieramy się. Do wyjścia.",
+  "Koniec wyprawy. Wracamy.",
+  "Wracamy, póki się da.",
+  "Kierunek: wyjście. Bez dyskusji.",
+  "Zwijamy się. Do domu.",
+  "Wracamy. Będzie co opowiadać w karczmie.",
+  "Dość lochu na dziś. Wychodzimy.",
+  "Do wyjścia. Spokojnie, bez biegu."
+ ],
+ "decideStorm": [
+  "Idziemy po kryształ!",
+  "Do serca! Nie oglądamy się za siebie.",
+  "Szturm! Kryształ będzie nasz.",
+  "Szturmujemy serce!",
+  "Do serca! I nie patrzeć pod nogi!",
+  "Dość krążenia. Bierzemy kryształ.",
+  "Naprzód! Serce czeka.",
+  "Idziemy na całość. Po kryształ!",
+  "Postanowione: serce. Ruszamy!"
+ ],
+ "decideMore": [
+  "Dobra, jeszcze chwila. Ale krótko.",
+  "Damy sobie chwilę. Niedługo.",
+  "Chwila, nie więcej. Potem wracamy do tematu.",
+  "Jeszcze chwila, ani minuty dłużej.",
+  "Dobra, chwila. Potem pogadamy znowu.",
+  "Zgoda, jeszcze trochę. Potem koniec żartów.",
+  "Niech będzie. Krótko.",
+  "Jeszcze moment. Liczę każdą chwilę.",
+  "Trochę czasu jeszcze mamy. Niewiele."
+ ],
+ "goHomeAlone": [
+  "Beze mnie. Wracam do domu.",
+  "Róbcie, co chcecie. Ja się stąd zbieram.",
+  "Nie idę z wami. Żegnajcie.",
+  "Wracam sam{|a}. Nie zatrzymujcie mnie.",
+  "Wasza sprawa. Ja idę do domu.",
+  "Niech was bogowie prowadzą. Ja wychodzę.",
+  "Mam dość. Spotkamy się w karczmie.",
+  "Nie zginę tu za cudzy kryształ.",
+  "Głupota. Wracam, póki mogę."
+ ],
+ "outvotedHome": [
+  "Dobra... ale to zły pomysł.",
+  "Jak zginiemy, to wasza wina.",
+  "Idę z wami. Ale pod protestem.",
+  "Idę. Ale ostrzegał{em|am}.",
+  "Niech wam będzie. Oby się opłaciło.",
+  "Przegłosowan{y|a}. Trudno.",
+  "Zostaję. Ktoś musi was pilnować.",
+  "Ech. Jeszcze tego pożałujemy.",
+  "Dobrze. Ale pamiętajcie, kto chciał wracać."
+ ],
+ "outvotedStorm": [
+  "Szkoda. Byliśmy tak blisko.",
+  "Tchórze... Ale dobra.",
+  "Kryształ był na wyciągnięcie ręki.",
+  "Serce było prawie nasze...",
+  "Trzeba było iść, póki był czas.",
+  "Szkoda. Taka okazja...",
+  "Gdzie wasza odwaga?",
+  "Ech. A kryształ by się przydał.",
+  "Następnym razem pójdę sam{|a}."
+ ],
+ "outvotedMore": [
+  "A tyle jeszcze nie widzieliśmy...",
+  "Szkoda. Pewnie coś przegapiliśmy.",
+  "Zawsze się tak spieszymy.",
+  "Tak szybko? Szkoda.",
+  "Jeszcze jeden pokój by nie zaszkodził.",
+  "Ledwo się rozkręcił{em|am}...",
+  "Zostawiamy tyle nieobejrzanych kątów...",
+  "Pośpiech, zawsze ten pośpiech.",
+  "A może tam dalej leżał skarb?"
+ ],
+ "lookStart": [
+  "Rozejrzyjmy się.",
+  "Chwila. Obejrzyjmy to miejsce.",
+  "Nie spieszmy się. Sprawdźmy, co tu jest.",
+  "Chwila oddechu. Popatrzmy wokół.",
+  "Hola. Tu warto zajrzeć w kąty.",
+  "Rozglądamy się. Bez wygłupów.",
+  "Ciekawe miejsce. Warto popatrzeć.",
+  "Kto ma oczy, niech patrzy.",
+  "Moment. Co my tu mamy?"
+ ],
+ "lookEnd": [
+  "Dobra, wystarczy. Idziemy.",
+  "Koniec zwiedzania. Dalej.",
+  "Zbiórka, ruszamy.",
+  "Starczy tego. Ruszamy.",
+  "Koniec postoju. W drogę.",
+  "Nic tu po nas. Dalej.",
+  "Zbierać się. Loch nie poczeka.",
+  "Dość zaglądania w kąty. Idziemy.",
+  "Wracamy do roboty."
+ ],
+ "lookWant": [
+  "Przeszukamy te graty?",
+  "Może się tu rozejrzymy?",
+  "Tu może coś być. Sprawdzimy?",
+  "Rzucimy okiem? Tylko chwilkę.",
+  "Szkoda przejść obok. Zajrzymy?",
+  "Chwila! Tu jest co oglądać.",
+  "Ej, a tamto? Nie sprawdzimy?",
+  "Daj nam się chwilę rozejrzeć.",
+  "Coś mi mówi, że tu coś leży."
+ ],
+ "lookHurry": [
+  "Nie ma czasu na zwiedzanie.",
+  "Później. Idziemy.",
+  "Nie teraz. Trzymamy się razem.",
+  "Nie. Idziemy dalej.",
+  "Szkoda czasu.",
+  "Potem pooglądasz.",
+  "Oczy przed siebie, nie na boki.",
+  "Nie po to tu jesteśmy.",
+  "Ruszaj się. Nie stoimy."
+ ],
+ "lookStay": [
+  "Ja tu postoję.",
+  "Idźcie. Ja zostanę przy was.",
+  "Wolę niczego nie dotykać.",
+  "Ja popatrzę stąd.",
+  "Nie ruszam niczego. Na wszelki wypadek.",
+  "Ktoś musi pilnować tyłów.",
+  "Ja... tu poczekam.",
+  "Grzebanie w cudzych rzeczach to nie dla mnie.",
+  "Moje ręce zostają przy mnie."
+ ],
+ "lookObj": {
+  "barrel": [
+   "Beczka. Ciekawe, co w środku.",
+   "Pachnie winem. Albo czymś gorszym.",
+   "Ciężka ta beczka.",
+   "Coś chlupie w środku.",
+   "Beczka po piwie? Oby nie pusta.",
+   "Klepki spróchniałe, obręcze rdzawe.",
+   "Kto toczy beczki do lochu?",
+   "Pachnie octem. Albo smołą.",
+   "Stuk, stuk... chyba pełna."
+  ],
+  "crate": [
+   "Skrzynia! Zobaczmy...",
+   "Może ktoś tu coś schował.",
+   "Wieko ledwo się trzyma.",
+   "Gwoździe przerdzewiałe. Dam radę.",
+   "Ciekawe, co tu kto upchnął.",
+   "Skrzynia jak skrzynia. Ale może...",
+   "Napis wytarty. Nic nie przeczytam.",
+   "Drzazgi, wszędzie drzazgi.",
+   "Zajrzę pod wieko. Ostrożnie."
+  ],
+  "statue": [
+   "Ładny posąg. Trochę straszny.",
+   "Kogo on przedstawia?",
+   "Ma oczy jak żywy...",
+   "Kamienny wojownik. Ponury typ.",
+   "Ciekawe, czy pozował żywy...",
+   "Stoi tu chyba od wieków.",
+   "Kamienna zbroja. Lekka nie jest.",
+   "Nie lubię, jak posąg na mnie patrzy.",
+   "Rzeźbiarz znał się na rzeczy."
+  ],
+  "shelf": [
+   "Półka pełna kurzu.",
+   "Książki... wolę nie wiedzieć, o czym.",
+   "Stare księgi. Zbutwiałe.",
+   "Księgi. Połowę zjadły mole.",
+   "Za książkami często coś chowają.",
+   "Grzbiety spleśniałe, litery nieczytelne.",
+   "Biblioteka w lochu. Ktoś się tu nudził.",
+   "Może trafi się jakaś mapa?",
+   "Ciekawe, kto to wszystko czytał."
+  ]
+ },
+ "lookProp": {
+  "portrait": [
+   "Kto by tu powiesił portret?",
+   "Ten obraz... jakby patrzył.",
+   "Brzydki ten przodek.",
+   "Czyj to portret? Podpisu brak.",
+   "Rama niezła. Malunek okropny.",
+   "Oczy ma jakieś... błyszczące.",
+   "Pewnie dawny pan tego lochu.",
+   "Ponura gęba. Pasuje do miejsca.",
+   "Gdzie ja widział{em|am} tę twarz?"
+  ],
+  "mirror": [
+   "Lustro w lochu? Po co?",
+   "Brudne to lustro.",
+   "Wyglądam okropnie.",
+   "Kto się tu przegląda? Szczury?",
+   "Ładna rama. Szkło do niczego.",
+   "Schudł{em|am} w tym lochu.",
+   "Moje odbicie wygląda na zmęczone.",
+   "Ciekawe, ile by za nie dali na targu.",
+   "Całkiem niezł{y|a} ze mnie bohater{|ka}."
+  ],
+  "eyes": [
+   "Dziwne rzeźbienia na ścianie.",
+   "Te kamienne oczy... brr.",
+   "Kto to wyrzeźbił?",
+   "Oczy w murze. Same oczy.",
+   "Ktoś tu miał dziwny gust.",
+   "Nie podoba mi się, jak patrzą.",
+   "Wykute w kamieniu... a jakby żywe.",
+   "Oko w oko z kamieniem. Remis.",
+   "Po co komu oczy w ścianie?"
+  ],
+  "coffin": [
+   "Trumna... Lepiej nie zaglądać.",
+   "Ciekawe, kto tu leży.",
+   "Ciężkie wieko. Kamienne.",
+   "Krzyż na wieku. Ktoś tu był pobożny.",
+   "Solidne deski. Dąb chyba.",
+   "Śpij spokojnie, kimkolwiek jesteś.",
+   "Nie otwieram. Nie ja.",
+   "Kto chowa zmarłych w lochu?",
+   "Ciężkie wieko. Niech tak zostanie."
+  ],
+  "bones": [
+   "Ktoś tu nie wyszedł.",
+   "Stare kości. Biedak.",
+   "Te kości są całkiem świeże.",
+   "Czaszka. I reszta, w kawałkach.",
+   "Biedaczysko. Ciekawe, kim był.",
+   "Pouczający widok. Bardzo.",
+   "Ktoś tu leży od dawna.",
+   "Żadnych pierścieni? Szkoda.",
+   "Czaszka się szczerzy. Bezczelna."
+  ]
+ },
+ "lookKind": {
+  "goblin": [
+   "Ognisko jeszcze ciepłe...",
+   "Gobliny tu obozowały.",
+   "Śmierdzi goblinem.",
+   "Zielone grzyby. Świecą...",
+   "Totem z czaszką. Urocze.",
+   "Zielone łapy na ścianach. Brr.",
+   "Gobliny nie sprzątają po sobie.",
+   "Dym gryzie w oczy.",
+   "Ile tu tego tałatajstwa spało?"
+  ],
+  "spider": [
+   "Jaja... ogromne jaja.",
+   "Kokony. W środku coś jest.",
+   "Wszędzie pajęczyna.",
+   "Nici kleją się do butów.",
+   "Małe pająki... Oby tylko małe.",
+   "Ktoś tu skończył jako kokon.",
+   "Nie dotykać jaj. Nie dotykać jaj.",
+   "Ciarki mi chodzą po plecach.",
+   "Gdzie jest matka tych jaj?"
+  ],
+  "ogre": [
+   "Co tu się gotuje? Lepiej nie pytać.",
+   "Ten kocioł jest wielki jak wóz.",
+   "Kości obgryzione do czysta.",
+   "Zupa bulgocze. Zielona.",
+   "Muchy, muchy i jeszcze raz muchy.",
+   "Ślady stóp... ogromnych stóp.",
+   "Kto tu mieszka, je za dziesięciu.",
+   "Głazy zamiast mebli. Gustownie.",
+   "Cuchnie jak w rzeźni."
+  ],
+  "haunt": [
+   "Świece palą się same...",
+   "Kto siedział na tym krześle?",
+   "Chłód aż do kości.",
+   "Szron na podłodze? Tutaj?",
+   "Krzesła poprzewracane. Ktoś uciekał?",
+   "Niebieskie płomienie. Niedobrze.",
+   "Urny. Pewnie z prochami.",
+   "Krąg na podłodze... kto go narysował?",
+   "Para mi leci z ust."
+  ],
+  "bats": [
+   "Guano. Wszędzie guano.",
+   "Coś szeleści pod sufitem.",
+   "Ślisko od odchodów.",
+   "Śmierdzi gorzej niż w kurniku.",
+   "Coś wisi pod sklepieniem...",
+   "Słyszę piski. Cienkie piski.",
+   "Stalagmity sterczą jak zęby.",
+   "Buty grzęzną w odchodach. Cudownie.",
+   "Tylko nie patrzeć w górę."
+  ],
+  "ossuary": [
+   "Tyle czaszek...",
+   "Ktoś je tu ułożył. Starannie.",
+   "Świece przy kościach. Ktoś tu się modli?",
+   "Piramida z czaszek. Ktoś miał cierpliwość.",
+   "Ściany z kości...",
+   "Płyta z krzyżem. Grób?",
+   "Kaplica dla umarłych. Cicho tu.",
+   "Ilu tu zapomnianych...",
+   "Niech odpoczywają w spokoju."
+  ],
+  "armory": [
+   "Stojak z bronią. Zardzewiała.",
+   "Ktoś tu ćwiczył strzelanie.",
+   "Tarcze... same dziury.",
+   "Tarcza strzelecka. Ktoś dobrze celował.",
+   "Strzały wbite w podłogę. Hm.",
+   "Włócznie tępe, tarcze pogięte.",
+   "Ktoś tu uzbroił całą armię.",
+   "Płyty z nitami. Solidna robota.",
+   "Szkoda, że wszystko takie stare."
+  ],
+  "forge": [
+   "Kowadło jeszcze ciepłe.",
+   "Kto tu kuje? I co?",
+   "Węgle się żarzą...",
+   "Żar jeszcze dyszy.",
+   "Młot i obcęgi. Kowal wyszedł na chwilę?",
+   "Wiadra z wodą. Do hartowania.",
+   "Gorąco tu jak w piekle.",
+   "Iskry... ktoś tu niedawno kuł.",
+   "Sztaby żelaza. Ciężkie i nic niewarte."
+  ],
+  "prison": [
+   "Słoma, wiadro... ktoś tu siedział.",
+   "Kajdany. Puste.",
+   "Szczur. Tylko szczur.",
+   "Kreski na podłodze. Ktoś liczył dni.",
+   "Miska. Pusta od dawna.",
+   "Kapie z sufitu. Wszędzie wilgoć.",
+   "Słoma zgniła. Smród.",
+   "Łańcuchy się kołyszą...",
+   "Nie chciał{bym|abym} tu siedzieć."
+  ],
+  "junk": [
+   "Graty, graty, graty.",
+   "Rupieciarnia. Może coś się znajdzie.",
+   "Ile tu śmieci...",
+   "Butelki, worki, skrzynki... raj złodzieja.",
+   "Ktoś tu niczego nie wyrzucał.",
+   "Stosy ksiąg. Nikt ich nie czytał.",
+   "Kurz po kostki.",
+   "Tu można szukać tydzień.",
+   "Bałagan jak u mojej babki."
+  ],
+  "gallery": [
+   "Galeria w lochu? Elegancko.",
+   "Popiersia patrzą na nas.",
+   "Ktoś tu ma gust.",
+   "Czerwony chodnik. Dla gości?",
+   "Liny na słupkach. Nie wolno dotykać?",
+   "Wazy na postumentach. Ile warte?",
+   "Marmur w lochu. Ktoś przesadził.",
+   "Te popiersia... wszystkie takie same?",
+   "Jak w pałacu. Tylko zimniej."
+  ],
+  "nursery": [
+   "Zabawki? Tutaj?",
+   "Miś... Kto go tu zostawił?",
+   "Bębenek. Lepiej nie dotykać.",
+   "Klocki. Ktoś budował wieżę.",
+   "Bazgroły na podłodze. Dziecięce.",
+   "Kto trzyma dzieci w lochu?!",
+   "Bączek się kręci. Sam z siebie.",
+   "Piłka. Nie kopię. Na wszelki wypadek.",
+   "Tu jest za wesoło. To mnie martwi."
+  ]
+ },
+ "lookWall": [
+  "Ktoś tu wyrył swoje imię.",
+  "Ślady pazurów...",
+  "Mech na ścianach. Wilgoć.",
+  "Zwykła ściana. Chyba.",
+  "Kamień i zaprawa. Nic więcej.",
+  "Zimny kamień. Wilgotny.",
+  "Ciekawe, co jest po drugiej stronie.",
+  "Ściana jak ściana.",
+  "Pukam... brzmi pełno."
+ ],
+ "lookFind": [
+  "Moneta!",
+  "Ha! Ktoś tu zgubił sakiewkę.",
+  "Coś błyszczy... moje!",
+  "Moneta! Mała, ale moja.",
+  "Złoto w kurzu!",
+  "Jest! Coś brzęczy.",
+  "Grosz do grosza...",
+  "Opłacało się grzebać.",
+  "Cicho... nikt nie widział."
+ ],
+ "lookNothing": [
+  "Nic. Tylko kurz.",
+  "Pusto.",
+  "Szczury mnie ubiegły.",
+  "Nic. Ktoś był tu przede mną.",
+  "Puste jak kieszeń żebraka.",
+  "Tylko pajęczyny.",
+  "Na nic ta robota.",
+  "Ani guzika.",
+  "Myszy i kurz. Nic więcej."
+ ],
+ "hearSound": [
+  "Słyszeliście? Tam coś huknęło.",
+  "Coś się tam dzieje...",
+  "Cicho! Tam, za ścianą.",
+  "Słyszę coś. Tam.",
+  "Tam! Coś szczęknęło.",
+  "Ciii... Coś za ścianą.",
+  "Ktoś tam jest? Albo coś?",
+  "Hałas. Niedaleko.",
+  "Loch coś knuje. Słyszę to."
+ ],
+ "hearScream": [
+  "To krzyczy {n}!",
+  "Słyszycie? To {n}!",
+  "Coś się stało. To był głos {g}!",
+  "{n}! Coś się dzieje!",
+  "Krzyk {g}! Blisko!",
+  "{n} ma kłopoty!",
+  "Znam ten wrzask. To {n}.",
+  "{n}?! Wytrzymaj!",
+  "Wrzask {g}... gdzieś tam!"
+ ],
+ "shieldLead": [
+  "Za mną, osłonię was!",
+  "Trzymajcie się za tarczą!",
+  "Idę przodem, za mną!",
+  "Idę pierwsz{y|a}. Tarcza przodem!",
+  "Tarcza w górę, prowadzę!",
+  "Ja pierwsz{y|a}. Od tego jest tarcza.",
+  "Trzymać się mojego śladu!",
+  "Krok w krok za mną!",
+  "Na mnie niech walą. Naprzód!"
+ ],
+ "deliberate2": [
+  "Ja bym sz{edł|ła} tędy.",
+  "Rozdzielmy się?",
+  "Nie, trzymajmy się razem.",
+  "Mnie się tamta bardziej podoba.",
+  "Gdybym był{|a} lochem, gdzie schował{bym|abym} kryształ?",
+  "Nie podoba mi się ani jedna, ani druga.",
+  "Przeczucie mówi mi: tamtędy.",
+  "Wszystko jedno. Byle nie stać.",
+  "Ty prowadzisz, ty wybierasz."
+ ],
+ "blessDone": [
+  "Odczynione.",
+  "Zły duch odszedł.",
+  "Czyste. Bogom niech będą dzięki.",
+  "Niech światło tu zostanie.",
+  "Zło odeszło. Na razie.",
+  "Niech tak będzie. Można przejść.",
+  "Wiara silniejsza niż klątwa.",
+  "Bogowie wysłuchali.",
+  "Odpędzone. Uff..."
+ ],
+ "blessHit": [
+  "Przerwało mi modlitwę!",
+  "Klątwa się broni!",
+  "Nie skończył{em|am}!",
+  "Bluźnierstwo!",
+  "Ono się opiera!",
+  "Zło nie chce odejść!",
+  "Słowa mi się rozsypały!",
+  "Za silne! Za silne!",
+  "Ciemność odpowiada!"
+ ],
+ "deathHeard": [
+  "Co to był za krzyk?!",
+  "Ktoś krzyczał... Oby to nie był nikt z nas.",
+  "Ten krzyk... coś się stało.",
+  "Taki krzyk... to czyjś koniec.",
+  "Ten wrzask się urwał...",
+  "Bogowie... kto to był?",
+  "Nie, nie, nie... Kto krzyczał?",
+  "To był ostatni krzyk. Znam go.",
+  "Cisza po krzyku. Najgorsza."
+ ],
+ "tellDeath": [
+  "{n} już nie wróci.",
+  "Mam złą wieść. Loch zabrał {a}.",
+  "{n} nie wyjdzie z tego lochu.",
+  "Słuchaj... {a} już nie zobaczymy.",
+  "Nie wiesz jeszcze? {n} nie żyje.",
+  "Pomódl się za {a}. Już po wszystkim.",
+  "Musisz to usłyszeć. {n} już nie wstanie."
+ ],
+ "newsDeath": [
+  "Co?! Nie...",
+  "Jak to się stało?",
+  "Nie wierzę...",
+  "Nie... Tylko nie to.",
+  "Kiedy? Jak?!",
+  "Nie mów tak. To nie może być prawda.",
+  "Bogowie... dlaczego?",
+  "Zaraz... na pewno?",
+  "Ten przeklęty loch..."
+ ],
+ "leftBehind": [
+  "Gdzie wszyscy?! Poszli beze mnie?",
+  "Nikogo już nie ma... Trzeba stąd iść.",
+  "Sam{|a}. Pora wracać.",
+  "Nikogo... Wychodzę stąd.",
+  "Albo uciekli, albo... Nie myśleć.",
+  "Cisza. Został{em|am} tylko ja.",
+  "Halo? ...Dobra. Sam{|a} do wyjścia.",
+  "Każdy dba o siebie. Ja też.",
+  "Gdzie wy jesteście?! ...Trudno. Do wyjścia."
+ ],
+ "searchFail": [
+  "Nikogo tu nie ma...",
+  "Pusto. Ani śladu.",
+  "Nie ma. Szukanie nic nie da.",
+  "Ani śladu. Spóźnił{em|am} się?",
+  "Pusto. Loch połyka ludzi.",
+  "Tu? Nic. Tylko kurz.",
+  "Nic. Trzeba iść dalej.",
+  "Za późno. Albo nie to miejsce.",
+  "Echo i nic więcej."
+ ],
+ "lootPotion": [
+  "Mikstura! Przyda się.",
+  "Wezmę tę fiolkę.",
+  "Zapas na czarną godzinę.",
+  "Mikstura się nie zmarnuje.",
+  "Biorę. Na później.",
+  "Flaszka życia. Moja.",
+  "Taka fiolka może uratować skórę.",
+  "Mała flaszka, duża nadzieja.",
+  "Na zapas. Loch jest długi."
+ ],
+ "lootPotionNeed": [
+  "Mikstura! Muszę ją mieć!",
+  "Ledwo żyję, biorę tę miksturę!",
+  "Muszę się napić. Szybko!",
+  "To mi uratuje życie!",
+  "Moja ostatnia szansa!",
+  "Jeszcze nie umieram! Mikstura!",
+  "Wszystko boli... fiolka!",
+  "Pić, zanim padnę!",
+  "Trzymaj się, ciało... Mikstura!"
+ ],
+ "lootPotionSeen": [
+  "Mikstura!",
+  "Tam leży mikstura.",
+  "Lekarstwo!",
+  "Fiolka! Tam, na podłodze.",
+  "Ktoś zgubił miksturę.",
+  "O, flakonik. Cały.",
+  "Butelka! I chyba pełna.",
+  "Leczniczy napój? Wygląda na to.",
+  "Mikstura leży i czeka."
+ ],
+ "lootObey": [
+  "Dobra, dobra. Zostawiam.",
+  "Niech ci będzie.",
+  "Szkoda... ale masz rację.",
+  "Jak każesz.",
+  "Zostawiam. Ale żal.",
+  "No dobrze, już dobrze.",
+  "Ty tu rządzisz.",
+  "Ech. Następnym razem.",
+  "Rozkaz to rozkaz."
+ ],
+ "curseSelf": [
+  "Zdejmuję z siebie tę klątwę.",
+  "Precz ze mnie, klątwo!",
+  "Lżej. Klątwa puściła.",
+  "Światło, oczyść mnie.",
+  "Klątwo, puść mnie wreszcie.",
+  "Koniec szeptów w mojej głowie. Precz!",
+  "Sam{|a} sobie kapłan{em|ką}. Odejdź, złe!",
+  "Uff. Znów jestem sobą.",
+  "Nie dam się ciemności!"
  ]
 }

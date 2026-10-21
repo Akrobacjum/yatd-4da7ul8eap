@@ -2,70 +2,357 @@
  "Słyszycie to?": [
   "Nic nie słyszę.",
   "Ciii... Słucham.",
-  "To tylko wiatr. Chyba."
+  "To tylko wiatr. Chyba.",
+  "Słyszę. I wolał{bym|abym} nie.",
+  "Szczury. To muszą być szczury.",
+  "Co? Gdzie?",
+  "Słyszę tylko własne serce.",
+  "Nie mów takich rzeczy w lochu.",
+  "Słyszę tylko, jak marudzisz."
  ],
  "Trzymajcie się blisko.": [
-  "Jestem tuż za tobą.",
-  "Jasne."
+  "Trzymam się, trzymam.",
+  "Jasne.",
+  "Blisko, ale bez przytulania.",
+  "Nigdzie się nie wybieram.",
+  "Jak cień.",
+  "Tylko mi nie depcz po piętach."
  ],
  "Patrzcie pod nogi.": [
   "Patrzę, patrzę.",
-  "Wiem, nie jestem {ślepy|ślepa}."
+  "Wiem, nie jestem {ślepy|ślepa}.",
+  "Ty też.",
+  "A kto będzie patrzył w górę?",
+  "Od wejścia nic innego nie robię.",
+  "Moje nogi mają się dobrze. Na razie."
  ],
  "Ledwo stoję...": [
   "Wytrzymaj, jeszcze trochę.",
-  "Oprzyj się o mnie."
+  "Wytrzymaj, nie padaj mi tu.",
+  "Nie umieraj mi tu.",
+  "Dasz radę. Musisz.",
+  "Ktoś musi cię podleczyć.",
+  "Widzę. Wyglądasz okropnie."
  ],
  "Potrzebuję chwili.": [
   "Nie mamy chwili.",
-  "Złap oddech, osłaniam cię."
+  "Złap oddech. Rozglądam się.",
+  "Każdy by chciał.",
+  "Chwila to w lochu luksus.",
+  "Oddychaj. Powoli.",
+  "Weź ją. Loch poczeka. Może."
  ],
  "Jeszcze trochę złota i wracam do domu.": [
   "Wszyscy tak mówią.",
-  "Jak przeżyjesz."
+  "Jak przeżyjesz.",
+  "Dom poczeka.",
+  "Ile to jest trochę?",
+  "Ja wrócę, nawet bez złota.",
+  "Słyszał{em|am} to od każdego, kto tu został."
  ],
  "Opatrzmy rany.": [
   "Daj, pomogę.",
-  "Szybko, zanim coś przyjdzie."
+  "Szybko, zanim coś przyjdzie.",
+  "Moje mogą poczekać.",
+  "Dobry pomysł. Pierwszy dzisiaj.",
+  "Najwyższy czas.",
+  "Byle szybko."
  ],
  "Kto ma bandaże?": [
-  "Ja mam. Trzymaj.",
-  "Zostały mi ostatnie."
+  "Ja mam. Ostatni.",
+  "Zostały mi ostatnie.",
+  "Skończyły się dwa pokoje temu.",
+  "Mam kawałek koszuli. Może być?",
+  "Ja mam tylko nadzieję.",
+  "Zużył{em|am} ostatni na siebie."
  ],
  "Chwila oddechu...": [
-  "Tylko krótka."
- ],
- "Nie siadaj na tej płycie!": [
-  "Spokojnie, nie siadam."
+  "Tylko krótka.",
+  "Nareszcie.",
+  "Oddychaj, póki możesz."
  ],
  "Może jednak wrócimy?": [
   "Nie ma mowy.",
-  "Idziemy dalej. Głowa do góry."
+  "Idziemy dalej. Głowa do góry.",
+  "Wrócimy. Z kryształem.",
+  "Nie po to tu szliśmy.",
+  "Szczerze? Też o tym myślę.",
+  "Jeszcze nie teraz."
  ],
  "Czemu zawsze ja idę w środku?": [
-  "Bo w środku najbezpieczniej."
+  "Bo w środku najbezpieczniej.",
+  "Wolisz z przodu? Proszę bardzo.",
+  "Bo tam cię najtrudniej zgubić."
  ],
  "Ja tu tylko noszę bagaże...": [
-  "To noś i nie marudź."
+  "To noś i nie marudź.",
+  "To czemu masz najlżejszy plecak?",
+  "Bagaże też czasem giną. Uważaj."
  ],
  "Podział po równo, tak?": [
   "Po równo. Jak przeżyjemy.",
-  "Zobaczymy."
+  "Zobaczymy.",
+  "Po równo między żywych.",
+  "Dostaniesz tyle, ile uniesiesz.",
+  "Kto więcej ryzykuje, więcej bierze.",
+  "Tak. Chyba że znajdę coś sam{|a}."
  ],
  "Gdzieś tu musi być skarbiec.": [
   "Najpierw przeżyjmy, potem skarbiec.",
-  "Oby."
+  "Oby.",
+  "Albo grobowiec.",
+  "Szukaj, tylko niczego nie dotykaj.",
+  "Mówisz to w każdym lochu.",
+  "Jak go znajdziesz, daj znać."
  ],
  "Czuję złoto.": [
-  "Ja czuję tylko stęchliznę."
- ],
- "Ta płyta jest luźna. Omijamy.": [
-  "Dobrze, że patrzysz."
+  "Ja czuję tylko stęchliznę.",
+  "Ty zawsze czujesz złoto.",
+  "A ja czuję kłopoty."
  ],
  "Powoli, nie ma pośpiechu.": [
-  "Jest pośpiech. Czas leci."
+  "Jest pośpiech. Czas leci.",
+  "Ślimaki nas wyprzedzą.",
+  "Powoli, ale do przodu."
  ],
  "Niech tylko coś wyskoczy!": [
-  "Nie kuś losu."
+  "Nie kuś losu.",
+  "Uważaj, czego sobie życzysz.",
+  "Ciszej, bo jeszcze wyskoczy."
+ ],
+ "A jak się pozna, że coś jest pułapką?": [
+  "Zwykle po krzyku.",
+  "Po tym, że ktoś już w nią wpadł.",
+  "Jak ci się wydaje, że nie jest, to jest."
+ ],
+ "Mistrz mówił, że to będzie łatwe.": [
+  "Twój mistrz siedzi teraz w karczmie.",
+  "Mistrzowie zawsze tak mówią."
+ ],
+ "Ile płacą za taki kryształ? Tak tylko pytam.": [
+  "Tyle, że starczy na porządny pogrzeb.",
+  "Najpierw go zdobądź, potem licz."
+ ],
+ "Ciekawe, czy mieszka tu jakiś smok.": [
+  "Módl się, żeby nie.",
+  "Smoki są w bajkach. Tu jest gorzej."
+ ],
+ "Wszystko mam nowe, prosto od kupca!": [
+  "To się szybko zmieni.",
+  "Widać. Błyszczysz jak lampa."
+ ],
+ "Czy to normalne, że tak tu cuchnie?": [
+  "W lochach zawsze cuchnie.",
+  "Przywykniesz. Albo zemdlejesz."
+ ],
+ "Nie dotykać, nie podnosić, nie ufać.": [
+  "Nawet tobie?",
+  "Znamy tę regułę na pamięć."
+ ],
+ "Bywał{em|am} w gorszych lochach. W niewielu.": [
+  "Pocieszające.",
+  "Opowiesz przy ognisku. Jak wyjdziemy."
+ ],
+ "Młodzi zawsze idą za szybko.": [
+  "A starzy za wolno.",
+  "Dlatego starzy jeszcze żyją."
+ ],
+ "Oddał{bym|abym} całe złoto za kufel piwa.": [
+  "Ja nawet za pół kufla.",
+  "Ja za łyk zwykłej wody."
+ ],
+ "Przypomnijcie mi, czemu się na to zgodził{em|am}.": [
+  "Dla złota.",
+  "Dla sławy. I z głupoty."
+ ],
+ "Ktoś pamięta drogę powrotną?": [
+  "Mniej więcej.",
+  "Pamiętam drogę tutaj. To się liczy?"
+ ],
+ "Jak wrócimy, stawiam wszystkim kolejkę.": [
+  "Trzymam cię za słowo.",
+  "Słyszeliście? Wszyscy jesteśmy świadkami."
+ ],
+ "Zdjął{bym|abym} buty, ale boję się, co zobaczę.": [
+  "Nie rób nam tego.",
+  "Lepiej nie. Dla dobra nas wszystkich."
+ ],
+ "Ile już tu jesteśmy? Godzinę? Dzień?": [
+  "Za długo.",
+  "Stracił{em|am} rachubę."
+ ],
+ "Burczy mi w brzuchu. Zaraz coś nas usłyszy.": [
+  "Mam suchar. Twardy jak ta podłoga.",
+  "Ciszej, brzuchu."
+ ],
+ "Matka chciała, żebym piek{ł|ła} chleb...": [
+  "Chleb by ci się przypalił.",
+  "Matki zawsze mają rację."
+ ],
+ "Kiedy ostatnio spał{em|am} w łóżku?": [
+  "Ja już nie pamiętam, jak wygląda łóżko.",
+  "W karczmie. Pod stołem."
+ ],
+ "Kto ma jeszcze wodę, niech się podzieli.": [
+  "Mam łyk. Tylko łyk.",
+  "Mój bukłak jest suchy jak kość."
+ ],
+ "Nie zdejmujcie butów. Nigdy nie wiadomo.": [
+  "Moje buty już do mnie przyrosły.",
+  "Nawet nie mam siły ich zdjąć."
+ ],
+ "Tu chyba nic nas nie zje.": [
+  "Chyba.",
+  "Nie mów tego głośno."
+ ],
+ "Ciszej. Niech loch myśli, że nas nie ma.": [
+  "Loch wie wszystko.",
+  "Już szepczę."
+ ],
+ "Kręci mi się w głowie...": [
+  "Usiądź, zanim upadniesz.",
+  "Patrz na mnie. Nie mdlej."
+ ],
+ "Bywało lepiej. Dużo lepiej.": [
+  "Bywało też gorzej. Chyba.",
+  "Przynajmniej jeszcze chodzisz."
+ ],
+ "Nie patrz tak na mnie. Wiem, jak wyglądam.": [
+  "Jak trup. Tylko gadasz więcej.",
+  "Nic nie mówię."
+ ],
+ "Trzymam się. Ledwo, ale się trzymam.": [
+  "To trzymaj się dalej.",
+  "Widzę. Jestem pod wrażeniem."
+ ],
+ "Z tym złotem kupię sobie kawałek ziemi.": [
+  "Na cmentarzu jest tanio.",
+  "Najpierw je stąd wynieś."
+ ],
+ "Sakiewka ciągnie mnie do ziemi.": [
+  "To ją zostaw. Popilnuję.",
+  "Pomogę ją nieść. Za połowę."
+ ],
+ "Ciężkie to bogactwo. Ale nie oddam.": [
+  "Nikt nie prosi.",
+  "Zobaczymy, jak będziesz uciekać."
+ ],
+ "Gdzie było wyjście? Pytam na wszelki wypadek.": [
+  "Za nami. A my idziemy naprzód.",
+  "Nie myśl teraz o wyjściu."
+ ],
+ "Jak coś wyskoczy, ja krzyczę, a wy walczycie.": [
+  "Uczciwy podział.",
+  "Krzycz głośno. Żebyśmy zdążyli."
+ ],
+ "To mój ostatni loch. Przysięgam.": [
+  "Słyszeliśmy to już.",
+  "Oby nie w tym sensie."
+ ],
+ "Mama mówiła: nie chodź do lochów.": [
+  "Mądra kobieta.",
+  "Moja też. I co z tego?"
+ ],
+ "Strach to tylko słowo.": [
+  "Bardzo głośne słowo.",
+  "Powiedz to moim kolanom."
+ ],
+ "Za kilka dni będą o nas śpiewać.": [
+  "Byle nie pieśni żałobne.",
+  "Jakiś bard zawsze coś zmyśli."
+ ],
+ "Lubię, kiedy jest trudno.": [
+  "Ja wolę, kiedy jest łatwo.",
+  "To dziś masz szczęście."
+ ],
+ "Lepiej stracić chwilę niż nogę.": [
+  "Wolę nie tracić żadnej.",
+  "Mądrze. Nudno, ale mądrze."
+ ],
+ "Nie dotykajcie niczego, co błyszczy.": [
+  "A złoto?",
+  "To po co tu przyszliśmy?"
+ ],
+ "Zapamiętujcie drogę. Może się przydać.": [
+  "Lewo, prawo, lewo... Już zapomniał{em|am}.",
+  "Pamiętam. Prawie."
+ ],
+ "Sprawdzam wszystko dwa razy. Dlatego żyję.": [
+  "A ja mam szczęście. Też działa.",
+  "Dlatego tak wolno idziemy."
+ ],
+ "Kto znajdzie skarb, bierze więcej. Umowa?": [
+  "Żadnej umowy.",
+  "Umowa. I tak ja go znajdę."
+ ],
+ "Za kryształ kupię sobie zamek.": [
+  "Mały zamek. Bardzo mały.",
+  "Z lochem? Mam dość lochów."
+ ],
+ "Myślicie, że w ścianach są ukryte skrytki?": [
+  "Opukaj, to się przekonasz.",
+  "Albo ukryte kolce."
+ ],
+ "Ciekawe, ile da się wynieść w butach.": [
+  "Twoich czy cudzych?",
+  "Zależy, ile zostanie z nóg."
+ ],
+ "Jeśli zginę, niech ktoś dokończy moją pieśń.": [
+  "Dokończę. Ale zmienię refren.",
+  "Nie zginiesz. Za dużo gadasz."
+ ],
+ "W balladzie będziemy wyżsi i odważniejsi.": [
+  "Mnie zrób trochę mądrzejsz{ego|ą}.",
+  "I bogatsi, mam nadzieję."
+ ],
+ "Loch, groch... Nie, tego nie zaśpiewam.": [
+  "Dzięki ci za to.",
+  "Szkoda. Brzmiało obiecująco."
+ ],
+ "Pułapki to tchórzostwo. Niech coś stanie i walczy!": [
+  "Powiedz to kolcom.",
+  "Pułapki nie stają. Na szczęście."
+ ],
+ "Głodn{y|a} jestem. I zł{y|a}. Głównie zł{y|a}.": [
+  "Czyli jak zawsze.",
+  "Zjedz coś, zanim kogoś ugryziesz."
+ ],
+ "W mojej wiosce takie lochy to plac zabaw.": [
+  "Dziwne dzieci macie w tej wiosce.",
+  "Ciekawe, ile tych dzieci dorasta."
+ ],
+ "Ktoś już tu był przed nami.": [
+  "I pewnie nie wyszedł.",
+  "Ciekawe, czy ktoś z nich wrócił."
+ ],
+ "Ciekawe, kto to wszystko zbudował.": [
+  "Ktoś bardzo złośliwy.",
+  "Lepiej nie wiedzieć."
+ ],
+ "Mam wrażenie, że ten loch się zmienia.": [
+  "Bo się zmienia.",
+  "Nie strasz."
+ ],
+ "Gdzieś kapie woda...": [
+  "Oby to była woda.",
+  "Liczę krople. Uspokaja."
+ ],
+ "Czuć tu przeciąg. Skąd?": [
+  "Może jest drugie wyjście.",
+  "Ze szczeliny. Nie zaglądaj tam."
+ ],
+ "Pachnie tu stęchlizną. I czymś gorszym.": [
+  "To chyba ja.",
+  "Nie mów, czym."
+ ],
+ "Tu każdy kamień może się ruszyć.": [
+  "Dobrze, że patrzysz.",
+  "Którą? Tę?",
+  "Dzięki. Moje stopy też dziękują."
+ ],
+ "Tylko nie siadaj byle gdzie!": [
+  "Spokojnie, nie siadam.",
+  "Na której? Wszystkie wyglądają tak samo.",
+  "Siedział{em|am} już na gorszych."
  ]
 }
