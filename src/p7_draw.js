@@ -1602,7 +1602,7 @@
       }
     }
     if (it.item && s >= 14) {   // a known item lies here (dropped by a hero): its colour in the corner
-      ctx.fillStyle = ITEM_COLOR[it.item.type] || '#fff'; ctx.beginPath(); ctx.arc(cx + s * 0.3, cy - s * 0.3, s * 0.09, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = it.item.cursed ? '#b48cff' : ITEM_COLOR[it.item.type] || '#fff'; ctx.beginPath(); ctx.arc(cx + s * 0.3, cy - s * 0.3, s * 0.09, 0, Math.PI * 2); ctx.fill();   // 1.20: cursed: violet
       ctx.strokeStyle = '#1a1424'; ctx.lineWidth = 1; ctx.stroke();
     }
     const gl = 0.5 + 0.5 * Math.sin(realNow * 4 + it.x);
@@ -2358,6 +2358,11 @@
           const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, T * 1.6); g.addColorStop(0, 'rgba(210,220,235,0.22)'); g.addColorStop(1, 'rgba(210,220,235,0)');
           ctx.fillStyle = g; ctx.fillRect(fx - T * 1.6, fy - T * 1.6, T * 3.2, T * 3.2);
         }
+        if (fl.phase === 'raid') fl.heroes.forEach(o => {   // 1.20: a lit lantern clears a warm patch of the fog, 1,5 tiles round its bearer
+          if (o.dead || o.fled || o.gone || roomOf(o.tx, o.ty) !== R.id || !litLantern(o)) return;
+          const p = heroPos(o), lx = p.x * T, ly = p.y * T, lg = ctx.createRadialGradient(lx, ly, 0, lx, ly, T * 1.5);
+          lg.addColorStop(0, 'rgba(255,232,170,0.22)'); lg.addColorStop(1, 'rgba(255,232,170,0)'); ctx.fillStyle = lg; ctx.fillRect(lx - T * 1.5, ly - T * 1.5, T * 3, T * 3);
+        });
       } else if (R.rt === 'swamp') {
         ctx.fillStyle = 'rgba(70,100,40,0.32)'; ctx.fillRect(x, y, w, h);
         ctx.fillStyle = 'rgba(150,190,90,0.45)';
@@ -2985,7 +2990,7 @@
           if (it.cursedKnown && fl.phase === 'raid') { ctx.save(); tileMap(it.x, it.y, 0.33, null); ctx.strokeStyle = '#b48cff'; ctx.lineWidth = Math.max(2 / T, 0.06); ctx.beginPath(); ctx.moveTo(0.15, 0.15); ctx.lineTo(0.85, 0.85); ctx.moveTo(0.85, 0.15); ctx.lineTo(0.15, 0.85); ctx.stroke(); ctx.restore(); }   // a big X over the chest, on a plane
         }
       }
-      if (it.item && T >= 14) { const p = W2S(bx + 0.25, by - 0.25, 0.45); ctx.fillStyle = ITEM_COLOR[it.item.type] || '#fff'; ctx.beginPath(); ctx.arc(p[0], p[1], T * 0.08, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#1a1424'; ctx.lineWidth = 1; ctx.stroke(); }
+      if (it.item && T >= 14) { const p = W2S(bx + 0.25, by - 0.25, 0.45); ctx.fillStyle = it.item.cursed ? '#b48cff' : ITEM_COLOR[it.item.type] || '#fff'; ctx.beginPath(); ctx.arc(p[0], p[1], T * 0.08, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#1a1424'; ctx.lineWidth = 1; ctx.stroke(); }
       const gl = 0.5 + 0.5 * Math.sin(realNow * 4 + it.x), sp = W2S(bx + 0.15, by - 0.1, 0.35);
       ctx.fillStyle = 'rgba(255,240,180,' + (0.6 * gl).toFixed(2) + ')'; ctx.fillRect(sp[0], sp[1], T * 0.05, T * 0.05);
     }
@@ -3139,6 +3144,12 @@
     else if (h.alone && fl.phase === 'raid') ring('rgba(255,179,92,0.85)', 1.5, [4, 3], 0, Math.PI * 2, 1.5);
     if (h.hp / h.max < 0.3 && h.state !== 'rest') ring('rgba(255,90,90,' + (0.55 + 0.4 * Math.sin(realNow * 12)).toFixed(2) + ')', 2, null, 0, Math.PI * 2, 1.1);
     if (h.state === 'disarm') ring('#ffe066', 2.5, null, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur), 1.4);
+    else if (h.state === 'loot') ring('#c9c2b8', 2.5, null, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur), 1.4);   // 1.20: searching a body
+    if (litLantern(h)) {   // 1.20: a lit lantern: a warm circle on the floor, 1,5 tiles
+      ctx.save(); ctx.translate(x, feet); ctx.scale(1, SP);
+      const lg = ctx.createRadialGradient(0, 0, 0, 0, 0, T * 1.5); lg.addColorStop(0, 'rgba(255,224,138,0.16)'); lg.addColorStop(1, 'rgba(255,224,138,0)');
+      ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(0, 0, T * 1.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
     if (h.cursed) {   // a cursed treasure: a violet haze
       const g = ctx.createRadialGradient(x, mid, W * 0.4, x, mid, H * 0.75); g.addColorStop(0, 'rgba(180,140,255,0.45)'); g.addColorStop(1, 'rgba(180,140,255,0)');
       ctx.fillStyle = g; ctx.fillRect(x - H, mid - H, H * 2, H * 2);
@@ -3193,11 +3204,13 @@
     if (h.inv.length && T >= 14) {   // the pack: one square per item under the feet, in its colour; a power on cooldown is dimmed
       const q = Math.max(3, T * 0.1), n = Math.min(6, h.inv.length), x0 = x - (n * (q + 2) - 2) / 2;
       h.inv.slice(0, 6).forEach((it, k) => {
-        ctx.globalAlpha = fl.time < (it.cdUntil || 0) || it.charges === 0 ? 0.35 : 1;
-        ctx.fillStyle = ITEM_COLOR[it.type] || rarColor(it.r); ctx.fillRect(x0 + k * (q + 2), feet + W * 0.4, q, q);
-        if (it.r >= 2) { ctx.strokeStyle = rarColor(it.r); ctx.lineWidth = 1; ctx.strokeRect(x0 + k * (q + 2) - 0.5, feet + W * 0.4 - 0.5, q + 1, q + 1); }
+        ctx.globalAlpha = (fl.time < (it.cdUntil || 0) || it.charges === 0 || (it.type === 'lantern' && fl.time < (it.outUntil || 0)) ? 0.35 : 1) * (it.cursed ? 0.8 + 0.2 * Math.sin(realNow * 6) : 1);
+        ctx.fillStyle = it.cursed ? '#b48cff' : ITEM_COLOR[it.type] || rarColor(it.r); ctx.fillRect(x0 + k * (q + 2), feet + W * 0.4, q, q);
+        if (HITEMS[it.type].tool) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(x0 + k * (q + 2) - 0.5, feet + W * 0.4 - 0.5, q + 1, q + 1); }   // 1.20: a tool
+        else if (it.r >= 2) { ctx.strokeStyle = rarColor(it.r); ctx.lineWidth = 1; ctx.strokeRect(x0 + k * (q + 2) - 0.5, feet + W * 0.4 - 0.5, q + 1, q + 1); }
       });
       ctx.globalAlpha = 1;
+      if (burden(h) < 1) { ctx.fillStyle = '#c9c2b8'; ctx.font = numFont(Math.max(8, q * 1.6), true); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText('▼', x0 + n * (q + 2) + 1, feet + W * 0.4 + q / 2); }   // 1.20: too heavy, he slows down
     }
     // a sign above the bars: panic, lost, talking, resting
     const sign = (t, color, size, wob) => { ctx.fillStyle = color; ctx.font = numFont(Math.max(10, size), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, x, b0 - 8 - (h.shield > 0 ? bh + 1 : 0) + wob); };

@@ -955,7 +955,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // run's raids +33% and Esencja -14% (its scares lost more: +12% a combo step instead of +25%).
   const COMBO_HP = 0.2;
   const comboHp = n => 1 + COMBO_HP * Math.min(1, Math.max(0, n - 1) / 4);
-  const LOOT_GREED = { gold: [0.08, 0.06], potion: [0.03, 0.02], gear: [0.15, 0.08], relic: [0.35, 0.15], cursed: [0.15, 0.08] };   // [seen, picked up]
+  const LOOT_GREED = { gold: [0.08, 0.06], potion: [0.03, 0.02], gear: [0.15, 0.08], relic: [0.35, 0.15], cursed: [0.15, 0.08], body: [0.075, 0.04] };   // [seen, picked up]
+  // 1.20: body = what a dead hero spilled (any kind of pile): greed only, LOOT_KIND stays; half of gear, no Sezam or Relikwiarz on top
   const isLoot = t => !!LOOT_KIND[t];
   const RARITY_NAME = ['', 'zwykły', 'rzadki', 'legendarny'];
   const RARITY_COLOR = ['#f2b94b', '#f2b94b', '#6fb7ff', '#ff8a3c'];
@@ -1132,7 +1133,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       for (const kk in w) { x -= w[kk]; if (x <= 0) { t = kk; break; } }
       const same = out.find(o => o.type === t);
       if (same && (t === 'charm' || t === 'amulet' || t === 'boots')) { same.charges++; continue; }   // one power of a kind: a second roll is one more use
-      out.push({ type: t, r, kit: true, charges: powerCharges(t, r) });
+      out.push({ type: t, r, kit: true, src: 'kit', charges: powerCharges(t, r) });   // 1.20: src = where it comes from (the hero card, the dead's things, a returner's trophy)
     }
     return out;
   }
@@ -1141,18 +1142,35 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // potion and bomb are used up; talisman, amulet and boots are powers with a cooldown the hero decides when to use;
   // a weapon (against monsters) and armour (against traps) just work. One of each power, weapon and armour is enough: a better one replaces the old.
   const HITEMS = {
-    potion: { name: 'mikstura', acc: 'miksturę', g: 'f', w: 30, use: 'once' },
-    charm: { name: 'talizman', acc: 'talizman', g: 'm', w: 22, use: 'power', cd: 20 },
-    amulet: { name: 'amulet', acc: 'amulet', g: 'm', w: 16, use: 'power', cd: 30 },
-    boots: { name: 'buty', acc: 'buty', g: 'pl', w: 14, use: 'power', cd: 15 },
-    bomb: { name: 'bomba', acc: 'bombę', g: 'f', w: 18, use: 'once' },
-    weapon: { name: 'broń', acc: 'broń', g: 'f', w: 14, use: 'gear', loot: true },
-    armor: { name: 'zbroja', acc: 'zbroję', g: 'f', w: 14, use: 'gear', loot: true }
+    potion: { name: 'mikstura', acc: 'miksturę', g: 'f', w: 30, use: 'once', kg: 1 },
+    charm: { name: 'talizman', acc: 'talizman', g: 'm', w: 22, use: 'power', cd: 20, kg: 0.5 },
+    amulet: { name: 'amulet', acc: 'amulet', g: 'm', w: 16, use: 'power', cd: 30, kg: 0.5 },
+    boots: { name: 'buty', acc: 'buty', g: 'pl', w: 14, use: 'power', cd: 15, kg: 1.5 },
+    bomb: { name: 'bomba', acc: 'bombę', g: 'f', w: 18, use: 'once', kg: 2 },
+    weapon: { name: 'broń', acc: 'broń', g: 'f', w: 14, use: 'gear', loot: true, kg: 3 },
+    armor: { name: 'zbroja', acc: 'zbroję', g: 'f', w: 14, use: 'gear', loot: true, kg: 6 },
+    // 1.20: tools, never rolled from loot (w 0, tool): the guild gives them, a returner who was lost brings a lantern. The lantern
+    // keeps the fog off the ones next to it (p5_ai.js: lanternNear), the crowbar levers a gate and opens a cage (hasCrowbar).
+    lantern: { name: 'latarnia', acc: 'latarnię', g: 'f', w: 0, use: 'tool', kg: 1.5, tool: true },
+    crowbar: { name: 'łom', acc: 'łom', g: 'm', w: 0, use: 'tool', kg: 3, tool: true }
   };
+  // 1.20 Udźwig (author: a mage carries as much as a barbarian, armour weighs what an amulet does): what a class carries, +0,3 kg
+  // a level (p3_flow.js: carryOf). Past 60% of it he slows down (burden), on ice he slips more; past 100% he takes nothing more.
+  const CARRY = { warrior: 14, barbarian: 16, priest: 10, bard: 10, thief: 9, mage: 8 };
+  // 1.20: how well a kind of gear fits a class (itemValue; 1 when not listed). It replaces the one favourite class of each kind,
+  // so a mage no longer values armour like a warrior does, and the party can hand gear to whoever it fits (p5_ai.js: shareThink).
+  const CLASS_FIT = {
+    weapon: { warrior: 1.3, barbarian: 1.3, thief: 0.8, bard: 0.6, priest: 0.5, mage: 0.3 },
+    armor: { warrior: 1.3, barbarian: 1.0, priest: 0.9, bard: 0.7, thief: 0.5, mage: 0.4 },
+    charm: { warrior: 1.3, barbarian: 1.1 },
+    amulet: { priest: 1.3, bard: 1.1, mage: 1.1 },
+    boots: { thief: 1.3, bard: 1.1 },
+    bomb: { mage: 1.2, barbarian: 1.1, thief: 1.1 } };
+  const fitOf = (type, cls) => (CLASS_FIT[type] && CLASS_FIT[type][cls]) || 1;
   const GEAR_POOL = ['charm', 'amulet', 'boots', 'bomb', 'weapon', 'armor'];
   // Powers have a few uses per wave (better ones more) and a cooldown between them: the hero has to pick his moments.
   function powerCharges(t, r) { return t === 'boots' ? 2 + Math.floor(r / 3) : (t === 'charm' || t === 'amulet') ? 1 + Math.floor(r / 3) : undefined; }
-  const ITEM_COLOR = { potion: '#8be38f', charm: '#7fb8ff', amulet: '#c3b2ff', boots: '#e8c27a', bomb: '#ff9a3c', weapon: '#d9dbe6', armor: '#9aa3b8' };
+  const ITEM_COLOR = { potion: '#8be38f', charm: '#7fb8ff', amulet: '#c3b2ff', boots: '#e8c27a', bomb: '#ff9a3c', weapon: '#d9dbe6', armor: '#9aa3b8', lantern: '#ffe08a', crowbar: '#b8b0a0' };   // 1.20: the tools
   // Polish needs the adjective to agree with the item: rzadki talizman, rzadka mikstura, rzadkie buty (and "mam rzadką miksturę").
   const ADJ = { m: ['', 'zwykły', 'rzadki', 'legendarny'], f: ['', 'zwykła', 'rzadka', 'legendarna'], pl: ['', 'zwykłe', 'rzadkie', 'legendarne'], fAcc: ['', 'zwykłą', 'rzadką', 'legendarną'] };
   const adj = (g, r) => ADJ[g][Math.min(3, Math.max(1, r))];
@@ -2396,7 +2414,58 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       'Zostawcie mnie w spokoju!', 'Ja się tu nie liczę? Proszę bardzo.', 'Idę sam{|a}. Przynajmniej nikt nie gada.'],
     sulkBack: ['No... to co, idziemy dalej?', 'Nic się nie stało. Jasne?', 'Wrócił{em|am}. Tylko bez min.', 'Przemyślał{em|am} sprawę. Trochę.',
       'Ktoś musi was pilnować, nie?', 'Nie gadajmy o tym.', 'Samemu nudno. Jestem.', 'Co się gapicie? Jestem z powrotem.', 'Przepraszam. Prawie.',
-      'Dobra, było, minęło.']
+      'Dobra, było, minęło.'],
+    // 1.20 Ekwipunek i łup: the dead's things ({n} {g} = the dead one, whose gender the line does not know), a predecessor's pile,
+    // looting a body (lootDead*: from the 1.21 dialogue pass, e121/R2), handing gear over, weight, who takes the loot ({n} {v} = the
+    // one who is to take it), the lantern, the crowbar, a crit knocking gear out, the mimic's belly, bombs in a fire, a returner's trophy
+    lootFallen: ['Rzeczy {g}... zostały tu.', 'To plecak {g}. Nie zostawię go tak.', 'Dobytek {g}. Tyle z tego zostało.', 'Tu leżą rzeczy {g}. Ciężko na to patrzeć.',
+      'Plecak {g}... jeszcze ciepły.', 'To należało do {g}.', 'Nie myślał{em|am}, że {n} tak skończy.', 'Tyle zostało z {g}...'],
+    predecessorGear: ['To rzeczy {g}. Stąd nie wrócił nikt.', 'Plecak {g}... gildia o tym mówiła.', 'Więc tu skończyła się wyprawa {g}.',
+      'Znam ten plecak. To rzeczy {g}.', 'W karczmie piliśmy za {a}. To tutaj...', 'Rzeczy {g}. Czyli plotki były prawdziwe.',
+      'Ktoś tu zginął przed nami. {n}, z gildii.', 'Nikt nie pochował {g}. Zostały tylko rzeczy.'],
+    cursedKeep: ['Nie. To zostaje ze mną.', 'Nie dotykaj tego. To moje.', 'Nie oddam. Nawet nie proś.', 'Nie ruszaj. Ani palcem.', 'Nie wymienię tego za nic na świecie.',
+      'Odsuń się od moich rzeczy.'],
+    lootDead: ['Wybacz... tobie to już niepotrzebne.', 'Wezmę to. Na pamiątkę.', 'Zaniosę to twoim bliskim. Obiecuję.', 'Lepiej w moich rękach niż w ciemności.',
+      'Niech chociaż to wyjdzie z tego lochu.', 'Nie patrzcie tak. Zmarłym łupy niepotrzebne.', 'Spoczywaj. Resztą się zajmę.', 'Wybacz, że to biorę.',
+      'Tu by tylko przepadło.', 'Przyda się żywym.'],
+    lootDeadObject: ['Zostaw to, {v}! Miej serce!', '{v}! Ani się waż!', 'Hieno jedna... {v}, odłóż to.', 'To nie twoje, {v}. Odłóż.', '{v}, jak możesz?!',
+      'Na bogów, {v}, szacunek dla zmarłych!', 'Okradasz poległych, {v}? Wstydź się.', 'Nie wolno, {v}. To przynosi pecha.',
+      'Ręce precz od zmarłych, {v}.', '{v}, a jak ty padniesz, mam zrobić to samo?'],
+    lootDeadReply: ['Martwym już nic niepotrzebne.', 'Wolisz, żeby zgniło?', 'Gdybym padł{|a}, bierz moje. Bez żalu.', 'Przetrwanie przed szacunkiem.',
+      'Szacunek nas stąd nie wyprowadzi.', 'Oddam, jak wyjdziemy. Może.', 'Nie oceniaj mnie.', 'Nikomu tym nie ubliżam.', 'Zmilcz. Wiem, co robię.',
+      'Spokojnie. Biorę to z szacunkiem.'],
+    giveGear: ['Masz, tobie się bardziej przyda.', 'Weź to. Ja i tak nie umiem tym machać.', 'Trzymaj. W twoich rękach to coś warte.', 'Weź. Mnie tylko ciąży.',
+      'To dla ciebie. Mnie na nic.', 'Łap. Lepiej leży na tobie niż na mnie.', 'Nie patrz tak, bierz. Należy ci się.', 'Masz. Tylko oddaj, jak wyjdziemy.'],
+    giveGearThanks: ['Dzięki, oddam w karczmie.', 'O, to mi się przyda.', 'Dziękuję. Nie zapomnę.', 'Ha! Teraz to rozumiem.', 'Pasuje jak ulał.', 'Masz u mnie piwo.'],
+    amuletGive: ['Trzymaj mój amulet! Oddychaj!', 'Weź amulet. Ściśnij go mocno.', 'Masz, to cię uspokoi.', 'Ściśnij to. Spokojnie, jestem obok.',
+      'Amulet, łap! I nie panikuj!', 'Weź to. Pomoże na strach.'],
+    tooHeavy: ['Za ciężkie dla mnie.', 'Tego nie udźwignę.', 'Ledwo niosę to, co mam.', 'Plecy mi pękną. Zostawiam.', 'Nie ma mowy, za ciężkie.',
+      'Więcej nie uniosę.', 'Mam już pełne ręce. I plecy.', 'Ciężkie jak grzech. Nie biorę.'],
+    heavyLoad: ['Plecak ciągnie mnie do ziemi.', 'Uff... za dużo tego dźwigam.', 'Nogi mi się uginają.', 'Idę jak objuczony muł.', 'Ciężko... ale nie zostawię.',
+      'Po co ja to wszystko taszczę?'],
+    lootAssign: ['{n}, ty to weź.', 'Zostaw, niech {n} bierze.', '{v}, to dla ciebie. Bierz.', 'Nie ty. {n} bardziej tego potrzebuje.',
+      'Ty nie. {v}, chodź tu po to.', 'Stój. Niech {n} to weźmie.', '{v}! Twoje. Bierz i wracaj.', 'Dzielimy uczciwie: bierze {n}.'],
+    lootOffer: ['Mnie się nie przyda. Komuś?', 'Tu leży coś dla kogoś innego.', 'Nie dla mnie. Kto chce?', 'Zostawiam. Może komuś się przyda.',
+      'Ktoś chętny? Ja nie biorę.', 'Leży i czeka na właściciela. Nie na mnie.', 'Dobra rzecz, ale nie w moje ręce.',
+      'Kto pierwszy, ten lepszy. Ja odpuszczam.'],
+    lootOfferTake: ['Daj, ja wezmę.', 'Moje! To znaczy... dzięki.', 'Ja to wezmę!', 'Zostaw, już idę.', 'Biorę, skoro nikt nie chce.', 'Dla mnie w sam raz.'],
+    lanternLight: ['Trzymajcie się światła!', 'Za latarnią, krok w krok.', 'Mgła gęsta, ale latarnia daje radę.', 'Blisko mnie! Tu jeszcze coś widać.',
+      'Światło! Nie odchodźcie od światła.', 'Ta mgła nie lubi latarni.'],
+    lanternOut: ['Zgasła! Nic nie widzę!', 'Kto zgasił światło?!', 'Latarnia! Zgasła mi!', 'Ciemno! Gdzie krzesiwo?!', 'Coś zdmuchnęło płomień!',
+      'Ciemność! Tylko nie to!'],
+    crowbarGate: ['Łom! Zaraz ją podważę.', 'Odsuńcie się, podważam.', 'Krata kontra łom. Zobaczymy.', 'Podważę te pręty. Chwila.', 'Na tę kratę mam łom.',
+      'Raz, dwa... ruszyła!'],
+    crowbarCage: ['Mam łom! Wyłamuję pręty!', 'Pręty nie wytrzymają łomu.', 'Łom w szczelinę i... wolność!', 'Dobrze, że wziął{em|am} łom.'],
+    gearKnocked: ['Moje rzeczy! Wypadło mi!', 'Coś mi wybiło z ręki!', 'Upuścił{em|am}! Leży tam!', 'Wyleciało mi! Muszę to podnieść.', 'Poleciało! Moja rzecz!',
+      'Wytrącone! Akurat teraz!'],
+    gearBack: ['Mam z powrotem!', 'Moje. Już nie wypuszczę.', 'Odzyskane!', 'Wróciło do właściciela.', 'Tym razem trzymam mocno.', 'Uff, jest. Całe.'],
+    mimicSpill: ['Wypluł wszystko, co zjadł!', 'W środku pełno cudzych rzeczy!', 'Ten mebel miał pełny brzuch!', 'Ile on tego połknął?!'],
+    bombCook: ['Bomby! Gorą mi w plecaku!', 'Płonę, a mam przy sobie bomby!', 'Proch w plecaku! Odsuńcie się!', 'Zaraz wybuchnie! Wszystko!',
+      'Gorę! A bomby ze mną!', 'Ogień przy bombach! Uciekać!'],
+    bombFriendly: ['Uważaj, gdzie rzucasz!', 'Ej! Ja tu stoję!', 'Moje uszy! Celuj lepiej!', 'Swoich nie bombardujemy!', 'Mało mnie nie rozerwało!',
+      'Następnym razem ostrzeż!'],
+    returnGear: ['Wrócił{em|am}. I mam coś twojego, lochu.', 'Twoja błyskotka wróciła ze mną.', 'Pamiętasz to, lochu? Oddać ci?',
+      'Wziął{em|am} to stąd. Teraz po więcej.', 'Patrz, lochu. Twoje trofeum w moich rękach.', 'To stąd {wyniosłem|wyniosłam}. Wracam.']
   };
   // 1.10: answers to the everyday lines (someone close by says one now and then)
   const CHAT_REPLY = {
@@ -3390,7 +3459,13 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     g2LeaderDown: ['Został{em|am} sam{|a}. Muszę znaleźć resztę.', 'I co teraz? Do pozostałych, póki się da.', 'Trzeba było zostać z resztą...',
       'Nikogo. Tylko ja i ten loch. Wracam do swoich.', 'Spokojnie. Znajdę ich. Muszę ich znaleźć.', 'Ten upór drogo nas kosztował. Wracam.'],
     sulkBack: ['Dobra... sam{|a} tu długo nie pociągnę.', 'Wrócę. Ale nie przeproszę.', 'Chyba przesadził{em|am}. Trochę.',
-      'Gdzie oni są? Trzeba ich znaleźć.', 'Ech. Duma dumą, a życie życiem.', 'Za cicho tu bez nich. Wracam.']
+      'Gdzie oni są? Trzeba ich znaleźć.', 'Ech. Duma dumą, a życie życiem.', 'Za cicho tu bez nich. Wracam.'],
+    // 1.20: alone (the others of the new keys are said to himself already, or only with someone next to him)
+    lootDead: ['Nikt nie widzi... wybacz.', 'Nie zostawię tego tu, w ciemności.', 'Wezmę. Ktoś musi to stąd wynieść.', 'Przepraszam. Muszę przeżyć.',
+      'Sam{|a} jestem. Każda rzecz się przyda.', 'Mnie to teraz bardziej potrzebne. Wybacz.'],
+    cursedKeep: ['Nie zamienię. To zostaje przy mnie.', 'Inne? Nie. Mam swoje skarby.', 'Nikt mi tego nie zabierze.'],
+    crowbarGate: ['Sam{|a} podważę tę kratę. Jakoś.', 'Łom w szparę i ciągnę...', 'No dalej, kraciska...'],
+    bombCook: ['Gorę... a te bomby zaraz...', 'Bomby się grzeją! Zaraz będzie po mnie!', 'Ogień i proch. Głupi{|a} ja.']
   };
   const SOLO_MUTE = new Set(['prepWard', 'prepJam', 'prepDisarm', 'prepShield', 'lootWait', 'friendHit', 'friendLow', 'rescue', 'scoutReply', 'councilReply', 'prepReply', 'restReply', 'restPriest', 'restScene',
     'argueLoot', 'argueCareful', 'argueCoward', 'argueBrave', 'decideYes', 'decideNo', 'argueSearch', 'replySearch', 'argueRetreat', 'agreeRetreat', 'reassure', 'surviveFirst',
@@ -3432,7 +3507,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       'Łatwo ci mówić po tamtej stronie krat!', 'Ptaszek w klatce. Zaśpiewasz coś?', 'Ha! Jak niedźwiedź na jarmarku!',
       'Zamiast rechotać, szarpnij za kraty!', 'Oddychaj, {Av}. Kraty to tylko kraty.', 'Wypuśćcie mnie! Natychmiast!', 'Jak tam w środku?',
       'Jak tam w klatce, {Av}?', 'Żelazne kraty... Ile by za nie dali?', 'Kiepski zamek. Wstyd dla lochu.',
-      'Pierwsza klatka? Do trzeciej się przywyka.'],
+      'Pierwsza klatka? Do trzeciej się przywyka.',
+      'Mam łom! Wyłamuję pręty!', 'Pręty nie wytrzymają łomu.'   // 1.20
+    ],
     coffin: ['Trumna się otwiera!', 'Wieko się rusza!', 'Coś jest w tej trumnie!', 'Coś tu patrzy z trumien.', 'Trumna... Lepiej nie zaglądać.',
       'Ciekawe, kto tu leży.', 'Ciężkie wieko. Kamienne.', 'Krzyż na wieku. Ktoś tu był pobożny.', 'Solidne deski. Dąb chyba.',
       'Śpij spokojnie, kimkolwiek jesteś.', 'Nie otwieram. Nie ja.', 'Kto chowa zmarłych w lochu?', 'Ciężkie wieko. Niech tak zostanie.',
@@ -3474,14 +3551,18 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       'Ogień! Jak wtedy, kiedy spłonął dom...', 'Nienawidzę ognia! Nienawidzę!', 'Znowu ten ogień z moich snów!',
       'Ogień nie jest silniejszy od ciebie, {Av}.', 'Za blisko. Zawsze jest za blisko.', 'Ogień to tylko ogień, {Av}.',
       'Ogień to narzędzie. Trzeba go oswoić.', 'Ktoś tu się przypiekł...', 'Już zgasło. Bogom dzięki.', 'Czuć tu spaleniznę.',
-      'Lepiej czuć, niż płonąć.', 'Gasić modlitwą? Woda by była tańsza.'],
+      'Lepiej czuć, niż płonąć.', 'Gasić modlitwą? Woda by była tańsza.',
+      'Płonę, a mam przy sobie bomby!', 'Gorę! A bomby ze mną!', 'Ogień przy bombach! Uciekać!', 'Gorę... a te bomby zaraz...', 'Ogień i proch. Głupi{|a} ja.'   // 1.20
+    ],
     fog: ['Nic nie widać w tej mgle...', 'Trzymajcie się blisko, mgła!', 'Gdzie podłoga, gdzie pułapka?', 'Mgła! Nie widzę własnych rąk.',
       'Mgła gęsta jak mleko...', 'Ledwo widzę na dwa kroki.', 'Coś tam jest, w tej mgle?', 'Mgła... łatwo tu zabłądzić.',
       'Nie lubię, jak nie widzę podłogi.', 'Nic nie widać... gdzie są drzwi?', 'Trzymajcie się blisko, ta mgła...', 'Którędy? Nie widzę ściany!',
       'Ściana? Nie... drzwi? Też nie.', 'Po omacku... krok, i jeszcze krok.', 'Mgła mnie prowadzi, nie ja ją.', 'Nie widzę, dokąd prowadzę...',
       'Gdzie ja jestem w tej mgle?', 'Którędy? Nic nie widać.', 'Nie widzę własnych butów.', 'Mgła. Nic nie widzę.',
       'Mgła... Gdzie podłoga, gdzie pułapka?', 'Biało i cicho. Nie lubię.', 'Mgła. Gorzej być nie może.', 'Sam{|a} we mgle. Wspaniale.',
-      'Tylko spokojnie. To tylko mgła.'],
+      'Tylko spokojnie. To tylko mgła.',
+      'Mgła gęsta, ale latarnia daje radę.', 'Ta mgła nie lubi latarni.'   // 1.20
+    ],
     gate: ['Krata!', 'Krata opadła!', 'Odcięło przejście!', 'Krata! Zamknęło się przed nosem!', 'Krata spadła tuż obok!', 'Krata spadła!',
       'Żelazna krata! Skąd?!', 'Ktoś spuścił kratę!', 'Pręty z sufitu!', 'Krata! Szukamy innej drogi.', 'Krata. Trzeba szukać obejścia.',
       'Żelazo nie ustąpi. Inna droga.', 'Nie będę czekać pod kratą.', 'Nie ma innej drogi, czekamy na kratę.',
@@ -3490,7 +3571,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       'Może ją wyważymy?', 'Krata z żelaza, ty z mięsa. Czekamy.', 'Krata jak krata. Każda kiedyś się podnosi.',
       'Krata. Poczekam, aż się podniesie.', 'Kraty nie przegadam. Czekam.', 'Kiedyś musi się podnieść. Czekam.', 'Żelazo i cierpliwość. Kto wygra?',
       'Podważę ją sam{|a}. Oby nikt nie patrzył.', 'Krata. Spróbuję ją podważyć.', 'Krata... dam radę sam{|a}.', 'Żelazo ustąpi. Zawsze ustępuje.',
-      'Krata. Poszukam innej drogi.', 'Krata mnie nie zatrzyma. Inna droga.', 'Żelazo? Dobrze. Są inne drzwi.'],
+      'Krata. Poszukam innej drogi.', 'Krata mnie nie zatrzyma. Inna droga.', 'Żelazo? Dobrze. Są inne drzwi.',
+      'Krata kontra łom. Zobaczymy.', 'Podważę te pręty. Chwila.', 'Na tę kratę mam łom.', 'Sam{|a} podważę tę kratę. Jakoś.', 'No dalej, kraciska...'   // 1.20
+    ],
     gear: ['Porządny sprzęt!', 'Ktoś tu zostawił dobry ekwipunek.', 'Wygląda na robotę mistrza.', 'Jeśli to miecz, jest mój.', 'A jeśli to buty?'],
     gears: ['Słyszycie te tryby?', 'Cały pokój tyka...', 'Mechanizm! Patrzcie pod nogi.', 'Zębatki w ścianach... Po co komu?',
       'Tik, tak, tik, tak...', 'Ten loch to jakiś wielki zegar.', 'Ktoś to wszystko nakręca...', 'Zgrzyta jak w krasnoludzkiej kuźni.',
@@ -3573,7 +3656,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     k_spider: ['Jaja... ogromne jaja.', 'Kokony. W środku coś jest.', 'Wszędzie pajęczyna.', 'Nici kleją się do butów.',
       'Małe pająki... Oby tylko małe.', 'Ktoś tu skończył jako kokon.', 'Nie dotykać jaj. Nie dotykać jaj.', 'Ciarki mi chodzą po plecach.',
       'Gdzie jest matka tych jaj?'],
-    mimic: ['Ten mebel gryzie!', 'Mimik!', 'Ten mebel ma zęby!'],
+    mimic: ['Ten mebel gryzie!', 'Mimik!', 'Ten mebel ma zęby!',
+      'Ten mebel miał pełny brzuch!'   // 1.20
+    ],
     mirror: ['W lustrze coś jest!', 'W lustrze ktoś stoi!', 'To odbicie ma cudzą twarz!', 'Lustro w lochu? Po co?', 'Brudne to lustro.',
       'Wyglądam okropnie.', 'Kto się tu przegląda? Szczury?', 'Ładna rama. Szkło do niczego.', 'Schudł{em|am} w tym lochu.',
       'Moje odbicie wygląda na zmęczone.', 'Ciekawe, ile by za nie dali na targu.', 'Całkiem niezł{y|a} ze mnie bohater{|ka}.', 'I jak wyglądasz?',
@@ -4288,7 +4373,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   const alive = () => fl.heroes.filter(h => !h.dead && !h.fled && !h.gone);
   const webbed = h => fl.time < h.slowUntil;
   const caged = h => h.state === 'caged';
-  const held = h => h.state === 'fight' || h.state === 'wait' || h.state === 'talk' || h.state === 'rest' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || caged(h) || webbed(h);
+  const held = h => h.state === 'fight' || h.state === 'wait' || h.state === 'talk' || h.state === 'rest' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || h.state === 'loot' || caged(h) || webbed(h);   // 1.20: loot = kneeling by a body
   function trapMult(h, type, src) {
     const pierce = type === 'arrows' && src && t3(src);   // level 3 arrows go through shields
     const sh = k => inB('acid', h.room) ? (1 + k) / 2 : k;   // acid: shields protect half as well
@@ -4714,7 +4799,16 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const phys = pre.phys !== undefined ? pre.phys : (deep && Math.random() < 0.35 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHYS)) : null);
     const phobia = pre.phobia !== undefined ? pre.phobia : (deep && !boss && Math.random() < 0.3 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHOBIAS)) : null);
     const known = pre.known || [phys && (mods.revealAll || Math.random() < 0.3) ? 'phys' : null, phobia && (mods.revealAll || Math.random() < 0.3) ? 'phobia' : null].filter(Boolean);
-    return { type, lvl, rank: tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: comboHp(n), inv: makeKit(type, lvl + (boss ? 2 : 0)), trait,
+    const inv = makeKit(type, lvl + (boss ? 2 : 0));
+    // 1.20 (hook for 1.23): a returner brings back the best two things he carried out of your dungeon (src trophy): a better one
+    // replaces his own power or gear of that kind, the rest comes on top of his kit (past invCap). One who got lost in here brings
+    // a lantern from home.
+    (pre.gear || []).slice(0, 2).forEach(g => {
+      const tr = Object.assign({}, g, { src: 'trophy', kit: false }), U = HITEMS[g.type].use, cur = (U === 'power' || U === 'gear' || U === 'tool') && inv.find(x => x.type === g.type);
+      if (cur) { if (g.r > cur.r) inv[inv.indexOf(cur)] = tr; } else inv.push(tr);
+    });
+    if (pre.wasLost && !inv.some(x => x.type === 'lantern')) inv.push({ type: 'lantern', r: 1, src: 'kit' });
+    return { type, lvl, rank: tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: comboHp(n), inv, trait,
       courage: Math.round(R.courage * (boss === 'final' ? 2 : boss ? 1.5 : 1) * ck), phys, phobia, known, returning: !!pre.returning, scar: pre.scar || null, times: pre.times || 0 };
   }
   // The guild reads the last wave's report and sends the right people (from wave 3): priests and amulets against fear,
@@ -4803,7 +4897,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (idx < 0) return;
       back++;
       const L = Math.max(list[idx].lvl, r.lvl + 1 + (r.crystal ? 1 : 0));
-      list[idx] = makeHero(r.type, L, n, used, null, { nm: r.nm, female: r.female, phys: r.phys, phobia: r.phobia, trait: r.trait, known: [r.phys ? 'phys' : null, r.phobia ? 'phobia' : null].filter(Boolean), returning: true, scar: r.scar, times: r.times });
+      list[idx] = makeHero(r.type, L, n, used, null, { nm: r.nm, female: r.female, phys: r.phys, phobia: r.phobia, trait: r.trait, known: [r.phys ? 'phys' : null, r.phobia ? 'phobia' : null].filter(Boolean), returning: true, scar: r.scar, times: r.times, gear: r.gear, wasLost: r.wasLost });   // 1.20: gear, wasLost
       r.used = n;
     });
     const boss = bossOf(n);
@@ -4812,8 +4906,23 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (g && (g.kind === 'fear' || g.kind === 'kill')) list.forEach(e => {
       if (!(n >= 6 || e.type === { fear: 'priest', kill: 'warrior' }[g.kind]) || e.inv.length >= 3 + Math.floor(e.lvl / 3)) return;
       const t = g.kind === 'fear' ? 'amulet' : 'charm', r = 1 + Math.floor(e.lvl / 6), cur = e.inv.find(x => x.type === t);
-      if (cur) { cur.r = Math.max(cur.r, r); cur.charges = (cur.charges || 0) + 1; } else e.inv.push({ type: t, r, charges: 1 });   // one power of a kind is enough (one use from the guild)
+      if (cur) { cur.r = Math.max(cur.r, r); cur.charges = (cur.charges || 0) + 1; } else e.inv.push({ type: t, r, charges: 1, src: 'guild' });   // one power of a kind is enough (one use from the guild)
     });
+    // 1.20: the guild's tools, one of each a party, from wave 4 of the full game. A lantern for a party going where people got
+    // lost (the guild's 'lost' answer), otherwise now and then when your dungeon has a Mgła (35%); a crowbar for a dungeon of
+    // shut ways (its 'block' answer, the barbarian first), otherwise now and then when you have a gate (30%, a fighter first).
+    if (n >= 4 && stageOf() >= 3) {
+      const room = e => e.inv.length < 3 + Math.floor(e.lvl / 3), has = t => list.some(e => e.inv.some(x => x.type === t));
+      const give = (e, t) => { if (e) e.inv.push({ type: t, r: 1, src: 'guild' }); };
+      if (!has('lantern')) {
+        if (g && g.kind === 'lost') give(list.find(room), 'lantern');
+        else if ([...run.layout.cells.values()].some(c => c.rt === 'fog') && Math.random() < 0.35) { const c = list.filter(e => !e.boss && room(e)); if (c.length) give(pick(c), 'lantern'); }
+      }
+      if (!has('crowbar')) {
+        if (g && g.kind === 'block') give(list.find(e => e.type === 'barbarian' && room(e)) || list.find(room), 'crowbar');
+        else if ([...run.items.values()].some(it => it.type === 'gate') && Math.random() < 0.3) { const c = list.filter(room); give(c.find(e => e.type === 'warrior' || e.type === 'barbarian') || (c.length ? pick(c) : null), 'crowbar'); }
+      }
+    }
     return list;
   }
   const TALE_PER = 0.04, TALE_LOOT = 4, TALE_CAP = 0.3;   // v15.1: +0,04 greed per treasure seen (up to 4) for every hero scared away, at most +0,3 a wave
@@ -4823,7 +4932,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     run.buildSec += Math.max(0, realNow - fl.buildStart); fl.buildSec = Math.round(realNow - fl.buildStart);
     saveRun('build');   // a tab closed during the wave comes back to this build
     perfReset();
-    fl.items.forEach(it => { it.skullOff = false; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap)
+    fl.items.forEach(it => { it.skullOff = false; it.firstBy = null; it.knocked = null; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap); 1.20: so do who saw a pile first and whose gear a crit knocked out
     fl.phase = 'raid'; fl.time = 0; fl.patT = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
     { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał
@@ -4882,12 +4991,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     fl.threatDirty = true;
   }
   function spawnHero(e) {
-    const T = HEROES[e.type], R = levelStats(e.lvl), sp = spawnPt();
-    const h = { entry: e, id: fl.heroes.length, type: e.type, T, R, rank: e.rank, lvl: e.lvl, boss: e.boss, female: e.female, nm: e.nm, hp: e.hp, max: e.max, hpK: e.hpK || 1,
+    const T = HEROES[e.type], R = levelStats(e.lvl), sp = spawnPt(), id = fl.heroes.length;
+    const h = { entry: e, id, type: e.type, T, R, rank: e.rank, lvl: e.lvl, boss: e.boss, female: e.female, nm: e.nm, hp: e.hp, max: e.max, hpK: e.hpK || 1,
       x: sp.x, y: sp.y, nx: null, ny: null, prog: 0, tx: sp.x, ty: sp.y, path: [], needPlan: true, thinkT: 0, intent: 'follow',
       room: roomOf(sp.ix, sp.iy), state: 'walk', timer: 0, dur: 1, slowUntil: -1, burnUntil: -1, burnBy: null, foe: null, item: null,
       dead: false, fled: false, gone: false, flash: 0, acc: 0, accT: 0, cast: e.type === 'priest' ? 1.5 : e.type === 'mage' ? 2 : 0,
-      barrierCd: 0, dispelCd: 0, scan: 0.5, hurtAt: -9, edgeAt: -9, playerDmg: 0, loot: 0, orbAcc: 0, inv: e.inv.map(it => Object.assign({}, it, { cdUntil: 0 })),
+      barrierCd: 0, dispelCd: 0, scan: 0.5, hurtAt: -9, edgeAt: -9, playerDmg: 0, loot: 0, orbAcc: 0, inv: e.inv.map(it => Object.assign({}, it, { cdUntil: 0, owner: it.owner != null ? it.owner : id, ownerNm: it.ownerNm || e.nm, ownerFem: it.ownerNm ? it.ownerFem : e.female, wave: it.wave || run.wave, src: it.src || 'kit' })), shareCd: 0,   // 1.20: owner, src
       shield: 0, shieldUpUntil: -1, shieldCd: 0, dodgeCd: 0, panicUntil: -1, lost: false, noPathT: 0, alone: false, aloneSaid: false, bubble: null,
       disarmT: null, scoutTarget: -1, scoutUntil: -1, split: false, fear: 0, courage: e.courage || R.courage, fleeing: false, crystal: false, fallUntil: -1, cageUntil: -1, cageIt: null,
       freeT: null, lostT: 0, lootMemo: new Map(), saidTiming: new Set(), felt: new Map(), wanderUntil: -1, wanderTarget: -1, rumorSaid: false, invCap: 3 + Math.floor(e.lvl / 3),
@@ -4904,7 +5013,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     tl('sp', h.id);
     reveal(h);
     if (fl.heroes.length === 1 && fl.breach) say(h, pick(fl.spawnAt === 'breach' ? SAY.breachUse : SAY.doorUse), 3, 2.2);
-    else if (h.returning) say(h, pick(SAY.returnBack), 3, 2.4);
+    else if (h.returning) {   // 1.20: one who brings back something of yours may say so
+      const tr = h.inv.some(x => x.src === 'trophy');
+      if (tr) { fl.stats.returnGear = (fl.stats.returnGear || 0) + 1; tl('rq', h.id); }
+      say(h, pick(tr && Math.random() < 0.5 ? SAY.returnGear : SAY.returnBack), 3, 2.4);
+    }
+    if (h.inv.some(x => x.type === 'lantern')) fl.stats.lanterns = (fl.stats.lanterns || 0) + 1;   // 1.20: parties with a lantern
     if (h.returning && mods.badMemories) h.fear = Math.max(h.fear, mods.badMemories * h.courage);   // Złe wspomnienia
     else if (h.hunter && Math.random() < 0.6) say(h, pick(SAY.hunters), 2, 2.2);
     if (fl.secondGroup) {   // they saw their friends run out screaming
@@ -5073,7 +5187,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       }
       if (!scar && topDmg && topDmg[1] > 0.3 * h.max) { phys = SCAR_RES[topDmg[0]]; scar = PHYS[phys].name[h.female ? 1 : 0] + ' po ranach z Twojego lochu'; }   // the wound that nearly killed him hardened him
       run.returners.push({ nm: h.nm, female: h.female, type: h.type, lvl: h.lvl, back: run.wave + 2 + (Math.random() < 0.5 ? 1 : 0), phys, phobia, trait: h.trait,
-        scar: scar || 'pamięta Twój loch', times: ((h.entry && h.entry.times) || 0) + 1, crystal: !!h.carriedOut });
+        scar: scar || 'pamięta Twój loch', times: ((h.entry && h.entry.times) || 0) + 1, crystal: !!h.carriedOut,
+        // 1.20 (hook for 1.23): the best two things he took from your dungeon come back with him, and one who got lost brings a lantern
+        gear: h.inv.filter(x => ['loot', 'relic', 'body', 'trophy'].includes(x.src)).sort((a, b) => b.r - a.r).slice(0, 2).map(x => ({ type: x.type, r: x.r, src: x.src, wave: x.wave || run.wave,
+          ownerNm: x.ownerNm, ownerFem: x.ownerFem, wasRelic: x.src === 'relic' || !!x.wasRelic, charges: powerCharges(x.type, x.r) })), wasLost: !!h.lostEver, goldOut: h.gold || 0 });
       fl.stats.returnersOut = (fl.stats.returnersOut || 0) + 1;
     });
   }
@@ -5453,7 +5570,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (caged(h)) { freeCaged(h, false, 'panic'); say(h, pick(SAY.cageBreak), 4); }
     h.fleeing = true; h.needPlan = true; fl.stats.flees++; tl('fl', h.id); tutPop('flee');
     if (mods.fleeShock) alive().forEach(o => { if (o !== h && !o.fleeing && canHearShout(o, h)) addFear(o, mods.fleeShock * o.courage, null, 'screams'); });   // Krzyki w ścianach (1.18: who hears his shout, as for every other shout since 1.17)
-    if (h.state === 'rest' || h.state === 'talk' || h.state === 'wait' || h.state === 'boss' || h.state === 'disarm' || h.state === 'free') { h.state = 'walk'; h.item = null; }
+    if (h.state === 'rest' || h.state === 'talk' || h.state === 'wait' || h.state === 'boss' || h.state === 'disarm' || h.state === 'free' || h.state === 'loot') { h.state = 'walk'; h.item = null; h.lootIt = null; }   // 1.20: loot
     say(h, pick(h.trait === 'coward' ? SAY.cowardRun : SAY.flee), 4, 2);
     floatHero(h, 'Ucieka!', '#c3b2ff', 14, -0.8);
     // the champion will not have it: a battle cry steadies everyone else (once every 15 s)
@@ -5525,8 +5642,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       addFloat(p.x, p.y - 0.5, 'Kocioł +' + n + ' Esencji', '#ff7a86', 14, -0.6);
     }
     // his gear and his purse spill out as loot around the body: the exact items, free for the next one who dares (no Esencja back for these)
-    h.inv.forEach(it => dropItem(h, it, 0));
-    if (h.gold > 0) dropItem(h, null, h.gold);
+    // 1.20: the piles know whose body they are (it.body, fromNm): the others see the dead one's things, not a relic (dropItem)
+    h.inv.forEach(it => dropItem(h, it, 0, false, { body: true }));
+    if (h.gold > 0) dropItem(h, null, h.gold, false, { body: true });
     h.inv = []; h.gold = 0;
     // the others react: a death scares everyone (a lot up close, more in a crypt, cowards most), less than a scare trap does,
     // and it stays with them for a while (fear fades slowly when shaken). Veterans feel it too: it scales with courage.
@@ -5582,46 +5700,81 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 
   /* ================= loot, greed and hero gear ================= */
   function rollItem(r, pool) {
-    const types = pool || Object.keys(HITEMS).filter(t => !HITEMS[t].loot), total = types.reduce((a, t) => a + HITEMS[t].w, 0);
+    const types = (pool || Object.keys(HITEMS).filter(t => !HITEMS[t].loot)).filter(t => !HITEMS[t].tool), total = types.reduce((a, t) => a + HITEMS[t].w, 0);   // 1.20: tools never come from loot
     let x = Math.random() * total, t = types[0];
     for (const k of types) { x -= HITEMS[k].w; if (x <= 0) { t = k; break; } }
     return { type: t, r, cdUntil: 0, charges: powerCharges(t, r) };
   }
   const itemPow = h => mods.itemPower * (h && h.cursed ? 0.5 : 1);   // Rdza and a curse weaken gear
+  // 1.20 Udźwig: what he carries (kg) against what his class can carry; past 60% he slows down (at most to x0,84)
+  const loadOf = h => h.inv.reduce((a, x) => a + (HITEMS[x.type].kg || 0), 0);
+  const carryOf = h => (CARRY[h.type] || 10) + 0.3 * h.lvl;
+  const burden = h => Math.max(0.84, 1 - 0.4 * Math.max(0, loadOf(h) / carryOf(h) - 0.6));
+  // could he take this one from a friend: room in the pack (or it replaces one of a kind, not a cursed one) and the weight
+  function canTake(o, x) {
+    const U = HITEMS[x.type].use, same = (U === 'power' || U === 'gear' || U === 'tool') ? o.inv.find(y => y.type === x.type) : null;
+    if (same && same.cursed) return false;
+    if (!same && o.inv.length >= (o.invCap || 3)) return false;
+    return loadOf(o) + (HITEMS[x.type].kg || 0) - (same ? HITEMS[same.type].kg || 0 : 0) <= carryOf(o);
+  }
+  // 1.20 Latarnia: lit (a ghost, a shade or bats may blow it out for 8 s), it keeps the fog off everyone within 2 tiles in his room
+  const litLantern = h => !h.dead && !h.gone && h.inv.some(x => x.type === 'lantern' && fl.time >= (x.outUntil || 0));
+  const lanternNear = h => alive().some(o => litLantern(o) && o.room === h.room && hdist(o, h) <= 2);
+  const hasCrowbar = h => h.inv.some(x => x.type === 'crowbar');
   const potionHeal = it => Math.min(0.55, 1 - Math.pow(0.7, it.r));   // a potion heals 30% of max HP, a rare one 51%, never more than 55%
   const gearR = (h, t) => h.inv.reduce((a, x) => x.type === t ? Math.max(a, x.r) : a, 0);
   function itemLabel(it) { const H = HITEMS[it.type]; return H.name + (it.r > 1 ? ' (' + adj(H.g, it.r) + ')' : ''); }
   function itemAcc(it) { const H = HITEMS[it.type]; return (it.r > 1 ? (H.g === 'f' ? adj('fAcc', it.r) : adj(H.g, it.r)) + ' ' : '') + H.acc; }
   // What a piece of gear is worth to this hero right now (0 = no use for it): potions matter when hurt, a second power of a kind
-  // only if it is better, each class has its favourite (warrior: talisman, weapon, armour; priest: amulet; thief: boots).
+  // only if it is better. 1.20: how well each kind fits his class (CLASS_FIT) instead of one favourite class a kind, so armour is
+  // worth 3,1 to a warrior and 1 to a mage; a tool is worth 1,5 to one who has none of its kind.
   function itemValue(h, it) {
     const P = it.type, r = it.r, others = h.inv.filter(x => x !== it && x.type === P);
     if (P === 'potion') return r * (h.hp < 0.6 * h.max ? 2.5 : 1) / (1 + 0.7 * others.length);
-    if (P === 'bomb') return 0.8 * r / (1 + 0.5 * others.length);
-    const pref = { charm: 'warrior', amulet: 'priest', boots: 'thief', weapon: 'warrior', armor: 'warrior' }[P];
+    if (P === 'bomb') return 0.8 * r * fitOf('bomb', h.type) / (1 + 0.5 * others.length);
+    if (HITEMS[P].tool) return others.length ? 0 : 1.5;
     const best = others.reduce((a, x) => Math.max(a, x.r), 0);
-    return best ? Math.max(0, r - best) * 1.2 : r * 1.2 * (pref === h.type ? 1.3 : 1);
+    return best ? Math.max(0, r - best) * 1.2 * fitOf(P, h.type) : r * 1.2 * fitOf(P, h.type);
   }
   // Something lands on the floor next to the hero (swapped out, or spilled from a body): the exact item, loot for anyone.
-  function dropItem(h, item, gold, noGreed) {
-    const spots = [[h.tx, h.ty]].concat(DIRS8.map(d => [h.tx + d[0], h.ty + d[1]]));
+  // 1.20: dropAt puts it next to a spot (the mimic spitting out its belly), dropItem next to the hero, with his name on the pile.
+  // A relic of yours (src relic, or a returner's trophy that was one) stays a relic; everything else a hero had is plain gear
+  // (it used to glitter as a relic from power 3 on: a dead friend's bomb across the dungeon). opt.body: spilled from his body;
+  // opt.knocked: knocked out of his hands (a crit, the Zbrojownia), he wants it back.
+  function dropAt(x, y, item, gold, noGreed, opt) {
+    const spots = [[x, y]].concat(DIRS8.map(d => [x + d[0], y + d[1]]));
     const s = spots.find(t => walkable(t[0], t[1]) && !fl.items.has(key(t[0], t[1])));
     if (!s) return false;
-    const type = gold ? 'loot' : item.type === 'potion' ? 'lpotion' : item.r >= 3 ? 'loot3' : 'loot2';
-    fl.items.set(key(s[0], s[1]), { type, x: s[0], y: s[1], cd: 0, anim: 0, disabled: false, hp: 0, max: 0, power: 1, shot: 0, flash: 0, preview: 0,
-      dropped: true, spent: 0, item: item ? Object.assign({}, item, { cdUntil: 0 }) : null, gold: gold || 0, noGreed: !!noGreed });   // a power keeps the uses it has left
-    const d = [...fl.items.values()].filter(o => o.dropped);   // at most 10 piles of spilled gear lie around (the oldest are trampled into the dirt)
-    while (d.length > 10) { const o = d.shift(); fl.items.delete(key(o.x, o.y)); }
+    const h = opt && opt.from;
+    const type = gold ? 'loot' : item.type === 'potion' ? 'lpotion' : (item.src === 'relic' || (item.src === 'trophy' && item.wasRelic)) && item.r >= 3 ? 'loot3' : 'loot2';
+    const pile = { type, x: s[0], y: s[1], cd: 0, anim: 0, disabled: false, hp: 0, max: 0, power: 1, shot: 0, flash: 0, preview: 0,
+      dropped: true, spent: 0, item: item ? Object.assign({}, item, { cdUntil: 0 }) : null, gold: gold || 0, noGreed: !!noGreed,   // a power keeps the uses it has left
+      from: h ? h.id : null, fromNm: h ? h.nm : null, fromFem: h ? h.female : null, fromWave: run.wave, body: h && opt.body ? h.id : null, knocked: h && opt.knocked ? h.id : null };
+    fl.items.set(key(s[0], s[1]), pile);
+    // at most 10 piles of spilled gear lie around (the oldest are trampled into the dirt). 1.20: plain piles go first, then the bodies
+    // of earlier waves, the bodies of this wave last (never the pile just dropped)
+    const d = [...fl.items.values()].filter(o => o.dropped);
+    if (d.length > 10) {
+      const rank = o => o.body == null ? 0 : (o.fromWave || 0) < run.wave ? 1 : 2;
+      d.map((o, i) => [o, i]).filter(e => e[0] !== pile).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).slice(0, d.length - 10).forEach(e => fl.items.delete(key(e[0].x, e[0].y)));
+    }
     return true;
   }
+  function dropItem(h, item, gold, noGreed, opt) { return dropAt(h.tx, h.ty, item, gold, noGreed, Object.assign({ from: h }, opt || {})); }
   // A hero takes a piece of gear. One power, weapon and armour of a kind: a better one replaces the old one (left on the floor);
   // a full pack swaps out its least useful item if the new one is worth more, otherwise he leaves it.
+  // 1.20: never past what he can carry (tooHeavy; a better one of the same kind weighs the same), and a cursed item is never let go:
+  // not swapped for a better one, not the one thrown out of a full pack.
   function giveItem(h, item, quiet) {
     const H = HITEMS[item.type]; item.cdUntil = item.cdUntil || 0;
-    if (H.use === 'power' || H.use === 'gear') {
+    const kg = x => HITEMS[x.type].kg || 0;
+    const heavy = out => { if (loadOf(h) + kg(item) - (out ? kg(out) : 0) <= carryOf(h)) return false; if (!quiet) say(h, pick(SAY.tooHeavy), 1); fl.stats.tooHeavy = (fl.stats.tooHeavy || 0) + 1; return true; };
+    if (H.use === 'power' || H.use === 'gear' || H.use === 'tool') {
       const cur = h.inv.find(x => x.type === item.type);
       if (cur) {
+        if (cur.cursed) { if (!quiet) say(h, pick(SAY.cursedKeep), 2); return false; }
         if (cur.r >= item.r) { if (!quiet) say(h, pick(SAY.noNeed), 1); return false; }
+        if (heavy(cur)) return false;
         h.inv.splice(h.inv.indexOf(cur), 1); dropItem(h, cur, 0, true);
         h.inv.push(item); fl.stats.swaps++; fl.stats.itemsGot++; tl('sw', h.id, cur.type + cur.r, item.type + item.r);
         if (!quiet) { say(h, pick(SAY.swap), 2); floatHero(h, itemLabel(cur) + ' → ' + itemLabel(item), '#c3b2ff', 12, -0.7); }
@@ -5630,44 +5783,79 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     }
     if (h.inv.length >= (h.invCap || 3)) {
       const v = itemValue(h, item);
-      let low = -1, lv = 1e9; h.inv.forEach((o, i) => { const ov = itemValue(h, o); if (ov < lv) { lv = ov; low = i; } });
+      let low = -1, lv = 1e9; h.inv.forEach((o, i) => { if (o.cursed) return; const ov = itemValue(h, o); if (ov < lv) { lv = ov; low = i; } });
       if (low < 0 || lv >= v) { if (!quiet) say(h, pick(SAY.full), 1); return false; }
+      if (heavy(h.inv[low])) return false;
       const old = h.inv.splice(low, 1)[0]; dropItem(h, old, 0, true);
       fl.stats.swaps++; tl('sw', h.id, old.type + old.r, item.type + item.r);
       if (!quiet) { say(h, pick(SAY.swap), 2); floatHero(h, itemLabel(old) + ' → ' + itemLabel(item), '#c3b2ff', 12, -0.7); }
-    } else if (!quiet) say(h, 'Mam ' + itemAcc(item) + '!', item.r >= 2 ? 3 : 2);
+    } else { if (heavy(null)) return false; if (!quiet) say(h, 'Mam ' + itemAcc(item) + '!', item.r >= 2 ? 3 : 2); }
     h.inv.push(item); fl.stats.itemsGot++;
     return true;
   }
   // Greed grows when they SEE treasure (each kind its own pull, a Sezam doubles it); picking it up adds a little more.
+  // 1.20: a dead hero's things (it.body) pull half as much as gear, with no Sezam or Relikwiarz on top (LOOT_GREED.body); one who
+  // knows of that death says whose they are (lootFallen); a new party may recognise the things of one who did not come back from an
+  // earlier wave (60%, once a hero: predecessorGear and a little fear). it.firstBy: who saw it first this wave (claimScore).
   function noticeLoot(it, by) {
+    if (by && it.firstBy == null && it.seenWave !== run.wave) it.firstBy = by.id;
     if (it.seenWave === run.wave) return;
     it.seenWave = run.wave;
     if (it.noGreed) return;   // their own old gear, just put down
-    const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1;
-    const g = LOOT_GREED[kind][0] * mods.greedMult * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
-    greedOrbs(it.x, it.y, addGreed(g)); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
+    const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, body = it.body != null;
+    const g = body ? LOOT_GREED.body[0] * mods.greedMult / (1 + 0.15 * fl.stats.lootSeen) :
+      LOOT_GREED[kind][0] * mods.greedMult * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
+    const dg = addGreed(g); greedOrbs(it.x, it.y, dg); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
+    if (body) fl.stats.greedBody = (fl.stats.greedBody || 0) + dg;
     floatTile(it.x, it.y, 'Chciwość ×' + fmt2(fl.greed), '#f2b94b', 14, -0.6, 'greed');
     if (!by) return;
     sawAdd(by, itemTags(it));   // 1.17.1
+    const dead = { nm: it.fromNm, female: it.fromFem };
+    const d = body && it.fromWave === run.wave ? (fl.deaths || []).find(x => x.id === it.body) : null;
+    const pred = body && it.fromNm && it.fromWave != null && it.fromWave < run.wave && !by.predSaid && !by.fleeing && !panicking(by) && Math.random() < 0.6;
     sayNow(itemTags(it), () => {
       if (by.fleeing || by.crystal || panicking(by) || goingOut()) { if (r >= 2) say(by, pick(SAY.lootFlee), 2); }   // 1.05: running for his life, he has no joy for gold
+      else if (pred) {
+        by.predSaid = true; say(by, nameFill(pick(SAY.predecessorGear), dead), 3); addFear(by, 0.05 * by.courage, null, 'death');
+        fl.stats.predecessorSeen = (fl.stats.predecessorSeen || 0) + 1; tl('pr', by.id, it.x, it.y);
+        alive().forEach(o => { if (o !== by && earshot(o, by)) sawAdd(o, ['gear']); });
+      } else if (d && d.knows.has(by.id)) { say(by, nameFill(pick(SAY.lootFallen), dead), 2); fl.stats.lootFallen = (fl.stats.lootFallen || 0) + 1; }
       else say(by, kind === 'potion' ? pick(SAY.lootPotionSeen) : pick(SAY['loot' + Math.min(3, r)]), r >= 2 ? 3 : 2);
     });
   }
   // Picking it up: coins go to the purse, the rest is a real item (or the exact one that was dropped). No use or no room: it stays.
   function pickup(h, it) {
-    const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1;
+    const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, k = key(it.x, it.y);
+    // 1.20: a body's things: he kneels and goes through them (updateHero: the 'loot' state, then bodyLoot), not while running or
+    // in a panic, and not again over a body he found nothing on
+    if (it.body != null) {
+      const m = h.lootMemo.get(k);
+      if ((m && m.body && !m.go && m.t > fl.time) || exiting(h) || panicking(h) || caged(h)) return false;
+      h.state = 'loot'; h.timer = h.type === 'thief' ? 0.5 : 1.0; h.dur = h.timer; h.lootIt = it; h.path = [];
+      return false;
+    }
     noticeLoot(it, null);
     let item = null;
     if (it.item) item = Object.assign({}, it.item);
     else if (kind === 'potion') item = { type: 'potion', r: 1, cdUntil: 0 };   // (powers rolled from gear come with their uses)
     else if (kind === 'gear' || kind === 'cursed') item = rollItem(2, GEAR_POOL);
     else if (kind === 'relic' && !mods.reliquary) item = rollItem(3, Object.keys(HITEMS));
+    if (item && !it.item) Object.assign(item, { src: kind === 'relic' ? 'relic' : 'loot', owner: h.id, ownerNm: h.nm, ownerFem: h.female, wave: run.wave });   // 1.20: from your dungeon
     if (item && kind === 'potion' && !it.dropped && mods.tainted) item.tainted = true;   // 1.18 Zepsute mikstury: only a potion from your loot, not from their gear
-    if (item && kind !== 'cursed' && !giveItem(h, item)) { h.lootMemo.set(key(it.x, it.y), { go: false, t: fl.time + 60 }); return false; }   // he leaves it lying (and will not come back for it)
-    fl.items.delete(key(it.x, it.y));
+    if (item && kind !== 'cursed' && !giveItem(h, item, it.knocked === h.id)) {   // he leaves it lying (and will not come back for it)
+      h.lootMemo.set(k, { go: false, t: fl.time + 60 });
+      // 1.20: what he rolled stays there (it used to vanish, and the next one rolled anew): everyone knows what lies there now,
+      // and one who sees a friend it would suit tells him (lootOffer)
+      if (!it.item) it.item = Object.assign({}, item);
+      lootOffer(h, it, item);
+      return false;
+    }
+    fl.items.delete(k);
+    // 1.20: his own, knocked out of his hands (a crit, the Zbrojownia): he has it back, and it is not loot (no greed, no Groza;
+    // in 1.19 it vanished and gave nothing; counted as loot it gave the replays +15-25% Esencja)
+    if (it.knocked === h.id) { fl.party.queueSay.push({ id: h.id, text: pick(SAY.gearBack), at: fl.time + 0.2, prio: 2 }); fl.stats.gearBack = (fl.stats.gearBack || 0) + 1; tl('lp', h.id, 0, 'back'); replanAll(); return true; }
     h.loot++;
+    if (h.offerKey === k) { fl.stats.lootOfferTaken = (fl.stats.lootOfferTaken || 0) + 1; h.offerKey = null; }   // 1.20: he took what he was offered
     const kg = LOOT_GREED[kind];
     // 1.03: taking it pulls less each time, like seeing it (Odwrotna chciwość x3 on top), and the greed that stays for good
     // grows ever slower: in replays of the author's 223-relic run both kept climbing without end
@@ -5678,6 +5866,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     sawAdd(h, itemTags(it));
     if (kind === 'gold') { const n = Math.max(1, it.gold || 1); h.gold += n; fl.stats.goldPicked += n; sayNow(['gold'], () => say(h, pick(h.gold >= 3 ? SAY.goldHeavy : SAY.gold), 2)); }
     if (kind === 'cursed') curse(h, item);
+    else if (item && item.cursed) { curse(h, null); fl.stats.cursePassed = (fl.stats.cursePassed || 0) + 1; }   // 1.20: a cursed item curses the next one who takes it
     if (mods.lootTrap > 0) damage(h, mods.lootTrap * r, LOOTTRAP);
     if (kind === 'relic' && !it.dropped) gainEssence(null, 4, 'essDrop');
     vaultSnap(it, h);   // 1.18 Zatrzask sezamu
@@ -5697,7 +5886,49 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     fl.stats.vaultSnaps = (fl.stats.vaultSnaps || 0) + 1; tl('vs', h.id, r, n);
     return n;
   }
+  // 1.20 Ciało do przeszukania: after kneeling by a body he takes from its piles (this one and the dead one's others within 1,5
+  // tiles) every coin and each item worth 0,6 to him that fits in his pack; the rest stays. A kit or guild item of the dead one
+  // becomes src body (the card says whose it was; a returner keeps it). Counted like loot (greed of a body, Groza of rarity 2).
+  function bodyLoot(h, it) {
+    const got = [], from = { nm: it.fromNm, female: it.fromFem };
+    const piles = [...fl.items.values()].filter(o => o.body != null && o.body === it.body && o.fromWave === it.fromWave && isLoot(o.type) && Math.hypot(o.x - it.x, o.y - it.y) <= 1.5);
+    piles.forEach(o => {
+      if (o.gold) { h.gold += o.gold; fl.stats.goldPicked += o.gold; got.push({ type: 'gold', n: o.gold }); }
+      else if (o.item && itemValue(h, o.item) >= 0.6) {
+        const x = Object.assign({}, o.item); if (x.src === 'kit' || x.src === 'guild') x.src = 'body';
+        if (!giveItem(h, x, true)) return;
+        got.push(x);
+        if (x.cursed) { curse(h, null); fl.stats.cursePassed = (fl.stats.cursePassed || 0) + 1; }
+      } else return;
+      fl.items.delete(key(o.x, o.y)); h.loot++;
+      greedOrbs(o.x, o.y, addGreed(LOOT_GREED.body[1] * mods.greedMult * mods.pickGreed / (1 + 0.15 * fl.stats.loot)));
+      const pts = addPts(GZ.loot * 2 * depthMult(roomOf(o.x, o.y)), 'lootPts', h); fl.stats.loot++;
+      floatTile(o.x, o.y, '+' + fmtE(pts) + ' łup', '#ff7a86', 16);
+    });
+    // what he left there he has looked at: he does not come back to kneel over it (60 s)
+    piles.concat([it]).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o) h.lootMemo.set(key(o.x, o.y), { go: false, t: fl.time + 60, body: true }); });
+    if (got.length) {
+      sawAdd(h, ['gear']); floatHero(h, 'Zabiera rzeczy ' + nameGen(from), '#c9c2b8', 12, -0.7);
+      if (mods.lootTrap > 0) damage(h, mods.lootTrap * 2, LOOTTRAP);
+      vaultSnap(it, h); updateTray(); replanAll();
+    }
+    onLootDead(h, it.body, got, it);
+    return got.length;
+  }
+  // 1.20: a bomb in a burning pack goes off: it hurts him (40 x power), half that to anyone within 1,5 tiles, a scare to 3 tiles
+  function bombCook(h, b) {
+    h.inv.splice(h.inv.indexOf(b), 1);
+    const k = Math.sqrt(Math.min(4, b.r)), p = heroPos(h);
+    const near = alive().filter(o => o !== h && hdist(o, h) <= 1.5), scared = alive().filter(o => hdist(o, h) <= 3);
+    damage(h, 40 * S.dmg * k, BURN);
+    near.forEach(o => damage(o, 20 * S.dmg * k, BURN));
+    scared.forEach(o => addFear(o, 10, null, 'blast'));
+    burst(p.x, p.y, '#ffb35c', 16); shake = Math.max(shake, 0.15); floatHero(h, 'Bomba w plecaku!', '#ffb35c', 14, -0.9);
+    fl.stats.bombCook = (fl.stats.bombCook || 0) + 1; tl('bx', h.id);
+  }
+  // 1.20: the item he gets with a curse carries it (item.cursed): it curses whoever takes it after him (pickup, bodyLoot)
   function curse(h, item) {
+    if (item) item.cursed = true;
     h.cursed = true; fl.stats.cursed++; tl('cu', h.id);
     if (item) giveItem(h, item, true);   // he keeps the (cursed) gear if he has room
     sawAdd(h, ['cursed']); sayNow(['cursed', 'gear'], () => say(h, pick(SAY.cursedPick), 3, 2.2)); floatHero(h, 'Klątwa!', '#b48cff', 15, -0.8);
@@ -5752,9 +5983,30 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const g = h.inv.filter(x => x.type === 'charm' || x.type === 'amulet' || x.type === 'armor');
     if (!g.length || Math.random() >= Math.min(1, 0.5 * mods.strip)) return false;
     const x = pick(g);
-    if (!dropItem(h, x, 0)) return false;   // nowhere to fall: he keeps it
-    h.inv.splice(h.inv.indexOf(x), 1); fl.stats.stripped = (fl.stats.stripped || 0) + 1; tl('sp', h.id, x.type);
+    if (!dropItem(h, x, 0, false, { knocked: true })) return false;   // nowhere to fall: he keeps it (1.20: knocked, he wants it back)
+    h.inv.splice(h.inv.indexOf(x), 1); fl.stats.stripped = (fl.stats.stripped || 0) + 1; tl('st', h.id, x.type);   // 1.20: 'st' (it was 'sp', the code of a hero coming in)
     floatHero(h, 'Strącone: ' + HITEMS[x.type].name, '#c9d5e2', 12, -0.6);
+    return true;
+  }
+  // 1.20: a mimic blown up by a bomb or smashed by an axe spits out what it ate (its belly, up to 6 items, kept between waves)
+  // around its furniture, as loot
+  function mimicSpill(it, h) {
+    if (!it || it.type !== 'mimic' || !it.belly || !it.belly.length) return 0;
+    let n = 0; it.belly.forEach(x => { if (dropAt(it.x, it.y, x, 0, false)) n++; });
+    it.belly = [];
+    if (!n) return 0;
+    fl.stats.mimicSpill = (fl.stats.mimicSpill || 0) + n; tl('mx', it.x, it.y, n);
+    floatTile(it.x, it.y, 'Wypluwa ' + n + (n === 1 ? ' przedmiot' : n < 5 ? ' przedmioty' : ' przedmiotów'), '#d8434f', 13, -0.7);
+    const o = h && !h.dead ? h : alive().sort((a, b) => Math.hypot(a.tx - it.x, a.ty - it.y) - Math.hypot(b.tx - it.x, b.ty - it.y))[0];
+    if (o) { sawAdd(o, ['mimic']); sayNow(['mimic'], () => say(o, pick(SAY.mimicSpill), 3)); }
+    return n;
+  }
+  // 1.20 Latarnia: a ghost, a shade or bats hitting its bearer may blow it out for 8 s (half the time; a level 3 shade always)
+  function douseLantern(h, it) {
+    const lt = h.inv.find(x => x.type === 'lantern');
+    if (!lt || h.dead || fl.time < (lt.outUntil || 0) || Math.random() >= (it.type === 'shade' && t3(it) ? 1 : 0.5)) return false;
+    lt.outUntil = fl.time + 8; floatHero(h, 'Zgasła!', '#ffe08a', 13, -0.8); say(h, pick(SAY.lanternOut), 3);
+    fl.stats.lanternOut = (fl.stats.lanternOut || 0) + 1; tl('la', h.id);
     return true;
   }
   function disarmSpots(it) {
@@ -5991,8 +6243,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         it.cd = cdBase; it.anim = 0.35;
         fxTiles(area, '216,67,79', 0.3);
         list.forEach(h => {
-          damage(h, 40 * D * mods.mimicDmg * pw, it, cpow); hit++;
-          if (t3(it) && !h.dead && h.inv.length) { const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0]; floatHero(h, 'Pożarte: ' + HITEMS[lost.type].name, '#d8434f', 12, -0.6); }   // Pożeracz
+          damage(h, 40 * D * mods.mimicDmg * pw * (1 + 0.1 * Math.min(6, (it.belly || []).length)), it, cpow); hit++;   // 1.20: +10% for each item in its belly
+          if (t3(it) && !h.dead && h.inv.length) {   // Pożeracz (1.20: the item goes into its belly, at most 6, kept between waves)
+            const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0]; floatHero(h, 'Pożarte: ' + HITEMS[lost.type].name, '#d8434f', 12, -0.6);
+            (it.belly || (it.belly = [])).push(Object.assign({}, lost, { cdUntil: 0 })); if (it.belly.length > 6) it.belly.shift(); fl.stats.mimicAte = (fl.stats.mimicAte || 0) + 1;
+          }
         });
         break;
       case 'goblin': {
@@ -6032,14 +6287,14 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       case 'ghost':
         it.cd = cdBase; it.anim = 0.6;
         fxTiles(area, '200,210,255', 0.4);
-        list.forEach(h => { addFear(h, 40 * pw * mods.ghostAura * galleryK(it) * cpow, 'ghost'); damage(h, 5 * D * pw, actSrc(it.type), cpow); hit++; });
+        list.forEach(h => { addFear(h, 40 * pw * mods.ghostAura * galleryK(it) * cpow, 'ghost'); damage(h, 5 * D * pw, actSrc(it.type), cpow); douseLantern(h, it); hit++; });   // 1.20: douseLantern
         floatTile(it.x, it.y, 'Wrzask!', '#dfe6ff', 15, -0.6);
         break;
       case 'shade': {   // a whisper: the one it follows hears it best (the lonely twice as well)
         it.cd = cdBase; it.anim = 0.6;
         let tgt = null, bs = -1e9;
         list.forEach(h => { const p = heroPos(h), sc = (h.alone || h.lost ? 100 : 0) - Math.hypot(p.x - it.gx, p.y - it.gy); if (sc > bs) { bs = sc; tgt = h; } });
-        list.forEach(h => { addFear(h, (h === tgt ? 30 : 10) * (h.alone || h.lost ? 2 : 1) * pw * cpow, 'shade'); hit++; });
+        list.forEach(h => { addFear(h, (h === tgt ? 30 : 10) * (h.alone || h.lost ? 2 : 1) * pw * cpow, 'shade'); douseLantern(h, it); hit++; });   // 1.20: douseLantern
         if (tgt) {
           floatHero(tgt, 'Szept...', '#9a8fb8', 14, -0.6); say(tgt, pick(SAY.shade), 3, null, 'loud');
           if (t3(it) && tgt.alone && !tgt.lost && leader() !== tgt) getLost(tgt, 'shade');   // Pożeracz światła
@@ -6051,7 +6306,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         fxTiles(area, '70,56,84', 0.3);
         const L = leader();
         list.forEach(h => {
-          addFear(h, 16 * pw * cpow, 'bats'); damage(h, 6 * D * pw, actSrc(it.type), cpow); hit++;
+          addFear(h, 16 * pw * cpow, 'bats'); damage(h, 6 * D * pw, actSrc(it.type), cpow); douseLantern(h, it); hit++;   // 1.20: douseLantern
           if (!h.dead && !h.fleeing && !h.crystal && !caged(h) && h !== L && Math.random() < (h.rank === 0 ? 0.6 : 0.35) * (t3(it) ? 1.3 : 1)) {
             h.panicUntil = fl.time + 2.5; h.needPlan = true; fl.stats.batScatter = (fl.stats.batScatter || 0) + 1;
             floatHero(h, 'Spłoszony!', '#c9c0d8', 13, -0.8); say(h, pick(SAY.batScatter), 2, null, 'loud');
@@ -6364,7 +6619,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function itemTags(it, fired) {
     const t = it && it.type; if (!t) return [];
     if (MONSTERS[t]) return [t, 'monster'];
-    if (t === 'lcursed') return it.cursedKnown ? ['cursed', 'gear'] : ['gear'];   // it looks like gear till a priest feels the curse
+    if (t === 'lcursed' || (it.item && it.item.cursed)) return it.cursedKnown ? ['cursed', 'gear'] : ['gear'];   // it looks like gear till a priest feels the curse (1.20: a cursed item left by a hero too)
     if (LOOT_KIND[t]) return [LOOT_KIND[t]];
     if (t === 'powder') return fired && t3(it) ? ['blast', 'fire'] : ['blast'];
     if (t === 'arrows' && fired && mods.arrowBurn) return ['arrows', 'fire'];
@@ -6882,12 +7137,13 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function lootLevel(it) { return ITEMS[it.type].rarity || 0; }
   // Common loot is noticed from the same room, rare from the next one, legendary glitters across the dungeon.
   function lootSeen(it) {
-    if (it.seenWave === run.wave) { if (it.type === 'lcursed') checkCursed(it); return true; }
+    const cur = it.type === 'lcursed' || (it.item && it.item.cursed);   // 1.20: a cursed item a hero left
+    if (it.seenWave === run.wave) { if (cur) checkCursed(it); return true; }
     const r = lootLevel(it), R = r === 3 ? 12 : r === 2 ? 7 : 5, ir = roomOf(it.x, it.y);
     const by = alive().find(h => (h.room === ir && fl.known[it.y * WW + it.x]) || (r >= 2 && Math.hypot(h.tx - it.x, h.ty - it.y) <= R) || (r === 1 && fl.known[it.y * WW + it.x] && Math.hypot(h.tx - it.x, h.ty - it.y) <= R));
     if (!by) return false;
     noticeLoot(it, by);
-    if (it.type === 'lcursed') checkCursed(it);
+    if (cur) checkCursed(it);
     return true;
   }
   // An experienced priest (level 6+) feels the curse on a treasure close by and warns the others: nobody touches it.
@@ -6910,17 +7166,26 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (kind === 'potion') need = hurt ? 3.2 : h.hp < 0.7 * h.max ? 1.6 : (h.inv.some(x => x.type === 'potion') ? 0.25 : 0.6);
     else if (kind === 'gold') need = h.type === 'thief' || h.trait === 'greedy' || h.hunter ? 1.6 : 1;
     else if (it.item) need = Math.min(2, itemValue(h, it.item) / Math.max(0.6, 1.2 * it.item.r));   // a dropped item: better than his own?
+    if (h.offerKey === k) need = Math.max(need, 1.2);   // 1.20: a friend told him it is for him (lootOffer)
+    if (it.knocked === h.id) need *= 1.5;   // 1.20: his own, knocked out of his hands: he wants it back
     if (it.item && need <= 0.05) { h.lootMemo.set(k, { go: false, t: fl.time }); return false; }
     let value = [0, 1, 2.6, 6][r] * need * h.T.greed * (h.rank === 0 ? 1.6 : h.rank === 1 ? 1 : 0.85) * (0.6 + 0.4 * greedRaw(fl.greed));   // 1.10: they judge by the raw greed (as greedy as before the curve)
     if (h.rank >= 2 && kind === 'gold' && h.type !== 'thief' && !h.hunter) value *= 0.3;   // elites do not stoop for small change...
     if (r >= 2) value *= 1 + 0.06 * (h.lvl - 1);   // ...but glory and rare treasure pull harder the better they are
     if (h.trait === 'greedy') value *= 1.8; else if (h.trait === 'careful') value *= 0.6;
     if (isRt(roomOf(it.x, it.y), 'vault')) value *= 1.5;   // Sezam
+    if (it.body != null) {   // 1.20: a dead friend's things: one who knows of the death holds back (not the greedy), a priest more, a thief or a greedy one less
+      const knows = it.fromWave === run.wave && (fl.deaths || []).some(d => d.id === it.body && d.knows.has(h.id));
+      if (knows && h.trait !== 'greedy' && !h.hunter) value *= 0.7;
+      if (h.type === 'priest' && !(kind === 'potion' && hurt)) value *= 0.5;
+      if (h.type === 'thief' || h.trait === 'greedy' || h.hunter) value *= 1.2;
+    }
     let risk = 0;
     pathFrom(b, idx).forEach(p => { risk += fl.danger[p[1] * WW + p[0]]; });
     risk *= 0.35;
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && fl.known[m.y * WW + m.x] && Math.hypot(m.x - it.x, m.y - it.y) <= 2.5) risk += 2.5; });
     risk += 2 * h.fear / h.courage + (hurt && kind !== 'potion' ? 2 : 0);
+    if (it.knocked === h.id) risk *= 0.8;   // 1.20
     const nerve = Math.max(0.8, h.R.risk) * (h.trait === 'greedy' ? 1.3 : 1) * (kind === 'potion' && hurt ? 1.5 : 1);   // caution grows with experience, but never to zero; the wounded risk it for a potion
     const go = h.rank === 0 ? (value * 2 * nerve > risk || Math.random() < 0.7) : value * 2 * nerve > risk;
     h.lootMemo.set(k, { go, t: fl.time });
@@ -6951,6 +7216,116 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       }
     }
     return go;
+  }
+  // 1.20 Kto bierze łup: how much a hero should have this loot (what it is worth to him; for one nobody knows: a potion for the
+  // wounded, coins for a thief or the greedy, anything for the greedy), +0,5 for the one who saw it first
+  function claimScore(h, it) {
+    const kind = LOOT_KIND[it.type], hurt = h.hp < 0.4 * h.max, greedy = h.trait === 'greedy' || h.hunter;
+    const s = it.item ? itemValue(h, it.item) : kind === 'potion' ? (hurt ? 3 : 0.5) : kind === 'gold' ? (h.type === 'thief' || greedy ? 1.5 : 0.6) : 1 + (greedy ? 0.5 : 0);
+    return s + (it.firstBy === h.id ? 0.5 : 0);
+  }
+  // another one has set out for it: one who needs it clearly more (+0,8), both close to it (8 steps), takes it over when a leader
+  // of rank 1+ (neither of them) hears both and gives it to him; with no such leader two greedy ones become rivals (the hook for
+  // the 1.21 quarrels; in 1.20 the first keeps it without a word)
+  function lootReassign(h, cl, it, k, steps) {
+    const P = fl.party;
+    if (steps < 0 || steps > 8 || Math.hypot(cl.tx - it.x, cl.ty - it.y) > 8 || claimScore(h, it) < claimScore(cl, it) + 0.8) return false;
+    const L = groupLeaderOf(h);
+    if (L && L !== h && L !== cl && L.rank >= 1 && !panicking(L) && earshot(L, h) && earshot(L, cl)) {
+      P.lootClaim.set(k, h.id); cl.lootMemo.set(k, { go: false, t: fl.time + 7 }); cl.needPlan = true;
+      P.queueSay.push({ id: L.id, text: nameFill(pick(SAY.lootAssign), h), at: fl.time + 0.3, prio: 2 });
+      fl.stats.lootAssign = (fl.stats.lootAssign || 0) + 1; tl('qa', L.id, h.id, cl.id);
+      return true;
+    }
+    if ((h.trait === 'greedy' || h.hunter) && (cl.trait === 'greedy' || cl.hunter)) onLootRival(h, cl, it, k);
+    return false;
+  }
+  // 1.20 (hook for 1.21: a quarrel over the loot): two greedy ones after the same thing, once a pair and a pile
+  function onLootRival(a, b, it, k) {
+    const P = fl.party, seen = P.rivalSeen || (P.rivalSeen = new Set()), sk = Math.min(a.id, b.id) + '|' + Math.max(a.id, b.id) + '|' + k;
+    if (seen.has(sk)) return false;
+    seen.add(sk); (P.lootRivals || (P.lootRivals = [])).push({ a: a.id, b: b.id, k, t: fl.time });
+    fl.stats.lootRival = (fl.stats.lootRival || 0) + 1; tl('qr', a.id, b.id);
+    return true;
+  }
+  // 1.20: he cannot use what he found (no need, no room, too heavy): a friend who sees him and whom it would suit (worth 1+) is
+  // told, and goes for it (offerKey: lootDecision wants it; the lootMemo 'no' is gone)
+  function lootOffer(h, it, item) {
+    const P = fl.party, k = key(it.x, it.y);
+    if (fl.phase !== 'raid' || !P) return false;
+    const o = alive().filter(x => x !== h && inG2(x) === inG2(h) && canSee(x, h) && !x.lost && !caged(x) && !panicking(x) && !exiting(x) && canTake(x, item))
+      .sort((a, b) => itemValue(b, item) - itemValue(a, item))[0];
+    if (!o || itemValue(o, item) < 1.0) return false;
+    say(h, pick(SAY.lootOffer), 2); o.lootMemo.delete(k); o.needPlan = true; o.offerKey = k;
+    P.queueSay.push({ id: o.id, text: pick(SAY.lootOfferTake), at: fl.time + 1.0 });
+    fl.stats.lootOffer = (fl.stats.lootOffer || 0) + 1; tl('qo', h.id, o.id);
+    return true;
+  }
+  // 1.20 (hook for 1.21: looting the dead, a friend's objection): called after every search of a body, taken or not. A friend of
+  // the dead who sees it may object (lootDeadObject, {v} = the looter) and the looter answers (lootDeadReply): words only in 1.20.
+  function onLootDead(h, deadId, items, it) {
+    const P = fl.party, wave = it ? it.fromWave : run.wave;
+    (P.lootedDead || (P.lootedDead = [])).push({ by: h.id, dead: deadId, wave, t: fl.time, n: items.length });
+    if (!items.length) return;
+    fl.stats.bodyLoot = (fl.stats.bodyLoot || 0) + items.length;
+    const by = fl.stats.bodyLootBy || (fl.stats.bodyLootBy = {}); by[h.type] = (by[h.type] || 0) + items.length;
+    tl('bl', h.id, deadId, items.length);
+    if (Math.random() < 0.6) say(h, pick(SAY.lootDead), 2);   // alone: SOLO.lootDead (say)
+    const d = wave === run.wave ? (fl.deaths || []).find(x => x.id === deadId) : null;
+    const o = d && alive().find(x => x !== h && canSee(x, h) && d.knows.has(x.id) && x.trait !== 'greedy' && !x.hunter && !panicking(x) && !caged(x) && !exiting(x) &&
+      (x.type === 'priest' || x.trait === 'careful' || Math.random() < 0.3));
+    if (o && Math.random() < 0.5) {
+      P.queueSay.push({ id: o.id, text: nameFill(pick(SAY.lootDeadObject), h), at: fl.time + 1.2, prio: 2 }, { id: h.id, text: pick(SAY.lootDeadReply), at: fl.time + 2.4, prio: 2 });
+      fl.stats.lootDeadObject = (fl.stats.lootDeadObject || 0) + 1;
+    }
+  }
+  // 1.20 Dzielenie się (author: they share nothing but potions): once a second. 1) In a crisis a calm one hands his ready amulet to
+  // a friend about to panic (2 tiles, they see each other) and it works at once. 2) At ease (a talk, a rest, the stop before a
+  // room: always; otherwise 35%) two of the same group side by side, neither in a fight, a panic or a trap, no monster they know
+  // in the room, hand over an item worth 1+ more to the other (CLASS_FIT), or swap two. 8 s a hero, 4 s the party; an item never
+  // goes back to one who gave it; no potions (they have their own rule), nothing cursed. P.gifts: the hook for 1.21-1.22.
+  function shareThink(crew, L, dt) {
+    const P = fl.party;
+    P.shareT = (P.shareT || 0) - dt; if (P.shareT > 0) return; P.shareT = 1;
+    for (const g of crew) for (const o of crew) {
+      if (g === o || fl.time < g.giveCd || panicking(g) || caged(g) || g.lost || exiting(g)) continue;
+      if (o.fear < 0.6 * o.courage || powerReady(o, 'amulet') || fl.time < o.calmUntil || panicking(o) || caged(o) || hdist(g, o) > 2) continue;
+      const am = powerReady(g, 'amulet'); if (!am || am.cursed || g.fear >= 0.4 * g.courage || !canSee(g, o)) continue;
+      g.inv.splice(g.inv.indexOf(am), 1); am.gaveNm = g.nm; am.gaveFem = g.female; am.gaveBy = (am.gaveBy || []).concat(g.id); o.inv.push(am);   // into his hand: no pack or weight check
+      useAmulet(o); g.giveCd = fl.time + 10; fl.stats.amuletGiven = (fl.stats.amuletGiven || 0) + 1; tl('gv', g.id, o.id, 'amulet' + am.r);
+      (P.gifts || (P.gifts = [])).push({ from: g.id, to: o.id, type: 'amulet', t: fl.time });
+      say(g, pick(SAY.amuletGive), 3); floatHero(o, 'Od ' + nameGen(g) + ': amulet', ITEM_COLOR.amulet, 12, -0.7);
+      return;
+    }
+    if (fl.fearless || goingOut() || P.plan === 'retreat' || fl.time < (P.shareCd || 0)) return;
+    const monRooms = new Set(); fl.items.forEach(m => { if (MONSTERS[m.type] && !DRIFT[m.type] && m.hp > 0 && fl.known[m.y * WW + m.x]) monRooms.add(roomOf(m.x, m.y)); });
+    const calm = x => !panicking(x) && !caged(x) && !x.lost && !exiting(x) && x.state !== 'fight' && x.state !== 'loot' && !fl.danger[tIdx(x)] && x.room >= 0 && !monRooms.has(x.room);
+    const chance = P.prep || crew.some(x => x.state === 'talk' || x.state === 'rest' || x.huddle) ? 1 : 0.35;
+    if (Math.random() >= chance) return;
+    const gain = (g, o, x) => itemValue(o, x) - itemValue(g, x);
+    const gives = (g, o) => g.inv.filter(x => x.type !== 'potion' && !x.cursed && !(x.gaveBy && x.gaveBy.includes(o.id)) && gain(g, o, x) >= 1.0 && canTake(o, x));
+    let best = null;
+    for (const g of crew) for (const o of crew) {
+      if (g === o || inG2(g) !== inG2(o) || hdist(g, o) > 2 || !canSee(g, o) || !calm(g) || !calm(o) || fl.time < (g.shareCd || 0) || fl.time < (o.shareCd || 0)) continue;
+      gives(g, o).forEach(x => { const v = gain(g, o, x); if (!best || v > best.v) best = { g, o, x, v }; });
+    }
+    if (!best) return;
+    const { g, o, x } = best;
+    const hand = (a, b, y) => {   // a gives y to b; a better one of a kind sends b's old one back to a (or to the floor)
+      a.inv.splice(a.inv.indexOf(y), 1);
+      y.gaveBy = (y.gaveBy || []).concat(a.id); y.gaveNm = a.nm; y.gaveFem = a.female;
+      const U = HITEMS[y.type].use, same = (U === 'power' || U === 'gear' || U === 'tool') ? b.inv.find(z => z.type === y.type) : null;
+      if (same) { b.inv.splice(b.inv.indexOf(same), 1); if (itemValue(a, same) > 0 && canTake(a, same)) a.inv.push(same); else dropItem(a, same, 0, true); }
+      b.inv.push(y);
+      floatHero(b, 'Od ' + nameGen(a) + ': ' + itemLabel(y), ITEM_COLOR[y.type] || '#c3b2ff', 12, -0.7);
+      (P.gifts || (P.gifts = [])).push({ from: a.id, to: b.id, type: y.type, t: fl.time });
+      tl('gv', a.id, b.id, y.type + y.r);
+    };
+    hand(g, o, x); fl.stats.gearGiven = (fl.stats.gearGiven || 0) + 1;
+    const back = gives(o, g).filter(y => y !== x).sort((a, b) => gain(o, g, b) - gain(o, g, a))[0];   // a swap: something of his is worth 1+ more to the giver
+    if (back) { hand(o, g, back); fl.stats.gearTrades = (fl.stats.gearTrades || 0) + 1; }
+    g.shareCd = o.shareCd = fl.time + 8; P.shareCd = fl.time + 4;
+    say(g, pick(SAY.giveGear), 2); P.queueSay.push({ id: o.id, text: pick(SAY.giveGearThanks), at: fl.time + 1.1 });
   }
   function safestRoom(from) {
     const b = from ? bfs(from.x, from.y, { known: true }) : null;
@@ -7147,7 +7522,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         // 1.18 Błędne ogniki: the lights lead him onto the nearest tile in reach of a trap of this room the party does not know, and he gropes 2 s longer
         let wt = null;
         if (mods.wisps) { let bd = 1e9; fl.items.forEach(it => { if (!TRAPS[it.type] || it.detected || it.disabled || slotRoom(it.type, it.x, it.y) !== L.room) return; areaOf(it).forEach(t => { if (!walkable(t[0], t[1]) || roomOf(t[0], t[1]) !== L.room) return; const d = Math.hypot(t[0] - L.tx, t[1] - L.ty); if (d >= 1 && d < bd) { bd = d; wt = t; } }); }); }
-        if (wt || spots.length) { const t = wt || pick(spots); P.detour = { goal: t[1] * WW + t[0], until: fl.time + 3 + 0.25 * Math.max(0, 8 - L.lvl / 2) + 2 * mods.wisps, wisp: !!wt }; fl.stats.fogGrope = (fl.stats.fogGrope || 0) + 1; if (wt) fl.stats.wisps = (fl.stats.wisps || 0) + 1; tl('fg', L.room); say(L, pick(SAY.fogGrope), 3); }
+        // 1.20: a lit lantern next to him: half the groping (the wisps' 2 s stay), and its bearer says so
+        const lt = lanternNear(L) ? alive().find(o => litLantern(o) && o.room === L.room && hdist(o, L) <= 2) : null;
+        if (wt || spots.length) { const t = wt || pick(spots); P.detour = { goal: t[1] * WW + t[0], until: fl.time + (lt ? 0.5 : 1) * (3 + 0.25 * Math.max(0, 8 - L.lvl / 2)) + 2 * mods.wisps, wisp: !!wt }; fl.stats.fogGrope = (fl.stats.fogGrope || 0) + 1; if (wt) fl.stats.wisps = (fl.stats.wisps || 0) + 1; tl('fg', L.room); if (lt) { fl.stats.lanternGrope = (fl.stats.lanternGrope || 0) + 1; say(lt, pick(SAY.lanternLight), 3); } else say(L, pick(SAY.fogGrope), 3); }
       }
     }
     crew.forEach(h => {
@@ -7201,7 +7578,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         // 1.16: away on purpose: being cut off is the plan, no roll for that; but the fog and a lost way still get him
         h.sepT = 0; h.sepRolled = false;
         if (h.noPathT > 3 && d > 6) getLost(h, 'nopath');
-        else if (h.room >= 0 && isRt(h.room, 'fog') && d > 1.5 && Math.random() < dt * 0.22 * Math.max(0.35, 1 - 0.03 * h.lvl) * (h.type === 'thief' ? 0.6 : 1)) getLost(h, 'fog');
+        else if (h.room >= 0 && isRt(h.room, 'fog') && d > 1.5 && fogRoll(h, dt)) getLost(h, 'fog');
       }
       else if (!fl.fearless && !exiting(h) && !caged(h)) {
         // cut off from the leader (another room, far away): in a big dungeon, or in the fog, he may lose his way
@@ -7210,7 +7587,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         if (!apart) h.sepRolled = false;
         if (h.noPathT > 3 && d > 6) getLost(h, 'nopath');
         else if (h.sepT > 3 && !h.sepRolled) { h.sepRolled = true; if (Math.random() < lostChance(h)) getLost(h, 'sep'); }
-        else if (h.room >= 0 && isRt(h.room, 'fog') && d > 1.5 && Math.random() < dt * 0.22 * Math.max(0.35, 1 - 0.03 * h.lvl) * (h.type === 'thief' ? 0.6 : 1)) getLost(h, 'fog');   // 1.01: in the fog anyone a step away from the leader can lose the party
+        else if (h.room >= 0 && isRt(h.room, 'fog') && d > 1.5 && fogRoll(h, dt)) getLost(h, 'fog');   // 1.01: in the fog anyone a step away from the leader can lose the party
       }
       if (h.lost) {
         addFear(h, 4 * dt, null, 'lost');
@@ -7235,6 +7612,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       say(g, pick(SAY.potionGive), 3); P.queueSay.push({ id: f.id, text: pick(SAY.potionThanks), at: fl.time + 1.1 });
       floatHero(f, 'Mikstura!', '#8be38f', 14, -0.7);
     });
+    shareThink(crew, L, dt);   // 1.20: an amulet in a crisis, gear handed over at ease
     if (!L) return;
     if (P.prep && fl.time >= P.prep.until) finishPrep();
     else if (!P.prep) checkPrep(L);
@@ -7352,12 +7730,16 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       }
       if (P.blockSaid && P.plan !== 'explore') {   // waiting at the gate: a thief next to it levers it up in 3 s
         const door = [...fl.doors.values()].filter(d => d.closedUntil > fl.time).sort((a, b) => Math.hypot(a.x - L.tx, a.y - L.ty) - Math.hypot(b.x - L.tx, b.y - L.ty))[0];
-        const it = door && fl.items.get(key(door.x, door.y)), th = door && alive().find(h => h.type === 'thief' && !panicking(h) && !h.fleeing && Math.hypot(h.tx - door.x, h.ty - door.y) <= 1.6);
+        // 1.20 Łom: anyone with a crowbar levers it too (x1,5; a thief with one x2,25), a level 3 gate half as fast
+        const near = h => !panicking(h) && !h.fleeing && Math.hypot(h.tx - door.x, h.ty - door.y) <= 1.6;
+        const it = door && fl.items.get(key(door.x, door.y)), th = door && (alive().find(h => hasCrowbar(h) && near(h)) || alive().find(h => h.type === 'thief' && near(h)));
         if (it && it.type === 'gate' && th) {
-          if (!P.liftT) { sawAdd(th, ['gate']); sayNow(['gate'], () => say(th, pick(SAY.gateLever), 3, 2)); }
-          P.liftT = (P.liftT || 0) + dt * (th.lvl >= 6 ? 1.5 : 1);
+          const bar = hasCrowbar(th);
+          if (!P.liftT) { sawAdd(th, ['gate']); sayNow(['gate'], () => say(th, pick(bar ? SAY.crowbarGate : SAY.gateLever), 3, 2)); }
+          P.liftT = (P.liftT || 0) + dt * (th.type === 'thief' ? (th.lvl >= 6 ? 1.5 : 1) : 1) * (bar ? 1.5 : 1) * ((it.lvl || 1) >= 3 ? 0.5 : 1);
           if (P.liftT >= 3) {
             door.closedUntil = fl.time; it.disabled = true; it.detected = true; fl.threatDirty = true; P.liftT = 0;
+            if (bar) { fl.stats.crowbarGate = (fl.stats.crowbarGate || 0) + 1; tl('lm', th.id, 'gate'); }
             bt('gate').disarmed++; fl.stats.disarmed++; tl('lg', th.id, door.x, door.y);
             floatTile(door.x, door.y, 'Krata podważona', '#c9c2d8', 13, -0.6); replanAll();
           }
@@ -7492,11 +7874,19 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   /* ----- getting lost, wrong turns ----- */
   // The chance to lose the way once cut off from the leader: bigger dungeon and fog = more, experience and a thief's sense = less.
   function lostChance(h) {
-    const p = 0.12 + 0.03 * Math.max(0, roomCount() - 6) + (isRt(h.room, 'fog') ? 0.45 : 0) - 0.01 * h.lvl - (h.type === 'thief' ? 0.1 : 0);
+    const p = 0.12 + 0.03 * Math.max(0, roomCount() - 6) + (isRt(h.room, 'fog') ? (lanternNear(h) ? 0.15 : 0.45) : 0) - 0.01 * h.lvl - (h.type === 'thief' ? 0.1 : 0);   // 1.20: a lantern close by
     return clamp(p, 0.02, 0.6);
+  }
+  // 1.20 Latarnia: the fog's roll on one a step away from the leader; a lit lantern within 2 tiles cuts it to 30% (lanternSaves)
+  function fogRoll(h, dt) {
+    const p = dt * 0.22 * Math.max(0.35, 1 - 0.03 * h.lvl) * (h.type === 'thief' ? 0.6 : 1), x = Math.random();
+    if (x >= p) return false;
+    if (x >= 0.3 * p && lanternNear(h)) { fl.stats.lanternSaves = (fl.stats.lanternSaves || 0) + 1; return false; }
+    return true;
   }
   function getLost(h, why) {
     if (h.lost) return;
+    h.lostEver = true;   // 1.20: a returner who got lost brings a lantern
     h.lost = true; h.sepRolled = true; h.lostT = 0; h.lostCallT = fl.time + 5; h.needPlan = true;
     if (h.split) { h.split = false; fl.stats.splitLost = (fl.stats.splitLost || 0) + 1; }   // 1.16: the errand went wrong: now he is lost
     h.wanderUntil = -1;
@@ -7969,7 +8359,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
             rs = cand[0]; P.rescuerId = rs ? rs.id : -1;
           }
           if (rs === h) {
-            if (Math.abs(h.x - c.x) + Math.abs(h.y - c.y) <= 1) { h.state = 'free'; h.timer = h.type === 'thief' ? 0.8 : 1.8; h.dur = h.timer; h.freeT = c.id; h.path = []; h.intent = 'rescue'; return; }
+            if (Math.abs(h.x - c.x) + Math.abs(h.y - c.y) <= 1) { h.state = 'free'; h.timer = hasCrowbar(h) ? (h.type === 'thief' ? 0.5 : 0.6) : h.type === 'thief' ? 0.8 : 1.8; h.dur = h.timer; h.freeT = c.id; h.path = []; h.intent = 'rescue'; return; }   // 1.20: a crowbar opens it in a moment
             const g = nearestOf(B(), DIRS.map(d => [c.x + d[0], c.y + d[1]]).filter(t => walkable(t[0], t[1])).map(t => t[1] * WW + t[0]));
             if (g >= 0) job = { intent: 'rescue', goal: g };
           }
@@ -7988,6 +8378,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (!job && h.type === 'barbarian') job = smashJob(h, B());   // 1.05
       if (!job && h.type === 'thief') job = disarmJob(h, B());
       if (!job && h.type === 'priest' && h.rank >= 1) job = blessJob(h, B());
+      // 1.20 Łom: while the party waits at a shut gate, one with a crowbar (or a thief) goes up to it and levers it (partyThink)
+      if (!job && P.blockSaid && P.plan !== 'explore' && (hasCrowbar(h) || h.type === 'thief') && !panicking(h) && !inG2(h)) {
+        const door = [...fl.doors.values()].filter(dd => dd.closedUntil > fl.time && (fl.items.get(key(dd.x, dd.y)) || {}).type === 'gate').sort((a, c) => Math.hypot(a.x - h.tx, a.y - h.ty) - Math.hypot(c.x - h.tx, c.y - h.ty))[0];
+        if (door && Math.hypot(h.tx - door.x, h.ty - door.y) <= 1.6) { h.intent = 'pry'; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.5; return; }
+        if (door) { const g = nearestOf(B(), DIRS.map(dd => [door.x + dd[0], door.y + dd[1]]).filter(t => walkable(t[0], t[1])).map(t => t[1] * WW + t[0])); if (g >= 0) job = { intent: 'pry', goal: g }; }
+      }
       if (!job) job = bombJob(h, B());
       if (!job) {
         // 1.10 (author: they ignored loot even when it was free): how far it is counts in steps on the way they would take. It
@@ -7999,8 +8395,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         fl.items.forEach(it => {
           if (!isLoot(it.type) || it.seenWave !== run.wave || it.cursedKnown) return;
           const k = key(it.x, it.y), cl = byId(claims.get(k));
-          if (cl && cl !== h && !cl.dead && !cl.fled && !cl.gone && cl.intent === 'loot' && cl.lootKey === k) return;
           const i = it.y * WW + it.x, d = B().dist[i], r = lootLevel(it), steps = d >= 0 ? pathFrom(B(), i).length : -1;
+          if (cl && cl !== h && !cl.dead && !cl.fled && !cl.gone && cl.intent === 'loot' && cl.lootKey === k && !lootReassign(h, cl, it, k, steps)) return;   // 1.20: unless the leader gives it to him
           const reach = r === 3 ? 30 : r === 2 ? 16 : (LOOT_KIND[it.type] === 'potion' && h.hp < 0.5 * h.max ? 14 : h.type === 'thief' ? 11 : h.rank === 0 ? 9 : 8);
           if (steps >= 0 && steps <= reach && steps < bd && lootDecision(h, it, B(), i)) { bd = steps; best = i; bestK = k; }
           else if (d < 0 && r === 3 && h.type !== 'priest') {   // legendary in an unknown spot: head for the nearest opening towards it
@@ -8156,6 +8552,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (!fl.objects.has(k)) return;
       const on = fl.items.get(k);   // what stood on it: a powder keg blows up, a mimic bites, a music box falls silent
       if (on && !on.disabled) { if ((on.type === 'powder' || on.type === 'mimic') && on.cd <= 0) fire(on, 1); on.disabled = true; }
+      if (on) mimicSpill(on, h);   // 1.20: the smashed mimic spits out its belly
       fl.objects.delete(k); fl.stats.smashedObj = (fl.stats.smashedObj || 0) + 1;
       floatTile(t.x, t.y, 'Rozbite!', '#ffb38a', 13, -0.5);
     }
@@ -8197,7 +8594,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (Math.hypot(it.x - h.tx, it.y - h.ty) <= 3) {
         h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++;
         if (it.type === 'powder') fire(it, 0.5);
-        else { it.disabled = true; fl.threatDirty = true; bt(it.type).disarmed++; }
+        else { it.disabled = true; fl.threatDirty = true; bt(it.type).disarmed++; mimicSpill(it, h); }   // 1.20: a mimic spits out its belly
         burst(it.x + 0.5, it.y + 0.5, '#ffb35c', 14); floatTile(it.x, it.y, 'Zniszczone bombą', '#ffb35c', 13, -0.5); say(h, pick(SAY.bomb), 3);
         return null;
       }
@@ -8273,7 +8670,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       // a curse on a friend (level 4+): 3 faith
       const cu = h.lvl >= 4 && h.faith >= 3 ? (near.find(o => o.cursed && o !== h) || near.find(o => o.cursed)) : null;   // 1.17: a friend first, then himself
       if (cu && spend(3)) {
-        cu.cursed = false; fl.stats.curseLifts++; tl('cl', h.id, cu.id); h.cast = 3;
+        cu.cursed = false; cu.inv.forEach(x => { x.cursed = false; }); fl.stats.curseLifts++; tl('cl', h.id, cu.id); h.cast = 3;   // 1.20: and his things
         say(h, cu === h ? pick(SAY.curseSelf) : nameFill(pick(SAY.curseLift), cu), 3); floatHero(cu, 'Klątwa zdjęta', '#fff2c0', 13, -0.7);
         particles.push({ ring: true, x: p.x, y: p.y, r: 0.3, maxR: 2, life: 0.45, color: '#fff2c0' });
         return;
@@ -8420,9 +8817,9 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     }
     if (isExitTile(h.x, h.y) && exiting(h)) { heroExit(h); return; }
     const it = fl.items.get(key(h.x, h.y));
-    if (it && isLoot(it.type) && !h.crystal && !h.fleeing) pickup(h, it);
+    if (it && isLoot(it.type) && !h.crystal && !h.fleeing) { pickup(h, it); if (h.state === 'loot') return; }   // 1.20: he kneels by a body
     // 1.10: Lodownia: a step may run on, one tile straight ahead, into whatever is there (not twice in a row)
-    if (r >= 0 && isRt(r, 'ice') && !h.slid && (h.ldx || h.ldy) && h.state === 'walk' && Math.random() < slipChance(h) * (1 + 0.5 * mods.blackice)) {   // 1.18: Gołoledź, half as many slips more
+    if (r >= 0 && isRt(r, 'ice') && !h.slid && (h.ldx || h.ldy) && h.state === 'walk' && Math.random() < slipChance(h) * (1 + 0.5 * mods.blackice) * (1 + Math.max(0, loadOf(h) / carryOf(h) - 0.5))) {   // 1.18: Gołoledź, half as many slips more; 1.20: a heavy pack slips more
       const sx = h.x + h.ldx, sy = h.y + h.ldy, g = fl.items.get(key(sx, sy));
       if (passable(sx, sy) && !(g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) && !(Math.abs(sx - fl.heart.x) + Math.abs(sy - fl.heart.y) === 0) && !heroBlock(h, sx, sy)) {
         h.nx = sx; h.ny = sy; h.prog = 0; h.sliding = true; h.path = []; fl.stats.slips = (fl.stats.slips || 0) + 1; tl('sl', h.id, sx, sy);
@@ -8449,12 +8846,13 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   function inZone(x, y) { const k = key(x, y); return fl.zones.some(z => z.keys.has(k)); }
   function scanTraps(h) {
     const am = gearR(h, 'amulet');
-    const R = (h.type === 'thief' ? 2 : 0) + h.R.detect + Math.max(0, Math.round(am * itemPow(h)));
-    if (R <= 0) return;
+    const R = (h.type === 'thief' ? 2 : 0) + h.R.detect + Math.max(0, Math.round(am * itemPow(h))), lit = litLantern(h);
+    if (R <= 0 && !lit) return;
     fl.items.forEach(it => {
       if (!LOOKS_TRAP(it.type) || it.detected || it.disabled) return;
-      if (Math.max(Math.abs(it.x - h.tx), Math.abs(it.y - h.ty)) > R) return;
-      if (isRt(slotRoom(it.type, it.x, it.y), 'fog')) return;   // Mgła: nothing to see in there
+      const dd = Math.max(Math.abs(it.x - h.tx), Math.abs(it.y - h.ty));
+      if (isRt(slotRoom(it.type, it.x, it.y), 'fog')) { if (!(lit && dd <= 1)) return; }   // Mgła: nothing to see in there (1.20: but the tiles next to his lantern)
+      else if (dd > R) return;
       learnTrap(it, 'scan', h); fl.stats.detected++;
       floatTile(it.x, it.y, 'Wykryta!', '#ffe066', 13, -0.6);
     });
@@ -8467,7 +8865,15 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (h.accT >= 0.6) { if ((h.accG || 0) >= 0.1) floatHero(h, '+' + fmtG(h.accG), '#c3b2ff', 13); h.acc = 0; h.accG = 0; h.accT = 0; }   // 1.01: Groza (violet)
     const ot = heroTile(h); h.tx = ot[0]; h.ty = ot[1];
     const rr = roomOf(h.tx, h.ty); if (rr >= 0) h.room = rr;
-    if (fl.time < h.burnUntil) { damage(h, 6 * S.dmg * dt, BURN); if (h.dead) return; }
+    if (fl.time < h.burnUntil) {
+      damage(h, 6 * S.dmg * dt, BURN); if (h.dead) return;
+      // 1.20: burning with bombs in the pack: one may go off (15% a second a bomb, at most 45%)
+      const bs = h.inv.filter(x => x.type === 'bomb');
+      if (bs.length) {
+        if (!h.cookSaid) { h.cookSaid = true; sayNow(['fire'], () => say(h, pick(SAY.bombCook), 4, null, 'loud')); }
+        if (Math.random() < dt * Math.min(0.45, 0.15 * bs.length)) { bombCook(h, bs[0]); if (h.dead) return; }
+      }
+    }
     if (h.hp < h.R.potion * h.max) {   // a potion when it gets bad (rookies wait far too long)
       const pot = h.inv.filter(x => x.type === 'potion').sort((a, c) => c.r - a.r)[0];
       if (pot) { h.inv.splice(h.inv.indexOf(pot), 1); h.hp = Math.min(h.max, h.hp + h.max * potionHeal(pot) * itemPow(h) * taintedSip(h, pot)); fl.stats.potions++; fl.stats.itemsUsed++; say(h, pick(SAY.potion), 3);   /* 1.18: Zepsute mikstury */ floatHero(h, 'Mikstura', '#8be38f', 14, -0.7); tl('po', h.id); }
@@ -8482,7 +8888,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (h.scan <= 0) { h.scan = 0.5; scanTraps(h); }
     h.thinkT -= dt;
     if (h.sliding && (h.state !== 'walk' || h.nx === null)) h.sliding = false;   // 1.10: a cage or a fall stops a slide
-    if (caged(h)) { if (fl.time >= h.cageUntil) cageEnds(h); return; }
+    if (caged(h)) {
+      if (hasCrowbar(h) && fl.time - (h.cagedAt || 0) >= 4) { freeCaged(h, false, 'pry'); sayNow(['cage'], () => say(h, pick(SAY.crowbarCage), 3)); fl.stats.crowbarCage = (fl.stats.crowbarCage || 0) + 1; tl('lm', h.id, 'cage'); }   // 1.20: he levers the bars himself
+      else if (fl.time >= h.cageUntil) cageEnds(h);
+      return;
+    }
     if (h.state === 'rest') {
       const haven = h.room >= 0 && isRt(h.room, 'haven'), dream = !!h.dream && fl.time < (h.napUntil || -1); if (!(h.restAt > 0)) h.restAt = fl.time;   // 1.18: dream = asleep to the lullaby (Usypianka)
       if (fl.time >= h.burnUntil) h.hp = Math.min(h.max, h.hp + 4 * dt * (haven || dream ? 0.5 : 1));
@@ -8525,7 +8935,14 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       const c = byId(h.freeT);
       if (!c || !caged(c) || exiting(h)) { h.state = 'walk'; h.needPlan = true; return; }
       h.timer -= dt;
-      if (h.timer <= 0) { freeCaged(c, true); h.state = 'walk'; h.needPlan = true; }
+      if (h.timer <= 0) { freeCaged(c, true); if (hasCrowbar(h)) { fl.stats.crowbarCage = (fl.stats.crowbarCage || 0) + 1; tl('lm', h.id, 'cage'); } h.state = 'walk'; h.needPlan = true; }
+      return;
+    }
+    // 1.20: kneeling by a body (pickup): a wound does not stop him (that is the price), running out or a panic does
+    if (h.state === 'loot') {
+      if (exiting(h) || panicking(h) || h.fleeing) { h.state = 'walk'; h.lootIt = null; h.needPlan = true; return; }
+      h.timer -= dt;
+      if (h.timer <= 0) { const it = h.lootIt; h.state = 'walk'; h.lootIt = null; h.needPlan = true; if (it) bodyLoot(h, it); }
       return;
     }
     if (h.state === 'fight') {
@@ -8533,7 +8950,16 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       if (!g || g.hp <= 0 || fl.items.get(key(g.x, g.y)) !== g || exiting(h)) { h.state = 'walk'; h.foe = null; h.needPlan = true; }
       else {
         const bomb = h.inv.find(x => x.type === 'bomb');
-        if (bomb && g.hp > 60) { h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++; say(h, pick(SAY.bomb), 3); burst(g.x + 0.5, g.y + 0.5, '#ffb35c', 16); hurtMonster(g, 80 * Math.pow(Math.min(4, bomb.r), 1.3) * itemPow(h)); }
+        if (bomb && g.hp > 60) {
+          // 1.20: the blast hurts a friend next to the monster: a veteran holds it (not in a fury), a rookie throws anyway
+          const near = alive().filter(o => o !== h && Math.max(Math.abs(o.tx - g.x), Math.abs(o.ty - g.y)) <= 1);
+          if (near.length && h.rank >= 1 && !raging(h)) { if (h.bombHeldFor !== g) { h.bombHeldFor = g; fl.stats.bombHeld = (fl.stats.bombHeld || 0) + 1; } }
+          else {
+            h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++; say(h, pick(SAY.bomb), 3); burst(g.x + 0.5, g.y + 0.5, '#ffb35c', 16); hurtMonster(g, 80 * Math.pow(Math.min(4, bomb.r), 1.3) * itemPow(h));
+            near.forEach(o => damage(o, 20 * S.dmg * Math.sqrt(Math.min(4, bomb.r)), BURN));
+            if (near.length) { fl.stats.bombFriendly = (fl.stats.bombFriendly || 0) + near.length; tl('bf2', h.id, near.length); P.queueSay.push({ id: near[0].id, text: pick(SAY.bombFriendly), at: fl.time + 0.4, prio: 3 }); }
+          }
+        }
         return;
       }
     }
@@ -8604,8 +9030,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const sprint = fl.time < h.sprintUntil ? h.sprintK : 1;   // boots (a power)
     const bog = isRt(roomOf(h.nx, h.ny), 'swamp') || isRt(roomOf(h.x, h.y), 'swamp') ? 0.65 : 1;   // Bagno
     const purse = h.gold > 0 ? Math.max(0.8, 1 - 0.04 * h.gold) : 1;   // a heavy purse
+    const load = burden(h);   // 1.20 Udźwig: a heavy pack
+    if (load < 1) { fl.stats.loadSlowT = (fl.stats.loadSlowT || 0) + dt; if (!h.heavySaid) { h.heavySaid = true; say(h, pick(SAY.heavyLoad), 2); } }
     if (h.sliding) { h.prog += 3.2 * dt; if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = true; h.sliding = false; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); } return; }   // 1.10: a slide on the ice: fast, nothing stops it
-    const spd = h.T.speed * h.R.speed * (S.heroSpeed / 100) * slow * (fl.fearless ? 1.3 : 1) * dash * careful * sprint * bog * purse *
+    const spd = h.T.speed * h.R.speed * (S.heroSpeed / 100) * slow * (fl.fearless ? 1.3 : 1) * dash * careful * sprint * bog * purse * load *
       (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1) * (h.crystal ? 0.9 * mods.carrierSlow : 1) * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1) * (fl.time < h.rageUntil ? 1.25 : 1);
     h.prog += spd * dt;
     if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = !!h.sliding; h.sliding = false; h.passing = null; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); }
@@ -9005,6 +9433,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0];
         const q = heroPos(h); burst(q.x, q.y, rarColor(lost.r), 10);
         floatHero(h, G3(HITEMS[lost.type].g, 'Wypadł', 'Wypadła', 'Wypadły') + ' ' + HITEMS[lost.type].name + '!', '#c3b2ff', 14, -1.0);
+        // 1.20: it lands next to him (it used to vanish), no greed for it, and he wants it back (lootDecision); no room: gone as before
+        if (dropItem(h, lost, 0, true, { knocked: true })) {
+          fl.stats.gearKnocked = (fl.stats.gearKnocked || 0) + 1; tl('kn', h.id, lost.type);
+          if (Math.random() < 0.6) fl.party.queueSay.push({ id: h.id, text: pick(SAY.gearKnocked), at: fl.time + 0.3, prio: 2 });
+        }
       });
     }
     else { fl.stats.checkOk++; floatTile(c.it.x, c.it.y, 'Draśnięcie', '#8be38f', 14, -1.2); }
@@ -9161,7 +9594,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (!crew.length) return inPit.length ? null : 'empty';
     if (crew.every(h => caged(h))) return null;
     for (const h of crew) {
-      if (h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free') return h.state;
+      if (h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || h.state === 'loot') return h.state;   // 1.20: searching a body
       if (caged(h)) return 'caged';
     }
     const live = it => (ACTIVE[it.type] && !it.disabled && !(MONSTERS[it.type] && it.hp <= 0)) || isLoot(it.type);
@@ -11082,7 +11515,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       }
     }
     if (it.item && s >= 14) {   // a known item lies here (dropped by a hero): its colour in the corner
-      ctx.fillStyle = ITEM_COLOR[it.item.type] || '#fff'; ctx.beginPath(); ctx.arc(cx + s * 0.3, cy - s * 0.3, s * 0.09, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = it.item.cursed ? '#b48cff' : ITEM_COLOR[it.item.type] || '#fff'; ctx.beginPath(); ctx.arc(cx + s * 0.3, cy - s * 0.3, s * 0.09, 0, Math.PI * 2); ctx.fill();   // 1.20: cursed: violet
       ctx.strokeStyle = '#1a1424'; ctx.lineWidth = 1; ctx.stroke();
     }
     const gl = 0.5 + 0.5 * Math.sin(realNow * 4 + it.x);
@@ -11838,6 +12271,11 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
           const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, T * 1.6); g.addColorStop(0, 'rgba(210,220,235,0.22)'); g.addColorStop(1, 'rgba(210,220,235,0)');
           ctx.fillStyle = g; ctx.fillRect(fx - T * 1.6, fy - T * 1.6, T * 3.2, T * 3.2);
         }
+        if (fl.phase === 'raid') fl.heroes.forEach(o => {   // 1.20: a lit lantern clears a warm patch of the fog, 1,5 tiles round its bearer
+          if (o.dead || o.fled || o.gone || roomOf(o.tx, o.ty) !== R.id || !litLantern(o)) return;
+          const p = heroPos(o), lx = p.x * T, ly = p.y * T, lg = ctx.createRadialGradient(lx, ly, 0, lx, ly, T * 1.5);
+          lg.addColorStop(0, 'rgba(255,232,170,0.22)'); lg.addColorStop(1, 'rgba(255,232,170,0)'); ctx.fillStyle = lg; ctx.fillRect(lx - T * 1.5, ly - T * 1.5, T * 3, T * 3);
+        });
       } else if (R.rt === 'swamp') {
         ctx.fillStyle = 'rgba(70,100,40,0.32)'; ctx.fillRect(x, y, w, h);
         ctx.fillStyle = 'rgba(150,190,90,0.45)';
@@ -12465,7 +12903,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
           if (it.cursedKnown && fl.phase === 'raid') { ctx.save(); tileMap(it.x, it.y, 0.33, null); ctx.strokeStyle = '#b48cff'; ctx.lineWidth = Math.max(2 / T, 0.06); ctx.beginPath(); ctx.moveTo(0.15, 0.15); ctx.lineTo(0.85, 0.85); ctx.moveTo(0.85, 0.15); ctx.lineTo(0.15, 0.85); ctx.stroke(); ctx.restore(); }   // a big X over the chest, on a plane
         }
       }
-      if (it.item && T >= 14) { const p = W2S(bx + 0.25, by - 0.25, 0.45); ctx.fillStyle = ITEM_COLOR[it.item.type] || '#fff'; ctx.beginPath(); ctx.arc(p[0], p[1], T * 0.08, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#1a1424'; ctx.lineWidth = 1; ctx.stroke(); }
+      if (it.item && T >= 14) { const p = W2S(bx + 0.25, by - 0.25, 0.45); ctx.fillStyle = it.item.cursed ? '#b48cff' : ITEM_COLOR[it.item.type] || '#fff'; ctx.beginPath(); ctx.arc(p[0], p[1], T * 0.08, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#1a1424'; ctx.lineWidth = 1; ctx.stroke(); }
       const gl = 0.5 + 0.5 * Math.sin(realNow * 4 + it.x), sp = W2S(bx + 0.15, by - 0.1, 0.35);
       ctx.fillStyle = 'rgba(255,240,180,' + (0.6 * gl).toFixed(2) + ')'; ctx.fillRect(sp[0], sp[1], T * 0.05, T * 0.05);
     }
@@ -12619,6 +13057,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     else if (h.alone && fl.phase === 'raid') ring('rgba(255,179,92,0.85)', 1.5, [4, 3], 0, Math.PI * 2, 1.5);
     if (h.hp / h.max < 0.3 && h.state !== 'rest') ring('rgba(255,90,90,' + (0.55 + 0.4 * Math.sin(realNow * 12)).toFixed(2) + ')', 2, null, 0, Math.PI * 2, 1.1);
     if (h.state === 'disarm') ring('#ffe066', 2.5, null, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur), 1.4);
+    else if (h.state === 'loot') ring('#c9c2b8', 2.5, null, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur), 1.4);   // 1.20: searching a body
+    if (litLantern(h)) {   // 1.20: a lit lantern: a warm circle on the floor, 1,5 tiles
+      ctx.save(); ctx.translate(x, feet); ctx.scale(1, SP);
+      const lg = ctx.createRadialGradient(0, 0, 0, 0, 0, T * 1.5); lg.addColorStop(0, 'rgba(255,224,138,0.16)'); lg.addColorStop(1, 'rgba(255,224,138,0)');
+      ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(0, 0, T * 1.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
     if (h.cursed) {   // a cursed treasure: a violet haze
       const g = ctx.createRadialGradient(x, mid, W * 0.4, x, mid, H * 0.75); g.addColorStop(0, 'rgba(180,140,255,0.45)'); g.addColorStop(1, 'rgba(180,140,255,0)');
       ctx.fillStyle = g; ctx.fillRect(x - H, mid - H, H * 2, H * 2);
@@ -12673,11 +13117,13 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (h.inv.length && T >= 14) {   // the pack: one square per item under the feet, in its colour; a power on cooldown is dimmed
       const q = Math.max(3, T * 0.1), n = Math.min(6, h.inv.length), x0 = x - (n * (q + 2) - 2) / 2;
       h.inv.slice(0, 6).forEach((it, k) => {
-        ctx.globalAlpha = fl.time < (it.cdUntil || 0) || it.charges === 0 ? 0.35 : 1;
-        ctx.fillStyle = ITEM_COLOR[it.type] || rarColor(it.r); ctx.fillRect(x0 + k * (q + 2), feet + W * 0.4, q, q);
-        if (it.r >= 2) { ctx.strokeStyle = rarColor(it.r); ctx.lineWidth = 1; ctx.strokeRect(x0 + k * (q + 2) - 0.5, feet + W * 0.4 - 0.5, q + 1, q + 1); }
+        ctx.globalAlpha = (fl.time < (it.cdUntil || 0) || it.charges === 0 || (it.type === 'lantern' && fl.time < (it.outUntil || 0)) ? 0.35 : 1) * (it.cursed ? 0.8 + 0.2 * Math.sin(realNow * 6) : 1);
+        ctx.fillStyle = it.cursed ? '#b48cff' : ITEM_COLOR[it.type] || rarColor(it.r); ctx.fillRect(x0 + k * (q + 2), feet + W * 0.4, q, q);
+        if (HITEMS[it.type].tool) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(x0 + k * (q + 2) - 0.5, feet + W * 0.4 - 0.5, q + 1, q + 1); }   // 1.20: a tool
+        else if (it.r >= 2) { ctx.strokeStyle = rarColor(it.r); ctx.lineWidth = 1; ctx.strokeRect(x0 + k * (q + 2) - 0.5, feet + W * 0.4 - 0.5, q + 1, q + 1); }
       });
       ctx.globalAlpha = 1;
+      if (burden(h) < 1) { ctx.fillStyle = '#c9c2b8'; ctx.font = numFont(Math.max(8, q * 1.6), true); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText('▼', x0 + n * (q + 2) + 1, feet + W * 0.4 + q / 2); }   // 1.20: too heavy, he slows down
     }
     // a sign above the bars: panic, lost, talking, resting
     const sign = (t, color, size, wob) => { ctx.fillStyle = color; ctx.font = numFont(Math.max(10, size), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, x, b0 - 8 - (h.shield > 0 ? bh + 1 : 0) + wob); };
@@ -13721,7 +14167,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.19 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.20 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -13771,9 +14217,16 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.19'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.20'));
     const ul2 = el('ul', 'conseq');
-    ['1.19: Rozłam. Drużyna może się podzielić na dwie grupy z dwoma przywódcami (obwódka bursztynowa). Przy rozwidleniu ktoś, kogo przywódca nie posłuchał (chciwy) albo uparty weteran, idzie drugą drogą, a 1-2 podobnych mu idzie z nim; obie grupy zwiedzają osobno i łączą się, gdy się spotkają (po ok. 40 s druga grupa wraca szukać reszty). Kto jest w drugiej grupie, nabija Grozę jak zwiadowca.',
+    ['1.20: ekwipunek i łup. Rzeczy poległego bohatera to już nie relikwie, tylko jego rzeczy: leżą jako zwykły ekwipunek (relikwią zostaje tylko relikwia z Twojego lochu) i ciągną chciwość o połowę słabiej. Kto wie o tej śmierci, mówi, czyje to; nowa drużyna czasem rozpozna rzeczy kogoś z poprzedniej wyprawy i trochę się boi.',
+     '1.20: ciało do przeszukania. Kto wejdzie na rzeczy poległego, klęka przy nich na sekundę (złodziej pół) i zabiera to, co mu się przyda; trafiony w tym czasie nie wstaje. Kapłan i ten, kto widział śmierć, rzadziej idą po rzeczy zmarłych, złodziej i chciwy chętniej; przyjaciel zmarłego może zaprotestować.',
+     '1.20: dzielenie się. Na postoju bohaterowie, którzy się widzą, podają sobie to, co komuś innemu bardziej się przyda (zbroja do wojownika, bomby do maga), albo się wymieniają; spokojny podaje swój amulet temu, kto zaraz wpadnie w panikę. Kto znajdzie coś, czego nie weźmie, mówi o tym, a ten, komu się przyda, idzie po to. Przywódca może przydzielić łup temu, kto go bardziej potrzebuje.',
+     '1.20: udźwig. Każdy przedmiot coś waży (zbroja 6 kg, bomba 2, amulet 0,5), a każda klasa unosi inaczej (barbarzyńca 16 kg, mag 8, +0,3 kg na poziom). Ponad 60% udźwigu bohater zwalnia (strzałka pod plecakiem) i częściej poślizgnie się na Lodowni; za ciężkiego nie weźmie.',
+     '1.20: narzędzia od gildii (od fali 4): latarnia (gdy w Twoim lochu ludzie błądzą albo jest Mgła) chroni przed zgubieniem się w Mgle tych, którzy są blisko niej; duch, cień i nietoperze mogą ją zgasić na 8 s. Łom (gdy zastawiasz przejścia albo masz kratę) podważa kratę i otwiera klatkę. Powracający, który kiedyś zabłądził, przynosi latarnię, a ten, kto wyniósł coś z Twojego lochu, wraca z tym.',
+     '1.20: przedmioty nie znikają. Krytyk wybija przedmiot na podłogę (właściciel chce go odzyskać), Pożeracz trzyma zjedzone przedmioty w brzuchu (do 6, gryzie o 10% mocniej za każdy) i wypluwa je, gdy wysadzi go bomba albo rozbije topór. Przeklęty przedmiot przeklina następnego, kto go weźmie. Płonący bohater z bombami może wylecieć w powietrze, a bomba rzucona w potwora rani stojących przy nim (weteran wtedy jej nie rzuca).',
+     '1.20: karta bohatera mówi, skąd ma każdy przedmiot (z domu, od gildii, z Twojego lochu, z rzeczy poległego, od przyjaciela, trofeum) i ile dźwiga; karta stosu mówi, czyje to rzeczy.',
+     '1.19: Rozłam. Drużyna może się podzielić na dwie grupy z dwoma przywódcami (obwódka bursztynowa). Przy rozwidleniu ktoś, kogo przywódca nie posłuchał (chciwy) albo uparty weteran, idzie drugą drogą, a 1-2 podobnych mu idzie z nim; obie grupy zwiedzają osobno i łączą się, gdy się spotkają (po ok. 40 s druga grupa wraca szukać reszty). Kto jest w drugiej grupie, nabija Grozę jak zwiadowca.',
      '1.19: na naradzie po 2 minutach, gdy drużyna wraca do domu, 2-3 chcących szukać dalej albo szturmować może zostać razem jako druga grupa; gdy drużyna zostaje, a kilku chce do domu, wracają razem ("Idę z tobą").',
      '1.19: bunt. Gdy idzie źle (śmierć, ciężkie rany albo strach, niskie morale), a przywódca prowadzi dalej, odważniejszy albo wyższy rangą rzuca mu wyzwanie przy całej grupie. Każdy staje po którejś stronie (wystraszeni i ranni za buntownikiem); wygrany prowadzi, a gdy drużyna jest wystraszona, zabiera ją do domu. Dumny przegrany odchodzi obrażony sam i wraca, gdy spotka resztę. Obrażony może też odejść ten, komu dwa razy kazano zostawić łup.',
      '1.18: 28 nowych kart. Każda komnata i każdy efekt pokoju ma swoją kartę (21), a sklep pokazuje ją tylko wtedy, gdy ta komnata albo efekt jest w Twoim lochu: Zastawione szuflady (Graciarnia), Cela pod zapadnią (Więzienie), Spojrzenie z ramy (Galeria), Beczki z kuźni (Kuźnia), Usypianka (Pokój dziecięcy), Zasadzka w norze (Goblinia nora), Kokony (Leże pająków), Kocioł ogra (Jaskinia ogra), Spłoszeni w mrok (Gniazdo nietoperzy), Mur z czaszek (Kaplica czaszek), Zdarte pancerze (Zbrojownia), Fałszywe wołanie (Nawiedzona sala), Błędne ogniki (Mgła), Grzęzawisko (Bagno), Niosące się echo (Grota), Wstający umarli (Krypta), Zatrzask sezamu (Sezam), Sen bez przebudzenia (Sanktuarium), Sprzężone tryby (Zębatki), Odnalezione ciało (Głusza) i Gołoledź (Lodownia). Przychodzą od 3. runu, razem z komnatami i efektami.',
@@ -14110,8 +14563,20 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     boots: '<path d="M7 2h7v10l6 3.5V21H4v-4h3z"/>',
     bomb: '<path d="M10.5 7.4V5h3v2.4a7.5 7.5 0 1 1-3 0z M14 4.2l2.6-2.4 1.4 1.4-2.4 2.6z"/>',
     weapon: '<path d="M18.5 2H22v3.5L9.5 18l1.5 1.5-1.5 1.5-1.5-1.5L5 22.5 1.5 19 4.5 16 3 14.5 4.5 13 6 14.5z"/>',
-    armor: '<path d="M6 3l3 1.5h6L18 3l4 4-3 3v11H5V10L2 7z"/>'
+    armor: '<path d="M6 3l3 1.5h6L18 3l4 4-3 3v11H5V10L2 7z"/>',
+    lantern: '<path d="M9 2h6v2h2v3l-1 1v9l1 1v3H7v-3l1-1V8L7 7V4h2z M10 9v7h4V9z"/>',   // 1.20
+    crowbar: '<path d="M18 2l3 1-1 3-2-1L6 19c-1 1-1 2 0 3l-1 1c-2-1-2-3-1-5L17 4z"/>'
   };
+  // 1.20: where a hero's item comes from (the hero card, the next party's icons)
+  function srcText(it, h) {
+    if (it.gaveNm) return ' - od ' + nameGen({ nm: it.gaveNm, female: it.gaveFem });
+    const s = it.src || 'kit';
+    if (s === 'trophy') return ' - trofeum z fali ' + (it.wave || '?');
+    if (s === 'relic') return ' - relikwia z Twojego lochu';
+    if (s === 'loot') return ' - z Twojego lochu';
+    if ((s === 'body' || (h && it.ownerNm && it.ownerNm[0] !== h.nm[0])) && it.ownerNm) return ' - z rzeczy ' + nameGen({ nm: it.ownerNm, female: it.ownerFem });
+    return s === 'guild' ? ' - od gildii' : ' - z domu';
+  }
   const svgI = (inner, color, cls) => '<svg class="' + (cls || 'gi') + '" viewBox="0 0 24 24" aria-hidden="true"><g fill="' + color + '" fill-rule="evenodd">' + inner + '</g></svg>';
   function classIconSvg(type, color, cls) {
     const ic = CLASS_ICON[type]; if (!ic) return '';
@@ -14140,7 +14605,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     r.appendChild(l1);
     const kit = el('div', 'kit');
     if (!e.inv.length) kit.appendChild(el('small', null, 'bez sprzętu'));
-    e.inv.forEach(it => { const s = el('span'); s.innerHTML = svgI(ITEM_GLYPH[it.type] || '', ITEM_COLOR[it.type] || '#ccc') + (it.charges > 1 ? '<small>' + it.charges + '</small>' : ''); s.title = itemLabel(it); kit.appendChild(s); });
+    e.inv.forEach(it => { const s = el('span'); s.innerHTML = svgI(ITEM_GLYPH[it.type] || '', ITEM_COLOR[it.type] || '#ccc') + (it.charges > 1 ? '<small>' + it.charges + '</small>' : ''); s.title = itemLabel(it) + srcText(it, e); if (HITEMS[it.type].tool || it.src === 'trophy') { s.style.outline = '1px solid ' + (it.src === 'trophy' ? '#ff8a3c' : '#ffffff'); s.style.borderRadius = '3px'; } kit.appendChild(s); });   // 1.20: src, a tool or a trophy framed
     r.appendChild(kit);
     // second line, under the name and the gear: what the class does, its weak spots and what the tavern does not know
     const l2 = el('div', 'np2'); l2.appendChild(document.createTextNode(CLASS_SKILL[e.type] || ''));
@@ -14269,7 +14734,8 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     body.appendChild(seg);
     const box = el('div', 'panel segpanel'), list = el('div', 'flist' + (cur === 'nums' ? ' grid2' : '')); box.appendChild(list); body.appendChild(box);
     if (cur === 'next') {
-      const nb = bossOf(run.wave + 1), items = [s.swaps ? 'wymiany: ' + s.swaps : '', s.potionsGiven ? 'mikstury podane: ' + s.potionsGiven : '', s.charms ? 'talizmany: ' + s.charms : '', s.amulets ? 'amulety: ' + s.amulets : '', s.boots ? 'buty: ' + s.boots : ''].filter(Boolean);
+      const nb = bossOf(run.wave + 1), items = [s.swaps ? 'wymiany: ' + s.swaps : '', s.potionsGiven ? 'mikstury podane: ' + s.potionsGiven : '', s.charms ? 'talizmany: ' + s.charms : '', s.amulets ? 'amulety: ' + s.amulets : '', s.boots ? 'buty: ' + s.boots : '',
+        s.gearGiven ? 'przekazane: ' + s.gearGiven : '', s.bodyLoot ? 'z ciał: ' + s.bodyLoot : '', s.gearKnocked ? 'wybite: ' + s.gearKnocked : '', s.lanternOut ? 'zgaszone latarnie: ' + s.lanternOut : '', s.bombCook ? 'bomby w ogniu: ' + s.bombCook : ''].filter(Boolean);   // 1.20
       if (H && !H.fed) frow(list, 'Serce chciało ' + H.need + ' Esencji z fali, a fala dała ' + fmtE(fl.score) + ': zjadło wszystko i kryształ.', 'heart');
       else if (H) frow(list, 'Serce wzięło pierwsze ' + H.need + ' Esencji' + (H.fedAt != null ? ' (najadło się w ' + mmss(H.fedAt) + ')' : '') + ', reszta (' + fmtE(Math.max(0, fl.score - H.need)) + ') trafiła do Ciebie.', 'heart');
       if (run.wave < RUN_WAVES || run.won) frow(list, 'Fala ' + (run.wave + 1) + ': poziom ok. ' + Math.round(waveBase(run.wave + 1)) + (nb ? ', prowadzi ' + (nb === 'final' ? 'bohater z przepowiedni' : 'czempion') : '') + '.', 'wave');
@@ -14318,6 +14784,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
       cell('Narada: dom / szturm / chwila · sami do domu', (s.councilHome || 0) + ' / ' + (s.councilStorm || 0) + ' / ' + (s.councilMore || 0) + ' · ' + (s.goHome || 0));
       cell('Słyszane zza ściany / wieści o śmierci', (s.heard || 0) + ' / ' + (s.newsDeaths || 0));
       cell('Rozłam: grupy / bunty (udane) / obrażeni / powroty', (s.rifts || 0) + ' / ' + (s.mutinies || 0) + ' (' + (s.mutinyWins || 0) + ') / ' + (s.sulks || 0) + ' / ' + (s.merges || 0));   // 1.19
+      cell('Ekwipunek: z ciał / podane (amulety) / przydział / oferty / za ciężkie / latarnia ratuje / łom', (s.bodyLoot || 0) + ' / ' + (s.gearGiven || 0) + ' (' + (s.amuletGiven || 0) + ') / ' + (s.lootAssign || 0) + ' / ' + (s.lootOffer || 0) + ' / ' + (s.tooHeavy || 0) + ' / ' + (s.lanternSaves || 0) + ' / ' + ((s.crowbarGate || 0) + (s.crowbarCage || 0)));   // 1.20
       cell('Kwestie o tym, co widzieli / zamienione / pominięte', (s.sawTalk || 0) + ' / ' + (s.lineSwap || 0) + ' / ' + (s.lineDrop || 0));   // 1.17.1
     }
     fitList(list);
@@ -14677,7 +15144,14 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
         'Ostatnia fala: ' + it.lf + '× odpalony, ' + it.lh + ' trafień, ' + it.lp + ' Esencji' + (it.lk ? ', zabici: ' + it.lk : '') + '.';
       card.appendChild(el('p', 'lead', s));
     }
-    if (loot && it.dropped) card.appendChild(el('p', 'lead', it.gold ? 'Sakwa poległego bohatera: ' + it.gold + (it.gold === 1 ? ' moneta.' : ' monet.') : it.item ? 'Zostawił to bohater: ' + itemLabel(it.item) + '. Następni mogą to podnieść.' : 'Zostawił to bohater.'));
+    if (loot && it.dropped) {   // 1.20: whose things they are
+      const who = it.fromNm ? { nm: it.fromNm, female: it.fromFem } : null;
+      card.appendChild(el('p', 'lead', it.body != null && who ? 'Rzeczy poległego: ' + it.fromNm[0] + ' (fala ' + it.fromWave + '): ' + (it.gold ? it.gold + (it.gold === 1 ? ' moneta' : ' monet') : itemLabel(it.item)) + '. Następni mogą to zabrać.' :
+        it.knocked != null && who ? 'Wybite bohaterowi ' + nameGen(who) + ' krytykiem: ' + itemLabel(it.item) + '.' :
+        it.gold ? 'Sakwa poległego bohatera: ' + it.gold + (it.gold === 1 ? ' moneta.' : ' monet.') : it.item ? 'Zostawił to bohater: ' + itemLabel(it.item) + '. Następni mogą to podnieść.' : 'Zostawił to bohater.'));
+    }
+    if (loot && it.item && it.item.cursed) card.appendChild(el('p', 'note', 'Przeklęty: klątwa przejdzie na tego, kto go weźmie.'));
+    if (it.type === 'mimic' && it.belly && it.belly.length) card.appendChild(el('p', 'note', 'W brzuchu: ' + it.belly.length + (it.belly.length === 1 ? ' przedmiot' : it.belly.length < 5 ? ' przedmioty' : ' przedmiotów') + ' (gryzie o ' + 10 * Math.min(6, it.belly.length) + '% mocniej). Wypluje je, gdy wysadzi go bomba albo rozbije topór.'));
     const r = roomOf(it.x, it.y), rt = rtOf(r);
     const d = el('details'); d.appendChild(el('summary', null, 'Opis'));
     d.appendChild(el('p', null, T.desc));
@@ -14772,8 +15246,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     card.appendChild(el('h2', 'h2small', 'Ekwipunek'));
     const inv = live ? live.inv : e.inv, il = el('ul', 'conseq');
     if (!inv.length) il.appendChild(el('li', null, 'Nic przy sobie.'));
-    inv.forEach(it => { const H = HITEMS[it.type]; const cd = live && fl.time < (it.cdUntil || 0) ? ', odnowienie ' + Math.ceil(it.cdUntil - fl.time) + ' s' : ''; il.appendChild(el('li', null, capFirst(adj(H.g, it.r) + ' ' + H.name) + ' (moc ' + it.r + (it.charges != null ? ', użycia: ' + it.charges : '') + cd + ')')); });
+    inv.forEach(it => { const H = HITEMS[it.type]; const cd = live && fl.time < (it.cdUntil || 0) ? ', odnowienie ' + Math.ceil(it.cdUntil - fl.time) + ' s' : '';
+      const nm = H.tool ? capFirst(H.name) + (live && it.type === 'lantern' && fl.time < (it.outUntil || 0) ? ' (zgaszona)' : '') : capFirst(adj(H.g, it.r) + ' ' + H.name) + ' (moc ' + it.r + (it.charges != null ? ', użycia: ' + it.charges : '') + cd + ')';
+      il.appendChild(el('li', null, nm + srcText(it, h) + (it.cursed ? ', przeklęty' : ''))); });   // 1.20: where it comes from
     if (live && live.gold) il.appendChild(el('li', null, 'Sakwa: ' + live.gold + ' monet (spowalnia).'));
+    { const ld = loadOf(h), cy = carryOf(h), f1 = v => v.toFixed(1).replace('.', ','); il.appendChild(el('li', null, 'Ciężar: ' + f1(ld) + ' / ' + f1(cy) + ' kg' + (burden(h) < 1 ? ' (zwalnia)' : '') + '.')); }   // 1.20 Udźwig
+    if (live && live.fled && !live.dead && (live.loot || live.gold)) il.appendChild(el('li', null, (fem ? 'Zabrała' : 'Zabrał') + ' z lochu: ' + (live.loot || 0) + ' łupu, ' + (live.gold || 0) + ' monet.'));
     card.appendChild(il);
     if (live && !live.queued) {
       const db = Object.entries(live.dmgBy || {}).filter(x => x[1] >= 1).map(x => DMG_TYPES[x[0]] + ' ' + Math.round(x[1])).join(', ');
@@ -14929,7 +15407,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     if (!userStarted || !run || run.over) return false;   // Prototype 1.0: the tutorial run is saved too (it goes on as a full run)
     try {
       if (fl && fl.phase === 'build' && stage === 'build') run.essence = fl.essence;
-      const prim = o => { const c = {}; for (const k in o) { const v = o[k]; if (v === null || typeof v !== 'object' && typeof v !== 'function') c[k] = v; } if (o.item) c.item = Object.assign({}, o.item); return c; };   // loot left by a hero keeps its exact item
+      const prim = o => { const c = {}; for (const k in o) { const v = o[k]; if (v === null || typeof v !== 'object' && typeof v !== 'function') c[k] = v; } if (o.item) c.item = Object.assign({}, o.item); if (o.fromNm) c.fromNm = o.fromNm.slice(); if (o.belly) c.belly = o.belly.map(x => Object.assign({}, x)); return c; };   // loot left by a hero keeps its exact item (1.20: and whose it was; a mimic its belly)
       const data = JSON.stringify({ v: SAVE_VER, gv: LOG_VERSION, stage, at: Date.now(), run }, function (k, v) {
         if (k === 'afterModals' || k === 'lastLog') return undefined;
         if (k === 'waveDocs') return v.map(d => Object.assign({}, d, { timeline: null }));
@@ -14995,7 +15473,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 58;   // 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  const LOG_VERSION = 58;   // 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
@@ -15023,7 +15501,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     const w = run.waves[run.waves.length - 1];
     const doc = { version: LOG_VERSION, runId: run.id, wave: run.wave, at: new Date().toISOString(), partial: !!partial, summary: w,
       heroes: fl.heroes.map(h => ({ id: h.id, name: h.nm[0], female: h.female, type: h.type, lvl: h.lvl, boss: h.boss, trait: h.trait, max: h.max, courage: h.courage,
-        kit: h.entry.inv.map(i => i.type + i.r), end: h.inv.map(i => i.type + i.r), gold: h.gold || 0, cursed: h.cursed ? 1 : 0, lost: h.lost ? 1 : 0, hunter: h.hunter ? 1 : 0,
+        kit: h.entry.inv.map(i => i.type + i.r), end: h.inv.map(i => i.type + i.r), endSrc: h.inv.map(i => (i.src || 'kit')[0]), took: h.loot || 0, load: Math.round(loadOf(h) * 10) / 10, gold: h.gold || 0,   // 1.20: endSrc, took, load cursed: h.cursed ? 1 : 0, lost: h.lost ? 1 : 0, hunter: h.hunter ? 1 : 0,
         out: h.dead ? 'dead' : h.carriedOut ? 'crystal' : h.fleeing ? 'scared' : h.fled ? 'left' : 'inside' })),
       entry: fl.spawnAt || 'ent', checkShapes: CHECK_SHAPE,
       layout: run.waveStart, timeline: fl.tl ? { ev: fl.tl.ev, smp: fl.tl.smp } : null, upgrades: run.upgrades.slice(), deck: run.deck.slice(), deckSize: run.deckSize, mods: Object.assign({}, mods) };
@@ -15669,6 +16147,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
     resolveCheck: p => resolveCheck(p), skipCheck: () => skipCheck(), clearCheck: () => clearCheck(), areaOf, slotOf, shortestPath, frontier, toolMarkers, applyTool, toolCost, get WW() { return WW; }, get WH() { return WH; }, TUT, UPGRADES, UPG, ITEMS, startBuild, applyUpgrade, makeWave, levelStats, recomputeMods, sellCard, upgradePicks, cardMultNow, openModal, queueModal, renderDeckTiles, saveRun, loadSave, resumeRun, clearSave, upgradeItem, removeItem, waveCurve, waveBase, computeBRooms, inB, decoyAlarm, guildAdapt, quietNow, setUser: v => { userStarted = v; }, get userStarted() { return userStarted; }, ignite, trapBoost, calmReady, landFallen, fall, planBreach: () => planBreach(), tutAnySpot, galleryK, stealNeed, portraitRooms, addFear, setTab: t => { tab = t; updateTray(); }, undo, pushUndo, get undoN() { return undoStack.length; }, setTrayOpen, UI, moveItem, moveTarget, setMode: (m, k) => { selected = m; movingKey = k || null; updateTray(); }, get selected() { return selected; }, get movingKey() { return movingKey; }, rankOf, dungeonBounds, regroupAtDoor: () => regroupAtDoor(),
     lookDone, councilDone, chooseTarget, canHearShout, answerLost, perceiveThink: (L, c) => perceiveThink(L, c), startFlee, cardFit, CARD_NEEDS, monstersTick, rebuildThreat, updateHero, onEnter, hiddenAmbush, skullK, cellLand, vaultSnap, riseGhost, restockForge, stripGear, framesWake, falseCall, taintedSip, reqOk, freshMods, shoutRange,   // 1.18
+    shareThink, loadOf, carryOf, burden, claimScore, lootReassign, onLootDead, onLootRival, lanternNear, litLantern, dropAt, bodyLoot, CLASS_FIT, CARRY, fitOf, canTake, lootOffer, mimicSpill, douseLantern, bombCook, fogRoll, hasCrowbar, srcText, smashDone, bombJob, heroAbilities, scanTraps, LOOT_GREED, itemLabel, canSee, setGreed, freeCaged, SOLO,   // 1.20
     patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, startSplit, onScout, splitting, lookRoll, lookSpots, hearFar, councilVote, nameGen, g2Start, g2End, g2Think, g2Leader, inG2, groupLeaderOf, mutinyThink, sulkThink, councilDone, lineOk, lineTags, fitLine, TRAPS, MONSTERS, isLoot, SAY, knowsTag, sawSweep, sawItem, sawAdd, itemTags, sayNow, LINE_NEEDS, setSayHook: f => { sayHook = f; }, say, nameFill, GZ, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, t3, kindPow, inKind, slotRoom, servedRooms, kindProps, PROP, PROP_PLAN, KIND_WALL3D, snapshotLayout, KINDS, KIND_INFO, KIND_OF, RT_INFO, nbrRooms, roomCount, sizeMult,
     rollItem, curse, comboNow, get orbs() { return orbs; }, boxOrbs, tileScreen, bfs, say: (h, t, p, d, how) => say(h, t, p, d, how), sayTick, floorBusy, readT, talkAs: (d, l) => talkAs(d, l), greedCurve, greedRaw, addGreed, waveSize, partySize, safestRoom: h => safestRoom(h), planHero: h => planHero(h), lootSeen: it => lootSeen(it), kill: (h, k, a) => kill(h, k, a), damage, loadRecords, BREACH_PATCH, HITEMS, LOOT_KIND, noticeLoot, lootDecision, leader, alive, heroExit, driftTarget, SCARE, CURSED, DRIFT, TABS, objTargetOk, roomOf, dropCarry, holdRemove, buildTap, onbStage, setOnb, onbDone, startGuided, endRun: (r, x) => endRun(r, x), revealPhobia, revealPhys, ONB_STAGES, ONB_CARD, ONB_ITEM, comboHp, onbOk, coachDone,
     get movingObj() { return movingObj; }

@@ -68,3 +68,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.17](1.17.html) | 21.10 | zwiedzanie i przeszukiwanie, narada po 2 minutach, bohaterowie wiedzą tylko to, co widzą i słyszą, dymki ×3 |
 | [Prototype 1.17.1](1.17.1.html) | 21.10 | bohaterowie mówią tylko o tym, co widzieli; krwawienie z kolców to nie ogień |
 | [Prototype 1.18](1.18.html) | 21.10 | 28 nowych kart: każda komnata i każdy efekt ma kartę, karty na ciekawość, słuch i naradę |
+| [Prototype 1.19](1.19.html) | 21.10 | Rozłam: druga grupa, bunt, obrażeni odchodzą sami |

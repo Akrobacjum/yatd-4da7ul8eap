@@ -534,7 +534,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.19 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.20 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -584,9 +584,16 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.19'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.20'));
     const ul2 = el('ul', 'conseq');
-    ['1.19: Rozłam. Drużyna może się podzielić na dwie grupy z dwoma przywódcami (obwódka bursztynowa). Przy rozwidleniu ktoś, kogo przywódca nie posłuchał (chciwy) albo uparty weteran, idzie drugą drogą, a 1-2 podobnych mu idzie z nim; obie grupy zwiedzają osobno i łączą się, gdy się spotkają (po ok. 40 s druga grupa wraca szukać reszty). Kto jest w drugiej grupie, nabija Grozę jak zwiadowca.',
+    ['1.20: ekwipunek i łup. Rzeczy poległego bohatera to już nie relikwie, tylko jego rzeczy: leżą jako zwykły ekwipunek (relikwią zostaje tylko relikwia z Twojego lochu) i ciągną chciwość o połowę słabiej. Kto wie o tej śmierci, mówi, czyje to; nowa drużyna czasem rozpozna rzeczy kogoś z poprzedniej wyprawy i trochę się boi.',
+     '1.20: ciało do przeszukania. Kto wejdzie na rzeczy poległego, klęka przy nich na sekundę (złodziej pół) i zabiera to, co mu się przyda; trafiony w tym czasie nie wstaje. Kapłan i ten, kto widział śmierć, rzadziej idą po rzeczy zmarłych, złodziej i chciwy chętniej; przyjaciel zmarłego może zaprotestować.',
+     '1.20: dzielenie się. Na postoju bohaterowie, którzy się widzą, podają sobie to, co komuś innemu bardziej się przyda (zbroja do wojownika, bomby do maga), albo się wymieniają; spokojny podaje swój amulet temu, kto zaraz wpadnie w panikę. Kto znajdzie coś, czego nie weźmie, mówi o tym, a ten, komu się przyda, idzie po to. Przywódca może przydzielić łup temu, kto go bardziej potrzebuje.',
+     '1.20: udźwig. Każdy przedmiot coś waży (zbroja 6 kg, bomba 2, amulet 0,5), a każda klasa unosi inaczej (barbarzyńca 16 kg, mag 8, +0,3 kg na poziom). Ponad 60% udźwigu bohater zwalnia (strzałka pod plecakiem) i częściej poślizgnie się na Lodowni; za ciężkiego nie weźmie.',
+     '1.20: narzędzia od gildii (od fali 4): latarnia (gdy w Twoim lochu ludzie błądzą albo jest Mgła) chroni przed zgubieniem się w Mgle tych, którzy są blisko niej; duch, cień i nietoperze mogą ją zgasić na 8 s. Łom (gdy zastawiasz przejścia albo masz kratę) podważa kratę i otwiera klatkę. Powracający, który kiedyś zabłądził, przynosi latarnię, a ten, kto wyniósł coś z Twojego lochu, wraca z tym.',
+     '1.20: przedmioty nie znikają. Krytyk wybija przedmiot na podłogę (właściciel chce go odzyskać), Pożeracz trzyma zjedzone przedmioty w brzuchu (do 6, gryzie o 10% mocniej za każdy) i wypluwa je, gdy wysadzi go bomba albo rozbije topór. Przeklęty przedmiot przeklina następnego, kto go weźmie. Płonący bohater z bombami może wylecieć w powietrze, a bomba rzucona w potwora rani stojących przy nim (weteran wtedy jej nie rzuca).',
+     '1.20: karta bohatera mówi, skąd ma każdy przedmiot (z domu, od gildii, z Twojego lochu, z rzeczy poległego, od przyjaciela, trofeum) i ile dźwiga; karta stosu mówi, czyje to rzeczy.',
+     '1.19: Rozłam. Drużyna może się podzielić na dwie grupy z dwoma przywódcami (obwódka bursztynowa). Przy rozwidleniu ktoś, kogo przywódca nie posłuchał (chciwy) albo uparty weteran, idzie drugą drogą, a 1-2 podobnych mu idzie z nim; obie grupy zwiedzają osobno i łączą się, gdy się spotkają (po ok. 40 s druga grupa wraca szukać reszty). Kto jest w drugiej grupie, nabija Grozę jak zwiadowca.',
      '1.19: na naradzie po 2 minutach, gdy drużyna wraca do domu, 2-3 chcących szukać dalej albo szturmować może zostać razem jako druga grupa; gdy drużyna zostaje, a kilku chce do domu, wracają razem ("Idę z tobą").',
      '1.19: bunt. Gdy idzie źle (śmierć, ciężkie rany albo strach, niskie morale), a przywódca prowadzi dalej, odważniejszy albo wyższy rangą rzuca mu wyzwanie przy całej grupie. Każdy staje po którejś stronie (wystraszeni i ranni za buntownikiem); wygrany prowadzi, a gdy drużyna jest wystraszona, zabiera ją do domu. Dumny przegrany odchodzi obrażony sam i wraca, gdy spotka resztę. Obrażony może też odejść ten, komu dwa razy kazano zostawić łup.',
      '1.18: 28 nowych kart. Każda komnata i każdy efekt pokoju ma swoją kartę (21), a sklep pokazuje ją tylko wtedy, gdy ta komnata albo efekt jest w Twoim lochu: Zastawione szuflady (Graciarnia), Cela pod zapadnią (Więzienie), Spojrzenie z ramy (Galeria), Beczki z kuźni (Kuźnia), Usypianka (Pokój dziecięcy), Zasadzka w norze (Goblinia nora), Kokony (Leże pająków), Kocioł ogra (Jaskinia ogra), Spłoszeni w mrok (Gniazdo nietoperzy), Mur z czaszek (Kaplica czaszek), Zdarte pancerze (Zbrojownia), Fałszywe wołanie (Nawiedzona sala), Błędne ogniki (Mgła), Grzęzawisko (Bagno), Niosące się echo (Grota), Wstający umarli (Krypta), Zatrzask sezamu (Sezam), Sen bez przebudzenia (Sanktuarium), Sprzężone tryby (Zębatki), Odnalezione ciało (Głusza) i Gołoledź (Lodownia). Przychodzą od 3. runu, razem z komnatami i efektami.',
@@ -923,8 +930,20 @@
     boots: '<path d="M7 2h7v10l6 3.5V21H4v-4h3z"/>',
     bomb: '<path d="M10.5 7.4V5h3v2.4a7.5 7.5 0 1 1-3 0z M14 4.2l2.6-2.4 1.4 1.4-2.4 2.6z"/>',
     weapon: '<path d="M18.5 2H22v3.5L9.5 18l1.5 1.5-1.5 1.5-1.5-1.5L5 22.5 1.5 19 4.5 16 3 14.5 4.5 13 6 14.5z"/>',
-    armor: '<path d="M6 3l3 1.5h6L18 3l4 4-3 3v11H5V10L2 7z"/>'
+    armor: '<path d="M6 3l3 1.5h6L18 3l4 4-3 3v11H5V10L2 7z"/>',
+    lantern: '<path d="M9 2h6v2h2v3l-1 1v9l1 1v3H7v-3l1-1V8L7 7V4h2z M10 9v7h4V9z"/>',   // 1.20
+    crowbar: '<path d="M18 2l3 1-1 3-2-1L6 19c-1 1-1 2 0 3l-1 1c-2-1-2-3-1-5L17 4z"/>'
   };
+  // 1.20: where a hero's item comes from (the hero card, the next party's icons)
+  function srcText(it, h) {
+    if (it.gaveNm) return ' - od ' + nameGen({ nm: it.gaveNm, female: it.gaveFem });
+    const s = it.src || 'kit';
+    if (s === 'trophy') return ' - trofeum z fali ' + (it.wave || '?');
+    if (s === 'relic') return ' - relikwia z Twojego lochu';
+    if (s === 'loot') return ' - z Twojego lochu';
+    if ((s === 'body' || (h && it.ownerNm && it.ownerNm[0] !== h.nm[0])) && it.ownerNm) return ' - z rzeczy ' + nameGen({ nm: it.ownerNm, female: it.ownerFem });
+    return s === 'guild' ? ' - od gildii' : ' - z domu';
+  }
   const svgI = (inner, color, cls) => '<svg class="' + (cls || 'gi') + '" viewBox="0 0 24 24" aria-hidden="true"><g fill="' + color + '" fill-rule="evenodd">' + inner + '</g></svg>';
   function classIconSvg(type, color, cls) {
     const ic = CLASS_ICON[type]; if (!ic) return '';
@@ -953,7 +972,7 @@
     r.appendChild(l1);
     const kit = el('div', 'kit');
     if (!e.inv.length) kit.appendChild(el('small', null, 'bez sprzętu'));
-    e.inv.forEach(it => { const s = el('span'); s.innerHTML = svgI(ITEM_GLYPH[it.type] || '', ITEM_COLOR[it.type] || '#ccc') + (it.charges > 1 ? '<small>' + it.charges + '</small>' : ''); s.title = itemLabel(it); kit.appendChild(s); });
+    e.inv.forEach(it => { const s = el('span'); s.innerHTML = svgI(ITEM_GLYPH[it.type] || '', ITEM_COLOR[it.type] || '#ccc') + (it.charges > 1 ? '<small>' + it.charges + '</small>' : ''); s.title = itemLabel(it) + srcText(it, e); if (HITEMS[it.type].tool || it.src === 'trophy') { s.style.outline = '1px solid ' + (it.src === 'trophy' ? '#ff8a3c' : '#ffffff'); s.style.borderRadius = '3px'; } kit.appendChild(s); });   // 1.20: src, a tool or a trophy framed
     r.appendChild(kit);
     // second line, under the name and the gear: what the class does, its weak spots and what the tavern does not know
     const l2 = el('div', 'np2'); l2.appendChild(document.createTextNode(CLASS_SKILL[e.type] || ''));
@@ -1082,7 +1101,8 @@
     body.appendChild(seg);
     const box = el('div', 'panel segpanel'), list = el('div', 'flist' + (cur === 'nums' ? ' grid2' : '')); box.appendChild(list); body.appendChild(box);
     if (cur === 'next') {
-      const nb = bossOf(run.wave + 1), items = [s.swaps ? 'wymiany: ' + s.swaps : '', s.potionsGiven ? 'mikstury podane: ' + s.potionsGiven : '', s.charms ? 'talizmany: ' + s.charms : '', s.amulets ? 'amulety: ' + s.amulets : '', s.boots ? 'buty: ' + s.boots : ''].filter(Boolean);
+      const nb = bossOf(run.wave + 1), items = [s.swaps ? 'wymiany: ' + s.swaps : '', s.potionsGiven ? 'mikstury podane: ' + s.potionsGiven : '', s.charms ? 'talizmany: ' + s.charms : '', s.amulets ? 'amulety: ' + s.amulets : '', s.boots ? 'buty: ' + s.boots : '',
+        s.gearGiven ? 'przekazane: ' + s.gearGiven : '', s.bodyLoot ? 'z ciał: ' + s.bodyLoot : '', s.gearKnocked ? 'wybite: ' + s.gearKnocked : '', s.lanternOut ? 'zgaszone latarnie: ' + s.lanternOut : '', s.bombCook ? 'bomby w ogniu: ' + s.bombCook : ''].filter(Boolean);   // 1.20
       if (H && !H.fed) frow(list, 'Serce chciało ' + H.need + ' Esencji z fali, a fala dała ' + fmtE(fl.score) + ': zjadło wszystko i kryształ.', 'heart');
       else if (H) frow(list, 'Serce wzięło pierwsze ' + H.need + ' Esencji' + (H.fedAt != null ? ' (najadło się w ' + mmss(H.fedAt) + ')' : '') + ', reszta (' + fmtE(Math.max(0, fl.score - H.need)) + ') trafiła do Ciebie.', 'heart');
       if (run.wave < RUN_WAVES || run.won) frow(list, 'Fala ' + (run.wave + 1) + ': poziom ok. ' + Math.round(waveBase(run.wave + 1)) + (nb ? ', prowadzi ' + (nb === 'final' ? 'bohater z przepowiedni' : 'czempion') : '') + '.', 'wave');
@@ -1131,6 +1151,7 @@
       cell('Narada: dom / szturm / chwila · sami do domu', (s.councilHome || 0) + ' / ' + (s.councilStorm || 0) + ' / ' + (s.councilMore || 0) + ' · ' + (s.goHome || 0));
       cell('Słyszane zza ściany / wieści o śmierci', (s.heard || 0) + ' / ' + (s.newsDeaths || 0));
       cell('Rozłam: grupy / bunty (udane) / obrażeni / powroty', (s.rifts || 0) + ' / ' + (s.mutinies || 0) + ' (' + (s.mutinyWins || 0) + ') / ' + (s.sulks || 0) + ' / ' + (s.merges || 0));   // 1.19
+      cell('Ekwipunek: z ciał / podane (amulety) / przydział / oferty / za ciężkie / latarnia ratuje / łom', (s.bodyLoot || 0) + ' / ' + (s.gearGiven || 0) + ' (' + (s.amuletGiven || 0) + ') / ' + (s.lootAssign || 0) + ' / ' + (s.lootOffer || 0) + ' / ' + (s.tooHeavy || 0) + ' / ' + (s.lanternSaves || 0) + ' / ' + ((s.crowbarGate || 0) + (s.crowbarCage || 0)));   // 1.20
       cell('Kwestie o tym, co widzieli / zamienione / pominięte', (s.sawTalk || 0) + ' / ' + (s.lineSwap || 0) + ' / ' + (s.lineDrop || 0));   // 1.17.1
     }
     fitList(list);
@@ -1490,7 +1511,14 @@
         'Ostatnia fala: ' + it.lf + '× odpalony, ' + it.lh + ' trafień, ' + it.lp + ' Esencji' + (it.lk ? ', zabici: ' + it.lk : '') + '.';
       card.appendChild(el('p', 'lead', s));
     }
-    if (loot && it.dropped) card.appendChild(el('p', 'lead', it.gold ? 'Sakwa poległego bohatera: ' + it.gold + (it.gold === 1 ? ' moneta.' : ' monet.') : it.item ? 'Zostawił to bohater: ' + itemLabel(it.item) + '. Następni mogą to podnieść.' : 'Zostawił to bohater.'));
+    if (loot && it.dropped) {   // 1.20: whose things they are
+      const who = it.fromNm ? { nm: it.fromNm, female: it.fromFem } : null;
+      card.appendChild(el('p', 'lead', it.body != null && who ? 'Rzeczy poległego: ' + it.fromNm[0] + ' (fala ' + it.fromWave + '): ' + (it.gold ? it.gold + (it.gold === 1 ? ' moneta' : ' monet') : itemLabel(it.item)) + '. Następni mogą to zabrać.' :
+        it.knocked != null && who ? 'Wybite bohaterowi ' + nameGen(who) + ' krytykiem: ' + itemLabel(it.item) + '.' :
+        it.gold ? 'Sakwa poległego bohatera: ' + it.gold + (it.gold === 1 ? ' moneta.' : ' monet.') : it.item ? 'Zostawił to bohater: ' + itemLabel(it.item) + '. Następni mogą to podnieść.' : 'Zostawił to bohater.'));
+    }
+    if (loot && it.item && it.item.cursed) card.appendChild(el('p', 'note', 'Przeklęty: klątwa przejdzie na tego, kto go weźmie.'));
+    if (it.type === 'mimic' && it.belly && it.belly.length) card.appendChild(el('p', 'note', 'W brzuchu: ' + it.belly.length + (it.belly.length === 1 ? ' przedmiot' : it.belly.length < 5 ? ' przedmioty' : ' przedmiotów') + ' (gryzie o ' + 10 * Math.min(6, it.belly.length) + '% mocniej). Wypluje je, gdy wysadzi go bomba albo rozbije topór.'));
     const r = roomOf(it.x, it.y), rt = rtOf(r);
     const d = el('details'); d.appendChild(el('summary', null, 'Opis'));
     d.appendChild(el('p', null, T.desc));
@@ -1585,8 +1613,12 @@
     card.appendChild(el('h2', 'h2small', 'Ekwipunek'));
     const inv = live ? live.inv : e.inv, il = el('ul', 'conseq');
     if (!inv.length) il.appendChild(el('li', null, 'Nic przy sobie.'));
-    inv.forEach(it => { const H = HITEMS[it.type]; const cd = live && fl.time < (it.cdUntil || 0) ? ', odnowienie ' + Math.ceil(it.cdUntil - fl.time) + ' s' : ''; il.appendChild(el('li', null, capFirst(adj(H.g, it.r) + ' ' + H.name) + ' (moc ' + it.r + (it.charges != null ? ', użycia: ' + it.charges : '') + cd + ')')); });
+    inv.forEach(it => { const H = HITEMS[it.type]; const cd = live && fl.time < (it.cdUntil || 0) ? ', odnowienie ' + Math.ceil(it.cdUntil - fl.time) + ' s' : '';
+      const nm = H.tool ? capFirst(H.name) + (live && it.type === 'lantern' && fl.time < (it.outUntil || 0) ? ' (zgaszona)' : '') : capFirst(adj(H.g, it.r) + ' ' + H.name) + ' (moc ' + it.r + (it.charges != null ? ', użycia: ' + it.charges : '') + cd + ')';
+      il.appendChild(el('li', null, nm + srcText(it, h) + (it.cursed ? ', przeklęty' : ''))); });   // 1.20: where it comes from
     if (live && live.gold) il.appendChild(el('li', null, 'Sakwa: ' + live.gold + ' monet (spowalnia).'));
+    { const ld = loadOf(h), cy = carryOf(h), f1 = v => v.toFixed(1).replace('.', ','); il.appendChild(el('li', null, 'Ciężar: ' + f1(ld) + ' / ' + f1(cy) + ' kg' + (burden(h) < 1 ? ' (zwalnia)' : '') + '.')); }   // 1.20 Udźwig
+    if (live && live.fled && !live.dead && (live.loot || live.gold)) il.appendChild(el('li', null, (fem ? 'Zabrała' : 'Zabrał') + ' z lochu: ' + (live.loot || 0) + ' łupu, ' + (live.gold || 0) + ' monet.'));
     card.appendChild(il);
     if (live && !live.queued) {
       const db = Object.entries(live.dmgBy || {}).filter(x => x[1] >= 1).map(x => DMG_TYPES[x[0]] + ' ' + Math.round(x[1])).join(', ');
@@ -1742,7 +1774,7 @@
     if (!userStarted || !run || run.over) return false;   // Prototype 1.0: the tutorial run is saved too (it goes on as a full run)
     try {
       if (fl && fl.phase === 'build' && stage === 'build') run.essence = fl.essence;
-      const prim = o => { const c = {}; for (const k in o) { const v = o[k]; if (v === null || typeof v !== 'object' && typeof v !== 'function') c[k] = v; } if (o.item) c.item = Object.assign({}, o.item); return c; };   // loot left by a hero keeps its exact item
+      const prim = o => { const c = {}; for (const k in o) { const v = o[k]; if (v === null || typeof v !== 'object' && typeof v !== 'function') c[k] = v; } if (o.item) c.item = Object.assign({}, o.item); if (o.fromNm) c.fromNm = o.fromNm.slice(); if (o.belly) c.belly = o.belly.map(x => Object.assign({}, x)); return c; };   // loot left by a hero keeps its exact item (1.20: and whose it was; a mimic its belly)
       const data = JSON.stringify({ v: SAVE_VER, gv: LOG_VERSION, stage, at: Date.now(), run }, function (k, v) {
         if (k === 'afterModals' || k === 'lastLog') return undefined;
         if (k === 'waveDocs') return v.map(d => Object.assign({}, d, { timeline: null }));
@@ -1808,7 +1840,7 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 58;   // 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  const LOG_VERSION = 58;   // 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
@@ -1836,7 +1868,7 @@
     const w = run.waves[run.waves.length - 1];
     const doc = { version: LOG_VERSION, runId: run.id, wave: run.wave, at: new Date().toISOString(), partial: !!partial, summary: w,
       heroes: fl.heroes.map(h => ({ id: h.id, name: h.nm[0], female: h.female, type: h.type, lvl: h.lvl, boss: h.boss, trait: h.trait, max: h.max, courage: h.courage,
-        kit: h.entry.inv.map(i => i.type + i.r), end: h.inv.map(i => i.type + i.r), gold: h.gold || 0, cursed: h.cursed ? 1 : 0, lost: h.lost ? 1 : 0, hunter: h.hunter ? 1 : 0,
+        kit: h.entry.inv.map(i => i.type + i.r), end: h.inv.map(i => i.type + i.r), endSrc: h.inv.map(i => (i.src || 'kit')[0]), took: h.loot || 0, load: Math.round(loadOf(h) * 10) / 10, gold: h.gold || 0,   // 1.20: endSrc, took, load cursed: h.cursed ? 1 : 0, lost: h.lost ? 1 : 0, hunter: h.hunter ? 1 : 0,
         out: h.dead ? 'dead' : h.carriedOut ? 'crystal' : h.fleeing ? 'scared' : h.fled ? 'left' : 'inside' })),
       entry: fl.spawnAt || 'ent', checkShapes: CHECK_SHAPE,
       layout: run.waveStart, timeline: fl.tl ? { ev: fl.tl.ev, smp: fl.tl.smp } : null, upgrades: run.upgrades.slice(), deck: run.deck.slice(), deckSize: run.deckSize, mods: Object.assign({}, mods) };
@@ -2482,6 +2514,7 @@
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
     resolveCheck: p => resolveCheck(p), skipCheck: () => skipCheck(), clearCheck: () => clearCheck(), areaOf, slotOf, shortestPath, frontier, toolMarkers, applyTool, toolCost, get WW() { return WW; }, get WH() { return WH; }, TUT, UPGRADES, UPG, ITEMS, startBuild, applyUpgrade, makeWave, levelStats, recomputeMods, sellCard, upgradePicks, cardMultNow, openModal, queueModal, renderDeckTiles, saveRun, loadSave, resumeRun, clearSave, upgradeItem, removeItem, waveCurve, waveBase, computeBRooms, inB, decoyAlarm, guildAdapt, quietNow, setUser: v => { userStarted = v; }, get userStarted() { return userStarted; }, ignite, trapBoost, calmReady, landFallen, fall, planBreach: () => planBreach(), tutAnySpot, galleryK, stealNeed, portraitRooms, addFear, setTab: t => { tab = t; updateTray(); }, undo, pushUndo, get undoN() { return undoStack.length; }, setTrayOpen, UI, moveItem, moveTarget, setMode: (m, k) => { selected = m; movingKey = k || null; updateTray(); }, get selected() { return selected; }, get movingKey() { return movingKey; }, rankOf, dungeonBounds, regroupAtDoor: () => regroupAtDoor(),
     lookDone, councilDone, chooseTarget, canHearShout, answerLost, perceiveThink: (L, c) => perceiveThink(L, c), startFlee, cardFit, CARD_NEEDS, monstersTick, rebuildThreat, updateHero, onEnter, hiddenAmbush, skullK, cellLand, vaultSnap, riseGhost, restockForge, stripGear, framesWake, falseCall, taintedSip, reqOk, freshMods, shoutRange,   // 1.18
+    shareThink, loadOf, carryOf, burden, claimScore, lootReassign, onLootDead, onLootRival, lanternNear, litLantern, dropAt, bodyLoot, CLASS_FIT, CARRY, fitOf, canTake, lootOffer, mimicSpill, douseLantern, bombCook, fogRoll, hasCrowbar, srcText, smashDone, bombJob, heroAbilities, scanTraps, LOOT_GREED, itemLabel, canSee, setGreed, freeCaged, SOLO,   // 1.20
     patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, startSplit, onScout, splitting, lookRoll, lookSpots, hearFar, councilVote, nameGen, g2Start, g2End, g2Think, g2Leader, inG2, groupLeaderOf, mutinyThink, sulkThink, councilDone, lineOk, lineTags, fitLine, TRAPS, MONSTERS, isLoot, SAY, knowsTag, sawSweep, sawItem, sawAdd, itemTags, sayNow, LINE_NEEDS, setSayHook: f => { sayHook = f; }, say, nameFill, GZ, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, t3, kindPow, inKind, slotRoom, servedRooms, kindProps, PROP, PROP_PLAN, KIND_WALL3D, snapshotLayout, KINDS, KIND_INFO, KIND_OF, RT_INFO, nbrRooms, roomCount, sizeMult,
     rollItem, curse, comboNow, get orbs() { return orbs; }, boxOrbs, tileScreen, bfs, say: (h, t, p, d, how) => say(h, t, p, d, how), sayTick, floorBusy, readT, talkAs: (d, l) => talkAs(d, l), greedCurve, greedRaw, addGreed, waveSize, partySize, safestRoom: h => safestRoom(h), planHero: h => planHero(h), lootSeen: it => lootSeen(it), kill: (h, k, a) => kill(h, k, a), damage, loadRecords, BREACH_PATCH, HITEMS, LOOT_KIND, noticeLoot, lootDecision, leader, alive, heroExit, driftTarget, SCARE, CURSED, DRIFT, TABS, objTargetOk, roomOf, dropCarry, holdRemove, buildTap, onbStage, setOnb, onbDone, startGuided, endRun: (r, x) => endRun(r, x), revealPhobia, revealPhys, ONB_STAGES, ONB_CARD, ONB_ITEM, comboHp, onbOk, coachDone,
     get movingObj() { return movingObj; }

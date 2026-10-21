@@ -47,9 +47,30 @@
     const g = h.inv.filter(x => x.type === 'charm' || x.type === 'amulet' || x.type === 'armor');
     if (!g.length || Math.random() >= Math.min(1, 0.5 * mods.strip)) return false;
     const x = pick(g);
-    if (!dropItem(h, x, 0)) return false;   // nowhere to fall: he keeps it
-    h.inv.splice(h.inv.indexOf(x), 1); fl.stats.stripped = (fl.stats.stripped || 0) + 1; tl('sp', h.id, x.type);
+    if (!dropItem(h, x, 0, false, { knocked: true })) return false;   // nowhere to fall: he keeps it (1.20: knocked, he wants it back)
+    h.inv.splice(h.inv.indexOf(x), 1); fl.stats.stripped = (fl.stats.stripped || 0) + 1; tl('st', h.id, x.type);   // 1.20: 'st' (it was 'sp', the code of a hero coming in)
     floatHero(h, 'Strącone: ' + HITEMS[x.type].name, '#c9d5e2', 12, -0.6);
+    return true;
+  }
+  // 1.20: a mimic blown up by a bomb or smashed by an axe spits out what it ate (its belly, up to 6 items, kept between waves)
+  // around its furniture, as loot
+  function mimicSpill(it, h) {
+    if (!it || it.type !== 'mimic' || !it.belly || !it.belly.length) return 0;
+    let n = 0; it.belly.forEach(x => { if (dropAt(it.x, it.y, x, 0, false)) n++; });
+    it.belly = [];
+    if (!n) return 0;
+    fl.stats.mimicSpill = (fl.stats.mimicSpill || 0) + n; tl('mx', it.x, it.y, n);
+    floatTile(it.x, it.y, 'Wypluwa ' + n + (n === 1 ? ' przedmiot' : n < 5 ? ' przedmioty' : ' przedmiotów'), '#d8434f', 13, -0.7);
+    const o = h && !h.dead ? h : alive().sort((a, b) => Math.hypot(a.tx - it.x, a.ty - it.y) - Math.hypot(b.tx - it.x, b.ty - it.y))[0];
+    if (o) { sawAdd(o, ['mimic']); sayNow(['mimic'], () => say(o, pick(SAY.mimicSpill), 3)); }
+    return n;
+  }
+  // 1.20 Latarnia: a ghost, a shade or bats hitting its bearer may blow it out for 8 s (half the time; a level 3 shade always)
+  function douseLantern(h, it) {
+    const lt = h.inv.find(x => x.type === 'lantern');
+    if (!lt || h.dead || fl.time < (lt.outUntil || 0) || Math.random() >= (it.type === 'shade' && t3(it) ? 1 : 0.5)) return false;
+    lt.outUntil = fl.time + 8; floatHero(h, 'Zgasła!', '#ffe08a', 13, -0.8); say(h, pick(SAY.lanternOut), 3);
+    fl.stats.lanternOut = (fl.stats.lanternOut || 0) + 1; tl('la', h.id);
     return true;
   }
   function disarmSpots(it) {
@@ -286,8 +307,11 @@
         it.cd = cdBase; it.anim = 0.35;
         fxTiles(area, '216,67,79', 0.3);
         list.forEach(h => {
-          damage(h, 40 * D * mods.mimicDmg * pw, it, cpow); hit++;
-          if (t3(it) && !h.dead && h.inv.length) { const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0]; floatHero(h, 'Pożarte: ' + HITEMS[lost.type].name, '#d8434f', 12, -0.6); }   // Pożeracz
+          damage(h, 40 * D * mods.mimicDmg * pw * (1 + 0.1 * Math.min(6, (it.belly || []).length)), it, cpow); hit++;   // 1.20: +10% for each item in its belly
+          if (t3(it) && !h.dead && h.inv.length) {   // Pożeracz (1.20: the item goes into its belly, at most 6, kept between waves)
+            const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0]; floatHero(h, 'Pożarte: ' + HITEMS[lost.type].name, '#d8434f', 12, -0.6);
+            (it.belly || (it.belly = [])).push(Object.assign({}, lost, { cdUntil: 0 })); if (it.belly.length > 6) it.belly.shift(); fl.stats.mimicAte = (fl.stats.mimicAte || 0) + 1;
+          }
         });
         break;
       case 'goblin': {
@@ -327,14 +351,14 @@
       case 'ghost':
         it.cd = cdBase; it.anim = 0.6;
         fxTiles(area, '200,210,255', 0.4);
-        list.forEach(h => { addFear(h, 40 * pw * mods.ghostAura * galleryK(it) * cpow, 'ghost'); damage(h, 5 * D * pw, actSrc(it.type), cpow); hit++; });
+        list.forEach(h => { addFear(h, 40 * pw * mods.ghostAura * galleryK(it) * cpow, 'ghost'); damage(h, 5 * D * pw, actSrc(it.type), cpow); douseLantern(h, it); hit++; });   // 1.20: douseLantern
         floatTile(it.x, it.y, 'Wrzask!', '#dfe6ff', 15, -0.6);
         break;
       case 'shade': {   // a whisper: the one it follows hears it best (the lonely twice as well)
         it.cd = cdBase; it.anim = 0.6;
         let tgt = null, bs = -1e9;
         list.forEach(h => { const p = heroPos(h), sc = (h.alone || h.lost ? 100 : 0) - Math.hypot(p.x - it.gx, p.y - it.gy); if (sc > bs) { bs = sc; tgt = h; } });
-        list.forEach(h => { addFear(h, (h === tgt ? 30 : 10) * (h.alone || h.lost ? 2 : 1) * pw * cpow, 'shade'); hit++; });
+        list.forEach(h => { addFear(h, (h === tgt ? 30 : 10) * (h.alone || h.lost ? 2 : 1) * pw * cpow, 'shade'); douseLantern(h, it); hit++; });   // 1.20: douseLantern
         if (tgt) {
           floatHero(tgt, 'Szept...', '#9a8fb8', 14, -0.6); say(tgt, pick(SAY.shade), 3, null, 'loud');
           if (t3(it) && tgt.alone && !tgt.lost && leader() !== tgt) getLost(tgt, 'shade');   // Pożeracz światła
@@ -346,7 +370,7 @@
         fxTiles(area, '70,56,84', 0.3);
         const L = leader();
         list.forEach(h => {
-          addFear(h, 16 * pw * cpow, 'bats'); damage(h, 6 * D * pw, actSrc(it.type), cpow); hit++;
+          addFear(h, 16 * pw * cpow, 'bats'); damage(h, 6 * D * pw, actSrc(it.type), cpow); douseLantern(h, it); hit++;   // 1.20: douseLantern
           if (!h.dead && !h.fleeing && !h.crystal && !caged(h) && h !== L && Math.random() < (h.rank === 0 ? 0.6 : 0.35) * (t3(it) ? 1.3 : 1)) {
             h.panicUntil = fl.time + 2.5; h.needPlan = true; fl.stats.batScatter = (fl.stats.batScatter || 0) + 1;
             floatHero(h, 'Spłoszony!', '#c9c0d8', 13, -0.8); say(h, pick(SAY.batScatter), 2, null, 'loud');

@@ -393,6 +393,11 @@
         const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0];
         const q = heroPos(h); burst(q.x, q.y, rarColor(lost.r), 10);
         floatHero(h, G3(HITEMS[lost.type].g, 'Wypadł', 'Wypadła', 'Wypadły') + ' ' + HITEMS[lost.type].name + '!', '#c3b2ff', 14, -1.0);
+        // 1.20: it lands next to him (it used to vanish), no greed for it, and he wants it back (lootDecision); no room: gone as before
+        if (dropItem(h, lost, 0, true, { knocked: true })) {
+          fl.stats.gearKnocked = (fl.stats.gearKnocked || 0) + 1; tl('kn', h.id, lost.type);
+          if (Math.random() < 0.6) fl.party.queueSay.push({ id: h.id, text: pick(SAY.gearKnocked), at: fl.time + 0.3, prio: 2 });
+        }
       });
     }
     else { fl.stats.checkOk++; floatTile(c.it.x, c.it.y, 'Draśnięcie', '#8be38f', 14, -1.2); }
@@ -549,7 +554,7 @@
     if (!crew.length) return inPit.length ? null : 'empty';
     if (crew.every(h => caged(h))) return null;
     for (const h of crew) {
-      if (h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free') return h.state;
+      if (h.state === 'fight' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || h.state === 'loot') return h.state;   // 1.20: searching a body
       if (caged(h)) return 'caged';
     }
     const live = it => (ACTIVE[it.type] && !it.disabled && !(MONSTERS[it.type] && it.hp <= 0)) || isLoot(it.type);

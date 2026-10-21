@@ -118,7 +118,7 @@
   const alive = () => fl.heroes.filter(h => !h.dead && !h.fled && !h.gone);
   const webbed = h => fl.time < h.slowUntil;
   const caged = h => h.state === 'caged';
-  const held = h => h.state === 'fight' || h.state === 'wait' || h.state === 'talk' || h.state === 'rest' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || caged(h) || webbed(h);
+  const held = h => h.state === 'fight' || h.state === 'wait' || h.state === 'talk' || h.state === 'rest' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || h.state === 'loot' || caged(h) || webbed(h);   // 1.20: loot = kneeling by a body
   function trapMult(h, type, src) {
     const pierce = type === 'arrows' && src && t3(src);   // level 3 arrows go through shields
     const sh = k => inB('acid', h.room) ? (1 + k) / 2 : k;   // acid: shields protect half as well
@@ -544,7 +544,16 @@
     const phys = pre.phys !== undefined ? pre.phys : (deep && Math.random() < 0.35 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHYS)) : null);
     const phobia = pre.phobia !== undefined ? pre.phobia : (deep && !boss && Math.random() < 0.3 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHOBIAS)) : null);
     const known = pre.known || [phys && (mods.revealAll || Math.random() < 0.3) ? 'phys' : null, phobia && (mods.revealAll || Math.random() < 0.3) ? 'phobia' : null].filter(Boolean);
-    return { type, lvl, rank: tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: comboHp(n), inv: makeKit(type, lvl + (boss ? 2 : 0)), trait,
+    const inv = makeKit(type, lvl + (boss ? 2 : 0));
+    // 1.20 (hook for 1.23): a returner brings back the best two things he carried out of your dungeon (src trophy): a better one
+    // replaces his own power or gear of that kind, the rest comes on top of his kit (past invCap). One who got lost in here brings
+    // a lantern from home.
+    (pre.gear || []).slice(0, 2).forEach(g => {
+      const tr = Object.assign({}, g, { src: 'trophy', kit: false }), U = HITEMS[g.type].use, cur = (U === 'power' || U === 'gear' || U === 'tool') && inv.find(x => x.type === g.type);
+      if (cur) { if (g.r > cur.r) inv[inv.indexOf(cur)] = tr; } else inv.push(tr);
+    });
+    if (pre.wasLost && !inv.some(x => x.type === 'lantern')) inv.push({ type: 'lantern', r: 1, src: 'kit' });
+    return { type, lvl, rank: tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: comboHp(n), inv, trait,
       courage: Math.round(R.courage * (boss === 'final' ? 2 : boss ? 1.5 : 1) * ck), phys, phobia, known, returning: !!pre.returning, scar: pre.scar || null, times: pre.times || 0 };
   }
   // The guild reads the last wave's report and sends the right people (from wave 3): priests and amulets against fear,
@@ -633,7 +642,7 @@
       if (idx < 0) return;
       back++;
       const L = Math.max(list[idx].lvl, r.lvl + 1 + (r.crystal ? 1 : 0));
-      list[idx] = makeHero(r.type, L, n, used, null, { nm: r.nm, female: r.female, phys: r.phys, phobia: r.phobia, trait: r.trait, known: [r.phys ? 'phys' : null, r.phobia ? 'phobia' : null].filter(Boolean), returning: true, scar: r.scar, times: r.times });
+      list[idx] = makeHero(r.type, L, n, used, null, { nm: r.nm, female: r.female, phys: r.phys, phobia: r.phobia, trait: r.trait, known: [r.phys ? 'phys' : null, r.phobia ? 'phobia' : null].filter(Boolean), returning: true, scar: r.scar, times: r.times, gear: r.gear, wasLost: r.wasLost });   // 1.20: gear, wasLost
       r.used = n;
     });
     const boss = bossOf(n);
@@ -642,8 +651,23 @@
     if (g && (g.kind === 'fear' || g.kind === 'kill')) list.forEach(e => {
       if (!(n >= 6 || e.type === { fear: 'priest', kill: 'warrior' }[g.kind]) || e.inv.length >= 3 + Math.floor(e.lvl / 3)) return;
       const t = g.kind === 'fear' ? 'amulet' : 'charm', r = 1 + Math.floor(e.lvl / 6), cur = e.inv.find(x => x.type === t);
-      if (cur) { cur.r = Math.max(cur.r, r); cur.charges = (cur.charges || 0) + 1; } else e.inv.push({ type: t, r, charges: 1 });   // one power of a kind is enough (one use from the guild)
+      if (cur) { cur.r = Math.max(cur.r, r); cur.charges = (cur.charges || 0) + 1; } else e.inv.push({ type: t, r, charges: 1, src: 'guild' });   // one power of a kind is enough (one use from the guild)
     });
+    // 1.20: the guild's tools, one of each a party, from wave 4 of the full game. A lantern for a party going where people got
+    // lost (the guild's 'lost' answer), otherwise now and then when your dungeon has a Mgła (35%); a crowbar for a dungeon of
+    // shut ways (its 'block' answer, the barbarian first), otherwise now and then when you have a gate (30%, a fighter first).
+    if (n >= 4 && stageOf() >= 3) {
+      const room = e => e.inv.length < 3 + Math.floor(e.lvl / 3), has = t => list.some(e => e.inv.some(x => x.type === t));
+      const give = (e, t) => { if (e) e.inv.push({ type: t, r: 1, src: 'guild' }); };
+      if (!has('lantern')) {
+        if (g && g.kind === 'lost') give(list.find(room), 'lantern');
+        else if ([...run.layout.cells.values()].some(c => c.rt === 'fog') && Math.random() < 0.35) { const c = list.filter(e => !e.boss && room(e)); if (c.length) give(pick(c), 'lantern'); }
+      }
+      if (!has('crowbar')) {
+        if (g && g.kind === 'block') give(list.find(e => e.type === 'barbarian' && room(e)) || list.find(room), 'crowbar');
+        else if ([...run.items.values()].some(it => it.type === 'gate') && Math.random() < 0.3) { const c = list.filter(room); give(c.find(e => e.type === 'warrior' || e.type === 'barbarian') || (c.length ? pick(c) : null), 'crowbar'); }
+      }
+    }
     return list;
   }
   const TALE_PER = 0.04, TALE_LOOT = 4, TALE_CAP = 0.3;   // v15.1: +0,04 greed per treasure seen (up to 4) for every hero scared away, at most +0,3 a wave
@@ -653,7 +677,7 @@
     run.buildSec += Math.max(0, realNow - fl.buildStart); fl.buildSec = Math.round(realNow - fl.buildStart);
     saveRun('build');   // a tab closed during the wave comes back to this build
     perfReset();
-    fl.items.forEach(it => { it.skullOff = false; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap)
+    fl.items.forEach(it => { it.skullOff = false; it.firstBy = null; it.knocked = null; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap); 1.20: so do who saw a pile first and whose gear a crit knocked out
     fl.phase = 'raid'; fl.time = 0; fl.patT = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
     { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał
@@ -712,12 +736,12 @@
     fl.threatDirty = true;
   }
   function spawnHero(e) {
-    const T = HEROES[e.type], R = levelStats(e.lvl), sp = spawnPt();
-    const h = { entry: e, id: fl.heroes.length, type: e.type, T, R, rank: e.rank, lvl: e.lvl, boss: e.boss, female: e.female, nm: e.nm, hp: e.hp, max: e.max, hpK: e.hpK || 1,
+    const T = HEROES[e.type], R = levelStats(e.lvl), sp = spawnPt(), id = fl.heroes.length;
+    const h = { entry: e, id, type: e.type, T, R, rank: e.rank, lvl: e.lvl, boss: e.boss, female: e.female, nm: e.nm, hp: e.hp, max: e.max, hpK: e.hpK || 1,
       x: sp.x, y: sp.y, nx: null, ny: null, prog: 0, tx: sp.x, ty: sp.y, path: [], needPlan: true, thinkT: 0, intent: 'follow',
       room: roomOf(sp.ix, sp.iy), state: 'walk', timer: 0, dur: 1, slowUntil: -1, burnUntil: -1, burnBy: null, foe: null, item: null,
       dead: false, fled: false, gone: false, flash: 0, acc: 0, accT: 0, cast: e.type === 'priest' ? 1.5 : e.type === 'mage' ? 2 : 0,
-      barrierCd: 0, dispelCd: 0, scan: 0.5, hurtAt: -9, edgeAt: -9, playerDmg: 0, loot: 0, orbAcc: 0, inv: e.inv.map(it => Object.assign({}, it, { cdUntil: 0 })),
+      barrierCd: 0, dispelCd: 0, scan: 0.5, hurtAt: -9, edgeAt: -9, playerDmg: 0, loot: 0, orbAcc: 0, inv: e.inv.map(it => Object.assign({}, it, { cdUntil: 0, owner: it.owner != null ? it.owner : id, ownerNm: it.ownerNm || e.nm, ownerFem: it.ownerNm ? it.ownerFem : e.female, wave: it.wave || run.wave, src: it.src || 'kit' })), shareCd: 0,   // 1.20: owner, src
       shield: 0, shieldUpUntil: -1, shieldCd: 0, dodgeCd: 0, panicUntil: -1, lost: false, noPathT: 0, alone: false, aloneSaid: false, bubble: null,
       disarmT: null, scoutTarget: -1, scoutUntil: -1, split: false, fear: 0, courage: e.courage || R.courage, fleeing: false, crystal: false, fallUntil: -1, cageUntil: -1, cageIt: null,
       freeT: null, lostT: 0, lootMemo: new Map(), saidTiming: new Set(), felt: new Map(), wanderUntil: -1, wanderTarget: -1, rumorSaid: false, invCap: 3 + Math.floor(e.lvl / 3),
@@ -734,7 +758,12 @@
     tl('sp', h.id);
     reveal(h);
     if (fl.heroes.length === 1 && fl.breach) say(h, pick(fl.spawnAt === 'breach' ? SAY.breachUse : SAY.doorUse), 3, 2.2);
-    else if (h.returning) say(h, pick(SAY.returnBack), 3, 2.4);
+    else if (h.returning) {   // 1.20: one who brings back something of yours may say so
+      const tr = h.inv.some(x => x.src === 'trophy');
+      if (tr) { fl.stats.returnGear = (fl.stats.returnGear || 0) + 1; tl('rq', h.id); }
+      say(h, pick(tr && Math.random() < 0.5 ? SAY.returnGear : SAY.returnBack), 3, 2.4);
+    }
+    if (h.inv.some(x => x.type === 'lantern')) fl.stats.lanterns = (fl.stats.lanterns || 0) + 1;   // 1.20: parties with a lantern
     if (h.returning && mods.badMemories) h.fear = Math.max(h.fear, mods.badMemories * h.courage);   // Złe wspomnienia
     else if (h.hunter && Math.random() < 0.6) say(h, pick(SAY.hunters), 2, 2.2);
     if (fl.secondGroup) {   // they saw their friends run out screaming
@@ -903,7 +932,10 @@
       }
       if (!scar && topDmg && topDmg[1] > 0.3 * h.max) { phys = SCAR_RES[topDmg[0]]; scar = PHYS[phys].name[h.female ? 1 : 0] + ' po ranach z Twojego lochu'; }   // the wound that nearly killed him hardened him
       run.returners.push({ nm: h.nm, female: h.female, type: h.type, lvl: h.lvl, back: run.wave + 2 + (Math.random() < 0.5 ? 1 : 0), phys, phobia, trait: h.trait,
-        scar: scar || 'pamięta Twój loch', times: ((h.entry && h.entry.times) || 0) + 1, crystal: !!h.carriedOut });
+        scar: scar || 'pamięta Twój loch', times: ((h.entry && h.entry.times) || 0) + 1, crystal: !!h.carriedOut,
+        // 1.20 (hook for 1.23): the best two things he took from your dungeon come back with him, and one who got lost brings a lantern
+        gear: h.inv.filter(x => ['loot', 'relic', 'body', 'trophy'].includes(x.src)).sort((a, b) => b.r - a.r).slice(0, 2).map(x => ({ type: x.type, r: x.r, src: x.src, wave: x.wave || run.wave,
+          ownerNm: x.ownerNm, ownerFem: x.ownerFem, wasRelic: x.src === 'relic' || !!x.wasRelic, charges: powerCharges(x.type, x.r) })), wasLost: !!h.lostEver, goldOut: h.gold || 0 });
       fl.stats.returnersOut = (fl.stats.returnersOut || 0) + 1;
     });
   }
@@ -1283,7 +1315,7 @@
     if (caged(h)) { freeCaged(h, false, 'panic'); say(h, pick(SAY.cageBreak), 4); }
     h.fleeing = true; h.needPlan = true; fl.stats.flees++; tl('fl', h.id); tutPop('flee');
     if (mods.fleeShock) alive().forEach(o => { if (o !== h && !o.fleeing && canHearShout(o, h)) addFear(o, mods.fleeShock * o.courage, null, 'screams'); });   // Krzyki w ścianach (1.18: who hears his shout, as for every other shout since 1.17)
-    if (h.state === 'rest' || h.state === 'talk' || h.state === 'wait' || h.state === 'boss' || h.state === 'disarm' || h.state === 'free') { h.state = 'walk'; h.item = null; }
+    if (h.state === 'rest' || h.state === 'talk' || h.state === 'wait' || h.state === 'boss' || h.state === 'disarm' || h.state === 'free' || h.state === 'loot') { h.state = 'walk'; h.item = null; h.lootIt = null; }   // 1.20: loot
     say(h, pick(h.trait === 'coward' ? SAY.cowardRun : SAY.flee), 4, 2);
     floatHero(h, 'Ucieka!', '#c3b2ff', 14, -0.8);
     // the champion will not have it: a battle cry steadies everyone else (once every 15 s)
@@ -1355,8 +1387,9 @@
       addFloat(p.x, p.y - 0.5, 'Kocioł +' + n + ' Esencji', '#ff7a86', 14, -0.6);
     }
     // his gear and his purse spill out as loot around the body: the exact items, free for the next one who dares (no Esencja back for these)
-    h.inv.forEach(it => dropItem(h, it, 0));
-    if (h.gold > 0) dropItem(h, null, h.gold);
+    // 1.20: the piles know whose body they are (it.body, fromNm): the others see the dead one's things, not a relic (dropItem)
+    h.inv.forEach(it => dropItem(h, it, 0, false, { body: true }));
+    if (h.gold > 0) dropItem(h, null, h.gold, false, { body: true });
     h.inv = []; h.gold = 0;
     // the others react: a death scares everyone (a lot up close, more in a crypt, cowards most), less than a scare trap does,
     // and it stays with them for a while (fear fades slowly when shaken). Veterans feel it too: it scales with courage.
@@ -1412,46 +1445,81 @@
 
   /* ================= loot, greed and hero gear ================= */
   function rollItem(r, pool) {
-    const types = pool || Object.keys(HITEMS).filter(t => !HITEMS[t].loot), total = types.reduce((a, t) => a + HITEMS[t].w, 0);
+    const types = (pool || Object.keys(HITEMS).filter(t => !HITEMS[t].loot)).filter(t => !HITEMS[t].tool), total = types.reduce((a, t) => a + HITEMS[t].w, 0);   // 1.20: tools never come from loot
     let x = Math.random() * total, t = types[0];
     for (const k of types) { x -= HITEMS[k].w; if (x <= 0) { t = k; break; } }
     return { type: t, r, cdUntil: 0, charges: powerCharges(t, r) };
   }
   const itemPow = h => mods.itemPower * (h && h.cursed ? 0.5 : 1);   // Rdza and a curse weaken gear
+  // 1.20 Udźwig: what he carries (kg) against what his class can carry; past 60% he slows down (at most to x0,84)
+  const loadOf = h => h.inv.reduce((a, x) => a + (HITEMS[x.type].kg || 0), 0);
+  const carryOf = h => (CARRY[h.type] || 10) + 0.3 * h.lvl;
+  const burden = h => Math.max(0.84, 1 - 0.4 * Math.max(0, loadOf(h) / carryOf(h) - 0.6));
+  // could he take this one from a friend: room in the pack (or it replaces one of a kind, not a cursed one) and the weight
+  function canTake(o, x) {
+    const U = HITEMS[x.type].use, same = (U === 'power' || U === 'gear' || U === 'tool') ? o.inv.find(y => y.type === x.type) : null;
+    if (same && same.cursed) return false;
+    if (!same && o.inv.length >= (o.invCap || 3)) return false;
+    return loadOf(o) + (HITEMS[x.type].kg || 0) - (same ? HITEMS[same.type].kg || 0 : 0) <= carryOf(o);
+  }
+  // 1.20 Latarnia: lit (a ghost, a shade or bats may blow it out for 8 s), it keeps the fog off everyone within 2 tiles in his room
+  const litLantern = h => !h.dead && !h.gone && h.inv.some(x => x.type === 'lantern' && fl.time >= (x.outUntil || 0));
+  const lanternNear = h => alive().some(o => litLantern(o) && o.room === h.room && hdist(o, h) <= 2);
+  const hasCrowbar = h => h.inv.some(x => x.type === 'crowbar');
   const potionHeal = it => Math.min(0.55, 1 - Math.pow(0.7, it.r));   // a potion heals 30% of max HP, a rare one 51%, never more than 55%
   const gearR = (h, t) => h.inv.reduce((a, x) => x.type === t ? Math.max(a, x.r) : a, 0);
   function itemLabel(it) { const H = HITEMS[it.type]; return H.name + (it.r > 1 ? ' (' + adj(H.g, it.r) + ')' : ''); }
   function itemAcc(it) { const H = HITEMS[it.type]; return (it.r > 1 ? (H.g === 'f' ? adj('fAcc', it.r) : adj(H.g, it.r)) + ' ' : '') + H.acc; }
   // What a piece of gear is worth to this hero right now (0 = no use for it): potions matter when hurt, a second power of a kind
-  // only if it is better, each class has its favourite (warrior: talisman, weapon, armour; priest: amulet; thief: boots).
+  // only if it is better. 1.20: how well each kind fits his class (CLASS_FIT) instead of one favourite class a kind, so armour is
+  // worth 3,1 to a warrior and 1 to a mage; a tool is worth 1,5 to one who has none of its kind.
   function itemValue(h, it) {
     const P = it.type, r = it.r, others = h.inv.filter(x => x !== it && x.type === P);
     if (P === 'potion') return r * (h.hp < 0.6 * h.max ? 2.5 : 1) / (1 + 0.7 * others.length);
-    if (P === 'bomb') return 0.8 * r / (1 + 0.5 * others.length);
-    const pref = { charm: 'warrior', amulet: 'priest', boots: 'thief', weapon: 'warrior', armor: 'warrior' }[P];
+    if (P === 'bomb') return 0.8 * r * fitOf('bomb', h.type) / (1 + 0.5 * others.length);
+    if (HITEMS[P].tool) return others.length ? 0 : 1.5;
     const best = others.reduce((a, x) => Math.max(a, x.r), 0);
-    return best ? Math.max(0, r - best) * 1.2 : r * 1.2 * (pref === h.type ? 1.3 : 1);
+    return best ? Math.max(0, r - best) * 1.2 * fitOf(P, h.type) : r * 1.2 * fitOf(P, h.type);
   }
   // Something lands on the floor next to the hero (swapped out, or spilled from a body): the exact item, loot for anyone.
-  function dropItem(h, item, gold, noGreed) {
-    const spots = [[h.tx, h.ty]].concat(DIRS8.map(d => [h.tx + d[0], h.ty + d[1]]));
+  // 1.20: dropAt puts it next to a spot (the mimic spitting out its belly), dropItem next to the hero, with his name on the pile.
+  // A relic of yours (src relic, or a returner's trophy that was one) stays a relic; everything else a hero had is plain gear
+  // (it used to glitter as a relic from power 3 on: a dead friend's bomb across the dungeon). opt.body: spilled from his body;
+  // opt.knocked: knocked out of his hands (a crit, the Zbrojownia), he wants it back.
+  function dropAt(x, y, item, gold, noGreed, opt) {
+    const spots = [[x, y]].concat(DIRS8.map(d => [x + d[0], y + d[1]]));
     const s = spots.find(t => walkable(t[0], t[1]) && !fl.items.has(key(t[0], t[1])));
     if (!s) return false;
-    const type = gold ? 'loot' : item.type === 'potion' ? 'lpotion' : item.r >= 3 ? 'loot3' : 'loot2';
-    fl.items.set(key(s[0], s[1]), { type, x: s[0], y: s[1], cd: 0, anim: 0, disabled: false, hp: 0, max: 0, power: 1, shot: 0, flash: 0, preview: 0,
-      dropped: true, spent: 0, item: item ? Object.assign({}, item, { cdUntil: 0 }) : null, gold: gold || 0, noGreed: !!noGreed });   // a power keeps the uses it has left
-    const d = [...fl.items.values()].filter(o => o.dropped);   // at most 10 piles of spilled gear lie around (the oldest are trampled into the dirt)
-    while (d.length > 10) { const o = d.shift(); fl.items.delete(key(o.x, o.y)); }
+    const h = opt && opt.from;
+    const type = gold ? 'loot' : item.type === 'potion' ? 'lpotion' : (item.src === 'relic' || (item.src === 'trophy' && item.wasRelic)) && item.r >= 3 ? 'loot3' : 'loot2';
+    const pile = { type, x: s[0], y: s[1], cd: 0, anim: 0, disabled: false, hp: 0, max: 0, power: 1, shot: 0, flash: 0, preview: 0,
+      dropped: true, spent: 0, item: item ? Object.assign({}, item, { cdUntil: 0 }) : null, gold: gold || 0, noGreed: !!noGreed,   // a power keeps the uses it has left
+      from: h ? h.id : null, fromNm: h ? h.nm : null, fromFem: h ? h.female : null, fromWave: run.wave, body: h && opt.body ? h.id : null, knocked: h && opt.knocked ? h.id : null };
+    fl.items.set(key(s[0], s[1]), pile);
+    // at most 10 piles of spilled gear lie around (the oldest are trampled into the dirt). 1.20: plain piles go first, then the bodies
+    // of earlier waves, the bodies of this wave last (never the pile just dropped)
+    const d = [...fl.items.values()].filter(o => o.dropped);
+    if (d.length > 10) {
+      const rank = o => o.body == null ? 0 : (o.fromWave || 0) < run.wave ? 1 : 2;
+      d.map((o, i) => [o, i]).filter(e => e[0] !== pile).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).slice(0, d.length - 10).forEach(e => fl.items.delete(key(e[0].x, e[0].y)));
+    }
     return true;
   }
+  function dropItem(h, item, gold, noGreed, opt) { return dropAt(h.tx, h.ty, item, gold, noGreed, Object.assign({ from: h }, opt || {})); }
   // A hero takes a piece of gear. One power, weapon and armour of a kind: a better one replaces the old one (left on the floor);
   // a full pack swaps out its least useful item if the new one is worth more, otherwise he leaves it.
+  // 1.20: never past what he can carry (tooHeavy; a better one of the same kind weighs the same), and a cursed item is never let go:
+  // not swapped for a better one, not the one thrown out of a full pack.
   function giveItem(h, item, quiet) {
     const H = HITEMS[item.type]; item.cdUntil = item.cdUntil || 0;
-    if (H.use === 'power' || H.use === 'gear') {
+    const kg = x => HITEMS[x.type].kg || 0;
+    const heavy = out => { if (loadOf(h) + kg(item) - (out ? kg(out) : 0) <= carryOf(h)) return false; if (!quiet) say(h, pick(SAY.tooHeavy), 1); fl.stats.tooHeavy = (fl.stats.tooHeavy || 0) + 1; return true; };
+    if (H.use === 'power' || H.use === 'gear' || H.use === 'tool') {
       const cur = h.inv.find(x => x.type === item.type);
       if (cur) {
+        if (cur.cursed) { if (!quiet) say(h, pick(SAY.cursedKeep), 2); return false; }
         if (cur.r >= item.r) { if (!quiet) say(h, pick(SAY.noNeed), 1); return false; }
+        if (heavy(cur)) return false;
         h.inv.splice(h.inv.indexOf(cur), 1); dropItem(h, cur, 0, true);
         h.inv.push(item); fl.stats.swaps++; fl.stats.itemsGot++; tl('sw', h.id, cur.type + cur.r, item.type + item.r);
         if (!quiet) { say(h, pick(SAY.swap), 2); floatHero(h, itemLabel(cur) + ' → ' + itemLabel(item), '#c3b2ff', 12, -0.7); }
@@ -1460,44 +1528,79 @@
     }
     if (h.inv.length >= (h.invCap || 3)) {
       const v = itemValue(h, item);
-      let low = -1, lv = 1e9; h.inv.forEach((o, i) => { const ov = itemValue(h, o); if (ov < lv) { lv = ov; low = i; } });
+      let low = -1, lv = 1e9; h.inv.forEach((o, i) => { if (o.cursed) return; const ov = itemValue(h, o); if (ov < lv) { lv = ov; low = i; } });
       if (low < 0 || lv >= v) { if (!quiet) say(h, pick(SAY.full), 1); return false; }
+      if (heavy(h.inv[low])) return false;
       const old = h.inv.splice(low, 1)[0]; dropItem(h, old, 0, true);
       fl.stats.swaps++; tl('sw', h.id, old.type + old.r, item.type + item.r);
       if (!quiet) { say(h, pick(SAY.swap), 2); floatHero(h, itemLabel(old) + ' → ' + itemLabel(item), '#c3b2ff', 12, -0.7); }
-    } else if (!quiet) say(h, 'Mam ' + itemAcc(item) + '!', item.r >= 2 ? 3 : 2);
+    } else { if (heavy(null)) return false; if (!quiet) say(h, 'Mam ' + itemAcc(item) + '!', item.r >= 2 ? 3 : 2); }
     h.inv.push(item); fl.stats.itemsGot++;
     return true;
   }
   // Greed grows when they SEE treasure (each kind its own pull, a Sezam doubles it); picking it up adds a little more.
+  // 1.20: a dead hero's things (it.body) pull half as much as gear, with no Sezam or Relikwiarz on top (LOOT_GREED.body); one who
+  // knows of that death says whose they are (lootFallen); a new party may recognise the things of one who did not come back from an
+  // earlier wave (60%, once a hero: predecessorGear and a little fear). it.firstBy: who saw it first this wave (claimScore).
   function noticeLoot(it, by) {
+    if (by && it.firstBy == null && it.seenWave !== run.wave) it.firstBy = by.id;
     if (it.seenWave === run.wave) return;
     it.seenWave = run.wave;
     if (it.noGreed) return;   // their own old gear, just put down
-    const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1;
-    const g = LOOT_GREED[kind][0] * mods.greedMult * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
-    greedOrbs(it.x, it.y, addGreed(g)); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
+    const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, body = it.body != null;
+    const g = body ? LOOT_GREED.body[0] * mods.greedMult / (1 + 0.15 * fl.stats.lootSeen) :
+      LOOT_GREED[kind][0] * mods.greedMult * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
+    const dg = addGreed(g); greedOrbs(it.x, it.y, dg); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
+    if (body) fl.stats.greedBody = (fl.stats.greedBody || 0) + dg;
     floatTile(it.x, it.y, 'Chciwość ×' + fmt2(fl.greed), '#f2b94b', 14, -0.6, 'greed');
     if (!by) return;
     sawAdd(by, itemTags(it));   // 1.17.1
+    const dead = { nm: it.fromNm, female: it.fromFem };
+    const d = body && it.fromWave === run.wave ? (fl.deaths || []).find(x => x.id === it.body) : null;
+    const pred = body && it.fromNm && it.fromWave != null && it.fromWave < run.wave && !by.predSaid && !by.fleeing && !panicking(by) && Math.random() < 0.6;
     sayNow(itemTags(it), () => {
       if (by.fleeing || by.crystal || panicking(by) || goingOut()) { if (r >= 2) say(by, pick(SAY.lootFlee), 2); }   // 1.05: running for his life, he has no joy for gold
+      else if (pred) {
+        by.predSaid = true; say(by, nameFill(pick(SAY.predecessorGear), dead), 3); addFear(by, 0.05 * by.courage, null, 'death');
+        fl.stats.predecessorSeen = (fl.stats.predecessorSeen || 0) + 1; tl('pr', by.id, it.x, it.y);
+        alive().forEach(o => { if (o !== by && earshot(o, by)) sawAdd(o, ['gear']); });
+      } else if (d && d.knows.has(by.id)) { say(by, nameFill(pick(SAY.lootFallen), dead), 2); fl.stats.lootFallen = (fl.stats.lootFallen || 0) + 1; }
       else say(by, kind === 'potion' ? pick(SAY.lootPotionSeen) : pick(SAY['loot' + Math.min(3, r)]), r >= 2 ? 3 : 2);
     });
   }
   // Picking it up: coins go to the purse, the rest is a real item (or the exact one that was dropped). No use or no room: it stays.
   function pickup(h, it) {
-    const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1;
+    const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, k = key(it.x, it.y);
+    // 1.20: a body's things: he kneels and goes through them (updateHero: the 'loot' state, then bodyLoot), not while running or
+    // in a panic, and not again over a body he found nothing on
+    if (it.body != null) {
+      const m = h.lootMemo.get(k);
+      if ((m && m.body && !m.go && m.t > fl.time) || exiting(h) || panicking(h) || caged(h)) return false;
+      h.state = 'loot'; h.timer = h.type === 'thief' ? 0.5 : 1.0; h.dur = h.timer; h.lootIt = it; h.path = [];
+      return false;
+    }
     noticeLoot(it, null);
     let item = null;
     if (it.item) item = Object.assign({}, it.item);
     else if (kind === 'potion') item = { type: 'potion', r: 1, cdUntil: 0 };   // (powers rolled from gear come with their uses)
     else if (kind === 'gear' || kind === 'cursed') item = rollItem(2, GEAR_POOL);
     else if (kind === 'relic' && !mods.reliquary) item = rollItem(3, Object.keys(HITEMS));
+    if (item && !it.item) Object.assign(item, { src: kind === 'relic' ? 'relic' : 'loot', owner: h.id, ownerNm: h.nm, ownerFem: h.female, wave: run.wave });   // 1.20: from your dungeon
     if (item && kind === 'potion' && !it.dropped && mods.tainted) item.tainted = true;   // 1.18 Zepsute mikstury: only a potion from your loot, not from their gear
-    if (item && kind !== 'cursed' && !giveItem(h, item)) { h.lootMemo.set(key(it.x, it.y), { go: false, t: fl.time + 60 }); return false; }   // he leaves it lying (and will not come back for it)
-    fl.items.delete(key(it.x, it.y));
+    if (item && kind !== 'cursed' && !giveItem(h, item, it.knocked === h.id)) {   // he leaves it lying (and will not come back for it)
+      h.lootMemo.set(k, { go: false, t: fl.time + 60 });
+      // 1.20: what he rolled stays there (it used to vanish, and the next one rolled anew): everyone knows what lies there now,
+      // and one who sees a friend it would suit tells him (lootOffer)
+      if (!it.item) it.item = Object.assign({}, item);
+      lootOffer(h, it, item);
+      return false;
+    }
+    fl.items.delete(k);
+    // 1.20: his own, knocked out of his hands (a crit, the Zbrojownia): he has it back, and it is not loot (no greed, no Groza;
+    // in 1.19 it vanished and gave nothing; counted as loot it gave the replays +15-25% Esencja)
+    if (it.knocked === h.id) { fl.party.queueSay.push({ id: h.id, text: pick(SAY.gearBack), at: fl.time + 0.2, prio: 2 }); fl.stats.gearBack = (fl.stats.gearBack || 0) + 1; tl('lp', h.id, 0, 'back'); replanAll(); return true; }
     h.loot++;
+    if (h.offerKey === k) { fl.stats.lootOfferTaken = (fl.stats.lootOfferTaken || 0) + 1; h.offerKey = null; }   // 1.20: he took what he was offered
     const kg = LOOT_GREED[kind];
     // 1.03: taking it pulls less each time, like seeing it (Odwrotna chciwość x3 on top), and the greed that stays for good
     // grows ever slower: in replays of the author's 223-relic run both kept climbing without end
@@ -1508,6 +1611,7 @@
     sawAdd(h, itemTags(it));
     if (kind === 'gold') { const n = Math.max(1, it.gold || 1); h.gold += n; fl.stats.goldPicked += n; sayNow(['gold'], () => say(h, pick(h.gold >= 3 ? SAY.goldHeavy : SAY.gold), 2)); }
     if (kind === 'cursed') curse(h, item);
+    else if (item && item.cursed) { curse(h, null); fl.stats.cursePassed = (fl.stats.cursePassed || 0) + 1; }   // 1.20: a cursed item curses the next one who takes it
     if (mods.lootTrap > 0) damage(h, mods.lootTrap * r, LOOTTRAP);
     if (kind === 'relic' && !it.dropped) gainEssence(null, 4, 'essDrop');
     vaultSnap(it, h);   // 1.18 Zatrzask sezamu
@@ -1527,7 +1631,49 @@
     fl.stats.vaultSnaps = (fl.stats.vaultSnaps || 0) + 1; tl('vs', h.id, r, n);
     return n;
   }
+  // 1.20 Ciało do przeszukania: after kneeling by a body he takes from its piles (this one and the dead one's others within 1,5
+  // tiles) every coin and each item worth 0,6 to him that fits in his pack; the rest stays. A kit or guild item of the dead one
+  // becomes src body (the card says whose it was; a returner keeps it). Counted like loot (greed of a body, Groza of rarity 2).
+  function bodyLoot(h, it) {
+    const got = [], from = { nm: it.fromNm, female: it.fromFem };
+    const piles = [...fl.items.values()].filter(o => o.body != null && o.body === it.body && o.fromWave === it.fromWave && isLoot(o.type) && Math.hypot(o.x - it.x, o.y - it.y) <= 1.5);
+    piles.forEach(o => {
+      if (o.gold) { h.gold += o.gold; fl.stats.goldPicked += o.gold; got.push({ type: 'gold', n: o.gold }); }
+      else if (o.item && itemValue(h, o.item) >= 0.6) {
+        const x = Object.assign({}, o.item); if (x.src === 'kit' || x.src === 'guild') x.src = 'body';
+        if (!giveItem(h, x, true)) return;
+        got.push(x);
+        if (x.cursed) { curse(h, null); fl.stats.cursePassed = (fl.stats.cursePassed || 0) + 1; }
+      } else return;
+      fl.items.delete(key(o.x, o.y)); h.loot++;
+      greedOrbs(o.x, o.y, addGreed(LOOT_GREED.body[1] * mods.greedMult * mods.pickGreed / (1 + 0.15 * fl.stats.loot)));
+      const pts = addPts(GZ.loot * 2 * depthMult(roomOf(o.x, o.y)), 'lootPts', h); fl.stats.loot++;
+      floatTile(o.x, o.y, '+' + fmtE(pts) + ' łup', '#ff7a86', 16);
+    });
+    // what he left there he has looked at: he does not come back to kneel over it (60 s)
+    piles.concat([it]).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o) h.lootMemo.set(key(o.x, o.y), { go: false, t: fl.time + 60, body: true }); });
+    if (got.length) {
+      sawAdd(h, ['gear']); floatHero(h, 'Zabiera rzeczy ' + nameGen(from), '#c9c2b8', 12, -0.7);
+      if (mods.lootTrap > 0) damage(h, mods.lootTrap * 2, LOOTTRAP);
+      vaultSnap(it, h); updateTray(); replanAll();
+    }
+    onLootDead(h, it.body, got, it);
+    return got.length;
+  }
+  // 1.20: a bomb in a burning pack goes off: it hurts him (40 x power), half that to anyone within 1,5 tiles, a scare to 3 tiles
+  function bombCook(h, b) {
+    h.inv.splice(h.inv.indexOf(b), 1);
+    const k = Math.sqrt(Math.min(4, b.r)), p = heroPos(h);
+    const near = alive().filter(o => o !== h && hdist(o, h) <= 1.5), scared = alive().filter(o => hdist(o, h) <= 3);
+    damage(h, 40 * S.dmg * k, BURN);
+    near.forEach(o => damage(o, 20 * S.dmg * k, BURN));
+    scared.forEach(o => addFear(o, 10, null, 'blast'));
+    burst(p.x, p.y, '#ffb35c', 16); shake = Math.max(shake, 0.15); floatHero(h, 'Bomba w plecaku!', '#ffb35c', 14, -0.9);
+    fl.stats.bombCook = (fl.stats.bombCook || 0) + 1; tl('bx', h.id);
+  }
+  // 1.20: the item he gets with a curse carries it (item.cursed): it curses whoever takes it after him (pickup, bodyLoot)
   function curse(h, item) {
+    if (item) item.cursed = true;
     h.cursed = true; fl.stats.cursed++; tl('cu', h.id);
     if (item) giveItem(h, item, true);   // he keeps the (cursed) gear if he has room
     sawAdd(h, ['cursed']); sayNow(['cursed', 'gear'], () => say(h, pick(SAY.cursedPick), 3, 2.2)); floatHero(h, 'Klątwa!', '#b48cff', 15, -0.8);

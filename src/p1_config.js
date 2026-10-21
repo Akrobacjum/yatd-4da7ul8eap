@@ -201,7 +201,8 @@
   // run's raids +33% and Esencja -14% (its scares lost more: +12% a combo step instead of +25%).
   const COMBO_HP = 0.2;
   const comboHp = n => 1 + COMBO_HP * Math.min(1, Math.max(0, n - 1) / 4);
-  const LOOT_GREED = { gold: [0.08, 0.06], potion: [0.03, 0.02], gear: [0.15, 0.08], relic: [0.35, 0.15], cursed: [0.15, 0.08] };   // [seen, picked up]
+  const LOOT_GREED = { gold: [0.08, 0.06], potion: [0.03, 0.02], gear: [0.15, 0.08], relic: [0.35, 0.15], cursed: [0.15, 0.08], body: [0.075, 0.04] };   // [seen, picked up]
+  // 1.20: body = what a dead hero spilled (any kind of pile): greed only, LOOT_KIND stays; half of gear, no Sezam or Relikwiarz on top
   const isLoot = t => !!LOOT_KIND[t];
   const RARITY_NAME = ['', 'zwykły', 'rzadki', 'legendarny'];
   const RARITY_COLOR = ['#f2b94b', '#f2b94b', '#6fb7ff', '#ff8a3c'];
@@ -378,7 +379,7 @@
       for (const kk in w) { x -= w[kk]; if (x <= 0) { t = kk; break; } }
       const same = out.find(o => o.type === t);
       if (same && (t === 'charm' || t === 'amulet' || t === 'boots')) { same.charges++; continue; }   // one power of a kind: a second roll is one more use
-      out.push({ type: t, r, kit: true, charges: powerCharges(t, r) });
+      out.push({ type: t, r, kit: true, src: 'kit', charges: powerCharges(t, r) });   // 1.20: src = where it comes from (the hero card, the dead's things, a returner's trophy)
     }
     return out;
   }
@@ -387,18 +388,35 @@
   // potion and bomb are used up; talisman, amulet and boots are powers with a cooldown the hero decides when to use;
   // a weapon (against monsters) and armour (against traps) just work. One of each power, weapon and armour is enough: a better one replaces the old.
   const HITEMS = {
-    potion: { name: 'mikstura', acc: 'miksturę', g: 'f', w: 30, use: 'once' },
-    charm: { name: 'talizman', acc: 'talizman', g: 'm', w: 22, use: 'power', cd: 20 },
-    amulet: { name: 'amulet', acc: 'amulet', g: 'm', w: 16, use: 'power', cd: 30 },
-    boots: { name: 'buty', acc: 'buty', g: 'pl', w: 14, use: 'power', cd: 15 },
-    bomb: { name: 'bomba', acc: 'bombę', g: 'f', w: 18, use: 'once' },
-    weapon: { name: 'broń', acc: 'broń', g: 'f', w: 14, use: 'gear', loot: true },
-    armor: { name: 'zbroja', acc: 'zbroję', g: 'f', w: 14, use: 'gear', loot: true }
+    potion: { name: 'mikstura', acc: 'miksturę', g: 'f', w: 30, use: 'once', kg: 1 },
+    charm: { name: 'talizman', acc: 'talizman', g: 'm', w: 22, use: 'power', cd: 20, kg: 0.5 },
+    amulet: { name: 'amulet', acc: 'amulet', g: 'm', w: 16, use: 'power', cd: 30, kg: 0.5 },
+    boots: { name: 'buty', acc: 'buty', g: 'pl', w: 14, use: 'power', cd: 15, kg: 1.5 },
+    bomb: { name: 'bomba', acc: 'bombę', g: 'f', w: 18, use: 'once', kg: 2 },
+    weapon: { name: 'broń', acc: 'broń', g: 'f', w: 14, use: 'gear', loot: true, kg: 3 },
+    armor: { name: 'zbroja', acc: 'zbroję', g: 'f', w: 14, use: 'gear', loot: true, kg: 6 },
+    // 1.20: tools, never rolled from loot (w 0, tool): the guild gives them, a returner who was lost brings a lantern. The lantern
+    // keeps the fog off the ones next to it (p5_ai.js: lanternNear), the crowbar levers a gate and opens a cage (hasCrowbar).
+    lantern: { name: 'latarnia', acc: 'latarnię', g: 'f', w: 0, use: 'tool', kg: 1.5, tool: true },
+    crowbar: { name: 'łom', acc: 'łom', g: 'm', w: 0, use: 'tool', kg: 3, tool: true }
   };
+  // 1.20 Udźwig (author: a mage carries as much as a barbarian, armour weighs what an amulet does): what a class carries, +0,3 kg
+  // a level (p3_flow.js: carryOf). Past 60% of it he slows down (burden), on ice he slips more; past 100% he takes nothing more.
+  const CARRY = { warrior: 14, barbarian: 16, priest: 10, bard: 10, thief: 9, mage: 8 };
+  // 1.20: how well a kind of gear fits a class (itemValue; 1 when not listed). It replaces the one favourite class of each kind,
+  // so a mage no longer values armour like a warrior does, and the party can hand gear to whoever it fits (p5_ai.js: shareThink).
+  const CLASS_FIT = {
+    weapon: { warrior: 1.3, barbarian: 1.3, thief: 0.8, bard: 0.6, priest: 0.5, mage: 0.3 },
+    armor: { warrior: 1.3, barbarian: 1.0, priest: 0.9, bard: 0.7, thief: 0.5, mage: 0.4 },
+    charm: { warrior: 1.3, barbarian: 1.1 },
+    amulet: { priest: 1.3, bard: 1.1, mage: 1.1 },
+    boots: { thief: 1.3, bard: 1.1 },
+    bomb: { mage: 1.2, barbarian: 1.1, thief: 1.1 } };
+  const fitOf = (type, cls) => (CLASS_FIT[type] && CLASS_FIT[type][cls]) || 1;
   const GEAR_POOL = ['charm', 'amulet', 'boots', 'bomb', 'weapon', 'armor'];
   // Powers have a few uses per wave (better ones more) and a cooldown between them: the hero has to pick his moments.
   function powerCharges(t, r) { return t === 'boots' ? 2 + Math.floor(r / 3) : (t === 'charm' || t === 'amulet') ? 1 + Math.floor(r / 3) : undefined; }
-  const ITEM_COLOR = { potion: '#8be38f', charm: '#7fb8ff', amulet: '#c3b2ff', boots: '#e8c27a', bomb: '#ff9a3c', weapon: '#d9dbe6', armor: '#9aa3b8' };
+  const ITEM_COLOR = { potion: '#8be38f', charm: '#7fb8ff', amulet: '#c3b2ff', boots: '#e8c27a', bomb: '#ff9a3c', weapon: '#d9dbe6', armor: '#9aa3b8', lantern: '#ffe08a', crowbar: '#b8b0a0' };   // 1.20: the tools
   // Polish needs the adjective to agree with the item: rzadki talizman, rzadka mikstura, rzadkie buty (and "mam rzadką miksturę").
   const ADJ = { m: ['', 'zwykły', 'rzadki', 'legendarny'], f: ['', 'zwykła', 'rzadka', 'legendarna'], pl: ['', 'zwykłe', 'rzadkie', 'legendarne'], fAcc: ['', 'zwykłą', 'rzadką', 'legendarną'] };
   const adj = (g, r) => ADJ[g][Math.min(3, Math.max(1, r))];
@@ -1642,7 +1660,58 @@
       'Zostawcie mnie w spokoju!', 'Ja się tu nie liczę? Proszę bardzo.', 'Idę sam{|a}. Przynajmniej nikt nie gada.'],
     sulkBack: ['No... to co, idziemy dalej?', 'Nic się nie stało. Jasne?', 'Wrócił{em|am}. Tylko bez min.', 'Przemyślał{em|am} sprawę. Trochę.',
       'Ktoś musi was pilnować, nie?', 'Nie gadajmy o tym.', 'Samemu nudno. Jestem.', 'Co się gapicie? Jestem z powrotem.', 'Przepraszam. Prawie.',
-      'Dobra, było, minęło.']
+      'Dobra, było, minęło.'],
+    // 1.20 Ekwipunek i łup: the dead's things ({n} {g} = the dead one, whose gender the line does not know), a predecessor's pile,
+    // looting a body (lootDead*: from the 1.21 dialogue pass, e121/R2), handing gear over, weight, who takes the loot ({n} {v} = the
+    // one who is to take it), the lantern, the crowbar, a crit knocking gear out, the mimic's belly, bombs in a fire, a returner's trophy
+    lootFallen: ['Rzeczy {g}... zostały tu.', 'To plecak {g}. Nie zostawię go tak.', 'Dobytek {g}. Tyle z tego zostało.', 'Tu leżą rzeczy {g}. Ciężko na to patrzeć.',
+      'Plecak {g}... jeszcze ciepły.', 'To należało do {g}.', 'Nie myślał{em|am}, że {n} tak skończy.', 'Tyle zostało z {g}...'],
+    predecessorGear: ['To rzeczy {g}. Stąd nie wrócił nikt.', 'Plecak {g}... gildia o tym mówiła.', 'Więc tu skończyła się wyprawa {g}.',
+      'Znam ten plecak. To rzeczy {g}.', 'W karczmie piliśmy za {a}. To tutaj...', 'Rzeczy {g}. Czyli plotki były prawdziwe.',
+      'Ktoś tu zginął przed nami. {n}, z gildii.', 'Nikt nie pochował {g}. Zostały tylko rzeczy.'],
+    cursedKeep: ['Nie. To zostaje ze mną.', 'Nie dotykaj tego. To moje.', 'Nie oddam. Nawet nie proś.', 'Nie ruszaj. Ani palcem.', 'Nie wymienię tego za nic na świecie.',
+      'Odsuń się od moich rzeczy.'],
+    lootDead: ['Wybacz... tobie to już niepotrzebne.', 'Wezmę to. Na pamiątkę.', 'Zaniosę to twoim bliskim. Obiecuję.', 'Lepiej w moich rękach niż w ciemności.',
+      'Niech chociaż to wyjdzie z tego lochu.', 'Nie patrzcie tak. Zmarłym łupy niepotrzebne.', 'Spoczywaj. Resztą się zajmę.', 'Wybacz, że to biorę.',
+      'Tu by tylko przepadło.', 'Przyda się żywym.'],
+    lootDeadObject: ['Zostaw to, {v}! Miej serce!', '{v}! Ani się waż!', 'Hieno jedna... {v}, odłóż to.', 'To nie twoje, {v}. Odłóż.', '{v}, jak możesz?!',
+      'Na bogów, {v}, szacunek dla zmarłych!', 'Okradasz poległych, {v}? Wstydź się.', 'Nie wolno, {v}. To przynosi pecha.',
+      'Ręce precz od zmarłych, {v}.', '{v}, a jak ty padniesz, mam zrobić to samo?'],
+    lootDeadReply: ['Martwym już nic niepotrzebne.', 'Wolisz, żeby zgniło?', 'Gdybym padł{|a}, bierz moje. Bez żalu.', 'Przetrwanie przed szacunkiem.',
+      'Szacunek nas stąd nie wyprowadzi.', 'Oddam, jak wyjdziemy. Może.', 'Nie oceniaj mnie.', 'Nikomu tym nie ubliżam.', 'Zmilcz. Wiem, co robię.',
+      'Spokojnie. Biorę to z szacunkiem.'],
+    giveGear: ['Masz, tobie się bardziej przyda.', 'Weź to. Ja i tak nie umiem tym machać.', 'Trzymaj. W twoich rękach to coś warte.', 'Weź. Mnie tylko ciąży.',
+      'To dla ciebie. Mnie na nic.', 'Łap. Lepiej leży na tobie niż na mnie.', 'Nie patrz tak, bierz. Należy ci się.', 'Masz. Tylko oddaj, jak wyjdziemy.'],
+    giveGearThanks: ['Dzięki, oddam w karczmie.', 'O, to mi się przyda.', 'Dziękuję. Nie zapomnę.', 'Ha! Teraz to rozumiem.', 'Pasuje jak ulał.', 'Masz u mnie piwo.'],
+    amuletGive: ['Trzymaj mój amulet! Oddychaj!', 'Weź amulet. Ściśnij go mocno.', 'Masz, to cię uspokoi.', 'Ściśnij to. Spokojnie, jestem obok.',
+      'Amulet, łap! I nie panikuj!', 'Weź to. Pomoże na strach.'],
+    tooHeavy: ['Za ciężkie dla mnie.', 'Tego nie udźwignę.', 'Ledwo niosę to, co mam.', 'Plecy mi pękną. Zostawiam.', 'Nie ma mowy, za ciężkie.',
+      'Więcej nie uniosę.', 'Mam już pełne ręce. I plecy.', 'Ciężkie jak grzech. Nie biorę.'],
+    heavyLoad: ['Plecak ciągnie mnie do ziemi.', 'Uff... za dużo tego dźwigam.', 'Nogi mi się uginają.', 'Idę jak objuczony muł.', 'Ciężko... ale nie zostawię.',
+      'Po co ja to wszystko taszczę?'],
+    lootAssign: ['{n}, ty to weź.', 'Zostaw, niech {n} bierze.', '{v}, to dla ciebie. Bierz.', 'Nie ty. {n} bardziej tego potrzebuje.',
+      'Ty nie. {v}, chodź tu po to.', 'Stój. Niech {n} to weźmie.', '{v}! Twoje. Bierz i wracaj.', 'Dzielimy uczciwie: bierze {n}.'],
+    lootOffer: ['Mnie się nie przyda. Komuś?', 'Tu leży coś dla kogoś innego.', 'Nie dla mnie. Kto chce?', 'Zostawiam. Może komuś się przyda.',
+      'Ktoś chętny? Ja nie biorę.', 'Leży i czeka na właściciela. Nie na mnie.', 'Dobra rzecz, ale nie w moje ręce.',
+      'Kto pierwszy, ten lepszy. Ja odpuszczam.'],
+    lootOfferTake: ['Daj, ja wezmę.', 'Moje! To znaczy... dzięki.', 'Ja to wezmę!', 'Zostaw, już idę.', 'Biorę, skoro nikt nie chce.', 'Dla mnie w sam raz.'],
+    lanternLight: ['Trzymajcie się światła!', 'Za latarnią, krok w krok.', 'Mgła gęsta, ale latarnia daje radę.', 'Blisko mnie! Tu jeszcze coś widać.',
+      'Światło! Nie odchodźcie od światła.', 'Ta mgła nie lubi latarni.'],
+    lanternOut: ['Zgasła! Nic nie widzę!', 'Kto zgasił światło?!', 'Latarnia! Zgasła mi!', 'Ciemno! Gdzie krzesiwo?!', 'Coś zdmuchnęło płomień!',
+      'Ciemność! Tylko nie to!'],
+    crowbarGate: ['Łom! Zaraz ją podważę.', 'Odsuńcie się, podważam.', 'Krata kontra łom. Zobaczymy.', 'Podważę te pręty. Chwila.', 'Na tę kratę mam łom.',
+      'Raz, dwa... ruszyła!'],
+    crowbarCage: ['Mam łom! Wyłamuję pręty!', 'Pręty nie wytrzymają łomu.', 'Łom w szczelinę i... wolność!', 'Dobrze, że wziął{em|am} łom.'],
+    gearKnocked: ['Moje rzeczy! Wypadło mi!', 'Coś mi wybiło z ręki!', 'Upuścił{em|am}! Leży tam!', 'Wyleciało mi! Muszę to podnieść.', 'Poleciało! Moja rzecz!',
+      'Wytrącone! Akurat teraz!'],
+    gearBack: ['Mam z powrotem!', 'Moje. Już nie wypuszczę.', 'Odzyskane!', 'Wróciło do właściciela.', 'Tym razem trzymam mocno.', 'Uff, jest. Całe.'],
+    mimicSpill: ['Wypluł wszystko, co zjadł!', 'W środku pełno cudzych rzeczy!', 'Ten mebel miał pełny brzuch!', 'Ile on tego połknął?!'],
+    bombCook: ['Bomby! Gorą mi w plecaku!', 'Płonę, a mam przy sobie bomby!', 'Proch w plecaku! Odsuńcie się!', 'Zaraz wybuchnie! Wszystko!',
+      'Gorę! A bomby ze mną!', 'Ogień przy bombach! Uciekać!'],
+    bombFriendly: ['Uważaj, gdzie rzucasz!', 'Ej! Ja tu stoję!', 'Moje uszy! Celuj lepiej!', 'Swoich nie bombardujemy!', 'Mało mnie nie rozerwało!',
+      'Następnym razem ostrzeż!'],
+    returnGear: ['Wrócił{em|am}. I mam coś twojego, lochu.', 'Twoja błyskotka wróciła ze mną.', 'Pamiętasz to, lochu? Oddać ci?',
+      'Wziął{em|am} to stąd. Teraz po więcej.', 'Patrz, lochu. Twoje trofeum w moich rękach.', 'To stąd {wyniosłem|wyniosłam}. Wracam.']
   };
   // 1.10: answers to the everyday lines (someone close by says one now and then)
   const CHAT_REPLY = {
@@ -2636,7 +2705,13 @@
     g2LeaderDown: ['Został{em|am} sam{|a}. Muszę znaleźć resztę.', 'I co teraz? Do pozostałych, póki się da.', 'Trzeba było zostać z resztą...',
       'Nikogo. Tylko ja i ten loch. Wracam do swoich.', 'Spokojnie. Znajdę ich. Muszę ich znaleźć.', 'Ten upór drogo nas kosztował. Wracam.'],
     sulkBack: ['Dobra... sam{|a} tu długo nie pociągnę.', 'Wrócę. Ale nie przeproszę.', 'Chyba przesadził{em|am}. Trochę.',
-      'Gdzie oni są? Trzeba ich znaleźć.', 'Ech. Duma dumą, a życie życiem.', 'Za cicho tu bez nich. Wracam.']
+      'Gdzie oni są? Trzeba ich znaleźć.', 'Ech. Duma dumą, a życie życiem.', 'Za cicho tu bez nich. Wracam.'],
+    // 1.20: alone (the others of the new keys are said to himself already, or only with someone next to him)
+    lootDead: ['Nikt nie widzi... wybacz.', 'Nie zostawię tego tu, w ciemności.', 'Wezmę. Ktoś musi to stąd wynieść.', 'Przepraszam. Muszę przeżyć.',
+      'Sam{|a} jestem. Każda rzecz się przyda.', 'Mnie to teraz bardziej potrzebne. Wybacz.'],
+    cursedKeep: ['Nie zamienię. To zostaje przy mnie.', 'Inne? Nie. Mam swoje skarby.', 'Nikt mi tego nie zabierze.'],
+    crowbarGate: ['Sam{|a} podważę tę kratę. Jakoś.', 'Łom w szparę i ciągnę...', 'No dalej, kraciska...'],
+    bombCook: ['Gorę... a te bomby zaraz...', 'Bomby się grzeją! Zaraz będzie po mnie!', 'Ogień i proch. Głupi{|a} ja.']
   };
   const SOLO_MUTE = new Set(['prepWard', 'prepJam', 'prepDisarm', 'prepShield', 'lootWait', 'friendHit', 'friendLow', 'rescue', 'scoutReply', 'councilReply', 'prepReply', 'restReply', 'restPriest', 'restScene',
     'argueLoot', 'argueCareful', 'argueCoward', 'argueBrave', 'decideYes', 'decideNo', 'argueSearch', 'replySearch', 'argueRetreat', 'agreeRetreat', 'reassure', 'surviveFirst',
@@ -2678,7 +2753,9 @@
       'Łatwo ci mówić po tamtej stronie krat!', 'Ptaszek w klatce. Zaśpiewasz coś?', 'Ha! Jak niedźwiedź na jarmarku!',
       'Zamiast rechotać, szarpnij za kraty!', 'Oddychaj, {Av}. Kraty to tylko kraty.', 'Wypuśćcie mnie! Natychmiast!', 'Jak tam w środku?',
       'Jak tam w klatce, {Av}?', 'Żelazne kraty... Ile by za nie dali?', 'Kiepski zamek. Wstyd dla lochu.',
-      'Pierwsza klatka? Do trzeciej się przywyka.'],
+      'Pierwsza klatka? Do trzeciej się przywyka.',
+      'Mam łom! Wyłamuję pręty!', 'Pręty nie wytrzymają łomu.'   // 1.20
+    ],
     coffin: ['Trumna się otwiera!', 'Wieko się rusza!', 'Coś jest w tej trumnie!', 'Coś tu patrzy z trumien.', 'Trumna... Lepiej nie zaglądać.',
       'Ciekawe, kto tu leży.', 'Ciężkie wieko. Kamienne.', 'Krzyż na wieku. Ktoś tu był pobożny.', 'Solidne deski. Dąb chyba.',
       'Śpij spokojnie, kimkolwiek jesteś.', 'Nie otwieram. Nie ja.', 'Kto chowa zmarłych w lochu?', 'Ciężkie wieko. Niech tak zostanie.',
@@ -2720,14 +2797,18 @@
       'Ogień! Jak wtedy, kiedy spłonął dom...', 'Nienawidzę ognia! Nienawidzę!', 'Znowu ten ogień z moich snów!',
       'Ogień nie jest silniejszy od ciebie, {Av}.', 'Za blisko. Zawsze jest za blisko.', 'Ogień to tylko ogień, {Av}.',
       'Ogień to narzędzie. Trzeba go oswoić.', 'Ktoś tu się przypiekł...', 'Już zgasło. Bogom dzięki.', 'Czuć tu spaleniznę.',
-      'Lepiej czuć, niż płonąć.', 'Gasić modlitwą? Woda by była tańsza.'],
+      'Lepiej czuć, niż płonąć.', 'Gasić modlitwą? Woda by była tańsza.',
+      'Płonę, a mam przy sobie bomby!', 'Gorę! A bomby ze mną!', 'Ogień przy bombach! Uciekać!', 'Gorę... a te bomby zaraz...', 'Ogień i proch. Głupi{|a} ja.'   // 1.20
+    ],
     fog: ['Nic nie widać w tej mgle...', 'Trzymajcie się blisko, mgła!', 'Gdzie podłoga, gdzie pułapka?', 'Mgła! Nie widzę własnych rąk.',
       'Mgła gęsta jak mleko...', 'Ledwo widzę na dwa kroki.', 'Coś tam jest, w tej mgle?', 'Mgła... łatwo tu zabłądzić.',
       'Nie lubię, jak nie widzę podłogi.', 'Nic nie widać... gdzie są drzwi?', 'Trzymajcie się blisko, ta mgła...', 'Którędy? Nie widzę ściany!',
       'Ściana? Nie... drzwi? Też nie.', 'Po omacku... krok, i jeszcze krok.', 'Mgła mnie prowadzi, nie ja ją.', 'Nie widzę, dokąd prowadzę...',
       'Gdzie ja jestem w tej mgle?', 'Którędy? Nic nie widać.', 'Nie widzę własnych butów.', 'Mgła. Nic nie widzę.',
       'Mgła... Gdzie podłoga, gdzie pułapka?', 'Biało i cicho. Nie lubię.', 'Mgła. Gorzej być nie może.', 'Sam{|a} we mgle. Wspaniale.',
-      'Tylko spokojnie. To tylko mgła.'],
+      'Tylko spokojnie. To tylko mgła.',
+      'Mgła gęsta, ale latarnia daje radę.', 'Ta mgła nie lubi latarni.'   // 1.20
+    ],
     gate: ['Krata!', 'Krata opadła!', 'Odcięło przejście!', 'Krata! Zamknęło się przed nosem!', 'Krata spadła tuż obok!', 'Krata spadła!',
       'Żelazna krata! Skąd?!', 'Ktoś spuścił kratę!', 'Pręty z sufitu!', 'Krata! Szukamy innej drogi.', 'Krata. Trzeba szukać obejścia.',
       'Żelazo nie ustąpi. Inna droga.', 'Nie będę czekać pod kratą.', 'Nie ma innej drogi, czekamy na kratę.',
@@ -2736,7 +2817,9 @@
       'Może ją wyważymy?', 'Krata z żelaza, ty z mięsa. Czekamy.', 'Krata jak krata. Każda kiedyś się podnosi.',
       'Krata. Poczekam, aż się podniesie.', 'Kraty nie przegadam. Czekam.', 'Kiedyś musi się podnieść. Czekam.', 'Żelazo i cierpliwość. Kto wygra?',
       'Podważę ją sam{|a}. Oby nikt nie patrzył.', 'Krata. Spróbuję ją podważyć.', 'Krata... dam radę sam{|a}.', 'Żelazo ustąpi. Zawsze ustępuje.',
-      'Krata. Poszukam innej drogi.', 'Krata mnie nie zatrzyma. Inna droga.', 'Żelazo? Dobrze. Są inne drzwi.'],
+      'Krata. Poszukam innej drogi.', 'Krata mnie nie zatrzyma. Inna droga.', 'Żelazo? Dobrze. Są inne drzwi.',
+      'Krata kontra łom. Zobaczymy.', 'Podważę te pręty. Chwila.', 'Na tę kratę mam łom.', 'Sam{|a} podważę tę kratę. Jakoś.', 'No dalej, kraciska...'   // 1.20
+    ],
     gear: ['Porządny sprzęt!', 'Ktoś tu zostawił dobry ekwipunek.', 'Wygląda na robotę mistrza.', 'Jeśli to miecz, jest mój.', 'A jeśli to buty?'],
     gears: ['Słyszycie te tryby?', 'Cały pokój tyka...', 'Mechanizm! Patrzcie pod nogi.', 'Zębatki w ścianach... Po co komu?',
       'Tik, tak, tik, tak...', 'Ten loch to jakiś wielki zegar.', 'Ktoś to wszystko nakręca...', 'Zgrzyta jak w krasnoludzkiej kuźni.',
@@ -2819,7 +2902,9 @@
     k_spider: ['Jaja... ogromne jaja.', 'Kokony. W środku coś jest.', 'Wszędzie pajęczyna.', 'Nici kleją się do butów.',
       'Małe pająki... Oby tylko małe.', 'Ktoś tu skończył jako kokon.', 'Nie dotykać jaj. Nie dotykać jaj.', 'Ciarki mi chodzą po plecach.',
       'Gdzie jest matka tych jaj?'],
-    mimic: ['Ten mebel gryzie!', 'Mimik!', 'Ten mebel ma zęby!'],
+    mimic: ['Ten mebel gryzie!', 'Mimik!', 'Ten mebel ma zęby!',
+      'Ten mebel miał pełny brzuch!'   // 1.20
+    ],
     mirror: ['W lustrze coś jest!', 'W lustrze ktoś stoi!', 'To odbicie ma cudzą twarz!', 'Lustro w lochu? Po co?', 'Brudne to lustro.',
       'Wyglądam okropnie.', 'Kto się tu przegląda? Szczury?', 'Ładna rama. Szkło do niczego.', 'Schudł{em|am} w tym lochu.',
       'Moje odbicie wygląda na zmęczone.', 'Ciekawe, ile by za nie dali na targu.', 'Całkiem niezł{y|a} ze mnie bohater{|ka}.', 'I jak wyglądasz?',

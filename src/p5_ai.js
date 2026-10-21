@@ -81,7 +81,7 @@
   function itemTags(it, fired) {
     const t = it && it.type; if (!t) return [];
     if (MONSTERS[t]) return [t, 'monster'];
-    if (t === 'lcursed') return it.cursedKnown ? ['cursed', 'gear'] : ['gear'];   // it looks like gear till a priest feels the curse
+    if (t === 'lcursed' || (it.item && it.item.cursed)) return it.cursedKnown ? ['cursed', 'gear'] : ['gear'];   // it looks like gear till a priest feels the curse (1.20: a cursed item left by a hero too)
     if (LOOT_KIND[t]) return [LOOT_KIND[t]];
     if (t === 'powder') return fired && t3(it) ? ['blast', 'fire'] : ['blast'];
     if (t === 'arrows' && fired && mods.arrowBurn) return ['arrows', 'fire'];
@@ -599,12 +599,13 @@
   function lootLevel(it) { return ITEMS[it.type].rarity || 0; }
   // Common loot is noticed from the same room, rare from the next one, legendary glitters across the dungeon.
   function lootSeen(it) {
-    if (it.seenWave === run.wave) { if (it.type === 'lcursed') checkCursed(it); return true; }
+    const cur = it.type === 'lcursed' || (it.item && it.item.cursed);   // 1.20: a cursed item a hero left
+    if (it.seenWave === run.wave) { if (cur) checkCursed(it); return true; }
     const r = lootLevel(it), R = r === 3 ? 12 : r === 2 ? 7 : 5, ir = roomOf(it.x, it.y);
     const by = alive().find(h => (h.room === ir && fl.known[it.y * WW + it.x]) || (r >= 2 && Math.hypot(h.tx - it.x, h.ty - it.y) <= R) || (r === 1 && fl.known[it.y * WW + it.x] && Math.hypot(h.tx - it.x, h.ty - it.y) <= R));
     if (!by) return false;
     noticeLoot(it, by);
-    if (it.type === 'lcursed') checkCursed(it);
+    if (cur) checkCursed(it);
     return true;
   }
   // An experienced priest (level 6+) feels the curse on a treasure close by and warns the others: nobody touches it.
@@ -627,17 +628,26 @@
     if (kind === 'potion') need = hurt ? 3.2 : h.hp < 0.7 * h.max ? 1.6 : (h.inv.some(x => x.type === 'potion') ? 0.25 : 0.6);
     else if (kind === 'gold') need = h.type === 'thief' || h.trait === 'greedy' || h.hunter ? 1.6 : 1;
     else if (it.item) need = Math.min(2, itemValue(h, it.item) / Math.max(0.6, 1.2 * it.item.r));   // a dropped item: better than his own?
+    if (h.offerKey === k) need = Math.max(need, 1.2);   // 1.20: a friend told him it is for him (lootOffer)
+    if (it.knocked === h.id) need *= 1.5;   // 1.20: his own, knocked out of his hands: he wants it back
     if (it.item && need <= 0.05) { h.lootMemo.set(k, { go: false, t: fl.time }); return false; }
     let value = [0, 1, 2.6, 6][r] * need * h.T.greed * (h.rank === 0 ? 1.6 : h.rank === 1 ? 1 : 0.85) * (0.6 + 0.4 * greedRaw(fl.greed));   // 1.10: they judge by the raw greed (as greedy as before the curve)
     if (h.rank >= 2 && kind === 'gold' && h.type !== 'thief' && !h.hunter) value *= 0.3;   // elites do not stoop for small change...
     if (r >= 2) value *= 1 + 0.06 * (h.lvl - 1);   // ...but glory and rare treasure pull harder the better they are
     if (h.trait === 'greedy') value *= 1.8; else if (h.trait === 'careful') value *= 0.6;
     if (isRt(roomOf(it.x, it.y), 'vault')) value *= 1.5;   // Sezam
+    if (it.body != null) {   // 1.20: a dead friend's things: one who knows of the death holds back (not the greedy), a priest more, a thief or a greedy one less
+      const knows = it.fromWave === run.wave && (fl.deaths || []).some(d => d.id === it.body && d.knows.has(h.id));
+      if (knows && h.trait !== 'greedy' && !h.hunter) value *= 0.7;
+      if (h.type === 'priest' && !(kind === 'potion' && hurt)) value *= 0.5;
+      if (h.type === 'thief' || h.trait === 'greedy' || h.hunter) value *= 1.2;
+    }
     let risk = 0;
     pathFrom(b, idx).forEach(p => { risk += fl.danger[p[1] * WW + p[0]]; });
     risk *= 0.35;
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && fl.known[m.y * WW + m.x] && Math.hypot(m.x - it.x, m.y - it.y) <= 2.5) risk += 2.5; });
     risk += 2 * h.fear / h.courage + (hurt && kind !== 'potion' ? 2 : 0);
+    if (it.knocked === h.id) risk *= 0.8;   // 1.20
     const nerve = Math.max(0.8, h.R.risk) * (h.trait === 'greedy' ? 1.3 : 1) * (kind === 'potion' && hurt ? 1.5 : 1);   // caution grows with experience, but never to zero; the wounded risk it for a potion
     const go = h.rank === 0 ? (value * 2 * nerve > risk || Math.random() < 0.7) : value * 2 * nerve > risk;
     h.lootMemo.set(k, { go, t: fl.time });
@@ -668,6 +678,116 @@
       }
     }
     return go;
+  }
+  // 1.20 Kto bierze łup: how much a hero should have this loot (what it is worth to him; for one nobody knows: a potion for the
+  // wounded, coins for a thief or the greedy, anything for the greedy), +0,5 for the one who saw it first
+  function claimScore(h, it) {
+    const kind = LOOT_KIND[it.type], hurt = h.hp < 0.4 * h.max, greedy = h.trait === 'greedy' || h.hunter;
+    const s = it.item ? itemValue(h, it.item) : kind === 'potion' ? (hurt ? 3 : 0.5) : kind === 'gold' ? (h.type === 'thief' || greedy ? 1.5 : 0.6) : 1 + (greedy ? 0.5 : 0);
+    return s + (it.firstBy === h.id ? 0.5 : 0);
+  }
+  // another one has set out for it: one who needs it clearly more (+0,8), both close to it (8 steps), takes it over when a leader
+  // of rank 1+ (neither of them) hears both and gives it to him; with no such leader two greedy ones become rivals (the hook for
+  // the 1.21 quarrels; in 1.20 the first keeps it without a word)
+  function lootReassign(h, cl, it, k, steps) {
+    const P = fl.party;
+    if (steps < 0 || steps > 8 || Math.hypot(cl.tx - it.x, cl.ty - it.y) > 8 || claimScore(h, it) < claimScore(cl, it) + 0.8) return false;
+    const L = groupLeaderOf(h);
+    if (L && L !== h && L !== cl && L.rank >= 1 && !panicking(L) && earshot(L, h) && earshot(L, cl)) {
+      P.lootClaim.set(k, h.id); cl.lootMemo.set(k, { go: false, t: fl.time + 7 }); cl.needPlan = true;
+      P.queueSay.push({ id: L.id, text: nameFill(pick(SAY.lootAssign), h), at: fl.time + 0.3, prio: 2 });
+      fl.stats.lootAssign = (fl.stats.lootAssign || 0) + 1; tl('qa', L.id, h.id, cl.id);
+      return true;
+    }
+    if ((h.trait === 'greedy' || h.hunter) && (cl.trait === 'greedy' || cl.hunter)) onLootRival(h, cl, it, k);
+    return false;
+  }
+  // 1.20 (hook for 1.21: a quarrel over the loot): two greedy ones after the same thing, once a pair and a pile
+  function onLootRival(a, b, it, k) {
+    const P = fl.party, seen = P.rivalSeen || (P.rivalSeen = new Set()), sk = Math.min(a.id, b.id) + '|' + Math.max(a.id, b.id) + '|' + k;
+    if (seen.has(sk)) return false;
+    seen.add(sk); (P.lootRivals || (P.lootRivals = [])).push({ a: a.id, b: b.id, k, t: fl.time });
+    fl.stats.lootRival = (fl.stats.lootRival || 0) + 1; tl('qr', a.id, b.id);
+    return true;
+  }
+  // 1.20: he cannot use what he found (no need, no room, too heavy): a friend who sees him and whom it would suit (worth 1+) is
+  // told, and goes for it (offerKey: lootDecision wants it; the lootMemo 'no' is gone)
+  function lootOffer(h, it, item) {
+    const P = fl.party, k = key(it.x, it.y);
+    if (fl.phase !== 'raid' || !P) return false;
+    const o = alive().filter(x => x !== h && inG2(x) === inG2(h) && canSee(x, h) && !x.lost && !caged(x) && !panicking(x) && !exiting(x) && canTake(x, item))
+      .sort((a, b) => itemValue(b, item) - itemValue(a, item))[0];
+    if (!o || itemValue(o, item) < 1.0) return false;
+    say(h, pick(SAY.lootOffer), 2); o.lootMemo.delete(k); o.needPlan = true; o.offerKey = k;
+    P.queueSay.push({ id: o.id, text: pick(SAY.lootOfferTake), at: fl.time + 1.0 });
+    fl.stats.lootOffer = (fl.stats.lootOffer || 0) + 1; tl('qo', h.id, o.id);
+    return true;
+  }
+  // 1.20 (hook for 1.21: looting the dead, a friend's objection): called after every search of a body, taken or not. A friend of
+  // the dead who sees it may object (lootDeadObject, {v} = the looter) and the looter answers (lootDeadReply): words only in 1.20.
+  function onLootDead(h, deadId, items, it) {
+    const P = fl.party, wave = it ? it.fromWave : run.wave;
+    (P.lootedDead || (P.lootedDead = [])).push({ by: h.id, dead: deadId, wave, t: fl.time, n: items.length });
+    if (!items.length) return;
+    fl.stats.bodyLoot = (fl.stats.bodyLoot || 0) + items.length;
+    const by = fl.stats.bodyLootBy || (fl.stats.bodyLootBy = {}); by[h.type] = (by[h.type] || 0) + items.length;
+    tl('bl', h.id, deadId, items.length);
+    if (Math.random() < 0.6) say(h, pick(SAY.lootDead), 2);   // alone: SOLO.lootDead (say)
+    const d = wave === run.wave ? (fl.deaths || []).find(x => x.id === deadId) : null;
+    const o = d && alive().find(x => x !== h && canSee(x, h) && d.knows.has(x.id) && x.trait !== 'greedy' && !x.hunter && !panicking(x) && !caged(x) && !exiting(x) &&
+      (x.type === 'priest' || x.trait === 'careful' || Math.random() < 0.3));
+    if (o && Math.random() < 0.5) {
+      P.queueSay.push({ id: o.id, text: nameFill(pick(SAY.lootDeadObject), h), at: fl.time + 1.2, prio: 2 }, { id: h.id, text: pick(SAY.lootDeadReply), at: fl.time + 2.4, prio: 2 });
+      fl.stats.lootDeadObject = (fl.stats.lootDeadObject || 0) + 1;
+    }
+  }
+  // 1.20 Dzielenie się (author: they share nothing but potions): once a second. 1) In a crisis a calm one hands his ready amulet to
+  // a friend about to panic (2 tiles, they see each other) and it works at once. 2) At ease (a talk, a rest, the stop before a
+  // room: always; otherwise 35%) two of the same group side by side, neither in a fight, a panic or a trap, no monster they know
+  // in the room, hand over an item worth 1+ more to the other (CLASS_FIT), or swap two. 8 s a hero, 4 s the party; an item never
+  // goes back to one who gave it; no potions (they have their own rule), nothing cursed. P.gifts: the hook for 1.21-1.22.
+  function shareThink(crew, L, dt) {
+    const P = fl.party;
+    P.shareT = (P.shareT || 0) - dt; if (P.shareT > 0) return; P.shareT = 1;
+    for (const g of crew) for (const o of crew) {
+      if (g === o || fl.time < g.giveCd || panicking(g) || caged(g) || g.lost || exiting(g)) continue;
+      if (o.fear < 0.6 * o.courage || powerReady(o, 'amulet') || fl.time < o.calmUntil || panicking(o) || caged(o) || hdist(g, o) > 2) continue;
+      const am = powerReady(g, 'amulet'); if (!am || am.cursed || g.fear >= 0.4 * g.courage || !canSee(g, o)) continue;
+      g.inv.splice(g.inv.indexOf(am), 1); am.gaveNm = g.nm; am.gaveFem = g.female; am.gaveBy = (am.gaveBy || []).concat(g.id); o.inv.push(am);   // into his hand: no pack or weight check
+      useAmulet(o); g.giveCd = fl.time + 10; fl.stats.amuletGiven = (fl.stats.amuletGiven || 0) + 1; tl('gv', g.id, o.id, 'amulet' + am.r);
+      (P.gifts || (P.gifts = [])).push({ from: g.id, to: o.id, type: 'amulet', t: fl.time });
+      say(g, pick(SAY.amuletGive), 3); floatHero(o, 'Od ' + nameGen(g) + ': amulet', ITEM_COLOR.amulet, 12, -0.7);
+      return;
+    }
+    if (fl.fearless || goingOut() || P.plan === 'retreat' || fl.time < (P.shareCd || 0)) return;
+    const monRooms = new Set(); fl.items.forEach(m => { if (MONSTERS[m.type] && !DRIFT[m.type] && m.hp > 0 && fl.known[m.y * WW + m.x]) monRooms.add(roomOf(m.x, m.y)); });
+    const calm = x => !panicking(x) && !caged(x) && !x.lost && !exiting(x) && x.state !== 'fight' && x.state !== 'loot' && !fl.danger[tIdx(x)] && x.room >= 0 && !monRooms.has(x.room);
+    const chance = P.prep || crew.some(x => x.state === 'talk' || x.state === 'rest' || x.huddle) ? 1 : 0.35;
+    if (Math.random() >= chance) return;
+    const gain = (g, o, x) => itemValue(o, x) - itemValue(g, x);
+    const gives = (g, o) => g.inv.filter(x => x.type !== 'potion' && !x.cursed && !(x.gaveBy && x.gaveBy.includes(o.id)) && gain(g, o, x) >= 1.0 && canTake(o, x));
+    let best = null;
+    for (const g of crew) for (const o of crew) {
+      if (g === o || inG2(g) !== inG2(o) || hdist(g, o) > 2 || !canSee(g, o) || !calm(g) || !calm(o) || fl.time < (g.shareCd || 0) || fl.time < (o.shareCd || 0)) continue;
+      gives(g, o).forEach(x => { const v = gain(g, o, x); if (!best || v > best.v) best = { g, o, x, v }; });
+    }
+    if (!best) return;
+    const { g, o, x } = best;
+    const hand = (a, b, y) => {   // a gives y to b; a better one of a kind sends b's old one back to a (or to the floor)
+      a.inv.splice(a.inv.indexOf(y), 1);
+      y.gaveBy = (y.gaveBy || []).concat(a.id); y.gaveNm = a.nm; y.gaveFem = a.female;
+      const U = HITEMS[y.type].use, same = (U === 'power' || U === 'gear' || U === 'tool') ? b.inv.find(z => z.type === y.type) : null;
+      if (same) { b.inv.splice(b.inv.indexOf(same), 1); if (itemValue(a, same) > 0 && canTake(a, same)) a.inv.push(same); else dropItem(a, same, 0, true); }
+      b.inv.push(y);
+      floatHero(b, 'Od ' + nameGen(a) + ': ' + itemLabel(y), ITEM_COLOR[y.type] || '#c3b2ff', 12, -0.7);
+      (P.gifts || (P.gifts = [])).push({ from: a.id, to: b.id, type: y.type, t: fl.time });
+      tl('gv', a.id, b.id, y.type + y.r);
+    };
+    hand(g, o, x); fl.stats.gearGiven = (fl.stats.gearGiven || 0) + 1;
+    const back = gives(o, g).filter(y => y !== x).sort((a, b) => gain(o, g, b) - gain(o, g, a))[0];   // a swap: something of his is worth 1+ more to the giver
+    if (back) { hand(o, g, back); fl.stats.gearTrades = (fl.stats.gearTrades || 0) + 1; }
+    g.shareCd = o.shareCd = fl.time + 8; P.shareCd = fl.time + 4;
+    say(g, pick(SAY.giveGear), 2); P.queueSay.push({ id: o.id, text: pick(SAY.giveGearThanks), at: fl.time + 1.1 });
   }
   function safestRoom(from) {
     const b = from ? bfs(from.x, from.y, { known: true }) : null;
@@ -864,7 +984,9 @@
         // 1.18 Błędne ogniki: the lights lead him onto the nearest tile in reach of a trap of this room the party does not know, and he gropes 2 s longer
         let wt = null;
         if (mods.wisps) { let bd = 1e9; fl.items.forEach(it => { if (!TRAPS[it.type] || it.detected || it.disabled || slotRoom(it.type, it.x, it.y) !== L.room) return; areaOf(it).forEach(t => { if (!walkable(t[0], t[1]) || roomOf(t[0], t[1]) !== L.room) return; const d = Math.hypot(t[0] - L.tx, t[1] - L.ty); if (d >= 1 && d < bd) { bd = d; wt = t; } }); }); }
-        if (wt || spots.length) { const t = wt || pick(spots); P.detour = { goal: t[1] * WW + t[0], until: fl.time + 3 + 0.25 * Math.max(0, 8 - L.lvl / 2) + 2 * mods.wisps, wisp: !!wt }; fl.stats.fogGrope = (fl.stats.fogGrope || 0) + 1; if (wt) fl.stats.wisps = (fl.stats.wisps || 0) + 1; tl('fg', L.room); say(L, pick(SAY.fogGrope), 3); }
+        // 1.20: a lit lantern next to him: half the groping (the wisps' 2 s stay), and its bearer says so
+        const lt = lanternNear(L) ? alive().find(o => litLantern(o) && o.room === L.room && hdist(o, L) <= 2) : null;
+        if (wt || spots.length) { const t = wt || pick(spots); P.detour = { goal: t[1] * WW + t[0], until: fl.time + (lt ? 0.5 : 1) * (3 + 0.25 * Math.max(0, 8 - L.lvl / 2)) + 2 * mods.wisps, wisp: !!wt }; fl.stats.fogGrope = (fl.stats.fogGrope || 0) + 1; if (wt) fl.stats.wisps = (fl.stats.wisps || 0) + 1; tl('fg', L.room); if (lt) { fl.stats.lanternGrope = (fl.stats.lanternGrope || 0) + 1; say(lt, pick(SAY.lanternLight), 3); } else say(L, pick(SAY.fogGrope), 3); }
       }
     }
     crew.forEach(h => {
@@ -918,7 +1040,7 @@
         // 1.16: away on purpose: being cut off is the plan, no roll for that; but the fog and a lost way still get him
         h.sepT = 0; h.sepRolled = false;
         if (h.noPathT > 3 && d > 6) getLost(h, 'nopath');
-        else if (h.room >= 0 && isRt(h.room, 'fog') && d > 1.5 && Math.random() < dt * 0.22 * Math.max(0.35, 1 - 0.03 * h.lvl) * (h.type === 'thief' ? 0.6 : 1)) getLost(h, 'fog');
+        else if (h.room >= 0 && isRt(h.room, 'fog') && d > 1.5 && fogRoll(h, dt)) getLost(h, 'fog');
       }
       else if (!fl.fearless && !exiting(h) && !caged(h)) {
         // cut off from the leader (another room, far away): in a big dungeon, or in the fog, he may lose his way
@@ -927,7 +1049,7 @@
         if (!apart) h.sepRolled = false;
         if (h.noPathT > 3 && d > 6) getLost(h, 'nopath');
         else if (h.sepT > 3 && !h.sepRolled) { h.sepRolled = true; if (Math.random() < lostChance(h)) getLost(h, 'sep'); }
-        else if (h.room >= 0 && isRt(h.room, 'fog') && d > 1.5 && Math.random() < dt * 0.22 * Math.max(0.35, 1 - 0.03 * h.lvl) * (h.type === 'thief' ? 0.6 : 1)) getLost(h, 'fog');   // 1.01: in the fog anyone a step away from the leader can lose the party
+        else if (h.room >= 0 && isRt(h.room, 'fog') && d > 1.5 && fogRoll(h, dt)) getLost(h, 'fog');   // 1.01: in the fog anyone a step away from the leader can lose the party
       }
       if (h.lost) {
         addFear(h, 4 * dt, null, 'lost');
@@ -952,6 +1074,7 @@
       say(g, pick(SAY.potionGive), 3); P.queueSay.push({ id: f.id, text: pick(SAY.potionThanks), at: fl.time + 1.1 });
       floatHero(f, 'Mikstura!', '#8be38f', 14, -0.7);
     });
+    shareThink(crew, L, dt);   // 1.20: an amulet in a crisis, gear handed over at ease
     if (!L) return;
     if (P.prep && fl.time >= P.prep.until) finishPrep();
     else if (!P.prep) checkPrep(L);
@@ -1069,12 +1192,16 @@
       }
       if (P.blockSaid && P.plan !== 'explore') {   // waiting at the gate: a thief next to it levers it up in 3 s
         const door = [...fl.doors.values()].filter(d => d.closedUntil > fl.time).sort((a, b) => Math.hypot(a.x - L.tx, a.y - L.ty) - Math.hypot(b.x - L.tx, b.y - L.ty))[0];
-        const it = door && fl.items.get(key(door.x, door.y)), th = door && alive().find(h => h.type === 'thief' && !panicking(h) && !h.fleeing && Math.hypot(h.tx - door.x, h.ty - door.y) <= 1.6);
+        // 1.20 Łom: anyone with a crowbar levers it too (x1,5; a thief with one x2,25), a level 3 gate half as fast
+        const near = h => !panicking(h) && !h.fleeing && Math.hypot(h.tx - door.x, h.ty - door.y) <= 1.6;
+        const it = door && fl.items.get(key(door.x, door.y)), th = door && (alive().find(h => hasCrowbar(h) && near(h)) || alive().find(h => h.type === 'thief' && near(h)));
         if (it && it.type === 'gate' && th) {
-          if (!P.liftT) { sawAdd(th, ['gate']); sayNow(['gate'], () => say(th, pick(SAY.gateLever), 3, 2)); }
-          P.liftT = (P.liftT || 0) + dt * (th.lvl >= 6 ? 1.5 : 1);
+          const bar = hasCrowbar(th);
+          if (!P.liftT) { sawAdd(th, ['gate']); sayNow(['gate'], () => say(th, pick(bar ? SAY.crowbarGate : SAY.gateLever), 3, 2)); }
+          P.liftT = (P.liftT || 0) + dt * (th.type === 'thief' ? (th.lvl >= 6 ? 1.5 : 1) : 1) * (bar ? 1.5 : 1) * ((it.lvl || 1) >= 3 ? 0.5 : 1);
           if (P.liftT >= 3) {
             door.closedUntil = fl.time; it.disabled = true; it.detected = true; fl.threatDirty = true; P.liftT = 0;
+            if (bar) { fl.stats.crowbarGate = (fl.stats.crowbarGate || 0) + 1; tl('lm', th.id, 'gate'); }
             bt('gate').disarmed++; fl.stats.disarmed++; tl('lg', th.id, door.x, door.y);
             floatTile(door.x, door.y, 'Krata podważona', '#c9c2d8', 13, -0.6); replanAll();
           }
@@ -1209,11 +1336,19 @@
   /* ----- getting lost, wrong turns ----- */
   // The chance to lose the way once cut off from the leader: bigger dungeon and fog = more, experience and a thief's sense = less.
   function lostChance(h) {
-    const p = 0.12 + 0.03 * Math.max(0, roomCount() - 6) + (isRt(h.room, 'fog') ? 0.45 : 0) - 0.01 * h.lvl - (h.type === 'thief' ? 0.1 : 0);
+    const p = 0.12 + 0.03 * Math.max(0, roomCount() - 6) + (isRt(h.room, 'fog') ? (lanternNear(h) ? 0.15 : 0.45) : 0) - 0.01 * h.lvl - (h.type === 'thief' ? 0.1 : 0);   // 1.20: a lantern close by
     return clamp(p, 0.02, 0.6);
+  }
+  // 1.20 Latarnia: the fog's roll on one a step away from the leader; a lit lantern within 2 tiles cuts it to 30% (lanternSaves)
+  function fogRoll(h, dt) {
+    const p = dt * 0.22 * Math.max(0.35, 1 - 0.03 * h.lvl) * (h.type === 'thief' ? 0.6 : 1), x = Math.random();
+    if (x >= p) return false;
+    if (x >= 0.3 * p && lanternNear(h)) { fl.stats.lanternSaves = (fl.stats.lanternSaves || 0) + 1; return false; }
+    return true;
   }
   function getLost(h, why) {
     if (h.lost) return;
+    h.lostEver = true;   // 1.20: a returner who got lost brings a lantern
     h.lost = true; h.sepRolled = true; h.lostT = 0; h.lostCallT = fl.time + 5; h.needPlan = true;
     if (h.split) { h.split = false; fl.stats.splitLost = (fl.stats.splitLost || 0) + 1; }   // 1.16: the errand went wrong: now he is lost
     h.wanderUntil = -1;
@@ -1686,7 +1821,7 @@
             rs = cand[0]; P.rescuerId = rs ? rs.id : -1;
           }
           if (rs === h) {
-            if (Math.abs(h.x - c.x) + Math.abs(h.y - c.y) <= 1) { h.state = 'free'; h.timer = h.type === 'thief' ? 0.8 : 1.8; h.dur = h.timer; h.freeT = c.id; h.path = []; h.intent = 'rescue'; return; }
+            if (Math.abs(h.x - c.x) + Math.abs(h.y - c.y) <= 1) { h.state = 'free'; h.timer = hasCrowbar(h) ? (h.type === 'thief' ? 0.5 : 0.6) : h.type === 'thief' ? 0.8 : 1.8; h.dur = h.timer; h.freeT = c.id; h.path = []; h.intent = 'rescue'; return; }   // 1.20: a crowbar opens it in a moment
             const g = nearestOf(B(), DIRS.map(d => [c.x + d[0], c.y + d[1]]).filter(t => walkable(t[0], t[1])).map(t => t[1] * WW + t[0]));
             if (g >= 0) job = { intent: 'rescue', goal: g };
           }
@@ -1705,6 +1840,12 @@
       if (!job && h.type === 'barbarian') job = smashJob(h, B());   // 1.05
       if (!job && h.type === 'thief') job = disarmJob(h, B());
       if (!job && h.type === 'priest' && h.rank >= 1) job = blessJob(h, B());
+      // 1.20 Łom: while the party waits at a shut gate, one with a crowbar (or a thief) goes up to it and levers it (partyThink)
+      if (!job && P.blockSaid && P.plan !== 'explore' && (hasCrowbar(h) || h.type === 'thief') && !panicking(h) && !inG2(h)) {
+        const door = [...fl.doors.values()].filter(dd => dd.closedUntil > fl.time && (fl.items.get(key(dd.x, dd.y)) || {}).type === 'gate').sort((a, c) => Math.hypot(a.x - h.tx, a.y - h.ty) - Math.hypot(c.x - h.tx, c.y - h.ty))[0];
+        if (door && Math.hypot(h.tx - door.x, h.ty - door.y) <= 1.6) { h.intent = 'pry'; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.5; return; }
+        if (door) { const g = nearestOf(B(), DIRS.map(dd => [door.x + dd[0], door.y + dd[1]]).filter(t => walkable(t[0], t[1])).map(t => t[1] * WW + t[0])); if (g >= 0) job = { intent: 'pry', goal: g }; }
+      }
       if (!job) job = bombJob(h, B());
       if (!job) {
         // 1.10 (author: they ignored loot even when it was free): how far it is counts in steps on the way they would take. It
@@ -1716,8 +1857,8 @@
         fl.items.forEach(it => {
           if (!isLoot(it.type) || it.seenWave !== run.wave || it.cursedKnown) return;
           const k = key(it.x, it.y), cl = byId(claims.get(k));
-          if (cl && cl !== h && !cl.dead && !cl.fled && !cl.gone && cl.intent === 'loot' && cl.lootKey === k) return;
           const i = it.y * WW + it.x, d = B().dist[i], r = lootLevel(it), steps = d >= 0 ? pathFrom(B(), i).length : -1;
+          if (cl && cl !== h && !cl.dead && !cl.fled && !cl.gone && cl.intent === 'loot' && cl.lootKey === k && !lootReassign(h, cl, it, k, steps)) return;   // 1.20: unless the leader gives it to him
           const reach = r === 3 ? 30 : r === 2 ? 16 : (LOOT_KIND[it.type] === 'potion' && h.hp < 0.5 * h.max ? 14 : h.type === 'thief' ? 11 : h.rank === 0 ? 9 : 8);
           if (steps >= 0 && steps <= reach && steps < bd && lootDecision(h, it, B(), i)) { bd = steps; best = i; bestK = k; }
           else if (d < 0 && r === 3 && h.type !== 'priest') {   // legendary in an unknown spot: head for the nearest opening towards it
@@ -1873,6 +2014,7 @@
       if (!fl.objects.has(k)) return;
       const on = fl.items.get(k);   // what stood on it: a powder keg blows up, a mimic bites, a music box falls silent
       if (on && !on.disabled) { if ((on.type === 'powder' || on.type === 'mimic') && on.cd <= 0) fire(on, 1); on.disabled = true; }
+      if (on) mimicSpill(on, h);   // 1.20: the smashed mimic spits out its belly
       fl.objects.delete(k); fl.stats.smashedObj = (fl.stats.smashedObj || 0) + 1;
       floatTile(t.x, t.y, 'Rozbite!', '#ffb38a', 13, -0.5);
     }
@@ -1914,7 +2056,7 @@
       if (Math.hypot(it.x - h.tx, it.y - h.ty) <= 3) {
         h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++;
         if (it.type === 'powder') fire(it, 0.5);
-        else { it.disabled = true; fl.threatDirty = true; bt(it.type).disarmed++; }
+        else { it.disabled = true; fl.threatDirty = true; bt(it.type).disarmed++; mimicSpill(it, h); }   // 1.20: a mimic spits out its belly
         burst(it.x + 0.5, it.y + 0.5, '#ffb35c', 14); floatTile(it.x, it.y, 'Zniszczone bombą', '#ffb35c', 13, -0.5); say(h, pick(SAY.bomb), 3);
         return null;
       }
@@ -1990,7 +2132,7 @@
       // a curse on a friend (level 4+): 3 faith
       const cu = h.lvl >= 4 && h.faith >= 3 ? (near.find(o => o.cursed && o !== h) || near.find(o => o.cursed)) : null;   // 1.17: a friend first, then himself
       if (cu && spend(3)) {
-        cu.cursed = false; fl.stats.curseLifts++; tl('cl', h.id, cu.id); h.cast = 3;
+        cu.cursed = false; cu.inv.forEach(x => { x.cursed = false; }); fl.stats.curseLifts++; tl('cl', h.id, cu.id); h.cast = 3;   // 1.20: and his things
         say(h, cu === h ? pick(SAY.curseSelf) : nameFill(pick(SAY.curseLift), cu), 3); floatHero(cu, 'Klątwa zdjęta', '#fff2c0', 13, -0.7);
         particles.push({ ring: true, x: p.x, y: p.y, r: 0.3, maxR: 2, life: 0.45, color: '#fff2c0' });
         return;
@@ -2137,9 +2279,9 @@
     }
     if (isExitTile(h.x, h.y) && exiting(h)) { heroExit(h); return; }
     const it = fl.items.get(key(h.x, h.y));
-    if (it && isLoot(it.type) && !h.crystal && !h.fleeing) pickup(h, it);
+    if (it && isLoot(it.type) && !h.crystal && !h.fleeing) { pickup(h, it); if (h.state === 'loot') return; }   // 1.20: he kneels by a body
     // 1.10: Lodownia: a step may run on, one tile straight ahead, into whatever is there (not twice in a row)
-    if (r >= 0 && isRt(r, 'ice') && !h.slid && (h.ldx || h.ldy) && h.state === 'walk' && Math.random() < slipChance(h) * (1 + 0.5 * mods.blackice)) {   // 1.18: Gołoledź, half as many slips more
+    if (r >= 0 && isRt(r, 'ice') && !h.slid && (h.ldx || h.ldy) && h.state === 'walk' && Math.random() < slipChance(h) * (1 + 0.5 * mods.blackice) * (1 + Math.max(0, loadOf(h) / carryOf(h) - 0.5))) {   // 1.18: Gołoledź, half as many slips more; 1.20: a heavy pack slips more
       const sx = h.x + h.ldx, sy = h.y + h.ldy, g = fl.items.get(key(sx, sy));
       if (passable(sx, sy) && !(g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) && !(Math.abs(sx - fl.heart.x) + Math.abs(sy - fl.heart.y) === 0) && !heroBlock(h, sx, sy)) {
         h.nx = sx; h.ny = sy; h.prog = 0; h.sliding = true; h.path = []; fl.stats.slips = (fl.stats.slips || 0) + 1; tl('sl', h.id, sx, sy);
@@ -2166,12 +2308,13 @@
   function inZone(x, y) { const k = key(x, y); return fl.zones.some(z => z.keys.has(k)); }
   function scanTraps(h) {
     const am = gearR(h, 'amulet');
-    const R = (h.type === 'thief' ? 2 : 0) + h.R.detect + Math.max(0, Math.round(am * itemPow(h)));
-    if (R <= 0) return;
+    const R = (h.type === 'thief' ? 2 : 0) + h.R.detect + Math.max(0, Math.round(am * itemPow(h))), lit = litLantern(h);
+    if (R <= 0 && !lit) return;
     fl.items.forEach(it => {
       if (!LOOKS_TRAP(it.type) || it.detected || it.disabled) return;
-      if (Math.max(Math.abs(it.x - h.tx), Math.abs(it.y - h.ty)) > R) return;
-      if (isRt(slotRoom(it.type, it.x, it.y), 'fog')) return;   // Mgła: nothing to see in there
+      const dd = Math.max(Math.abs(it.x - h.tx), Math.abs(it.y - h.ty));
+      if (isRt(slotRoom(it.type, it.x, it.y), 'fog')) { if (!(lit && dd <= 1)) return; }   // Mgła: nothing to see in there (1.20: but the tiles next to his lantern)
+      else if (dd > R) return;
       learnTrap(it, 'scan', h); fl.stats.detected++;
       floatTile(it.x, it.y, 'Wykryta!', '#ffe066', 13, -0.6);
     });
@@ -2184,7 +2327,15 @@
     if (h.accT >= 0.6) { if ((h.accG || 0) >= 0.1) floatHero(h, '+' + fmtG(h.accG), '#c3b2ff', 13); h.acc = 0; h.accG = 0; h.accT = 0; }   // 1.01: Groza (violet)
     const ot = heroTile(h); h.tx = ot[0]; h.ty = ot[1];
     const rr = roomOf(h.tx, h.ty); if (rr >= 0) h.room = rr;
-    if (fl.time < h.burnUntil) { damage(h, 6 * S.dmg * dt, BURN); if (h.dead) return; }
+    if (fl.time < h.burnUntil) {
+      damage(h, 6 * S.dmg * dt, BURN); if (h.dead) return;
+      // 1.20: burning with bombs in the pack: one may go off (15% a second a bomb, at most 45%)
+      const bs = h.inv.filter(x => x.type === 'bomb');
+      if (bs.length) {
+        if (!h.cookSaid) { h.cookSaid = true; sayNow(['fire'], () => say(h, pick(SAY.bombCook), 4, null, 'loud')); }
+        if (Math.random() < dt * Math.min(0.45, 0.15 * bs.length)) { bombCook(h, bs[0]); if (h.dead) return; }
+      }
+    }
     if (h.hp < h.R.potion * h.max) {   // a potion when it gets bad (rookies wait far too long)
       const pot = h.inv.filter(x => x.type === 'potion').sort((a, c) => c.r - a.r)[0];
       if (pot) { h.inv.splice(h.inv.indexOf(pot), 1); h.hp = Math.min(h.max, h.hp + h.max * potionHeal(pot) * itemPow(h) * taintedSip(h, pot)); fl.stats.potions++; fl.stats.itemsUsed++; say(h, pick(SAY.potion), 3);   /* 1.18: Zepsute mikstury */ floatHero(h, 'Mikstura', '#8be38f', 14, -0.7); tl('po', h.id); }
@@ -2199,7 +2350,11 @@
     if (h.scan <= 0) { h.scan = 0.5; scanTraps(h); }
     h.thinkT -= dt;
     if (h.sliding && (h.state !== 'walk' || h.nx === null)) h.sliding = false;   // 1.10: a cage or a fall stops a slide
-    if (caged(h)) { if (fl.time >= h.cageUntil) cageEnds(h); return; }
+    if (caged(h)) {
+      if (hasCrowbar(h) && fl.time - (h.cagedAt || 0) >= 4) { freeCaged(h, false, 'pry'); sayNow(['cage'], () => say(h, pick(SAY.crowbarCage), 3)); fl.stats.crowbarCage = (fl.stats.crowbarCage || 0) + 1; tl('lm', h.id, 'cage'); }   // 1.20: he levers the bars himself
+      else if (fl.time >= h.cageUntil) cageEnds(h);
+      return;
+    }
     if (h.state === 'rest') {
       const haven = h.room >= 0 && isRt(h.room, 'haven'), dream = !!h.dream && fl.time < (h.napUntil || -1); if (!(h.restAt > 0)) h.restAt = fl.time;   // 1.18: dream = asleep to the lullaby (Usypianka)
       if (fl.time >= h.burnUntil) h.hp = Math.min(h.max, h.hp + 4 * dt * (haven || dream ? 0.5 : 1));
@@ -2242,7 +2397,14 @@
       const c = byId(h.freeT);
       if (!c || !caged(c) || exiting(h)) { h.state = 'walk'; h.needPlan = true; return; }
       h.timer -= dt;
-      if (h.timer <= 0) { freeCaged(c, true); h.state = 'walk'; h.needPlan = true; }
+      if (h.timer <= 0) { freeCaged(c, true); if (hasCrowbar(h)) { fl.stats.crowbarCage = (fl.stats.crowbarCage || 0) + 1; tl('lm', h.id, 'cage'); } h.state = 'walk'; h.needPlan = true; }
+      return;
+    }
+    // 1.20: kneeling by a body (pickup): a wound does not stop him (that is the price), running out or a panic does
+    if (h.state === 'loot') {
+      if (exiting(h) || panicking(h) || h.fleeing) { h.state = 'walk'; h.lootIt = null; h.needPlan = true; return; }
+      h.timer -= dt;
+      if (h.timer <= 0) { const it = h.lootIt; h.state = 'walk'; h.lootIt = null; h.needPlan = true; if (it) bodyLoot(h, it); }
       return;
     }
     if (h.state === 'fight') {
@@ -2250,7 +2412,16 @@
       if (!g || g.hp <= 0 || fl.items.get(key(g.x, g.y)) !== g || exiting(h)) { h.state = 'walk'; h.foe = null; h.needPlan = true; }
       else {
         const bomb = h.inv.find(x => x.type === 'bomb');
-        if (bomb && g.hp > 60) { h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++; say(h, pick(SAY.bomb), 3); burst(g.x + 0.5, g.y + 0.5, '#ffb35c', 16); hurtMonster(g, 80 * Math.pow(Math.min(4, bomb.r), 1.3) * itemPow(h)); }
+        if (bomb && g.hp > 60) {
+          // 1.20: the blast hurts a friend next to the monster: a veteran holds it (not in a fury), a rookie throws anyway
+          const near = alive().filter(o => o !== h && Math.max(Math.abs(o.tx - g.x), Math.abs(o.ty - g.y)) <= 1);
+          if (near.length && h.rank >= 1 && !raging(h)) { if (h.bombHeldFor !== g) { h.bombHeldFor = g; fl.stats.bombHeld = (fl.stats.bombHeld || 0) + 1; } }
+          else {
+            h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++; say(h, pick(SAY.bomb), 3); burst(g.x + 0.5, g.y + 0.5, '#ffb35c', 16); hurtMonster(g, 80 * Math.pow(Math.min(4, bomb.r), 1.3) * itemPow(h));
+            near.forEach(o => damage(o, 20 * S.dmg * Math.sqrt(Math.min(4, bomb.r)), BURN));
+            if (near.length) { fl.stats.bombFriendly = (fl.stats.bombFriendly || 0) + near.length; tl('bf2', h.id, near.length); P.queueSay.push({ id: near[0].id, text: pick(SAY.bombFriendly), at: fl.time + 0.4, prio: 3 }); }
+          }
+        }
         return;
       }
     }
@@ -2321,8 +2492,10 @@
     const sprint = fl.time < h.sprintUntil ? h.sprintK : 1;   // boots (a power)
     const bog = isRt(roomOf(h.nx, h.ny), 'swamp') || isRt(roomOf(h.x, h.y), 'swamp') ? 0.65 : 1;   // Bagno
     const purse = h.gold > 0 ? Math.max(0.8, 1 - 0.04 * h.gold) : 1;   // a heavy purse
+    const load = burden(h);   // 1.20 Udźwig: a heavy pack
+    if (load < 1) { fl.stats.loadSlowT = (fl.stats.loadSlowT || 0) + dt; if (!h.heavySaid) { h.heavySaid = true; say(h, pick(SAY.heavyLoad), 2); } }
     if (h.sliding) { h.prog += 3.2 * dt; if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = true; h.sliding = false; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); } return; }   // 1.10: a slide on the ice: fast, nothing stops it
-    const spd = h.T.speed * h.R.speed * (S.heroSpeed / 100) * slow * (fl.fearless ? 1.3 : 1) * dash * careful * sprint * bog * purse *
+    const spd = h.T.speed * h.R.speed * (S.heroSpeed / 100) * slow * (fl.fearless ? 1.3 : 1) * dash * careful * sprint * bog * purse * load *
       (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1) * (h.crystal ? 0.9 * mods.carrierSlow : 1) * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1) * (fl.time < h.rageUntil ? 1.25 : 1);
     h.prog += spd * dt;
     if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = !!h.sliding; h.sliding = false; h.passing = null; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); }
