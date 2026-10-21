@@ -1392,18 +1392,18 @@ if gateShut && L.blocked >= 0 && !goingOut():               // ostatni plan lide
       door = najbliższe lidera zamknięte drzwi
       th = złodziej nie panikujący, nie uciekający, w odległości <= 1.6 od tych drzwi
       if na drzwiach stoi Krata && th:
-         pierwszy raz: th mówi 'Podważę ją, osłaniajcie mnie!' (3, dur 2)
+         pierwszy raz: th mówi SAY.gateLever (3, dur 2; do 1.16 jedna kwestia zaszyta w kodzie)
          P.liftT += dt * (th.lvl >= 6 ? 1.5 : 1)
          if P.liftT >= 3: drzwi otwarte; krata disabled + detected; threatDirty; replanAll()
 else: P.blockT = 0; P.liftT = 0; if !gateShut: P.blockSaid = false
-if P.gateDetourUntil && plan 'explore' && (time > gateDetourUntil || P.target < 0) && fl.heartKnown && !gateShut:
+if P.gateDetourUntil && plan 'explore' && (time > gateDetourUntil || P.target < 0) && heartP() && !gateShut:     // 1.17: heartP
    P.gateDetourUntil = 0; plan = 'assault'; replanAll()
 ```
 Gdy drzwi się otworzą (`step`), wszyscy przeplanowują. Złodziej nie ma osobnej pracy "idź do kraty": podważa tylko, gdy już stoi blisko (zwykle idzie za liderem). Objazdy liczą się do statystyki `reroutes` (gildia przysyła barbarzyńcę, sekcja 04).
 
 ### 6.3.12 Inne odruchy drużyny
 
-- **Zasadzka** (`partyThink` krok 20): `fireRaw` przy każdej pułapce, która kogoś objęła, robi `ambushN++` jeśli poprzednia była mniej niż 3 s temu (inaczej `ambushN = 1`) i `ambushT = time`. Gdy `ambushN >= 3`, `time - ambushT < 0.6` i od ostatniej zasadzki minęło ponad 12 s (`P.ambushSaid`): `ambushN = 0`, `talk(1.0, [SAY.ambush])`, każdy +6 strachu (`'ambush'`). Kapłan traktuje każde trafienie pułapką w ostatnich 2 s jako powód do bariery (6.5.3).
+- **Zasadzka** (`partyThink` krok 20): `fireRaw` przy każdej pułapce, która objęła kogoś z grupy przywódcy (od 1.17: trafiony to przywódca albo widzi go lub słyszy; do 1.16 ktokolwiek w lochu), robi `ambushN++` jeśli poprzednia była mniej niż 3 s temu (inaczej `ambushN = 1`) i `ambushT = time`. Gdy `ambushN >= 3`, `time - ambushT < 0.6` i od ostatniej zasadzki minęło ponad 12 s (`P.ambushSaid`): `ambushN = 0`, `talk(1.0, [SAY.ambush])`, każdy z grupy przywódcy (od 1.17; wcześniej każdy żywy) +6 strachu (`'ambush'`). Kapłan traktuje każde liczone trafienie w ostatnich 2 s (`P.ambushT`) jako powód do bariery (6.5.3).
 - **Kontr-budowle** (`partyThink` krok 7): pierwszy, kto wejdzie do pokoju z budowlą `altar`, `rune`, `acid`, `veil`, `howl` albo `shackles`, mówi `SAY.b<Typ>` (3), raz na pokój i typ w fali (`fl.bSaid`). Pierwszeństwo ma klasa, której budowla szkodzi (Ołtarz: kapłan, Runa: mag, Kwas: wojownik, Kamień wyjec: bard, Okowy: barbarzyńca), jeśli jest w tym pokoju; Zasłona nie ma preferencji. Umocnienie (`fortify`) i Wabik nie mają kwestii przy wejściu (Wabik wygląda jak pułapka).
 - **Serce znalezione**: patrz 6.3.4 (`heartSeen`/`heartLater`).
 
