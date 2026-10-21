@@ -262,7 +262,11 @@
       // v14
       dmgType: { pierce: 1, blunt: 1, fire: 1, poison: 1 }, weakK: 0, revealAll: false, arsenal: 0, phobiaK: 0, oddBodies: 0, traumaK: 0, badMemories: 0, moreReturn: 0, returnGreed: 0,
       calmK: 1, fleeShock: 0, isolation: 0, heavyAir: 0, lastGasp: 0, shopDisc: 0, freeReroll: 0, sellK: 1, stashPlus: 0, patron: 0, stashGreed: 0,
-      greedFlat: 0, hungerK: 1, storeK: 1, heartbeat: 0, gilded: 0, goldDust: 0, reliquary: false, pack: 0, quickArm: false };
+      greedFlat: 0, hungerK: 1, storeK: 1, heartbeat: 0, gilded: 0, goldDust: 0, reliquary: false, pack: 0, quickArm: false,
+      // 1.18: the new cards (komnaty, room effects, the heroes' behaviour)
+      drawers: 0, lure: 0, onemore: 0, thickwalls: false, risen: false, cell: false, vaultsnap: false, wisps: 0, body: 0, falsecall: false, frames: 0,
+      restock: false, lullsleep: 0, ambush: false, cocoons: 0, cauldron: 0, batscatter: 0, skullwall: 0, strip: 0, mire: 0, farecho: 0, deepsleep: 0,
+      gearlink: 0, blackice: 0, badnews: 0, coins: 0, tainted: 0, rhythm: 0 };
   }
   // The deck decides the mods: start from scratch and lay every card on top (two copies = applied twice). Selling a card really removes it.
   function recomputeMods() {
@@ -281,10 +285,10 @@
   // a big dungeon, Szklane serce, Kolekcjoner, Skąpiec, Zła sława.
   function greedBonusParts() {
     let n = 0; const types = new Set();
-    if (fl) fl.items.forEach(it => { if (ACTIVE[it.type] && !(MONSTERS[it.type] && it.hp <= 0)) { types.add(it.type); n++; } });
+    if (fl) fl.items.forEach(it => { if (ACTIVE[it.type] && !it.temp && !(MONSTERS[it.type] && it.hp <= 0)) { types.add(it.type); n++; } });   // 1.18: not a risen ghost (temp)
     const parts = [['rozległość lochu', SIZE_BONUS * Math.max(0, (fl ? roomCount() : 0) - 5)], ['Szklane serce', mods.glass], ['Kolekcjoner', mods.collector * types.size],
       ['Skąpiec', mods.miser * Math.max(0, 15 - n)], ['Zła sława', mods.crystalPts * Math.max(0, run.crystals)], ['karty', mods.greedFlat],
-      ['Pozłacane pułapki', mods.gilded * (fl ? [...fl.items.values()].filter(it => ACTIVE[it.type] && (it.lvl || 1) >= 2).length : 0)],
+      ['Pozłacane pułapki', mods.gilded * (fl ? [...fl.items.values()].filter(it => ACTIVE[it.type] && !it.temp && (it.lvl || 1) >= 2).length : 0)],
       ['schowek', mods.stashGreed * ((run.stash || []).length)], ['powracający', mods.returnGreed * ((run.next || []).filter(e => e.returning).length)],
       ['opowieści o skarbach', run.greedNext || 0]];   // v15.1: the scared ones told the tavern about the gold they saw (this wave only)
     return parts.filter(p => Math.abs(p[1]) > 0.001);
@@ -376,22 +380,24 @@
     const map = buildMap(run.layout);
     fl = Object.assign(map, {
       items: run.items, heroes: [], queue: [], spawnTimer: 0, time: 0, phase: phase || 'build', essence: run.essence,
-      greed: 1, base: 0, combo: 1, lastTrapAt: -99, lastTrapType: null, cclock: 0, lastTrapC: -99, comboWinNow: S.comboWin, fearless: false, byType: {}, score: 0, fed: 0, fedAt: -1, chain: null, lastPay: null, ending: null, endReason: null, spawnAt: 'ent',
+      greed: 1, base: 0, combo: 1, lastTrapAt: -99, lastTrapType: null, cclock: 0, lastTrapC: -99, comboWinNow: S.comboWin + mods.rhythm, fearless: false, byType: {}, score: 0, fed: 0, fedAt: -1, chain: null, lastPay: null, ending: null, endReason: null, spawnAt: 'ent',
       fx: [], zones: [], danger: new Float32Array(WW * WH), ghosts: [], check: null, checkGap: 0, known: new Uint8Array(WW * WH), heartKnown: false,
       knowDirty: false, newKnowAt: -9, threatDirty: true, silence: false, surprise: false, crystalLost: false, buildStart: realNow, rerolled: false,
       party: freshParty(), stats: newStats(), disarmKeys: null
     });
+    fl.items.forEach((it, k) => { if (it.temp) fl.items.delete(k); });   // 1.18 Wstający umarli: a risen ghost lasts its wave only (no refund)
     validateItems(true);
     fl.items.forEach(it => {   // between waves everything is repaired and re-armed; monsters lick their wounds
       if (it.memRes && !it.worn && (it.disabled || it.broken)) it.memRes = null;   // 1.09: put out of use by the heroes: it asks again
       it.worn = false; it.cd = 0; it.disabled = false; it.bent = false; it.anim = 0; it.sleep = false; it.detected = false; it.rumored = false; it.uses = 0; it.seenWave = 0; it.preview = 0; it.noGreed = false; it.cursedKnown = false;
-      it.jamUntil = 0; it.skipUntil = 0; it.lastFire = null; it.broken = false;   // wave clocks restart at 0: stale timers from last wave would jam or mute a trap; smashed buildings stand again
+      it.jamUntil = 0; it.skipUntil = 0; it.lastFire = null; it.broken = false; it.shown = false; it.ambushUntil = 0; it.quick = false;   // wave clocks restart at 0: stale timers from last wave would jam or mute a trap; smashed buildings stand again; 1.18: Zasadzka w norze hides again, Szybki montaż's first shot is spent
       if (MONSTERS[it.type]) { it.hp = it.max; it.gx = it.x + 0.5; it.gy = it.y + 0.5; it.foeT = 0; }
     });
     fl.bRooms = computeBRooms();
   }
   function startBuild(resume) {
     tutPopDrop();   // 1.12: a card of the wave never outlives it
+    restockForge();   // 1.18: Beczki z kuźni
     setupFl('build');
     if (!run.shop || run.shop.wave !== run.wave) shopRefresh(true);   // v14: a fresh offer every wave
     if (!run.next || run.nextFor !== run.wave) { run.next = makeWave(run.wave); run.nextFor = run.wave; }   // 1.05: usually made at the end of the last wave
@@ -411,6 +417,19 @@
     updateTray(); updateAction(); updateZoomBtn(); updatePauseBtn();
     setHint(waveHint());
     saveRun('build');
+  }
+  // 1.18 Beczki z kuźni: the powder that blew up in a Kuźnia (fireRaw keeps it in run.restock) is back for the next wave, with its
+  // furniture, free and at its level, if its spot is still free (nothing changes the map between the wave and this)
+  function restockForge() {
+    const list = run.restock; run.restock = null;
+    if (!list || !list.length) return;
+    list.forEach(r => {
+      const c = run.layout.cells.get(cellKey(Math.floor(r.x / CELL), Math.floor(r.y / CELL)));
+      if (!c || run.items.has(key(r.x, r.y)) || (c.objs || []).some(o => o[0] === r.x && o[1] === r.y)) return;
+      c.objs.push(r.obj.slice());
+      run.items.set(key(r.x, r.y), { type: 'powder', x: r.x, y: r.y, cd: 0, anim: 0, disabled: false, hp: 0, max: 0, power: 1, shot: 0.5, flash: 0, preview: 0, gx: r.x + 0.5, gy: r.y + 0.5, lvl: r.lvl || 1, spent: r.spent, restocked: true });
+      run.restocked = (run.restocked || 0) + 1;
+    });
   }
   function waveHint() {
     const list = run.next, lv = list.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), boss = list.find(e => e.boss);
@@ -536,7 +555,7 @@
     if (n < 3 || !w || stageOf() < 3) return null;   // 1.12: the guild's specialists come with run 3 (with the counter-buildings)
     const st = w.stats, fearShare = (st.fearPts + st.scarePts) / Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts);
     const killShare = st.kills / Math.max(1, w.heroes.length);
-    let traps = 0, mons = 0, blocks = 0; run.items.forEach(it => { if (TRAPS[it.type]) traps++; else if (MONSTERS[it.type]) mons++; if (BUILDINGS[it.type]) blocks++; });
+    let traps = 0, mons = 0, blocks = 0; run.items.forEach(it => { if (it.temp) return; if (TRAPS[it.type]) traps++; else if (MONSTERS[it.type]) mons++; if (BUILDINGS[it.type]) blocks++; });
     run.layout.cells.forEach(c => (c.objs || []).forEach(o => { if (o[2] === 'crate' && o[3]) blocks++; }));   // crates you built
     const lostShare = (st.lostPts + st.lonePts) / Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts + st.lostPts + st.lonePts);
     const opts = [
@@ -1146,6 +1165,7 @@
       if (ar) amt *= 1 - (1 - Math.pow(0.92, ar * itemPow(h))) * (inB('acid', h.room) ? 0.5 : 1);
     } else if (caged(h)) amt *= 1.5;
     if (h.cursed && kind !== 'heart') amt *= 1.3;   // a cursed treasure: everything hurts more
+    if (mods.deepsleep && (kind === 'trap' || kind === 'monster') && h.state === 'rest' && isRt(h.room, 'haven')) amt *= 1 + mods.deepsleep;   // 1.18 Sen bez przebudzenia
     // v14: the damage type against the hero's class, body and scars (a weakness shows the first time it bites)
     const dtp = kind === 'burn' ? (h.burnBy === 'spikes' ? 'pierce' : 'fire') : kind === 'heart' ? null : DMG_OF[tkey || (src && src.type) || (kind === 'loot' ? 'loot' : '')] || null;
     if (dtp) { const tk = typeMult(h, dtp); amt *= tk; if (tk !== 1) revealPhys(h, dtp, tk); }
@@ -1231,6 +1251,7 @@
     const raw = amt;
     amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : isRt(h.room, 'hush') ? 1.2 : 1);   // Mgła: +15%, 1.10 Głusza: +20%
     if (raging(h)) amt *= 0.5;   // 1.05: fury dulls fear
+    if (mods.deepsleep && attr && ACTIVE[attr] && h.state === 'rest' && isRt(h.room, 'haven')) amt *= 1 + mods.deepsleep;   // 1.18 Sen bez przebudzenia: from your traps and monsters, not his own nightmares
     amt *= phobiaMult(h, attr, src, dtp);   // v14: phobias (x2) and this wave's traumas (x1,5)
     if (attr) h.fearBy[attr] = (h.fearBy[attr] || 0) + amt; else if (src) h.fearBy[src] = (h.fearBy[src] || 0) + amt;
     if (attr && fl.firing && fl.firing.type === attr) feltBy(h, amt / h.courage);   // 1.05: what scared him (told in the tavern)
@@ -1261,7 +1282,7 @@
   function startFlee(h) {
     if (caged(h)) { freeCaged(h, false, 'panic'); say(h, pick(SAY.cageBreak), 4); }
     h.fleeing = true; h.needPlan = true; fl.stats.flees++; tl('fl', h.id); tutPop('flee');
-    if (mods.fleeShock) alive().forEach(o => { if (o !== h && !o.fleeing) addFear(o, mods.fleeShock * o.courage, null, 'screams'); });   // Krzyki w ścianach
+    if (mods.fleeShock) alive().forEach(o => { if (o !== h && !o.fleeing && canHearShout(o, h)) addFear(o, mods.fleeShock * o.courage, null, 'screams'); });   // Krzyki w ścianach (1.18: who hears his shout, as for every other shout since 1.17)
     if (h.state === 'rest' || h.state === 'talk' || h.state === 'wait' || h.state === 'boss' || h.state === 'disarm' || h.state === 'free') { h.state = 'walk'; h.item = null; }
     say(h, pick(h.trait === 'coward' ? SAY.cowardRun : SAY.flee), 4, 2);
     floatHero(h, 'Ucieka!', '#c3b2ff', 14, -0.8);
@@ -1323,9 +1344,16 @@
     fl.stats.souls++;
     if (mods.granary) run.stacks.granary = (run.stacks.granary || 0) + 1;   // Spichlerz dusz: the heart wants 1 less for good (1.01)
     if (attr === 'spikes' && mods.hunger) run.stacks.hunger = (run.stacks.hunger || 0) + 1;   // Głodne kolce
+    if (mods.skullwall && rkOf(h.room) === 'ossuary') run.stacks.skullwall = (run.stacks.skullwall || 0) + 1;   // 1.18 Mur z czaszek
     addFloat(p.x, p.y - 0.1, 'Śmierć +' + fmtE(pts) + ' Esencji', '#ff7a86', 15, -0.4);
     const P = fl.party;
     if (h.crystal) crystalReturns(h);   // the crystal falls and rolls back to the heart
+    // 1.18 Kocioł ogra: in a Jaskinia ogra nothing spills: 2 Esencji an item and 1 a coin (at most 8 a hero, times the copies)
+    if (mods.cauldron && rkOf(h.room) === 'ogre' && (h.inv.length || h.gold > 0)) {
+      const n = Math.min(8, 2 * h.inv.length + (h.gold || 0)) * mods.cauldron;
+      h.inv = []; h.gold = 0; gainEssence(null, n, 'essDrop'); fl.stats.cauldron = (fl.stats.cauldron || 0) + n; tl('cn2', h.id, n);
+      addFloat(p.x, p.y - 0.5, 'Kocioł +' + n + ' Esencji', '#ff7a86', 14, -0.6);
+    }
     // his gear and his purse spill out as loot around the body: the exact items, free for the next one who dares (no Esencja back for these)
     h.inv.forEach(it => dropItem(h, it, 0));
     if (h.gold > 0) dropItem(h, null, h.gold);
@@ -1335,14 +1363,15 @@
     // 1.17 (author: "they know about each other in other rooms, e.g. when someone dies"): only the ones who see it (the same
     // place) react in full; the ones who only hear the death cry (14 steps, not through a Głusza) get the smaller fright and no
     // name; the rest learn later from someone who knows (perceiveThink: news), and the party's morale drops when the leader knows
-    const d = { id: h.id, t: fl.time, crypt, knows: new Set() }; (fl.deaths || (fl.deaths = [])).push(d);
+    const d = { id: h.id, t: fl.time, crypt, knows: new Set(), x: h.tx, y: h.ty, room: h.room, hush: isRt(h.room, 'hush') }; (fl.deaths || (fl.deaths = [])).push(d);   // 1.18: where the body lies (Odnalezione ciało)
+    const echo = mods.farecho && isRt(h.room, 'grotto');   // 1.18 Niosące się echo: who hears a death in a Grota fears it like a witness
     const Lnow = leader();
     if (mods.lastGasp) alive().forEach(o => { if (o.room === h.room) addFear(o, mods.lastGasp * o.courage, null, 'death'); });   // Ostatnie tchnienie
     alive().forEach(o => {
       const near = canSee(o, h), hears = !near && canHearShout(o, h);
       if (!near && !hears) return;
       d.knows.add(o.id); if (near) sawAdd(o, ['blood']); if (o === Lnow && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
-      const base = (near ? Math.max(15 * o.R.panic, 0.12 * o.courage + 4) : 1.3 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2)) * (crypt ? 2 : 1);   // v14: softer for rookies (was max(30 x panic, ...))
+      const base = (near || echo ? Math.max(15 * o.R.panic, 0.12 * o.courage + 4) : 1.3 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (1 + mods.badnews)) * (crypt ? 2 : 1);   // v14: softer for rookies (was max(30 x panic, ...)); 1.18: Złe wieści x2 for one who only hears it, Niosące się echo
       o.shakenUntil = fl.time + (near ? 9 : 5);
       if (hears) {   // a cry from somewhere: no name, no fury
         if (Math.random() < 0.55) say(o, pick(SAY.deathHeard), 3, 2);
@@ -1364,6 +1393,21 @@
     if (P.leaderId === h.id) P.leaderId = -1;
     if (P.scoutId === h.id) P.scoutId = -1;
     if (P.scoutMate === h.id) P.scoutMate = -1;
+    riseGhost(h);   // 1.18 Wstający umarli
+  }
+  // 1.18 Wstający umarli: a hero killed in a Krypta gets up as a ghost on your side, a real monster for the rest of the wave on the free
+  // floor tile nearest the body. It is temp: no cost, no slot, no part of the dungeon's greed or the guild's count, and setupFl takes it
+  // away before the next build (nothing back). At most 2 a wave.
+  function riseGhost(h) {
+    if (!mods.risen || fl.phase !== 'raid' || !isRt(h.room, 'crypt') || (fl.risen || 0) >= 2) return null;
+    const R = fl.rooms[h.room], p = heroPos(h); if (!R || !R.tiles) return null;
+    const free = R.tiles.filter(q => slotOf(q[0], q[1]) === 'floor' && walkable(q[0], q[1]) && !fl.items.has(key(q[0], q[1])));
+    if (!free.length) return null;
+    const t = free.reduce((a, q) => Math.hypot(q[0] + 0.5 - p.x, q[1] + 0.5 - p.y) < Math.hypot(a[0] + 0.5 - p.x, a[1] + 0.5 - p.y) ? q : a, free[0]);
+    const hp = ITEMS.ghost.hp, g = { type: 'ghost', x: t[0], y: t[1], cd: 1, anim: 0, disabled: false, hp, max: hp, power: 1, shot: 0.5, flash: 0, preview: 0, gx: p.x, gy: p.y, lvl: 1, spent: 0, temp: true };
+    fl.items.set(key(t[0], t[1]), g); fl.risen = (fl.risen || 0) + 1; fl.stats.risen = (fl.stats.risen || 0) + 1; fl.threatDirty = true; tl('rs', h.id, t[0], t[1]);
+    floatTile(t[0], t[1], 'Wstaje jako duch!', '#dfe6ff', 15, -0.9); burst(p.x, p.y, '#dfe6ff', 14);
+    return g;
   }
 
   /* ================= loot, greed and hero gear ================= */
@@ -1450,6 +1494,7 @@
     else if (kind === 'potion') item = { type: 'potion', r: 1, cdUntil: 0 };   // (powers rolled from gear come with their uses)
     else if (kind === 'gear' || kind === 'cursed') item = rollItem(2, GEAR_POOL);
     else if (kind === 'relic' && !mods.reliquary) item = rollItem(3, Object.keys(HITEMS));
+    if (item && kind === 'potion' && !it.dropped && mods.tainted) item.tainted = true;   // 1.18 Zepsute mikstury: only a potion from your loot, not from their gear
     if (item && kind !== 'cursed' && !giveItem(h, item)) { h.lootMemo.set(key(it.x, it.y), { go: false, t: fl.time + 60 }); return false; }   // he leaves it lying (and will not come back for it)
     fl.items.delete(key(it.x, it.y));
     h.loot++;
@@ -1465,9 +1510,22 @@
     if (kind === 'cursed') curse(h, item);
     if (mods.lootTrap > 0) damage(h, mods.lootTrap * r, LOOTTRAP);
     if (kind === 'relic' && !it.dropped) gainEssence(null, 4, 'essDrop');
+    vaultSnap(it, h);   // 1.18 Zatrzask sezamu
     updateTray();   // 1.03: the price of that loot drops again
     replanAll();
     return true;
+  }
+  // 1.18 Zatrzask sezamu: loot taken in a Sezam sets off every ready trap in that room (the decoy's alarm, without using it up),
+  // at most once in 6 s a room, so two treasures side by side make one alarm
+  function vaultSnap(it, h) {
+    const r = roomOf(it.x, it.y);
+    if (!mods.vaultsnap || fl.phase !== 'raid' || r < 0 || !isRt(r, 'vault')) return 0;
+    const at = fl.snapAt || (fl.snapAt = {}); if (fl.time - (at[r] == null ? -99 : at[r]) < 6) return 0;
+    at[r] = fl.time; let n = 0;
+    floatTile(it.x, it.y, 'Zatrzask!', '#ffd27a', 16, -1); shake = Math.max(shake, 0.12);
+    fl.items.forEach(o => { if (TRAPS[o.type] && slotRoom(o.type, o.x, o.y) === r && !o.disabled && o.cd <= 0 && fire(o, 1)) n++; });
+    fl.stats.vaultSnaps = (fl.stats.vaultSnaps || 0) + 1; tl('vs', h.id, r, n);
+    return n;
   }
   function curse(h, item) {
     h.cursed = true; fl.stats.cursed++; tl('cu', h.id);

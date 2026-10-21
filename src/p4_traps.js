@@ -25,10 +25,32 @@
     const add = (tiles, w) => tiles.forEach(t => { const i = t[1] * WW + t[0]; fl.danger[i] = Math.min(6, fl.danger[i] + w); });
     fl.items.forEach(it => {
       if (LOOKS_TRAP(it.type) && it.detected && !it.disabled) add(areaOf(it), SCARE[it.type] ? 1 : (it.cd > 0.3 || it.jamUntil > fl.time) ? 0.4 : 4);
-      else if (MONSTERS[it.type] && it.hp > 0 && fl.known[it.y * WW + it.x]) add(DRIFT[it.type] ? roomTilesNear(Math.floor(it.gx), Math.floor(it.gy), 1.5, roomOf(it.x, it.y)) : areaOf(it), it.type === 'archer' ? 1 : DRIFT[it.type] ? 1.5 : 2);
+      else if (MONSTERS[it.type] && it.hp > 0 && fl.known[it.y * WW + it.x] && !hiddenAmbush(it)) add(DRIFT[it.type] ? roomTilesNear(Math.floor(it.gx), Math.floor(it.gy), 1.5, roomOf(it.x, it.y)) : areaOf(it), it.type === 'archer' ? 1 : DRIFT[it.type] ? 1.5 : 2);
     });
     fl.ghosts.forEach(g => add(g.tiles, 4));
     replanAll();
+  }
+  // 1.18 Zasadzka w norze: goblins and shamans in their Goblinia nora sit hidden: no danger on the map (rebuildThreat), nobody walks
+  // round them or picks a fight with them, until one strikes or a hero runs into it (it.shown, reset every wave in setupFl)
+  const hiddenAmbush = m => !!mods.ambush && !!m && !m.shown && (m.type === 'goblin' || m.type === 'shaman') && inKind(m);
+  function showAmbush(m) {
+    if (m.shown) return;
+    m.shown = true; m.ambushUntil = fl.time + 1; fl.threatDirty = true; fl.stats.ambushes = (fl.stats.ambushes || 0) + 1; tl('ab', m.type, m.x, m.y);
+    floatTile(m.x, m.y, 'Zasadzka!', '#a7d060', 15, -0.9);
+  }
+  // 1.18 Mur z czaszek: kości, trumny and archers in a Kaplica czaszek, +5% for every hero killed in a Kaplica this run (at most +50%)
+  const skullK = it => mods.skullwall && KIND_OF[it.type] === 'ossuary' && inKind(it) ? 1 + Math.min(0.5, 0.05 * (run.stacks.skullwall || 0) * mods.skullwall) : 1;
+  // 1.18 Zdarte pancerze: spikes or arrows in a Zbrojownia may knock a talisman, an amulet or armour off him (50% a copy); it lands
+  // next to him as loot, and loot is something to come back for, through the same spikes
+  function stripGear(h, it) {
+    if (!mods.strip || h.dead || !inKind(it)) return false;
+    const g = h.inv.filter(x => x.type === 'charm' || x.type === 'amulet' || x.type === 'armor');
+    if (!g.length || Math.random() >= Math.min(1, 0.5 * mods.strip)) return false;
+    const x = pick(g);
+    if (!dropItem(h, x, 0)) return false;   // nowhere to fall: he keeps it
+    h.inv.splice(h.inv.indexOf(x), 1); fl.stats.stripped = (fl.stats.stripped || 0) + 1; tl('sp', h.id, x.type);
+    floatHero(h, 'Strącone: ' + HITEMS[x.type].name, '#c9d5e2', 12, -0.6);
+    return true;
   }
   function disarmSpots(it) {
     const x = it.x, y = it.y;
@@ -84,7 +106,8 @@
     if (!fl || fl.phase !== 'raid' || !ACTIVE[it.type] || it.disabled || (it.cd > 0 && !opt.echo) || it.jamUntil > fl.time || (MONSTERS[it.type] && it.hp <= 0)) return false;
     const basePw = pw, boost = trapBoost(it), s0 = fl.prov || 0, k0 = fl.stats.kills;   // 1.16.1: s0 counts what this firing is worth (fl.score only moves when a chain is cashed in, so a card nearly always said 0)
     if (calmReady(it) && !opt.echo) floatTile(it.x, it.y, 'Cisza przed burzą ×' + fmt2(1 + mods.calmStorm).replace(',00', ''), '#ffd27a', 13, -1.4);
-    pw *= boost * lvlPow(it) * kindPow(it) * mods.pactPower;   // upgrade level, 1.15: its komnata, and Krwawa umowa
+    pw *= boost * lvlPow(it) * kindPow(it) * mods.pactPower * skullK(it);   // upgrade level, 1.15: its komnata, and Krwawa umowa; 1.18: Mur z czaszek
+    if (it.quick && !opt.echo) { it.quick = false; pw *= 1.5; floatTile(it.x, it.y, 'Szybki montaż ×1,5', '#ffd27a', 13, -1.2); }   // 1.18 Szybki montaż: built during the wave, its first shot +50%
     if (TRAPS[it.type]) it.lastFire = fl.time;
     // Echo mechanizmów: every k-th trap firing goes off a second time a moment later
     if (mods.echoFire && TRAPS[it.type] && !opt.echo && !opt.choir) {
@@ -96,7 +119,7 @@
     if (fl.cclock - fl.lastTrapC < (fl.comboWinNow || S.comboWin)) { if ((fl.lastTrapType !== it.type || isRt(slotRoom(it.type, it.x, it.y), 'gears')) && fl.combo < 7) { fl.combo++; comboOrbs(it.x, it.y); } }   // 1.10: in Zębatki the same trap again counts too   // only a different type builds combo (1.10: its orbs fly to the Combo box)
     else { if (fl.chain && fl.chain.trap) payChain(); fl.combo = 1; comboReset(); }   // 1.01: the old chain is cashed in before a new one starts
     fl.lastTrapAt = fl.time; fl.lastTrapC = fl.cclock; fl.lastTrapType = it.type; fl.lastTrapRoom = slotRoom(it.type, it.x, it.y);
-    fl.comboWinNow = S.comboWin * (isRt(slotRoom(it.type, it.x, it.y), 'grotto') ? 1.5 : 1);   // Grota: the echo holds the combo longer
+    fl.comboWinNow = (S.comboWin + mods.rhythm) * (isRt(slotRoom(it.type, it.x, it.y), 'grotto') ? 1.5 : 1);   // Grota: the echo holds the combo longer; 1.18 Rytm lochu +1 s a copy
     bt(it.type).fires++;
     fl.stats.maxCombo = Math.max(fl.stats.maxCombo, fl.combo);
     // 1.12 (author: combo should also make the traps hit and scare harder, so fewer, well grouped traps pay): the combo step
@@ -141,6 +164,7 @@
         list.forEach(h => {
           damage(h, 35 * D * mods.spikeDmg * (1 + 0.04 * (run.stacks.hunger || 0) * mods.hunger) * pw, it, cpow); hit++;
           if (t3(it) && !h.dead) { h.burnUntil = Math.max(h.burnUntil, fl.time + 3); h.burnBy = 'spikes'; floatHero(h, 'Krwawi', '#ff6b6b', 12, -0.4); }   // Krwawienie
+          stripGear(h, it);   // 1.18
         });
         break;
       case 'web': {
@@ -169,7 +193,7 @@
           let k = 1; while (walkable(it.x + d[0] * k, it.y + d[1] * k)) k++;
           if (k > 1) fxLine(it.x + 0.5, it.y + 0.5, it.x + d[0] * (k - 1) + 0.5, it.y + d[1] * (k - 1) + 0.5, 0.28);
         });
-        list.forEach(h => { damage(h, 25 * D * pw, it, cpow); if (mods.arrowBurn && !h.dead) ignite(h, 'arrows'); hit++; });   // level 3: piercing (trapMult, talismans)
+        list.forEach(h => { damage(h, 25 * D * pw, it, cpow); if (mods.arrowBurn && !h.dead) ignite(h, 'arrows'); stripGear(h, it); hit++; });   // level 3: piercing (trapMult, talismans); 1.18: Zdarte pancerze
         break;
       case 'fire':
         it.cd = cdBase;
@@ -244,10 +268,13 @@
         break;
       }
       case 'powder': {
+        const forge = mods.restock && inKind(it);   // 1.18 Beczki z kuźni (asked before the furniture goes)
         fl.items.delete(key(it.x, it.y));
         fl.objects.delete(key(it.x, it.y)); fl.threatDirty = true;
         const L = run.layout, c = L.cells.get(cellKey(Math.floor(it.x / CELL), Math.floor(it.y / CELL)));
-        if (c) c.objs = c.objs.filter(o => !(o[0] === it.x && o[1] === it.y));   // the furniture is gone for good
+        const ob = c && c.objs.find(o => o[0] === it.x && o[1] === it.y);
+        if (forge && ob) (run.restock || (run.restock = [])).push({ x: it.x, y: it.y, obj: ob.slice(), lvl: it.lvl || 1, spent: it.spent });   // back next wave (startBuild)
+        if (c) c.objs = c.objs.filter(o => !(o[0] === it.x && o[1] === it.y));   // the furniture is gone for good (1.18: unless Beczki z kuźni bring it back)
         list.forEach(h => { damage(h, 60 * D * pw, it, cpow); if (t3(it) && !h.dead) ignite(h, 'powder'); hit++; });   // level 3: Ognisty proch
         burst(it.x + 0.5, it.y + 0.5, '#ff9a3c', 26); burst(it.x + 0.5, it.y + 0.5, '#ffd27a', 12);
         particles.push({ ring: true, x: it.x + 0.5, y: it.y + 0.5, r: 0.3, maxR: mods.powderR + 0.5, life: 0.35, color: '#ffb35c' });
@@ -267,7 +294,9 @@
         it.cd = cdBase; it.anim = 0.3;
         const near = alive().filter(h => Math.max(Math.abs(h.tx - it.x), Math.abs(h.ty - it.y)) <= 1);
         const tgt = near.find(h => h.foe === it) || near[0];
-        if (tgt) { damage(tgt, 35 * D * it.power * pw, actSrc(it.type), cpow); hit++; if (t3(it) && !tgt.dead) tgt.slowUntil = Math.max(tgt.slowUntil, fl.time + 1.5); }   // Podcięcie
+        const amb = !!tgt && hiddenAmbush(it);   // 1.18 Zasadzka w norze: the first blow from hiding hits twice as hard
+        if (tgt) { damage(tgt, 35 * D * it.power * pw * (amb ? 2 : 1), actSrc(it.type), cpow); hit++; if (t3(it) && !tgt.dead) tgt.slowUntil = Math.max(tgt.slowUntil, fl.time + 1.5); }   // Podcięcie
+        if (amb) showAmbush(it);
         break;
       }
       case 'archer':
@@ -276,9 +305,10 @@
         break;
       case 'spider':
         it.cd = cdBase; it.anim = 0.35;
-        fl.zones.push({ keys, tiles: area, until: fl.time + 4 * pw, src: it });
+        const hold = mods.spiderNest ? 2 : 0;   // 1.18 Pajęcze gniazdo: a spider's web holds 2 s longer
+        fl.zones.push({ keys, tiles: area, until: fl.time + 4 * pw + hold, src: it });
         fxTiles(area, '220,230,255', 0.35);
-        list.forEach(h => { h.slowUntil = fl.time + 4 * pw; damage(h, 30 * D * it.power * pw, actSrc(it.type), cpow); hit++; });
+        list.forEach(h => { h.slowUntil = fl.time + 4 * pw + hold; damage(h, 30 * D * it.power * pw, actSrc(it.type), cpow); hit++; });
         break;
       case 'ogre':
         it.cd = cdBase; it.anim = 0.35; shake = Math.max(shake, 0.2);
@@ -320,12 +350,19 @@
           if (!h.dead && !h.fleeing && !h.crystal && !caged(h) && h !== L && Math.random() < (h.rank === 0 ? 0.6 : 0.35) * (t3(it) ? 1.3 : 1)) {
             h.panicUntil = fl.time + 2.5; h.needPlan = true; fl.stats.batScatter = (fl.stats.batScatter || 0) + 1;
             floatHero(h, 'Spłoszony!', '#c9c0d8', 13, -0.8); say(h, pick(SAY.batScatter), 2, null, 'loud');
+            // 1.18 Spłoszeni w mrok: from a Gniazdo nietoperzy he runs blind and may lose the party (40%, a rookie 60%, +20% a copy)
+            if (mods.batscatter && inKind(it) && !h.lost && Math.random() < Math.min(1, (h.rank === 0 ? 0.6 : 0.4) + 0.2 * (mods.batscatter - 1))) { getLost(h, 'bats'); fl.stats.batLost = (fl.stats.batLost || 0) + 1; }
           }
         });
         break;
       }
     }
     fl.surprise = false;
+    // 1.18 Sprzężone tryby: a trap going off in Zębatki winds the other traps of that room on by 1 s a copy (not an echo or a choir, no loops)
+    if (mods.gearlink && TRAPS[it.type] && !opt.echo && !opt.choir) {
+      const gr = slotRoom(it.type, it.x, it.y);
+      if (gr >= 0 && isRt(gr, 'gears')) fl.items.forEach(o => { if (o !== it && TRAPS[o.type] && o.cd > 0 && slotRoom(o.type, o.x, o.y) === gr) { o.cd = Math.max(0, o.cd - mods.gearlink); fl.stats.gearLinks = (fl.stats.gearLinks || 0) + 1; } });
+    }
     if (TRAPS[it.type] && hit > 0 && mods.tempered) run.stacks.tempered = (run.stacks.tempered || 0) + hit;   // Zaprawione mechanizmy
     if (mods.overload && TRAPS[it.type] && it.type !== 'powder' && !opt.echo && fl.items.get(key(it.x, it.y)) === it && Math.random() < mods.overload) {   // Przeciążenie
       it.disabled = true; it.worn = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Zepsuta!', '#a69bbb', 13, -1.1); fl.stats.broken = (fl.stats.broken || 0) + 1;
@@ -354,6 +391,7 @@
   // A hero falls through a given trapdoor once per wave: after that he knows where the edge is and steps around it.
   function fall(h, pw, it) {
     if (it) { (h.fellFrom = h.fellFrom || new Set()).add(it); learnTrap(it, 'seen', null); if (t3(it)) h.deepFall = true; }
+    h.fallRoom = it ? slotRoom('trapdoor', it.x, it.y) : -1; h.fallRk = it ? rkOf(h.fallRoom) : null;   // 1.18: Cela pod zapadnią
     h.gone = true; h.state = 'fallen'; h.fallUntil = fl.time + mods.fallTime * Math.max(1, pw); h.outR = realNow; h.outKind = 'fall';   // 1.09: sinks into the floor
     h.path = []; h.nx = null; h.ny = null; h.prog = 0; h.foe = null; h.item = null;
     fl.stats.falls++; say(h, pick(SAY.fall), 4); tl('tr', h.id);
@@ -365,8 +403,24 @@
     if (fl.party.scoutMate === h.id) fl.party.scoutMate = -1;
     h.split = false;
   }
+  // 1.18 Cela pod zapadnią: down a trapdoor of a Więzienie he lands in a ready cage of a Więzienie (the one in that room first) and it
+  // shuts on him: the cage fires on him (its Groza, the combo, the party's rescue, as for any cage). No ready cage: the usual landing.
+  function cellLand(h) {
+    const cages = [...fl.items.values()].filter(c => c.type === 'cage' && !c.disabled && c.cd <= 0 && !(c.jamUntil > fl.time) && rkOf(slotRoom('cage', c.x, c.y)) === 'prison' && walkable(c.x, c.y) && !heroBlock(h, c.x, c.y));
+    if (!cages.length) return false;
+    const c = cages.find(q => slotRoom('cage', q.x, q.y) === h.fallRoom) || pick(cages);
+    h.x = c.x; h.y = c.y; h.tx = c.x; h.ty = c.y; h.nx = null; h.ny = null; h.prog = 0; h.gone = false; h.state = 'walk'; h.needPlan = true; h.deepFall = false;
+    h.room = roomOf(h.x, h.y); h.lost = false; h.noPathT = 0;
+    reveal(h);
+    fl.stats.cellDrops = (fl.stats.cellDrops || 0) + 1; tl('ce', h.id, c.x, c.y);
+    fire(c, 1);
+    addFear(h, 10, 'trapdoor');
+    if (mods.firepit) { ignite(h, 'trapdoor', 3 * mods.firepit); floatHero(h, 'Płonie!', '#ff9a3c', 13, -0.9); }   // Ognista otchłań
+    return true;
+  }
   function landFallen(h) {
     h.inR = realNow;   // 1.09: pops in where he climbs out
+    if (mods.cell && h.fallRk === 'prison' && cellLand(h)) return;   // 1.18
     const L = leader(), lp = L ? heroPos(L) : { x: fl.ent.x, y: fl.ent.y };
     const rooms = fl.rooms.filter(r => r.kind === 'room' && r.id !== fl.heart.room);
     // With the crystal he comes out as far from every way out as possible (picking "far from the leader" used to drop him at the door).
@@ -442,7 +496,7 @@
       fl.threatDirty = true;
     }
   }
-  const monDmg = m => S.monDmg * m.power * kindPow(m) * mods.pactPower * (heartFed() ? 1 + mods.heartbeat : 1) *
+  const monDmg = m => S.monDmg * m.power * kindPow(m) * mods.pactPower * skullK(m) * (heartFed() ? 1 + mods.heartbeat : 1) *   // 1.18: Mur z czaszek
     (mods.pack && [...fl.items.values()].some(o => o !== m && MONSTERS[o.type] && o.hp > 0 && roomOf(o.x, o.y) === roomOf(m.x, m.y)) ? 1 + mods.pack : 1);   // Stado
   // v15.1: the floating monsters. The ghost follows the nearest hero, the shade the lonely one or the last in line,
   // the bats flit from one hero to another. They never block the way and nobody fights them hand to hand.
@@ -505,13 +559,16 @@
       if (DRIFT[m.type]) { driftTick(m, room, dt); return; }
       const fighters = fl.heroes.filter(h => !h.dead && !h.fled && !h.gone && h.state === 'fight' && h.foe === m);
       if (!fighters.length) return;
-      (m.type === 'ogre' ? fighters : fighters.slice(0, 1)).forEach(h => { damage(h, ITEMS[m.type].melee * monDmg(m) * dt, m); if (m.type === 'ogre' && t3(m)) addFear(h, 4 * dt, 'ogre'); });
+      if (hiddenAmbush(m)) showAmbush(m);   // 1.18 Zasadzka w norze: he ran into it; its first second of fighting hits twice as hard
+      const ambK = fl.time < (m.ambushUntil || 0) ? 2 : 1;
+      (m.type === 'ogre' ? fighters : fighters.slice(0, 1)).forEach(h => { damage(h, ITEMS[m.type].melee * monDmg(m) * ambK * dt, m); if (m.type === 'ogre' && t3(m)) addFear(h, 4 * dt, 'ogre'); });
       if (m.type === 'spider') {
         m.webT = (m.webT || 0) - dt;
         if (m.webT <= 0) {
           m.webT = 3; const t = fighters[0];
-          if (mods.spiderNest || t3(m)) { const tiles = areaOf(m); fl.zones.push({ keys: new Set(tiles.map(q => key(q[0], q[1]))), tiles, until: fl.time + 3, src: m }); }
-          if (t) { t.slowUntil = fl.time + 2.5; sawAdd(t, ['web', 'spider', 'monster']); if (!t.spiderSaid) { t.spiderSaid = true; say(t, pick(SAY.spider), 2, null, 'loud'); } }
+          const hold = mods.spiderNest ? 2 : 0;   // 1.18 Pajęcze gniazdo: 3x3 without the trait (as before) and every spider's web 2 s longer
+          if (mods.spiderNest || t3(m)) { const tiles = areaOf(m); fl.zones.push({ keys: new Set(tiles.map(q => key(q[0], q[1]))), tiles, until: fl.time + 3 + hold, src: m }); }
+          if (t) { t.slowUntil = fl.time + 2.5 + hold; sawAdd(t, ['web', 'spider', 'monster']); if (!t.spiderSaid) { t.spiderSaid = true; say(t, pick(SAY.spider), 2, null, 'loud'); } }
         }
       }
       let dmgIn = 0;

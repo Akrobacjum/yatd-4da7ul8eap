@@ -66,3 +66,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.16](1.16.html) | 21.10 | celowe rozdzielenie: zwiad na naradzie, przodem, na postoju, we dwójkę; zwiad nabija Grozę wolniej niż zgubienie |
 | [Prototype 1.16.1](1.16.1.html) | 21.10 | serce je Grozę na bieżąco (pasek nie czeka na koniec combo), ekran dzieli się wcześniej, Esencja na kartach pułapek |
 | [Prototype 1.17](1.17.html) | 21.10 | zwiedzanie i przeszukiwanie, narada po 2 minutach, bohaterowie wiedzą tylko to, co widzą i słyszą, dymki ×3 |
+| [Prototype 1.17.1](1.17.1.html) | 21.10 | bohaterowie mówią tylko o tym, co widzieli; krwawienie z kolców to nie ogień |

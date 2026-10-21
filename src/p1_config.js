@@ -155,7 +155,11 @@
     r_fog: 3, r_swamp: 3, r_grotto: 3, r_crypt: 3, r_vault: 3, r_haven: 3, r_gears: 3, r_hush: 3, r_ice: 3 };
   // cards that only make sense with what a later run brings (a card that needs a locked trap or monster is filtered by its req)
   const ONB_CARD = { monsterroar: 2, haunt: 2, echo: 2, panic: 2, harvest: 2, chronicle: 2, dread: 2, screams: 2, lastgasp: 2, cageghost: 2, isolation: 2,
-    heavyair: 3, cheapwalls: 3, weakspot: 4, anatomy: 4, nightmares: 4, oddbodies: 4, scars: 4, memories: 4, survivors: 4 };
+    heavyair: 3, cheapwalls: 3, weakspot: 4, anatomy: 4, nightmares: 4, oddbodies: 4, scars: 4, memories: 4, survivors: 4,
+    // 1.18: the cards of a komnata or a room effect come with run 3, like the komnaty and effects themselves (their req also asks for
+    // the thing in the dungeon); the cards of the heroes' behaviour (lure, onemore, thickwalls, badnews, coins, tainted, rhythm) from run 1
+    drawers: 3, risen: 3, cell: 3, vaultsnap: 3, wisps: 3, body: 3, falsecall: 3, frames: 3, restock: 3, lullsleep: 3, ambush: 3, cocoons: 3,
+    cauldron: 3, batscatter: 3, skullwall: 3, strip: 3, mire: 3, farecho: 3, deepsleep: 3, gearlink: 3, blackice: 3 };
   const ONB_STAGES = [null,
     { name: 'Podstawy', news: [] },
     { name: 'Strach', news: [
@@ -399,6 +403,9 @@
   const ADJ = { m: ['', 'zwykły', 'rzadki', 'legendarny'], f: ['', 'zwykła', 'rzadka', 'legendarna'], pl: ['', 'zwykłe', 'rzadkie', 'legendarne'], fAcc: ['', 'zwykłą', 'rzadką', 'legendarną'] };
   const adj = (g, r) => ADJ[g][Math.min(3, Math.max(1, r))];
   const G3 = (g, m, f, pl) => g === 'f' ? f : g === 'pl' ? pl : m;
+  // 1.18: a card of a komnata or a room effect is offered only while that komnata or effect is in the dungeon (its req), so the
+  // 21 new ones do not water down the pool: a dungeon has 2-4 of them at a time
+  const hasRk = k => !!fl && fl.rooms.some(R => R.rk === k), hasRt = t => !!fl && fl.rooms.some(R => R.rt === t);
   // Cards. "card" = lives in the deck (7 slots; a second copy takes another slot and stacks), "unlock" = a new trap or monster
   // for good (no slot), "instant" = happens once (no slot). Rarity: c common, r rare, l legendary.
   // Every card's apply() is re-run on fresh mods whenever the deck changes, so a card sold is a card gone.
@@ -407,7 +414,6 @@
     { id: 'u-fire', kind: 'unlock', rar: 'c', unlock: 'fire', name: 'Nowa pułapka: Ogień', text: 'Na ścianę. Płomień 2×3 pola i podpalenie.' },
     { id: 'u-mimic', kind: 'unlock', rar: 'c', unlock: 'mimic', name: 'Nowa pułapka: Mimik', text: 'Na obiekt. Mebel gryzie wszystkich dookoła.' },
     { id: 'u-cage', kind: 'unlock', rar: 'c', unlock: 'cage', name: 'Nowa pułapka: Klatka', text: 'Na podłogę. Więzi bohatera; jeśli drużyna go nie uwolni, umiera w klatce.' },
-    { id: 'u-portrait', kind: 'unlock', rar: 'c', unlock: 'portrait', name: 'Nowa pułapka: Portret', text: 'Na ścianę. Nie rani, tylko straszy cały kawałek pokoju.' },
     { id: 'u-spider', kind: 'unlock', rar: 'c', unlock: 'spider', name: 'Nowy potwór: Pająk', text: 'Blokuje przejście, gryzie i oplata siecią.' },
     { id: 'u-ogre', kind: 'unlock', rar: 'c', unlock: 'ogre', name: 'Nowy potwór: Ogr', text: 'Dużo życia, bije wszystkich, którzy z nim walczą.' },
     { id: 'u-shaman', kind: 'unlock', rar: 'c', unlock: 'shaman', name: 'Nowy potwór: Szaman', text: 'Leczy potwory dookoła, w skill checku cały pokój.' },
@@ -420,13 +426,13 @@
     { id: 'u-bats', kind: 'unlock', rar: 'c', unlock: 'bats', name: 'Nowy potwór: Nietoperze', text: 'Szybki rój: gryzie, straszy i płoszy bohaterów.' },
     // instants
     { id: 'crystal', kind: 'instant', rar: 'r', name: 'Żarłoczne serce', text: 'Od razu: serce dostaje dodatkowy kryształ (także maksymalnie, do końca runu).', apply: () => { run.crystals += 1; run.maxCrystals += 1; } },
-    { id: 'infusion', kind: 'instant', rar: 'c', name: 'Zastrzyk Esencji', text: 'Od razu: +20 Esencji, nawet ponad pojemność.', apply: () => { fl.essence += 20; run.essence = fl.essence; } },
+    { id: 'infusion', kind: 'instant', rar: 'c', name: 'Zastrzyk Esencji', text: 'Od razu: +20 Esencji.', apply: () => { fl.essence += 20; run.essence = fl.essence; } },
     { id: 'gift', kind: 'instant', rar: 'r', name: 'Hojny kupiec', text: 'Od razu: 2 darmowe karty do wybrania w sklepie.', apply: () => { run.freePicks = (run.freePicks || 0) + 2; } },
     { id: 'pact', kind: 'instant', rar: 'l', name: 'Pakt', text: 'Do końca runu +1 miejsce w talii, ale serce traci 1 kryształ (także maksymalnie, zawsze zostaje co najmniej 1).', apply: () => { run.deckSize += 1; run.maxCrystals = Math.max(1, run.maxCrystals - 1); run.crystals = Math.max(1, Math.min(run.crystals - 1, run.maxCrystals)); } },
     // cards: traps and monsters
     { id: 'spikes', kind: 'card', rar: 'c', tag: 'kolce ×1,5', name: 'Ostrzejsze kolce', text: 'Kolce zadają +50% obrażeń.', apply: m => { m.spikeDmg *= 1.5; } },
-    { id: 'cooldown', kind: 'card', rar: 'c', tag: 'odnowa -25%', name: 'Szybkie przeładowanie', text: 'Odnowienie wszystkich pułapek krótsze o 25%.', apply: m => { m.cooldown *= 0.75; } },
-    { id: 'walls', kind: 'card', rar: 'c', tag: 'ściany -20%', name: 'Głodne ściany', text: 'Strzały, ogień i portrety przeładowują się o 20% szybciej.', apply: m => { m.wallCd *= 0.8; } },
+    { id: 'cooldown', kind: 'card', rar: 'c', tag: 'odnowa -25%', name: 'Szybkie przeładowanie', text: 'Odnowienie wszystkich pułapek i zdolności potworów krótsze o 25%.', apply: m => { m.cooldown *= 0.75; } },
+    { id: 'walls', kind: 'card', rar: 'c', tag: 'ściany -20%', name: 'Głodne ściany', text: 'Strzały, ogień, portrety, oczy i lustra przeładowują się o 20% szybciej.', apply: m => { m.wallCd *= 0.8; } },
     { id: 'powder', kind: 'card', rar: 'c', tag: 'proch +1', name: 'Więcej prochu', text: 'Wybuch prochu sięga o 1 pole dalej.', apply: m => { m.powderR += 1; } },
     { id: 'arrows', kind: 'card', rar: 'r', unique: true, tag: 'podpalenie', name: 'Płonące groty', text: 'Strzały podpalają trafionych.', apply: m => { m.arrowBurn = true; } },
     { id: 'gate', kind: 'card', rar: 'c', tag: 'krata', name: 'Ciężka krata', text: 'Każda krata wytrzymuje 2 zamknięcia więcej i miażdży o 50% mocniej.', apply: m => { m.gateUses += 2; m.gateCrush *= 1.5; } },
@@ -435,8 +441,8 @@
     { id: 'mimic', kind: 'card', rar: 'c', req: 'mimic', tag: 'mimik ×1,5', name: 'Wygłodniały mimik', text: 'Mimik gryzie o 50% mocniej.', apply: m => { m.mimicDmg *= 1.5; } },
     { id: 'trapdoor', kind: 'card', rar: 'c', tag: 'zapadnia', name: 'Głęboka zapadnia', text: 'Spadający bohater leci dłużej (+4 s) i obija się o 50% mocniej.', apply: m => { m.fallTime += 4; m.fallDmg *= 1.5; } },
     { id: 'cage', kind: 'card', rar: 'c', req: 'cage', tag: 'klatka ×2', name: 'Żelazne klatki', text: 'Klatka trzyma 2 razy dłużej (drużyna ma więcej czasu na ratunek), a uwięziony boi się o 50% bardziej.', apply: m => { m.cageTime *= 2; m.cageFear *= 1.5; } },
-    { id: 'portrait', kind: 'card', rar: 'c', req: 'portrait', tag: 'portret +', name: 'Galeria grozy', text: 'Portret sięga o 2 pola dalej i straszy o 30% mocniej.', apply: m => { m.portraitR += 2; m.portraitFear *= 1.3; } },
-    { id: 'spider', kind: 'card', rar: 'r', req: 'spider', unique: true, tag: 'gniazdo', name: 'Pajęcze gniazdo', text: 'Ugryzienie pająka oplata siecią cały kwadrat 3×3.', apply: m => { m.spiderNest = true; } },
+    { id: 'portrait', kind: 'card', rar: 'c', req: 'portrait', tag: 'portret +', name: 'Galeria grozy', text: 'Portret sięga o 2 pola dalej i straszy o 30% mocniej. Portret z cechą 3. poziomu (także w Galerii) i tak straszy cały pokój, więc dostaje tylko strach.', apply: m => { m.portraitR += 2; m.portraitFear *= 1.3; } },
+    { id: 'spider', kind: 'card', rar: 'r', req: 'spider', unique: true, tag: 'gniazdo', name: 'Pajęcze gniazdo', text: 'Ugryzienie pająka oplata siecią cały kwadrat 3×3 (pająk z cechą 3. poziomu robi to i bez karty), a pajęczyna każdego pająka trzyma 2 s dłużej.', apply: m => { m.spiderNest = true; } },
     { id: 'ghost', kind: 'card', rar: 'r', req: 'ghost', unique: true, tag: 'zimny dotyk', name: 'Zimny dotyk', text: 'Duch straszy o 50% mocniej, a zranić go może już tylko kapłan.', apply: m => { m.ghostAura *= 1.5; m.ghostPriestOnly = true; } },
     { id: 'monster', kind: 'card', rar: 'c', tag: 'weterani', name: 'Weterani', text: 'Nowo postawione potwory mają +40% HP i biją o 40% mocniej.', apply: m => { m.monster *= 1.4; } },
     { id: 'loottrap', kind: 'card', rar: 'c', tag: 'zatruty łup', name: 'Zatruty łup', text: 'Podniesienie łupu zadaje obrażenia (więcej przy rzadszym).', apply: m => { m.lootTrap += 15; } },
@@ -458,18 +464,18 @@
     { id: 'collector', kind: 'card', rar: 'r', tag: '+0,05 chciwości/rodzaj', name: 'Kolekcjoner', text: '+0,05 chciwości za każdy inny rodzaj pułapki lub potwora w lochu (na starcie fali).', apply: m => { m.collector += 0.05; } },
     { id: 'miser', kind: 'card', rar: 'r', tag: 'minimalizm', name: 'Skąpiec', text: '+0,05 chciwości za każdy element mniej niż 15 w lochu (pułapki i potwory, na starcie fali).', apply: m => { m.miser += 0.05; } },
     { id: 'lonely', kind: 'card', rar: 'r', tag: 'samotność ×2', name: 'Echo samotności', text: 'Samotność bohatera daje 2 razy więcej Grozy.', apply: m => { m.loneMult *= 2; } },
-    { id: 'maze', kind: 'card', rar: 'r', tag: 'zgubieni ×2', name: 'Kręte korytarze', text: 'Zgubiony bohater daje 2 razy więcej Grozy.', apply: m => { m.lostMult *= 2; } },
+    { id: 'maze', kind: 'card', rar: 'r', tag: 'zgubieni ×2', name: 'Kręte korytarze', text: 'Zgubiony bohater daje 2 razy więcej Grozy (Groza ze zgubienia płynie przez jego pierwsze 12 s).', apply: m => { m.lostMult *= 2; } },
     // cards: fear
     { id: 'haunt', kind: 'card', rar: 'c', tag: 'strach +25%', name: 'Nawiedzenie', text: 'Każdy strach jest o 25% silniejszy (więcej Grozy, szybsze ucieczki).', apply: m => { m.fearMult *= 1.25; } },
     { id: 'echo', kind: 'card', rar: 'r', tag: 'ucieczka ×2', name: 'Echo krzyku', text: 'Bohater, który ucieknie ze strachu, daje 2 razy więcej Grozy.', apply: m => { m.scareMult *= 2; } },
     { id: 'panic', kind: 'card', rar: 'r', tag: 'panika', name: 'Panika', text: 'Bohater, który zaczyna uciekać, straszy wszystkich w promieniu 3 pól (25 strachu).', apply: m => { m.panic += 1; } },
     { id: 'hgallery', kind: 'card', rar: 'r', req: 'ghost', tag: 'galeria ×2', name: 'Nawiedzona galeria', text: 'Duch w pokoju z portretem straszy 2 razy mocniej.', apply: m => { m.hauntedGallery += 1; } },
     { id: 'curse', kind: 'card', rar: 'r', tag: 'klątwa', name: 'Klątwa kryształu', text: 'Niosący kryształ idzie o 35% wolniej i boi się coraz bardziej.', apply: m => { m.carrierSlow *= 0.65; m.carrierFear += 4; } },
-    { id: 'deaf', kind: 'card', rar: 'r', tag: 'plotki /2', name: 'Głuche ściany', text: 'Uciekinierzy pamiętają tylko połowę tego, co widzieli.', apply: m => { m.rumorKeep *= 0.5; } },
+    { id: 'deaf', kind: 'card', rar: 'r', tag: 'plotki /2', name: 'Głuche ściany', text: 'Uciekinierzy pamiętają tylko połowę tego, co widzieli: pułapek i pokoi, ale też łupu (następna fala przychodzi mniej chciwa).', apply: m => { m.rumorKeep *= 0.5; } },
     { id: 'trails', kind: 'card', rar: 'r', unique: true, tag: 'fałszywki', name: 'Fałszywe tropy', text: 'Uciekinierzy opowiadają też o pułapkach, których nie ma. Następna fala omija puste miejsca.', apply: m => { m.falseTrails = true; } },
     { id: 'cursed', kind: 'card', rar: 'r', tag: 'sprzęt /2', name: 'Rdza', text: 'Przedmioty bohaterów (także z ich wyposażenia) działają o połowę słabiej.', apply: m => { m.itemPower *= 0.5; } },
     // cards: synergies, chains, odd ones
-    { id: 'sticky', kind: 'card', rar: 'r', req: () => run.unlocked.has('web') || run.unlocked.has('spider'), tag: 'kolce+sieć', name: 'Lepkie kolce', text: 'Kolce zadają 2 razy więcej bohaterom oplątanym siecią lub pajęczyną.', apply: m => { m.stickySpikes += 1; } },
+    { id: 'sticky', kind: 'card', rar: 'r', req: () => run.unlocked.has('web') || run.unlocked.has('spider'), tag: 'kolce+sieć', name: 'Lepkie kolce', text: 'Kolce zadają 2 razy więcej spowolnionym bohaterom (sieć, pajęczyna, zawiasy, trumna, podcięcie goblina, Gołoledź).', apply: m => { m.stickySpikes += 1; } },
     { id: 'wildfire', kind: 'card', rar: 'r', req: 'fire', tag: 'pożoga', name: 'Pożoga', text: 'Podpalenie przeskakuje na bohaterów w promieniu 1,5 pola (każda kolejna kopia +0,5 pola).', apply: m => { m.wildfire += 1; } },
     { id: 'blood', kind: 'card', rar: 'r', tag: 'krew = moc', name: 'Krwawy rytuał', text: 'Każde zabójstwo w tej fali wzmacnia pułapki o 10% (obrażenia, strach, czas działania) do końca fali.', apply: m => { m.bloodRite += 0.1; } },
     { id: 'calm', kind: 'card', rar: 'r', tag: 'cisza ×2,5', name: 'Cisza przed burzą', text: 'Pułapka, która nie odpaliła od 20 s (albo jeszcze wcale w tej fali), działa 2,5 raza mocniej (kolejna kopia: 4 razy, 5,5 raza...).', apply: m => { m.calmStorm += 1.5; } },
@@ -483,20 +489,20 @@
     { id: 'hunger', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Głodne kolce', text: 'Kolce zadają do końca runu +4% obrażeń za każde zabójstwo kolcami (licznik rośnie przez cały run).', apply: m => { m.hunger += 1; } },
     { id: 'chronicle', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Kronika grozy', text: 'Strach jest o 3% silniejszy za każdego bohatera, który w tym runie uciekł ze strachu (do końca runu).', apply: m => { m.chronicle += 1; } },
     { id: 'granary', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Spichlerz dusz', text: 'Każdy zabity bohater zmniejsza głód serca o 1 do końca runu.', apply: m => { m.granary += 1; } },
-    { id: 'bank', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Skarbiec', text: 'Każda fala bez utraty kryształu dodaje +2 Esencji do przychodu po każdej kolejnej fali (do końca runu).', apply: m => { m.bank += 1; } },
+    { id: 'bank', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Skarbiec', text: 'Każda fala bez kradzieży kryształu dodaje +2 Esencji do przychodu po każdej kolejnej fali (do końca runu).', apply: m => { m.bank += 1; } },
     { id: 'tempered', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Zaprawione mechanizmy', text: 'Pułapki działają o 1% mocniej za każde 4 trafienia pułapek w tym runie (do końca runu).', apply: m => { m.tempered += 1; } },
     // cards with a price
     { id: 'bloodpact', kind: 'card', rar: 'l', tag: 'moc ×1,6, cena', name: 'Krwawa umowa', text: 'Pułapki i potwory działają ×1,6 mocniej, ale bohaterowie przychodzą o 2 poziomy silniejsi.', apply: m => { m.pactPower *= 1.6; m.pactLevels += 2; } },
-    { id: 'overload', kind: 'card', rar: 'r', tag: 'odnowa -40%, cena', name: 'Przeciążenie', text: 'Pułapki odnawiają się o 40% szybciej, ale każde odpalenie ma 6% szans zepsuć pułapkę do końca fali.', apply: m => { m.cooldown *= 0.6; m.overload += 0.06; } },
+    { id: 'overload', kind: 'card', rar: 'r', tag: 'odnowa -40%, cena', name: 'Przeciążenie', text: 'Pułapki i zdolności potworów odnawiają się o 40% szybciej, ale każde odpalenie pułapki ma 6% szans zepsuć ją do końca fali.', apply: m => { m.cooldown *= 0.6; m.overload += 0.06; } },
     { id: 'cheapwalls', kind: 'card', rar: 'c', tag: 'rozbudowa /2', name: 'Tanie mury', text: 'Rozbudowa pokoi kosztuje o połowę mniej, ale budowle są o 50% droższe.', apply: m => { m.expandCost *= 0.5; m.buildingCost *= 1.5; } },
     // cards that tie two kinds of things together
     { id: 'firepit', kind: 'card', rar: 'r', tag: 'zapadnia + ogień', name: 'Ognista otchłań', text: 'Bohater, który spadnie przez zapadnię, wychodzi podpalony.', apply: m => { m.firepit += 1; } },
     { id: 'cageghost', kind: 'card', rar: 'r', req: 'cage', tag: 'klatka + strach', name: 'Nawiedzone klatki', text: 'Uwięziony w klatce dostaje 12 strachu na sekundę.', apply: m => { m.cageHaunt += 12; } },
     { id: 'monsterroar', kind: 'card', rar: 'c', tag: 'rany od potworów straszą', name: 'Ryk potworów', text: 'Rany zadane przez potwory straszą 2,5 raza mocniej (kolejna kopia: 4 razy...).', apply: m => { m.monsterFear += 1.5; } },
     // v14: damage types, bodies and phobias
-    { id: 'sharp', kind: 'card', rar: 'c', tag: 'kłute +25%', name: 'Hartowane ostrza', text: 'Obrażenia kłute (kolce, strzały, łucznik, goblin, mimik) +25%.', apply: m => { m.dmgType.pierce *= 1.25; } },
+    { id: 'sharp', kind: 'card', rar: 'c', tag: 'kłute +25%', name: 'Hartowane ostrza', text: 'Obrażenia kłute (kolce i krwawienie, strzały, łucznik, goblin, mimik, nietoperze) +25%.', apply: m => { m.dmgType.pierce *= 1.25; } },
     { id: 'heavy', kind: 'card', rar: 'c', tag: 'obuchowe +25%', name: 'Ciężkie mechanizmy', text: 'Obrażenia obuchowe (krata, ogr, upadek w zapadnię) +25%.', apply: m => { m.dmgType.blunt *= 1.25; } },
-    { id: 'oil', kind: 'card', rar: 'c', tag: 'ogień +25%', name: 'Olej w szczelinach', text: 'Obrażenia od ognia (ogień, proch, podpalenia) +25%.', apply: m => { m.dmgType.fire *= 1.25; } },
+    { id: 'oil', kind: 'card', rar: 'c', tag: 'ogień +25%', name: 'Olej w szczelinach', text: 'Obrażenia od ognia (ogień, proch, podpalenia; nie krwawienie) +25%.', apply: m => { m.dmgType.fire *= 1.25; } },
     { id: 'venom', kind: 'card', rar: 'c', tag: 'trucizna +30%', name: 'Jadowite gruczoły', text: 'Obrażenia od trucizny (pająk, szaman, Zatruty łup) +30%.', apply: m => { m.dmgType.poison *= 1.3; } },
     { id: 'weakspot', kind: 'card', rar: 'r', tag: 'słabości ×2', name: 'Słabe punkty', text: 'Słabości ciała bohaterów działają 2 razy mocniej (np. kruche kości: obuchowe +80% zamiast +40%).', apply: m => { m.weakK += 1; } },
     { id: 'anatomy', kind: 'card', rar: 'r', unique: true, tag: 'wszystko jawne', name: 'Anatomia ofiar', text: 'Przed falą znasz ciało i fobie każdego bohatera.', apply: m => { m.revealAll = true; } },
@@ -508,7 +514,7 @@
     { id: 'survivors', kind: 'card', rar: 'c', tag: 'więcej powrotów', name: 'Legenda ocalałych', text: 'Uciekinierzy wracają 1,5 raza częściej, a każdy powracający w drużynie daje +0,2 chciwości.', apply: m => { m.moreReturn += 0.5; m.returnGreed += 0.2; } },
     // v14: fear
     { id: 'dread', kind: 'card', rar: 'c', tag: 'strach mija wolniej', name: 'Gęsta atmosfera', text: 'Strach bohaterów opada o połowę wolniej.', apply: m => { m.calmK *= 0.5; } },
-    { id: 'screams', kind: 'card', rar: 'c', tag: 'ucieczka straszy', name: 'Krzyki w ścianach', text: 'Każdy bohater, który ucieknie ze strachu, straszy pozostałych (10% ich odwagi).', apply: m => { m.fleeShock += 0.1; } },
+    { id: 'screams', kind: 'card', rar: 'c', tag: 'ucieczka straszy', name: 'Krzyki w ścianach', text: 'Bohater, który ucieknie ze strachu, straszy tych, którzy słyszą jego krzyk (10% ich odwagi; krzyk niesie się 14 kroków, nie przez Głuszę i Kamień wyjec).', apply: m => { m.fleeShock += 0.1; } },
     { id: 'isolation', kind: 'card', rar: 'r', tag: 'samotni ×1,25', name: 'Izolacja', text: 'Samotny albo zgubiony bohater boi się wszystkiego o 25% bardziej, a sama samotność straszy go 2 razy mocniej.', apply: m => { m.isolation += 1; } },
     { id: 'heavyair', kind: 'card', rar: 'c', tag: 'Mgła i Krypta +25%', name: 'Ciężkie powietrze', text: 'W Mgle i w Krypcie każdy strach jest o 25% silniejszy.', apply: m => { m.heavyAir += 0.25; } },
     { id: 'lastgasp', kind: 'card', rar: 'r', tag: 'śmierć straszy pokój', name: 'Ostatnie tchnienie', text: 'Umierający bohater straszy wszystkich w swoim pokoju (20% ich odwagi).', apply: m => { m.lastGasp += 0.2; } },
@@ -530,7 +536,38 @@
     { id: 'reliquary', kind: 'card', rar: 'r', unique: true, tag: 'relikwie ×1,5', name: 'Relikwiarz', text: 'Relikwie podbijają chciwość 1,5 raza mocniej, a bohater, który zabierze relikwię, nie dostaje z niej przedmiotu.', apply: m => { m.reliquary = true; } },
     // v14: monsters and building
     { id: 'pack', kind: 'card', rar: 'c', tag: 'potwory w parach +20%', name: 'Stado', text: 'Potwór, który ma w swoim pokoju innego potwora, bije o 20% mocniej.', apply: m => { m.pack += 0.2; } },
-    { id: 'quickarm', kind: 'card', rar: 'c', unique: true, tag: 'od razu gotowe', name: 'Szybki montaż', text: 'Pułapki postawione w trakcie fali są gotowe od razu.', apply: m => { m.quickArm = true; } }
+    { id: 'quickarm', kind: 'card', rar: 'c', unique: true, tag: 'od razu gotowe', name: 'Szybki montaż', text: 'Pułapki postawione w trakcie fali są gotowe od razu, a ich pierwsze odpalenie ma +50% mocy.', apply: m => { m.quickArm = true; } },
+    // 1.18 (author: "cards for the new room effects and komnaty, maybe something else too"; e1171/cards_proposal.md): every komnata and
+    // every room effect gets a card (offered only while it is in the dungeon), and the heroes' behaviour from 1.16-1.17 (curiosity,
+    // the council, hearing, the news of a death) gets cards that turn its knobs
+    { id: 'drawers', kind: 'card', rar: 'c', req: () => hasRk('junk'), tag: 'szuflady', name: 'Zastawione szuflady', text: 'W Graciarni bohaterowie chętniej się rozglądają, a mimik, pozytywka i proch na przeszukiwanym meblu odpalają 2 razy częściej (mimik prawie zawsze).', apply: m => { m.drawers += 1; } },
+    { id: 'lure', kind: 'card', rar: 'r', tag: 'hałas wabi', name: 'Wabiący hałas', text: 'Odgłos pułapki zza ściany ciągnie każdego przywódcę, także ostrożnego i tchórza, a drużyna pamięta, skąd dobiegł, przez 40 s zamiast 25.', apply: m => { m.lure += 1; } },
+    { id: 'onemore', kind: 'card', rar: 'c', tag: 'narada: dłużej', name: 'Jeszcze chwila', text: 'Na naradzie bohaterowie chętniej głosują, żeby szukać dalej (chciwi i łowcy skarbów 2 razy chętniej), a "jeszcze chwila" trwa 45 s zamiast 30.', apply: m => { m.onemore += 1; } },
+    { id: 'thickwalls', kind: 'card', rar: 'r', unique: true, tag: 'krzyk 8 kroków', name: 'Grube mury', text: 'Krzyki niosą się tylko na 8 kroków zamiast 14. Drużyna później dowiaduje się o śmierci, klatce, krysztale i ucieczce, a odcięci szukają dalej sami. Za to mniej osób słyszy śmierć.', apply: m => { m.thickwalls = true; } },
+    { id: 'risen', kind: 'card', rar: 'l', unique: true, req: () => hasRt('crypt'), tag: 'Krypta: duchy', name: 'Wstający umarli', text: 'Bohater, który zginie w Krypcie, wstaje jako duch: Twój potwór do końca fali, nie zajmuje miejsca. Najwyżej 2 na falę.', apply: m => { m.risen = true; } },
+    { id: 'cell', kind: 'card', rar: 'r', unique: true, req: () => hasRk('prison'), tag: 'zapadnia → klatka', name: 'Cela pod zapadnią', text: 'Bohater, który spadnie przez zapadnię w Więzieniu, ląduje w gotowej klatce w Więzieniu (jeśli jakaś jest) i klatka zamyka się na nim.', apply: m => { m.cell = true; } },
+    { id: 'vaultsnap', kind: 'card', rar: 'r', unique: true, req: () => hasRt('vault'), tag: 'Sezam: alarm', name: 'Zatrzask sezamu', text: 'Gdy bohater podniesie łup w Sezamie, odpalają wszystkie gotowe pułapki w Sezamie (jak alarm wabika, najwyżej raz na 6 s).', apply: m => { m.vaultsnap = true; } },
+    { id: 'wisps', kind: 'card', rar: 'c', req: () => hasRt('fog'), tag: 'Mgła prowadzi', name: 'Błędne ogniki', text: 'Przywódca, który błądzi we Mgle, idzie prosto na pułapkę, której drużyna nie zna (jeśli jest w tym pokoju), i błądzi o 2 s dłużej.', apply: m => { m.wisps += 1; } },
+    { id: 'body', kind: 'card', rar: 'r', req: () => hasRt('hush'), tag: 'ciało straszy', name: 'Odnalezione ciało', text: 'Kto znajdzie ciało towarzysza, o którego śmierci nie wiedział, boi się jak świadek śmierci. W Głuszy 2 razy mocniej (kolejna kopia: +50%).', apply: m => { m.body += 1; } },
+    { id: 'falsecall', kind: 'card', rar: 'r', unique: true, req: () => hasRk('haunt'), tag: 'sala woła', name: 'Fałszywe wołanie', text: 'Zgubiony bohater, który woła drużynę w pobliżu Nawiedzonej sali, czasem słyszy odpowiedź z sali i idzie na ten głos prosto do niej.', apply: m => { m.falsecall = true; } },
+    { id: 'frames', kind: 'card', rar: 'r', req: () => hasRk('gallery'), tag: 'Galeria patrzy', name: 'Spojrzenie z ramy', text: 'Bohater, który w Galerii ogląda portret, oczy albo lustro, budzi je: gotowa pułapka odpala sama na niego z 1,5 raza większą mocą.', apply: m => { m.frames += 1; } },
+    { id: 'restock', kind: 'card', rar: 'c', unique: true, req: () => hasRk('forge'), tag: 'proch wraca', name: 'Beczki z kuźni', text: 'Proch w Kuźni po wybuchu wraca w następnej fali razem z meblem, za darmo i na tym samym poziomie.', apply: m => { m.restock = true; } },
+    { id: 'lullsleep', kind: 'card', rar: 'r', req: () => hasRk('nursery'), tag: 'kołysanka usypia', name: 'Usypianka', text: 'Ranny bohater (poniżej 60% HP), który w Pokoju dziecięcym słucha kołysanki, zasypia na 4 s (kolejna kopia: +2 s): śpi w miejscu, a koszmary straszą go jak w Sanktuarium.', apply: m => { m.lullsleep += 1; } },
+    { id: 'ambush', kind: 'card', rar: 'r', unique: true, req: () => hasRk('goblin'), tag: 'nora: zasadzka', name: 'Zasadzka w norze', text: 'Gobliny i szamani w Gobliniej norze siedzą w ukryciu: bohaterowie nie omijają ich, dopóki goblin nie zaatakuje. Pierwszy cios z ukrycia jest 2 razy mocniejszy.', apply: m => { m.ambush = true; } },
+    { id: 'cocoons', kind: 'card', rar: 'c', req: () => hasRk('spider'), tag: 'Leże: strach w sieci', name: 'Kokony', text: 'Bohater oplątany w Leżu pająków (sieć albo pająk) boi się 6 na sekundę, dopóki się nie wyplącze (z fobią pająków 2 razy więcej).', apply: m => { m.cocoons += 1; } },
+    { id: 'cauldron', kind: 'card', rar: 'c', req: () => hasRk('ogre'), tag: 'Jaskinia: kocioł', name: 'Kocioł ogra', text: 'Bohater, który zginie w Jaskini ogra, trafia do kotła: jego przedmioty i złoto nie wypadają na podłogę, a Ty dostajesz 2 Esencji za każdy przedmiot i 1 za każdą monetę (najwyżej 8 z jednego bohatera).', apply: m => { m.cauldron += 1; } },
+    { id: 'batscatter', kind: 'card', rar: 'c', req: () => hasRk('bats'), tag: 'Gniazdo: gubią się', name: 'Spłoszeni w mrok', text: 'Bohater spłoszony przez nietoperze z Gniazda nietoperzy biegnie na oślep i może się zgubić (40% szans, nowicjusz 60%).', apply: m => { m.batscatter += 1; } },
+    { id: 'skullwall', kind: 'card', rar: 'r', grows: true, req: () => hasRk('ossuary'), tag: 'rośnie', name: 'Mur z czaszek', text: 'Kości, trumny i łucznicy w Kaplicy czaszek działają o 5% mocniej za każdego bohatera, który zginął w Kaplicy w tym runie (najwyżej +50%).', apply: m => { m.skullwall += 1; } },
+    { id: 'strip', kind: 'card', rar: 'c', req: () => hasRk('armory'), tag: 'Zbrojownia: zdziera', name: 'Zdarte pancerze', text: 'Trafienie kolcami albo strzałą w Zbrojowni strąca bohaterowi talizman, amulet albo zbroję (50% szans): przedmiot spada obok jako łup.', apply: m => { m.strip += 1; } },
+    { id: 'mire', kind: 'card', rar: 'c', req: () => hasRt('swamp'), tag: 'Bagno trzyma', name: 'Grzęzawisko', text: 'W Bagnie spowolnienie od pułapek i potworów (sieć, pająk, zawiasy, trumna, podcięcie goblina) trwa 2 razy dłużej.', apply: m => { m.mire += 1; } },
+    { id: 'farecho', kind: 'card', rar: 'r', req: () => hasRt('grotto'), tag: 'Grota niesie krzyk', name: 'Niosące się echo', text: 'Krzyk z Groty (śmierć, klatka, kryształ, ucieczka) słychać 2 razy dalej, a kto usłyszy śmierć w Grocie, boi się jak świadek.', apply: m => { m.farecho += 1; } },
+    { id: 'deepsleep', kind: 'card', rar: 'c', req: () => hasRt('haven'), tag: 'Sanktuarium ×2', name: 'Sen bez przebudzenia', text: 'Pułapki i potwory w Sanktuarium zadają śpiącym i odpoczywającym 2 razy więcej ran i strachu.', apply: m => { m.deepsleep += 1; } },
+    { id: 'gearlink', kind: 'card', rar: 'c', req: () => hasRt('gears'), tag: 'Zębatki: łańcuch', name: 'Sprzężone tryby', text: 'Gdy pułapka w Zębatkach odpali, inne pułapki w tym pokoju odnawiają się o 1 s szybciej.', apply: m => { m.gearlink += 1; } },
+    { id: 'blackice', kind: 'card', rar: 'c', req: () => hasRt('ice'), tag: 'Lodownia: upadek', name: 'Gołoledź', text: 'Kto poślizgnie się w Lodowni, przewraca się: przez 1,5 s jest spowolniony (pułapki zadają mu +30%), a poślizgów jest o połowę więcej.', apply: m => { m.blackice += 1; } },
+    { id: 'badnews', kind: 'card', rar: 'c', tag: 'wieści ×2', name: 'Złe wieści', text: 'Śmierć, o której bohater dowie się później (z krzyku zza ścian albo od towarzysza), straszy go 2 razy mocniej.', apply: m => { m.badnews += 1; } },
+    { id: 'coins', kind: 'card', rar: 'c', tag: 'meble: chciwość', name: 'Podrzucone grosze', text: 'Przeszukany mebel 2 razy częściej kryje monetę, a znaleziona moneta podbija chciwość jak zobaczone Monety.', apply: m => { m.coins += 1; } },
+    { id: 'tainted', kind: 'card', rar: 'c', tag: 'mikstury zepsute', name: 'Zepsute mikstury', text: 'Mikstury z Twojego łupu są zepsute: wypita leczy o połowę słabiej i straszy pijącego (10% odwagi).', apply: m => { m.tainted += 1; } },
+    { id: 'rhythm', kind: 'card', rar: 'c', tag: 'combo +1 s', name: 'Rytm lochu', text: 'Okno combo trwa 1 s dłużej (4 s zamiast 3).', apply: m => { m.rhythm += 1; } }
   ];
   const UPG = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
   const RAR_NAME = { c: 'zwykła', r: 'rzadka', l: 'legendarna' }, RAR_COLOR = { c: '#c9c2d8', r: '#6fb7ff', l: '#ff8a3c' }, RAR_SELL = { c: 2, r: 4, l: 6 };
@@ -1001,6 +1038,9 @@
       'Tu się nie chodzi, tu się jeździ.', 'Jeden zły krok i jadę na drugi koniec.', 'Zęby mi dzwonią z zimna.', 'Małymi kroczkami... małymi.'],
     slip: ['Ślisko!', 'Łoo!', 'Nie mogę stanąć!', 'Jadę!', 'Uaaa!', 'Ojej!', 'Lecę!', 'Ślizgawka!', 'Oj, oj, oj!', 'Nogi mi uciekają!',
       'Stój, stój, stój!'],
+    bodyFound: ['Ciało! To {n}...', 'Znalazł{em|am} {a}. Już nie żyje.', 'Nie... {n} tu leży. Nikt nic nie słyszał?', '{v}?! Kiedy to się stało?', 'Ktoś tu leży... to {n}! Nie...', 'Nikt nie słyszał, jak {n} umiera...'],   // 1.18: Odnalezione ciało (found a friend's body, a death he did not know of)
+    lullNap: ['Ta kołysanka... oczy same się zamykają...', 'Tylko na chwilkę... ta melodia...', 'Mama tak nuciła... śpię...', 'Tak cicho gra... zasypiam...'],   // 1.18: Usypianka (falls asleep to the lullaby)
+    lullDream: ['Pozytywka gra mi w głowie... nie mogę się obudzić!', 'Śni mi się ta melodia... i coś w ciemności...', 'Kołysanka... ktoś nuci mi do ucha...', 'Obudźcie mnie! Ta muzyka nie przestaje!'],   // 1.18: Usypianka (the nightmare in his sleep)
     nap: ['Chwila odpoczynku...', 'Tylko przymknę oczy.', 'Usiądę na moment.', 'Muszę przysiąść. Tylko na chwilkę.', 'Pięć oddechów i wstaję.',
       'Rany pieką... przysiądę.', 'Oczy mi się kleją...', 'Krótki postój. Nikt nie zauważy.', 'Święty spokój. Dosłownie.'],
     nightmare: ['Koszmary... nie mogę spać.', 'Ktoś szepcze mi do ucha...', 'To miejsce nie jest święte...', 'Coś tu nie chce, żebym spał{|a}.',
@@ -2335,6 +2375,7 @@
   // are his small talk when alone. Lines that only make sense with others around and have no solo version here are not
   // said alone at all (SOLO_MUTE).
   const SOLO = {
+    bodyFound: ['Ciało... to ktoś od nas.', 'Nie... Leży tu, a nikt o tym nie wie.', 'Sam{|a} z ciałem przyjaciela... Nie wytrzymam.'],   // 1.18
     staunch: ['Krew stanęła. Dobrze.', 'Zatamowane. Mogę iść dalej.', 'Rana zamknięta. Dzięki ci, światło.'],   // 1.17.1
     enter: ['No to idę.', 'Sam{|a} tam nie wejdę... A jednak wchodzę.', 'Cicho, krok po kroku.', 'Dobra. Wchodzę, zanim zmienię zdanie.',
       'Ciemno jak w grobie. Cudownie.', 'Głęboki oddech... i do środka.', 'Gdzieś tu jest kryształ. Znajdę go.', 'Pachnie wilgocią i kłopotami.',
@@ -2535,7 +2576,8 @@
       'Błyszczy, kusi i jest przeklęte.', 'To dzieło ciemności. Nie dotykać.', 'Zdejmuję z siebie tę klątwę.', 'Precz ze mnie, klątwo!',
       'Lżej. Klątwa puściła.', 'Klątwo, puść mnie wreszcie.', 'Koniec szeptów w mojej głowie. Precz!', 'Rzuć to! Ten skarb jest przeklęty!',
       'To coś cuchnie czarną magią.'],
-    death: ['Nie! {n}!', 'Straciliśmy {a}!', 'Pomścimy cię, {v}!', '{v}! Wstawaj! Wstawaj!', 'Tylko nie {n}...', '{n} nie żyje...',
+    death: ['Ciało! To {n}...', 'Znalazł{em|am} {a}. Już nie żyje.', 'Nie... {n} tu leży. Nikt nic nie słyszał?', '{v}?! Kiedy to się stało?', 'Ktoś tu leży... to {n}! Nie...', 'Nikt nie słyszał, jak {n} umiera...', 'Ciało... to ktoś od nas.', 'Nie... Leży tu, a nikt o tym nie wie.', 'Sam{|a} z ciałem przyjaciela... Nie wytrzymam.',   // 1.18: bodyFound (the finder knows of the death the moment he says it)
+      'Nie! {n}!', 'Straciliśmy {a}!', 'Pomścimy cię, {v}!', '{v}! Wstawaj! Wstawaj!', 'Tylko nie {n}...', '{n} nie żyje...',
       'Ten loch zabrał {a}!', 'Jak to? {n}?!', 'Żegnaj, {v}.', 'Pomszczę cię, {v}!', 'Za {a}! Bez litości!', 'Zapłacą za {a}!',
       '{v}... Teraz jestem naprawdę zł{y|a}.', 'Za {a} rozniosę ten loch w pył!', 'Krew za {a}! Twoja krew, lochu!',
       'Śpij, {v}. Ja jeszcze nie skończył{em|am}.', 'Bez litości! To za {a}!', 'To mogł{em|am} być ja.', 'Jeszcze rano jedliśmy razem śniadanie...',
@@ -2668,7 +2710,8 @@
     monster: ['Na potwora!', 'Chodź tu, bestio!', 'Tylko nie daj się zjeść!', 'Najpierw popatrz, jak się rusza.', 'Patrzę. Rusza się na mnie.',
       'Ty naprawdę idziesz na to coś?', 'Tylko nie dopisuj mu trzech głów.', 'Tylko zęby i smród.', 'Próbowało. Nie smakował{em|am} mu.',
       'Sam{|a}. Dobrze. Więcej potworów dla mnie.', 'Ha! Niech wszystkie potwory przyjdą naraz!'],
-    musicbox: ['Skąd ta melodia?!', 'Pozytywka gra sama!', 'Kołysanka? Tutaj?!', 'Ta melodia... skądś ją znam...', 'Przestańcie grać! Przestańcie!',
+    musicbox: ['Ta kołysanka... oczy same się zamykają...', 'Tylko na chwilkę... ta melodia...', 'Mama tak nuciła... śpię...', 'Tak cicho gra... zasypiam...', 'Pozytywka gra mi w głowie... nie mogę się obudzić!', 'Śni mi się ta melodia... i coś w ciemności...', 'Kołysanka... ktoś nuci mi do ucha...', 'Obudźcie mnie! Ta muzyka nie przestaje!',   // 1.18: lullNap, lullDream
+      'Skąd ta melodia?!', 'Pozytywka gra sama!', 'Kołysanka? Tutaj?!', 'Ta melodia... skądś ją znam...', 'Przestańcie grać! Przestańcie!',
       'Mama mi to nuciła...', 'Ta melodia wchodzi mi do głowy...', 'Gra samo z siebie... Nie podoba mi się to.', 'Zatkaj uszy!',
       'Moja babka to nuciła... przed śmiercią.', 'Ładna melodia. Fałsz w trzecim takcie.', 'Kogo obchodzą takty?! Niech przestanie!'],
     portrait: ['Ten obraz się rusza!', 'Portret ożył!', 'Ta twarz na obrazie się krzywi!', 'Kto by tu powiesił portret?',

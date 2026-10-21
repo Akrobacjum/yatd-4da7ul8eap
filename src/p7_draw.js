@@ -2475,7 +2475,7 @@
   }
   function roomLoads() {
     const loads = new Array(fl.rooms.length).fill(0);
-    fl.items.forEach(it => { if (!SLOTTED(it.type)) return; const r = slotRoom(it.type, it.x, it.y); if (r >= 0) loads[r]++; });
+    fl.items.forEach(it => { if (!SLOTTED(it.type) || it.temp) return; const r = slotRoom(it.type, it.x, it.y); if (r >= 0) loads[r]++; });   // 1.18: a risen ghost takes no slot
     return loads;
   }
   function roomFull(type, x, y, loads) {

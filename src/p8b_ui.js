@@ -534,7 +534,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.17.1 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.18 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -584,9 +584,13 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.17.1'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.18'));
     const ul2 = el('ul', 'conseq');
-    ['1.17.1: bohaterowie mówią tylko o tym, co widzieli albo poczuli w tej fali. Każdy pamięta pokoje, w których był (efekt, komnata, budowle), potwory, łup, pułapki, które odpaliły przy nim albo o których wie, krew i śmierć towarzyszy. Kwestia o ogniu, ogrze czy mgle pada tylko u kogoś, kto je widział, a reszta mówi coś innego z tej samej puli. Kwestia o tym, co dzieje się właśnie teraz (łup, na który patrzy, pułapka, która odpaliła, potwór, na którego idzie, to, co go zraniło), musi dotyczyć właśnie tego.',
+    ['1.18: 28 nowych kart. Każda komnata i każdy efekt pokoju ma swoją kartę (21), a sklep pokazuje ją tylko wtedy, gdy ta komnata albo efekt jest w Twoim lochu: Zastawione szuflady (Graciarnia), Cela pod zapadnią (Więzienie), Spojrzenie z ramy (Galeria), Beczki z kuźni (Kuźnia), Usypianka (Pokój dziecięcy), Zasadzka w norze (Goblinia nora), Kokony (Leże pająków), Kocioł ogra (Jaskinia ogra), Spłoszeni w mrok (Gniazdo nietoperzy), Mur z czaszek (Kaplica czaszek), Zdarte pancerze (Zbrojownia), Fałszywe wołanie (Nawiedzona sala), Błędne ogniki (Mgła), Grzęzawisko (Bagno), Niosące się echo (Grota), Wstający umarli (Krypta), Zatrzask sezamu (Sezam), Sen bez przebudzenia (Sanktuarium), Sprzężone tryby (Zębatki), Odnalezione ciało (Głusza) i Gołoledź (Lodownia). Przychodzą od 3. runu, razem z komnatami i efektami.',
+     '1.18: karty na to, jak bohaterowie zwiedzają, słuchają i naradzają się: Wabiący hałas (pułapka usłyszana zza ściany ciągnie każdego przywódcę, także ostrożnego i tchórza), Jeszcze chwila (narada częściej wybiera "jeszcze chwila", która trwa 45 s), Grube mury (krzyk niesie się 8 kroków zamiast 14, więc wieści idą wolniej), Złe wieści (śmierć, o której dowiedzą się później, straszy 2 razy mocniej) i Podrzucone grosze (przeszukane meble częściej kryją monetę, a ta podbija chciwość). Do tego Zepsute mikstury (mikstura z Twojego łupu leczy słabiej i straszy) i Rytm lochu (okno combo o 1 s dłuższe).',
+     '1.18: poprawione karty. Szybki montaż: pułapka postawiona w fali ma pierwsze odpalenie o 50% mocniejsze. Pajęcze gniazdo nie dubluje już cechy z Leża pająków: pajęczyna każdego pająka trzyma 2 s dłużej. Krzyki w ścianach straszą tylko tych, którzy słyszą krzyk uciekiniera. Karta "Nowa pułapka: Portret" zniknęła (portret jest od początku i nigdy jej nie było w sklepie).',
+     '1.18: teksty kart mówią to, co karta robi: Głodne ściany (też oczy i lustra), Galeria grozy (portret z cechą 3. poziomu i tak straszy cały pokój), Zastrzyk Esencji, Skarbiec (bez kradzieży kryształu), Lepkie kolce (każdy spowolniony), Szybkie przeładowanie i Przeciążenie (też zdolności potworów), Hartowane ostrza (też nietoperze), Kręte korytarze (pierwsze 12 s) i Głuche ściany (przepada też połowa opowieści o łupie). Podpowiedź w sklepie "Pasuje do Twojego lochu" liczy oczy i lustra, nietoperze, Nawiedzoną galerię tylko z duchem i portretem, a przy kartach komnat i efektów pisze np. "Brak w lochu: Kuźnia".',
+     '1.17.1: bohaterowie mówią tylko o tym, co widzieli albo poczuli w tej fali. Każdy pamięta pokoje, w których był (efekt, komnata, budowle), potwory, łup, pułapki, które odpaliły przy nim albo o których wie, krew i śmierć towarzyszy. Kwestia o ogniu, ogrze czy mgle pada tylko u kogoś, kto je widział, a reszta mówi coś innego z tej samej puli. Kwestia o tym, co dzieje się właśnie teraz (łup, na który patrzy, pułapka, która odpaliła, potwór, na którego idzie, to, co go zraniło), musi dotyczyć właśnie tego.',
      '1.17.1: nowe kwestie: 522 pogaduszki o tym, co widzieli w tej fali (po 9 na każdą pułapkę, potwora, rodzaj łupu, efekt, komnatę i budowlę; najczęściej o tym, co widzieli przed chwilą), 108 kwestii przy wejściu do komnaty (pierwszy, kto wejdzie, mówi, co to za miejsce) i 23 nowe rozmowy. Karta bohatera pokazuje, co widział w tej fali.',
      '1.17.1: krwawienie z kolców (3. poziom albo Zbrojownia) to teraz rana kłuta, a nie ogień. Wcześniej liczyło się jako obrażenia od ognia, stąd trauma i fobia ognia oraz płomienie, które miały się śnić, w lochu bez ognia. Kapłan tamuje krwawienie innymi słowami niż gasi ogień.',
      '1.17: bohaterowie zwiedzają. Gdy przywódca wejdzie do nowego pokoju, czasem pozwala się rozejrzeć: każdy podchodzi do czegoś (mebel, portret, lustro, trumna, kości, środek komnaty, goła ściana), ogląda to przez chwilę i mówi, co widzi. Meble przeszukują: czasem znajdą monetę, a mimik, beczka prochu albo pozytywka na meblu może przy tym odpalić (pod koniec, więc pierwsza szansa jest Twoja). Tchórz woli zostać przy przywódcy, a chciwy może poprosić o przeszukanie i usłyszeć "Nie ma czasu".',
@@ -1131,15 +1135,22 @@
   /* ----- the shop ----- */
   // 1.05 (a tester bought Chór potępionych without a single portrait): does the card work with what stands in the dungeon?
   const MON_T = ['goblin', 'archer', 'spider', 'ogre', 'shaman', 'ghost', 'shade', 'bats'], LOOT_T = ['loot', 'lpotion', 'loot2', 'loot3', 'lcursed'];
-  const CARD_NEEDS = { spikes: ['spikes'], walls: ['arrows', 'fire', 'portrait'], powder: ['powder'], arrows: ['arrows'], gate: ['gate'], web: ['web'], fire: ['fire'], mimic: ['mimic'],
+  const CARD_NEEDS = { spikes: ['spikes'], walls: ['arrows', 'fire', 'portrait', 'eyes', 'mirror'], powder: ['powder'], arrows: ['arrows'], gate: ['gate'], web: ['web'], fire: ['fire'], mimic: ['mimic'],
     trapdoor: ['trapdoor'], cage: ['cage'], portrait: ['portrait'], spider: ['spider'], ghost: ['ghost'], monster: MON_T, loottrap: LOOT_T, sticky: ['spikes'], wildfire: ['fire', 'powder', 'arrows'],
-    choir: ['portrait'], hgallery: ['ghost'], firepit: ['trapdoor'], cageghost: ['cage'], monsterroar: MON_T, sharp: ['spikes', 'arrows', 'archer', 'goblin', 'mimic'], heavy: ['gate', 'ogre', 'trapdoor'],
-    oil: ['fire', 'powder'], venom: ['spider', 'shaman', 'lcursed'], pack: MON_T, well: ['trapdoor'], golddust: ['loot'], reliquary: ['loot3'], greed: LOOT_T, nopick: LOOT_T };
+    choir: ['portrait'], hgallery: ['ghost', 'portrait'], firepit: ['trapdoor'], cageghost: ['cage'], monsterroar: MON_T, sharp: ['spikes', 'arrows', 'archer', 'goblin', 'mimic', 'bats'], heavy: ['gate', 'ogre', 'trapdoor'],
+    oil: ['fire', 'powder'], venom: ['spider', 'shaman'], pack: MON_T, well: ['trapdoor'], golddust: ['loot'], reliquary: ['loot3'], greed: LOOT_T, nopick: LOOT_T,
+    // 1.18: a komnata (k_) or a room effect (r_) in the dungeon; the card's req asks the same when the shop rolls it, this says it
+    // again when it was taken down after the roll ("Brak w lochu: Kuźnia.")
+    drawers: ['k_junk'], cell: ['k_prison'], frames: ['k_gallery'], restock: ['k_forge'], lullsleep: ['k_nursery'], ambush: ['k_goblin'], cocoons: ['k_spider'],
+    cauldron: ['k_ogre'], batscatter: ['k_bats'], skullwall: ['k_ossuary'], strip: ['k_armory'], falsecall: ['k_haunt'], wisps: ['r_fog'], mire: ['r_swamp'],
+    farecho: ['r_grotto'], risen: ['r_crypt'], vaultsnap: ['r_vault'], deepsleep: ['r_haven'], gearlink: ['r_gears'], body: ['r_hush'], blackice: ['r_ice'], tainted: ['lpotion'] };
+  const CARD_ALL = { hgallery: true };   // 1.18: needs every one of them (a ghost in a room with a portrait), not just one
+  const needHas = t => ITEMS[t] && ITEMS[t].tool && (KINDS[t] || ITEMS[t].rt) ? fl.rooms.some(R => KINDS[t] ? R.rk === KINDS[t] : R.rt === ITEMS[t].rt) : [...fl.items.values()].some(it => it.type === t && !it.temp);
   function cardFit(u) {
     const need = CARD_NEEDS[u.id]; if (!need || u.kind !== 'card' || !fl) return null;
-    const have = [...fl.items.values()].some(it => need.includes(it.type));
+    const miss = need.filter(t => !needHas(t)), have = CARD_ALL[u.id] ? !miss.length : miss.length < need.length;
     if (have) return { ok: true, text: ' Pasuje do Twojego lochu.' };
-    return { ok: false, text: need === MON_T ? ' Brak potworów w lochu.' : need === LOOT_T ? ' Brak łupu w lochu.' : ' Brak w lochu: ' + need.map(t => ITEMS[t] ? ITEMS[t].name : t).join(', ') + '.' };
+    return { ok: false, text: need === MON_T ? ' Brak potworów w lochu.' : need === LOOT_T ? ' Brak łupu w lochu.' : ' Brak w lochu: ' + (CARD_ALL[u.id] ? miss : need).map(t => ITEMS[t] ? ITEMS[t].name : t).join(', ') + '.' };
   }
   function kindShort(u) {
     if (u.kind === 'unlock') return 'odblokowanie';
@@ -1368,7 +1379,7 @@
     card.appendChild(el('p', null, 'Nowa karta: ' + u.name + ' (' + u.tag + '). Sprzedana karta przestaje działać i oddaje Esencję.'));
     const box = el('div', 'choices');
     run.deck.forEach((id, i) => {
-      const c = UPG[id];
+      const c = UPG[id]; if (!c) return;   // 1.18: a card gone from the game (u-portrait) in an old save
       box.appendChild(cardBtn(c, () => {
         const got = sellCard(i);
         run.deck.splice(i, 0, u.id); run.upgrades.push(u.id); recomputeMods();
@@ -1555,7 +1566,7 @@
     const add = t => { if (t) ul.appendChild(el('li', null, t)); };
     if (live) {
       const st = live.dead ? (fem ? 'Zginęła.' : 'Zginął.') : live.fled ? (live.carriedOut ? 'Wyniósł kryształ.' : live.fleeing ? 'Uciekł ze strachu.' : 'Wyszedł z lochu.') :
-        [live.fleeing ? 'UCIEKA' : '', live.crystal ? 'NIESIE KRYSZTAŁ' : '', caged(live) ? 'w klatce' : '', live.lost ? 'zgubiony' : live.goHome ? (live.female ? 'wraca sama do domu' : 'wraca sam do domu') : live.split ? 'na zwiadzie' : live.look && !live.look.done ? 'rozgląda się' : live.alone ? 'sam' : '', fl.time < live.burnUntil ? 'płonie' : '', live.cursed ? 'przeklęty' : '', fl.time < live.shakenUntil ? 'wstrząśnięty śmiercią' : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
+        [live.fleeing ? 'UCIEKA' : '', live.crystal ? 'NIESIE KRYSZTAŁ' : '', caged(live) ? 'w klatce' : '', live.lost ? 'zgubiony' : live.goHome ? (live.female ? 'wraca sama do domu' : 'wraca sam do domu') : live.split ? 'na zwiadzie' : live.look && !live.look.done ? 'rozgląda się' : live.alone ? 'sam' : '', fl.time < live.burnUntil ? (live.burnBy === 'spikes' ? 'krwawi' : 'płonie') : '', live.cursed ? 'przeklęty' : '', fl.time < live.shakenUntil ? 'wstrząśnięty śmiercią' : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
       add('Teraz: ' + st + '.');
     }
     add('Charakter: ' + (e.trait ? HERO_TRAITS[e.trait].name[fem ? 1 : 0] + ' (' + TRAIT_TEXT[e.trait] + ')' : 'zwyczajny') + '.');
@@ -1773,6 +1784,7 @@
     loadFound().forEach(t => { if (onbOk(t, run.stage || ONB_FULL)) run.unlocked.add(t); });
     if (!sv.gv || sv.gv < 38) run.shop = null;
     run.deck = run.deck.filter(id => UPG[id]); run.stash = run.stash.filter(id => UPG[id]);
+    if (run.shop && run.shop.ids) run.shop.ids = run.shop.ids.map(id => id && UPG[id] ? id : null);   // 1.18: a card gone from the game (u-portrait) is no offer
     mods = freshMods(); run.deck.forEach(id => { const u = UPG[id]; if (u && u.apply) u.apply(mods); });
     floats = []; particles = []; paused = false; ff = false; selected = null;
     if (sv.stage === 'summary') {   // the wave was over: show what was left to pick, then build
@@ -2114,7 +2126,7 @@
       return true;
     }
     const hp = MONSTERS[type] ? ITEMS[type].hp * mods.monster : 0;
-    fl.items.set(key(x, y), { type, x, y, cd: fl.phase === 'raid' && TRAPS[type] && !mods.quickArm ? ARM_TIME : 0, anim: 0, disabled: false, hp, max: hp, power: mods.monster, shot: 0.5, flash: 0, preview: 1.4, gx: x + 0.5, gy: y + 0.5, lvl: 1, spent: cost });
+    fl.items.set(key(x, y), { type, x, y, cd: fl.phase === 'raid' && TRAPS[type] && !mods.quickArm ? ARM_TIME : 0, quick: fl.phase === 'raid' && !!TRAPS[type] && !!mods.quickArm, anim: 0,   /* 1.18 Szybki montaż: its first shot +50% */ disabled: false, hp, max: hp, power: mods.monster, shot: 0.5, flash: 0, preview: 1.4, gx: x + 0.5, gy: y + 0.5, lvl: 1, spent: cost });
     { const ms = run.memSpots && run.memSpots[key(x, y)]; if (ms && ms[0] === type && ms[2] === 1) { const it = fl.items.get(key(x, y)); it.memRes = ms[1]; it.memLvl = 1; } }   // 1.09: put back on its spot, it remembers its answer
     fl.items.get(key(x, y)).popR = realNow; dustAt(x, y);   // 1.09: it lands with a pop
     fl.essence -= cost; bt(type).placed++; bt(type).spent += cost;
@@ -2465,6 +2477,7 @@
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
     resolveCheck: p => resolveCheck(p), skipCheck: () => skipCheck(), clearCheck: () => clearCheck(), areaOf, slotOf, shortestPath, frontier, toolMarkers, applyTool, toolCost, get WW() { return WW; }, get WH() { return WH; }, TUT, UPGRADES, UPG, ITEMS, startBuild, applyUpgrade, makeWave, levelStats, recomputeMods, sellCard, upgradePicks, cardMultNow, openModal, queueModal, renderDeckTiles, saveRun, loadSave, resumeRun, clearSave, upgradeItem, removeItem, waveCurve, waveBase, computeBRooms, inB, decoyAlarm, guildAdapt, quietNow, setUser: v => { userStarted = v; }, get userStarted() { return userStarted; }, ignite, trapBoost, calmReady, landFallen, fall, planBreach: () => planBreach(), tutAnySpot, galleryK, stealNeed, portraitRooms, addFear, setTab: t => { tab = t; updateTray(); }, undo, pushUndo, get undoN() { return undoStack.length; }, setTrayOpen, UI, moveItem, moveTarget, setMode: (m, k) => { selected = m; movingKey = k || null; updateTray(); }, get selected() { return selected; }, get movingKey() { return movingKey; }, rankOf, dungeonBounds, regroupAtDoor: () => regroupAtDoor(),
+    lookDone, councilDone, chooseTarget, canHearShout, answerLost, perceiveThink: (L, c) => perceiveThink(L, c), startFlee, cardFit, CARD_NEEDS, monstersTick, rebuildThreat, updateHero, onEnter, hiddenAmbush, skullK, cellLand, vaultSnap, riseGhost, restockForge, stripGear, framesWake, falseCall, taintedSip, reqOk, freshMods, shoutRange,   // 1.18
     patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, startSplit, onScout, splitting, lookRoll, lookSpots, hearFar, councilVote, nameGen, lineOk, lineTags, fitLine, TRAPS, MONSTERS, isLoot, SAY, knowsTag, sawSweep, sawItem, sawAdd, itemTags, sayNow, LINE_NEEDS, setSayHook: f => { sayHook = f; }, say, nameFill, GZ, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, t3, kindPow, inKind, slotRoom, servedRooms, kindProps, PROP, PROP_PLAN, KIND_WALL3D, snapshotLayout, KINDS, KIND_INFO, KIND_OF, RT_INFO, nbrRooms, roomCount, sizeMult,
     rollItem, curse, comboNow, get orbs() { return orbs; }, boxOrbs, tileScreen, bfs, say: (h, t, p, d, how) => say(h, t, p, d, how), sayTick, floorBusy, readT, talkAs: (d, l) => talkAs(d, l), greedCurve, greedRaw, addGreed, waveSize, partySize, safestRoom: h => safestRoom(h), planHero: h => planHero(h), lootSeen: it => lootSeen(it), kill: (h, k, a) => kill(h, k, a), damage, loadRecords, BREACH_PATCH, HITEMS, LOOT_KIND, noticeLoot, lootDecision, leader, alive, heroExit, driftTarget, SCARE, CURSED, DRIFT, TABS, objTargetOk, roomOf, dropCarry, holdRemove, buildTap, onbStage, setOnb, onbDone, startGuided, endRun: (r, x) => endRun(r, x), revealPhobia, revealPhys, ONB_STAGES, ONB_CARD, ONB_ITEM, comboHp, onbOk, coachDone,
     get movingObj() { return movingObj; }

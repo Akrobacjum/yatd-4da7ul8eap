@@ -52,10 +52,14 @@
     }
     return false;
   }
+  // 1.18: Grube mury: a shout carries 8 steps instead of 14; Niosące się echo: a shout from a Grota carries 2 times as far (3 times with
+  // a second copy), with Grube mury 16
+  const shoutRange = v => (mods.thickwalls ? 8 : 14) * (mods.farecho && v.room >= 0 && isRt(v.room, 'grotto') ? 1 + mods.farecho : 1);
   function canHearShout(o, v) {
     if (canHear(o, v)) return true;
-    if (o.gone || v.gone || hushAt(o) || hushAt(v) || inB('howl', o.room) || inB('howl', v.room) || Math.hypot(o.tx - v.tx, o.ty - v.ty) > 14) return false;
-    return stepsWithin(v, o, 14);
+    const R = shoutRange(v);
+    if (o.gone || v.gone || hushAt(o) || hushAt(v) || inB('howl', o.room) || inB('howl', v.room) || Math.hypot(o.tx - v.tx, o.ty - v.ty) > R) return false;
+    return stepsWithin(v, o, R);
   }
   const perceives = (o, v, shout) => o === v || canSee(o, v) || (shout ? canHearShout(o, v) : canHear(o, v));
   const groupOf = L => alive().filter(o => o === L || (!o.lost && !caged(o) && (canSee(o, L) || canHear(o, L))));   // the leader's group: who decides and counts
@@ -254,7 +258,8 @@
     sc.home = 0.9 + 1.8 * fr + 1.4 * (1 - hp) + (t === 'coward' ? 1.4 : t === 'careful' ? 0.4 : 0) + ((h.gold || 0) >= 2 ? 0.4 : 0) + (fl.time < h.shakenUntil ? 0.5 : 0);
     sc.storm = 0.6 + (t === 'brave' ? 1 : t === 'greedy' ? 0.5 : t === 'coward' ? -0.9 : 0) + (h.type === 'barbarian' ? 0.6 : 0) + (h.boss === 'champion' || h.hunter ? 0.8 : 0) +
       (hp > 0.6 ? 0.5 : 0) + 0.2 * h.rank - 1.4 * fr + (P.plan === 'assault' ? 0.4 : 0);
-    sc.more = 0.5 + (heartP() ? 0 : 0.7) + (t === 'greedy' ? 0.8 : t === 'brave' ? 0.2 : 0) + (h.hunter ? 0.6 : 0) - (hp < 0.4 ? 0.6 : 0) - fr;
+    sc.more = 0.5 + (heartP() ? 0 : 0.7) + (t === 'greedy' ? 0.8 : t === 'brave' ? 0.2 : 0) + (h.hunter ? 0.6 : 0) - (hp < 0.4 ? 0.6 : 0) - fr +
+      0.6 * mods.onemore * (t === 'greedy' || h.hunter ? 2 : 1);   // 1.18 Jeszcze chwila (the greedy and the treasure hunters twice)
     let best = opts[0], bv = -1e9;
     opts.forEach(k => { const v = sc[k] + Math.random() * 0.8; if (v > bv) { bv = v; best = k; } });
     return best;
@@ -294,8 +299,9 @@
     P.council = null;
     const st = fl.stats, k = 'council' + C.res[0].toUpperCase() + C.res.slice(1); st[k] = (st[k] || 0) + 1;
     if (C.res === 'more') {
-      P.councilMore = true; fl.patT = Math.min(fl.patT, S.waveTime - 30);
-      setHint('Narada: jeszcze chwila. Bohaterowie szukają dalej przez 30 s.');
+      const more = 30 + 15 * mods.onemore;   // 1.18 Jeszcze chwila: 45 s
+      P.councilMore = true; fl.patT = Math.min(fl.patT, S.waveTime - more);
+      setHint('Narada: jeszcze chwila. Bohaterowie szukają dalej przez ' + more + ' s.');
     } else if (C.res === 'storm') {
       fl.fearless = true; fl.storm = true; P.plan = 'assault'; P.detour = null; tl('ip', 1);
       crew.forEach(h => { if (h.state === 'rest' || h.state === 'talk') h.state = 'walk'; h.needPlan = true; });
@@ -527,7 +533,8 @@
     // and picks more on a whim, a careful one keeps to what is close, a coward stays nearer the way out; a sound heard in the
     // last 25 s (hearFar) draws a brave, greedy or green leader and keeps a careful one or a coward away.
     const tr = L.trait, deep = tr === 'brave' ? 0.24 : tr === 'coward' ? 0.1 : 0.18, whim = tr === 'brave' ? 2.5 : tr === 'careful' ? 1 : 1.5;
-    const snd = P.sound && fl.time - P.sound.t < 25 ? P.sound : null, sndK = tr === 'brave' || tr === 'greedy' || L.rank === 0 ? -2.5 : tr === 'careful' || tr === 'coward' ? 2 : -1;
+    // 1.18 Wabiący hałas: the sound draws every leader, a careful one and a coward too, and is remembered 40 s (15 s more a copy)
+    const snd = P.sound && fl.time - P.sound.t < 25 + 15 * mods.lure ? P.sound : null, sndK = mods.lure || tr === 'brave' || tr === 'greedy' || L.rank === 0 ? -2.5 : tr === 'careful' || tr === 'coward' ? 2 : -1;
     const add = (f, room, bonus) => {
       const d = b.dist[f]; if (d < 0) return;
       const fx = f % WW, fy = (f / WW) | 0;
@@ -667,7 +674,10 @@
       if (!P.fogDone.has(L.room)) {
         P.fogDone.add(L.room);
         const R = fl.rooms[L.room], spots = R.tiles.filter(t => walkable(t[0], t[1]) && Math.hypot(t[0] - L.tx, t[1] - L.ty) >= 2);
-        if (spots.length) { const t = pick(spots); P.detour = { goal: t[1] * WW + t[0], until: fl.time + 3 + 0.25 * Math.max(0, 8 - L.lvl / 2) }; fl.stats.fogGrope = (fl.stats.fogGrope || 0) + 1; tl('fg', L.room); say(L, pick(SAY.fogGrope), 3); }
+        // 1.18 Błędne ogniki: the lights lead him onto the nearest tile in reach of a trap of this room the party does not know, and he gropes 2 s longer
+        let wt = null;
+        if (mods.wisps) { let bd = 1e9; fl.items.forEach(it => { if (!TRAPS[it.type] || it.detected || it.disabled || slotRoom(it.type, it.x, it.y) !== L.room) return; areaOf(it).forEach(t => { if (!walkable(t[0], t[1]) || roomOf(t[0], t[1]) !== L.room) return; const d = Math.hypot(t[0] - L.tx, t[1] - L.ty); if (d >= 1 && d < bd) { bd = d; wt = t; } }); }); }
+        if (wt || spots.length) { const t = wt || pick(spots); P.detour = { goal: t[1] * WW + t[0], until: fl.time + 3 + 0.25 * Math.max(0, 8 - L.lvl / 2) + 2 * mods.wisps, wisp: !!wt }; fl.stats.fogGrope = (fl.stats.fogGrope || 0) + 1; if (wt) fl.stats.wisps = (fl.stats.wisps || 0) + 1; tl('fg', L.room); say(L, pick(SAY.fogGrope), 3); }
       }
     }
     crew.forEach(h => {
@@ -691,6 +701,7 @@
       if (h.hp < 0.35 * h.max) addFear(h, 2.2 * dt, null, 'lowhp');   // v15.1: was 3/s (heavy wounds scare less, fear pays more)
       if (h.crystal && mods.carrierFear) addFear(h, mods.carrierFear * dt, null, 'carrier');
       if (caged(h) && mods.cageHaunt) addFear(h, mods.cageHaunt * dt, 'cage', 'haunt');   // Nawiedzone klatki
+      if (mods.cocoons && fl.time < h.slowUntil && rkOf(h.room) === 'spider' && fl.zones.some(z => z.src && (z.src.type === 'web' || z.src.type === 'spider') && z.keys.has(key(h.tx, h.ty)))) addFear(h, 6 * mods.cocoons * dt, 'web', 'cocoon');   // 1.18 Kokony (the web's attribute: fobia pająków x2)
       // counter-buildings: the first one to walk in (preferably the one it hurts) reacts out loud
       if (h.room >= 0 && fl.bRooms && fl.bSaid) ['altar', 'rune', 'acid', 'veil', 'howl', 'shackles'].forEach(t => {
         const kk = t + ':' + h.room;
@@ -702,7 +713,15 @@
       // caged with nobody coming: the fear builds until he tears the bars apart and runs
       if (caged(h) && (P.abandoned.has(h.id) || !crew.some(o => o !== h && !caged(o) && !o.fleeing && !o.lost))) addFear(h, 8 * dt * mods.cageFear, 'cage', 'cageAlone');
       if (h.cursed) addFear(h, 2 * dt, null, 'curse');   // a cursed treasure whispers
-      if (fl.time < (h.lullUntil || 0) && h.room === h.lullRoom) addFear(h, h.lullK * dt, 'musicbox', 'lull');   // v15.1: the music box's lullaby, while he stays in that room
+      if (fl.time < (h.lullUntil || 0) && h.room === h.lullRoom) {
+        addFear(h, h.lullK * dt, 'musicbox', 'lull');   // v15.1: the music box's lullaby, while he stays in that room
+        // 1.18 Usypianka: a wounded one (under 60% HP) in a Pokój dziecięcy falls asleep where he stands: the Sanktuarium's nap (once a
+        // wave, shared with it) with its nightmares (h.dream, see updateHero), 4 s (+2 s a copy)
+        if (mods.lullsleep && rkOf(h.room) === 'nursery' && h.hp < 0.6 * h.max && !h.napped && h.nx === null && !caged(h) && !exiting(h) && !panicking(h) && fl.time >= h.burnUntil && (h.state === 'walk' || h.state === 'talk' || h.state === 'wait')) {
+          h.napped = true; h.dream = true; h.napUntil = fl.time + 4 + 2 * (mods.lullsleep - 1); h.restAt = fl.time; h.dreamSaid = false; h.state = 'rest'; h.path = []; h.intent = 'nap';
+          fl.stats.lullNaps = (fl.stats.lullNaps || 0) + 1; tl('ln', h.id); say(h, pick(SAY.lullNap), 2); floatHero(h, 'Zasypia', '#e6d2ff', 12, -0.8);
+        }
+      }
       if (h === L) { h.lost = false; h.sepT = 0; return; }
       const d = L ? hdist(h, L) : 0;
       const hr = h.lost && h.hearUntil > fl.time ? byId(h.hearId) : null;   // 1.05: the one whose voice he follows counts as finding the party
@@ -740,7 +759,7 @@
       if (!f) return;
       const pot = pots.sort((a, b) => a.r - b.r)[0];
       g.inv.splice(g.inv.indexOf(pot), 1); g.giveCd = fl.time + 10;
-      f.hp = Math.min(f.max, f.hp + f.max * potionHeal(pot) * itemPow(f));
+      f.hp = Math.min(f.max, f.hp + f.max * potionHeal(pot) * itemPow(f) * taintedSip(f, pot));   // 1.18: Zepsute mikstury
       fl.stats.potionsGiven++; fl.stats.potions++; fl.stats.itemsUsed++; tl('pg', g.id, f.id);
       say(g, pick(SAY.potionGive), 3); P.queueSay.push({ id: f.id, text: pick(SAY.potionThanks), at: fl.time + 1.1 });
       floatHero(f, 'Mikstura!', '#8be38f', 14, -0.7);
@@ -911,7 +930,7 @@
       lines.push(...sl);
       const fit = h ? (sl.length && Math.random() < 0.45 ? sl : okLines(h, lines)) : [];   // almost half the time it is about what they saw
       const line = fit.length ? pick(fit) : null;
-      fl.stats.chatTry = (fl.stats.chatTry || 0) + 1; if (line) fl.stats.chatPick = (fl.stats.chatPick || 0) + 1;
+      if (h) fl.stats.chatTry = (fl.stats.chatTry || 0) + 1; if (line) fl.stats.chatPick = (fl.stats.chatPick || 0) + 1;
       if (line && say(h, line, 1, 2.2)) {
         // an answer now and then: courage for the scared, sense for the greedy
         const fearLine = mood === 'fear' && (SAY.shaken.includes(line) || SAY.chatScared.includes(line));
@@ -963,10 +982,29 @@
       const d = b.dist[tIdx(o)], range = o.type === 'bard' ? 26 : 14;
       if (d >= 0 && d <= range && d < bd) { bd = d; best = o; }
     });
+    if (mods.falsecall && (!best || Math.random() < 0.6) && falseCall(h, b)) return;   // 1.18
     if (!best) return;
     h.hearUntil = fl.time + 7; h.hearId = best.id; h.needPlan = true; fl.stats.answers = (fl.stats.answers || 0) + 1; tl('an', best.id, h.id);
     P.queueSay.push({ id: best.id, text: nameFill(pick(best.type === 'bard' ? SAY.bardCall : SAY.answer), h), at: fl.time + 0.8 });
     P.queueSay.push({ id: h.id, text: pick(best.type === 'bard' ? SAY.lostHear : SAY.hearVoice), at: fl.time + 1.8 });
+  }
+  // 1.18 Fałszywe wołanie: a Nawiedzona sala within 14 steps of the lost one answers his call; he walks to the voice, to the middle of
+  // the hall (h.hearGoal, planHero), and is still lost when he gets there. Kamień wyjec and Głusza still swallow his call (answerLost).
+  function falseCall(h, b) {
+    let goal = -1, gd = 1e9;
+    fl.rooms.forEach(R => {
+      if (R.rk !== 'haunt' || R.id === h.room || !R.tiles) return;
+      const near = R.tiles.reduce((a, t) => { const d = b.dist[t[1] * WW + t[0]]; return d >= 0 && (a < 0 || d < a) ? d : a; }, -1);
+      if (near < 0 || near > 14 || near >= gd) return;
+      const mx = (R.x0 + R.x1 + 1) / 2, my = (R.y0 + R.y1 + 1) / 2;
+      const c = R.tiles.filter(t => walkable(t[0], t[1]) && b.dist[t[1] * WW + t[0]] >= 0).sort((p, q) => Math.hypot(p[0] + 0.5 - mx, p[1] + 0.5 - my) - Math.hypot(q[0] + 0.5 - mx, q[1] + 0.5 - my))[0];
+      if (c) { gd = near; goal = c[1] * WW + c[0]; }
+    });
+    if (goal < 0) return false;
+    h.hearUntil = fl.time + 7; h.hearId = -1; h.hearGoal = goal; h.needPlan = true;
+    fl.stats.falseCalls = (fl.stats.falseCalls || 0) + 1; tl('fc', h.id, goal);
+    fl.party.queueSay.push({ id: h.id, text: pick(SAY.hearVoice), at: fl.time + 1.2 });
+    return true;
   }
   // 1.16: the scout's next opening: the nearest known way into the unknown that does not lead back towards the party
   function nextScout(sc, L) {
@@ -1026,6 +1064,21 @@
       if (L && (o === L || canSee(L, o) || canHear(L, o))) seen[o.id] = { x: o.tx, y: o.ty, t: fl.time };
       if (o.lost && !o.lostNoticed && fl.time - (o.lostAt || 0) >= 4 && L && !canHear(L, o)) missLost(o, L);
     });
+    // 1.18 Odnalezione ciało: one who comes upon the body of a friend whose death he did not know of learns it there and then and
+    // fears it like a witness (x2 when it lies in a Głusza, +50% a second copy)
+    if (mods.body) (fl.deaths || []).forEach(d => {
+      const dead = byId(d.id); if (!dead || d.x == null) return;
+      const at = { tx: d.x, ty: d.y };
+      crew.forEach(o => {
+        if (d.knows.has(o.id) || panicking(o) || caged(o) || o.gone || !samePlace(o, at)) return;
+        d.knows.add(o.id); sawAdd(o, ['blood']);   // he knows it before he says it (the line needs the death)
+        const k = (d.hush ? 2 : 1) * (d.crypt ? 2 : 1) * (1 + 0.5 * (mods.body - 1)) * (o.trait === 'coward' ? 1.5 : 1);
+        o.shakenUntil = fl.time + 9; const f0 = o.fear; addFear(o, Math.max(15 * o.R.panic, 0.12 * o.courage + 4) * k, null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0);
+        if (o === L && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
+        fl.stats.bodies = (fl.stats.bodies || 0) + 1; tl('bf', o.id, d.id);
+        P.queueSay.push({ id: o.id, text: nameFill(pick(SAY.bodyFound), dead), at: fl.time + 0.2, prio: 3, late: 3 });
+      });
+    });
     (fl.deaths || []).forEach(d => {
       const dead = byId(d.id); if (!dead) return;
       for (const o of crew) {
@@ -1034,7 +1087,7 @@
         if (!k) continue;
         d.knows.add(o.id);
         P.queueSay.push({ id: k.id, text: nameFill(pick(SAY.tellDeath), dead), at: fl.time + 0.2, prio: 3, late: 3 }, { id: o.id, text: pick(SAY.newsDeath), at: fl.time + 0.4, prio: 3, late: 4 });
-        o.shakenUntil = fl.time + 5; const f0 = o.fear; addFear(o, 0.6 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (d.crypt ? 2 : 1), null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0);
+        o.shakenUntil = fl.time + 5; const f0 = o.fear; addFear(o, 0.6 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (d.crypt ? 2 : 1) * (1 + mods.badnews), null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0);   // 1.18: Złe wieści
         if (o === L && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
         fl.stats.newsDeaths = (fl.stats.newsDeaths || 0) + 1;
         break;   // one at a time
@@ -1108,10 +1161,10 @@
     (P.lookRolled || (P.lookRolled = new Set())).add(r);
     if (P.plan !== 'explore' || fl.fearless || goingOut() || P.council || P.detour || P.prep || P.aheadWait >= 0 || fl.time < P.lookCd || L.lost || talking(L)) return;
     if (fl.patT > 0.8 * S.waveTime || P.morale < 0.45 || groupOf(L).some(o => panicking(o) || o.state === 'fight') || roomOf(L.tx, L.ty) !== r) return;
-    if ([...fl.items.values()].some(m => MONSTERS[m.type] && m.hp > 0 && roomOf(m.x, m.y) === r)) return;
+    if ([...fl.items.values()].some(m => MONSTERS[m.type] && m.hp > 0 && roomOf(m.x, m.y) === r && !hiddenAmbush(m))) return;   // 1.18: not one hiding in ambush
     const grpL = groupOf(L), avgHp = grpL.reduce((a, o) => a + o.hp / o.max, 0) / grpL.length;
     const spots = lookSpots(r, L), objs = spots.filter(s => s.kind !== 'wall').length;
-    const p = ({ careful: 0.5, greedy: 0.55, brave: 0.35, coward: 0.15 }[L.trait] || 0.4) + (L.rank === 0 ? 0.15 : 0) + (objs >= 2 ? 0.2 : objs ? 0.1 : -0.2) + (R.rk ? 0.15 : 0) - (avgHp < 0.5 ? 0.25 : 0) - (fl.patT > 0.6 * S.waveTime ? 0.15 : 0);
+    const p = ({ careful: 0.5, greedy: 0.55, brave: 0.35, coward: 0.15 }[L.trait] || 0.4) + (L.rank === 0 ? 0.15 : 0) + (objs >= 2 ? 0.2 : objs ? 0.1 : -0.2) + (R.rk ? 0.15 : 0) - (avgHp < 0.5 ? 0.25 : 0) - (fl.patT > 0.6 * S.waveTime ? 0.15 : 0) + (R.rk === 'junk' ? 0.3 * mods.drawers : 0);   // 1.18: Zastawione szuflady
     const g = talkGroup(L);
     if (Math.random() >= p) {   // no time for sightseeing: a greedy one or a rookie may still ask, and hear no
       const w = spots.some(s => s.kind === 'obj') && Math.random() < 0.3 ? g.find(o => o !== L && (o.trait === 'greedy' || o.rank === 0) && !talking(o)) : null;   // asks about the furniture
@@ -1178,16 +1231,32 @@
   }
   function lookDone(h, lk) {
     lk.done = true; h.needPlan = true;
+    if (lk.kind === 'prop') { framesWake(h, lk); return; }   // 1.18: Spojrzenie z ramy
     if (lk.kind !== 'obj') return;
     const it = lk.it;
-    if (it && fl.items.get(key(it.x, it.y)) === it && !it.disabled && !it.detected && it.cd <= 0 && Math.random() < SEARCH_TRAP[it.type]) {
+    // 1.18 Zastawione szuflady: in a Graciarnia what sits on the furniture goes off (1 + copies) times as often, at most 95%
+    const pT = it ? (mods.drawers && rkOf(roomOf(lk.x, lk.y)) === 'junk' ? Math.min(0.95, SEARCH_TRAP[it.type] * (1 + mods.drawers)) : SEARCH_TRAP[it.type]) : 0;
+    if (it && fl.items.get(key(it.x, it.y)) === it && !it.disabled && !it.detected && it.cd <= 0 && Math.random() < pT) {
       fl.stats.lookTraps = (fl.stats.lookTraps || 0) + 1; tl('lt', h.id, it.type, it.x, it.y); fire(it, 1); return;
     }
     if (!SEARCH_GOLD[lk.sub]) return;
-    if (Math.random() < (h.trait === 'greedy' || h.type === 'thief' ? 0.3 : 0.18)) {
+    if (Math.random() < (h.trait === 'greedy' || h.type === 'thief' ? 0.3 : 0.18) * (1 + mods.coins)) {   // 1.18: Podrzucone grosze x2
       h.gold = (h.gold || 0) + 1; sawAdd(h, ['gold']); fl.stats.goldFound = (fl.stats.goldFound || 0) + 1; floatHero(h, '+1 złota', '#f2c94c', 12, -0.7);
+      if (mods.coins) {   // 1.18 Podrzucone grosze: the coin pulls like Monety seen (noticeLoot's formula, fading the same way)
+        const g = LOOT_GREED.gold[0] * mods.greedMult * (1 + mods.goldDust) / (1 + 0.15 * fl.stats.lootSeen);
+        greedOrbs(h.tx, h.ty, addGreed(g)); fl.stats.lootSeen++; fl.stats.coinGreed = (fl.stats.coinGreed || 0) + g;
+      }
       fl.party.queueSay.push({ id: h.id, text: pick(SAY.lookFind), at: fl.time + 0.1, prio: 2, late: 2.5 });
     } else if (Math.random() < 0.45) fl.party.queueSay.push({ id: h.id, text: pick(SAY.lookNothing), at: fl.time + 0.1, prio: 1, late: 2.5 });
+  }
+  // 1.18 Spojrzenie z ramy: in a Galeria, the portrait, eyes or mirror he looks at wakes up: if it is ready (and they do not know it),
+  // it goes off on him by itself with 1,5 times the power (+0,5 a copy)
+  function framesWake(h, lk) {
+    if (!mods.frames || !(lk.sub === 'portrait' || lk.sub === 'eyes' || lk.sub === 'mirror')) return false;
+    const it = fl.items.get(key(lk.x, lk.y));
+    if (!it || it.type !== lk.sub || it.disabled || it.detected || it.cd > 0 || it.jamUntil > fl.time || rkOf(slotRoom(it.type, it.x, it.y)) !== 'gallery') return false;
+    fl.stats.frames = (fl.stats.frames || 0) + 1; tl('fw', h.id, it.type, it.x, it.y);
+    return fire(it, 1 + 0.5 * mods.frames);
   }
   // 1.17: a trap goes off where none of them can see it: the nearest calm one within 12 tiles (not in that room, not in a
   // Głusza, and the trap not in one) hears it, may say so, and those in earshot of him turn that way. A scream when it caught
@@ -1204,6 +1273,13 @@
     fl.stats.heard = (fl.stats.heard || 0) + 1; tl('hs', h.id, it.type);
     if (v || Math.random() < 0.65) P.queueSay.push({ id: h.id, text: v ? nameFill(pick(SAY.hearScream), v) : pick(SAY.hearSound), at: fl.time + 0.3, prio: 2, late: 2.5 });
     alive().forEach(o => { if (!o.lost && !panicking(o) && !caged(o) && (o === h || earshot(o, h))) { lookAt(o, it.x, it.y); o.glanceT = 2.5; } });
+  }
+  // 1.18 Zepsute mikstury: a potion from your loot (pickup marks it) heals half and scares the one who drinks it (10% of his courage a copy)
+  function taintedSip(h, pot) {
+    if (!pot || !pot.tainted) return 1;
+    addFear(h, 0.1 * Math.max(1, mods.tainted) * h.courage, null, 'potion'); fl.stats.tainted = (fl.stats.tainted || 0) + 1; tl('ta', h.id);
+    floatHero(h, 'Zepsuta!', '#9fbf6a', 12, -1.1);
+    return 0.5;
   }
   /* ----- powers with a cooldown (talisman, amulet, boots): the hero decides when ----- */
   const powerReady = (h, t) => h.inv.find(x => x.type === t && fl.time >= (x.cdUntil || 0) && (x.charges === undefined || x.charges > 0));
@@ -1287,7 +1363,7 @@
     crew.forEach(h => {   // experienced heroes drink up before walking into it
       if (h.lvl < 4 || h.hp >= 0.7 * h.max) return;
       const pot = h.inv.filter(x => x.type === 'potion').sort((a, c) => c.r - a.r)[0];
-      if (pot) { h.inv.splice(h.inv.indexOf(pot), 1); h.hp = Math.min(h.max, h.hp + h.max * potionHeal(pot) * itemPow(h)); fl.stats.potions++; fl.stats.itemsUsed++; floatHero(h, 'Mikstura', '#8be38f', 14, -0.7); }
+      if (pot) { h.inv.splice(h.inv.indexOf(pot), 1); h.hp = Math.min(h.max, h.hp + h.max * potionHeal(pot) * itemPow(h) * taintedSip(h, pot)); fl.stats.potions++; fl.stats.itemsUsed++; floatHero(h, 'Mikstura', '#8be38f', 14, -0.7); }   // 1.18: Zepsute mikstury
     });
     tl('pp', r, pr ? 1 : 0, mg ? 1 : 0, th ? 1 : 0, wr ? 1 : 0);
   }
@@ -1395,7 +1471,9 @@
     } else if (h.lost) {
       intent = 'lost';
       const lt = L ? tIdx(L) : -1, hr = h.hearUntil > fl.time ? byId(h.hearId) : null;
-      if (hr && !hr.dead && !hr.fled && !hr.lost && !inB('howl', h.room)) { const bv = bfs(h.x, h.y, {}), g = tIdx(hr); if (bv.dist[g] >= 0) { b = bv; goal = g; } }   // 1.05: he follows the voice that answered him, known way or not
+      if (h.hearGoal >= 0 && (fl.time >= h.hearUntil || Math.abs(h.hearGoal % WW - h.tx) + Math.abs(((h.hearGoal / WW) | 0) - h.ty) <= 1)) h.hearGoal = -1;   // 1.18: there (still lost), or the voice is gone after 7 s
+      if (h.hearGoal >= 0 && !inB('howl', h.room)) { const bv = bfs(h.x, h.y, {}); if (bv.dist[h.hearGoal] >= 0) { b = bv; goal = h.hearGoal; } }   // 1.18 Fałszywe wołanie: to the voice from the hall
+      else if (hr && !hr.dead && !hr.fled && !hr.lost && !inB('howl', h.room)) { const bv = bfs(h.x, h.y, {}), g = tIdx(hr); if (bv.dist[g] >= 0) { b = bv; goal = g; } }   // 1.05: he follows the voice that answered him, known way or not
       if (goal >= 0) { /* following a voice */ }
       else if (lt >= 0 && B().dist[lt] >= 0 && B().dist[lt] < 14 && Math.random() < 0.5) goal = lt;   // he hears their voices and follows them
       else {   // otherwise he wanders: through some door of this room, or into the unknown
@@ -1462,7 +1540,7 @@
       if (!job && h.type === 'warrior') {   // rookies charge anything; veterans pick fights they can win or must fight
         let best = -1, bd = 1e9, skip = null, bm = null;
         fl.items.forEach(m => {
-          if (!MONSTERS[m.type] || DRIFT[m.type] || m.hp <= 0 || roomOf(m.x, m.y) !== h.room) return;
+          if (!MONSTERS[m.type] || DRIFT[m.type] || m.hp <= 0 || roomOf(m.x, m.y) !== h.room || hiddenAmbush(m)) return;   // 1.18: he does not see one in ambush
           const i = m.y * WW + m.x, d = B().dist[i];
           const smart = h.rank === 0 || m.type === 'archer' || (h.hp > 0.6 * h.max && m.type !== 'ogre');
           if (!smart) { skip = m; return; }
@@ -1862,7 +1940,7 @@
       const rt = fl.rooms[r].rt;   // the first one into a room with a character says what it is
       if (rt && !exiting(h) && !(fl.rtSaid || (fl.rtSaid = new Set())).has(r)) { fl.rtSaid.add(r); say(h, pick(SAY[RT_SAY[rt]]), 3); }
       const rk = fl.rooms[r].rk, rkL = rk && SAY.rkEnter && SAY.rkEnter['k_' + rk];   // 1.17.1: and what the room is for (a komnata)
-      if (rkL && !exiting(h) && !(fl.rkSaid || (fl.rkSaid = new Set())).has(r)) { fl.rkSaid.add(r); fl.stats.rkEnter = (fl.stats.rkEnter || 0) + 1; say(h, pick(rkL), rt ? 2 : 3); }
+      if (rkL && !exiting(h) && !(fl.rkSaid || (fl.rkSaid = new Set())).has(r)) { fl.rkSaid.add(r); fl.stats.rkEnter = (fl.stats.rkEnter || 0) + 1; if (rt) P.queueSay.push({ id: h.id, text: pick(rkL), at: fl.time + 0.2, prio: 2, late: 5 }); else say(h, pick(rkL), 3); }   // 1.18: after the effect line, not dropped by it
       if (changed && h.id === P.leaderId) { maybeDetour(h, r); if (!P.detour) P.lookAsk = { room: r, at: fl.time + 0.9 }; }   // 1.17: look around? (lookThink)
       if (changed && !exiting(h)) phobiaSight(h, r);
     }
@@ -1870,10 +1948,11 @@
     const it = fl.items.get(key(h.x, h.y));
     if (it && isLoot(it.type) && !h.crystal && !h.fleeing) pickup(h, it);
     // 1.10: Lodownia: a step may run on, one tile straight ahead, into whatever is there (not twice in a row)
-    if (r >= 0 && isRt(r, 'ice') && !h.slid && (h.ldx || h.ldy) && h.state === 'walk' && Math.random() < slipChance(h)) {
+    if (r >= 0 && isRt(r, 'ice') && !h.slid && (h.ldx || h.ldy) && h.state === 'walk' && Math.random() < slipChance(h) * (1 + 0.5 * mods.blackice)) {   // 1.18: Gołoledź, half as many slips more
       const sx = h.x + h.ldx, sy = h.y + h.ldy, g = fl.items.get(key(sx, sy));
       if (passable(sx, sy) && !(g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) && !(Math.abs(sx - fl.heart.x) + Math.abs(sy - fl.heart.y) === 0) && !heroBlock(h, sx, sy)) {
         h.nx = sx; h.ny = sy; h.prog = 0; h.sliding = true; h.path = []; fl.stats.slips = (fl.stats.slips || 0) + 1; tl('sl', h.id, sx, sy);
+        if (mods.blackice) { h.slowUntil = Math.max(h.slowUntil, fl.time + 1.8); fl.stats.iceFalls = (fl.stats.iceFalls || 0) + 1; }   // 1.18 Gołoledź: he falls: slowed 1,5 s after the slide (about 0,3 s)
         say(h, pick(SAY.slip), 2, 1.2, 'loud'); return;
       }
     }
@@ -1917,10 +1996,11 @@
     if (fl.time < h.burnUntil) { damage(h, 6 * S.dmg * dt, BURN); if (h.dead) return; }
     if (h.hp < h.R.potion * h.max) {   // a potion when it gets bad (rookies wait far too long)
       const pot = h.inv.filter(x => x.type === 'potion').sort((a, c) => c.r - a.r)[0];
-      if (pot) { h.inv.splice(h.inv.indexOf(pot), 1); h.hp = Math.min(h.max, h.hp + h.max * potionHeal(pot) * itemPow(h)); fl.stats.potions++; fl.stats.itemsUsed++; say(h, pick(SAY.potion), 3); floatHero(h, 'Mikstura', '#8be38f', 14, -0.7); tl('po', h.id); }
+      if (pot) { h.inv.splice(h.inv.indexOf(pot), 1); h.hp = Math.min(h.max, h.hp + h.max * potionHeal(pot) * itemPow(h) * taintedSip(h, pot)); fl.stats.potions++; fl.stats.itemsUsed++; say(h, pick(SAY.potion), 3);   /* 1.18: Zepsute mikstury */ floatHero(h, 'Mikstura', '#8be38f', 14, -0.7); tl('po', h.id); }
     }
     heroAbilities(h, dt);
     if (inZone(h.tx, h.ty)) h.slowUntil = Math.max(h.slowUntil, fl.time + 0.15);
+    if (mods.mire && h.slowUntil > fl.time && h.room >= 0 && isRt(h.room, 'swamp')) h.slowUntil += dt * (1 - 1 / (1 + mods.mire));   // 1.18 Grzęzawisko: a slow runs out half as fast in a Bagno (a third as fast with 2 copies)
     // v14: fear always fades by a steady amount (level-based), half as fast alone, lost or caged, slower right after a wound,
     // after a death (shaken) and under a curse
     if (!h.fleeing && h.fear > 0) h.fear = Math.max(0, h.fear - h.R.calm * mods.calmK * dt * (h.alone || h.lost || caged(h) ? 0.5 : 1) * (fl.time - h.hurtAt < 1.5 ? 0.5 : 1) * (fl.time < h.shakenUntil ? 0.35 : 1) * (h.cursed ? 0.5 : 1));
@@ -1930,11 +2010,11 @@
     if (h.sliding && (h.state !== 'walk' || h.nx === null)) h.sliding = false;   // 1.10: a cage or a fall stops a slide
     if (caged(h)) { if (fl.time >= h.cageUntil) cageEnds(h); return; }
     if (h.state === 'rest') {
-      const haven = h.room >= 0 && isRt(h.room, 'haven'); if (!(h.restAt > 0)) h.restAt = fl.time;
-      if (fl.time >= h.burnUntil) h.hp = Math.min(h.max, h.hp + 4 * dt * (haven ? 0.5 : 1));
-      if (haven) { addFear(h, 3.5 * dt, null, 'nightmare'); if (!h.dreamSaid && fl.time - (h.restAt || fl.time) > 1.5) { h.dreamSaid = true; say(h, pick(SAY.nightmare), 2); } }   // 1.10: Sanktuarium
+      const haven = h.room >= 0 && isRt(h.room, 'haven'), dream = !!h.dream && fl.time < (h.napUntil || -1); if (!(h.restAt > 0)) h.restAt = fl.time;   // 1.18: dream = asleep to the lullaby (Usypianka)
+      if (fl.time >= h.burnUntil) h.hp = Math.min(h.max, h.hp + 4 * dt * (haven || dream ? 0.5 : 1));
+      if (haven || dream) { addFear(h, 3.5 * dt, null, 'nightmare'); if (!h.dreamSaid && fl.time - (h.restAt || fl.time) > 1.5) { h.dreamSaid = true; say(h, pick(dream && !haven ? SAY.lullDream : SAY.nightmare), 2); } }   // 1.10: Sanktuarium
       const nap = fl.time < (h.napUntil || -1);
-      if ((P.plan !== 'retreat' && !nap) || panicking(h) || exiting(h)) { h.state = 'walk'; h.napUntil = -1; h.restAt = -1; h.needPlan = true; }
+      if ((P.plan !== 'retreat' && !nap) || panicking(h) || exiting(h)) { h.state = 'walk'; h.napUntil = -1; h.restAt = -1; h.needPlan = true; h.dream = false; }
       return;
     }
     if (h.state === 'disarm') {
