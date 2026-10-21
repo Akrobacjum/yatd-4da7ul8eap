@@ -248,7 +248,7 @@ huntersN(g)  = g < 3 ? 0 : g < 4.5 ? 1 : 2 + max(0, floor(log2(g / 4.5)))
 | `fail` | `0.35 * 0.5^k` | `p5_ai.js: updateHero` (stan `disarm`), `finishPrep` | szansa, że rozbrajanie odpali pułapkę |
 | `rumor` | `min(1, 0.4 + 0.15k)` | `p3_flow.js: applyRumors` (maks. w kolejce) | ile plotek z karczmy przyjmują |
 | `risk` | `2.2 * 0.82^k` | `p5_ai.js: lootDecision` (`nerve = max(0.8, risk)...`) | brawura wobec łupu |
-| `panic` | `1.5 * 0.86^k` | `p3_flow.js: kill` (strach po śmierci towarzysza) | jak mocno wstrząsa nimi śmierć |
+| `panic` | `1.5 * 0.86^k` | `p3_flow.js: kill` (strach po śmierci towarzysza; od 1.17 tylko u tych, którzy ją widzieli albo słyszeli krzyk), `p5_ai.js: perceiveThink` (wieść o śmierci, 0,6 dalekiego strachu) | jak mocno wstrząsa nimi śmierć |
 | `potion` | `min(0.5, 0.15 + 0.03k)` | `p5_ai.js: updateHero` | próg HP (ułamek), poniżej którego pije miksturę |
 | `coord` | `L >= 3` | `p5_ai.js: partyThink` (odwrót, zbiórka), `updateHero` (czekanie przy rozbrajaniu), `p3_flow.js: startFlee` (okrzyk) | koordynacja drużyny |
 | `caution` | `L >= 6` | `p5_ai.js: updateHero` | szybkość ×0.8 na nieznanych polach (sprawdza podłogę) |
@@ -384,16 +384,20 @@ Wszystkie skutki w kodzie:
 | | na naradzie przy rozwidleniu (gdy alternatywa prowadzi do widzianego łupu) namawia na łup; przywódca chciwy (lub łowca, lub nowicjusz, lub 35%) ulega | `p5_ai.js: chooseTarget` |
 | | gdy drużyna rusza na serce przy przeszukaniu < 85%: protestuje (`argueSearch`) | `p5_ai.js: partyThink` |
 | | kwestie `lootGreedy`, `chat_greedy` | `p5_ai.js` |
+| | 1.17: nie słucha rozkazu przywódcy "zostaw łup" (`lootReply`); prosi o przeszukanie mebli (`lookWant`), przy rozglądaniu wybiera meble (+2,5) i częściej znajduje monetę (0,3); jako przywódca najchętniej pozwala się rozglądać (0,55) i idzie sprawdzić pułapkę usłyszaną zza ściany; na naradzie po cierpliwości szturm +0,5, "jeszcze chwila" +0,8 | `p5_ai.js: lootDecision, lookRoll, lookPref, lookDone, chooseTarget, councilVote` |
 | coward (tchórzliwy/a) | odwaga ×0.8 | `p3_flow.js: makeHero` |
 | | próg paniki 0.55 zamiast 0.7 limitu strachu | `p3_flow.js: addFear` |
-| | strach po śmierci towarzysza ×1.5 | `p3_flow.js: kill` |
+| | strach po śmierci towarzysza ×1.5 (od 1.17 gdy ją widział albo usłyszał krzyk; z wieści bez tego mnożnika) | `p3_flow.js: kill` |
 | | kwestia ucieczki `cowardRun`; na naradzie (morale < 0.8) chce wracać; popiera odwrót | `p3_flow.js: startFlee`, `p5_ai.js: chooseTarget, partyThink` |
+| | 1.17: przy rozglądaniu zwykle zostaje przy przywódcy (0,6) albo ogląda coś najwyżej 3 pola dalej; jako przywódca trzyma się bliżej wyjścia, omija pułapkę usłyszaną zza ściany i rzadko pozwala zwiedzać (0,15); na naradzie po cierpliwości dom +1,4, szturm -0,9, po przegranym głosowaniu częściej wraca sam (+0,35) | `p5_ai.js: lookRoll, chooseTarget, councilVote, councilThink` |
 | brave (bohaterski/a) | odwaga ×1.2 | `p3_flow.js: makeHero` |
-| | po śmierci towarzysza (jeśli nie ucieka) wpada w furię (`startRage`), a strach z tej śmierci ×0.3 | `p3_flow.js: kill` |
+| | po śmierci towarzysza (jeśli nie ucieka; od 1.17 tylko gdy ją widział) wpada w furię (`startRage`), a strach z tej śmierci ×0.3 | `p3_flow.js: kill` |
 | | odpowiada tchórzowi na naradzie, sprzeciwia się odwrotowi, uspokaja przestraszonych w rozmowach | `p5_ai.js: chooseTarget, partyThink` |
+| | 1.17: jako przywódca idzie w głąb lochu i częściej "na czuja", idzie sprawdzić pułapkę usłyszaną zza ściany, rzadziej pozwala zwiedzać (0,35); na naradzie szturm +1, "jeszcze chwila" +0,2 | `p5_ai.js: chooseTarget, lookRoll, councilVote` |
 | careful (ostrożny/a) | `avoid` ×1.3 | `p5_ai.js: planHero` |
 | | wartość łupu ×0.6, kwestia `lootCareful` przy rezygnacji | `p5_ai.js: lootDecision` |
 | | na naradzie mówi `argueCareful`; przy wejściu 40% na kwestię `cautious`; odpowiada na "chciwe" kwestie | `p5_ai.js: chooseTarget`, `p3_flow.js: spawnHero` |
+| | 1.17: jako przywódca wybiera bliższe cele (odległość ×1,15, mało przypadku), omija pułapkę usłyszaną zza ściany, chętnie pozwala zwiedzać (0,5); na naradzie dom +0,4 | `p5_ai.js: chooseTarget, lookRoll, councilVote` |
 
 Uwaga: tekst "sprawdza podłogę" nie ma pokrycia w kodzie dla charakteru (spowolnienie na nieznanych polach daje `R.caution`, zależne tylko od poziomu >= 6).
 
@@ -781,28 +785,31 @@ if fl.queue.length:
 - `spawnHero(e)` kopiuje z wpisu: typ, `T`, `R`, rank, lvl, boss, płeć, imię, hp, max, kopie przedmiotów (`cdUntil: 0`), odwagę, charakter, ciało, fobię, `known` (Set), returning, bliznę, `hunter`; ustawia stan początkowy: `fear 0`, `invCap`, `cast` (kapłan 1.5, mag 2), `songs` barda, `faith`/`faithMax` kapłana, puste `trauma`, `fearBy`, `dmgBy`, `phobiaSeen`, `felt`, `gold 0`, `cursed false` oraz cały stan AI (sekcja 06). `h.id` = kolejny indeks w `fl.heroes`.
 - Kwestie przy wejściu (szczegóły sekcja 06): pierwszy wchodzący: `finalAura` (przepowiednia), `champion`, kwestia gildii, `heartRumor` (znają serce z plotek), `rumorStart` z liczbą pułapek z plotek, `rookieBoast` (nowicjusz) albo `enter`; drugi: przy sławie lochu (ranga >= 2) 70% `fame1`/`fame2` (>= 4); dalsi: nowicjusz 35% przechwałka, ostrożny 40% `cautious`; powracający `returnBack`; łowca 60% `hunters`.
 
-### 6.7 Cierpliwość (120 s) i odwrót
+### 6.7 Cierpliwość (120 s), narada i odwrót
 
-`p6_loop.js: step`: gdy czas cierpliwości `fl.patT >= S.waveTime` (domyślnie 120 s; od 1.12.1 `fl.patT` płynie 2 razy wolniej w trakcie narad i odpoczynku, sekcja 06), fala trwa i nie jest jeszcze "nieustraszona", woła `p3_flow.js: becomeImpatient()`:
+`p6_loop.js: step`: gdy czas cierpliwości `fl.patT >= S.waveTime` (domyślnie 120 s; od 1.12.1 `fl.patT` płynie 2 razy wolniej w trakcie narad i odpoczynku, sekcja 06), fala trwa i nie jest jeszcze "nieustraszona", woła `p3_flow.js: becomeImpatient()` (co krok, dopóki nie ustawi się `fl.fearless`):
 
 ```
 becomeImpatient():
-    fl.fearless = true
-    if plan in (escape, flee, leave): return
+    if plan in (escape, flee, leave): fl.fearless = true; return
+    if P.council: return                                        // 1.17: narada trwa
     prophet = żywy bohater z boss == 'final', który nie ucieka
     if !prophet:
-        fl.storm = false; plan = 'leave'; wszyscy przeplanowują, przywódca mówi SAY.leave
-        podpowiedź "Bohaterom skończyła się cierpliwość: odwrót, wracają do domu."
+        if przywódca jest && (przywódca zna serce: heartP() || "jeszcze chwila" nieużyta):   // 1.17
+            P.council = {stage: 'wait'}; podpowiedź "Bohaterom kończy się cierpliwość: naradzają się, co dalej."; return
+        goHome(L): fl.fearless = true; fl.storm = false; plan = 'leave'; wszyscy przeplanowują, przywódca mówi SAY.leave
+            podpowiedź "Bohaterom skończyła się cierpliwość: odwrót, wracają do domu."
         return
-    fl.storm = true
+    fl.fearless = true; fl.storm = true
     if !fl.heartKnown:
         fl.heartKnown = true; znane pola najkrótszej drogi do serca i pokój serca; prorok mówi SAY.prophecy
     plan = 'assault'; przywódca mówi SAY.impatient
     podpowiedź "...szturmują serce i mniej uważają na pułapki."
 ```
-- Zasada finału: **tylko bohater z przepowiedni** (fala 10, 20, 30...) po czasie cierpliwości prowadzi szturm na serce (przepowiednia pokazuje drogę). Każda inna drużyna po 120 s odchodzi do domu, nawet jeśli zna serce.
-- `fl.fearless` = tryb po cierpliwości: limit strachu ×1.3, szybkość ×1.3, bez narad i przygotowań itd. (sekcja 05/06). HUD pokazuje zamiast czasu "szturm!" albo "odwrót".
-- Siatka bezpieczeństwa: przy `fl.patT >= S.waveTime + 60` (180 s czasu cierpliwości) wszyscy żywi wychodzą natychmiast (`heroExit`); niosący kryształ w tym momencie oznacza stracony kryształ.
+- **Narada** (1.17, szczegóły w sekcji 06, 6.3.10a): przywódca czeka do 4 s na ciszę, potem każdy, kto stoi przy nim (bez niosącego kryształ, wychodzących, panikujących), głosuje: do domu, szturm (tylko gdy przywódca wie, gdzie jest serce) albo "jeszcze chwila" (raz na falę). Głos zależy od strachu, ran, charakteru (tchórz i ostrożny wolą dom, odważny, chciwy, barbarzyńca, czempion i łowca szturm, chciwy i łowca "jeszcze chwila"), rangi i złota w sakiewce; przywódca liczy się 1,5, elita 1,25. Wynik: dom = `goHome` (jak wyżej, bez kwestii `leave`), szturm = `fl.fearless`, `fl.storm`, `plan 'assault'`, "jeszcze chwila" = cierpliwość cofnięta do 90 s (`fl.patT = min(fl.patT, S.waveTime - 30)`), po 30 s druga narada bez tej opcji. Przegłosowany, który chciał do domu, może wrócić sam (`h.goHome`, kwestia `goHomeAlone`; chętniej tchórz, przestraszony i ciężko ranny). Narada, której nie da się zebrać w 8 s (przywódca zgubiony, w klatce), kończy się powrotem do domu.
+- Zasada finału: **tylko bohater z przepowiedni** (fala 10, 20, 30...) po czasie cierpliwości prowadzi szturm na serce bez narady (przepowiednia pokazuje drogę). Do 1.16 każda inna drużyna po 120 s odchodziła do domu, nawet jeśli znała serce (decyzja autora z 1.01); od 1.17 może też szturmować albo szukać 30 s dłużej, jeśli tak przegłosuje (decyzja autora z 21.10, sekcja 11: do potwierdzenia, bo wraca szturm usunięty w 1.01).
+- `fl.fearless` = tryb po cierpliwości (od 1.17 dopiero po wyniku narady "dom" albo "szturm"): limit strachu ×1.3, szybkość ×1.3, bez narad i przygotowań itd. (sekcja 05/06). HUD pokazuje zamiast czasu "szturm!" albo "odwrót", a w trakcie narady "narada".
+- Siatka bezpieczeństwa: przy `fl.patT >= S.waveTime + 60` (180 s czasu cierpliwości; po "jeszcze chwila" później w czasie fali) wszyscy żywi wychodzą natychmiast (`heroExit`); niosący kryształ w tym momencie oznacza stracony kryształ.
 - Fala kończy się 1.2 s po tym, gdy kolejka jest pusta, a wszyscy nie żyją albo wyszli (`fl.ending = 1.2`).
 - W fali 1 serce odpycha drużynę (nie da się wyrwać kryształu; strach 0.3 odwagi/s przy sercu, przy 85% postępu ucieczka), `p6_loop.js: step` (sekcja 05/06).
 
@@ -811,12 +818,13 @@ becomeImpatient():
 | Reguła | Źródło |
 |---|---|
 | Groza za śmierć i za wypędzenie bossa ×2 (`GZ.kill`, `GZ.scare`) | `p3_flow.js: kill, heroExit` |
-| Póki żyje jakikolwiek boss, strach wszystkich (także samego bossa) ×0.85 | `p3_flow.js: fearResist` |
+| Strach ×0.85 dla tych, którzy są z bossem (od 1.17: widzą go albo słyszą, boss nie w klatce i nie w zapadni; sam boss też); do 1.16 dla wszystkich, póki żył jakikolwiek boss | `p3_flow.js: fearResist` |
 | Bohater z przepowiedni w promieniu 3 pól: strach pozostałych ×0.75 | `p3_flow.js: fearResist` |
-| Przepowiednia, raz na falę, gdy HP spadnie < 50%: +20% maks. HP leczenia, tarcza 20% maks. HP, strach pozostałych -20% odwagi, kwestia `finalRage`, napis "Gniew!" | `p3_flow.js: damage` |
-| Czempion: gdy ktoś inny zaczyna uciekać, okrzyk (odnowienie 15 s): strach pozostałych (nieuciekających) -25% odwagi, kwestia `champShout` | `p3_flow.js: startFlee` |
+| Przepowiednia, raz na falę, gdy HP spadnie < 50%: +20% maks. HP leczenia, tarcza 20% maks. HP, strach pozostałych, którzy słyszą jego krzyk (od 1.17; wcześniej wszystkich), -20% odwagi, kwestia `finalRage`, napis "Gniew!" | `p3_flow.js: damage` |
+| Czempion: gdy ktoś inny zaczyna uciekać, a czempion to widzi albo słyszy (od 1.17), okrzyk (odnowienie 15 s): strach nieuciekających, którzy słyszą okrzyk (od 1.17; wcześniej wszystkich), -25% odwagi, kwestia `champShout`; przy ucieczce całej drużyny czempion wychodzi z nią, ale nie jest oznaczany jako uciekający (1.17) | `p3_flow.js: startFlee, partyFlee` |
 | Boss w klatce nie ginie po czasie klatki: wyłamuje kraty | `p4_traps.js: cageEnds` |
-| Po cierpliwości przepowiednia szturmuje serce (6.7) | `p3_flow.js: becomeImpatient` |
+| Po cierpliwości przepowiednia szturmuje serce bez narady (6.7) | `p3_flow.js: becomeImpatient` |
+| Czempion i łowca skarbów głosują na naradzie chętniej za szturmem (+0,8) | `p5_ai.js: councilVote` |
 | Nagroda za falę bossa ma poziom `r = 3` zamiast 1 (`run.pendingUpgrades`, sklep w sekcji 03) | `p3_flow.js: finishWave` |
 | Wyróżnienie graficzne: korona, większa figura, pomarańczowa obwódka | `p7_draw.js` (sekcja 08) |
 
@@ -885,7 +893,7 @@ becomeImpatient():
 14. **Siatka bezpieczeństwa 180 s** wyprowadza też niosącego kryształ, co liczy się jako stracony kryształ (`heroExit`).
 15. **Pasywny bonus amuletu do wykrywania** (`scanTraps`, `gearR`) działa także przy 0 użyć.
 16. **Przedmiot gildii** ma zawsze 1 użycie niezależnie od mocy; dołożony do istniejącej mocy daje +1 użycie i ewentualnie wyższą moc (bez sprawdzenia, czy to "ten sam" przedmiot).
-17. **`fearResist`**: mnożnik 0.85 "póki żyje boss" działa także na samego bossa (brak warunku `o !== h`).
+17. **`fearResist`**: mnożnik 0.85 bossa działa także na samego bossa (do 1.16 brak warunku `o !== h`; od 1.17 jest to zapisane wprost: `o === h || canSee(h, o) || canHear(h, o)`, a dla reszty działa tylko, gdy są z nim).
 18. **`phobiaSight`** nie sprawdza `hp` potwora, więc martwy pająk/duch w pokoju (element zostaje w `fl.items` z `hp <= 0`) też wywoła szok fobii. Prawdopodobnie błąd; w Unity pomijać martwe potwory.
 19. **Fale >= 15**: limit `waveSize <= 6` sprawia, że boss nie dochodzi jako dodatkowy bohater (zastępuje zwykłego).
 20. Komentarz w `makeWave` mówi, że pierwsze trzy fale to tylko klasy klasyczne, ale gildia w fali 3 może wstawić barda albo barbarzyńcę (zgodne z tekstem onboardingu "od fali 3").

@@ -1116,6 +1116,10 @@
       cell('Zapadnie / klatki', s.falls + ' / ' + s.cages);
       cell('Serce / dla Ciebie', Math.round(s.essHeart || 0) + ' / ' + Math.round(Math.max(0, fl.score - (s.essHeart || 0))));
       cell('Czas / przyspieszenie', mmss(fl.time) + ' / ' + Math.round(s.ffTime) + ' s');
+      cell('Osobno: zwiad / sam / zgubiony (s)', Math.round(s.splitTime || 0) + ' / ' + Math.round(s.loneTime || 0) + ' / ' + Math.round(s.lostTime || 0));   // 1.17: these rows were only in the unused statsTable
+      cell('Rozglądania / monety / pułapki z szukania', (s.looks || 0) + ' / ' + (s.goldFound || 0) + ' / ' + (s.lookTraps || 0));
+      cell('Narada: dom / szturm / chwila · sami do domu', (s.councilHome || 0) + ' / ' + (s.councilStorm || 0) + ' / ' + (s.councilMore || 0) + ' · ' + (s.goHome || 0));
+      cell('Słyszane zza ściany / wieści o śmierci', (s.heard || 0) + ' / ' + (s.newsDeaths || 0));
     }
     fitList(list);
   }
@@ -1547,7 +1551,7 @@
     const add = t => { if (t) ul.appendChild(el('li', null, t)); };
     if (live) {
       const st = live.dead ? (fem ? 'Zginęła.' : 'Zginął.') : live.fled ? (live.carriedOut ? 'Wyniósł kryształ.' : live.fleeing ? 'Uciekł ze strachu.' : 'Wyszedł z lochu.') :
-        [live.fleeing ? 'UCIEKA' : '', live.crystal ? 'NIESIE KRYSZTAŁ' : '', caged(live) ? 'w klatce' : '', live.lost ? 'zgubiony' : live.goHome ? 'wraca sam do domu' : live.split ? 'na zwiadzie' : live.look && !live.look.done ? 'rozgląda się' : live.alone ? 'sam' : '', fl.time < live.burnUntil ? 'płonie' : '', live.cursed ? 'przeklęty' : '', fl.time < live.shakenUntil ? 'wstrząśnięty śmiercią' : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
+        [live.fleeing ? 'UCIEKA' : '', live.crystal ? 'NIESIE KRYSZTAŁ' : '', caged(live) ? 'w klatce' : '', live.lost ? 'zgubiony' : live.goHome ? (live.female ? 'wraca sama do domu' : 'wraca sam do domu') : live.split ? 'na zwiadzie' : live.look && !live.look.done ? 'rozgląda się' : live.alone ? 'sam' : '', fl.time < live.burnUntil ? 'płonie' : '', live.cursed ? 'przeklęty' : '', fl.time < live.shakenUntil ? 'wstrząśnięty śmiercią' : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
       add('Teraz: ' + st + '.');
     }
     add('Charakter: ' + (e.trait ? HERO_TRAITS[e.trait].name[fem ? 1 : 0] + ' (' + TRAIT_TEXT[e.trait] + ')' : 'zwyczajny') + '.');

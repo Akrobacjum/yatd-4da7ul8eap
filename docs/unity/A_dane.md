@@ -1,8 +1,8 @@
 # Załącznik A: dane wyeksportowane z prototypu
 
-Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (wszystkie pliki tabel przeeksportowane na Prototype 1.16.1; od 1.13.1 zmieniły się `TABS` w 1.14, w 1.15 `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`, w 1.16 `GZ` i `SAY`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
+Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (wszystkie pliki tabel przeeksportowane na Prototype 1.17; od 1.13.1 zmieniły się `TABS` w 1.14, w 1.15 `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`, w 1.16 `GZ` i `SAY`, w 1.17 tabele kwestii `SAY`, `SOLO`, `SOLO_MUTE`, `CHAT_REPLY`, `CONVO` i `CONVO_P`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
 
-- `yatd_content_1.16.1.json`: wszystkie tabele w jednym pliku: `{ version, source, tables: { ITEMS: ..., UPGRADES: ..., ... } }`, złożony z plików tabel poniżej (stan 1.16.1; zastąpił `yatd_content_1.13.1.json`). Ten plik warto wczytać w Unity.
+- `yatd_content_1.17.json`: wszystkie tabele w jednym pliku: `{ version, source, tables: { ITEMS: ..., UPGRADES: ..., ... } }` (82 tabele), złożony z plików tabel poniżej (stan 1.17; zastąpił `yatd_content_1.16.1.json`). Ten plik warto wczytać w Unity.
 - `<NAZWA>.json`: ta sama tabela osobno (wygodne do czytania i porównań).
 - `levelStats_1_30.json`: wynik `levelStats(L)` dla poziomów 1-30 (zaokrąglone do 4 miejsc).
 - `golden_1.13.1.json`: wartości policzone przez działający prototyp do testów (sekcja 09).
@@ -74,19 +74,41 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 
 ## A.5 Teksty bohaterów
 
+**Rozmiary tabel kwestii (stan 1.17, jedyne miejsce w tym pliku z liczbami; policzone na `data/*.json`):**
+
+| Tabela | 1.17 | 1.16.1 (poprzedni eksport) |
+|---|---|---|
+| `SAY` | 269 kluczy, 2535 kwestii (z zagnieżdżonymi) | 222 klucze, 669 kwestii |
+| `SOLO` | 67 kluczy, 431 kwestii | 38 kluczy, 89 kwestii |
+| `SOLO_MUTE` | 39 kluczy | 35 kluczy |
+| `CHAT_REPLY` | 75 zaczepek, 206 odpowiedzi | 19 zaczepek, 31 odpowiedzi |
+| `CONVO` | 85 zestawów, 497 wymian, 1073 kwestie | 74 zestawy, 143 wymiany, 305 kwestii |
+| `CONVO_P` | 78 kluczy | 67 kluczy |
+
+`CHANGES117.md` podaje dla stanu przed 1.17 inne liczby `SAY` (230 kluczy, 684 kwestie), a kod i eksport 1.16.1 mają 222 klucze i 669 kwestii; do porównań brać tabelę wyżej.
+
 | Plik | Pola i znaczenie |
 |---|---|
-| `SAY` (217 kluczy) | klucz sytuacji -> lista kwestii do losowania. Kiedy pada który klucz i z jakim priorytetem: sekcja 06 |
+| `SAY` | klucz sytuacji -> lista kwestii do losowania. Kiedy pada który klucz i z jakim priorytetem: sekcja 06 |
 | `CHAT_REPLY` | kwestia -> lista odpowiedzi (krótkie rozmowy w drużynie) |
-| `CONVO` (od 1.13, 74 zestawy, 143 wymiany, 305 kwestii) | klucz kwestii, która zaczyna rozmowę (klucz `SAY`, przy zagnieżdżonych `trap:spikes`, `phobia:fire`; `monsterDown` bez własnej kwestii: zabicie potwora; `scare` przez `CONVO_ALIAS`) -> lista wymian `{ l: [[mówiący, tekst], ...], b, bt, br, bv, ac, at, w }`: mówiący `A` (ten, kto powiedział kwestię), `B` (przyjaciel w zasięgu słuchu), `C` (ktoś trzeci); `b`/`bt` klasa/charakter B (jedna wartość albo lista), `br`/`bv` ranga B najwyżej/najmniej, `ac`/`at` klasa/charakter A, `w` waga. Mechanika: sekcja 06 (6.7.5a) |
+| `CONVO` (od 1.13) | klucz kwestii, która zaczyna rozmowę (klucz `SAY`, przy zagnieżdżonych `trap:spikes`, `phobia:fire`; `monsterDown` bez własnej kwestii: zabicie potwora; `scare` przez `CONVO_ALIAS`) -> lista wymian `{ l: [[mówiący, tekst], ...], b, bt, br, bv, ac, at, w }`: mówiący `A` (ten, kto powiedział kwestię), `B` (przyjaciel w zasięgu słuchu), `C` (ktoś trzeci); `b`/`bt` klasa/charakter B (jedna wartość albo lista), `br`/`bv` ranga B najwyżej/najmniej, `ac`/`at` klasa/charakter A, `w` waga. Mechanika: sekcja 06 (6.7.5a) |
 | `CONVO_ALIAS` | klucz -> zestaw zastępczy (straszące pułapki -> `scare`) |
-| `SOLO` (od 1.13.1, 38 kluczy, 89 kwestii) | klucz `SAY` -> kwestie, które bohater mówi zamiast niej, gdy nikt go nie słyszy (myślenie na głos); `chat`, `chat_<charakter>`, `chat_<klasa>` = jego small talk w samotności. Mechanika: sekcja 06 (6.7.5b) |
+| `SOLO` (od 1.13.1) | klucz `SAY` -> kwestie, które bohater mówi zamiast niej, gdy nikt go nie słyszy (myślenie na głos); `chat`, `chat_<charakter>`, `chat_<klasa>` = jego small talk w samotności. Mechanika: sekcja 06 (6.7.5b) |
 | `SOLO_MUTE` | klucze kwestii, które bez słuchaczy w ogóle nie padają (odpowiedzi, zachęty, spory, podziękowania) |
 | `CONVO_P` | klucz -> szansa, że kwestia zacznie rozmowę (0,15 przy "Ał!", do 0,9 przy wpadkach i rzadkich chwilach) |
 
+Co doszło w 1.17 (żaden klucz nie zniknął):
+- `SAY`, 47 nowych kluczy: `fogGrope`, `gateLever`, `trapGeneric`, small talk `chatHurt`, `chatScared`, `chatGold`, `chatRich`, `chatIdle`, narada `councilOpen`, `voteHome`, `voteStorm`, `voteMore`, `councilGiveIn`, `decideHome`, `decideStorm`, `decideMore`, `goHomeAlone`, `outvotedHome`, `outvotedStorm`, `outvotedMore`, rozglądanie `lookStart`, `lookEnd`, `lookWant`, `lookHurry`, `lookStay`, `lookObj`, `lookProp`, `lookKind`, `lookWall`, `lookFind`, `lookNothing`, dźwięk `hearSound`, `hearScream`, oraz `shieldLead`, `deliberate2`, `blessDone`, `blessHit`, `deathHeard`, `tellDeath`, `newsDeath`, `leftBehind`, `searchFail`, `lootPotion`, `lootPotionNeed`, `lootPotionSeen`, `lootObey`, `curseSelf`. Kiedy który pada: sekcja 06 (6.7.9).
+- Zagnieżdżone klucze `SAY` (obiekt rodzaj -> lista): `trap` (16 rodzajów pułapek), `trauma`, `weakHit`, `resistHit` (4 typy obrażeń), `phobia` (6 fobii) i nowe w 1.17 `lookObj` (`barrel`, `crate`, `statue`, `shelf`), `lookProp` (`portrait`, `mirror`, `eyes`, `coffin`, `bones`), `lookKind` (12 rodzajów komnat: `goblin`, `spider`, `ogre`, `haunt`, `bats`, `ossuary`, `armory`, `forge`, `prison`, `junk`, `gallery`, `nursery`). Do 1.16.1 `SAY.trap[rodzaj]` był jednym tekstem, od 1.17 to lista 3 kwestii; kod losuje przez `pickS` (`p1_config.js`: lista -> losowa kwestia, tekst -> ten tekst), więc port powinien przyjmować obie postaci.
+- `SOLO`, 29 nowych kluczy: `councilOpen`, `decideHome`, `decideStorm`, `decideMore`, `lookStart`, `lookEnd`, `scoutBack`, `partyFlee`, `gateLever`, `detour`, `detourBack`, `fogGrope`, `searchLost`, `leaveLost`, `heartLater`, `prophecy`, `gateReroute`, `disarm`, `chatFlee`, `rtFog`, `rtSwamp`, `rtGrotto`, `rtGears`, `rtIce`, `rtVault`, `rtHaven`, `shieldLead`, `hearSound`, `hearScream`.
+- `SOLO_MUTE`: doszły `prepWard`, `prepJam`, `prepDisarm`, `prepShield` (przygotowania specjalistów bez słuchaczy nie padają).
+- `CHAT_REPLY`: 17 zaczepek zostało (z większą liczbą odpowiedzi), 2 wypadły (`Nie siadaj na tej płycie!`, `Ta płyta jest luźna. Omijamy.`), 58 nowych. Kluczem jest surowy tekst zaczepki z `SAY` (ze znacznikami płci, przed ich rozwinięciem, small talk w `p5_ai.js: partyThink`), więc zmiana tekstu w `SAY` bez zmiany klucza w `CHAT_REPLY` urywa odpowiedzi.
+- `CONVO` i `CONVO_P`, 11 nowych zestawów z szansą zaczęcia: `lookObj` 0,35, `lookKind` 0,45, `lookProp:portrait`, `lookProp:mirror`, `lookProp:coffin` po 0,45, `lookFind` 0,6, `lookNothing` 0,25, `newsDeath` 0,7, `deathHeard` 0,6, `goHomeAlone` 0,8, `councilGiveIn` 0,5. Istniejące zestawy dostały więcej wymian (143 -> 497).
+
 Znaczniki w tekstach (trzeba je obsłużyć w lokalizacji):
 - `{męska|żeńska}` forma zależna od płci mówiącego, np. `Byłem|Byłam` (`p1_config.js: gtext`),
-- `{n}`, `{a}`, `{v}` imię w mianowniku, bierniku i wołaczu (`p1_config.js: nameFill`, dane w `NAMES_M`/`NAMES_F`).
+- `{n}`, `{a}`, `{v}` imię w mianowniku, bierniku i wołaczu (`p1_config.js: nameFill`, dane w `NAMES_M`/`NAMES_F`),
+- od 1.17 `{g}` imię w dopełniaczu (`p1_config.js: nameGen`: mężczyzna = jego biernik, kobieta = mianownik z końcówką `-ia` -> `-ii`, `-ka`/`-ga`/`-la` -> `-ki`/`-gi`/`-li`, inne `-a` -> `-y`); używają go `leaveLost` i `hearScream` (5 kwestii w `SAY`), w `SOLO` i `CONVO` go nie ma. Jak pozostałe znaczniki imion, `nameFill` podmienia tylko pierwsze wystąpienie w kwestii.
 - w `CONVO` (od 1.13): `{A:męska|żeńska}`, `{B:...}`, `{C:...}` forma zależna od płci innej osoby rozmowy, `{An}` `{Aa}` `{Av}` (i tak samo B, C) jej imię w trzech przypadkach (`p5_ai.js: convoFill`); `{męska|żeńska}` bez litery to nadal płeć mówiącego.
 
 Polszczyzna gry odmienia imiona i formy płci; przy tłumaczeniu na angielski większość znaczników znika, ale klucze muszą zostać te same.
@@ -94,3 +116,17 @@ Polszczyzna gry odmienia imiona i formy płci; przy tłumaczeniu na angielski wi
 ## A.6 Wartości wzorcowe (`golden_1.13.1.json`)
 
 Policzone na zbudowanym prototypie (`newRun(false)`, pełna gra, domyślne ustawienia): `waves[n]` dla fal 1-20 (`partySize`, `waveSize`, `waveCurve`, `waveBase`, `hungerNeed`, `comboHp`), `greedCurve` (surowa -> chciwość), `prices` (c 6, r 10, l 16, unlock 8), `rerollCost0` (pierwsze odświeżenie), `stashCap` (3), `toolCosts` na wylosowanym lochu startowym, `crystals` 3, `essenceStart` 24 (po postawieniu dwóch pułapek), `deckSize` 7, `mods` (wszystkie modyfikatory kart z wartościami domyślnymi), `S` (wszystkie ustawienia). Skrypt: `tools/golden.py`.
+
+## A.7 Stałe AI dodane w 1.17 (`p5_ai.js`, poza `data/`)
+
+Te tabele i liczby siedzą w kodzie AI, nie w `p1_config.js`, więc `tools/dump.js` ich nie eksportuje; w porcie najlepiej przenieść je do tej samej konfiguracji co resztę. Pełna lista liczb AI: sekcja 06 (6.9.1).
+
+| Stała | Wartość | Do czego |
+|---|---|---|
+| `LOOK_PROP` | `{ portrait, mirror, eyes, coffin, bones }` (wszystkie 1) | które pułapki-rekwizyty są czymś do obejrzenia przy rozglądaniu się (6.3.3a); kwestie `SAY.lookProp[rodzaj]` |
+| `SEARCH_TRAP` | `{ mimic: 0.55, musicbox: 0.45, powder: 0.2 }` | szansa, że przeszukanie mebla odpali pułapkę stojącą na tym polu (`lookDone` -> `fireRaw`, 05 5.2.5) |
+| `SEARCH_GOLD` | `{ crate, barrel, shelf }` (wszystkie 1) | meble, w których przeszukanie może dać monetę: 0,3 dla chciwego i złodzieja, 0,18 dla reszty (`stats.goldFound`) |
+| `LOOK_LIKE` | cecha/klasa -> `{ rzecz albo komnata: premia }`: chciwy `obj` 2,5; złodziej `obj` 1,5; kapłan `coffin`, `bones`, `ossuary` 2,5, `haunt` 1,5; mag `mirror`, `eyes` 2, `haunt` 1,5; barbarzyńca `armory`, `forge` 2,5, `ogre` 1,5; bard `statue` 2, `gallery` 2,5, `nursery` 1,5, `portrait` 1,5; wojownik `armory` 2, `statue` 1 | `lookPref`: co bohater wybiera do oglądania (premie z cechy i klasy się sumują, ściana -1,5) |
+| `COUNCIL_LINE` | `{ home: 'voteHome', storm: 'voteStorm', more: 'voteMore' }` | klucz `SAY` dla głosu na daną opcję narady (6.3.10a) |
+| zasięg krzyku | 14 kroków drogi (`stepsWithin`, BFS po polach przechodnich i drzwiach), w linii prostej najwyżej 14 pól; nie z Głuszy ani z pokoju z Kamieniem wyjcem | `canHearShout` (6.3.13): wołanie o kapłana, klatka (decyzja przywódcy, wybór ratownika), ucieczka drużyny, krzyk śmierci, okrzyk czempiona, wstający bohater przepowiedni, upuszczony kryształ, kradzież kryształu (`p6_loop.js: takeCrystal`) |
+| zasięg słuchu i wzroku | słuch `earshot` (ten sam obszar albo 7 pól w linii), nie w Głuszy; wzrok `samePlace` (ten sam pokój/korytarz albo 3,5 pola) | `canHear`, `canSee` |

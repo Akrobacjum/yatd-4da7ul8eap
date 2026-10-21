@@ -15,7 +15,15 @@ Lista rzeczy, o które trzeba zapytać autora albo które trzeba świadomie rozs
 | Przytrzymanie palca a czaszka | przy przytrzymaniu checków nie ma, więc zabójczy cios pada bez pytania (`p6_loop.js: checkTick`, gałąź `ff`), choć zasada mówi "czaszka pyta zawsze" | zostawić (opis "Jak grać" mówi, że przy przytrzymaniu checków nie ma) czy pytać mimo przyspieszenia |
 | Pierwsze runy (1.12) | sprawdzone testami, jeszcze nie na graczach | ocena po testach z ludźmi |
 | Balans po 1.12.1 | przychód przywrócony mnożnikiem `S.essK = 1,1`, zegarem combo ×0,25 w ciszy i oknem 3 s (odtworzenia dwóch runów autora: na 1.12.1 +3% i +5%, na 1.13 +3% i +6% względem 1.11.1, serce syte mniej więcej tak samo często, najazdy ok. 25-35% dłuższe, więc Esencji na minutę jest mniej); oparte na 2 runach, 8 prób na falę | potwierdzić na testach z ludźmi; jeśli Esencji za dużo, zmniejszyć `essK` |
-| Rozmowy (1.13) | ok. 1,5-2,5 wymiany na falę w teście z gęstymi pułapkami; 305 kwestii w 143 wymianach; w chaosie wymiany często się urywają (spóźniona kwestia przepada) | ocenić z autorem częstość (`CONVO_P`, przerwa 1,5-4 s) i ton; dopisywać wymiany do kolejnych kluczy; przy tłumaczeniu na angielski formy `{A:...}` i wołacz znikają |
+| Rozmowy (1.13) | ok. 1,5-2,5 wymiany na falę w teście z gęstymi pułapkami (1.13); w 1.17 ok. 3 razy więcej wymian (liczby w sekcji 06, 6.7.9) i rozmowy startują też od kwestii z kolejki drużyny; w chaosie wymiany często się urywają (spóźniona kwestia przepada) | ocenić z autorem częstość (`CONVO_P`, przerwa 1,5-4 s) i ton; przy tłumaczeniu na angielski formy `{A:...}`, wołacz i dopełniacz `{g}` znikają |
+| Szturm jako opcja narady (1.17) | po 120 s drużyna głosuje: dom, szturm na serce albo +30 s (sekcja 06, 6.3.10a). Szturm wraca jako możliwość, choć autor usunął dawną "szarżę" w 1.01 (wtedy: po cierpliwości zawsze do domu); teraz to wynik głosowania i tylko gdy przywódca wie, gdzie jest serce | potwierdzić z autorem, czy szturm z narady ma zostać i jak często (wagi głosów w `councilVote`) |
+| Wiedza wspólna mimo percepcji (1.17) | mapa (`fl.known`), wiedza o pułapkach (`detected`, `fl.danger`, `fl.knownTypes`) i o łupach są wspólne dla całej drużyny, także dla zwiadowcy i zgubionego pokoje dalej; zwiadowca działa jak zdalna kamera, a nie ktoś, kto przynosi wieści (abstrakcja, sekcja 06, 6.3.5) | zostawić czy dzielić wiedzę oddzielonych (np. odkrycia zwiadowcy trafiają do wspólnej mapy dopiero, gdy wróci, z kwestią "Na wschodzie są dwa pokoje") |
+| `fl.fearless` po szturmie i powrocie (1.17) | wynik narady dotyczy tylko tych, którzy go słyszą (plan bohatera), ale `fl.fearless` (prędkość ×1,3, bez omijania pułapek, wyższy próg strachu) działa od razu na wszystkich w lochu, także na zwiadowcę, który o naradzie nie wie | zostawić jako wspólne zmęczenie cierpliwości czy wiązać z planem bohatera |
+| Idący za liderem jak GPS (1.17 bez zmian) | bohater, który nie jest zgubiony, idzie do bieżącego pola przywódcy, także gdy go nie widzi ani nie słyszy; łapie go tylko rzut na zgubienie (`lostChance`, mgła, brak drogi), sekcja 06, 6.2.12 | dodać ostatnie znane miejsce przywódcy (`P.seen` już jest) i szukanie, gdy go nie ma, czy zostawić |
+| Celowe rozdzielenie mało daje (1.16) | w wygranym runie autora zwiadowca trzymał się w promieniu ok. 3,2 pola od drużyny, a próg "z dala" to 4,5 pola, więc `splitTime` = 0 i zwiad nie dał Grozy | zmniejszyć próg, wydłużyć zwiad albo wysyłać dalej (do decyzji z autorem) |
+| Postój przy wejściu przed groźnym pokojem (1.13) | przygotowanie zaczyna się, gdy groźny pokój jest w 5 polach ścieżki lidera, więc często drużyna stoi na polu wejścia; w runie autora widać postoje 9-12 s (scenka + bieg) | sprawdzić z autorem, czy to nie za długo przy samym wejściu; ewentualnie nie zaczynać przygotowania w pierwszych sekundach fali |
+| Esencja po 1.17 | odtworzenia dwóch runów autora: suma Esencji z fal 2-10 +6,5% względem 1.16 (2457 i 2228 zamiast 2301 i 2094), fale ok. 9 s dłuższe, kradzieże kryształu w granicach rozrzutu (sekcja 09) | potwierdzić na testach z ludźmi; jeśli Esencji za dużo, zmniejszyć `S.essK`; policzyć nowy wzorzec odtworzeń dla Unity |
+| Wiersze statystyk w `statsTable` (1.16-1.17) | funkcja nie jest wołana; od poprawki wydania 1.17 zwiad, zwiedzanie, narada i wieści są kratkami w zakładce Liczby (sekcja 08), więc zostaje tylko usunąć martwą funkcję | usunąć `statsTable` przy porządkach |
 | Narady lokalne i bezpieczne stanie (1.13) | fale dłuższe o ok. 5-15%, bohaterowie rzadziej giną w pułapkach, a w odtworzeniach nieco częściej się gubią (nie stoją wszyscy naraz) | sprawdzić na graczach, czy najazd nie jest za długi; ewentualnie skrócić cierpliwość |
 | Jedno pole na bohatera (1.12.1) | przeciśnięcia (mijanie po czekaniu) zdarzają się ok. 2-3 razy na falę (test `t1121_tiles`); dwóch stojących na jednym polu w ok. 0,2-0,3% klatek (głównie krótkie zatory w korytarzach) | ocenić z autorem, czy wygląda naturalnie; w Unity można dodać rezerwację pól, jeśli zatory będą widoczne |
 
@@ -47,7 +55,7 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | Opisy niezgodne z kodem | osobowość "ostrożny" obiecuje sprawdzanie podłogi (robią to dopiero poziomy 6+); powracający "pamiętają loch", ale nie mają pamięci mapy; suwak `earlyHp` mówi o falach 2-6, a fala 1 też dostaje +25% HP |
 | Powracający | może mieć imię zdublowane w fali; zastępując łowcę albo rekruta tej samej klasy kasuje ich znacznik; blizna po ranach nadpisuje istniejące ciało |
 | Amulet z 0 ładunków | dalej daje bierne wykrywanie |
-| Mnożnik strachu bossa ×0,85 | działa też na samego bossa |
+| Mnożnik strachu bossa ×0,85 | działa też na samego bossa (od 1.17 zapisane wprost; dla innych tylko, gdy są z bossem) |
 | `phobiaSight` | martwy pająk dalej straszy |
 | Od fali 15 | limit 6 bohaterów pochłania dodatkowe miejsce bossa |
 
@@ -82,18 +90,22 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 
 | Problem | Skutek |
 |---|---|
-| Kwestie, które nigdy nie padają | `SAY.learn` (`learnTrap` z `'seen'` dostaje `by = null`), `SAY.charm` nieużywane; `SAY.ghostOnly` zawsze blokuje własny dymek tego samego wojownika |
-| Intencja `avoid` | od razu nadpisywana, więc kwestia `avoid` może wracać przy każdym planie |
+| Kwestie, które nigdy nie padają | `SAY.charm` nieużywane; `SAY.ghostOnly` zawsze blokuje własny dymek tego samego wojownika; `SAY.learn` pada od 1.17 (naprawione) |
+| Intencja `avoid` (naprawione w 1.17) | była od razu nadpisywana, więc kwestia `avoid` mogła wracać przy każdym planie; od 1.17 raz na potwora |
 | Furia | przyspiesza także w pokoju z Okowami (prędkość liczona z `h.rageUntil`, a nie z `raging()`) |
-| `partyFlee` | oznacza uwięzionych w klatce jako uciekających, więc nikt ich nie uwolni |
-| Jeden `rescueId` | druga decyzja o ratunku nadpisuje pierwszą |
-| `P.steal` | nie spada, gdy drużyna odejdzie od serca |
-| Wyjście z zapadni | nie przechodzi przez `getLost`, więc przywódca nie decyduje o szukaniu |
+| `partyFlee` (naprawione w 1.17) | oznaczał uwięzionych w klatce jako uciekających, więc nikt ich nie uwalniał; od 1.17 nie oznacza uwięzionych ani czempiona, a ucieka tylko ten, kto słyszy krzyk przywódcy |
+| Jeden `rescueId` (naprawione w 1.17) | druga decyzja o ratunku nadpisywała pierwszą; od 1.17 drugi czeka w `P.rescueQ` |
+| `P.steal` (naprawione w 1.17) | nie spadał, gdy drużyna odeszła od serca; od 1.17 maleje o 0,5/s |
+| Wyjście z zapadni | nie przechodzi przez `getLost`; od 1.17 przywódca i tak decyduje o szukaniu, gdy go nie słyszy (`missLost`), chyba że `lostNoticed` zostało z wcześniejszego zgubienia w tej fali |
+| Sprzeciw lidera wobec łupu (naprawione w 1.17) | był tylko słowami; od 1.17 zbierający zwykle słucha (`lootObey`) i zostawia łup na 15 s |
+| Wiedza przez ściany (naprawione w 1.17) | śmierć, krzyki, ucieczka, kryształ, klatka, wołanie kapłana, serce i zgubiony działały na cały loch; od 1.17 percepcja (sekcja 06, 6.3.13). Zostały ograniczenia: morale spada przy każdej ranie od pułapki w lochu, bard woła zgubionego po imieniu bez usłyszenia go, efekty przygotowania działają na wszystkich, uwięziony wie, czy ktoś po niego idzie, reakcje liczone samą odległością przez ściany (`friendHit`, ostrzeżenie weterana, odwracanie się do rannego, pocieszenie), ratownik, który później się zgubi, nie traci roli |
+| Nowy przywódca przynosi swój plan (1.17, zawężone w poprawce wydania) | dzieje się już tylko wtedy, gdy nikt z pozostałych nie zna starego planu, przed końcem cierpliwości i bez kradzieży w fali; wcześniej (pierwsza wersja 1.17) po powrocie do domu z `fl.fearless` drużyna mogła znów zwiedzać albo szturmować do siatki bezpieczeństwa (sekcja 06, 6.8 #32) |
+| Rozmowy o naradzie (1.17) | zestawy `CONVO` dla `goHomeAlone` i `councilGiveIn` prawie nigdy nie startują, bo mówiący jest w trakcie narady (`talking`) |
 | Objazd lidera po czasie (naprawione w 1.16) | do 1.15.1 `P.detour` czyściło tylko `planHero` lidera bez własnej pracy, więc lider zajęty łupem trzymał objazd po jego czasie (w powtórkach autora 3,7 s mgły wisiało do 13 s) i blokował nowe pomyłki i błądzenie we mgle; od 1.16 `partyThink` czyści go po `until` |
 | Okienko Esencji w równaniu (naprawione w 1.16.1) | do 1.16 "+E" otwartej serii liczono bez `S.essK`, a wypłatę z nim, więc przy wypłacie liczba podskakiwała o ok. 10% |
 | Esencja elementu na jego karcie (naprawione w 1.16.1) | do 1.16 "Ostatnia fala: ... Esencji" liczyło przyrost `fl.score` w czasie odpalenia, a ten rośnie tylko przy wypłacie serii, więc na karcie było prawie zawsze 0; od 1.16.1 liczy się przyrost `fl.prov` (wartość chwilowa Grozy z tego odpalenia, bez dopłaty combo wstecz) |
 | Zwiad w bardzo zabójczym lochu (1.16) | zwiad wymaga 3+ w załodze i zdrowego złodzieja; w powtórkach runów autora drużyna bywa przerzedzona po kilkunastu sekundach (złodziej często ginie pierwszy), więc zwiadów jest mało (0-0,75 na falę); w spokojniejszym lochu 12 pokoi ok. 2 na falę. Do decyzji autora, czy to wystarcza |
-| Mag i kapłan | rzucają czary także w panice |
+| Mag i kapłan (naprawione w 1.17) | rzucali czary także w panice i w ucieczce; od 1.17 nie |
 | Przywódca | wybierany według rangi, nie poziomu |
 | Kwestie otwarcia przy wejściu | wypierają się nawzajem |
 | Komentarze niezgodne z kodem | plotka liczy pokój jako 0,3 (komentarz: "połowa"); zasadzka wymaga 3 trafień (komentarz: 2) |
@@ -129,6 +141,7 @@ Poprawione już w 1.12.1: brak polskich nazw części źródeł strachu ("heart"
 | Ekran suwaków balansu | nic go nie otwiera (tylko prototyp) |
 | `rollItem` bez puli, warunek wieku łupu `> 3` w `applyRumors`, gałąź z prorokiem w `becomeImpatient`, `tl('cb')`, gałąź 70% pętli w generatorze startowym | nieosiągalne |
 | `regroupAtDoor` | praktycznie nieosiągalne (wszyscy są w środku po 1,5 s, a brama otwiera się po 1,8 s; niepewne) |
+| `statsTable` (`p8b_ui.js`) | nigdzie niewołana; razem z wierszami dopisanymi w 1.16 i 1.17 (sekcja 08, rozdział 10) |
 
 ## 11.4 Uwagi do przenoszenia
 

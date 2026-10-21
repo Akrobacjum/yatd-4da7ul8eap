@@ -207,8 +207,9 @@ Przeciążenie (`mods.overload`, karta): po każdym odpaleniu `TRAPS` (nie proch
 8. **Wpadka rozbrajania**: złodziej z szansą `R.fail` odpala ją `fire(it, 1)` (gdy `cd <= 0`, nie przeklęta).
 9. **Topór barbarzyńcy**: rozbity mebel odpala proch albo mimika na nim `fire(on, 1)` (`smashDone`).
 10. **Bomba bohatera** w proch: `fire(it, 0,5)` (`bombJob`).
+11. **Przeszukanie mebla** (1.17, rozglądanie się, sekcja 06, 6.3.3a): bohater, który skończył oglądać mebel, na którym stoi mimik, pozytywka albo beczka prochu (wciąż na miejscu, niewyłączony, nierozpoznany, gotowy: `cd <= 0`), odpala go `fire(it, 1)` z szansą `SEARCH_TRAP`: mimik 0,55, pozytywka 0,45, proch 0,2 (`p5_ai.js: lookDone`; `stats.lookTraps`, `tl('lt')`). Dzieje się to na końcu oglądania (1,5-3 s po dojściu), więc gracz ma najpierw własną szansę (skill check, gdy bohater stoi w zasięgu). Mebel ze znaną pułapką nie jest oglądany.
 
-Bez gracza (bez tapnięcia, bez pamięci, bez `ff`) pułapka **nie odpala**: check, na który nikt nie odpowie, wygasa i element czeka (`skipCheck`). Potwory poza checkiem działają pasywnie (5.4).
+Bez gracza (bez tapnięcia, bez pamięci, bez `ff`) pułapka **nie odpala** (poza punktami 6-11, które wywołują bohaterowie): check, na który nikt nie odpowie, wygasa i element czeka (`skipCheck`). Potwory poza checkiem działają pasywnie (5.4).
 
 ### 5.2.6 Przebieg `fire` i `fireRaw` (`p4_traps.js`)
 
@@ -218,12 +219,13 @@ Bez gracza (bez tapnięcia, bez pamięci, bez `ff`) pułapka **nie odpala**: che
 2. Napis "Cisza przed burzą ×N", gdy `calmReady(it)` i to nie echo.
 3. `pw *= boost * lvlPow(it) * mods.pactPower`. Dla `TRAPS`: `it.lastFire = fl.time`.
 4. Echo mechanizmów: dla `TRAPS`, gdy `mods.echoFire` i nie echo ani chór: `fl.trapFires++`; gdy `fl.trapFires % max(2, 6 - mods.echoFire) === 0` i typ nie `powder`, do kolejki `fl.echoQ` trafia `{ it, at: fl.time + 0,4, pw: basePw }`.
-5. Combo (5.2.7), zapis `lastTrapAt`, `lastTrapC`, `lastTrapType`, okno `comboWinNow`.
+5. Combo (5.2.7), zapis `lastTrapAt`, `lastTrapC`, `lastTrapType`, od 1.17 `lastTrapRoom` (`slotRoom` elementu; przerywa rozglądanie się w tym pokoju, sekcja 06), okno `comboWinNow`.
 6. `comboMult = 1 + 0,25 * (combo - 1)` (tylko napis nad pułapką), `cpow = 1 + COMBO_POW * (combo - 1)`, `D = S.dmg`. `run.fires++`.
-7. Każdy, kto właśnie rozbraja ten element (`h.item === it && state === 'disarm'`), przerywa (kwestia `SAY.disarmHit`); od 1.13.4 za drugim razem odpuszcza tę pułapkę (`h.disarmHits`, 6.5.2).
+7. Każdy, kto właśnie rozbraja ten element (`h.item === it && state === 'disarm'`), przerywa (kwestia `SAY.disarmHit`, od 1.17 przy przeklętym straszaku kapłan mówi `SAY.blessHit`); od 1.13.4 za drugim razem odpuszcza tę pułapkę (`h.disarmHits`, 6.5.2).
 8. `area = areaOf(it)`, `list = heroesOn(keys)`. Z `opt.lock` dochodzą cele zablokowane przez check (żywi, nie `fled`, nie `gone`, **nie uciekający**), bez duplikatów.
 9. `fl.surprise = TRAPS[type] && !it.detected` (rana z niewykrytej pułapki straszy ×1,3).
-10. Dla `TRAPS`, jeśli ktoś jest w pokojach obszaru (świadkowie): okrzyk, gdy niewykryta; uczenie się (`p = max(R.learn)` świadków; w Głuszy nikt się nie uczy, `stats.hushUnlearned`; inaczej z szansą `p` `learnTrap(it, 'seen')`); licznik zasadzki: gdy `list` niepusta, `ambushN++` jeśli od `ambushT` minęło < 3 s, inaczej `ambushN = 1` (co robi zasadzka: 5.7.5). Szczegóły uczenia i kwestie: sekcja 06.
+9a. 1.17: dla `TRAPS` (każde odpalenie, przed świadkami) `hearFar(it, list)` (`p5_ai.js`, sekcja 06, 6.3.3a): gdy minęła przerwa `P.soundCd` (10 s), drużyna nie wychodzi, a pokój pułapki nie jest Głuszą, najbliższy spokojny bohater (nie zgubiony, nie panikuje, nie w klatce, nie wychodzi) w odległości <= 12 pól, nie w tym pokoju, nie w Głuszy i nie trafiony tą pułapką, słyszy ją: kwestia `hearScream` z imieniem trafionego albo (szansa 0,65) `hearSound`, on i każdy w jego zasięgu słuchu odwracają się w tę stronę; gdy to przywódca albo przywódca go słyszy, `P.sound` (przez 25 s przyciąga odważnego, chciwego albo zielonego przywódcę i odpycha ostrożnego i tchórza). `stats.heard`, `tl('hs')`.
+10. Dla `TRAPS`, jeśli ktoś jest w pokojach obszaru (świadkowie): okrzyk, gdy niewykryta (`pickS(SAY.trap[typ] || SAY.trapGeneric)`, od 1.17 lista kwestii); uczenie się (`p = max(R.learn)` świadków; w Głuszy nikt się nie uczy, `stats.hushUnlearned`; inaczej z szansą `p` `learnTrap(it, 'seen')`, a wtedy od 1.17 z szansą 0,5 ktoś w pokoju mówi `SAY.learn`); licznik zasadzki: gdy wśród trafionych jest przywódca albo ktoś, kto go widzi lub słyszy (od 1.17: grupa przywódcy; wcześniej każdy trafiony, także pokoje dalej), `ambushN++` jeśli od `ambushT` minęło < 3 s, inaczej `ambushN = 1` (co robi zasadzka: 5.7.5). Szczegóły uczenia i kwestie: sekcja 06.
 11. `cdBase = cdOf(type) * (Zębatki ? 0,75 : 1)`, gdzie `cdOf(type) = ITEMS[type].cd * mods.cooldown * (WALL_TRAP[type] ? mods.wallCd : 1)` (też dla potworów).
 12. Efekt typu (`switch`, punkty 5.3 i 5.4); `hit` = liczba trafionych (szaman: `-1`).
 13. Zaprawione mechanizmy: `TRAPS && hit > 0 && mods.tempered` daje `run.stacks.tempered += hit`.
@@ -414,11 +416,11 @@ list: damage(h, 60 * D * pw, it, cpow); lvl >= 3 && !h.dead: ignite(h, 'powder')
 replanAll(); efekty wybuchu, wstrząs 0,35
 ```
 
-Jednorazowy (element i mebel znikają, w miejscu mebla jest przejście). Nie ma echa ani Przeciążenia. Odpala go też topór barbarzyńcy (rozbity mebel) i bomba bohatera (`pw = 0,5`). Promień: `mods.powderR` (1, Więcej prochu +1) + poziom 3.
+Jednorazowy (element i mebel znikają, w miejscu mebla jest przejście). Nie ma echa ani Przeciążenia. Odpala go też topór barbarzyńcy (rozbity mebel), bomba bohatera (`pw = 0,5`) i od 1.17 bohater przeszukujący mebel przy rozglądaniu się (szansa 0,2, `pw = 1`, 5.2.5). Promień: `mods.powderR` (1, Więcej prochu +1) + poziom 3.
 
 ### 5.3.11 Mimik (`mimic`)
 
-`damage(h, 40 * D * mods.mimicDmg * pw, it, cpow)` każdemu z 8 sąsiadów. Poziom 3 (Pożeracz): żywy trafiony traci losowy przedmiot z plecaka (przepada, bez łupu). Nie da się go rozbroić (nie ma w `DISARMABLE`), może go wyłączyć bomba; topór rozbijający mebel odpala go i wyłącza.
+`damage(h, 40 * D * mods.mimicDmg * pw, it, cpow)` każdemu z 8 sąsiadów. Poziom 3 (Pożeracz): żywy trafiony traci losowy przedmiot z plecaka (przepada, bez łupu). Nie da się go rozbroić (nie ma w `DISARMABLE`), może go wyłączyć bomba; topór rozbijający mebel odpala go i wyłącza. Od 1.17 budzi go też bohater przeszukujący mebel przy rozglądaniu się (szansa 0,55, `pw = 1`, 5.2.5); nieznany mimik wygląda wtedy jak zwykły mebel, który drużyna ogląda (`lookObj`).
 
 ### 5.3.12 Oczy (`eyes`)
 
@@ -452,7 +454,7 @@ dur = lvl >= 3 ? 8 : 4; r = roomOf(x, y); it.playUntil = fl.time + dur
 każdy w pokoju: addFear(h, 6 * pw * cpow, 'musicbox'); h.lullUntil = fl.time + dur; h.lullK = 5 * pw; h.lullRoom = r
 ```
 
-Kołysanka (`p5_ai.js: partyThink`): dopóki `fl.time < lullUntil` i bohater jest w `lullRoom`, `addFear(h, lullK * dt, 'musicbox', 'lull')` (bez cpow). Topór rozbijający mebel wyłącza pozytywkę.
+Kołysanka (`p5_ai.js: partyThink`): dopóki `fl.time < lullUntil` i bohater jest w `lullRoom`, `addFear(h, lullK * dt, 'musicbox', 'lull')` (bez cpow). Topór rozbijający mebel wyłącza pozytywkę. Od 1.17 nakręca ją bohater przeszukujący mebel przy rozglądaniu się (szansa 0,45, `pw = 1`, 5.2.5).
 
 ### 5.3.18 Obrona bohaterów przed pułapkami (skrót, szczegóły w sekcji 06)
 
@@ -608,7 +610,7 @@ Budowla stoi tylko między falami, jedna danego typu na pokój, na podłodze pok
 | acid Kwas | tarcza wojownika i osłona tarczą działają jak `(1 + k) / 2`, talizman `wardK * 0,5`, zbroja połowa redukcji, tarcza kapłana (`h.shield`) pochłania połowę rany |
 | veil Zasłona | uciekinierzy nie zapamiętują pokoju, pułapek ani łupu w nim (plotki, sekcja 03); doświadczony mag nie wyczuwa pułapek tego pokoju przy wejściu |
 | fortify Bastion | gildia nie przebije tu wyłomu (sekcja 03) |
-| howl Kamień wyjec | pieśń i wołanie barda nie działają; zgubiony nie trafi tu do drużyny po głosie |
+| howl Kamień wyjec | pieśń i wołanie barda nie działają; zgubiony nie trafi tu do drużyny po głosie; od 1.17 połyka krzyki z daleka (`canHearShout`: kto stoi w tym pokoju, nie słyszy krzyku spoza zasięgu zwykłego głosu i nikt nie słyszy z daleka jego krzyku; sekcja 06, 6.3.13) |
 | shackles Okowy | nikt nie wpada w furię (`startRage` zwraca false, `raging` false); nikt nie rozbija mebli ani budowli |
 
 `decoyAlarm(it, by)`: raz (`alarmed`), wabik `disabled`; każda `TRAPS` z tym samym `slotRoom`, nie wyłączona, `cd <= 0`, odpala `fire(o, 1)` (bez checku, pełna moc 1, nawet gdy nikogo nie ma w obszarze); wstrząs, kwestia.
@@ -702,9 +704,10 @@ return k * mods.dmgType[dtp] * (mods.arsenal && fl.arsenal4 ? 1 + mods.arsenal :
 2. Groza: `addPts(GZ.kill * (h.boss ? 2 : 1) * mods.soulMult * (Krypta ? 1,5 : 1), 'killPts', h)`, `GZ.kill = 1,2`.
 3. Spichlerz dusz (`run.stacks.granary++`), Głodne kolce (`attr === 'spikes'`).
 4. Kryształ wraca do serca, ekwipunek i złoto wypadają jako łup (sekcja 04).
-5. Morale drużyny -0,25 (min 0,15).
-6. Ostatnie tchnienie: każdy żywy w tym samym pokoju `addFear(o, mods.lastGasp * o.courage, null, 'death')`.
-7. Strach ze śmierci dla każdego żywego (5.7.4).
+5. 1.17: zapis śmierci `{id, t, crypt, knows}` w `fl.deaths` (kto o niej wie; wieści, sekcja 06, 6.3.13).
+6. Ostatnie tchnienie: każdy żywy w tym samym pokoju `addFear(o, mods.lastGasp * o.courage, null, 'death')` (bez zmian w 1.17).
+7. Strach ze śmierci tylko dla tych, którzy ją widzieli albo słyszeli krzyk (5.7.4; do 1.16 dla każdego żywego).
+8. Morale drużyny -0,25 (min 0,15) raz, gdy dowie się przywódca: od razu, jeśli widział albo słyszał, inaczej, gdy dostanie wieść (do 1.16 zawsze od razu).
 
 ### 5.6.5 Leczenie, tarcze, mikstury (jak wchodzą w obrażenia)
 
@@ -756,7 +759,8 @@ fearResist:
   attr in fl.knownTypes                          → ×0.6   // jakakolwiek wykryta pułapka tego typu (rebuildThreat)
   inny kapłan rangi >= 1 w odległości <= 3       → ×0.75 (Ołtarz w pokoju h: ×0.875)
   bohater z przepowiedni w odległości <= 3       → ×0.75
-  jakikolwiek żywy boss w fali                   → ×0.85
+  żywy boss, z którym jest (1.17: to on sam albo h go widzi lub słyszy; boss nie w klatce, nie w zapadni)   → ×0.85
+                                                 // do 1.16: jakikolwiek żywy boss w fali, gdziekolwiek
   fl.time < h.braveUntil                         → ×h.braveK      // osłona kapłana przed pokojem: 0,85^(1 + lvl/5), Ołtarz połowa efektu
   fl.time < h.calmUntil                          → ×0.7          // amulet
 
@@ -793,27 +797,33 @@ Gęsta atmosfera: `calmK ×0,5`. Uciekający nie uspokaja się.
 **Ucieczka** (`startFlee`): `fear >= lim`; nie w klatce (klatka trzyma, strach dalej daje Grozę); niosący kryształ najpierw go rzuca (`dropCrystal`, kryształ wraca). Skutki:
 - `fleeing = true`, prędkość ×1,15, cel: wyjście, ostrożność ×0,6 (sekcja 06),
 - Krzyki w ścianach: każdy inny nieuciekający `addFear(o, mods.fleeShock * o.courage, null, 'screams')`,
-- czempion (jeśli żyje, nie ucieka i nie siedzi w klatce) raz na 15 s okrzykiem obniża strach każdego innego nieuciekającego o 25% jego odwagi,
-- gdy uciekających jest ≥ `max(2, ceil(drużyna / 2))`, cała drużyna się wycofuje (`partyFlee`),
+- czempion (jeśli żyje, nie ucieka i nie siedzi w klatce; od 1.17 tylko gdy widzi uciekającego albo słyszy jego krzyk) raz na 15 s okrzykiem obniża strach innego nieuciekającego o 25% jego odwagi (od 1.17 tylko tym, którzy słyszą okrzyk, do 14 kroków),
+- gdy uciekających jest ≥ `max(2, ceil(grupa / 2))`, cała drużyna się wycofuje (`partyFlee`); od 1.17 liczy się grupa przywódcy (ci, którzy go widzą albo słyszą), a ucieka tylko ten, kto słyszy krzyk przywódcy, bez uwięzionych w klatce i bez czempiona (sekcja 06, 6.6.3),
 - Panika (karta): każdy w odległości ≤ 3 `addFear(o, 25 * mods.panic, null, 'panic')`.
 
 **Wypłata za przestraszonego** (`heroExit`, gdy wychodzi z `fleeing`): `addPts(GZ.scare * (boss ? 2 : 1) * mods.scareMult, 'scarePts', h)`, `GZ.scare = 2,5` (Echo krzyku ×2); Żniwa strachu: `+mods.fearHarvest` Esencji bez mnożników; Kronika grozy `run.stacks.chronicle++`. Opowieść o skarbach i powroty: sekcje 03 i 04.
 
 ### 5.7.4 Strach ze śmierci (`kill`)
 
-Dla każdego żywego `o` (`p` = miejsce śmierci):
+Od 1.17 (autor: bohaterowie "wiedzą o sobie w innych pokojach, np. o śmierci") reaguje tylko ten, kto śmierć widzi albo słyszy (sekcja 06, 6.3.13). Dla każdego żywego `o`:
 
 ```
-near = hypot(o - p) < 8
-base = (near ? max(15 * o.R.panic, 0.12 * o.courage + 4) : max(5 * o.R.panic, 0.05 * o.courage + 2)) * (Krypta ? 2 : 1)
+near  = canSee(o, zmarły)                               // to samo miejsce: pokój/korytarz albo <= 3,5 pola, nikt w zapadni
+hears = !near && canHearShout(o, zmarły)                // krzyk: do 14 kroków drogi, nie przez Głuszę ani Kamień wyjec
+if !near && !hears: nic (dowie się później z wieści)
+d.knows.add(o); if o jest przywódcą: morale -0.25 (raz)
+base = (near ? max(15 * o.R.panic, 0.12 * o.courage + 4) : 1.3 * max(5 * o.R.panic, 0.05 * o.courage + 2)) * (Krypta ? 2 : 1)
 o.shakenUntil = fl.time + (near ? 9 : 5)               // wstrząśnięty: strach spada ×0,35
-jeśli nie ucieka i (trait 'brave' || barbarzyńca || (wojownik && rand < 0.3)) i startRage(o, 'death', h):
-    addFear(o, base * 0.3, null, 'death')              // gniew zamiast strachu
-inaczej: addFear(o, base * (trait 'coward' ? 1.5 : 1), null, 'death')
+hears: z szansą 0.55 SAY.deathHeard (bez imienia); addFear(o, base * (trait 'coward' ? 1.5 : 1), null, 'death'); koniec (bez furii)
+near:  jeśli nie ucieka i (trait 'brave' || barbarzyńca || (wojownik && rand < 0.3)) i startRage(o, 'death', h):
+          addFear(o, base * 0.3, null, 'death')        // gniew zamiast strachu
+       inaczej: z szansą 0.55 SAY.death / deathFlee z imieniem; addFear(o, base * (trait 'coward' ? 1.5 : 1), null, 'death')
+wieść (p5_ai.js: perceiveThink, gdy spotka kogoś, kto wie): addFear(o, 0.6 * max(5 * o.R.panic, 0.05 * o.courage + 2) * (Krypta ? 2 : 1), null, 'death'),
+       shakenUntil = fl.time + 5, bez furii i bez mnożnika tchórza
 R.panic = 1.5 * 0.86^(L-1)
 ```
 
-Krypta to pokój zmarłego. `src = 'death'` budzi fobię krwi. Furia (`startRage`): 6 s (barbarzyńca 8 s), odnowienie 20 s (14 s), strach ×0,5, prędkość ×1,25, wręcz ×1,5; Okowy blokują.
+Do 1.16 reagował każdy żywy w lochu: `near = hypot(o - p) < 8` (w linii prostej, przez ściany), daleki `max(5 * panic, 0.05 * courage + 2)` bez mnożnika 1,3, wstrząs 9 albo 5 s, a furia i kwestia z imieniem także daleko. Krypta to pokój zmarłego. `src = 'death'` budzi fobię krwi (także przy krzyku i wieści). Furia (`startRage`): 6 s (barbarzyńca 8 s), odnowienie 20 s (14 s), strach ×0,5, prędkość ×1,25, wręcz ×1,5; Okowy blokują.
 
 ### 5.7.5 Źródła strachu (pełna lista)
 
@@ -833,10 +843,10 @@ Krypta to pokój zmarłego. `src = 'death'` budzi fobię krwi. Furia (`startRage
 | kołysanka `lull` | `5*pw`/s w pokoju pozytywki | `partyThink` |
 | nosiciel kryształu `carrier` | `mods.carrierFear`/s (Klątwa kryształu +4) | `partyThink` |
 | koszmar `nightmare` | 3,5/s przy odpoczynku w Sanktuarium | `updateHero` |
-| zasadzka `ambush` | 6 każdemu, gdy ≥ 3 pułapki trafiły drużynę w odstępach < 3 s i ostatnia < 0,6 s temu; raz na 12 s | `partyThink` |
+| zasadzka `ambush` | 6 każdemu z grupy przywódcy (od 1.17; wcześniej każdemu), gdy ≥ 3 pułapki trafiły grupę przywódcy w odstępach < 3 s i ostatnia < 0,6 s temu; raz na 12 s | `partyThink` |
 | serce `heart` (fala 1) | `0,3 * courage`/s przy sercu, `0,4 * courage` przy odepchnięciu | `step` |
 | fobia `phobia` | `0,15 * courage * (1 + phobiaK/2)` za widok | `phobiaSight` |
-| śmierć `death` | 5.7.4; Ostatnie tchnienie `lastGasp * courage` w pokoju | `kill` |
+| śmierć `death` | 5.7.4 (widziana, usłyszana albo z wieści); Ostatnie tchnienie `lastGasp * courage` w pokoju | `kill`, `perceiveThink` |
 | krzyki `screams`, panika `panic` | karty | `startFlee` |
 | echo `echo` | 40% z Groty | `addFear` |
 
@@ -861,7 +871,7 @@ Ustawiana w `damage` (krok 13), trwa do końca fali (bohater żyje tylko w fali)
 | **vault** Sezam | widziany łup podbija chciwość ×2 (`noticeLoot`); wartość łupu w decyzji ×1,5; pokój przyciąga przy wyborze celu (-4); `depthMult +0,15` (sekcje 03, 04, 06) |
 | **haven** Sanktuarium | ranny (< 60% HP) przechodzący drzemie 5 s raz na falę (nie gdy płonie, nie zgubiony); przy odwrocie wybierany jako najbezpieczniejszy (-12); leczenie przy odpoczynku ×0,5; śpiący +3,5 strachu/s (`nightmare`) |
 | **gears** Zębatki | odnowienie elementów z `slotRoom` w Zębatkach ×0,75 (pułapki i potwory); ta sama pułapka w oknie combo podbija combo |
-| **hush** Głusza | strach ×1,2; świadkowie odpalenia nie uczą się pułapki (`slotRoom` w Głuszy); kwestie bohatera w Głuszy to "…" (`say`); nikt nie woła kapłana, nikt nie odpowiada na strach, wołanie zgubionego przepada (pokój mówiącego) |
+| **hush** Głusza | strach ×1,2; świadkowie odpalenia nie uczą się pułapki (`slotRoom` w Głuszy); kwestie bohatera w Głuszy to "…" (`say`); nikt nie woła kapłana, nikt nie odpowiada na strach, wołanie zgubionego przepada (pokój mówiącego); od 1.17 nikt w Głuszy ani spoza niej nie słyszy nikogo po drugiej stronie (`canHear`, `canHearShout`: krzyk śmierci, klatka, ucieczka drużyny, wieści, plan), a pułapka w Głuszy nie jest słyszana zza ściany (`hearFar`), tak samo bohater w Głuszy jej nie słyszy (sekcja 06, 6.3.13) |
 | **ice** Lodownia | przy wejściu na pole w stanie `walk` (nie dwa razy z rzędu): z szansą `0,33 * (rank >= 2 ? 0,55 : 1) * (złodziej 0,6) * (panika lub ucieczka 1,3)` bohater jedzie jedno pole dalej w tym samym kierunku (`prog += 3,2 dt`), jeśli pole przechodnie, bez żywego potwora nie-`DRIFT` i nie serce; po wjeździe normalne `onEnter` (łup, pułapki); nikt tu nie odpoczywa |
 
 Uwaga dla kraty i zawiasów: ich `slotRoom` to korytarz, więc Zębatki, Głusza i Grota z pokoju obok ich nie dotyczą.

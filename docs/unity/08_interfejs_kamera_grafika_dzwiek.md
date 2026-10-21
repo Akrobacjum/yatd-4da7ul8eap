@@ -1,6 +1,6 @@
 # 08. Interfejs, sterowanie, kamera, grafika, dźwięk i samouczek
 
-Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
+Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 1.17 (niżej). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
@@ -10,6 +10,15 @@ Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenome
 - Narady i odpoczynek to scenki z kilkoma dymkami po kolei; drużyna podchodzi do przywódcy i patrzy na niego (sekcja 06, 6.7.5); w ich trakcie bez autoprzyspieszenia.
 - Pasek czasu w HUD pokazuje czas cierpliwości `fl.patT` (w scenkach płynie 2 razy wolniej).
 - Nowa karta "Wieści z karczmy", komunikaty sklepu nad przyciskiem, poprawki z listy w rozdziale 10.
+
+## Zmiany w 1.17 (skrót)
+
+- HUD: w trakcie narady na końcu cierpliwości `#h-time` pokazuje "narada" zamiast pozostałego czasu (2.2).
+- Karta bohatera: nowe stany "wraca sam do domu" i "rozgląda się" w wierszu "Teraz" (3.14).
+- Ekran po fali: nowe ciekawostki "Zwiedzali" i "Narada" (3.8); w zakładce Liczby cztery nowe kratki (od poprawki wydania 1.17): "Osobno: zwiad / sam / zgubiony (s)", "Rozglądania / monety / pułapki z szukania", "Narada: dom / szturm / chwila · sami do domu" i "Słyszane zza ściany / wieści o śmierci". Wiersze dopisane w 1.16 i pierwszej wersji 1.17 do `statsTable` nie pokazywały się, bo ta funkcja nie jest wołana (rozdział 10).
+- Napis "Wraca sam" / "Wraca sama" nad przegłosowanym, który wraca do domu, i "+1 złota" nad tym, kto znalazł monetę w meblu (pływające napisy, kolory `#c9c2d8` i `#f2c94c`).
+- Ekran startowy: podtytuł "Prototype 1.17 · 10 fal i finał", lista "Co nowego w Prototype 1.17" (3.3).
+- Dymków jest ok. 3 razy więcej (treść i zasady: sekcja 06, 6.7); wygląd dymka bez zmian.
 
 ## 0. Konwencje
 
@@ -142,7 +151,7 @@ Warstwy (z-index): świeca/winieta 1, baner 2, coach 3, `#fx` 6, `#tip` 8, overl
 | 1 lewo | `#h-wave` | "Fala N/10" (po fali 10: "Fala N ∞") | to samo | Grenze 700, 21 px (19 px przy ≤380 px) |
 | 1 środek | `#h-score` + `#h-best` | duża liczba = `floor(fl.essence)`; pod nią "Esencja" | pod nią "Esencja · fala +X" (Esencja tej fali razem z porcją serca) | Jersey 26 px (23 px ≤380) w `--ess` z poświatą; `#h-best` 12 px muted; przy ≤440 px kolumna |
 | 1 prawo | `#h-cry` | ◆ za każdy kryształ w sercu, ◇ za utracony | ◈ zamiast jednego ◆, gdy złodziej niesie kryształ | 15 px, `--rose`, odstęp 2 px, poświata |
-| 2 | `#h-pips` / `#h-barwrap` + `#h-time` | 10 pipsów runu + "budowa" | pasek czasu (`fl.patT / S.waveTime`, od 1.12.1 czas cierpliwości, w scenkach płynie wolniej; mosiądz) + pozostały czas m:ss, "pauza", "szturm!" / "odwrót" (gdy `fl.fearless`) | pips 7 px wysokości, odstęp 3 px; pasek 6 px; czas Jersey 14 px |
+| 2 | `#h-pips` / `#h-barwrap` + `#h-time` | 10 pipsów runu + "budowa" | pasek czasu (`fl.patT / S.waveTime`, od 1.12.1 czas cierpliwości, w scenkach płynie wolniej; mosiądz) + pozostały czas m:ss, "pauza", "szturm!" / "odwrót" (gdy `fl.fearless`; "szturm!" przy `fl.storm`), od 1.17 "narada" (gdy trwa narada na końcu cierpliwości, `fl.party.council`); po "jeszcze chwila" znów czas (30 s) | pips 7 px wysokości, odstęp 3 px; pasek 6 px; czas Jersey 14 px |
 | 3 | `#h-hrow`: ♥ `#h-heart`, pasek `#h-hfill`, `#h-hlabel` | etykieta "serce chce N z fali" albo "serce głodne od fali 2" | "serce X/N" → "serce syte" | pasek 9 px; patrz stany niżej |
 | 4 | `#h-eq` (równanie) | Groza 0 × Chciwość start × Combo 1 = +0 | żywe wartości serii combo | patrz 2.3 |
 | 5 | `#h-rankrow` | "Ranga · Następna za N" albo "ranga: Legenda" | ukryty (równanie potrzebuje miejsca) | 12,5 px muted |
@@ -284,7 +293,7 @@ W Unity: Canvas Scaler z rozdzielczością referencyjną 390×844, dopasowanie d
 
 ### 3.3 Start (`renderStart`, zrzut `01_start.png`)
 
-Od góry: podtytuł "Prototype 1.14 · 10 fal i finał"; h1 "You are the dungeon"; akapit wstępu; rekordy (jeśli są: "Twój rekord: N Esencji zebranej w runie (ranga: X) · najdalej: fala F · wygrane: W z R."); pole "Kto testuje (opcjonalnie)" (tylko prototyp); przyciski; wiersz web (tylko prototyp); rozwijane **Jak grać** (17 akapitów w tablicy literalnej w `renderStart`, zasady całej gry, do przeniesienia jako tekst lokalizowany) i **Co nowego w Prototype 1.14** (99 wpisów dziennika zmian od v14 do 1.14, druga tablica w `renderStart`); przycisk "Ustawienia" (dźwięk, wibracje, skill checki).
+Od góry: podtytuł "Prototype 1.17 · 10 fal i finał" (opis niżej dotyczy 1.14; w 1.17 zmieniły się tylko podtytuł i lista "Co nowego", która ma 123 wpisy, w tym 6 wpisów 1.17: zwiedzanie i przeszukiwanie mebli, narada po 2 minutach, wiedza tylko z tego, co widzą i słyszą, ok. 3 razy więcej i prawdziwsze dymki, pułapka słyszana zza ściany i charakter przywódcy w wyborze drogi, poprawki AI); h1 "You are the dungeon"; akapit wstępu; rekordy (jeśli są: "Twój rekord: N Esencji zebranej w runie (ranga: X) · najdalej: fala F · wygrane: W z R."); pole "Kto testuje (opcjonalnie)" (tylko prototyp); przyciski; wiersz web (tylko prototyp); rozwijane **Jak grać** (17 akapitów w tablicy literalnej w `renderStart`, zasady całej gry, do przeniesienia jako tekst lokalizowany) i **Co nowego w Prototype 1.14** (99 wpisów dziennika zmian od v14 do 1.14, druga tablica w `renderStart`); przycisk "Ustawienia" (dźwięk, wibracje, skill checki).
 
 Przyciski (`startbtns`; `onbStage()` z rozdz. 8.1; `sv` = zapisany run):
 
@@ -335,12 +344,14 @@ Widok główny (ciało):
 1. Cztery kafelki statystyk (`statrow`): "masz Esencji" (czerwony), serce ("♥ N" "serce syte" zielony / "zjadło kryształ" różowy, albo "-" "głód od fali 2"), "k/max" "kryształy", "zabici · przestr.".
 2. **Rozliczenie** (`reck`, 12,5 px, części wjeżdżają po 0,45 / 0,8 / 1,15 s): "Groza G × m = E", "♥ -N" albo "♥ za mało: -X · kryształ", "dla Ciebie +Y (+P po fali)".
 3. Panel "Esencja z fal" (prawy dopisek "kreska: porcja serca"): wykres `waveChart` z miejscem na każdą z 10 fal (przyszłe przerywane), słupek gradient `--ess-hi`→`--ess`→`--ess-lo`, fala ze stratą szara, różowa kreska 2 px = porcja serca, bieżąca fala pełne krycie z poświatą i wartością u stopy słupka (Jersey 11,5 px biały z cieniem), numery fal pod spodem.
-4. 2-3 **ciekawostki** (`waveFun`): "Ulubiona pułapka" (zawsze pierwsza, gdy jest), losowo z: "Zabójca fali", "Cichy zabójca/pomocnik", "MVP bohaterów", "Najbardziej przerażony", "Najwyższe combo", "Krytyki", "Zgubieni", "Rozdzieleni" (1.16: "N razy", "X s na zwiadzie", gdy co najmniej 4 s), "Rozbrojone", "Łup". Etykieta mosiądz 9,5 px wersalikami, wartość 13,5 px, opis 11 px w 2 liniach.
+4. 2-3 **ciekawostki** (`waveFun`): "Ulubiona pułapka" (zawsze pierwsza, gdy jest), losowo z: "Zabójca fali", "Cichy zabójca/pomocnik", "MVP bohaterów", "Najbardziej przerażony", "Najwyższe combo", "Krytyki", "Zgubieni", "Rozdzieleni" (1.16: "N razy", "X s na zwiadzie", gdy co najmniej 4 s), od 1.17 "Zwiedzali" (gdy co najmniej 2 rozglądania: "N razy", opis "znaleźli N monetę/monety/monet" albo "nic nie znaleźli", z dopiskiem ", obudzili pułapkę: N", gdy przeszukanie odpaliło pułapkę) i "Narada" (gdy była narada po cierpliwości: wartość "szturm", "jeszcze chwila" albo "do domu", w tej kolejności ważności, gdy narad było kilka; opis "przegłosowani wrócili sami: N" albo "zdecydowali razem"), "Rozbrojone", "Łup". Etykieta mosiądz 9,5 px wersalikami, wartość 13,5 px, opis 11 px w 2 liniach.
 5. Panel **następnej drużyny** "Fala N: k bohaterów, poz. a-b" (prawy dopisek: gildia albo "serce chce X"), wiersze `nextRow`: krążek 26 px z ikoną klasy, imię w kolorze klasy, "Klasa L", plakietki (przepowiednia/czempion mosiądz, charakter, sakiewka łowcy, ↺ powracający fiolet, rekrut), po prawej ikony ekwipunku (`ITEM_GLYPH`, 14 px, z liczbą ładunków), druga linia: umiejętność klasy · "słaby: …" (`#ffb35c`) · "boi się: …" · "? ciało/fobia" (`--dim`). Stuknięcie wiersza otwiera kartę bohatera, a "Wróć" wraca do podsumowania.
 
 Stopka: przy zwycięstwie "Graj dalej" (fale bez końca) i "Zakończ: zwycięstwo"; inaczej "Dalej: sklep przed falą N+1" (albo "Dalej", gdy nie ma kryształów) z podpisem "darmowe karty: k[ (legendarna w ofercie)]". Pod spodem rząd małych przycisków: "Szczegóły" / "‹ Wróć", "Pobierz wyniki" (tylko prototyp), "Zapisz i wyjdź", "Zakończ run" (dwa stuknięcia: "Na pewno?"), oraz notka stanu logów (tylko prototyp).
 
-Widok **Szczegóły**: panel "Skąd Esencja" (prawy dopisek "Groza G × średnio m") z paskiem źródeł 12 px (kolory: Rany `#ff8a7a`, Strach `#c3b2ff`, Ucieczki `#8a6fe0`, Zabici `#d8434f`, Łup `#f2b94b`, Combo `#a9d4da`, Inne `#7d7590`) i legendą 4 największych; zakładki (`seg`, jak zakładki paska): **Co dalej** (lista punktów z rombami: serce, fala następna, gildia, głód, Esencja po fali, plotki, opowieści o skarbach, zabrany łup, co gildia słyszy o chciwości, wyłom, przygotowania, budowle, błądzenie, przedmioty, wiara, saperzy, ranga), **Bohaterowie** (ikona, imię, klasa, los: zginął czerwony, wyniósł kryształ pomarańczowy, uciekł ze strachu fiolet, wyszedł szary), **Elementy** (nazwa, pasek, "E · n traf."), **Liczby** (siatka 2 kolumn: krytyk/draśnięcie/pudło, ciosy z pamięci, najwyższe combo, łup zobaczony/zabrany, rozbrojone/odczynione, plotki, zapadnie/klatki, serce/dla Ciebie, czas/przyspieszenie).
+Widok **Szczegóły**: panel "Skąd Esencja" (prawy dopisek "Groza G × średnio m") z paskiem źródeł 12 px (kolory: Rany `#ff8a7a`, Strach `#c3b2ff`, Ucieczki `#8a6fe0`, Zabici `#d8434f`, Łup `#f2b94b`, Combo `#a9d4da`, Inne `#7d7590`) i legendą 4 największych; zakładki (`seg`, jak zakładki paska): **Co dalej** (lista punktów z rombami: serce, fala następna, gildia, głód, Esencja po fali, plotki, opowieści o skarbach, zabrany łup, co gildia słyszy o chciwości, wyłom, przygotowania, budowle, błądzenie, przedmioty, wiara, saperzy, ranga), **Bohaterowie** (ikona, imię, klasa, los: zginął czerwony, wyniósł kryształ pomarańczowy, uciekł ze strachu fiolet, wyszedł szary), **Elementy** (nazwa, pasek, "E · n traf."), **Liczby** (siatka 2 kolumn: krytyk/draśnięcie/pudło, ciosy z pamięci, najwyższe combo, łup zobaczony/zabrany, rozbrojone/odczynione, plotki, zapadnie/klatki, serce/dla Ciebie, czas/przyspieszenie; w 1.17 bez zmian).
+
+`statsTable(s)` (`p8b_ui.js`) to osobna, dłuższa tabela liczb fali, której **nic nie woła** (martwy kod, rozdział 10). 1.16 i 1.17 dopisały do niej wiersze (zwiad, zwiedzanie, narada, wieści), więc od poprawki wydania 1.17 te liczby są też w zakładce Liczby (`renderWave`, `cur === 'nums'`) jako cztery kratki: "Osobno: zwiad / sam / zgubiony (s)" (`splitTime`, `loneTime`, `lostTime`), "Rozglądania / monety / pułapki z szukania" (`looks`, `goldFound`, `lookTraps`), "Narada: dom / szturm / chwila · sami do domu" (`councilHome`, `councilStorm`, `councilMore`, `goHome`) i "Słyszane zza ściany / wieści o śmierci" (`heard`, `newsDeaths`). `lookNo` i `lootObey` są tylko w logach (sekcja 07).
 
 ### 3.9 Sklep (`renderShop`, zrzut `08_shop.png`)
 
@@ -374,6 +385,8 @@ Przed pierwszym ekranem końca runu w wersji web: 5 pytań z przyciskami (`SURVE
 ### 3.14 Karta bohatera (`renderHero`, zrzut `09_hero_card.png`)
 
 Otwiera: stuknięcie figury w fali, wiersz listy drużyny, wiersz następnej fali. W fali gra się pauzuje i wznawia po zamknięciu. Podtytuł "Klasa · poz. L ranga[ · powracający][ · łowca skarbów][ · rekrut]", imię Grenze w kolorze klasy, kafelki: HP "h/max" (różowy < 35%), strach "%" "strach z N odwagi" (różowy > 60%), wiara kapłana albo liczba przedmiotów; lista: Teraz (stan żywego), Charakter, Umie, Klasa (odporności), Łowca skarbów, Ciało, Fobia (albo "nie wiadomo"), Blizna, Trauma; "Ekwipunek" (lista z mocą, ładunkami, odnowieniem; sakwa); "Ta fala" (rany wg typów, 4 największe źródła strachu); notka o odkrywaniu ciała i fobii; przycisk "Zamknij" albo "Wróć". Treść: sekcje 04 i 06.
+
+Wiersz "Teraz" (żywy): "Zginął/Zginęła." / "Wyniósł kryształ." / "Uciekł ze strachu." / "Wyszedł z lochu." albo lista po przecinku: "UCIEKA", "NIESIE KRYSZTAŁ", "w klatce", jeden z: "zgubiony", "wraca sam do domu" (1.17, przegłosowany na naradzie), "na zwiadzie" (1.16), "rozgląda się" (1.17, ogląda coś przy rozglądaniu się, `h.look` nieskończone), "sam" (w tej kolejności pierwszeństwa), dalej "płonie", "przeklęty", "wstrząśnięty śmiercią", stan z `STATE_TEXT`. Stany "zgubiony" i "wraca sam do domu" nie mają formy żeńskiej (w Unity dodać).
 
 ### 3.15 Karta elementu (`renderItem`)
 
@@ -955,3 +968,5 @@ Run z samouczkiem zapisuje się jak każdy. Po wczytaniu: liczniki "postaw więc
 11. **Tarcie cząsteczek** ×0,9 na klatkę zależy od liczby klatek; w Unity użyć `0,9^(60·dt)`.
 12. **Dymki ucinają tekst** po 2 liniach (`wrapText` zwraca najwyżej 2), bez wielokropka.
 13. **Legenda checku**: warunek `run.checkHints >= 0` jest zawsze prawdziwy, więc legenda pokazuje się w pierwszych 3 checkach każdej fali (prawdopodobnie zamierzone, ale licznik `checkHints` nie ma już sensu).
+14. **`statsTable` martwa** (`p8b_ui.js`): funkcja nie jest nigdzie wołana; wiersze dopisane do niej w 1.16 i 1.17 przez to się nie pokazywały (a "Co nowego" 1.16 obiecało czas na zwiadzie w Szczegółach). Od poprawki wydania 1.17 najważniejsze z nich są kratkami w zakładce Liczby; samą funkcję można usunąć.
+15. **Stany bez formy żeńskiej** w karcie bohatera (1.17): "wraca sam do domu" (i od dawna "zgubiony", "sam") nie zmieniają się dla bohaterki, choć napis nad postacią ("Wraca sama") się zmienia.

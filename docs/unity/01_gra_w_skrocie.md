@@ -61,7 +61,7 @@ Czym gra NIE jest: bez energii i timerów, nie test refleksu (check to wyczucie 
 
 Rdzeń to skill check: gracz robi go setki razy w runie, więc ma bawić bez ulepszeń. Wyróżnik wobec konkurencji: ekonomia z cierpienia bohaterów (Groza × Chciwość × Combo), żywe reakcje bohaterów i checki w trakcie fali.
 
-## 1.4 Liczby w pigułce (Prototype 1.16.1)
+## 1.4 Liczby w pigułce (Prototype 1.17)
 
 | Rzecz | Wartość | Gdzie szczegóły |
 |---|---|---|
@@ -75,7 +75,7 @@ Rdzeń to skill check: gracz robi go setki razy w runie, więc ma bawić bez ule
 | Combo | różne pułapki pod rząd, każda w 3 s od poprzedniej (w ciszy zegar płynie 4 razy wolniej); Esencja ×(1 + 0,25 na stopień, max ×2,5); obrażenia i strach +12% na stopień (max combo 7) | 03, 05 |
 | Esencja z Grozy | Groza × Chciwość × Combo × 1,1 (`S.essK`, 1.12.1) | 03 |
 | HP bohaterów | rosną z poziomem, +10% w fali 3 i +20% od fali 5 (1.12); Groza i strach z ran liczone bez tego dodatku (1.12.1) | 04 |
-| Cierpliwość | 120 s, potem odwrót (tylko bohater z przepowiedni szturmuje serce); w naradach i na odpoczynku płynie 2 razy wolniej (1.12.1) | 04, 06 |
+| Cierpliwość | 120 s, potem narada (1.17): do domu, szturm na serce (tylko gdy przywódca wie, gdzie jest) albo jeszcze chwila (+30 s, raz na falę); bez wyboru od razu odwrót; tylko bohater z przepowiedni zawsze szturmuje serce; w naradach i na odpoczynku płynie 2 razy wolniej (1.12.1) | 04, 06 |
 | Pole | jeden bohater na polu, jak potwory; dzielą pole tylko przy mijaniu (1.12.1) | 06 |
 | Talia | 7 miejsc, schowek 3 | 03 |
 | Ceny kart | zwykła 6, rzadka 10, legendarna 16, odblokowanie 8 | 03 |
@@ -116,6 +116,7 @@ Każda z nich zapadła po testach i ma swoje uzasadnienie w historii projektu (d
 | 21.10 | 1.15.1: każda porada przewodnika w fali zatrzymuje grę do zatwierdzenia albo wykonania; podzakładki zawsze widoczne. |
 | 21.10 | 1.16: bohaterowie mogą się zgubić (Groza jak dotąd), ale mogą też rozdzielić się celowo, np. na zwiad, co nabija Grozę wolniej. |
 | 21.10 | 1.16.1: pasek serca nie czeka na koniec combo; ekran dzieli się trochę wcześniej. Tego dnia autor pierwszy raz od utrudnienia gry przeszedł 10 fal. |
+| 21.10 | 1.17: po 2 minutach nie sztywny odwrót ani szarża, tylko narada, na której bohaterowie decydują razem (przegłosowany może wrócić sam). Bohaterowie wiedzą o sobie nawzajem tylko tyle, ile widzą i słyszą (np. czyjaś śmierć w innym pokoju). Zwiedzanie ma być naturalniejsze: ciekawość, rozglądanie się, przeszukiwanie mebli. Kwestie mają mówić prawdę o tym, co bohater robi. |
 
 ## 1.6 Co jest w prototypie, a czego nie ma
 
@@ -131,7 +132,7 @@ Każda z nich zapadła po testach i ma swoje uzasadnienie w historii projektu (d
 
 | Co | Gdzie |
 |---|---|
-| Zachowanie gry (ostateczne) | kod prototypu: repo `Akrobacjum/yatd-4da7ul8eap`, katalog `src/` (Prototype 1.16.1, commit z 21.10.2026). Gdy GDD i kod się różnią, rację ma kod. |
+| Zachowanie gry (ostateczne) | kod prototypu: repo `Akrobacjum/yatd-4da7ul8eap`, katalog `src/` (Prototype 1.17, commit z 21.10.2026). Gdy GDD i kod się różnią, rację ma kod. |
 | Grywalny prototyp | https://akrobacjum.github.io/yatd-4da7ul8eap/ (najnowsza wersja) oraz `archiwum/` w repo (każda wersja jako jedna strona) |
 | Projekt i uzasadnienia | GDD "GDD - You are the dungeon" (dokument w Claude: https://claude.ai/code/artifact/c213e326-fe7e-4be8-b628-1b869b576d8d) |
 | Historia decyzji, rynek, harmonogram | dokument projektu `claude/analiza-rynku-i-plan.md` w projekcie Claude "You Are The Dungeon" |

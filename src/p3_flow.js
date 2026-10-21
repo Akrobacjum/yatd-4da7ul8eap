@@ -1288,7 +1288,8 @@
     // 1.17: only those who see it or hear the cry shout and turn back; the decision is the leader's group's, and the others learn
     // of it when they rejoin (h.plan; meanwhile they walk on towards the exit, thinking the crystal is ahead of them)
     const L = leader(), crew = L ? groupOf(L) : alive();
-    alive().forEach(o => { if (perceives(o, h, true)) { say(o, pick(SAY.crystalDrop), 4); o.needPlan = true; } });
+    const at = { tx: h.tx, ty: h.ty, room: h.room, gone: false };   // where it happened (the carrier may be down a bottomless well)
+    alive().forEach(o => { if (perceives(o, at, true)) { say(o, pick(SAY.crystalDrop), 4); o.needPlan = true; } });
     if (crew.length >= 2 && crew.reduce((a, o) => a + o.fear / o.courage, 0) / crew.length < 0.55 && !crew.some(o => o.fleeing)) { P.plan = 'assault'; P.steal = 0; crew.forEach(o => { o.plan = 'assault'; o.needPlan = true; }); }
     else partyFlee();
   }

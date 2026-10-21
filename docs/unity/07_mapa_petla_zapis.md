@@ -726,12 +726,12 @@ gałąź QUIET.r == 0 (stara reguła "cały pokój zajęty") jest martwa przy r 
 15. `sayTick()`: kolejka kwestii (sekcja 06).
 16. Próbka do logu co 1 s (7.12.5).
 17. `fl.disarmKeys` = kafelki obszarów pułapek, które ktoś właśnie rozbraja.
-18. Brama: przy `fl.time >= GATE_T (1.8)` `fl.gateOpen = true` i kwestia przywódcy.
+18. Brama: przy `fl.time >= GATE_T (1.8)` `fl.gateOpen = true` i kwestia `SAY.gate` przywódcy (od 1.17 naprawdę przywódcy, `leader()`; do 1.16 mówił `alive()[0]`, pierwszy w kolejności wejścia, choć kwestie brzmią "za mną").
 19. Jeśli brama otwarta: `updateHero(h, dt)` dla każdego, kto nie zginął i nie wyszedł (ruch, spadek strachu, decyzje: sekcja 06); potem `checkTick()` (samodzielne odpalanie pułapek i nowe skill checki, sekcja 05).
 20. `monstersTick(dt)` (zawsze, także przed bramą).
-21. Serce: bohaterowie w stanie `boss` przy planie `assault` i `fl.ending == null`: `P.steal += dt * (1 + 0.5*(n-1))`; serce parzy pierwszego `damage(5*dt, HEART)`; fala 1 odpycha przy `0.85 * stealNeed`; przy `P.steal >= stealNeed() = 4 / 2^mods.glass` kradzież (`takeCrystal`). Szczegóły: sekcja 03/05.
+21. Serce: bohaterowie w stanie `boss` przy planie `assault` i `fl.ending == null`: `P.steal += dt * (1 + 0.5*(n-1))`; serce parzy pierwszego `damage(5*dt, HEART)`; fala 1 odpycha przy `0.85 * stealNeed`; przy `P.steal >= stealNeed() = 4 / 2^mods.glass` kradzież (`takeCrystal`). Od 1.17, gdy nikt nie stoi przy sercu, `P.steal` maleje o `0,5 × dt` do 0 (napoczęty kryształ osiada z powrotem; do 1.16 postęp zostawał). Szczegóły: sekcja 03/05.
 22. `fl.heartHit -= dt`.
-23. Cierpliwość (1.12.1): `fl.patT += dt × (narada albo odpoczynek ? 0,5 : 1)`; `!fl.fearless && fl.ending == null && fl.patT >= S.waveTime` (domyślnie 120 s) -> `becomeImpatient()` (raz, ustawia `fearless`).
+23. Cierpliwość (1.12.1): `fl.patT += dt × (narada albo odpoczynek ? 0,5 : 1)`; `!fl.fearless && fl.ending == null && fl.patT >= S.waveTime` (domyślnie 120 s) -> `becomeImpatient()`. Do 1.16 wołane raz (ustawiało `fearless`). Od 1.17 woła się co krok, dopóki nie ma `fearless`: pierwszy raz otwiera naradę (`P.council`, sekcja 06, 6.3.10a) albo, bez wyboru, `goHome`; w trakcie narady nic nie robi; wynik narady ustawia `fearless` (dom, szturm) albo cofa `fl.patT` o 30 s ("jeszcze chwila", raz na falę).
 24. Siatka bezpieczeństwa: `fl.patT >= S.waveTime + 60` -> każdy w środku wychodzi (`heroExit`).
 25. Koniec fali: kolejka pusta, są bohaterowie i każdy zginął albo wyszedł -> `fl.ending = 1.2`.
 26. Dymki mowy, którym minął czas, znikają.
@@ -759,7 +759,36 @@ perfSummary(): null przy < 20 klatkach, inaczej
 
 ### 7.10.7 Liczby losowe
 
-Prototyp używa wyłącznie `Math.random` (95 wywołań: `p3_flow.js` 32, `p5_ai.js` 34, `p6_loop.js` 11, `p4_traps.js` 8, `p1_config.js` 3, `p2_state_map.js` 3, `p8b_ui.js` 3, `p7_draw.js` 1) plus pomocnicze `rand`, `pick`, `shuffle`. Brak ziarna, brak możliwości powtórki.
+Prototyp używa wyłącznie `Math.random` (w 1.17 138 miejsc w kodzie: `p5_ai.js` 61, `p3_flow.js` 36, `p6_loop.js` 19, `p4_traps.js` 10, `p8b_ui.js` 4, `p1_config.js` 3, `p2_state_map.js` 3, `p7_draw.js` 2) plus pomocnicze `rand`, `pick`, `pickS`, `shuffle`. Brak ziarna, brak możliwości powtórki.
+
+### 7.10.8 Stan fali dopisany w 1.17 (pola `fl`, drużyny i bohatera)
+
+Wszystkie te pola żyją jedną falę (`setupFl` tworzy nowe `fl`, `freshParty` nowe `fl.party`, `spawnHero` nowych bohaterów); nie trafiają do zapisu runu. Szczegóły zachowania: sekcja 06 (6.1.3, 6.1.4, 6.3.3a, 6.3.10a, 6.3.13).
+
+| Gdzie | Pole | Znaczenie |
+|---|---|---|
+| `fl` | `deaths` | lista śmierci w fali `{id, t, crypt, knows: Set, morale?}`: kto wie (widział, słyszał krzyk albo dostał wieść), czy morale już spadło (`p3_flow.js: kill`, `p5_ai.js: perceiveThink`) |
+| `fl` | `heartBy` | id bohatera, który zobaczył pokój serca (`p2_state_map.js: revealRoom`); puste przy plotce i przepowiedni |
+| `fl` | `revealBy` | id bohatera z ostatniego `reveal` (pomocnicze dla `heartBy`) |
+| `fl` | `lastTrapRoom` | pokój (`slotRoom`) ostatniego odpalenia w `fireRaw` (przerywa rozglądanie się w tym pokoju) |
+| `fl.party` | `council`, `councilMore` | trwająca narada po cierpliwości; "jeszcze chwila" już użyta |
+| `fl.party` | `look`, `lookCd`, `lookAsk`, `lookRolled` | trwające rozglądanie się `{room, t0, until, ids}`; przerwa do; zaplanowany rzut `{room, at}`; pokoje, w których już rzucano |
+| `fl.party` | `sound`, `soundCd` | dźwięk zza ściany, który słyszał przywódca `{x, y, t, room}`; przerwa `hearFar` |
+| `fl.party` | `seen` | `id -> {x, y, t}`: gdzie przywódca ostatnio widział albo słyszał każdego |
+| `fl.party` | `searchGoal` | ostatnie znane pole zgubionego, do którego wraca przywódca |
+| `fl.party` | `rescueQ` | uwięzieni czekający na ratunek, gdy ratują już kogoś |
+| `fl.party` | `lastL` | przywódca z poprzedniego `partyThink` (nowy przynosi swój plan) |
+| `fl.party` | `queueCur`, `sayingQ` | kolejka kwestii w trakcie obsługi i kwestia właśnie mówiona (poprawka rozmów, sekcja 06, 6.7.3) |
+| `fl.party` | `heartSaid` | jak dotąd "przywódca skomentował serce", od 1.17 także "przywódca wie, gdzie jest serce" (`heartP()`) |
+| bohater | `plan` | plan drużyny, który ten bohater zna (`planOf`) |
+| bohater | `goHome` | przegłosowany na naradzie wraca sam do domu (wychodzi, nie prowadzi, nie ratuje) |
+| bohater | `look` | co ogląda przy rozglądaniu się `{kind, sub, x, y, st, it, dwell, at, done}` |
+| bohater | `lostAt`, `lostNoticed` | kiedy się zgubił; czy przywódca już zauważył brak |
+| bohater | `cagedAt` | kiedy zamknęła się klatka (decyzja o ratunku najpóźniej po 20 s) |
+| bohater | `healFor`, `healForUntil` | kapłan: kto go wołał, do kiedy idzie najpierw do niego |
+| bohater | `avoidM` | wojownik: potwór, którego omijanie już skomentował |
+
+W Unity: pola `PartyState` i `HeroRuntime` (sekcja 02); `fl.deaths` jako lista rekordów z `HashSet<int>` wiedzących.
 
 W Unity: własny RNG z ziarnem (np. xorshift lub PCG) w kilku niezależnych strumieniach: generowanie lochu, fale i bohaterowie, symulacja fali, sklep, kosmetyka (cząsteczki, wybór kwestii). Ziarno runu zapisać w zapisie gry i w logu; razem ze stałym krokiem (7.10.1) daje to powtórki i testy zgodności z prototypem.
 
@@ -894,7 +923,7 @@ W Unity: identyfikator instalacji (losowy GUID w `PlayerPrefs`), nie `SystemInfo
 
 ### 7.12.1 Przegląd
 
-Po każdej fali gra wysyła dokument fali i podsumowanie runu do bazy, a gracz może pobrać cały run jako plik JSON. Służy to autorowi do analizy balansu (także przez Claude). Wersja formatu: `LOG_VERSION = 58` (`p8b_ui.js`); komentarz przy stałej to historia zmian formatu od wersji 31 (np. 58: Prototype 1.13, rozmowy z nowymi statystykami fali `convos` (zaczęte wymiany), `convoNo` (dlaczego kwestia nie zaczęła wymiany: `breath`, `talk`, `queue`, `luck`, `hush`, `alone`, `fit`) i `toSafety` (zejścia z niebezpiecznego pola), narady tylko dla stojących razem; 57: Prototype 1.12.1, jedno pole na bohatera z nowymi statystykami fali `sidesteps` (zejścia z pola i objazdy) i `squeezes` (przeciśnięcia), dłuższe narady i odpoczynki, cierpliwość `fl.patT`, zegar combo w ciszy ×`S.comboQuiet`, okno 3 s, Groza z ran bez dodatku HP, `S.essK`; 56: etapy nauki, combo +12% na krok, okno 2,5 s; 55: serce znowu je, `stats.essHeart`; 53: `slips`, `naps`, `hushUnlearned`, `hushLost`; 52: `memLost`, `memFires`, `frozen`; 50: `trayPauses`, `pauseTime`; 48: `cpm`, `frozen`, `perf.realSec`, `tut`; 47: `perf`, `errors`).
+Po każdej fali gra wysyła dokument fali i podsumowanie runu do bazy, a gracz może pobrać cały run jako plik JSON. Służy to autorowi do analizy balansu (także przez Claude). Wersja formatu: `LOG_VERSION = 58` (`p8b_ui.js`); komentarz przy stałej to historia zmian formatu od wersji 31 (np. 58: Prototype 1.13, rozmowy z nowymi statystykami fali `convos` (zaczęte wymiany), `convoNo` (dlaczego kwestia nie zaczęła wymiany: `breath`, `talk`, `queue`, `luck`, `hush`, `alone`, `fit`) i `toSafety` (zejścia z niebezpiecznego pola), narady tylko dla stojących razem; 57: Prototype 1.12.1, jedno pole na bohatera z nowymi statystykami fali `sidesteps` (zejścia z pola i objazdy) i `squeezes` (przeciśnięcia), dłuższe narady i odpoczynki, cierpliwość `fl.patT`, zegar combo w ciszy ×`S.comboQuiet`, okno 3 s, Groza z ran bez dodatku HP, `S.essK`; 56: etapy nauki, combo +12% na krok, okno 2,5 s; 55: serce znowu je, `stats.essHeart`; 53: `slips`, `naps`, `hushUnlearned`, `hushLost`; 52: `memLost`, `memFires`, `frozen`; 50: `trayPauses`, `pauseTime`; 48: `cpm`, `frozen`, `perf.realSec`, `tut`; 47: `perf`, `errors`). Wersje 1.13.1-1.17 nie zmieniły numeru; 1.16 i 1.17 dopisują tylko nowe statystyki fali (7.12.7) i kody osi czasu (7.12.5: `rz`, `cn`, `gh`, `lk`, `lt`, `hs`), czego komentarz przy stałej nie wymienia.
 
 W Unity: ten sam podział na dokument runu i dokument fali, wysyłka `UnityWebRequest` POST w tle po fali (kolejka offline w pliku), adres i znacznik z konfiguracji builda (`web_config.json`), nie z kodu w repo.
 
@@ -1007,7 +1036,12 @@ Kody zdarzeń:
 | `rg` | ile w kolejce | druga grupa wchodzi po ucieczce pierwszej (`regroupAtDoor`) |
 | `br` | x, y | fala weszła wyłomem (`startWave`) |
 | `pl` | plan | zmiana planu drużyny (`partyThink`) |
-| `ip` | 0/1 | koniec cierpliwości: 0 = odwrót, 1 = szturm serca (`becomeImpatient`) |
+| `ip` | 0/1 | koniec cierpliwości: 0 = odwrót (`goHome`: bez wyboru albo wynik narady "do domu"), 1 = szturm serca (bohater z przepowiedni w `becomeImpatient` albo, od 1.17, wynik narady w `councilDone`) |
+| `cn` | wynik (`'home'`, `'storm'`, `'more'`), liczba głosujących, liczba wracających samotnie | 1.17: narada po cierpliwości przegłosowana (`councilThink`, gdy zaczyna się rozmowa) |
+| `gh` | id | 1.17: przegłosowany wraca sam do domu (`councilDone`) |
+| `lk` | pokój, liczba oglądających | 1.17: drużyna zaczyna się rozglądać (`lookRoll`) |
+| `lt` | id, type, x, y | 1.17: przeszukanie mebla odpaliło mimika, pozytywkę albo proch (`lookDone`) |
+| `hs` | id słyszącego, type | 1.17: pułapka usłyszana zza ściany (`hearFar`) |
 | `fi` | type, x, y, trafieni, moc | odpalenie elementu (`p4_traps.js: fire`) |
 | `ch` | type, x, y, wynik, w obszarze, dodatkowe w serii, maks. poziom, odchylenie % | wynik skill checku (`resolveCheck`); przy odpuszczeniu: type, x, y, `'skip'`, w obszarze (`skipCheck`) |
 | `cp` | Groza, mnożnik combo, Esencja | wypłata łańcucha combo, gdy combo > 1 albo Esencja >= 1 (`payChain`) |
@@ -1123,10 +1157,24 @@ Kody zdarzeń:
 | `swaps`, `potionsGiven`, `amulets`, `boots`, `goldPicked` | wymiany, podane mikstury, amulety, buty, monety |
 | `cursed`, `curseLifts`, `faithOut` | przeklęci, zdjęte klątwy, koniec wiary kapłana |
 | `detours`, `gotLost`, `searches` | objazdy, zgubienia, poszukiwania |
-| `deathFear` | strach dodany innym przez śmierć towarzysza |
+| `deathFear` | strach dodany innym przez śmierć towarzysza (od 1.17 tylko u tych, którzy ją widzieli albo słyszeli krzyk; strachu z późniejszej wieści tu nie ma) |
 | `roomsVisited` | odwiedzone pokoje i korytarze |
 
-Pola dopisywane w locie (nie ma ich w `newStats`): `alarms`, `altarBlocks`, `altarHeals`, `answers`, `autoFires` (odpalenia przy `ff`), `bardCalls`, `bardHeard`, `batScatter`, `breachOpen`, `broken`, `cageDeaths`, `charmSoak`, `chorus`, `comboPts`, `crystalDropped`, `cursedSeen`, `disputes`, `echoes`, `essGlut`, `essHeart` (porcja serca), `essWave` (Esencja do sakiewki), `fogGrope`, `healCalls`, `howlBlocks`, `hungerAte`, `hushLost`, `hushUnlearned`, `lootArgue`, `lootWeighed`, `memFires`, `memLost`, `naps`, `panicExits`, `panicked`, `patched`, `phobiaFear`, `prophecy`, `rage`, `rageNoPanic`, `rages`, `regroupsDoor`, `repelled`, `reroutes`, `returnersOut`, `revealed`, `revenge`, `rigged`, `rumorLoot`, `runeBlocks`, `shackleBlocks`, `shouts`, `skullOff`, `slips`, `smashedObj`, `smashes`, `songs`, `speedTime` (martwe), `traumas`, `trayPauses`, `treasureTale`, `upgrades`, `volleys`, `volleyTraps`, `wildfire`. Każde jest licznikiem albo flagą 0/1 ustawianą tam, gdzie zdarzenie zachodzi (nazwa opisuje zdarzenie; miejsca: `grep "stats.<pole>"`).
+Statystyki dopisane w 1.17 (w locie, nie ma ich w `newStats`; sekcja 06):
+
+| Pole | Znaczenie |
+|---|---|
+| `councils` | otwarte narady po cierpliwości (`becomeImpatient`) |
+| `councilHome`, `councilStorm`, `councilMore` | wyniki narad: do domu, szturm, jeszcze chwila (`councilDone`) |
+| `goHome` | przegłosowani, którzy wracają sami |
+| `looks`, `lookNo` | rozglądania się; prośby o rozglądanie, którym przywódca odmówił |
+| `lookTraps` | pułapki odpalone przy przeszukiwaniu mebli (mimik, pozytywka, proch) |
+| `goldFound` | monety znalezione w meblach |
+| `heard` | pułapki usłyszane zza ściany (`hearFar`) |
+| `newsDeaths` | wieści o śmierci przekazane później (`perceiveThink`) |
+| `lootObey` | łupy zostawione na rozkaz przywódcy (`lootDecision`) |
+
+Pola dopisywane w locie (nie ma ich w `newStats`; poza tabelą wyżej): `alarms`, `altarBlocks`, `altarHeals`, `answers`, `autoFires` (odpalenia przy `ff`), `bardCalls`, `bardHeard`, `batScatter`, `breachOpen`, `broken`, `cageDeaths`, `charmSoak`, `chorus`, `comboPts`, `crystalDropped`, `cursedSeen`, `disputes`, `echoes`, `essGlut`, `essHeart` (porcja serca), `essWave` (Esencja do sakiewki), `fogGrope`, `healCalls`, `howlBlocks`, `hungerAte`, `hushLost`, `hushUnlearned`, `lootArgue`, `lootWeighed`, `memFires`, `memLost`, `naps`, `panicExits`, `panicked`, `patched`, `phobiaFear`, `prophecy`, `rage`, `rageNoPanic`, `rages`, `regroupsDoor`, `repelled`, `reroutes`, `returnersOut`, `revealed`, `revenge`, `rigged`, `rumorLoot`, `runeBlocks`, `shackleBlocks`, `shouts`, `skullOff`, `slips`, `smashedObj`, `smashes`, `songs`, `speedTime` (martwe), `traumas`, `trayPauses`, `treasureTale`, `upgrades`, `volleys`, `volleyTraps`, `wildfire`. Każde jest licznikiem albo flagą 0/1 ustawianą tam, gdzie zdarzenie zachodzi (nazwa opisuje zdarzenie; miejsca: `grep "stats.<pole>"`).
 
 W Unity: stały, typowany słownik statystyk (np. `enum StatId`) zamiast pól dodawanych w locie; zaokrąglanie dopiero w eksporcie i nie do liczb całkowitych dla wartości ułamkowych.
 

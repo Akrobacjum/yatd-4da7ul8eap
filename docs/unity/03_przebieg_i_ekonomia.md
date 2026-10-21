@@ -208,10 +208,10 @@ Sprawdzane w `p6_loop.js: step` (czas gry):
 
 | Warunek | Skutek | Źródło |
 |---|---|---|
-| `fl.patT` (cierpliwość, od 1.12.1: rośnie o `dt`, a o `0,5 × dt`, gdy drużyna się naradza (`fl.time < P.talkUntil`) albo odpoczywa (`plan 'retreat'` i `restSince > 0`); `p6_loop.js: step`) `>= S.waveTime` (120 s) i `!fl.fearless` | `becomeImpatient()`: `fl.fearless = true`; drużyna wraca do domu (`plan 'leave'`), chyba że jest bohater z przepowiedni: wtedy zna serce i szturmuje (`plan 'assault'`, `fl.storm = true`). | `p3_flow.js: becomeImpatient` |
-| `fl.patT >= S.waveTime + 60` (180 s czasu cierpliwości) | Siatka bezpieczeństwa: każdy żywy i nie-wyszły bohater (także "zniknięty" w zapadni: `h.gone = false`) przechodzi przez `heroExit(h)`. **Nosiciel kryształu wynosi go wtedy (kryształ stracony).** | `p6_loop.js: step` |
+| `fl.patT` (cierpliwość, od 1.12.1: rośnie o `dt`, a o `0,5 × dt`, gdy drużyna się naradza (`fl.time < P.talkUntil`) albo odpoczywa (`plan 'retreat'` i `restSince > 0`); `p6_loop.js: step`) `>= S.waveTime` (120 s) i `!fl.fearless` | `becomeImpatient()`. Od 1.17 (bez bohatera z przepowiedni) **narada** (sekcja 06, 6.3.10a): przywódca i ci, którzy stoją przy nim, głosują według stanu i charakteru: do domu (`goHome`: `fl.fearless = true`, `plan 'leave'`), szturm na serce (tylko gdy przywódca wie, gdzie jest serce: `fl.fearless = true`, `fl.storm = true`, `plan 'assault'`) albo "jeszcze chwila" (raz na falę: `fl.patT = min(fl.patT, S.waveTime - 30)`, czyli +30 s cierpliwości i druga narada już bez tej opcji). Gdy nie ma wyboru (serce nieznane przywódcy i +30 s już użyte) albo nie da się zebrać narady w 8 s: od razu do domu jak do 1.16. Przegłosowany, który chciał do domu, może wrócić sam (`h.goHome`). Bohater z przepowiedni: bez narady, zna serce i szturmuje (`plan 'assault'`, `fl.storm = true`). Do 1.16 każda inna drużyna po 120 s wracała do domu. | `p3_flow.js: becomeImpatient, goHome`, `p5_ai.js: councilThink, councilDone` |
+| `fl.patT >= S.waveTime + 60` (180 s czasu cierpliwości; po "jeszcze chwila" odpowiednio później w czasie fali) | Siatka bezpieczeństwa: każdy żywy i nie-wyszły bohater (także "zniknięty" w zapadni: `h.gone = false`) przechodzi przez `heroExit(h)`. **Nosiciel kryształu wynosi go wtedy (kryształ stracony).** | `p6_loop.js: step` |
 | `fl.queue.length === 0 && fl.heroes.length && wszyscy (dead \|\| fled)` | `fl.ending = 1.2` | `p6_loop.js: step` |
-| Fala 1: drużyna przy sercu, `P.steal >= 0,85 × stealNeed()` | Serce ich odpycha: strach, ucieczka, `plan 'leave'` (fala 1 nie może ukraść kryształu). | `p6_loop.js: step` |
+| Fala 1: drużyna przy sercu, `P.steal >= 0,85 × stealNeed()` | Serce ich odpycha: strach, ucieczka, `plan 'leave'` (fala 1 nie może ukraść kryształu); od 1.17 kwestię mówi ktoś przy sercu albo ktoś, kto słyszy kogoś przy sercu. | `p6_loop.js: step` |
 
 `fl.ending` odlicza **czas rzeczywisty** (`rdt`) w `p6_loop.js: frameBody`, tylko gdy nie ma otwartego okna i pauzy. Po dojściu do 0: `fl.ending = null; finishWave()`. Gdy `fl.ending !== null`, `damage()` ignoruje obrażenia, a skill checki się nie pojawiają (`p6_loop.js: checkTick`).
 
@@ -569,7 +569,7 @@ startWave:  wchodzi do greedBonusParts jako 'opowieści o skarbach', potem run.g
 ```
 Liczy się łup widziany przez całą drużynę w tej fali, nie przez tego bohatera. Maks. +0,16 na uciekiniera i +0,3 na falę; działa tylko na następną falę.
 
-**Złoto wyniesione** (`p3_flow.js: heroExit`): każdy bohater, który wyjdzie żywy (z dowolnego powodu) i coś zabrał (`h.loot > 0`): `run.rumor.gold += 0.05 × h.loot + 0.02 × h.gold`. Wartość nigdy nie maleje (trwały dodatek do chciwości startowej do końca runu).
+**Złoto wyniesione** (`p3_flow.js: heroExit`): każdy bohater, który wyjdzie żywy (z dowolnego powodu) i coś zabrał (`h.loot > 0`): `run.rumor.gold += 0.05 × h.loot + 0.02 × h.gold`. Wartość nigdy nie maleje (trwały dodatek do chciwości startowej do końca runu). Od 1.17 monety mogą się też znaleźć przy przeszukiwaniu mebli w trakcie rozglądania się (`p5_ai.js: lookDone`, sekcja 06, 6.3.3a): `h.gold++` bez Grozy, bez chciwości i bez `h.loot`, więc liczą się tu tylko u kogoś, kto zabrał też jakiś łup, a poza tym tylko spowalniają (ciężka sakiewka) i wypadają po śmierci.
 
 **Reputacja dla gildii**: `run.greedRep = fl.greed` na końcu fali (`finishWave`). Gildia używa `greedRaw(run.greedRep)` do poziomu przywódcy i liczby łowców skarbów (sekcja 04).
 
@@ -650,13 +650,16 @@ if atHeart.length && P.plan === 'assault' && fl.ending === null:
     damage(atHeart[0], 5 × dt, HEART)                 // serce parzy pierwszego: 0 Grozy za rany, śmierć daje killPts
     fala 1: każdy przy sercu dostaje strach 0.3 × courage × dt; przy P.steal >= 0.85 × stealNeed(): odparcie (1.7)
     if P.steal >= stealNeed(): takeCrystal(żywi przy sercu)
+if !atHeart.length && P.steal > 0: P.steal = max(0, P.steal - 0.5 × dt)   // 1.17: napoczęty kryształ osiada z powrotem
 stealNeed() = 4 / 2^mods.glass                         // Szklane serce: 2 razy szybciej za kopię
 ```
-`takeCrystal`: nosicielem zostaje bohater przy sercu z największym HP; `carrier.crystal = true`, `P.carrierId`, `P.plan = 'escape'`, `P.steal = 0`, `fl.stats.crystalTaken++`. Ruch nosiciela i ucieczka: sekcja 06 (Klątwa kryształu: `carrierSlow`, `carrierFear`).
+Do 1.16 `P.steal` nie malał, gdy wszyscy odeszli od serca (np. w panice), więc kolejne podejście zaczynało od poprzedniego postępu.
+
+`takeCrystal`: nosicielem zostaje bohater przy sercu z największym HP; `carrier.crystal = true`, `P.carrierId`, `P.plan = 'escape'`, `P.steal = 0`, `fl.stats.crystalTaken++`. Od 1.17 do wyjścia ruszają od razu tylko ci, którzy widzą niosącego albo słyszą jego krzyk (do 14 kroków); reszta dowiaduje się, gdy dołączy (sekcja 06, 6.3.13). Ruch nosiciela i ucieczka: sekcja 06 (Klątwa kryształu: `carrierSlow`, `carrierFear`).
 
 **Wyniesienie** (`p3_flow.js: heroExit`): nosiciel wychodzi -> `h.carriedOut = true; fl.crystalLost = true; run.crystals = max(0, run.crystals - 1); fl.stats.crystalLost++`. Kryształ znika natychmiast (w trakcie fali). Bez Grozy.
 
-**Powrót** (`p3_flow.js: crystalReturns`): gdy nosiciel zginie (`kill`), rzuci kryształ ze strachu (`addFear` -> `dropCrystal`, gdy `h.fear >= lim`) albo wpadnie w zapadnię z Bezdenną studnią (`p4_traps.js: fall`). Efekt: `+GZ.crystal` Grozy (`crystalPts`), `fl.stats.crystalSaved++`, a drużyna albo szturmuje dalej (`plan 'assault'`, `P.steal = 0`, gdy żyje >= 2, średni strach/odwaga < 0,55 i nikt nie ucieka), albo ucieka (`partyFlee`). W jednej fali można więc stracić więcej niż jeden kryształ (kolejne kradzieże).
+**Powrót** (`p3_flow.js: crystalReturns`): gdy nosiciel zginie (`kill`), rzuci kryształ ze strachu (`addFear` -> `dropCrystal`, gdy `h.fear >= lim`) albo wpadnie w zapadnię z Bezdenną studnią (`p4_traps.js: fall`). Efekt: `+GZ.crystal` Grozy (`crystalPts`), `fl.stats.crystalSaved++`, a drużyna albo szturmuje dalej (`plan 'assault'`, `P.steal = 0`, gdy w grupie przywódcy jest >= 2, ich średni strach/odwaga < 0,55 i nikt z nich nie ucieka), albo ucieka (`partyFlee`). Od 1.17 liczy się grupa przywódcy (ci, którzy go widzą albo słyszą), a krzyczą i zawracają tylko ci, którzy widzą niosącego albo słyszą krzyk; do 1.16 cała drużyna w lochu. W jednej fali można więc stracić więcej niż jeden kryształ (kolejne kradzieże).
 
 **Wszystkie zmiany liczby kryształów:**
 

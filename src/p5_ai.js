@@ -489,7 +489,7 @@
     P.cageDecided.add(c.id);
     const others = alive().filter(o => o !== c && !o.fleeing && !caged(o));
     if (!others.length || goingOut()) return;
-    const fearR = others.reduce((a, o) => a + o.fear / o.courage, 0) / others.length;
+    const grpC = groupOf(L).filter(o => o !== c && !o.fleeing), fearR = (grpC.length ? grpC : others).reduce((a, o) => a + o.fear / o.courage, 0) / (grpC.length || others.length);   // 1.17: the leader's group
     const rescue = L.rank >= 2 || (fearR < 0.6 && Math.random() < (L.rank === 0 ? 0.5 : 0.8));
     const who = L === c ? others[0] : L;
     tl('rs', c.id, rescue ? 1 : 0);
@@ -883,7 +883,7 @@
   function perceiveThink(L, crew) {
     const P = fl.party, seen = P.seen || (P.seen = {});
     // a new leader from somewhere else brings what he knows: the party goes by his plan (unless he is the last one in there)
-    if (L && P.lastL !== L.id) { P.lastL = L.id; if (L.plan !== undefined && L.plan !== P.plan && crew.length > 1 && !L.crystal && !fl.stats.crystalTaken) P.plan = L.plan; }   // (never after a theft: no second crystal in a wave)
+    if (L && P.lastL !== L.id) { P.lastL = L.id; if (L.plan !== undefined && L.plan !== P.plan && crew.length > 1 && !L.crystal && !fl.stats.crystalTaken && !fl.fearless && !crew.some(o => o !== L && o.plan === P.plan)) P.plan = L.plan; }   // only when nobody who knew the old plan is left (never after a theft or once patience is over)
     crew.forEach(o => {
       if (o.plan === undefined) o.plan = P.plan;
       if (o === L || canSee(o, L) || canHear(o, L)) {
@@ -903,7 +903,7 @@
         if (!k) continue;
         d.knows.add(o.id);
         P.queueSay.push({ id: k.id, text: nameFill(pick(SAY.tellDeath), dead), at: fl.time + 0.2, prio: 3, late: 3 }, { id: o.id, text: pick(SAY.newsDeath), at: fl.time + 0.4, prio: 3, late: 4 });
-        o.shakenUntil = fl.time + 5; addFear(o, 0.6 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (d.crypt ? 2 : 1), null, 'death');
+        o.shakenUntil = fl.time + 5; const f0 = o.fear; addFear(o, 0.6 * Math.max(5 * o.R.panic, 0.05 * o.courage + 2) * (d.crypt ? 2 : 1), null, 'death'); fl.stats.deathFear += Math.max(0, o.fear - f0);
         if (o === L && !d.morale) { d.morale = true; P.morale = Math.max(0.15, P.morale - 0.25); }
         fl.stats.newsDeaths = (fl.stats.newsDeaths || 0) + 1;
         break;   // one at a time
@@ -978,7 +978,7 @@
     if (P.plan !== 'explore' || fl.fearless || goingOut() || P.council || P.detour || P.prep || P.aheadWait >= 0 || fl.time < P.lookCd || L.lost || talking(L)) return;
     if (fl.patT > 0.8 * S.waveTime || P.morale < 0.45 || groupOf(L).some(o => panicking(o) || o.state === 'fight') || roomOf(L.tx, L.ty) !== r) return;
     if ([...fl.items.values()].some(m => MONSTERS[m.type] && m.hp > 0 && roomOf(m.x, m.y) === r)) return;
-    const avgHp = crew.reduce((a, o) => a + o.hp / o.max, 0) / crew.length;
+    const grpL = groupOf(L), avgHp = grpL.reduce((a, o) => a + o.hp / o.max, 0) / grpL.length;
     const spots = lookSpots(r, L), objs = spots.filter(s => s.kind !== 'wall').length;
     const p = ({ careful: 0.5, greedy: 0.55, brave: 0.35, coward: 0.15 }[L.trait] || 0.4) + (L.rank === 0 ? 0.15 : 0) + (objs >= 2 ? 0.2 : objs ? 0.1 : -0.2) + (R.rk ? 0.15 : 0) - (avgHp < 0.5 ? 0.25 : 0) - (fl.patT > 0.6 * S.waveTime ? 0.15 : 0);
     const g = talkGroup(L);
@@ -1282,7 +1282,7 @@
         const c = byId(P.rescueId);
         if (c && caged(c)) {
           let rs = byId(P.rescuerId);
-          if (!rs || rs.dead || rs.fled || rs.gone || caged(rs) || rs.fleeing) {
+          if (!rs || rs.dead || rs.fled || rs.gone || caged(rs) || rs.fleeing || rs.lost || rs.goHome) {   // 1.17: a rescuer who got lost or went home is replaced
             const cand = alive().filter(o => o !== c && !caged(o) && !o.fleeing && !o.lost && !o.goHome && !onScout(o) && (canHearShout(o, c) || o === leader() || canHear(o, leader()))).sort((a, o) => ((o.type === 'thief') - (a.type === 'thief')) || (hdist(a, c) - hdist(o, c)));
             rs = cand[0]; P.rescuerId = rs ? rs.id : -1;
           }
@@ -1564,11 +1564,11 @@
     if (h.type === 'bard') { bardTick(h, dt); return; }
     if (h.type !== 'priest' && h.type !== 'mage') return;
     h.cast -= dt; h.barrierCd -= dt; h.dispelCd -= dt;
-    if (panicking(h) || h.fleeing) return;   // 1.17 (6.8 #16): no spells or prayers while running scared
     if (h.type === 'priest') {   // faith: a small pool (6 + level/2) that refills slowly (+1 every 12 s); every prayer spends it
       h.faithT += dt; if (h.faithT >= 12) { h.faithT -= 12; if (h.faith < h.faithMax) h.faith++; }
       if (h.faith >= 2) h.faithSaid = false;
     }
+    if (panicking(h) || h.fleeing) return;   // 1.17 (6.8 #16): no spells or prayers while running scared (faith still refills)
     const p = heroPos(h);
     if (h.type === 'mage' && h.dispelCd <= 0 && !panicking(h)) {
       const z = fl.zones.find(zz => alive().some(o => hdist(o, h) <= 4 && zz.keys.has(key(o.tx, o.ty))));

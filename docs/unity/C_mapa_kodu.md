@@ -1,6 +1,6 @@
 # Załącznik C: mapa kodu prototypu
 
-Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
+Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.17; zmiany w istniejących dopisane po średniku z numerem wersji) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
 
 ## p1_config.js (dane i stałe)
 
@@ -23,7 +23,9 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `actSrc` | a tapped monster ability scores like a trap |
 | `gtext` |  |
 | `pick` |  |
-| `nameFill` |  |
+| `pickS` | 1.17: a line or a list of lines (`SAY.trap[kind]` is a list of 3 since 1.17) |
+| `nameGen` | 1.17: {g} = genitive (bez Wandy, głos Borysa): a man's is his accusative, a woman's comes from her name (-ki/-gi/-li/-ii, else -y) |
+| `nameFill` | 1.17: also {g} (nameGen); each marker is replaced once |
 
 ## p2_state_map.js (ustawienia, stan, mapa, obszary)
 
@@ -89,9 +91,9 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `pathFrom` |  |
 | `shortestPath` | the true shortest way in (used by the tutorial and the test bots) |
 | `markKnown` | The party shares one map in their heads: what they were told in the tavern (rumours) plus what they see. A room is seen whole the moment someone steps in (or into its doorway); in a corridor they see a few tiles... |
-| `revealRoom` |  |
+| `revealRoom` | 1.17: the heart's room seen for the first time: fl.heartBy = fl.revealBy (who saw it; heartP, p5_ai.js) |
 | `revealAround` |  |
-| `reveal` |  |
+| `reveal` | 1.17: fl.revealBy = the hero whose sight it is (for heartBy) |
 | `checkGhostRumors` | A rumoured trap that is not there: once they can see the spot, the false rumour is gone. |
 | `frontier` | Frontier: tiles they know, next to walkable tiles they do not know yet. That is where exploring goes. |
 
@@ -144,7 +146,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `inChaos` |  |
 | `readT` |  |
 | `floorBusy` |  |
-| `othersWaiting` | a new line also waits for the lines already waiting around him (a talk going on, an answer due): first come, first said |
+| `othersWaiting` | a new line also waits for the lines already waiting around him (a talk going on, an answer due): first come, first said; 1.17: also the queue being worked through (P.queueCur without done entries and the line being said, P.sayingQ), plus P.queueSay |
 | `lookAt` |  |
 | `say` |  |
 | `sayTick` | the lines waiting for their turn: the most important first, the oldest among equals |
@@ -162,7 +164,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `newRun` |  |
 | `startTrapSpot` |  |
 | `seedStartTraps` |  |
-| `freshParty` |  |
+| `freshParty` | 1.17: council, councilMore, look, lookCd, sound, soundCd |
 | `setupFl` | A fresh wave state around the dungeon as it stands (used by the build phase, and by a run resumed after a wave summary). |
 | `startBuild` |  |
 | `waveHint` |  |
@@ -192,7 +194,8 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `applyRumors` |  |
 | `spawnHero` |  |
 | `regroupAtDoor` | The first ones ran out screaming before everyone was in: those still outside go in as a new group, a little shaken. |
-| `becomeImpatient` | Patience runs out. Prototype 1.01 (author's decision): the party retreats and goes home, heart known or not (the old "szarża" is gone). Only the hero of the prophecy never goes home: the prophecy shows the way and... |
+| `becomeImpatient` | Patience runs out. 1.17 (author: after 2 minutes not a rigid retreat or charge): P.council opens when the heart is known to the party (heartP) or the extra 30 s is still unused, and the party votes (p5_ai.js: councilThink); otherwise goHome. Only the hero of the prophecy never goes home: the prophecy shows the way and the party storms the heart. |
+| `goHome` | 1.17: the old end of patience: everyone goes home (fl.fearless, P.plan leave, P.council cleared, tl ip 0, the leader says leave, the hint); also the council's home result and its fallbacks |
 | `heroExit` | A hero walks out of the dungeon. With a crystal it is your loss; scared out of his wits it is your win. Either way, he talks. |
 | `finishWave` |  |
 | `collectReturners` | Głód serca: the wave's score feeds the heart. Short: the reserve pays first, then a crystal. Surplus: the reserve (at most 2 needs); a full reserve grows a lost crystal back. |
@@ -220,16 +223,16 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `bt` |  |
 | `srcKind` |  |
 | `markOuch` | 1.13 (author: they stood and rested in traps): a hero remembers where a trap just got him (the whole reach of it, for half a minute), even if the party learnt nothing; he will not stand still there (p... |
-| `damage` |  |
-| `fearResist` | Fear: the second currency of the dungeon. Every bit of it scores; past a hero's courage he runs for the exit. |
+| `damage` | 1.17: the hero of the prophecy getting back up steadies only those who hear him (canHearShout) |
+| `fearResist` | Fear: the second currency of the dungeon. Every bit of it scores; past a hero's courage he runs for the exit. 1.17: the boss bonus (x0.85) only with a boss he is with (sees or hears him) |
 | `startRage` | 1.05: fury, one mechanic for everyone (it used to be a brave one's answer to a death): +25% speed, half the fear, hits monsters harder. The barbarian lives in it: a death, a hard hit or panic makes him rage (panic... |
 | `raging` |  |
 | `addFear` |  |
 | `dropCrystal` |  |
-| `startFlee` |  |
-| `partyFlee` |  |
-| `crystalReturns` | The carrier loses the crystal (killed, or down a bottomless well): it rolls back to the heart and the others decide what now. |
-| `kill` | A dead hero: points, a soul for the dungeon, a louder legend (Infamy), panic among the others. His secrets die with him. |
+| `startFlee` | 1.17: the champion's cry only when he perceives the one who bolts, and steadies those who hear it; half of us run counts the leader's group (groupOf); fleeShout only when the leader perceives him |
+| `partyFlee` | 1.17: reaches whoever hears the leader's cry (canHearShout, h.plan flee); a caged one and the champion are not marked fleeing; the others learn when they rejoin |
+| `crystalReturns` | The carrier loses the crystal (killed, or down a bottomless well): it rolls back to the heart and the others decide what now. 1.17: only those who see it or hear the cry shout and turn back; the decision is the leader's group's (groupOf), the rest learn when they rejoin |
+| `kill` | A dead hero: points, a soul for the dungeon, a louder legend (Infamy), panic among the others. His secrets die with him. 1.17: fl.deaths entry (knows, morale); the ones who see it react in full, the ones who hear the cry (canHearShout) get 1.3 x the far fright, shaken 5 s, deathHeard 55%, no name, no rage; the party's morale drops once the leader knows |
 | `rollItem` |  |
 | `itemPow` | Rdza and a curse weaken gear |
 | `potionHeal` | a potion heals 30% of max HP, a rare one 51%, never more than 55% |
@@ -239,7 +242,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `itemValue` | What a piece of gear is worth to this hero right now (0 = no use for it): potions matter when hurt, a second power of a kind only if it is better, each class has its favourite (warrior: talisman, weapon, armour;... |
 | `dropItem` | Something lands on the floor next to the hero (swapped out, or spilled from a body): the exact item, loot for anyone. |
 | `giveItem` | A hero takes a piece of gear. One power, weapon and armour of a kind: a better one replaces the old one (left on the floor); a full pack swaps out its least useful item if the new one is worth more, otherwise he... |
-| `noticeLoot` | Greed grows when they SEE treasure (each kind its own pull, a Sezam doubles it); picking it up adds a little more. |
+| `noticeLoot` | Greed grows when they SEE treasure (each kind its own pull, a Sezam doubles it); picking it up adds a little more. 1.17: a potion seen: SAY.lootPotionSeen |
 | `pickup` | Picking it up: coins go to the purse, the rest is a real item (or the exact one that was dropped). No use or no room: it stays. |
 | `curse` |  |
 
@@ -247,7 +250,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 
 | funkcja | komentarz przed nią |
 |---|---|
-| `learnTrap` | A trap that went off in front of the heroes may be remembered (veterans almost always, rookies often not); the thief, elites and amulets spot traps before they fire. Known traps are avoided if they can be. |
+| `learnTrap` | A trap that went off in front of the heroes may be remembered (veterans almost always, rookies often not); the thief, elites and amulets spot traps before they fire. Known traps are avoided if they can be. 1.17: one who saw it (in that room, not lost, not panicking, not caged) tells the others now and then (0.5, SAY.learn after the shout) |
 | `rebuildThreat` | Path cost: known loaded traps hard, reloading ones barely; rumoured traps that are not there count as real; monsters they can see make them look for another way. |
 | `disarmSpots` |  |
 | `heroesOn` |  |
@@ -262,10 +265,10 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `decoyAlarm` | Wabik: taking it apart rings the alarm and every ready trap in its room goes off at once. |
 | `fire` | 1.05: while a trap fires, the wounds and the fright it causes are remembered by each hero (what he will tell in the tavern) |
 | `feltBy` |  |
-| `fireRaw` |  |
+| `fireRaw` | 1.17: fl.lastTrapRoom; hearFar for TRAPS; the shout from SAY.trap lists (pickS, else trapGeneric); the ambush counter only for traps on the leader's group; a priest's failed blessing says blessHit |
 | `fall` | Trapdoor: down into the dark, out somewhere else a few seconds later, alone and shaken. A hero falls through a given trapdoor once per wave: after that he knows where the edge is and steps around it. |
 | `landFallen` |  |
-| `cageHero` | Cage: stuck for a while, taking extra damage. The party decides whether to come back for him. |
+| `cageHero` | Cage: stuck for a while, taking extra damage. The party decides whether to come back for him. 1.17: h.cagedAt (the leader notices a silent cage after 20 s) |
 | `freeCaged` | Once a cage has been opened (pried by a friend, worn through, or torn apart in panic) its bars are bent: no more catches this wave. |
 | `cageEnds` | v14.1: the cage's time is up. A friend on the way gets a few more seconds; nobody coming = he dies in the cage. A boss is too strong for the bars: he tears them apart (the cage is bent for this wave). |
 | `hurtMonster` |  |
@@ -283,39 +286,63 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `tIdx` |  |
 | `hdist` |  |
 | `panicking` |  |
-| `goingOut` |  |
-| `exiting` |  |
+| `planOf` | 1.17 (author: the heroes know about each other in other rooms): each hero acts on the plan he knows (h.plan, else P.plan); perceiveThink spreads it |
+| `heartP` | 1.17: the party knows where the heart is once the leader does: heartKnown and heartSaid |
+| `heartTold` | 1.17: the leader learns the heart: heartBy unset (tavern, prophecy) or the leader himself, he sees or hears the one who saw it, or stands in the heart's room |
+| `goingOut` | 1.17: the party's plan (P.plan) only; one hero's own: goingOutH |
+| `goingOutH` | 1.17: the hero's own plan (planOf) is a way out (flee, leave, escape) |
+| `exiting` | 1.17: fleeing, crystal, goHome (outvoted at the council, goes home alone) or his own plan out (goingOutH) |
+| `hushAt` | 1.17: what a hero can perceive. He SEES what happens in his own place (samePlace), HEARS a voice in earshot, and a SHOUT carries 14 steps; nothing is heard into or out of a Głusza, and a Kamień wyjec swallows shouts |
+| `canSee` | 1.17: same place (samePlace), neither gone |
+| `canHear` | 1.17: earshot, neither gone nor in a Głusza |
+| `stepsWithin` | 1.17: walking steps from a to b (any walkable or door tile), searched up to n steps |
+| `canHearShout` | 1.17: canHear, or at most 14 walking steps (and 14 tiles straight), not from or into a Głusza or a Kamień wyjec's room |
+| `perceives` | 1.17: sees, or hears (a shout when shout is set) |
+| `groupOf` | 1.17: the leader's group: who decides and counts (the leader and whoever sees or hears him, not lost, not caged) |
 | `heartGoals` |  |
 | `exitGoals` |  |
 | `exitGoal` |  |
-| `leader` |  |
+| `leader` | 1.17: not one going home alone (goHome); one off on his own errand (scout, split) takes the lead only if nobody else can |
 | `partySay` |  |
 | `talkGroup` |  |
 | `toSafety` | a hero who stands still somewhere unsafe walks to a good tile (at most 3 steps, the one nearest the leader; one who rests stays in his room, so the rest does not walk out of it; none: he stays) |
+| `councilVote` | 1.17: one hero's vote at the council: scores for home, storm (only with heartP) and more (only once a wave) from fear, health, character, class, rank and gold |
+| `councilThink` | 1.17: the council at the end of patience (opened by becomeImpatient, p3_flow.js): waits for a quiet moment (at most 4 s, then cuts a talk short), the voters speak, the leader sums it up (his vote 1.5, an elite's 1.25); an outvoted hero may go home alone; cancelled when the party goes out, after 8 s without a group home |
+| `councilDone` | 1.17: the decision takes effect when the last line has been said: more (patT capped at waveTime - 30, councilMore), storm (fearless, storm, assault, tl ip 1) or home (goHome); the ones going home alone get goHome, tl gh, the float |
 | `talk` | The party stops and talks it over: a few lines from different heroes, one after another. |
-| `talkAs` | 1.05: the same, but each line has its speaker (null: anyone in the party) |
-| `lineKey` |  |
+| `talkAs` | 1.05: the same, but each line has its speaker (null: anyone in the party); 1.17: lines are matched to their keys by LINE_RX (lineKey) |
+| `lineKey` | 1.17: lines with a name ({n}, {a}, {v}, {g}) and gender forms are matched by regex patterns built once (LINE_RX), so CONVO starts after them too |
 | `convoAfter` |  |
-| `convoStart` |  |
+| `convoStart` | 1.17: another exchange nearby also counts while the queue is worked through (P.queueCur without done entries and P.sayingQ) |
 | `huddleUp` | 1.12.1: when the party stops to talk it over, the ones further off come up to the leader (to a free tile at most 2 steps from him) and everyone turns to him: a huddle, not a freeze |
 | `talkLen` |  |
 | `lootLevel` |  |
 | `lootSeen` | Common loot is noticed from the same room, rare from the next one, legendary glitters across the dungeon. |
 | `checkCursed` | An experienced priest (level 6+) feels the curse on a treasure close by and warns the others: nobody touches it. |
-| `lootDecision` | Worth it? What the loot is worth to THIS hero (gold to the greedy, a potion to the wounded, gear he can use) against the danger they know about on the way and around it. |
+| `lootDecision` | Worth it? What the loot is worth to THIS hero (gold to the greedy, a potion to the wounded, gear he can use) against the danger they know about on the way and around it. 1.17: lootStop has an effect (lootObey: who heeds it leaves the loot for 15 s); going for a potion he says lootPotion (lootPotionNeed when hurt), not a gold line |
 | `safestRoom` |  |
 | `searchTargets` | Rooms they know of (from the tavern or from the doorway) but have not walked through yet this wave: there may be treasure. |
-| `chooseTarget` |  |
+| `chooseTarget` | 1.17: deep and whim by character (brave, careful, coward), careful x1.15 distance; a sound heard in the last 25 s within 7 tiles pulls or pushes by character |
 | `restScene` | 1.12.1: when they sit down to rest: the leader calls it, the priest tends the wounds, somebody grumbles and gets an answer |
-| `decideCage` | A friend in a cage: elites always go back for him; others weigh their own fear. |
-| `partyThink` | Runs a few times per second: who leads, where they go, retreat, push for the crystal or run, who got separated. |
+| `decideCage` | A friend in a cage: elites always go back for him; others weigh their own fear. 1.17: a second one caged while they free the first waits in P.rescueQ |
+| `partyThink` | Runs a few times per second: who leads, where they go, retreat, push for the crystal or run, who got separated. 1.17: perceiveThink, councilThink and lookThink each tick; the cage decision when the leader hears the cage (or after 20 s); the heal call only when the priest hears it (canHearShout); retreat, rest and flight thresholds over the leader's group; small talk keys by mood (chatHurt, chatScared, chatGold, chatRich, chatIdle) |
 | `answerLost` | 1.05: a lost one calls and the party answers: the nearest one who hears him (14 steps, a bard 26) shouts back and he walks towards the voice, through rooms he does not know too. A Kamień wyjec in his room turns the... |
 | `lostChance` | The chance to lose the way once cut off from the leader: bigger dungeon and fog = more, experience and a thief's sense = less. |
-| `getLost` |  |
+| `getLost` | 1.17: only marks him (lostAt, lostNoticed false); the leader decides when he notices (missLost) |
+| `missLost` | 1.17: the leader misses him (4 s out of his sight and earshot): go back for him (to where he was last seen, P.seen; 14 s), or go on (leaveLost) |
+| `perceiveThink` | 1.17: who knows what. Every party tick: the leader's plan reaches those who see or hear him (h.plan), a new leader brings his own plan (not after a theft), P.seen, missLost, a death reaches those who did not see or hear it when they meet one who knows (tellDeath, newsDeath), heartTold, leftBehind |
 | `startSplit` | 1.16: a deliberate split starts (scout, mate, 'wait here', rest scout, rookie errand): h.split, stats.splits, the 'Zwiad' float |
 | `onScout`, `splitting` | 1.16: the scout or his mate; anyone away on purpose (also a rookie on his errand) |
 | `nextScout` | 1.16: the scout's next opening: the nearest known way into the unknown that does not lead back towards the party |
-| `maybeDetour` | A wrong turn at a junction (a room with 3+ ways out): more likely in a big dungeon and in the fog, rarer for veterans who know the way. |
+| `maybeDetour` | A wrong turn at a junction (a room with 3+ ways out): more likely in a big dungeon and in the fog, rarer for veterans who know the way. 1.17: heartP instead of heartKnown |
+| `lookSpots` | 1.17 (author: let them look around): what can be looked at in a room: furniture, props (LOOK_PROP), the komnata, a wall, with a free tile to stand on |
+| `lookPref` | 1.17: what this hero likes to look at (LOOK_LIKE by character and class; a wall -1.5) |
+| `lookRoll` | 1.17: the leader walks into a room not looked around in this wave: one roll whether they stop and look (chance by his character, the room, the time and their wounds); who goes, who stays (a coward 60%), lookWant / lookHurry |
+| `lookThink` | 1.17: the looking-around runs: ends when all are done, after 10 s, or at once on a trap there, a sound, a wound, a panic, a new plan; lookEnd, lookCd 18 s |
+| `lookJob` | 1.17: planHero: walk up to the thing, look at it, search it; null when there is nothing (left) to do |
+| `lookArrive` | 1.17: he stands at the thing: what he says (lookObj, lookProp, lookKind, lookWall) |
+| `lookDone` | 1.17: done looking: furniture searched may set off the trap on it (SEARCH_TRAP) or give a coin (SEARCH_GOLD: 0.3 greedy and thief, else 0.18); lookFind or lookNothing |
+| `hearFar` | 1.17: a trap goes off where none of them can see it: the nearest calm one within 12 tiles hears it, may say so (hearSound, hearScream), and P.sound steers the leader if he heard it too; soundCd 10 s |
 | `powerReady` |  |
 | `usePower` |  |
 | `useCharm` | Talisman: a 3 s ward against trap damage (25% at the first level, +5% a level, at most 40%). A few uses a wave. Rookies switch it on after a hard hit, veterans also right before a trap they know about. |
@@ -323,7 +350,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `useBoots` | Boots: a 3 s sprint, for running out (with or without the crystal), dashing past a known trap, or finding the others. |
 | `roomThreat` | Known threat in a room: traps they know about (wall traps count for the room they face) and monsters they can see. |
 | `checkPrep` |  |
-| `startPrep` |  |
+| `startPrep` | 1.17: the mage and the thief speak of traps only when the room has traps they know of |
 | `finishPrep` |  |
 | `isFrontierTile` |  |
 | `randomKnownFar` |  |
@@ -331,7 +358,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `loadFound` | 1.14: the traps you discover stay discovered between runs (this browser's collection, `yatd-found`). |
 | `saveFound` |  |
 | `pickTab` | 1.14: to a tab, and to the sub that holds a tile (the guide points at a tile). |
-| `planHero` | One hero decides what to do next and finds a path there (only through tiles the party knows). |
+| `planHero` | One hero decides what to do next and finds a path there (only through tiles the party knows). 1.17: reads planOf(h) and exiting(h); job 13 look (lookJob); the leader's search for a lost one ends with searchFail; the priest walks to a caller whose path costs at most 20 (healFor); regroup ignores those going out |
 | `partyWay` | 1.13.4: where the party is going: the leader's path while someone else leads and walks it, else the route to the party's goal (detour, heart in an assault, explore target). Not the hero's own path. |
 | `disarmJob` | The thief deals with known traps that still sit on the leader's way. Rookies are slow and sometimes set them off. |
 | `smashJob` | 1.05: the barbarian's axe: counter-buildings in his room (always worth it to him) and wooden furniture close by (further when raging). A smashed building does nothing for the rest of the wave and stops blocking; a... |
@@ -339,7 +366,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `blessJob` | An experienced priest lifts the curse from a known portrait near their way. |
 | `bombJob` | Anyone with a bomb throws it at a known trap blocking the leader's way, from up to 3 tiles. |
 | `bardTick` | Priest heals, puts out fires, raises a barrier and burns ghosts with holy light; mage burns monsters and clears webs. 1.05: the bard. A call when someone is lost (they walk to the music), and a song when spirits sag... |
-| `heroAbilities` |  |
+| `heroAbilities` | 1.17: no spells or prayers while panicking or fleeing; the priest lifts a friend's curse first, then his own (curseSelf) |
 | `glance` | 1.10: standing, a hero looks around now and then: at a friend, at loot they saw, at a trap they know, or just away |
 | `slipChance` |  |
 | `heroTile` |  |
@@ -348,10 +375,10 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `stepAside` | two standing on one tile (a fall, a slide, a squeeze): the later one steps to a free tile next to it |
 | `idleIn` | 1.12.1: a hero standing idle in the way of one who walks makes way: a step to the side, or one ahead along his way (and whoever stands there makes way too), so the leader never stands behind his own f... |
 | `makeWay` |  |
-| `onEnter` |  |
+| `onEnter` | 1.17: the leader in a new room without a detour: P.lookAsk (lookRoll 0.9 s later) |
 | `inZone` |  |
 | `scanTraps` |  |
-| `updateHero` |  |
+| `updateHero` | 1.17: a lifted curse says blessDone; the warrior leading raises his shield with shieldLead |
 
 ## p6_loop.js (krok symulacji, checki, kamera, muzyka)
 
@@ -400,9 +427,9 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `clearCheck` |  |
 | `updateCheck` |  |
 | `heroCode` |  |
-| `takeCrystal` |  |
+| `takeCrystal` | 1.17: only those who see the carrier or hear his cry turn to escape (h.plan); the rest learn when they rejoin |
 | `stealNeed` | Szklane serce: the crystal comes loose 2 times faster per copy |
-| `step` |  |
+| `step` | 1.17: the gate line by the leader; P.steal settles back 0.5/s with nobody at the heart; the wave 1 leave line by one who was at the heart (or hears one) |
 | `timeScale` |  |
 | `autoFFOn` | v15.1: after 0,3 s of quiet (was 0,8) |
 | `quietNow` |  |
@@ -636,7 +663,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `setText` |  |
 | `mmss` |  |
 | `fmtK` |  |
-| `updateHud` |  |
+| `updateHud` | 1.17: narada on the clock during a council |
 | `fmtG` | small Groza with two decimals |
 | `renderPips` | Ten pips for the run between waves: green = held, red = a crystal lost, gold = the next wave; a diamond marks a boss. |
 | `setHint` | 1.12 (author: the message box at the top of the map goes, all of it): what it explained is in the onboarding cards (Nowe w tym runie), in the tile tips (hold a tile) and on the screens; what a tap did wrong is said... |
@@ -673,7 +700,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `leaveFullscreen` |  |
 | `restart` | the start card again, in place |
 | `webStartRow` |  |
-| `renderStart` |  |
+| `renderStart` | 1.17: the version label and the Co nowego entries |
 | `renderMenu` | The menu (the button bottom left): back to the game, settings, save and leave, download, end the run. |
 | `settingsBack` |  |
 | `sliderRow` |  |
@@ -703,7 +730,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `classIconSvg` |  |
 | `weakOf` | what a hero entry is weak to: class and (when known) body; the strongest first |
 | `nextRow` | one row of the next party: icon, name, class and level, character; what the class does; gear; weaknesses and what is known |
-| `waveFun` | 2-3 curiosities of the wave: the favourite trap is the usual first, the rest by lot (kept while the screen is open) |
+| `waveFun` | 2-3 curiosities of the wave: the favourite trap is the usual first, the rest by lot (kept while the screen is open); 1.17: Zwiedzali (2+ looks) and Narada |
 | `renderWave` |  |
 | `waveDetails` | Szczegóły: where the Esencja came from, then four views in one box (what comes next, the heroes, the elements, the numbers) |
 | `cardFit` |  |
@@ -738,7 +765,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `tapMove` |  |
 | `renderItem` |  |
 | `renderEsencja` | v15.1: a tap on the equation row: what each part means, and where this wave's Esencja came from |
-| `renderHero` |  |
+| `renderHero` | 1.17: Teraz statuses wraca sam do domu and rozgląda się |
 | `renderHungerTip` | v14: the first hungry wave explains itself once |
 | `renderBreach` | The breach, tapped between waves: what it means and the patch. |
 | `renderCard` | A card from the deck tab: read it, or sell it between waves. |
@@ -746,7 +773,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `fearSrcName` |  |
 | `statTile` |  |
 | `itemsTable` |  |
-| `statsTable` |  |
+| `statsTable` | 1.17: rows for looking around, the council and news (no caller in 1.17, see 08) |
 | `renderOver` |  |
 | `renderVictory` | After a reload at the final summary: the same choice as on the summary (win now or play on). |
 | `saveRunSoon` |  |
@@ -826,4 +853,4 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16.1) z pier
 | `tutOnBuild` | 1.12: a new wave's build jumps to its first step (what was left of the wave before is let go) |
 | `tutResume` | Prototype 1.0: a tutorial run comes back from a save with its coach where it was. A step of the wave itself waits for the next wave, so it goes back to "release the wave"; the "place more" steps count from what... |
 | `tutAnySpot` |  |
-| `tutEnd` |  |
+| `tutEnd` | 1.17: the test hooks also export lookRoll, lookSpots, hearFar, councilVote, nameGen, nameFill |
