@@ -19,8 +19,14 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   // 2. patience: retreat (not the old charge)
   fresh(); G.startWave(); g = 0; while (G.fl.queue.length && g++ < 400) G.step(0.05);
   G.fl.heartKnown = true; G.becomeImpatient();
-  out.retreat = { plan: G.fl.party.plan, storm: G.fl.storm, label: (G.updateHud && 0) };
-  ok(G.fl.party.plan === 'leave' && G.fl.storm === false, 'patience over: retreat');
+  out.retreat = { plan: G.fl.party.plan, storm: G.fl.storm, council: !!G.fl.party.council, fearless: G.fl.fearless };
+  // 1.17: patience over opens a council (t117_ai tests its outcomes); with no choice left (heart not known to the leader,
+  // the extra time used) they go home as before
+  ok(G.fl.party.council && !G.fl.fearless, 'patience over: a council');
+  fresh(); G.startWave(); g = 0; while (G.fl.queue.length && g++ < 400) G.step(0.05);
+  G.fl.party.councilMore = true; G.becomeImpatient();
+  out.retreat2 = { plan: G.fl.party.plan, storm: G.fl.storm };
+  ok(G.fl.party.plan === 'leave' && G.fl.storm === false, 'patience over, no choice left: retreat');
   // 3. fog: a fog room on the way, heroes inside lose the party
   fresh();
   const L = G.run.layout, cells = [...L.cells.entries()].filter(([k, c]) => k !== L.entrance && k !== L.heartKey);
