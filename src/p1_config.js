@@ -1797,7 +1797,66 @@
       '{v}, liczę do trzech. Płacisz.', 'Wygrał{em|am}, {v}! Słyszycie?'],
     betLose: ['Ha! Płać, {v}. A potem się opatrz.', 'Mówił{em|am} ci, {v}. Pułapka zawsze wygrywa.', '{v}! Żyjesz? To dobrze. I tak płacisz.',
       'Głupi zakład, {v}. Trzymaj się.', 'Zatrzymaj tę monetę, {v}. Tylko żyj.', 'Dobra lekcja za jedną monetę, {v}.',
-      '{v}, to nie było warte monety!', 'No i kto wygrał, {v}?', 'Bogowie, {v}... dość już takich zakładów.', 'Następnym razem stawiaj na loch, {v}.']
+      '{v}, to nie było warte monety!', 'No i kto wygrał, {v}?', 'Bogowie, {v}... dość już takich zakładów.', 'Następnym razem stawiaj na loch, {v}.'],
+    // 1.22 Finał fali (e122/R3): the crystal run, the last stand, care on the way ({v} = the other one, filled by the code)
+    escortForm: ['Kryształ w środek, my dookoła!', 'Krąg! Nikt nie dotknie kryształu!', 'Osłaniać kryształ ze wszystkich stron!',
+      'Szyk wokół kryształu! Już!', 'Ściśnijcie się wokół kryształu!', 'Plecami do kryształu, oczy na zewnątrz!',
+      'Ten kamień ma dojść do wyjścia. Pilnować!', 'Bez kryształu nie ma po co wracać. Pilnować!', 'Nikt nie odstępuje kryształu na krok!',
+      'Straż przy krysztale! Ruszać się!'],
+    escortGuard: ['Nie oglądaj się, {v}. Jestem obok.', 'Biegnij, {v}. Resztę biorę na siebie.', 'Mam cię, {v}!', 'Lewa strona moja, {v}.',
+      'Nikt cię nie tknie, {v}.', 'Ty pilnuj kryształu, ja pilnuję ciebie.', 'Jestem przy tobie, {v}.', 'Tylko go nie upuść, {v}!',
+      'Spokojnie, {v}. Mam oczy dookoła głowy.'],
+    carrierThanks: ['Dzięki. Trzymajcie się blisko.', 'Tylko nie zostawiajcie mnie sam{ego|ej}!', 'Dobrze was mieć za plecami.',
+      'Postawię wam piwo. Każdemu.', 'Kamień nie lżejszy, ale mnie jakoś lżej.', 'Pilnujcie boków, ja patrzę przed siebie.', 'Nie zawiodę was.',
+      'Dobra, tylko nie depczcie mi po piętach.', 'Gdyby co, łapcie kryształ, nie mnie.', 'Bogowie wam zapłacą. Albo ja.'],
+    handOver: ['{v}, łap! Ze mną już krucho.', 'Bierz kryształ, {v}. Ledwo stoję.', 'Niech go niesie ktoś cały. Ty, {v}.',
+      'Masz, {v}. Ja się zaraz przewrócę.', 'Ręce mi drżą... {v}, przejmij go.', '{v}! Ratuj kryształ, nie mnie!',
+      'Dalej ty, {v}. Krwawię jak prosię.', 'Twoja kolej, {v}. Nie upuść go.', 'Bierz, {v}. Przeze mnie tylko zwalniamy.'],
+    handTake: ['Mam go. Trzymaj się, słyszysz?', 'Dawaj! Uniosę.', 'Ciężki, cholera... Ale idzie.', 'Przejmuję. Nie martw się.',
+      'Dobra, teraz ja go niosę.', 'Nie puszczę, choćby mi ręce urwało.', 'Masz moje słowo. Doniosę.', 'Ostrożnie... Jest. Mam.',
+      'Złapane! Zostań przy nas!', 'Ależ on błyszczy... Dobra, nie teraz.'],
+    lastStand: ['Uciekajcie! Te drzwi są moje!', 'Biegnijcie, kupię wam trochę czasu!', 'Nikt tędy nie przejdzie. Ruszać się!',
+      'Zostaję. Nie kłóćcie się, tylko biegnijcie!', 'Wynoście kryształ! Ja tu postoję.', 'Ktoś musi trzymać próg. Niech to będę ja.',
+      'Uciekajcie, póki stoję!', 'Opowiadajcie o mnie w karczmie! Biegiem!', 'Do wyjścia! Ja ich tu przywitam.',
+      'Nie czekajcie na mnie! Dogonię was... może.'],
+    lastStandReply: ['Nie zapomnimy ci tego, {v}!', '{v}, wracaj żywo, słyszysz?', 'To głupota, {v}! Piękna głupota.',
+      'Postawię ci kufel, {v}. Wróć po niego.', 'Niech bogowie stoją przy tobie, {v}.', 'Nie umieraj tam, {v}!', 'Zaśpiewają o tobie, {v}!',
+      '{v}! Tylko bez przesadnego bohaterstwa!', 'Trzymaj się, {v}. Czekamy przy wyjściu.'],
+    sacrifice: ['Ja ją uruchomię! Potem biegiem!', 'Wezmę to na siebie. Przechodźcie zaraz po!', 'Odsuńcie się! Wchodzę w nią specjalnie!',
+      'Niech zadziała na mnie, a wy przejdziecie!', 'Jak tylko się odpali, lećcie!', 'Patrzcie i uczcie się. Głupio, ale skutecznie.',
+      'Pułapka zadziała raz. Niech to będę ja.', 'Czekajcie na mój znak!', 'Wy biegniecie, ja obrywam. Uczciwy podział.',
+      'Nie patrzcie tak. Ktoś musi.'],
+    sacrificeReply: ['{v}, nie!', 'Ostrożnie tam, {v}!', 'Odwaga albo głupota, {v}. Dzięki.', 'Gotowi! Daj znak, {v}!',
+      'Niech bogowie cię chronią, {v}.', 'Tylko szybko, {v}!', 'Mamy u ciebie dług, {v}. Wielki.', 'Przeżyj to, {v}, bo ci nie wybaczę.',
+      'Ech, {v}... Kto cię tego nauczył?'],
+    sacrificeDone: ['Już! Biegiem!', 'Przechodźcie, póki cicho!', 'Teraz! Póki śpi!', 'Zadziałało! Ruszać się!', 'Droga wolna! Pędem!',
+      'Na co czekacie?! Dalej!', 'Żyję! Biegnijcie!', 'Szybciej, zanim się naładuje!', 'Hop, hop, przez środek!', 'Nie oglądajcie się na mnie! Dalej!'],
+    youFirst: ['Idź, {v}. Ja popatrzę.', '{v}, ty masz lżejszy krok. Prowadź.', 'Po tobie, {v}. Uprzejmość to podstawa.',
+      'Ty masz więcej szczęścia, {v}. Śmiało.', 'Najpierw ty, {v}. Ja potem. Na pewno.', 'Jak ty przejdziesz, to i ja, {v}.',
+      '{v}, sprawdź, czy tam bezpiecznie.', 'Ruszaj, {v}. Będę patrzeć, gdzie stąpasz.', 'Dalej, {v}. Ktoś musi być pierwszy.'],
+    youFirstReply: ['Jasne, zawsze ja.', 'Dobra, dobra. Idę.', 'Tchórz. Ale idę.', 'Jak zginę, będę cię straszyć.', 'No dobrze... Krok po kroku.',
+      'Zapamiętam to sobie.', 'Bogowie, prowadźcie mnie.', 'Patrz i podziwiaj.', 'Jeszcze mi za to zapłacisz.', 'Idę. Ale tylko dlatego, że chcę.'],
+    tapFloor: ['Puk, puk... Jest tam kto?', 'Najpierw kij, potem nogi.', 'Sprawdzę, zanim stanę.', 'Chwila. Posłucham podłogi.',
+      'Kij ma mniej do stracenia niż ja.', 'Ostrożnie... Opukam to.', 'Każda płyta po kolei.', 'Cicho, muszę usłyszeć.',
+      'Zobaczymy, co ten kamień powie.', 'Babcia mówiła: najpierw stuknij.'],
+    tapFound: ['Pusto! Tu coś siedzi!', 'Głuchy dźwięk... Nie podoba mi się.', 'Stop! Pod spodem coś jest!', 'A tu cię mam, podła płyto!',
+      'Ha! Wiedział{em|am}!', 'Kij właśnie uratował mi nogę.', 'Tu nie stąpię za żadne skarby.', 'Ten kamień brzmi fałszywie.',
+      'Coś tu pod spodem czeka.', 'Pułapka! Ani kroku na tę płytę!'],
+    tapNothing: ['Twardo. Można iść.', 'Cisza. Chyba czysto.', 'Nic. Tylko kamień.', 'Brzmi zdrowo.', 'Lity kamień. Uff.',
+      'Pusto nie jest, i dobrze.', 'Na razie nic. Na razie.', 'Kij mówi, że czysto.', 'Solidne. Jak mur w klasztorze.',
+      'Nic tu nie ma. Dziwne, ale dobre.'],
+    notThisWay: ['Nie tędy. Był{em|am} tam i wolę nie wracać.', 'Wiem, co tam czeka. Inną drogą.', 'Tam nie wejdę. I wy też nie.',
+      'Raz mi wystarczyło. Szukamy obejścia.', 'Pamiętam to miejsce. Złe miejsce.', 'Stać! Tamtędy idą tylko głupcy.', 'Zawracamy. Ta droga gryzie.',
+      'Nawet za worek złota tam nie wejdę.', 'Znam tę salę. Omijamy.', 'Nie, nie i nie. Szukajmy innej drogi.'],
+    frontLine: ['Szyk! Stańcie za mną!', 'Pierwsza linia to ja!', 'Za tarczę! Wszyscy!', 'Ja z przodu, wy zza pleców!',
+      'Niech najpierw przejdą przeze mnie!', 'Stoję! Nikt nie przejdzie!', 'Ściśnijcie szyk za moimi plecami!', 'No chodź tu! Najpierw ja!',
+      'Słabsi do tyłu!', 'Mur! Jestem murem!'],
+    woundedBack: ['Muszę się cofnąć!', 'Krwawię... Zasłońcie mnie!', 'Do tyłu, do tyłu! Oberwał{em|am}!', 'Nie dam rady w pierwszym rzędzie!',
+      'Ktoś za mnie! Szybko!', 'Schodzę na tył, trzymajcie ich!', 'Jestem rann{y|a}! Kryjcie mnie!', 'Cofam się na chwilę... tylko na chwilę.',
+      'Ała... Wy teraz, ja z tyłu.', 'Za wami się schowam, wybaczcie!'],
+    nearExit: ['Widzę światło!', 'Już blisko! Nie zwalniać!', 'Czuję świeże powietrze!', 'Jeszcze parę kroków!', 'Wyjście! Tam, przed nami!',
+      'Prawie w domu!', 'Ostatni zakręt, przysięgam!', 'Nie teraz się potknąć! Dalej!', 'Słyszę wiatr! To wyjście!',
+      'Jeszcze trochę, a będziemy bogaci!']
   };
   // 1.10: answers to the everyday lines (someone close by says one now and then)
   const CHAT_REPLY = {
@@ -2678,6 +2737,42 @@
       { l: [['B', 'A mnie kto popilnuje?'], ['A', 'Ty też trzymaj się blisko.'], ['C', 'Ja ciebie. Może.']] },
       { b: 'barbarian', l: [['B', 'Dobrze mieć kogoś za plecami w boju!'], ['A', 'Najlepiej na świecie.']] },
       { bv: 2, l: [['B', 'Widział{em|am} wiele takich przyjaźni. Dbajcie o nią.'], ['A', 'Mamy taki zamiar.']] }
+    ],
+    // 1.17: talk about what they look at, news of a death, the council
+    handOver: [
+      { bt: 'brave', l: [['B', 'Odpocznij, {Av}. Teraz my.'], ['A', 'Tylko go nie zgubcie.'], ['B', 'Prędzej zgubimy głowy.']] },
+      { bt: 'greedy', l: [['B', 'Ciekawe, kto teraz dostanie większą działkę.'], ['A', 'Ten, kto przeżyje.'], ['B', 'Czyli warto przeżyć.']] },
+      { b: 'priest', l: [['B', 'Trzymaj się, {Av}. Bogowie widzą.'], ['A', 'Niech lepiej coś zrobią.'], ['B', 'Robią. Ciągle oddychasz.']] },
+      { bt: 'coward', l: [['B', 'Ojej, tyle krwi...'], ['A', 'Mojej. Nie twojej. Spokojnie.'], ['B', 'Na razie nie mojej...']] },
+      { l: [['B', 'Dobrze zrobi{A:łeś|łaś}, {Av}.'], ['A', 'Wiem. Boli i tak.']] },
+      { b: 'barbarian', l: [['B', 'Ha! Tylko tyle, {Av}?'], ['A', 'Zamienimy się? Ty krwawisz, ja się śmieję.'], ['B', 'Dobra wymiana. Kiedy indziej.']] },
+      { bv: 2, l: [['B', 'Widział{em|am} gorsze rany.'], ['A', 'Bardzo mnie pocieszasz.'], ['B', 'Nie miało być.']] }
+    ],
+    lastStand: [
+      { l: [['B', '{Av}, nie rób tego!'], ['A', 'Już robię. Biegnij!'], ['B', 'Uparciuch!']] },
+      { bt: 'coward', l: [['B', 'Ja... ja nie zostanę. Przepraszam!'], ['A', 'Nikt cię nie prosi. Uciekaj!']] },
+      { b: 'bard', l: [['B', 'Ułożę o tym pieśń, {Av}!'], ['A', 'Byle nie smutną.'], ['B', 'Będzie głośna. Obiecuję.']] },
+      { bt: 'brave', l: [['B', 'Chciał{bym|abym} stać tam z tobą.'], ['A', 'Wiem. Biegnij.'], ['B', 'Nie umieraj za szybko!']] },
+      { b: 'priest', l: [['B', 'Błogosławię cię, {Av}.'], ['A', 'Przyda się. Idź już!']] },
+      { l: [['B', '{Av}! Chodź z nami!'], ['A', 'Później! Uciekajcie!'], ['C', 'Słyszysz, {Bv}? Szybciej!']] },
+      { bt: 'greedy', l: [['B', 'Twoja działka przejdzie na nas?'], ['A', 'Tylko jak zginę. Nie licz na to.'], ['B', 'Liczę na ciebie. Na działkę trochę też.']] }
+    ],
+    youFirst: [
+      { l: [['B', 'Sprytnie, {Av}. Bardzo sprytnie.'], ['A', 'Doświadczenie, nie spryt.'], ['B', 'Tchórzostwo, nie doświadczenie.']] },
+      { bt: 'coward', l: [['B', 'Tylko nie ja, tylko nie ja...'], ['A', 'Spokojnie. Ktoś musi.'], ['B', 'No właśnie. Ktoś.']] },
+      { bt: 'brave', l: [['B', 'Trzeba było mnie posłać. Już był{bym|abym} tam.'], ['A', 'No to następnym razem ty.'], ['B', 'Trzymam za słowo.']] },
+      { b: 'thief', l: [['B', 'Puszczasz kogoś przodem? A ja to od czego?'], ['A', 'Ty pilnuj tyłów.'], ['B', 'Tyły nie mają pułapek. Zwykle.']] },
+      { bv: 2, l: [['B', 'Stara sztuczka. Też jej używał{em|am}.'], ['A', 'I dlatego żyjesz.'], ['B', 'Między innymi.']] },
+      { bt: 'greedy', l: [['B', 'Kto pierwszy, ten pierwszy przy skarbach.'], ['A', 'Albo pierwszy w grobie.'], ['B', 'Ryzyko zawodowe.']] }
+    ],
+    notThisWay: [
+      { l: [['B', 'Skąd wiesz, co tam jest?'], ['A', 'Wiem. Wystarczy.'], ['B', 'Dobra, wierzę na słowo.']] },
+      { br: 0, l: [['B', 'Ale tam może być skarb!'], ['A', 'I grób. Często jedno przy drugim.'], ['B', 'To brzmi jak przysłowie.'], ['A', 'Bo nim jest.']] },
+      { bt: 'careful', l: [['B', 'Pierwszy rozsądny głos dzisiaj.'], ['A', 'Ciesz się, póki słychać.']] },
+      { bt: 'greedy', l: [['B', 'Szkoda. Pachniało złotem.'], ['A', 'Krwią pachniało. Uwierz mi.']] },
+      { b: 'barbarian', l: [['B', 'Boisz się, {Av}?'], ['A', 'Pamiętam. To co innego.'], ['B', 'Hm. Mądre słowa jak na ciebie.']] },
+      { bt: 'coward', l: [['B', 'Dzięki bogom. Myślał{em|am}, że każesz tam iść.'], ['A', 'Głup{i|ia} nie jestem.'], ['B', 'Dzisiaj nie.']] },
+      { l: [['B', 'Inną drogą będzie dłużej.'], ['A', 'Dłużej, ale na własnych nogach.'], ['C', 'Wolę na własnych.']] }
     ]
   };
   // 1.13 (author: alone, they talked to the air): what a hero says instead when nobody can hear him (nobody in earshot).
@@ -2846,7 +2941,14 @@
     griefFriend: ['{v}... i został{em|am} sam{|a}.', 'Nie ma cię, {v}. Nikogo nie ma.', 'Mówię do ciebie, {v}, a ty milczysz.',
       'Jak mam iść dalej bez ciebie, {v}?', '{v}... cisza tu taka straszna.', 'Tylko ja i ten loch, {v}. Tylko ja.'],
     revengeVow: ['Pomszczę cię, {v}. Choćbym miał{|a} paść.', 'Ten loch odpowie za ciebie, {v}.', 'Sam{|a}, ale nie bezbronn{y|a}. Za ciebie, {v}.',
-      'Słyszysz, przeklęty lochu? Odpłacę ci.', 'Obiecuję ci to, {v}. Zemstę.', 'Nikt nie słyszy tej przysięgi. Tylko ty, {v}.']
+      'Słyszysz, przeklęty lochu? Odpłacę ci.', 'Obiecuję ci to, {v}. Zemstę.', 'Nikt nie słyszy tej przysięgi. Tylko ty, {v}.'],
+    // 1.22: alone
+    tapFloor: ['Opukam. Nie ma się co spieszyć.', 'No, kijku, nie zawiedź mnie.', 'Nikt nie patrzy, a i tak stukam. Mądrze.',
+      'Lepiej stracić kij niż nogę.', 'Powoli. Nie ma kto mnie wyciągnąć.', 'Puk... i słuchamy.'],
+    nearExit: ['Jeszcze trochę... Dam radę.', 'Światło. Nareszcie.', 'Jeszcze tylko kawałek, nogi...', 'Czuję wiatr. Prawie...',
+      'Jeśli dojdę, nikt mi nie uwierzy.', 'Sam{|a} z kryształem. Kto by pomyślał.'],
+    lastStand: ['Dobra. Ja i te drzwi. Zobaczymy.', 'Nikt tędy nie przejdzie. Nawet bez świadków.', 'Niech przyjdą. Stoję.',
+      'Ładne miejsce na ostatnią walkę. Ciasne.', 'Tu się zatrzymam. Byle tamci zdążyli.', 'Bogowie, jeśli patrzycie, to teraz.']
   };
   const SOLO_MUTE = new Set(['prepWard', 'prepJam', 'prepDisarm', 'prepShield', 'lootWait', 'friendHit', 'friendLow', 'rescue', 'scoutReply', 'councilReply', 'prepReply', 'restReply', 'restPriest', 'restScene',
     'argueLoot', 'argueCareful', 'argueCoward', 'argueBrave', 'decideYes', 'decideNo', 'argueSearch', 'replySearch', 'argueRetreat', 'agreeRetreat', 'reassure', 'surviveFirst',
@@ -2876,7 +2978,8 @@
       'Cał{y|a} jestem we krwi. Nie mojej. Chyba.', 'Krew! Moja krew! Ktoś za to zapłaci!', 'Krwawię... Długo tak nie pociągnę.',
       'Krwawię... nie chcę więcej ostrzy!', 'Krew leci... ile jej jeszcze mam?', 'Tyle krwi... robi mi się słabo.',
       'Krew... nie mogę na to patrzeć!', 'Kręci mi się w głowie... krew...', '{n}, tutaj! Krwawię!', 'Krew to krew. Każdy ma jej pełno.',
-      'Złoto nie ucieknie. Krew ucieka.'],
+      'Złoto nie ucieknie. Krew ucieka.',
+      'Krwawię... Zasłońcie mnie!', 'Dalej ty, {v}. Krwawię jak prosię.', 'Ojej, tyle krwi...'],   // 1.22 (woundedBack, handOver, CONVO handOver)
     bones: ['Te kości... ruszają się!', 'Kości grzechoczą!', 'Słyszę stukot gnatów!', 'Kości... nie chcę tu skończyć jak oni!',
       'Ktoś tu nie wyszedł.', 'Stare kości. Biedak.', 'Te kości są całkiem świeże.', 'Czaszka. I reszta, w kawałkach.',
       'Biedaczysko. Ciekawe, kim był.', 'Pouczający widok. Bardzo.', 'Ktoś tu leży od dawna.', 'Żadnych pierścieni? Szkoda.',

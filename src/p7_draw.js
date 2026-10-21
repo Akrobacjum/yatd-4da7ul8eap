@@ -3142,6 +3142,7 @@
     if (fl.time < h.slowUntil) ring('#a9c6ff', 2);
     if (h.split && fl.phase === 'raid') ring(inG2(h) ? 'rgba(232,178,106,0.9)' : 'rgba(140,224,200,0.85)', 1.5, [2, 3], 0, Math.PI * 2, 1.5);   // 1.16: away on purpose (a scout)
     else if (h.alone && fl.phase === 'raid') ring('rgba(255,179,92,0.85)', 1.5, [4, 3], 0, Math.PI * 2, 1.5);
+    if (h.escort && !h.crystal && !h.fleeing && fl.phase === 'raid' && carrierOf()) ring('rgba(255,214,120,0.4)', 1.5, null, 0, Math.PI * 2, 1.75);   // 1.22: the carrier's escort (a faint gold ring)
     if (h.hp / h.max < 0.3 && h.state !== 'rest') ring('rgba(255,90,90,' + (0.55 + 0.4 * Math.sin(realNow * 12)).toFixed(2) + ')', 2, null, 0, Math.PI * 2, 1.1);
     if (h.state === 'disarm') ring('#ffe066', 2.5, null, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur), 1.4);
     else if (h.state === 'loot') ring('#c9c2b8', 2.5, null, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur), 1.4);   // 1.20: searching a body

@@ -1058,6 +1058,335 @@
     g.shareCd = o.shareCd = fl.time + 8; P.shareCd = fl.time + 4;
     say(g, pick(SAY.giveGear), 2); P.queueSay.push({ id: o.id, text: pick(SAY.giveGearThanks), at: fl.time + 1.1 });
   }
+  // 1.22 Finał fali (e122/SPEC122.md): the crystal run (a guard round the carrier, the crystal handed over, a last stand, a trap set
+  // off on purpose, "nearly out") and care on the way ("ty pierwszy", tapping the floor, "nie tędy", the fight formation). What
+  // happened this wave is in P.fin (P is a wave's). finalThink runs every party tick (partyThink, after bondThink).
+  const finOf = P => P.fin || (P.fin = { escortFor: -1, handTo: -1, hand: 0, handT: -99, stand: false, sac: null, sacDone: false, sacLook: 0, near: false, yfT: 0, yfN: 0, yfRooms: new Set(), ntw: false, front: new Set() });
+  function carrierOf() { const P = fl.party, c = P && P.carrierId >= 0 ? byId(P.carrierId) : null; return c && c.crystal && !c.dead && !c.fled && !c.gone ? c : null; }
+  function standing(h) { return !!h.stand && !h.stand.done; }   // a last stand (also asked by driftTarget, p4)
+  function sacrificing(h) { return !!h.sac && !h.sac.done; }
+  const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
+  const FLOOR_TAP = { spikes: 1, trapdoor: 1, cage: 1, web: 1 };   // what a stick on the floor can find
+  const lsBrave = o => o.trait === 'brave' || ((o.type === 'warrior' || o.type === 'barbarian') && (o.lsRoll === undefined ? (o.lsRoll = Math.random() < 0.5) : o.lsRoll));   // rolled once a wave
+  function finalThink(crew, L, dt) {
+    const P = fl.party, F = finOf(P), c = carrierOf();
+    if (c && P.plan === 'escape') {
+      escortThink(c, crew, L, F);
+      handThink(c, crew, F);
+      standStart(c, crew, F);
+      sacStart(c, crew, F);
+      // 9. nearly out: once a wave, the carrier within 6 tiles of the way out (through the queue: a busy moment does not lose it)
+      if (!F.near && Math.min(...exitGoals().map(i => Math.hypot(i % WW - c.tx, ((i / WW) | 0) - c.ty))) <= 6) {
+        F.near = true; fl.stats.nearExit = (fl.stats.nearExit || 0) + 1; tl('ne', c.id);
+        P.queueSay.push({ id: c.id, text: pick(SAY.nearExit), at: fl.time, prio: 3, late: 3 });
+      }
+    }
+    standThink(crew);
+    if (F.sac) sacTick(F);
+    formThink(crew, F);
+  }
+  // 1. the escort: when someone carries the crystal, those who see him (on the escape plan, 35%+ HP) walk next to him (planHero:
+  // escortGoal) instead of each taking his own way out. The leader (or the strongest of them) calls it, one guard speaks to the
+  // carrier and he answers. A crystal handed over keeps its guard (no new call). One who sees the carrier later joins.
+  function escortThink(c, crew, L, F) {
+    const P = fl.party;
+    const can = o => o !== c && calmFor(o) && planOf(o) === 'escape' && !o.goHome && !standing(o) && !sacrificing(o) && o.hp >= 0.35 * o.max && canSee(o, c);
+    if (F.escortFor !== c.id) {
+      const g = crew.filter(can), handed = F.handTo === c.id;
+      if (!g.length && !handed) return;   // nobody sees him yet: they form up when someone does
+      F.escortFor = c.id;
+      crew.forEach(o => { o.escort = false; }); g.forEach(o => { o.escort = true; o.needPlan = true; });
+      if (handed || !g.length) return;
+      const caller = L && g.includes(L) ? L : g.slice().sort((a, b) => b.hp - a.hp)[0];
+      const gd = g.filter(o => o !== caller).sort((a, b) => ((b.type === 'warrior') - (a.type === 'warrior')) || (hdist(a, c) - hdist(b, c)))[0] || caller;
+      fl.stats.escortForms = (fl.stats.escortForms || 0) + 1; fl.stats.escortGuards = (fl.stats.escortGuards || 0) + g.length; tl('ef', c.id, g.length);
+      say(caller, pick(SAY.escortForm), 3, 2.2);
+      P.queueSay.push({ id: gd.id, text: nameFill(pick(SAY.escortGuard), c), at: fl.time + 1.0, prio: 2, late: 5 }, { id: c.id, text: pick(SAY.carrierThanks), at: fl.time + 1.2, prio: 2, late: 6 });
+      return;
+    }
+    crew.forEach(o => { if (!o.escort && can(o)) { o.escort = true; o.needPlan = true; } });
+  }
+  // where a guard goes: a free tile 1-2 steps from where the carrier will be in two steps, off his next steps; a warrior in front
+  // (towards where the carrier goes), the others close at his side. Measured from his next tile, not the one he leaves, or the
+  // guard arrives where the carrier was and falls behind. No free spot (a passage): right behind him (his tile: the guard stops a
+  // step before it; the way out could part from the carrier's). -1: the carrier is far (another room, 2+ away): the exit as before.
+  function escortGoal(h, c, b) {
+    const ct = tIdx(c);
+    if (b.dist[ct] < 0 || !(canSee(h, c) || hdist(h, c) <= 8)) return -1;   // a guard who fell a little behind catches up (escortPace)
+    const nt = c.path.length ? c.path[0][1] * WW + c.path[0][0] : c.nx !== null ? c.ny * WW + c.nx : ct, cx = nt % WW, cy = (nt / WW) | 0;
+    const ahead = c.path.slice(0, 3).map(p => p[1] * WW + p[0]), on = new Set([ct, nt].concat(ahead));
+    const fr = ahead.length ? ahead[ahead.length - 1] : nt, fx = fr % WW, fy = (fr / WW) | 0, war = h.type === 'warrior';
+    let best = -1, bs = 1e9;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const x = (war ? fx : cx) + dx, y = (war ? fy : cy) + dy, i = y * WW + x;   // the warrior: round the tile 3 steps ahead of him
+      if (Math.abs(dx) + Math.abs(dy) > 2 || !walkable(x, y) || on.has(i) || b.dist[i] < 0 || fl.danger[i] > 1) continue;
+      if (alive().some(o => o !== h && o !== c && ((o.nx === null && o.x === x && o.y === y) || (o.nx === x && o.ny === y)))) continue;
+      const sc = (war ? 2 * Math.hypot(x - fx, y - fy) : Math.hypot(x - cx, y - cy)) + 0.25 * b.dist[i];
+      if (sc < bs) { bs = sc; best = i; }
+    }
+    return best >= 0 ? best : ct;
+  }
+  // a guard keeps up with the carrier: walking to his spot he goes at least at the carrier's pace (a thief with the crystal outran a
+  // priest and a mage, and the guard fell behind in the first test), a warrior a bit faster (he has to get round him to the front);
+  // up to 1,4 times his own
+  function escortPace(h) {
+    const c = h.intent === 'escort' ? carrierOf() : null; if (!c) return 1;
+    return clamp(c.T.speed * c.R.speed * 0.9 * mods.carrierSlow * (h.type === 'warrior' ? 1.2 : 1.05) / (h.T.speed * h.R.speed), 1, 1.4);
+  }
+  // a guard next to the carrier steps into a monster's blow meant for him (monstersTick, p4): the best of them (a warrior first)
+  function guardOf(c, m) {
+    const g = alive().filter(o => o !== c && o.escort && !caged(o) && !panicking(o) && o.hp >= 0.25 * o.max && cheb(o.tx, o.ty, c.tx, c.ty) <= 1)
+      .sort((a, b) => ((b.type === 'warrior') - (a.type === 'warrior')) || (b.hp - a.hp))[0];
+    if (g && m.soakBy !== g.id) { m.soakBy = g.id; fl.stats.guardSoaks = (fl.stats.guardSoaks || 0) + 1; tl('gs', g.id, c.id, m.type); }
+    return g || null;
+  }
+  // 2. the hand-over: the carrier under 35% HP gives the crystal to a healthier friend (60%+ HP) within 1,5 tiles who sees him;
+  // at most twice a wave, not twice within 6 s. The theft stats stay as they were.
+  function handThink(c, crew, F) {
+    const P = fl.party;
+    if (c.hp >= 0.35 * c.max || F.hand >= 2 || fl.time - F.handT < 6 || caged(c)) return;
+    const r = crew.filter(o => o !== c && o.hp >= 0.6 * o.max && calmFor(o) && !o.goHome && !standing(o) && !sacrificing(o) && hdist(o, c) <= 1.5 && canSee(o, c))
+      .sort((a, b) => b.hp / b.max - a.hp / a.max)[0];
+    if (!r) return;
+    F.hand++; F.handT = fl.time; F.handTo = r.id;
+    c.crystal = false; c.escort = false; r.crystal = true; r.escort = false; r.fleeing = false; r.plan = 'escape'; P.carrierId = r.id;
+    [c, r].forEach(o => { o.needPlan = true; if (o.state === 'fight' || o.state === 'wait' || o.state === 'talk' || o.state === 'rest') { o.state = 'walk'; o.foe = null; } });
+    fl.stats.handOvers = (fl.stats.handOvers || 0) + 1; tl('ho', c.id, r.id);
+    floatHero(r, 'Niesie kryształ', '#ff9ab0', 14, -0.8);
+    const n0 = P.convoN || 0, text = pick(okLines(c, SAY.handOver.map(x => nameFill(x, r)))), take = pick(SAY.handTake);   // the bleeding line only if he knows he bleeds (every line names him: say() could not swap it)
+    if (say(c, text, 3, 2.2, 'q')) { if ((P.convoN || 0) === n0) P.queueSay.push({ id: r.id, text: take, at: fl.time + 0.3, prio: 3, late: 4 }); }   // a talk that starts from it is the answer
+    else P.queueSay.push({ id: c.id, text, at: fl.time, prio: 3, late: 3 }, { id: r.id, text: take, at: fl.time + 0.2, prio: 3, late: 5 });
+  }
+  // 3. the last stand: a drifting monster (ghost, shade, bats), or a melee one somebody fights, within 3 tiles of the carrier
+  function threatNear(c) {
+    const p = heroPos(c); let best = null, bd = 3.01;
+    fl.items.forEach(m => {
+      if (!MONSTERS[m.type] || m.hp <= 0 || hiddenAmbush(m)) return;
+      let d;
+      if (DRIFT[m.type]) d = Math.hypot(m.gx - p.x, m.gy - p.y);
+      else if (alive().some(h => h.state === 'fight' && h.foe === m)) d = Math.hypot(m.x + 0.5 - p.x, m.y + 0.5 - p.y);
+      else return;
+      if (d < bd) { bd = d; best = m; }
+    });
+    return best;
+  }
+  // once a wave: a brave one (a warrior or a barbarian half the time) with 40%+ HP, not the carrier, stops in the nearest doorway
+  // between the monster and the carrier (or where he is) and holds it there (planHero: a fight with a melee one in reach, else
+  // he waits; drifting ones pick him, driftTarget) for up to 8 s or until he is under 25% HP (standThink); then he runs out.
+  function standStart(c, crew, F) {
+    const P = fl.party;
+    if (F.stand) return;
+    const m = threatNear(c); if (!m) return;
+    const mp = DRIFT[m.type] ? [m.gx, m.gy] : [m.x + 0.5, m.y + 0.5], cp = heroPos(c), dcm = Math.hypot(cp.x - mp[0], cp.y - mp[1]);
+    const s = crew.filter(o => o !== c && calmFor(o) && planOf(o) === 'escape' && !o.goHome && o.hp >= 0.4 * o.max && !sacrificing(o) && hdist(o, c) <= 6 && lsBrave(o))
+      .sort((a, b) => Math.hypot(heroPos(a).x - mp[0], heroPos(a).y - mp[1]) - Math.hypot(heroPos(b).x - mp[0], heroPos(b).y - mp[1]))[0];
+    if (!s) return;
+    const b = bfs(s.x, s.y, { known: true, noDanger: true }), cpath = new Set(c.path.map(q => q[1] * WW + q[0]));
+    let goal = tIdx(s), door = false, bd = 1e9;
+    new Set([c.room, roomOf(Math.floor(mp[0]), Math.floor(mp[1])), s.room]).forEach(r => {
+      if (r < 0 || !fl.rooms[r]) return;
+      fl.rooms[r].doors.forEach(d => {
+        const i = d.y * WW + d.x, dm = Math.hypot(d.x + 0.5 - mp[0], d.y + 0.5 - mp[1]), dc = Math.hypot(d.x + 0.5 - cp.x, d.y + 0.5 - cp.y);
+        if (d.entrance || cpath.has(i) || b.dist[i] < 0 || b.dist[i] > 6 || dm >= dcm || dc >= dcm + 1 || dc > 5 || heroBlock(s, d.x, d.y)) return;
+        if (b.dist[i] < bd) { bd = b.dist[i]; goal = i; door = true; }
+      });
+    });
+    F.stand = true;
+    s.stand = { m, goal, door, until: fl.time + 8, at: fl.time, done: false }; s.escort = false; s.needPlan = true;
+    if (s.state === 'wait' || s.state === 'talk') s.state = 'walk';
+    fl.stats.lastStands = (fl.stats.lastStands || 0) + 1; tl('lx', s.id, m.type, door ? 1 : 0);
+    floatHero(s, 'Zostaje!', '#ffd27a', 14, -0.8);
+    // a line about the door only in a doorway; alone his own words (SOLO), which say() would pick at random
+    const alone = aloneNow(s), pool = (alone ? SOLO.lastStand : SAY.lastStand).filter(x => door || !/drzwi|próg|Ciasne/.test(x));
+    const n0 = P.convoN || 0;
+    sayNow(itemTags(m), () => say(s, pick(pool), 4, 2.2, 'loud'));
+    if (!alone && (P.convoN || 0) === n0) {
+      const f = crew.find(o => o !== s && !o.lost && !caged(o) && !panicking(o) && canHear(o, s));
+      if (f) P.queueSay.push({ id: f.id, text: nameFill(pick(SAY.lastStandReply), s), at: fl.time + 0.4, prio: 3, late: 4 });
+    }
+  }
+  function standThink(crew) {
+    crew.forEach(s => {
+      if (!standing(s)) return;
+      const S = s.stand, m = S.m;
+      if (fl.time < S.until && s.hp >= 0.25 * s.max && calmFor(s) && m.hp > 0 && fl.items.get(key(m.x, m.y)) === m && carrierOf()) return;
+      S.done = true; s.needPlan = true; if (s.state === 'fight' || s.state === 'wait') { s.state = 'walk'; s.foe = null; }
+      fl.stats.lastStandT = Math.round(((fl.stats.lastStandT || 0) + fl.time - S.at) * 10) / 10; tl('le', s.id, Math.round(fl.time - S.at));
+    });
+  }
+  // 4. the sacrifice: once a wave, when the carrier's known way out goes through a known, loaded floor or wall trap (not a cage, not
+  // a scare) within 12 steps and there is no other known way, one of them (a brave one, a priest 30% of the time, else the one with
+  // the most HP; not the carrier) walks into its reach on purpose (planHero, noDanger) and stands there till it goes off on him as
+  // usual; the others hold before it (sacHold, updateHero) until it has fired, at most 4 s after he could be there.
+  function reachAvoid(h, goals, block) {   // a known way from him to one of goals, not through block
+    const gs = new Set(goals), s = tIdx(h), seen = new Uint8Array(WW * WH), q = [s]; seen[s] = 1;
+    for (let i = 0; i < q.length; i++) {
+      const cc = q[i]; if (gs.has(cc)) return true;
+      const x = cc % WW, y = (cc / WW) | 0;
+      for (const d of DIRS) { const nx = x + d[0], ny = y + d[1], j = ny * WW + nx; if (nx < 0 || ny < 0 || nx >= WW || ny >= WH || seen[j] || block.has(j) || !fl.known[j] || !passable(nx, ny)) continue; seen[j] = 1; q.push(j); }
+    }
+    return false;
+  }
+  function sacStart(c, crew, F) {
+    const P = fl.party;
+    if (F.sac || F.sacDone || fl.time < F.sacLook) return;
+    F.sacLook = fl.time + 1;   // a look once a second
+    const b = bfs(c.x, c.y, { known: true, noDanger: true }), eg = nearestOf(b, exitGoals()); if (eg < 0) return;
+    const way = pathFrom(b, eg).slice(0, 12).map(p => p[1] * WW + p[0]);
+    let t = null, ti = 99;
+    fl.items.forEach(it => {
+      if (!TRAPS[it.type] || SCARE[it.type] || it.type === 'cage' || !it.detected || it.disabled || it.cd > 0.3 || it.jamUntil > fl.time) return;
+      const sl = ITEMS[it.type].slot; if (sl !== 'floor' && sl !== 'wall') return;
+      const ar = new Set(areaOf(it).map(q => q[1] * WW + q[0])), k = way.findIndex(i => ar.has(i) && fl.danger[i] >= 1);
+      if (k >= 0 && k < ti) { ti = k; t = it; }
+    });
+    if (!t) return;
+    const area = new Set(areaOf(t).map(q => q[1] * WW + q[0]));
+    if (area.has(tIdx(c)) || reachAvoid(c, exitGoals(), area)) return;   // in it already, or another way out
+    const pool = crew.filter(o => o !== c && calmFor(o) && planOf(o) === 'escape' && !o.goHome && !standing(o) && o.hp >= 0.35 * o.max && hdist(o, c) <= 8);
+    if (!pool.length) return;
+    const s = pool.find(o => o.trait === 'brave') || pool.find(o => o.type === 'priest' && Math.random() < 0.3) || pool.slice().sort((a, o) => o.hp - a.hp)[0];
+    const b2 = bfs(s.x, s.y, { known: true, noDanger: true });
+    const tiles = [...area].filter(i => walkable(i % WW, (i / WW) | 0) && b2.dist[i] >= 0).sort((i, j) => ((way.includes(j)) - (way.includes(i))) || (b2.dist[i] - b2.dist[j]));
+    if (!tiles.length) return;
+    const g = tiles[0], steps = pathFrom(b2, g).length;
+    F.sacDone = true;
+    F.sac = { id: s.id, t, area, goal: g, at: fl.time, until: fl.time + 6 + 0.6 * steps, wait: fl.time + 4 + 0.6 * steps, fired: false, done: false };
+    s.sac = F.sac; s.escort = false; s.needPlan = true; if (s.state === 'wait' || s.state === 'talk' || s.state === 'fight') { s.state = 'walk'; s.foe = null; }
+    fl.stats.sacrifices = (fl.stats.sacrifices || 0) + 1; tl('sf', s.id, t.type);
+    floatHero(s, 'Poświęca się', '#ffd27a', 13, -0.8);
+    const text = pick(SAY.sacrifice), f = crew.find(o => o !== s && !o.lost && !caged(o) && !panicking(o) && canHear(o, s)), rep = f ? nameFill(pick(SAY.sacrificeReply), s) : null;
+    if (say(s, text, 3, 2.2, 'q')) { if (f) P.queueSay.push({ id: f.id, text: rep, at: fl.time + 0.4, prio: 3, late: 4 }); }
+    else { P.queueSay.push({ id: s.id, text, at: fl.time, prio: 3, late: 3 }); if (f) P.queueSay.push({ id: f.id, text: rep, at: fl.time + 0.2, prio: 3, late: 5 }); }
+  }
+  function sacTick(F) {
+    const S = F.sac; if (S.done) return;
+    const s = byId(S.id), t = S.t;
+    if (!S.fired && t.cd > 0) {
+      S.fired = true; fl.stats.sacrificeFired = (fl.stats.sacrificeFired || 0) + 1; tl('sd', S.id, t.type);
+      if (s && !s.dead && !s.fled && !s.gone) say(s, pick(SAY.sacrificeDone), 4, 1.8, 'loud');   // hurt or not
+    }
+    if (S.fired || fl.time > S.until || !s || !calmFor(s) || fl.items.get(key(t.x, t.y)) !== t || t.disabled) { S.done = true; if (s) s.needPlan = true; replanAll(); }
+  }
+  function sacHold(h) {   // one of the others, a step or two before the trap, waits for it to go off
+    const S = fl.party.fin && fl.party.fin.sac;
+    if (!S || S.done || S.id === h.id || !exiting(h) || panicking(h) || S.t.cd > 0 || fl.time > S.wait) return false;
+    return h.path.slice(0, 2).some(p => S.area.has(p[1] * WW + p[0]));
+  }
+  // 5. "ty pierwszy": exploring, a coward or a careful one about to walk into a room with a known trap sends another one first (his
+  // rival or a rookie if he can): the named one walks in (planHero: firstInto), he waits 1,5 s. Once in 40 s, 2 a wave at most,
+  // each room once (60%).
+  function youFirst(h, n) {
+    const P = fl.party;
+    if ((h.trait !== 'coward' && h.trait !== 'careful') || P.plan !== 'explore' || fl.fearless || exiting(h) || panicking(h) || h.lost || inG2(h) || onScout(h) || caged(h)) return false;
+    const r = roomOf(n[0], n[1]); if (r < 0 || r === roomOf(h.x, h.y) || fl.rooms[r].kind !== 'room') return false;
+    const F = finOf(P); if (F.yfN >= 2 || fl.time < F.yfT || F.yfRooms.has(r)) return false;
+    let tr = false; fl.items.forEach(it => { if (!tr && LOOKS_TRAP(it.type) && it.detected && !it.disabled && slotRoom(it.type, it.x, it.y) === r) tr = true; });
+    if (!tr) return false;
+    F.yfRooms.add(r);
+    if (Math.random() >= 0.6) return false;
+    const pool = alive().filter(o => o !== h && calmFor(o) && !exiting(o) && !inG2(o) && !onScout(o) && !o.firstInto && o.state !== 'fight' && canSee(h, o) && hdist(o, h) <= 4);
+    if (!pool.length) return false;
+    const pr = o => (bondType(h, 'rival') && bondOf(h) === o ? 2 : 0) + (o.rank === 0 ? 1 : 0);
+    const o = pool.sort((a, c) => (pr(c) - pr(a)) || (hdist(a, h) - hdist(c, h)))[0];
+    const k = h.path.findIndex(p => roomOf(p[0], p[1]) === r), q = k >= 0 ? h.path[Math.min(h.path.length - 1, k + 1)] : n;
+    o.firstInto = { room: r, goal: roomOf(q[0], q[1]) === r ? q[1] * WW + q[0] : n[1] * WW + n[0], until: fl.time + 6 }; o.needPlan = true;
+    if (o.state === 'wait') o.timer = 0;
+    F.yfT = fl.time + 40; F.yfN++;
+    h.state = 'wait'; h.timer = 1.5;
+    fl.stats.youFirst = (fl.stats.youFirst || 0) + 1; tl('yf', h.id, o.id);
+    const n0 = P.convoN || 0, text = nameFill(pick(SAY.youFirst), o), rep = pick(SAY.youFirstReply);
+    if (say(h, text, 2, 2.2, 'q')) { if ((P.convoN || 0) === n0) P.queueSay.push({ id: o.id, text: rep, at: fl.time + 0.3, prio: 2, late: 4 }); }
+    else P.queueSay.push({ id: h.id, text, at: fl.time, prio: 2, late: 3 }, { id: o.id, text: rep, at: fl.time + 0.2, prio: 2, late: 5 });
+    return true;
+  }
+  // 6. tapping the floor: a careful one (or a rookie thief) walking into a room nobody has walked through yet (or right behind the
+  // first one in) may tap his way across it (60%, 3 rooms a wave): 30% slower there (updateHero), and each hidden floor trap
+  // within 1 tile of his next step has one 35% roll to be found (tapStep) before he steps on it. Leaving the room having found
+  // nothing: tapNothing (40%).
+  function tapRoom(h, r, fresh) {
+    if (h.tap && h.tap.room !== r) { if (!h.tap.found && !exiting(h) && Math.random() < 0.4) say(h, pick(SAY.tapNothing), 2); h.tap = null; }
+    if (h.tap || !fresh || fl.rooms[r].kind !== 'room' || (h.taps || 0) >= 3 || exiting(h) || fl.fearless || panicking(h) || caged(h) || h.lost) return;
+    if (!(h.trait === 'careful' || (h.type === 'thief' && h.rank === 0)) || Math.random() >= 0.6) return;
+    h.taps = (h.taps || 0) + 1; h.tap = { room: r, found: 0, rolled: h.tapRolled || (h.tapRolled = new Set()) };   // one roll a trap a wave (walking in again is no new chance)
+    fl.stats.taps = (fl.stats.taps || 0) + 1; tl('tp', h.id, r);
+    say(h, pick(SAY.tapFloor), 2);
+  }
+  function tapStep(h, n) {   // true: he found one and stops to think again
+    const T = h.tap; if (!T || exiting(h) || roomOf(n[0], n[1]) !== T.room) return false;
+    let hit = null;
+    fl.items.forEach(it => {
+      if (hit || !FLOOR_TAP[it.type] || it.detected || it.disabled || T.rolled.has(it) || cheb(it.x, it.y, n[0], n[1]) > 1) return;
+      T.rolled.add(it); if (Math.random() < 0.35) hit = it;
+    });
+    if (!hit) return false;
+    T.found++; fl.stats.tapFound = (fl.stats.tapFound || 0) + 1; fl.stats.detected++; tl('tf', h.id, hit.type, hit.x, hit.y);
+    learnTrap(hit, 'tap', h); floatTile(hit.x, hit.y, 'Opukana!', '#ffe066', 13, -0.6);
+    h.path = []; h.needPlan = true; h.state = 'wait'; h.timer = 0.4;
+    return true;
+  }
+  // 7. "nie tędy": once a wave, a new explore target whose way goes through a room with a known trap that hurt someone this wave
+  // (P.hurt, damageRaw): a veteran (rank 2+) or one it hurt says so, and the leader picks another target if there is one
+  // (chooseTarget with that room's tiles costed higher). One who was not hurt there does not say he was.
+  function notThisWay(L, crew) {
+    const P = fl.party, F = finOf(P);
+    if (F.ntw || !P.hurt || P.target < 0 || P.plan !== 'explore' || fl.fearless || goingOut()) return;
+    const b = bfs(L.x, L.y, { known: true, avoid: L.R.avoid }); if (b.dist[P.target] < 0) return;
+    const rooms = new Set(pathFrom(b, P.target).map(p => roomOf(p[0], p[1])).filter(r => r >= 0 && r !== L.room));
+    let room = -1, ids = null;
+    P.hurt.forEach((s, t) => { if (room >= 0 || !t.detected || t.disabled || fl.items.get(key(t.x, t.y)) !== t) return; const r = slotRoom(t.type, t.x, t.y); if (rooms.has(r)) { room = r; ids = s; } });
+    if (room < 0) return;
+    const sp = crew.filter(o => o !== L && calmFor(o) && !exiting(o) && !inG2(o) && !onScout(o) && canHear(o, L) && (o.rank >= 2 || ids.has(o.id))).sort((a, c) => ids.has(c.id) - ids.has(a.id))[0];   // a talk about the way may be going on: he says it there
+    if (!sp) return;
+    F.ntw = true;
+    const before = P.target; chooseTarget(L, room);
+    const moved = P.target !== before;
+    fl.stats.notThisWay = (fl.stats.notThisWay || 0) + 1; if (moved) fl.stats.notThisWayMoved = (fl.stats.notThisWayMoved || 0) + 1; tl('nw', sp.id, room, moved ? 1 : 0);
+    P.queueSay.push({ id: sp.id, text: pick(SAY.notThisWay.filter(x => ids.has(sp.id) || !/Był\{|Raz mi|Pamiętam/.test(x))), at: fl.time, prio: 3, late: 4 });   // after a talk about the way that may be going on
+  }
+  // 8. the formation: in a fight with a melee monster (two of them or more there), the warrior holds the front (frontLine once a
+  // fight; planHero sends him at it, monstersTick hits him first), the priest and the mage step out of it and keep 2+ tiles away
+  // (planHero), and one fighting under 30% HP steps back behind the warrior for 4 s (woundedBack, once a hero a wave).
+  function formThink(crew, F) {
+    const fights = new Set();
+    crew.forEach(o => { if (o.state === 'fight' && o.foe && o.foe.hp > 0 && !DRIFT[o.foe.type] && !exiting(o)) fights.add(o.foe); });
+    fights.forEach(m => {
+      const r = roomOf(m.x, m.y);
+      const w = crew.find(o => o.type === 'warrior' && calmFor(o) && !exiting(o) && !inG2(o) && o.hp >= 0.3 * o.max && fl.time >= (o.backUntil || 0) && (o.room === r || cheb(o.tx, o.ty, m.x, m.y) <= 2));
+      if (!w || !crew.some(o => o !== w && !o.lost && !caged(o) && (o.room === r || cheb(o.tx, o.ty, m.x, m.y) <= 2))) return;
+      if (w.front !== m) { w.front = m; w.needPlan = true; }
+      if (!F.front.has(m)) { F.front.add(m); fl.stats.frontLines = (fl.stats.frontLines || 0) + 1; tl('fm', w.id, m.type); say(w, pick(SAY.frontLine), 3); }
+      crew.forEach(o => { if ((o.type === 'priest' || o.type === 'mage') && o.state === 'fight' && o.foe === m && !raging(o)) { o.state = 'walk'; o.foe = null; o.needPlan = true; } });
+    });
+    crew.forEach(o => {
+      if (o.state !== 'fight' || !o.foe || DRIFT[o.foe.type] || o.hp >= 0.3 * o.max || o.woundBack || exiting(o) || standing(o)) return;
+      const m = o.foe, w = crew.find(q => q !== o && q.type === 'warrior' && calmFor(q) && !exiting(q) && q.hp >= 0.3 * q.max && q.room === o.room);
+      if (!w && !crew.some(q => q !== o && q.state === 'fight' && q.foe === m)) return;   // nobody to hold it
+      o.woundBack = true; o.backUntil = fl.time + 4; o.backFrom = m; o.state = 'walk'; o.foe = null; o.needPlan = true;
+      if (w && w.front !== m) { w.front = m; w.needPlan = true; }
+      fl.stats.woundedBack = (fl.stats.woundedBack || 0) + 1; tl('wb', o.id, m.type);
+      say(o, pick(SAY.woundedBack), 3);
+    });
+  }
+  // a monster the warrior holds in his room (the priest and the mage keep off it)
+  function formedFoe(h) {
+    const F = fl.party.fin; if (!F || !F.front.size) return null;
+    for (const m of F.front) if (m.hp > 0 && fl.items.get(key(m.x, m.y)) === m && roomOf(m.x, m.y) === h.room && alive().some(w => w !== h && w.front === m && calmFor(w) && !exiting(w) && fl.time >= (w.backUntil || 0) && (w.room === h.room || cheb(w.tx, w.ty, m.x, m.y) <= 2))) return m;   // also while he is on his way to it
+    return null;
+  }
+  // a free, safe tile 2-3 tiles from the monster, behind the warrior who holds it if there is one, nearest to him
+  function backTile(h, m, b) {
+    const w = alive().find(o => o !== h && o.type === 'warrior' && o.front === m), dw = w ? Math.hypot(w.tx - m.x, w.ty - m.y) : 0;
+    let best = -1, bs = 1e9;
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+      const x = m.x + dx, y = m.y + dy, i = y * WW + x, c = Math.max(Math.abs(dx), Math.abs(dy));
+      if (c < 2 || !walkable(x, y) || b.dist[i] < 0 || fl.danger[i] > 1) continue;
+      if (alive().some(o => o !== h && ((o.nx === null && o.x === x && o.y === y) || (o.nx === x && o.ny === y)))) continue;
+      const sc = b.dist[i] + (w ? (Math.hypot(x - m.x, y - m.y) < dw ? 3 : 0) + 0.3 * Math.hypot(x - w.tx, y - w.ty) : 0);
+      if (sc < bs) { bs = sc; best = i; }
+    }
+    return best;
+  }
   function safestRoom(from) {
     const b = from ? bfs(from.x, from.y, { known: true }) : null;
     let best = -1, bestSc = 1e9;
@@ -1083,11 +1412,11 @@
     });
     return out;
   }
-  function chooseTarget(L) {
-    const P = fl.party, fr = frontier(), st = P.wantSearch ? searchTargets() : [];
+  function chooseTarget(L, avoidRoom) {
+    const P = fl.party, fr = frontier(), st = P.wantSearch ? searchTargets() : [], av = avoidRoom === undefined ? -1 : avoidRoom;   // 1.22: av, a room they will not cross (notThisWay)
     P.targetRoom = -1;
     if (!fr.length && !st.length) { P.target = -1; return; }
-    const b = bfs(L.x, L.y, { known: true, avoid: L.R.avoid });
+    const b = bfs(L.x, L.y, { known: true, avoid: L.R.avoid, costRoom: av });   // 1.22: its tiles cost more
     const seenLoot = [...fl.items.values()].filter(it => isLoot(it.type) && it.seenWave === run.wave);
     const cands = [];
     // 1.17 (author: less rigid, more natural exploring): the leader's character shows in where he goes. A brave one goes deeper
@@ -1103,6 +1432,7 @@
       if (snd && Math.hypot(snd.x - fx, snd.y - fy) <= 7) sc += sndK;
       seenLoot.forEach(it => { if (Math.hypot(it.x - fx, it.y - fy) <= 6) sc -= 3 * lootLevel(it); });
       if (room >= 0 && isRt(room, 'vault')) sc -= 4;   // a treasure room pulls them in
+      if (av >= 0 && (room === av || roomOf(fx, fy) === av)) sc += 1000;   // 1.22: not into the room they refuse (only if nothing else is left)
       cands.push({ f, sc, d, fx, fy, room });
     };
     fr.forEach(f => add(f, -1, 0));
@@ -1122,7 +1452,7 @@
     const alt = cands.find(c => c !== best && c.sc < best.sc + 5 && Math.abs(c.fx - best.fx) + Math.abs(c.fy - best.fy) > 5);
     let room = roomOf(L.tx, L.ty);
     if (room < 0) for (const d of DIRS) { const r = roomOf(L.tx + d[0], L.ty + d[1]); if (r >= 0 && !P.junctions.has(r)) { room = r; break; } }
-    if (alt && room >= 0 && !P.junctions.has(room) && !fl.fearless && fl.time - P.lastTalkAt > 6) {
+    if (alt && av < 0 && room >= 0 && !P.junctions.has(room) && !fl.fearless && fl.time - P.lastTalkAt > 6) {   // 1.22: no fork talk on a refused way
       P.lastTalkAt = fl.time;
       P.junctions.add(room); fl.stats.forkTalks = (fl.stats.forkTalks || 0) + 1;
       // 1.05: a council with characters: the greedy want the loot next door, the careful want it slow, a coward wants out and a
@@ -1346,6 +1676,7 @@
     });
     shareThink(crew, L, dt);   // 1.20: an amulet in a crisis, gear handed over at ease
     bondThink(crew, L);   // 1.21
+    finalThink(crew, L, dt);   // 1.22: the crystal run, the formation
     if (!L) return;
     if (P.prep && fl.time >= P.prep.until) finishPrep();
     else if (!P.prep) checkPrep(L);
@@ -1441,7 +1772,7 @@
     if (P.searchId >= 0) { const c = byId(P.searchId); if (!c || !c.lost || c.dead || c.fled || fl.time > P.searchUntil || goingOut()) P.searchId = -1; }
     if (P.plan === 'explore') {
       const valid = P.target >= 0 && (isFrontierTile(P.target) || (P.targetRoom >= 0 && !fl.rooms[P.targetRoom].visited));
-      if (!valid || (fl.knowDirty && fl.time - fl.newKnowAt < 0.5)) { chooseTarget(L); fl.knowDirty = false; replanAll(); }
+      if (!valid || (fl.knowDirty && fl.time - fl.newKnowAt < 0.5)) { chooseTarget(L); fl.knowDirty = false; notThisWay(L, crew); replanAll(); }   // 1.22: notThisWay
       if (P.target < 0 && heartP()) { P.plan = 'assault'; partySay('assault', 3, L); replanAll(); }   // nothing left to explore: go for it
     }
     // A closed gate between the leader and where he wants to go. Prototype 1.01: even on the way to the heart they go and search
@@ -2056,7 +2387,25 @@
       return best;
     };
     if (panicking(h)) { intent = 'panic'; noDanger = true; goal = h.fleeing ? exitG() : randomKnownFar(h); }
-    else if (exiting(h)) { intent = h.crystal ? 'carry' : 'exit'; goal = exitG(); }
+    else if (standing(h)) {   // 1.22: the last stand: in the doorway (or where he is); a melee monster in reach is his fight
+      const S = h.stand, m = S.m; noDanger = true;
+      if (tIdx(h) === S.goal || B().dist[S.goal] < 0) {
+        h.intent = 'stand'; h.lootKey = null; h.path = [];
+        if (!DRIFT[m.type] && cheb(h.tx, h.ty, m.x, m.y) <= 1) { h.state = 'fight'; h.foe = m; } else { h.state = 'wait'; h.timer = 0.5; }
+        return;
+      }
+      intent = 'stand'; goal = S.goal;
+    } else if (sacrificing(h)) {   // 1.22: into the trap's reach on purpose; he stands in it till it goes off (sacTick)
+      noDanger = true;
+      if (tIdx(h) === h.sac.goal || B().dist[h.sac.goal] < 0) { h.intent = 'sacrifice'; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.4; return; }
+      intent = 'sacrifice'; goal = h.sac.goal;
+    } else if (exiting(h)) {
+      intent = h.crystal ? 'carry' : 'exit';
+      // 1.22: a guard walks next to the carrier (escortGoal, recomputed each think); with the carrier far away, the exit as before
+      const c = !h.crystal && h.escort && !h.fleeing && !h.goHome ? carrierOf() : null, eg = c ? escortGoal(h, c, B()) : -1;
+      if (eg >= 0 && eg === tIdx(h)) { h.intent = 'escort'; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.15; h.thinkT = 0.15; return; }
+      if (eg >= 0) { intent = 'escort'; goal = eg; h.thinkT = 0.25; } else goal = exitG();   // a guard looks again soon (the carrier moves on)
+    }
     else if (fl.fearless && planOf(h) === 'assault') { intent = 'heart'; goal = heartGoal(); }
     else if (planOf(h) === 'retreat' && P.plan === 'retreat' && !h.lost && !onScout(h)) {   // 1.17: only one who knows of the retreat
       intent = 'retreat';
@@ -2112,9 +2461,20 @@
           }
         }
       }
-      if (!job && L && L !== h && L.state === 'fight' && L.foe && L.foe.hp > 0 && !DRIFT[L.foe.type] && !onScout(h) && canHear(h, L)) job = { intent: 'fight', goal: L.foe.y * WW + L.foe.x };   // 1.17: a fight he can hear
+      // 1.22: the formation: a wounded one steps back behind the warrior for 4 s (no fight meanwhile), the warrior goes for the
+      // monster he holds, the priest and the mage do not join a fight the warrior holds (they keep 2+ tiles off it, below)
+      const backing = fl.time < (h.backUntil || 0) && !!h.backFrom && h.backFrom.hp > 0, fm = h.type === 'priest' || h.type === 'mage' ? formedFoe(h) : null;
+      if (!job && backing) {
+        const g = backTile(h, h.backFrom, B());
+        if (g >= 0 && g === tIdx(h)) { h.intent = 'back'; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.4; return; }
+        if (g >= 0) job = { intent: 'back', goal: g };
+      }
+      if (!job && !backing && h.type === 'warrior' && h.front && h.front.hp > 0 && fl.items.get(key(h.front.x, h.front.y)) === h.front && roomOf(h.front.x, h.front.y) === h.room && B().dist[h.front.y * WW + h.front.x] > 0) job = { intent: 'fight', goal: h.front.y * WW + h.front.x };
+      // 1.22: sent first into a room they fear ("ty pierwszy"): a step or two into it
+      if (!job && h.firstInto) { const fi = h.firstInto; if (fl.time > fi.until || h.room === fi.room) h.firstInto = null; else if (B().dist[fi.goal] >= 0) job = { intent: 'first', goal: fi.goal }; }
+      if (!job && L && L !== h && !backing && !(fm && fm === L.foe) && L.state === 'fight' && L.foe && L.foe.hp > 0 && !DRIFT[L.foe.type] && !onScout(h) && canHear(h, L)) job = { intent: 'fight', goal: L.foe.y * WW + L.foe.x };   // 1.17: a fight he can hear (1.22: not while stepping back, nor the back line in a fight the warrior holds)
       // 1.21: a vow of revenge: the monster that killed his friend, when it is in his room (30 s)
-      if (!job && h.vowOn && fl.time < (h.vowUntil || 0)) {
+      if (!job && !backing && h.vowOn && fl.time < (h.vowUntil || 0)) {   // 1.22: not while stepping back
         const m = h.vowOn, i = m.y * WW + m.x;
         if (m.hp > 0 && fl.items.get(key(m.x, m.y)) === m && !DRIFT[m.type] && roomOf(m.x, m.y) === h.room && B().dist[i] > 0) { job = { intent: 'fight', goal: i }; if (!h.vowFought) { h.vowFought = true; fl.stats.revengeFights = (fl.stats.revengeFights || 0) + 1; } }
       }
@@ -2122,6 +2482,11 @@
         const cl = fl.time < (h.healForUntil || 0) ? byId(h.healFor) : null;   // 1.17: the one who called him comes first
         const hurt = cl && !cl.dead && !cl.fled && !cl.gone && cl.hp < 0.5 * cl.max && hdist(cl, h) > 2.5 ? cl : alive().filter(o => o !== h && o.hp < 0.5 * o.max && hdist(o, h) > 2.5).sort((a, c) => a.hp / a.max - c.hp / c.max)[0];
         if (hurt && B().dist[tIdx(hurt)] >= 0 && B().dist[tIdx(hurt)] <= (hurt === cl ? 20 : 12)) job = { intent: 'heal', goal: tIdx(hurt) };
+      }
+      if (!job && fm) {   // 1.22: the back line keeps 2-4 tiles off a monster the warrior holds
+        const d = cheb(h.tx, h.ty, fm.x, fm.y);
+        if (d < 2) { const g = backTile(h, fm, B()); if (g >= 0) job = { intent: 'back', goal: g }; }
+        else if (d <= 4) { h.intent = 'back'; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.4; return; }
       }
       // 1.10: Sanktuarium: a wounded hero passing through sits down for a few seconds (once a wave), and the party goes on
       if (!job && h.room >= 0 && isRt(h.room, 'haven') && h.hp < 0.6 * h.max && !h.napped && !h.lost && P.plan !== 'retreat' && fl.time >= h.burnUntil) {
@@ -2158,7 +2523,7 @@
         });
         if (best >= 0) { job = { intent: 'loot', goal: best }; h.lootKey = bestK; if (bestK) claims.set(bestK, h.id); }
       }
-      if (!job && h.type === 'warrior') {   // rookies charge anything; veterans pick fights they can win or must fight
+      if (!job && !backing && h.type === 'warrior') {   // rookies charge anything; veterans pick fights they can win or must fight (1.22: not while stepping back)
         let best = -1, bd = 1e9, skip = null, bm = null;
         fl.items.forEach(m => {
           if (!MONSTERS[m.type] || DRIFT[m.type] || m.hp <= 0 || roomOf(m.x, m.y) !== h.room || hiddenAmbush(m)) return;   // 1.18: he does not see one in ambush
@@ -2562,7 +2927,8 @@
     reveal(h);
     if (changed) sawRoom(h, r);   // 1.17.1: what he sees as he walks in
     if (r >= 0 && fl.rooms[r].kind === 'room') {
-      if (!fl.rooms[r].visited) { fl.rooms[r].visited = true; fl.stats.roomsVisited++; }
+      const fresh = !fl.rooms[r].visited || fl.time - (fl.rooms[r].visitT || -99) < 4;   // 1.22: nobody has walked through it yet (or he is right behind the first one in)
+      if (!fl.rooms[r].visited) { fl.rooms[r].visited = true; fl.rooms[r].visitT = fl.time; fl.stats.roomsVisited++; }
       const rt = fl.rooms[r].rt;   // the first one into a room with a character says what it is
       if (rt && !exiting(h) && !(fl.rtSaid || (fl.rtSaid = new Set())).has(r)) { fl.rtSaid.add(r); say(h, pick(SAY[RT_SAY[rt]]), 3); }
       const rk = fl.rooms[r].rk, rkL = rk && SAY.rkEnter && SAY.rkEnter['k_' + rk];   // 1.17.1: and what the room is for (a komnata)
@@ -2570,6 +2936,7 @@
       if (changed && h.id === P.leaderId) { maybeDetour(h, r); if (!P.detour) P.lookAsk = { room: r, at: fl.time + 0.9 }; }   // 1.17: look around? (lookThink)
       if (changed && !exiting(h)) phobiaSight(h, r);
       if (changed) mentorRoom(h, r);   // 1.21
+      if (changed) tapRoom(h, r, fresh);   // 1.22
     }
     if (h.bet) betStep(h);   // 1.21
     if (isExitTile(h.x, h.y) && exiting(h)) { heroExit(h); return; }
@@ -2705,7 +3072,7 @@
     }
     if (h.state === 'fight') {
       const g = h.foe;
-      if (!g || g.hp <= 0 || fl.items.get(key(g.x, g.y)) !== g || exiting(h)) { h.state = 'walk'; h.foe = null; h.needPlan = true; }
+      if (!g || g.hp <= 0 || fl.items.get(key(g.x, g.y)) !== g || (exiting(h) && !standing(h))) { h.state = 'walk'; h.foe = null; h.needPlan = true; }   // 1.22: a last stand fights on the way out
       else {
         const bomb = h.inv.find(x => x.type === 'bomb');
         if (bomb && g.hp > 60) {
@@ -2722,7 +3089,7 @@
       }
     }
     if (h.state === 'boss') { if (P.plan !== 'assault' || exiting(h) || panicking(h)) { h.state = 'walk'; h.needPlan = true; } return; }
-    if (h.nx === null && (h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && toSafety(h)) return;   // 1.13: never stands still in a trap
+    if (h.nx === null && (h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && !standing(h) && !sacrificing(h) && toSafety(h)) return;   // 1.13: never stands still in a trap (1.22: unless he stands there on purpose)
     if (h.nx === null && (h.state === 'walk' || h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && stepAside(h)) return;   // 1.12.1: one hero a tile
     if ((h.state === 'talk' || h.state === 'wait' || h.state === 'rest') && h.nx === null && (h.glanceT = (h.glanceT || 0) - dt) <= 0) glance(h);   // 1.10
     if (h.state === 'talk' && (h.huddle || h.toSafe) && h.path.length) h.state = 'walk';   // 1.12.1: still walking up to the huddle (1.13: or off a trap)
@@ -2744,6 +3111,8 @@
       }
       const n = h.path[0], g = fl.items.get(key(n[0], n[1]));
       if (g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) { h.state = 'fight'; h.foe = g; return; }
+      if (sacHold(h)) { h.state = 'wait'; h.timer = 0.3; return; }   // 1.22: the trap one of them sets off on purpose has not gone off yet
+      if (youFirst(h, n) || tapStep(h, n)) return;   // 1.22: "ty pierwszy", a stick on the floor
       if (h.R.coord && h.type !== 'thief' && !fl.fearless && !exiting(h) && fl.disarmKeys && fl.disarmKeys.has(key(n[0], n[1])) && !fl.disarmKeys.has(key(h.x, h.y))) { h.state = 'wait'; h.timer = 0.4; return; }
       // a careful leader hesitates before stepping into the unknown when morale is low; rookies just barge in
       if (h.id === P.leaderId && h.rank >= 1 && !fl.fearless && !exiting(h) && P.morale < 0.75 && isFrontierTile(n[1] * WW + n[0]) && !P.hesitated.has(n[1] * WW + n[0])) {
@@ -2792,7 +3161,8 @@
     if (load < 1) { fl.stats.loadSlowT = (fl.stats.loadSlowT || 0) + dt; if (!h.heavySaid) { h.heavySaid = true; say(h, pick(SAY.heavyLoad), 2); } }
     if (h.sliding) { h.prog += 3.2 * dt; if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = true; h.sliding = false; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); } return; }   // 1.10: a slide on the ice: fast, nothing stops it
     const spd = h.T.speed * h.R.speed * (S.heroSpeed / 100) * slow * (fl.fearless ? 1.3 : 1) * dash * careful * sprint * bog * purse * load *
-      (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1) * (h.crystal ? 0.9 * mods.carrierSlow : 1) * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1) * (fl.time < h.rageUntil ? 1.25 : 1);
+      (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1) * (h.crystal ? 0.9 * mods.carrierSlow : 1) * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1) * (fl.time < h.rageUntil ? 1.25 : 1) *
+      (h.tap && !exiting(h) && roomOf(h.nx, h.ny) === h.tap.room ? 0.7 : 1) * escortPace(h);   // 1.22: tapping the floor; a guard keeps the carrier's pace
     h.prog += spd * dt;
     if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = !!h.sliding; h.sliding = false; h.passing = null; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); }
   }

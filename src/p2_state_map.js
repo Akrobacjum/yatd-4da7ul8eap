@@ -427,6 +427,7 @@
     opt = opt || {};
     const N = WW * WH, dist = new Float32Array(N).fill(-1), prev = new Int32Array(N).fill(-1), done = new Uint8Array(N);
     const useKnown = opt.known && fl.known, avoidK = opt.noDanger || !fl.danger || fl.fearless ? 0 : (opt.avoid === undefined ? 1 : opt.avoid);
+    const cR = opt.costRoom >= 0 ? opt.costRoom : -1;   // 1.22: a room they will not cross if there is another way (notThisWay)
     const heap = [];
     const push = (c, i) => {
       heap.push([c, i]); let k = heap.length - 1;
@@ -450,7 +451,7 @@
         if (nx < 0 || ny < 0 || nx >= WW || ny >= WH || !passable(nx, ny)) continue;
         const ni = ny * WW + nx;
         if (useKnown && !fl.known[ni]) continue;
-        const nc = c + 1 + (avoidK ? Math.min(12, fl.danger[ni] * 3 * avoidK) : 0);
+        const nc = c + 1 + (avoidK ? Math.min(12, fl.danger[ni] * 3 * avoidK) : 0) + (cR >= 0 && fl.roomAt[ni] === cR ? 20 : 0);
         if (dist[ni] < 0 || nc < dist[ni]) { dist[ni] = nc; prev[ni] = i; push(nc, ni); }
       }
     }

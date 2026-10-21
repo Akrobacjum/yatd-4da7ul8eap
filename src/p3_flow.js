@@ -1249,6 +1249,7 @@
     feltBy(h, real / h.max);   // 1.05: what hurt him (told in the tavern)
     if (attr) { const b = bt(attr); if (kind === 'monster') b.passiveDmg += real; else b.dmg += real; }
     if (kind === 'trap') fl.party.morale = Math.max(0.15, fl.party.morale - 0.03);
+    if (kind === 'trap' && real > 0 && src && src.x !== undefined) { const hm = fl.party.hurt || (fl.party.hurt = new Map()); (hm.get(src) || hm.set(src, new Set()).get(src)).add(h.id); }   // 1.22: who a trap hurt this wave (notThisWay)
     if (h.hp <= 0) { h.hp = 0; h.dead = true; h.killer = kind === 'monster' ? src : null; kill(h, kind, attr); return; }   // 1.21: killer
     bondHurt(h, real, kind, src);   // 1.21
     if (kind === 'trap' && real >= 0.25 * h.max && fl.time - (fl.party.lastSay.friendHit || -99) > 5) {   // 1.05: a friend sees it and reacts

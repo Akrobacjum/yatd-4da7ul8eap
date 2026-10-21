@@ -6,7 +6,7 @@
     if (it.detected) return;
     it.detected = true; fl.threatDirty = true;
     if (how === 'seen') { fl.stats.learned++; floatTile(it.x, it.y, 'Zapamiętali', '#ffe066', 12, -0.5); }
-    if (by) { sawAdd(by, itemTags(it)); sayNow(itemTags(it), () => say(by, how === 'seen' ? pick(SAY.learn) : (gearR(by, 'amulet') && by.type !== 'thief' ? pick(SAY.amulet) : pick(SAY.detect)), 2)); }   // 1.17.1: he sees what he found
+    if (by) { sawAdd(by, itemTags(it)); sayNow(itemTags(it), () => say(by, how === 'seen' ? pick(SAY.learn) : how === 'tap' ? pick(SAY.tapFound) : (gearR(by, 'amulet') && by.type !== 'thief' ? pick(SAY.amulet) : pick(SAY.detect)), 2)); }   // 1.17.1: he sees what he found (1.22: 'tap', found with a stick)
     else if (how === 'seen' && fl.party && Math.random() < 0.5) {   // 1.17 (6.8 #1: never said): one who saw it go off tells the others, after the shout
       const r = slotRoom(it.type, it.x, it.y), w = alive().find(h => h.room === r && !h.lost && !panicking(h) && !caged(h));
       if (w) fl.party.queueSay.push({ id: w.id, text: pick(SAY.learn), at: fl.time + 1.2, prio: 2, late: 3 });
@@ -529,6 +529,7 @@
     const crew = alive().filter(h => h.room === room);
     if (!crew.length) return null;
     const dist = h => { const p = heroPos(h); return Math.hypot(p.x - m.gx, p.y - m.gy); };
+    const ls = crew.find(h => standing(h) && dist(h) <= 3); if (ls) return ls;   // 1.22: one making a last stand draws it
     let best = null, bs = -1e9;
     if (m.type === 'shade') {
       const L = leader();
@@ -585,7 +586,14 @@
       if (!fighters.length) return;
       if (hiddenAmbush(m)) showAmbush(m);   // 1.18 Zasadzka w norze: he ran into it; its first second of fighting hits twice as hard
       const ambK = fl.time < (m.ambushUntil || 0) ? 2 : 1;
-      (m.type === 'ogre' ? fighters : fighters.slice(0, 1)).forEach(h => { damage(h, ITEMS[m.type].melee * monDmg(m) * ambK * dt, m); if (m.type === 'ogre' && t3(m)) addFear(h, 4 * dt, 'ogre'); });
+      // 1.22: the warrior holding the front takes the blows first; a guard next to the carrier steps into half of a blow meant for
+      // him (a warrior 70%)
+      (m.type === 'ogre' ? fighters : [fighters.find(h => h.type === 'warrior' && h.front === m) || fighters[0]]).forEach(h => {
+        let d = ITEMS[m.type].melee * monDmg(m) * ambK * dt;
+        const gd = h.crystal ? guardOf(h, m) : null;
+        if (gd) { const k = gd.type === 'warrior' ? 0.7 : 0.5; damage(gd, d * k, m); d *= 1 - k; fl.stats.guardSoakDmg = (fl.stats.guardSoakDmg || 0) + d * k / (1 - k); }
+        damage(h, d, m); if (m.type === 'ogre' && t3(m)) addFear(h, 4 * dt, 'ogre');
+      });
       if (m.type === 'spider') {
         m.webT = (m.webT || 0) - dt;
         if (m.webT <= 0) {
