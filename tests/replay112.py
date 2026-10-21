@@ -21,8 +21,8 @@ JS = r"""
   G.newRun(false); while (G.modalKind) G.closeModal();
   const run = G.run, L0 = doc.layout;
   const L = { cells: new Map(), edges: new Map(), entrance: L0.entrance, heartKey: L0.heart, entX: L0.entX };
-  L0.cells.forEach(c => L.cells.set(c[0] + ',' + c[1], { cx: c[0], cy: c[1], x0: c[2], y0: c[3], x1: c[4], y1: c[5], lvl: c[6], born: 0, objs: c[7].map(o => o[3] ? [o[0], o[1], o[2], 1] : [o[0], o[1], o[2]]), rt: c[8] || undefined }));
-  [...L.cells.values()].forEach(c => { if (!c.rt) delete c.rt; });
+  L0.cells.forEach(c => L.cells.set(c[0] + ',' + c[1], { cx: c[0], cy: c[1], x0: c[2], y0: c[3], x1: c[4], y1: c[5], lvl: c[6], born: 0, objs: c[7].map(o => o[3] ? [o[0], o[1], o[2], 1] : [o[0], o[1], o[2]]), rt: c[8] || undefined, rk: c[9] || undefined }));
+  [...L.cells.values()].forEach(c => { if (!c.rt) delete c.rt; if (!c.rk) delete c.rk; });
   L0.edges.forEach(e => { const k = e[0] < e[1] ? e[0] + '|' + e[1] : e[1] + '|' + e[0]; L.edges.set(k, { key: k, a: e[0], b: e[1], horiz: !!e[2], pa: e[3], pb: e[4], lvl: e[5], born: 0 }); });
   if (L0.breach) L.breach = Object.assign({}, L0.breach, { fresh: true });
   run.layout = L; run.wave = doc.wave; run.total = prevTotal; run.greedKeep = L0.greedKeep || 0;
@@ -45,6 +45,12 @@ JS = r"""
           G.fl.items.set(k, { type, x, y, cd: 0, anim: 0, disabled: false, hp, max: hp, power: G.mods.monster, shot: 0.5, flash: 0, preview: 0, gx: x + 0.5, gy: y + 0.5, lvl: 1, spent: T.cost }); G.run.unlocked.add(type); done = true; break; }
         if (done) break; }
     });
+  }
+  if (deed[3] === 'auto') {   // 1.15 experiment: every room gets the komnata of the family it holds most of (none if it holds none)
+    G.fl.rooms.forEach(R => { if (R.kind !== 'room') return; const n = {};
+      G.fl.items.forEach(it => { const k = G.KIND_OF[it.type]; if (k && G.servedRooms(it.type, it.x, it.y).includes(R.id)) n[k] = (n[k] || 0) + 1; });
+      const best = Object.keys(n).sort((a, b) => n[b] - n[a])[0]; if (best) { R.rk = best; const c = run.layout.cells.get(R.key); if (c) c.rk = best; } });
+    G.fl.threatDirty = true; run.kindsN = G.fl.rooms.filter(r => r.rk).length;
   }
   run.next = G.makeWave(run.wave);
   if (L0.breach && !G.fl.breach) { /* breach from the doc is kept by startBuild(true) */ }
@@ -87,7 +93,7 @@ JS = r"""
   const w = run.waves[run.waves.length - 1] || {}, s = w.stats || {};
   const ev = (G.fl.tl && G.fl.tl.ev) || [], cps = ev.filter(e => e[1] === 'cp');
   return { pays: cps.length, comboPts: Math.round(s.comboPts || 0), essHeart: Math.round(s.essHeart || 0), fedAt: w.hunger ? w.hunger.fedAt : null, wave: doc.wave, lv: lvls.join(','), fame: fm, t: w.time, lost: w.crystalLost ? 1 : 0, k: s.kills, sc: s.scared, left: s.left, ch: s.checks, vol: s.volleys || 0, pts: Math.round(w.score || 0), fed: w.hunger && w.hunger.need ? (w.hunger.fed ? 1 : 0) : -1, need: w.hunger ? w.hunger.need : 0, rets: (G.run.returners || []).length, groza: w.groza || 0, greed: w.greed, heals: s.healed || 0, charms: s.charms || 0, guild: w.guild, prophecy: s.prophecy || 0,
-    amu: s.amulets || 0, boots: s.boots || 0, faithOut: s.faithOut || 0, det: s.detours || 0, lostN: s.gotLost || 0, swaps: s.swaps || 0, dFear: Math.round(s.deathFear || 0), fearPts: Math.round(s.fearPts || 0), scarePts: Math.round(s.scarePts || 0), dmgPts: Math.round(s.dmgPts || 0), killPts: Math.round(s.killPts || 0), shapeRes, crystals: run.crystals, rooms: s.roomsVisited || 0, lootN: s.loot || 0, heroesN: (w.heroes || []).length };
+    amu: s.amulets || 0, boots: s.boots || 0, faithOut: s.faithOut || 0, det: s.detours || 0, lostN: s.gotLost || 0, swaps: s.swaps || 0, dFear: Math.round(s.deathFear || 0), fearPts: Math.round(s.fearPts || 0), scarePts: Math.round(s.scarePts || 0), dmgPts: Math.round(s.dmgPts || 0), killPts: Math.round(s.killPts || 0), shapeRes, crystals: run.crystals, rooms: s.roomsVisited || 0, lootN: s.loot || 0, heroesN: (w.heroes || []).length, kindsN: run.kindsN || 0 };
 }"""
 def hits(d): return sum(v.get('hits', 0) for v in d['summary']['items'].values())
 async def main():
@@ -120,7 +126,7 @@ async def main():
                 if 'granary' in deck: stacks['granary'] = stacks.get('granary', 0) + st['kills']
                 if 'hunger' in deck: stacks['hunger'] = stacks.get('hunger', 0) + dk['summary']['items'].get('spikes', {}).get('kills', 0)
             prev = docs[n-1]['summary'] if n - 1 in docs else None
-            res = [await page.evaluate(JS, [docs[n], tot, fame, ACC, prev, stacks, MODE, [DEED, FW, EXTRA], [MODEL, SIG, SWF]]) for _ in range(REPS)]
+            res = [await page.evaluate(JS, [docs[n], tot, fame, ACC, prev, stacks, MODE, [DEED, FW, EXTRA, os.environ.get('KINDS', '')], [MODEL, SIG, SWF]]) for _ in range(REPS)]
             real = docs[n]['summary']
             agg = {}
             for r in res:
@@ -128,7 +134,7 @@ async def main():
                     a = agg.setdefault(sh, [0, 0, 0]); a[0] += v.get('crit', 0); a[1] += v.get('ok', 0); a[2] += v.get('miss', 0)
             print('W%d SHAPES %s rooms %.1f' % (n, ' '.join('%s %d/%d/%d' % (k, round(100 * v[0] / max(1, sum(v))), round(100 * v[1] / max(1, sum(v))), round(100 * v[2] / max(1, sum(v)))) for k, v in sorted(agg.items())), sum(r['rooms'] for r in res) / REPS), flush=True)
             mean = lambda a: round(sum(a) / max(1, len(a)))
-            print('JSON ' + json.dumps({'greed': [r['greed'] for r in res], 'lootN': [r['lootN'] for r in res], 'hn': res[0]['heroesN'], 'w': n, 'reps': REPS, 'lost': sum(r['lost'] for r in res), 'fedN': sum(1 for r in res if r['fed'] == 1), 'need': res[0]['need'], 'pts': sorted(r['pts'] for r in res), 't': sorted(r['t'] or 0 for r in res), 'pays': mean([r['pays'] for r in res]), 'combo': mean([r['comboPts'] for r in res]), 'lv': res[0]['lv'], 'k': sum(r['k'] or 0 for r in res) / REPS, 's': sum(r['sc'] or 0 for r in res) / REPS, 'real': {'pts': real['score'], 't': real['time'], 'lost': 1 if real['crystalLost'] else 0}}), flush=True)
+            print('JSON ' + json.dumps({'greed': [r['greed'] for r in res], 'lootN': [r['lootN'] for r in res], 'hn': res[0]['heroesN'], 'kinds': res[0].get('kindsN', 0), 'w': n, 'reps': REPS, 'lost': sum(r['lost'] for r in res), 'fedN': sum(1 for r in res if r['fed'] == 1), 'need': res[0]['need'], 'pts': sorted(r['pts'] for r in res), 't': sorted(r['t'] or 0 for r in res), 'pays': mean([r['pays'] for r in res]), 'combo': mean([r['comboPts'] for r in res]), 'lv': res[0]['lv'], 'k': sum(r['k'] or 0 for r in res) / REPS, 's': sum(r['sc'] or 0 for r in res) / REPS, 'real': {'pts': real['score'], 't': real['time'], 'lost': 1 if real['crystalLost'] else 0}}), flush=True)
             print('W%d FED %d/%d need %d rets %.1f' % (n, sum(1 for r in res if r['fed'] == 1), sum(1 for r in res if r['fed'] >= 0), res[0]['need'], sum(r['rets'] for r in res) / REPS), flush=True)
             print('W%d SUM lost %d/%d tmean %d chk %d pts %d groza %d lvmax %d | k %.1f s %.1f left %.1f | fear %d scare %d dmg %d kill %d | amu %.1f boots %.1f faithOut %.1f det %.1f lost %.1f swaps %.1f dFear %d' % (n, sum(r['lost'] for r in res), REPS, mean([r['t'] or 0 for r in res]), mean([r['ch'] or 0 for r in res]), mean([r['pts'] for r in res]), mean([r['groza'] for r in res]), max(int(x) for x in res[0]['lv'].split(',')),
                 sum(r['k'] or 0 for r in res) / REPS, sum(r['sc'] or 0 for r in res) / REPS, sum(r['left'] or 0 for r in res) / REPS, mean([r['fearPts'] for r in res]), mean([r['scarePts'] for r in res]), mean([r['dmgPts'] for r in res]), mean([r['killPts'] for r in res]),

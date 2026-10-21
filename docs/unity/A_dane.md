@@ -1,6 +1,6 @@
 # Załącznik A: dane wyeksportowane z prototypu
 
-Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (Prototype 1.13.1), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
+Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (Prototype 1.13.1; przeeksportowane później: `TABS` w 1.14, a w 1.15 `TABS`, `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
 
 - `yatd_content_1.13.1.json`: wszystkie tabele w jednym pliku: `{ version, source, tables: { ITEMS: ..., UPGRADES: ..., ... } }`. Ten plik warto wczytać w Unity.
 - `<NAZWA>.json`: ta sama tabela osobno (wygodne do czytania i porównań).
@@ -13,8 +13,8 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 
 | Plik | Kształt | Pola i znaczenie |
 |---|---|---|
-| `ITEMS` | słownik `id -> element` (53) | `name` nazwa; `cost` koszt w Esencji; `slot` miejsce: `floor`, `wall`, `door`, `object`, `roomtype` (opis w `SLOT_LABEL`); `tag` krótka cecha pod nazwą kafelka; `desc` opis po przytrzymaniu; `cd` odnowienie w s; `hp`, `melee` dla potworów; `build: true` budowla-kontra (tylko między falami, w pokoju, jedna na pokój); `tool: true` narzędzie lochu (kopanie, typy pokoi); `rt` typ pokoju nadawany przez narzędzie; `rarity` dla łupu (1-3: zasięg widzenia); `mode` dla trybów (Ulepsz, Przenieś) |
-| `TABS` | lista zakładek paska | `id`, `label`, `items` (kolejność kafelków), od 1.14 opcjonalnie `subs`: lista `{id, label, items}` (Pułapki i Potwory: `dmg` Rany, `fear` Strach; 08). `ITEM_ORDER` = wszystkie kafelki po kolei |
+| `ITEMS` | słownik `id -> element` (65; od 1.15 także 12 komnat `k_*`) | `name` nazwa; `cost` koszt w Esencji; `slot` miejsce: `floor`, `wall`, `door`, `object`, `roomtype`, od 1.15 `roomkind` (opis w `SLOT_LABEL`); `tag` krótka cecha pod nazwą kafelka; `desc` opis po przytrzymaniu; `cd` odnowienie w s; `hp`, `melee` dla potworów; `build: true` budowla-kontra (tylko między falami, w pokoju, jedna na pokój); `tool: true` narzędzie lochu (kopanie, typy pokoi); `rt` typ pokoju nadawany przez narzędzie; `rarity` dla łupu (1-3: zasięg widzenia); `mode` dla trybów (Ulepsz, Przenieś) |
+| `TABS` | lista zakładek paska | `id`, `label`, `items` (kolejność kafelków), od 1.14 opcjonalnie `subs`: lista `{id, label, items}` (Pułapki i Potwory: `dmg` Rany, `fear` Strach; od 1.15 Loch: `dig` Kopanie, `kind` Komnaty, `effect` Efekty; 08). `ITEM_ORDER` = wszystkie kafelki po kolei |
 | `START_UNLOCKED` | lista id | elementy dostępne od startu runu (reszta przez karty "Nowa pułapka/potwór"; od 1.14 odkryte zostają na stałe, 03 3.8) |
 | `TRAPS`, `MONSTERS`, `SCARE`, `CURSED`, `DRIFT`, `BUILDINGS`, `TOOLS`, `MODES`, `DISARMABLE`, `SMASHABLE_OBJ` | zbiory `id -> 1` | przynależność: pułapka, potwór, tylko straszy, przeklęte (kapłan zdejmuje), potwór dryfujący za bohaterami, budowla, narzędzie, tryb, da się rozbroić, barbarzyńca rozbija |
 | `LOOKS_TRAP` | funkcja | co bohaterowie biorą za pułapkę (pułapki i Wabik) |
@@ -24,7 +24,9 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 | `DMG_OF`, `DMG_TYPES` | `id -> typ`, `typ -> nazwa` | typ obrażeń elementu: `pierce` kłute, `blunt` obuchowe, `fire` ogień, `poison` trucizna |
 | `LOOT_KIND`, `LOOT_GREED` | `id -> rodzaj`, `rodzaj -> [zobaczony, zabrany]` | rodzaje łupu (złoto, mikstura, sprzęt, relikwia, przeklęty) i ile chciwości dają |
 | `SIZE_BONUS` | 0,05 | dodatek chciwości za rozległość lochu (sekcja 03) |
-| `ROOMTYPES`, `RT_INFO` | `narzędzie -> typ`, `typ -> {name, item, glyph, color}` | typy pokoi i ich znaczek na mapie |
+| `ROOMTYPES`, `RT_INFO` | `narzędzie -> typ`, `typ -> {name, item, glyph, color}` | efekty pokoi (dawniej typy pokoi) i ich znaczek na mapie |
+| `KIND_INFO`, `KINDS`, `KIND_OF` (od 1.15) | `komnata -> {name, item, items, tag, glyph, color}`, `narzędzie -> komnata`, `element -> komnata` | komnaty: rodzina (`items`), opis rodziny na kafelku (`tag`), znak i kolor (05, 5.8a) |
+| `KIND_POW`, `KIND_COST` (od 1.15) | 1,25; 12 | dodatkowa moc elementu rodziny, który ma już 3. poziom; cena komnaty |
 | `OBJ_KINDS` | lista | rodzaje mebli: beczka, skrzynia, posąg, półka |
 | `HEART` | `{kind: 'heart'}` | znacznik serca w układzie |
 | `CGX`, `ROCK`, `WW` | liczby | stałe siatki z pliku konfiguracji (`WW`, `WH` są przeliczane z układu lochu, sekcja 07) |

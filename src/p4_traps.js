@@ -7,7 +7,7 @@
     it.detected = true; fl.threatDirty = true;
     if (how === 'seen') { fl.stats.learned++; floatTile(it.x, it.y, 'Zapamiętali', '#ffe066', 12, -0.5); }
     if (by) say(by, how === 'seen' ? pick(SAY.learn) : (gearR(by, 'amulet') && by.type !== 'thief' ? pick(SAY.amulet) : pick(SAY.detect)), 2);
-    if (it.lvl >= 3) {   // a level 3 trap makes an impression
+    if (t3(it)) {   // a level 3 trap makes an impression
       const r = slotRoom(it.type, it.x, it.y), w = by || alive().find(h => h.room === r);
       if (w && Math.random() < 0.7) say(w, pick(SAY.nastyTrap), 3);
     }
@@ -80,7 +80,7 @@
     if (!fl || fl.phase !== 'raid' || !ACTIVE[it.type] || it.disabled || (it.cd > 0 && !opt.echo) || it.jamUntil > fl.time || (MONSTERS[it.type] && it.hp <= 0)) return false;
     const basePw = pw, boost = trapBoost(it), s0 = fl.score, k0 = fl.stats.kills;
     if (calmReady(it) && !opt.echo) floatTile(it.x, it.y, 'Cisza przed burzą ×' + fmt2(1 + mods.calmStorm).replace(',00', ''), '#ffd27a', 13, -1.4);
-    pw *= boost * lvlPow(it) * mods.pactPower;   // upgrade level and Krwawa umowa
+    pw *= boost * lvlPow(it) * kindPow(it) * mods.pactPower;   // upgrade level, 1.15: its komnata, and Krwawa umowa
     if (TRAPS[it.type]) it.lastFire = fl.time;
     // Echo mechanizmów: every k-th trap firing goes off a second time a moment later
     if (mods.echoFire && TRAPS[it.type] && !opt.echo && !opt.choir) {
@@ -133,7 +133,7 @@
         it.cd = cdBase; it.anim = 0.45;
         list.forEach(h => {
           damage(h, 35 * D * mods.spikeDmg * (1 + 0.04 * (run.stacks.hunger || 0) * mods.hunger) * pw, it, cpow); hit++;
-          if (it.lvl >= 3 && !h.dead) { h.burnUntil = Math.max(h.burnUntil, fl.time + 3); h.burnBy = 'spikes'; floatHero(h, 'Krwawi', '#ff6b6b', 12, -0.4); }   // Krwawienie
+          if (t3(it) && !h.dead) { h.burnUntil = Math.max(h.burnUntil, fl.time + 3); h.burnBy = 'spikes'; floatHero(h, 'Krwawi', '#ff6b6b', 12, -0.4); }   // Krwawienie
         });
         break;
       case 'web': {
@@ -142,7 +142,7 @@
         fl.zones.push({ keys, tiles: area, until: fl.time + dur, src: it });
         list.forEach(h => {
           h.slowUntil = fl.time + dur;
-          if (it.lvl >= 3) h.acidWebUntil = h.slowUntil;   // Kwaśna sieć
+          if (t3(it)) h.acidWebUntil = h.slowUntil;   // Kwaśna sieć
           const pts = addPts(GZ.web * depthMult(h.room) * loneMult(h), 'dmgPts', h); bt('web').pts += pts;
           floatHero(h, '+' + fmtE(pts) + ' sieć', '#ff7a86', 14); addFear(h, 6, 'web'); hit++;
         });
@@ -154,7 +154,7 @@
         break;
       case 'cage':
         it.cd = cdBase; it.anim = 0.4;
-        list.filter(h => !caged(h)).slice(0, 1).forEach(h => { cageHero(h, it, 6 * mods.cageTime * Math.max(1, pw), it.lvl >= 3 ? 2 : 1); const pts = addPts(GZ.cage * depthMult(h.room), 'dmgPts', h); bt('cage').pts += pts; floatHero(h, '+' + fmtE(pts) + ' klatka', '#ff7a86', 14); hit++; });
+        list.filter(h => !caged(h)).slice(0, 1).forEach(h => { cageHero(h, it, 6 * mods.cageTime * Math.max(1, pw), t3(it) ? 2 : 1); const pts = addPts(GZ.cage * depthMult(h.room), 'dmgPts', h); bt('cage').pts += pts; floatHero(h, '+' + fmtE(pts) + ' klatka', '#ff7a86', 14); hit++; });
         break;
       case 'arrows':
         it.cd = cdBase;
@@ -167,7 +167,7 @@
       case 'fire':
         it.cd = cdBase;
         fxTiles(area, '255,140,50', 0.5);
-        list.forEach(h => { damage(h, 20 * D * mods.fireDmg * pw, it, cpow); if (!h.dead) ignite(h, 'fire', it.lvl >= 3 ? 6 : 3); hit++; });   // level 3: Napalm
+        list.forEach(h => { damage(h, 20 * D * mods.fireDmg * pw, it, cpow); if (!h.dead) ignite(h, 'fire', t3(it) ? 6 : 3); hit++; });   // level 3: Napalm
         break;
       case 'portrait':
         it.cd = cdBase; it.anim = 0.8;
@@ -183,7 +183,7 @@
       case 'eyes':
         it.cd = cdBase; it.anim = 0.7;
         fxTiles(area, '255,224,102', 0.3);
-        list.forEach(h => { const lone = h.alone || h.lost, k = lone ? (it.lvl >= 3 ? 3 : 2) : 1; addFear(h, 14 * k * pw * cpow, 'eyes'); floatHero(h, lone ? 'Patrzą na mnie!' : 'Groza!', '#c3b2ff', 13, -0.5); hit++; });
+        list.forEach(h => { const lone = h.alone || h.lost, k = lone ? (t3(it) ? 3 : 2) : 1; addFear(h, 14 * k * pw * cpow, 'eyes'); floatHero(h, lone ? 'Patrzą na mnie!' : 'Groza!', '#c3b2ff', 13, -0.5); hit++; });
         break;
       case 'bones':
         it.cd = cdBase; it.anim = 0.5;
@@ -198,21 +198,21 @@
         break;
       case 'creak':
         it.cd = cdBase; it.anim = 0.7;
-        list.forEach(h => { const close = Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 1; addFear(h, (close ? 24 : 12) * pw * cpow, 'creak'); if (close && it.lvl >= 3) h.slowUntil = Math.max(h.slowUntil, fl.time + 2); hit++; });
+        list.forEach(h => { const close = Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 1; addFear(h, (close ? 24 : 12) * pw * cpow, 'creak'); if (close && t3(it)) h.slowUntil = Math.max(h.slowUntil, fl.time + 2); hit++; });
         floatTile(it.x, it.y, 'Skrzyp!', '#d9c9a8', 14, -0.6);
         break;
       case 'coffin': {
         it.cd = cdBase; it.anim = 1;
         const crypt = isRt(roomOf(it.x, it.y), 'crypt') ? 1.5 : 1;
         let near = null, bd = 99; list.forEach(h => { const dd = Math.hypot(h.tx - it.x, h.ty - it.y); if (dd < bd) { bd = dd; near = h; } });
-        list.forEach(h => { const main = h === near; addFear(h, (main ? 36 * (it.lvl >= 3 ? 1.5 : 1) : 14) * crypt * pw * cpow, 'coffin'); if (main && it.lvl >= 3) h.slowUntil = Math.max(h.slowUntil, fl.time + 3); hit++; });
+        list.forEach(h => { const main = h === near; addFear(h, (main ? 36 * (t3(it) ? 1.5 : 1) : 14) * crypt * pw * cpow, 'coffin'); if (main && t3(it)) h.slowUntil = Math.max(h.slowUntil, fl.time + 3); hit++; });
         if (near) floatHero(near, 'Trumna!', '#c3b2ff', 15, -0.6);
         shake = Math.max(shake, 0.08);
         break;
       }
       case 'musicbox': {
         it.cd = cdBase; it.anim = 0.6;
-        const dur = it.lvl >= 3 ? 8 : 4, r = roomOf(it.x, it.y);
+        const dur = t3(it) ? 8 : 4, r = roomOf(it.x, it.y);
         it.playUntil = fl.time + dur;
         list.forEach(h => { addFear(h, 6 * pw * cpow, 'musicbox'); h.lullUntil = fl.time + dur; h.lullK = 5 * pw; h.lullRoom = r; hit++; });
         if (list.length) say(list[0], pick(SAY.lull), 3);
@@ -227,7 +227,7 @@
         const d = fl.doors.get(key(it.x, it.y));
         d.closedUntil = fl.time + shut; d.wasClosed = true;
         it.uses = (it.uses || 0) + 1;
-        if (it.uses >= mods.gateUses + (it.lvl >= 3 ? 2 : 0)) { it.disabled = true; it.worn = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Ostatnie zamknięcie', '#c9c2d8', 13, -0.6); }
+        if (it.uses >= mods.gateUses + (t3(it) ? 2 : 0)) { it.disabled = true; it.worn = true; fl.threatDirty = true; floatTile(it.x, it.y, 'Ostatnie zamknięcie', '#c9c2d8', 13, -0.6); }
         fl.heroes.forEach(h => { if (!h.dead && !h.fled && h.nx === it.x && h.ny === it.y && h.prog < 0.5) { h.nx = null; h.ny = null; h.prog = 0; } });
         list.forEach(h => { damage(h, 60 * D * mods.gateCrush * pw, it, cpow); hit++; });
         const near = alive().find(h => Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 2);
@@ -241,7 +241,7 @@
         fl.objects.delete(key(it.x, it.y)); fl.threatDirty = true;
         const L = run.layout, c = L.cells.get(cellKey(Math.floor(it.x / CELL), Math.floor(it.y / CELL)));
         if (c) c.objs = c.objs.filter(o => !(o[0] === it.x && o[1] === it.y));   // the furniture is gone for good
-        list.forEach(h => { damage(h, 60 * D * pw, it, cpow); if (it.lvl >= 3 && !h.dead) ignite(h, 'powder'); hit++; });   // level 3: Ognisty proch
+        list.forEach(h => { damage(h, 60 * D * pw, it, cpow); if (t3(it) && !h.dead) ignite(h, 'powder'); hit++; });   // level 3: Ognisty proch
         burst(it.x + 0.5, it.y + 0.5, '#ff9a3c', 26); burst(it.x + 0.5, it.y + 0.5, '#ffd27a', 12);
         particles.push({ ring: true, x: it.x + 0.5, y: it.y + 0.5, r: 0.3, maxR: mods.powderR + 0.5, life: 0.35, color: '#ffb35c' });
         shake = 0.35;
@@ -253,19 +253,19 @@
         fxTiles(area, '216,67,79', 0.3);
         list.forEach(h => {
           damage(h, 40 * D * mods.mimicDmg * pw, it, cpow); hit++;
-          if (it.lvl >= 3 && !h.dead && h.inv.length) { const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0]; floatHero(h, 'Pożarte: ' + HITEMS[lost.type].name, '#d8434f', 12, -0.6); }   // Pożeracz
+          if (t3(it) && !h.dead && h.inv.length) { const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0]; floatHero(h, 'Pożarte: ' + HITEMS[lost.type].name, '#d8434f', 12, -0.6); }   // Pożeracz
         });
         break;
       case 'goblin': {
         it.cd = cdBase; it.anim = 0.3;
         const near = alive().filter(h => Math.max(Math.abs(h.tx - it.x), Math.abs(h.ty - it.y)) <= 1);
         const tgt = near.find(h => h.foe === it) || near[0];
-        if (tgt) { damage(tgt, 35 * D * it.power * pw, actSrc(it.type), cpow); hit++; if (it.lvl >= 3 && !tgt.dead) tgt.slowUntil = Math.max(tgt.slowUntil, fl.time + 1.5); }   // Podcięcie
+        if (tgt) { damage(tgt, 35 * D * it.power * pw, actSrc(it.type), cpow); hit++; if (t3(it) && !tgt.dead) tgt.slowUntil = Math.max(tgt.slowUntil, fl.time + 1.5); }   // Podcięcie
         break;
       }
       case 'archer':
         it.cd = cdBase;
-        list.forEach(h => { const p = heroPos(h); fxLine(it.x + 0.5, it.y + 0.5, p.x, p.y, 0.25); damage(h, 22 * D * it.power * pw, actSrc(it.type), cpow); if (it.lvl >= 3 && !h.dead) ignite(h, 'archer'); hit++; });
+        list.forEach(h => { const p = heroPos(h); fxLine(it.x + 0.5, it.y + 0.5, p.x, p.y, 0.25); damage(h, 22 * D * it.power * pw, actSrc(it.type), cpow); if (t3(it) && !h.dead) ignite(h, 'archer'); hit++; });
         break;
       case 'spider':
         it.cd = cdBase; it.anim = 0.35;
@@ -276,7 +276,7 @@
       case 'ogre':
         it.cd = cdBase; it.anim = 0.35; shake = Math.max(shake, 0.2);
         fxTiles(area, '200,180,140', 0.35);
-        list.forEach(h => { damage(h, 45 * D * it.power * pw, actSrc(it.type), cpow); if (it.lvl >= 3 && !h.dead) addFear(h, 15 * pw, 'ogre'); hit++; });   // Grzmot
+        list.forEach(h => { damage(h, 45 * D * it.power * pw, actSrc(it.type), cpow); if (t3(it) && !h.dead) addFear(h, 15 * pw, 'ogre'); hit++; });   // Grzmot
         break;
       case 'shaman': {
         it.cd = cdBase;
@@ -300,7 +300,7 @@
         list.forEach(h => { addFear(h, (h === tgt ? 30 : 10) * (h.alone || h.lost ? 2 : 1) * pw * cpow, 'shade'); hit++; });
         if (tgt) {
           floatHero(tgt, 'Szept...', '#9a8fb8', 14, -0.6); say(tgt, pick(SAY.shade), 3, null, 'loud');
-          if (it.lvl >= 3 && tgt.alone && !tgt.lost && leader() !== tgt) getLost(tgt, 'shade');   // Pożeracz światła
+          if (t3(it) && tgt.alone && !tgt.lost && leader() !== tgt) getLost(tgt, 'shade');   // Pożeracz światła
         }
         break;
       }
@@ -310,7 +310,7 @@
         const L = leader();
         list.forEach(h => {
           addFear(h, 16 * pw * cpow, 'bats'); damage(h, 6 * D * pw, actSrc(it.type), cpow); hit++;
-          if (!h.dead && !h.fleeing && !h.crystal && !caged(h) && h !== L && Math.random() < (h.rank === 0 ? 0.6 : 0.35) * (it.lvl >= 3 ? 1.3 : 1)) {
+          if (!h.dead && !h.fleeing && !h.crystal && !caged(h) && h !== L && Math.random() < (h.rank === 0 ? 0.6 : 0.35) * (t3(it) ? 1.3 : 1)) {
             h.panicUntil = fl.time + 2.5; h.needPlan = true; fl.stats.batScatter = (fl.stats.batScatter || 0) + 1;
             floatHero(h, 'Spłoszony!', '#c9c0d8', 13, -0.8); say(h, pick(SAY.batScatter), 2, null, 'loud');
           }
@@ -346,7 +346,7 @@
   // Trapdoor: down into the dark, out somewhere else a few seconds later, alone and shaken.
   // A hero falls through a given trapdoor once per wave: after that he knows where the edge is and steps around it.
   function fall(h, pw, it) {
-    if (it) { (h.fellFrom = h.fellFrom || new Set()).add(it); learnTrap(it, 'seen', null); if (it.lvl >= 3) h.deepFall = true; }
+    if (it) { (h.fellFrom = h.fellFrom || new Set()).add(it); learnTrap(it, 'seen', null); if (t3(it)) h.deepFall = true; }
     h.gone = true; h.state = 'fallen'; h.fallUntil = fl.time + mods.fallTime * Math.max(1, pw); h.outR = realNow; h.outKind = 'fall';   // 1.09: sinks into the floor
     h.path = []; h.nx = null; h.ny = null; h.prog = 0; h.foe = null; h.item = null;
     fl.stats.falls++; say(h, pick(SAY.fall), 4); tl('tr', h.id);
@@ -419,7 +419,7 @@
   function hurtMonster(m, dmg) {
     if (m.hp <= 0) return;
     const r = roomOf(m.x, m.y);
-    if ([...fl.items.values()].some(o => o.type === 'shaman' && o.lvl >= 3 && o.hp > 0 && roomOf(o.x, o.y) === r)) dmg *= 0.7;   // Tarcza ducha
+    if ([...fl.items.values()].some(o => o.type === 'shaman' && t3(o) && o.hp > 0 && roomOf(o.x, o.y) === r)) dmg *= 0.7;   // Tarcza ducha
     m.hp -= dmg; m.flash = 0.12;
     if (m.hp <= 0) {   // dead for good: monsters do not come back
       m.hp = 0; fl.stats.monstersLost++; bt(m.type).died++; tl('mn', m.type, m.x, m.y);
@@ -433,7 +433,7 @@
       fl.threatDirty = true;
     }
   }
-  const monDmg = m => S.monDmg * m.power * mods.pactPower * (heartFed() ? 1 + mods.heartbeat : 1) *
+  const monDmg = m => S.monDmg * m.power * kindPow(m) * mods.pactPower * (heartFed() ? 1 + mods.heartbeat : 1) *
     (mods.pack && [...fl.items.values()].some(o => o !== m && MONSTERS[o.type] && o.hp > 0 && roomOf(o.x, o.y) === roomOf(m.x, m.y)) ? 1 + mods.pack : 1);   // Stado
   // v15.1: the floating monsters. The ghost follows the nearest hero, the shade the lonely one or the last in line,
   // the bats flit from one hero to another. They never block the way and nobody fights them hand to hand.
@@ -466,11 +466,11 @@
     alive().forEach(h => {
       const q = heroPos(h), dd = Math.hypot(q.x - m.gx, q.y - m.gy);
       if (m.type === 'ghost') {   // chills everyone close
-        if (dd <= (m.lvl >= 3 ? 2.6 : 1.6)) { addFear(h, 10 * dt * mods.ghostAura * galleryK(m), 'ghost'); if (!h.ghostSaid) { h.ghostSaid = true; say(h, pick(SAY.ghost), 3, null, 'loud'); if (h.type === 'warrior') say(h, pick(SAY.ghostOnly), 2); } }
+        if (dd <= (t3(m) ? 2.6 : 1.6)) { addFear(h, 10 * dt * mods.ghostAura * galleryK(m), 'ghost'); if (!h.ghostSaid) { h.ghostSaid = true; say(h, pick(SAY.ghost), 3, null, 'loud'); if (h.type === 'warrior') say(h, pick(SAY.ghostOnly), 2); } }
         if (dd <= 0.8) damage(h, 5 * monDmg(m) * dt, m);
       } else if (m.type === 'shade') {   // a cold breath on the neck, twice as bad for the lonely
         if (dd <= 1.4) { addFear(h, 7 * dt * (h.alone || h.lost ? 2 : 1), 'shade'); if (!h.shadeSaid) { h.shadeSaid = true; say(h, pick(SAY.shade), 3, null, 'loud'); } }
-      } else if (dd <= (m.lvl >= 3 ? 1.6 : 1.0)) {   // bats: tiny bites and wings in the face
+      } else if (dd <= (t3(m) ? 1.6 : 1.0)) {   // bats: tiny bites and wings in the face
         addFear(h, 4 * dt, 'bats'); damage(h, 3 * monDmg(m) * dt, m);
         if (!h.batSaid) { h.batSaid = true; say(h, pick(SAY.bats), 3, null, 'loud'); }
       }
@@ -489,19 +489,19 @@
         if (m.shot <= 0) {
           let tgt = null, bd = 4.01;
           alive().forEach(h => { if (roomOf(h.tx, h.ty) !== room) return; const d = Math.hypot(h.tx - m.x, h.ty - m.y); if (d < bd) { bd = d; tgt = h; } });
-          if (tgt) { m.shot = 1.2; const p = heroPos(tgt); fxLine(m.x + 0.5, m.y + 0.5, p.x, p.y, 0.15); damage(tgt, 12 * monDmg(m), m); if (m.lvl >= 3 && !tgt.dead) ignite(tgt, 'archer'); }
+          if (tgt) { m.shot = 1.2; const p = heroPos(tgt); fxLine(m.x + 0.5, m.y + 0.5, p.x, p.y, 0.15); damage(tgt, 12 * monDmg(m), m); if (t3(m) && !tgt.dead) ignite(tgt, 'archer'); }
           else m.shot = 0.3;
         }
       }
       if (DRIFT[m.type]) { driftTick(m, room, dt); return; }
       const fighters = fl.heroes.filter(h => !h.dead && !h.fled && !h.gone && h.state === 'fight' && h.foe === m);
       if (!fighters.length) return;
-      (m.type === 'ogre' ? fighters : fighters.slice(0, 1)).forEach(h => { damage(h, ITEMS[m.type].melee * monDmg(m) * dt, m); if (m.type === 'ogre' && m.lvl >= 3) addFear(h, 4 * dt, 'ogre'); });
+      (m.type === 'ogre' ? fighters : fighters.slice(0, 1)).forEach(h => { damage(h, ITEMS[m.type].melee * monDmg(m) * dt, m); if (m.type === 'ogre' && t3(m)) addFear(h, 4 * dt, 'ogre'); });
       if (m.type === 'spider') {
         m.webT = (m.webT || 0) - dt;
         if (m.webT <= 0) {
           m.webT = 3; const t = fighters[0];
-          if (mods.spiderNest || m.lvl >= 3) { const tiles = areaOf(m); fl.zones.push({ keys: new Set(tiles.map(q => key(q[0], q[1]))), tiles, until: fl.time + 3, src: m }); }
+          if (mods.spiderNest || t3(m)) { const tiles = areaOf(m); fl.zones.push({ keys: new Set(tiles.map(q => key(q[0], q[1]))), tiles, until: fl.time + 3, src: m }); }
           if (t) { t.slowUntil = fl.time + 2.5; if (!t.spiderSaid) { t.spiderSaid = true; say(t, pick(SAY.spider), 2, null, 'loud'); } }
         }
       }

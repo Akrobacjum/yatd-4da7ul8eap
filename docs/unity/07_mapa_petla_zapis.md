@@ -537,21 +537,22 @@ W Unity: stos poleceń (Command) albo migawki stanu budowy; ta sama granica 30 i
 | `tunnel` | dla każdej komórki i kierunków w prawo i w dół: sąsiad istnieje, krawędzi brak; znacznik w połowie między środkami |
 | `expand` | każdy pokój (środek prostokąta + 0,5) i każdy korytarz (jego środkowy kafelek); niesie `lvl` |
 | `demolish` | pokoje z `canDemolishRoom` i korytarze z `canDemolishEdge` |
-| `r_*` (typy pokoi) | każdy pokój; `has` = ma już ten typ (stuknięcie zdejmie), `other` = ma inny typ (zostanie zastąpiony, napis "zamiast: ...") |
+| `r_*` (efekty, dawniej typy pokoi) | każdy pokój; `has` = ma już ten typ (stuknięcie zdejmie), `other` = ma inny typ (zostanie zastąpiony, napis "zamiast: ...") |
+| `k_*` (komnaty, od 1.15) | każdy pokój; `has` = ma już tę komnatę, `other` = ma inną komnatę (zastąpi ją); znacznik w kolorze i ze znakiem komnaty (05, 5.8a) |
 
 Stuknięcie wybiera najbliższy znacznik w promieniu 1,8 kafelka. Kolory i znaki znaczników: sekcja 08 (`p7_draw.js: drawToolMarkers`; pod znacznikiem rozbudowy jej cena).
 
 ### 7.9.2 Koszt: `toolCost(t, m)` (`p3_flow.js`)
 
 ```
-ROOMTYPES[t]: m && m.has ? 0 : ITEMS[t].cost                          // zdjęcie typu nic nie kosztuje
+ROOMTYPES[t] lub KINDS[t]: m && m.has ? 0 : ITEMS[t].cost             // zdjęcie efektu albo komnaty nic nie kosztuje
 expand:       ceil(ITEMS.expand.cost * 2 ^ (m ? m.lvl : 0) * mods.expandCost)      // 4, 8, 16, 32... za to samo miejsce
 dig:          run.freeDigs > 0 ? 0
               : max(0, ITEMS.dig.cost + 3 * max(0, cells.size - 7) - mods.digDiscount)   // 8, od 8. pokoju +3 za każdy
 tunnel:       max(0, ITEMS.tunnel.cost - mods.digDiscount)            // 4
 demolish:     max(0, 0) = 0
 ```
-Ceny bazowe: `dig` 8, `tunnel` 4, `expand` 4, `demolish` 0, typy pokoi 8 lub 10 (`ITEMS.json`).
+Ceny bazowe: `dig` 8, `tunnel` 4, `expand` 4, `demolish` 0, efekty 8 lub 10, komnaty 12 (`KIND_COST`) (`ITEMS.json`).
 
 ### 7.9.3 Zastosowanie: `applyTool(m)` (`p3_flow.js`)
 
@@ -569,6 +570,9 @@ demolish: forgetTiles(kafelki burzonego pokoju lub korytarza)       // UWAGA: pr
 expand:   spec.lvl++; R.lvl = spec.lvl                               // bez przebudowy mapy, pojemność liczy się z R.lvl
 r_*:      ten sam typ -> usuń c.rt, R.rt; essence += floor(ITEMS[t].cost / 2)
           inny lub brak -> c.rt = R.rt = typ (poprzedni typ przepada bez zwrotu)
+k_*:      ta sama komnata -> usuń c.rk, R.rk; essence += floor(12 / 2)      // od 1.15
+          inna lub brak -> c.rk = R.rk = komnata (poprzednia przepada bez zwrotu); efekt (rt) zostaje
+          fl.threatDirty = true; podpowiedź: rodzina i ile jej elementów już tu działa (`servedRooms`)
 !ok: zdejmij wpis cofania; note 'Tu się nie da'
 ok:  essence -= cost; stats.built++; bt(tool).placed++, spent += cost; run.next = run.next || makeWave(run.wave)
      podpowiedź z liczbą Esencji zwróconej za elementy, które straciły miejsce

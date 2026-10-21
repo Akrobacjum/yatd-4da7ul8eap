@@ -865,6 +865,38 @@ Ustawiana w `damage` (krok 13), trwa do końca fali (bohater żyje tylko w fali)
 
 Uwaga dla kraty i zawiasów: ich `slotRoom` to korytarz, więc Zębatki, Głusza i Grota z pokoju obok ich nie dotyczą.
 
+## 5.8a Komnaty (`KIND_INFO`, `KINDS`, `KIND_OF`, `rkOf`, `servedRooms`, `inKind`, `t3`, `kindPow`, od 1.15)
+
+Komnata mówi, komu pokój służy. `data/KIND_INFO.json`: id → nazwa, narzędzie (`k_<id>`), rodzina (`items`), krótki opis rodziny (`tag`), znak i kolor. Każda pułapka i każdy potwór należy do dokładnie jednej komnaty (24 elementy w 12 komnatach, `KIND_OF`: element → komnata; `KINDS`: narzędzie → komnata).
+
+| Komnata | Rodzina | Znak, kolor |
+|---|---|---|
+| **goblin** Goblinia nora | Goblin, Szaman | ♣ `#a7d060` |
+| **spider** Leże pająków | Pająk, Sieć | ✳ `#d4cbe8` |
+| **ogre** Jaskinia ogra | Ogr | ♠ `#d99a6c` |
+| **haunt** Nawiedzona sala | Duch, Cień | ✧ `#a6e8ff` |
+| **bats** Gniazdo nietoperzy | Nietoperze | ☾ `#bba2e6` |
+| **ossuary** Kaplica czaszek | Kości, Trumna, Łucznik | ☠ `#efe6cc` |
+| **armory** Zbrojownia | Kolce, Strzały | ⚔ `#c9d5e2` |
+| **forge** Kuźnia | Ogień, Proch | ⚒ `#ffa65c` |
+| **prison** Więzienie | Klatka, Zapadnia, Krata | ⛓ `#bdb19b` |
+| **junk** Graciarnia | Mimik | ⌂ `#dcae6c` |
+| **gallery** Galeria | Portret, Oczy, Lustro | ▣ `#ecc65e` |
+| **nursery** Pokój dziecięcy | Pozytywka, Zawiasy | ♪ `#f2bcd4` |
+
+Zasady (`p2_state_map.js`, `p3_flow.js: applyTool`):
+
+- **Działanie.** Element rodziny, który służy pokojowi z jej komnatą, ma cechę 3. poziomu bez ulepszania: `t3(it) = lvl >= 3 || inKind(it)`. Wszystkie miejsca w kodzie, które sprawdzały `lvl >= 3` dla cechy (`TRAITS`), pytają teraz `t3` (36 miejsc w `p2`-`p6`; klucz pamięci obszarów `AREA_MEMO` zawiera `t`, gdy element ma cechę). Element rodziny, który ma już 3. poziom, dostaje `KIND_POW = 1,25` mocy (`kindPow`): pułapki w `fireRaw` (`pw *= boost * lvlPow * kindPow * pactPower`), potwory w `monDmg`. Poziom 2 nie zyskuje nic poza cechą.
+- **Któremu pokojowi służy element** (`servedRooms`): pułapka na ścianie pokojowi, w który patrzy (`slotRoom`), potwór i pułapka na podłodze albo obiekcie pokojowi, w którym stoi (duchy, cienie i nietoperze: pokojowi swojego pola startowego), pułapka w drzwiach (Krata, Zawiasy) obu pokojom swoich drzwi. Samo `slotRoom` dałoby drzwiom często korytarz, a korytarz nie ma komnaty.
+- **Koszt** `KIND_COST = 12` (`toolCost`). Komnata nie zajmuje miejsca w pokoju (`roomCap` jej nie liczy). Tylko pokoje (`kind === 'room'`), nie korytarze. Jeden pokój ma najwyżej jedną komnatę i niezależnie od niej jeden efekt (`rt`). Komnata i efekt nakładają się (decyzja autora, np. Goblinia nora we Mgle): działają oba naraz, żadne z nich nie zdejmuje drugiego, a rysunek pokazuje oba (08, 6.2a).
+- **Zdejmowanie i zamiana.** Stuknięcie pokoju, który ma tę komnatę: zdjęcie za 0, wraca `floor(12 / 2) = 6`. Stuknięcie pokoju z inną komnatą: zamiana za pełne 12 (napis "zamiast: ..."). Cofnij przywraca komnatę (kopia `run.layout`).
+- **Odblokowanie.** Wszystkie 12 narzędzi jest w `START_UNLOCKED` (pokazują się od etapu 3, `ONB_ITEM = 3`), ale komnata działa jako zablokowana (`p8b_ui.js: isOpenT`), dopóki gracz nie ma odblokowanego żadnego elementu jej rodziny. Kafelek jest wtedy wyszarzony z kłódką, stuknięcie mówi "brak rodziny", a dymek: "Zablokowana: najpierw odblokuj X albo Y (kartą ze sklepu)."
+- **Komunikat po postawieniu:** "Komnata: <nazwa> (zamiast: <poprzednia>). <rodzina> w tym pokoju ma/mają cechę 3. poziomu (działa już na N | , postaw je tutaj)." Opis kafelka (`ITEMS.k_*.desc`) wymienia cechy całej rodziny (`TRAITS`).
+- **Zapis.** `run.layout.cells[k].rk` (id komnaty); pokój dostaje `R.rk` przy budowaniu mapy. Log runu: komórka układu `[9]` (`null`, gdy brak; `[8]` to efekt), `LOG_VERSION` bez zmian (58), bo pole doszło na końcu.
+- **Odtwarzanie** (`tests/replay112.py`): komórka `[9]` wraca jako `rk`. Eksperyment `KINDS=auto` (zmienna środowiska): każdy pokój dostaje komnatę rodziny, której ma najwięcej, bez opłaty.
+
+Wygląd komnat: sekcja 08 (6.2a). Podzakładki Lochu: sekcja 08 (2.5).
+
 ---
 
 ## 5.9 Skill checki (`p6_loop.js`)

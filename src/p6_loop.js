@@ -232,9 +232,9 @@
   function predictedDmg(it, pw) {
     const D = S.dmg, burn = 18 * D;   // the skull counts the burn too
     pw *= lvlPow(it) * mods.pactPower;   // the skull knows about upgrades too
-    if (it.type === 'fire') return 20 * D * mods.fireDmg * pw * trapBoost(it) + burn * (it.lvl >= 3 ? 2 : 1);
+    if (it.type === 'fire') return 20 * D * mods.fireDmg * pw * trapBoost(it) + burn * (t3(it) ? 2 : 1);
     if (it.type === 'arrows') return 25 * D * pw * trapBoost(it) + (mods.arrowBurn ? burn : 0);
-    if (it.type === 'spikes') return 35 * D * mods.spikeDmg * (1 + 0.04 * (run.stacks.hunger || 0) * mods.hunger) * pw * trapBoost(it) + (it.lvl >= 3 ? burn : 0);
+    if (it.type === 'spikes') return 35 * D * mods.spikeDmg * (1 + 0.04 * (run.stacks.hunger || 0) * mods.hunger) * pw * trapBoost(it) + (t3(it) ? burn : 0);
     const m = { spikes: mods.spikeDmg, gate: mods.gateCrush, mimic: mods.mimicDmg, trapdoor: mods.fallDmg }[it.type] || 1;
     return BASE_DMG[it.type] * D * m * (MONSTERS[it.type] ? it.power : 1) * pw * trapBoost(it);
   }
@@ -259,7 +259,7 @@
   // what reaches the hero after his own protection: a talisman's ward, armour (acid halves both), a curse (+30%)
   function takenK(h, it) {
     const acid = inB('acid', h.room) ? 0.5 : 1, ar = gearR(h, 'armor');
-    return (fl.time < h.wardUntil && !(it.type === 'arrows' && it.lvl >= 3) ? 1 - h.wardK * acid : 1) * (ar ? 1 - (1 - Math.pow(0.92, ar * itemPow(h))) * acid : 1) * (h.cursed ? 1.3 : 1);
+    return (fl.time < h.wardUntil && !(it.type === 'arrows' && t3(it)) ? 1 - h.wardK * acid : 1) * (ar ? 1 - (1 - Math.pow(0.92, ar * itemPow(h))) * acid : 1) * (h.cursed ? 1.3 : 1);
   }
   const lethalFor = (it, pw) => !NO_KILL[it.type] && heroesInArea(it).some(h => (it.type !== 'gate' || (h.tx === it.x && h.ty === it.y)) && h.hp + h.shield <= predictedDmg(it, pw) * trapMult(h, it.type, it) * takenK(h, it));
   const SERIES_MAX = 6;

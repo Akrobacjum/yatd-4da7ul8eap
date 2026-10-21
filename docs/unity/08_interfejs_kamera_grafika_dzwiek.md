@@ -1,6 +1,6 @@
 # 08. Interfejs, sterowanie, kamera, grafika, dźwięk i samouczek
 
-Wersja źródłowa: Prototype 1.14 (`LOG_VERSION = 58`). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
+Wersja źródłowa: Prototype 1.15 (`LOG_VERSION = 58`). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
@@ -38,6 +38,7 @@ Zrzuty 01-10 zrobione na Prototype 1.12 (interfejs 1.12.1 różni się tylko lis
 | `10_tutorial.png` | samouczek: coach na dole mapy, pulsujący pierścień celu |
 | `11_check_top.png` | 1.13: check (spirala) u góry mapy pod ikonami drużyny, dymek zepchnięty pod płytę, pułapka z obwódką i drużyna widoczne niżej |
 | `12_check_tutorial.png` | 1.13: pierwszy check w runie z przewodnikiem: karta samouczka u góry (gra stoi), check "Uwaga: strzały!" pod nią |
+| `13_komnaty.png` | 1.15: Goblinia nora we Mgle: ziemne ściany z belkami, korzeniami i trawą na górze, ognisko z polanami, świecące grzybki, totemy z czaszką, odciski dłoni, mgła na podłodze i przy ścianach, nazwy komnaty i efektu; pasek: Loch, podzakładka Komnaty |
 
 ## 1. Kierunek artystyczny, paleta, fonty
 
@@ -92,8 +93,9 @@ Inne stałe kolory używane w całym UI:
 | Poziomy (rangi bohatera) | Nowicjusz `#9be37a`, Weteran `#6fb7ff`, Elita `#c39bff`, Mistrz `#ff8a3c`, Legenda `#ff5a6a`, Mit `#ffe066` | `p1_config.js: TIERS` |
 | Przedmioty bohaterów | mikstura `#8be38f`, talizman `#7fb8ff`, amulet `#c3b2ff`, buty `#e8c27a`, bomba `#ff9a3c`, broń `#d9dbe6`, zbroja `#9aa3b8` | `p1_config.js: ITEM_COLOR` |
 | Łup (tag kafelka) | monety `#f2b94b`, mikstura `#8be38f`, ekwipunek `#6fb7ff`, relikwia `#ff8a3c`, przeklęty `#b48cff` | `p1_config.js: LOOT_COLOR` |
-| Typy pokoi (glif, kolor) | Mgła ≋ `#b9c4d8`, Bagno ~ `#8fbf6a`, Grota ) `#9fb6ff`, Krypta ✝ `#c9b6e8`, Sezam ◆ `#ffd27a`, Sanktuarium ✚ `#f3e2b0`, Zębatki ⚙ `#d6a86a`, Głusza ◌ `#9aa6bb`, Lodownia ❄ `#bfe6ff` | `p1_config.js: RT_INFO` |
-| Podłoga pokoi (od wejścia w głąb) | `ROOM_TINT` `#3f4246` → `#43424a` → `#4a3e45` → `#533941` → `#5f3239` (interpolacja po odległości; korytarz × 0,62) | `p1_config.js`, `p2_state_map.js: tint` |
+| Komnaty (glif, kolor, od 1.15) | Goblinia nora ♣ `#a7d060`, Leże pająków ✳ `#d4cbe8`, Jaskinia ogra ♠ `#d99a6c`, Nawiedzona sala ✧ `#a6e8ff`, Gniazdo nietoperzy ☾ `#bba2e6`, Kaplica czaszek ☠ `#efe6cc`, Zbrojownia ⚔ `#c9d5e2`, Kuźnia ⚒ `#ffa65c`, Więzienie ⛓ `#bdb19b`, Graciarnia ⌂ `#dcae6c`, Galeria ▣ `#ecc65e`, Pokój dziecięcy ♪ `#f2bcd4` | `p1_config.js: KIND_INFO` |
+| Efekty, dawniej typy pokoi (glif, kolor) | Mgła ≋ `#b9c4d8`, Bagno ~ `#8fbf6a`, Grota ) `#9fb6ff`, Krypta ✝ `#c9b6e8`, Sezam ◆ `#ffd27a`, Sanktuarium ✚ `#f3e2b0`, Zębatki ⚙ `#d6a86a`, Głusza ◌ `#9aa6bb`, Lodownia ❄ `#bfe6ff` | `p1_config.js: RT_INFO` |
+| Podłoga pokoi (od wejścia w głąb) | `ROOM_TINT` `#424448` → `#44464a` → `#46464b` → `#48464b` → `#4a464a` (od 1.15 szara kamienna aż do końca, w głębi tylko odrobinę cieplejsza; 1.0-1.14: `#3f4246` → `#5f3239`, "zaschnięta krew" w głębi; interpolacja po odległości; korytarz × 0,62) | `p1_config.js`, `p2_state_map.js: tint` |
 | Skill check | patrz 6.12 (`CK`) | `p7_draw.js: CK` |
 
 ### 1.3 Fonty (Google Fonts)
@@ -205,7 +207,7 @@ Zasady: start fali zawsze zwija (`p3_flow.js: startWave`); start budowy rozwija 
 
 **Zakładki** (`#tabs`, `p1_config.js: TABS`): Pułapki, Potwory, Łup, Obiekty, Loch, Talia. Równe kolumny, tekst 12,5 px muted (11,5 ≤440 px, 10,5 ≤380, 9,5 ≤340); wybrana: `--ink`, delikatny gradient od dołu i biała kreska 2 px pod spodem (wjeżdża `scaleX` 0,2 s). Talia ma kolor `#d4b878` (wybrana `--gold-hi`). Zakładka, w której w obecnym etapie nauki nic nie ma, jest ukryta (1.12, `onbOk`). Wybrana zakładka i przewinięcie każdej zakładki są zapamiętane (`yatd-tab`, `trayScroll`).
 
-**Podzakładki** (1.14, `#subs`, `TABS[].subs`, `p8b_ui.js: subsOn`, `curSub`, `pickTab`): rząd pod zakładkami, wysokość 24 px (odstęp siatki 6 px, `margin-top: -1px`). Pułapki i Potwory mają dwie: **Rany** (`dmg`) i **Strach** (`fear`); w Ranach są też pułapki, które zatrzymują, rozdzielają i spowalniają (Sieć, Zapadnia, Klatka, Krata). Przycisk `.sub`: prostokąt z rogami `--r` jak kafelek, 12 px, 600, odstęp 0 14 px, tło `--panel`, ramka `--line`, tekst muted; wybrany: `--ink`, ramka i wewnętrzna obwódka `--gold`, tło `--panel3`. Pasek pokazuje kafelki tylko wybranej podzakładki. Wybór jest zapamiętany dla każdej zakładki (`yatd-sub`, JSON `{traps: 'fear', ...}`), a przewinięcie paska dla pary zakładka/podzakładka. Rząd jest pokazany tylko wtedy, gdy co najmniej dwie podzakładki mają coś z obecnego etapu nauki (`onbOk`); inaczej zakładka pokazuje wszystkie swoje kafelki. Na zakładkach bez podzakładek rząd zostaje pusty (`visibility: hidden`), żeby mapa nie zmieniała wysokości przy przełączaniu. Przewodnik, który wskazuje kafelek, przełącza na jego podzakładkę (`pickTab('traps', 'spikes')`).
+**Podzakładki** (1.14, `#subs`, `TABS[].subs`, `p8b_ui.js: subsOn`, `curSub`, `pickTab`): rząd pod zakładkami, wysokość 24 px (odstęp siatki 6 px, `margin-top: -1px`). Pułapki i Potwory mają dwie: **Rany** (`dmg`) i **Strach** (`fear`); w Ranach są też pułapki, które zatrzymują, rozdzielają i spowalniają (Sieć, Zapadnia, Klatka, Krata). Przycisk `.sub`: prostokąt z rogami `--r` jak kafelek, 12 px, 600, odstęp 0 14 px, tło `--panel`, ramka `--line`, tekst muted; wybrany: `--ink`, ramka i wewnętrzna obwódka `--gold`, tło `--panel3`. Pasek pokazuje kafelki tylko wybranej podzakładki. Wybór jest zapamiętany dla każdej zakładki (`yatd-sub`, JSON `{traps: 'fear', ...}`), a przewinięcie paska dla pary zakładka/podzakładka. Rząd jest pokazany tylko wtedy, gdy co najmniej dwie podzakładki mają coś z obecnego etapu nauki (`onbOk`); inaczej zakładka pokazuje wszystkie swoje kafelki. Na zakładkach bez podzakładek rząd zostaje pusty (`visibility: hidden`), żeby mapa nie zmieniała wysokości przy przełączaniu. Przewodnik, który wskazuje kafelek, przełącza na jego podzakładkę (`pickTab('traps', 'spikes')`). Od 1.15 zakładka **Loch** ma trzy podzakładki: **Kopanie** (`dig`: kopanie, tunel, poszerzanie, burzenie), **Komnaty** (`kind`: 12 komnat, sekcja 05, 5.8a) i **Efekty** (`effect`: dawne typy pokoi `r_*`). Nazwy są robocze (autor podał "pomieszczenia", "rodzaj", "efekt"); zmiana to tylko `label` w `TABS`.
 
 **Pasek kafelków** (`#tray`): jeden rząd przewijany w bok, wysokość 64 px, odstęp 6 px, przyciąganie do początku kafelka (`scroll-snap: x proximity`), bez paska przewijania. Na krawędziach, za którymi jest jeszcze coś, maska zanikania 28 px (`trayFade`). Zmiana zakładki "rozdaje" kafelki: każdy wjeżdża z dołu (10 px, skala 0,94 → 1) w 0,24 s z opóźnieniem 24 ms × indeks (do 9), klasa zdejmowana po 700 ms.
 
@@ -213,10 +215,10 @@ Zasady: start fali zawsze zwija (`p3_flow.js: startWave`); start budowy rozwija 
 
 | Część | Wygląd | Uwagi |
 |---|---|---|
-| ikona | SVG 22×22 z `ICONS[typ]` (`p8a_icons.js`, 53 ikony) z cieniem 1 px | lewa górna część rzędu `.top` |
+| ikona | SVG 22×22 z `ICONS[typ]` (`p8a_icons.js`, 65 ikon; od 1.15 także 12 komnat) z cieniem 1 px | lewa górna część rzędu `.top` |
 | koszt | Jersey 12 px `--ess`, poprzedzony czerwonym rombem 6 px z poświatą | `costOf` (sekcja 03); tryby bez kosztu |
 | nazwa | 12,5 px; nazwy od 9 znaków 11 px (`longnm`) | `ITEMS[t].name` |
-| tag | 10,5 px muted; dla łupu kolor `LOOT_COLOR`, dla typów pokoi kolor `RT_INFO` | `ITEMS[t].tag` |
+| tag | 10,5 px muted; dla łupu kolor `LOOT_COLOR`, dla efektów kolor `RT_INFO`, dla komnat kolor `KIND_INFO` | `ITEMS[t].tag` |
 | kłódka | 11 px w prawym górnym rogu, `--dim` | gdy nieodblokowany |
 | wybrany | ramka `--gold`, tło `--panel3`, wewnętrzna złota poświata, "pyknięcie" 1,08 → 1 w 0,22 s | `aria-pressed` |
 | `off` | 40% krycia, saturacja 0,4 | zablokowany, nie w tej fazie albo za mało Esencji |
@@ -575,10 +577,11 @@ Canvas jest tak wysoki, jak mapa przy zwiniętym pasku (`rect.height + trayCover
 
 `drawWorld` (świat przesunięty o wstrząs):
 
-1. **Podłoga** (rzut podłogi `floorT`, rysowanie w pikselach pola): kafelki (`drawTileLayer`) → światło pochodni → typy pokoi → strefy (`fl.zones`, `rgba(160,190,255,0.18)`) → w fali mapa zagrożenia (`fl.danger` ≥ 0,4: `rgba(255,80,80, min(0,22, d×0,05))`) → w budowie zasięgi pułapek i plotki → poświata serca → rzeczy płaskie (sieć, zapadnia, otwarta klatka, rozbita budowla) z "pykiem" → znaki stanu na polach (6.5) → mgła wiedzy (fala/podsumowanie) → znaczniki miejsc / przenoszenia → pierścień przytrzymania → znacznik wyłomu (budowa) → zakłócone pola (fiolet `rgba(150,100,255,0.38)`) → cel samouczka → efekty pól i linii → pierścienie cząsteczek.
+1. **Podłoga** (rzut podłogi `floorT`, rysowanie w pikselach pola): kafelki (`drawTileLayer`) → światło pochodni → komnaty (`drawRoomKinds`) → efekty pokoi (`drawRoomTypes`, od 1.15 na podłodze komnaty) → poświaty rodzin (`drawKindAuras`) → strefy (`fl.zones`, `rgba(160,190,255,0.18)`) → w fali mapa zagrożenia (`fl.danger` ≥ 0,4: `rgba(255,80,80, min(0,22, d×0,05))`) → w budowie zasięgi pułapek i plotki → poświata serca → rzeczy płaskie (sieć, zapadnia, otwarta klatka, rozbita budowla) z "pykiem" → znaki stanu na polach (6.5) → mgła wiedzy (fala/podsumowanie) → znaczniki miejsc / przenoszenia → pierścień przytrzymania → znacznik wyłomu (budowa) → zakłócone pola (fiolet `rgba(150,100,255,0.38)`) → cel samouczka → efekty pól i linii → pierścienie cząsteczek.
+1a. **Życie komnat** (`drawKindLife`, rzut ekranu, przed ścianami, więc ściana przed pokojem je zasłania).
 2. **Ściany**: najpierw "wargi" (ściany położone płasko) i rzeczy na nich, potem stojące bloki posortowane po głębokości.
 3. **Rzeczy stojące**, posortowane po głębokości (meble x+y+1, elementy x+y+1 (na meblu +0,02), serce, bohaterowie p.x+p.y, trupy potworów). Rzecz, którą zasłoniłaby stojąca ściana przed nią (`wallCovers`), rysowana jest pomiędzy blokami ścian; reszta po wszystkich ścianach. Potem ramki na licach ścian, potem latające potwory (duch, cień, nietoperze) nad wszystkim.
-4. **Znaki** (zawsze w pionie, czytelne): "?" zakłócenia, nazwy typów pokoi, etykiety pokoi, "SERCE", oczy plotek (budowa), znaczniki narzędzi (budowa), etykieta wyłomu, "zdejmij", koszty ulepszeń, znaczki pamięci checku i "!" wykrycia, iskry, unoszące się napisy.
+4. **Znaki** (zawsze w pionie, czytelne): "?" zakłócenia, nazwy efektów i komnat (komnata linijkę wyżej, gdy pokój ma oba), etykiety pokoi, "SERCE", oczy plotek (budowa), znaczniki narzędzi (budowa), etykieta wyłomu, "zdejmij", koszty ulepszeń, znaczki pamięci checku i "!" wykrycia, iskry, unoszące się napisy.
 
 Wydajność (prototyp): podłogi rysowane raz do kawałków 8×8 pól w kilku skalach i wklejane (`tileChunk`, `TC`), poświaty jako gotowe obrazki (`glowSprite`), w budowie bez dotyku 2 s rysowana co druga klatka. W Unity zbędne (siatki/tilemapa), ale warto zachować oszczędzanie baterii w budowie (np. `Application.targetFrameRate` 30 w bezczynności).
 
@@ -590,6 +593,74 @@ Wydajność (prototyp): podłogi rysowane raz do kawałków 8×8 pól w kilku sk
 - **Mgła wiedzy** (`drawFog`, w fali, podsumowaniu, końcu): pola, których drużyna nie zna, `rgba(5,6,8,0.52)`; rzeczy stojące na nich w 55% krycia.
 - **Plotki** (budowa): pola znane z plotek `rgba(180,140,255,0.10)`; nad pułapką z plotki oko (`eyeIcon`, `#d6c8ff`): pełne, gdy plotka trafna, puste, gdy fałszywa/nieaktualna.
 - **Zasięgi** (budowa, `drawAreas`): pola rażenia każdej pułapki/potwora w kolorze kości `rgba(225,220,205,0.08)`, przez 1,4 s po postawieniu 0,26.
+
+### 6.2a Komnaty (od 1.15, `p7_draw.js`)
+
+Każda komnata ubiera swój pokój, żeby było ją widać z daleka. Ściany komnaty mają własny materiał i kształt (niżej, "Ściany komnat"), a na tym sześć warstw, wszystkie stałe dla pola (los z `tileHash` przez `kH(x, y, sól)`), z ruchem z `realNow` (przy "mniej ruchu" czas stoi, a życie znika):
+
+
+1. **Podłoga** (`drawRoomKinds`, rzut podłogi, od T ≥ 6, tylko pokoje widoczne na ekranie: `roomSeen`). Część stała (`KIND_FLOOR[rk]`) malowana raz na pokój do płótna w rozdzielczości ekranu (`kindFloorCache`: `s = round(T × DPR / 3) × 3` pikseli na pole; od nowa, gdy zmieni się pokój, komnata albo skok przybliżenia) i wklejana jednym obrazem; część ruchoma (`KIND_LIVE[rk]`: płomień ogniska, pająki, krąg i kałuże, cienie stada, światło świec, błyski, żar kuźni z kowadłem, połysk galerii, koń na biegunach) rysowana co klatkę, przycięta do pokoju. Rzeczy leżą płasko i niczego nie blokują. Efekty pokoi (`drawRoomTypes`) też rysują tylko pokoje na ekranie (od 1.15).
+2. **Ozdoby na licach ścian** (`kindWallDeco`, `KIND_WALL[rk]`, wywoływane z `wallDressing`, od T ≥ 12): na stojącej ścianie (wysokość ≥ 0,6 `WALL_H`) lico S i E, które patrzy w pokój z komnatą, mapowane `faceMap` na kwadrat jednostkowy (z1 = min(h, 1,45), z0 = z1 - 1,2). Pomijane: co trzecie pole (`tileHash(5x+1, 3y+2) mod 3 = 0`), pola z pochodnią i pola z pułapką ścienną. Wariant `alt` co drugie pole (`tileHash(x+7, y+11)` parzysty).
+3. **Życie** (`drawKindLife`, rzut ekranu, od T ≥ 9, tylko gdy środek pokoju jest na ekranie i nie w mgle wiedzy).
+5. **Rzeczy stojące** (dodane w 1.15 po uwadze autora: "bardziej niż o zmianę koloru i tekstury podłogi chodzi o dodanie malutkich, wypukłych elementów spójnych tematycznie oraz jakichś efektów cząsteczkowych"; `PROP_PLAN`, `kindProps`, `kindPropsSO`, `drawProp`, `PROP`): drobne bryły w rzucie ekranu (`pCyl` walec, `pBall` kula ze światłem z lewej i cieniem z prawej, `pCone` stożek, `pFlame` płomień, `isoBox`, `groundShadow`). Plan na pokój liczony raz (klucz: komnata + prostokąt pokoju): dla każdego pola los `kH`, przy ścianie częściej (zwykle 50-75%) niż w środku (0-35%), punkt w polu 0,22-0,78, skala 0,85-1,15, wariant 0-3; niektóre rzeczy stoją na środku pokoju (ognisko, kocioł, tarcza strzelecka, palenisko) albo w stałym miejscu (kowadło, szczur, słupki z liną wzdłuż chodnika). Co klatkę rzeczy z pokoi na ekranie (od T ≥ 9) idą do listy rzeczy stojących (`drawSO` rodzaj 5, głębokość x + y), więc bohater idący za kotłem jest nim zasłonięty; pominięte, gdy na polu jest pułapka, potwór, mebel albo serce. Rysowane ×1,3 (`PROP_K`) wokół stopy, w mgle wiedzy w 55% krycia. Niczego nie blokują.
+6. **Elementy wystające ze ścian** (`KIND_WALL3D`, `kindWall3D`, `wallFrame`: punkt lica (u, d na zewnątrz, z), `box` przy licu, `plane(d, z0, z1)` = płaszczyzna lica przesunięta o d): rysowane zaraz po swoim bloku, przed rzeczami przed nim.
+
+**Bryła rzeczy płaskich** (decyzja autora: "jak najwięcej obiektów 3D, nawet płaskie niech lekko odstają, tylko postacie w 2D"; `relief`, `noRelief`): sieć, zapadnia, otwarta klatka i gruz po budowli leżą 0,035 pola nad podłogą (`floorT(0.035)`), pułapki ścienne 0,04 pola przed licem (`wallPlane(it, 0.04)`; na położonej ścianie 0,04 nad wargą), uchwyt pochodni 0,04 przed licem, ozdoby komnat 0,03; wszystkie rzucają cień płótna (`shadowColor rgba(0,0,0,0.55)`, przesunięcie 0,025 × T × DPR w prawo i 0,045 w dół, rozmycie 0,035, × 0,6-0,9), który nie skręca razem z płaszczyzną, więc wygląda jak odstęp od podłoża. Postacie (bohaterowie, potwory, duchy) zostają płaskimi figurkami.
+
+| Komnata | Podłoga (płasko) | Rzeczy stojące (3D) | Na ścianach: ozdoby / elementy wystające | Życie |
+|---|---|---|---|---|
+| Goblinia nora | ubita ziemia, ciemne placki, słoma, zielone odciski dłoni przy ścianach, krąg kamieni | ognisko z dwoma polanami, płomieniem i iskrami (środek); kępki 2-3 świecących zielonych grzybków z poświatą; kamienie; patyki; totem: kij z czaszką i zieloną szmatą (rzadko, przy ścianie) | proporzec z dłonią, włócznie / stempel z belki, korzenie zwisające z ziemi | dym z ogniska, zielone zarodniki nad grzybkami |
+| Leże pająków | zmierzch `rgba(52,42,74,0.3)` (bez sieci: wielkie pajęczyny malowane na podłodze usunięte po uwadze autora) | skupiska 3-5 jaj z nitkami; kokony; kłębki jedwabiu; małe pająki chodzące tam i z powrotem | pajęczyna z górnego rogu, pająk na nici / płachta jedwabiu zwisająca z krawędzi i falująca, kokon na nici; na górze ścian jaja zamiast namiotów z nici | 2 pająki zjeżdżające z sufitu |
+| Jaskinia ogra | pęknięcia, plamy krwi, odciski stóp | kocioł na żarze z bulgoczącą zieloną zupą i parą (środek); stosy kości z czaszką; głazy; kość z mięsem | ślady pazurów, czaszka na sznurze / bryły skały, czaszka na kolcu | muchy, para z kotła |
+| Nawiedzona sala | zimny błękit, obracający się krąg przywołania, świecące kałuże, szron | 2-3 świece z niebieskim płomieniem w kałuży wosku; przewrócone krzesła; urny | zasłona, niebieska świeca / kinkiet z niebieską świecą | ogniki |
+| Gniazdo nietoperzy | ciemność, guano, cienie stada | stalagmity (1-3 stożki); kopczyki guana | wiszące nietoperze / sople skalne z krawędzi, nietoperz wiszący wśród nich | nietoperze latające ósemką |
+| Kaplica czaszek | płyta z krzyżem na środku | piramidki czaszek; świece z ciepłym płomieniem; wiązki kości | nisze z czaszkami, skrzyżowane kości / kości wystające ze ściany, czaszka wysunięta z lica | kurz w świetle świec |
+| Zbrojownia | stalowe płyty z nitami, leżące strzały | tarcza strzelecka na trójnogu ze strzałami (środek); stojaki z bronią (przy ścianie); tarcze oparte o coś; strzały wbite w podłogę | stojak z włóczniami / okrągła tarcza na skrzyżowanych włóczniach, wysunięta | błyski na płytach |
+| Kuźnia | sadza, pęknięcia rozżarzone od środka | palenisko na trójnogu z żarzącymi się węglami i poświatą (środek); kowadło na pniu; wiadra z wodą; sztaby; obcęgi | palenisko w ścianie / okap paleniska (co trzecie lico) z poświatą i iskrami, obcęgi i młot na kołkach | iskry |
+| Więzienie | wilgotna słoma w rogach, kratka odpływu, łańcuch, kreski dni | snopki słomy; wiadra; kołki z łańcuchem i kajdanami; miski; szczur biegający wzdłuż ściany | okienko z kratą / dwa kółka z łańcuchami i kajdanami, kołyszą się, kapie z nich woda | krople z sufitu |
+| Graciarnia | kurz, deski, monety | skrzynki (czasem dwie na sobie); beczki; butelki; stosy książek; worki | (zastąpione) / półka ze słojami, pudełkiem i butelką | kurz |
+| Galeria | marmur w 2 odcieniach, czerwony chodnik ze złotą obwódką | mosiężne słupki z czerwoną liną po obu stronach chodnika; popiersia i wazy na postumentach; kandelabry z 3 świecami | (zastąpione) / złocona rama z grubością i portretem o błyszczących oczach, kinkiet ze świecą | snop światła z kurzem |
+| Pokój dziecięcy | okrągły dywan, kredkowe bazgroły | stosy klocków; piłki; misie; bębenki; bączki (kręcą się) | rysunek dziecka / półeczka z klockami, piłką i misiem | nutki |
+
+**Ściany komnat** (od 1.15, decyzja autora: "ściany też powinny być modyfikowane przez nowy styl, nie tylko podłoga: tekstura, kształt, wszystko"; `kindWalls`, `WALL_STYLE`, `drawKindBlock`, `kindFace`, `drawKindLips`). Każdy blok ściany dostaje styl komnaty, w którą patrzy: lico S styl pokoju na polu (x, y+1), lico E pokoju na (x+1, y) (także przez położoną ścianę: pole o 2 dalej), góra styl pierwszego pokoju z komnatą wśród 8 sąsiadów. Przypisanie liczone raz na mapę i zestaw komnat (`KW`, klucz: `fl.tiles` + id pokoi z ich komnatami). Blok z jakimkolwiek stylem rysowany jest osobno (po `flush` partii zwykłych bloków, więc kolejność głębokości zostaje), w tej kolejności: lica (kolor bazowy + tekstura), zwykła zaprawa na licach bez stylu, góra (kolor + tekstura góry, jeśli styl ją ma), jasne krawędzie, korona. Blok w ruchu (`drawBlockPop`) ma tylko kolory stylu. Ściany położone płasko (wargi) dostają kolor `lip` i teksturę góry w 22% krycia.
+
+- **Tekstura lica**: płótno 128 × 218 px (szerokość pola × `WALL_H`) malowane raz na komnatę i wariant (2 warianty, wybór `tileHash(3x + 1|5, 7y + 2) mod 2`), w jednostkach pola, okresowe wzdłuż lica (elementy przy krawędzi rysowane też o ±1 pole dalej, a kolor kamienia zależy od jego położenia, więc sąsiednie bloki się łączą). Na koniec każdej: przyciemnienie przy podłodze (ostatnie 0,4 pola, do 0,32) i jasna górna krawędź. Kładzione `faceMap(..., 0, h)`; ściana niższa niż `WALL_H` (zapadająca się) pokazuje górną część tekstury. Lico E dostaje dodatkowo `rgba(0,0,0,0.3)`.
+- **Korona** (kształt, rzut ekranu, od T ≥ 10 i tylko na stojącym bloku): zmienia sylwetkę ściany.
+
+| Komnata | Lica S / E, góra, warga | Tekstura lica (wariant 0 / 1) | Korona |
+|---|---|---|---|
+| Goblinia nora | `#5a4630` / `#463624`, `#4f4030`, `#463a28` | ubita ziemia w falistych warstwach, kamyki, korzenie z góry, belka nadproża z gwoździami; słup stempla przy lewej krawędzi / zielony odcisk dłoni | 2 kopczyki ziemi z kępkami trawy, czasem sterczący korzeń |
+| Leże pająków | `#2a2632` / `#1f1c26`, `#3a3644`, `#2c2834` | ciemne ciosy pod zwisającymi płachtami jedwabiu i nićmi; jaja przy ziemi / kokon na nici | co trzeci blok: 3 kule jaj na górze (namioty z nici usunięte po uwadze autora) |
+| Jaskinia ogra | `#4a3a30` / `#36291f`, `#4e3e32`, `#3e3026` | surowa skała bez zaprawy (siatka 3 × 5 ścianek, każda inaczej cieniowana); dziura / rozmazana krew ze strużkami | 2 skalne zęby (ostrosłupy do 0,34 pola) |
+| Nawiedzona sala | `#46505e` / `#323a46`, `#4c5462`, `#3a424e` | blade ciosy z fazą, szron z soplami u góry; ślepa ostrołukowa arkada z poświatą / długie pęknięcie | czasem przekrzywiony odłamany kamień, oszronione krawędzie |
+| Gniazdo nietoperzy | `#2c2436` / `#1f1928`, `#342b3e`, `#28202f` | ciemna skała (3 × 4), dziury gniazd ze spływającym guanem, białe kropki; trzecia dziura z nietoperzem o czerwonych oczach | 3 skalne zęby do 0,4 pola |
+| Kaplica czaszek | `#5a5244` / `#433d32`, `#6a6252` (tekstura: kości), `#4e483c` | ściana z rzędów czaszek i par długich kości w szarej zaprawie / jedna czaszka wypadła (pusta nisza) | czaszki stojące na krawędzi (1-2 na blok, co czwarty bez) |
+| Zbrojownia | `#4a505a` / `#363b43`, `#565c66` (tekstura: płyty), `#3e434b` | ciosany kamień z fazą, dwa żelazne okucia z nitami; strzelnica w kształcie krzyża w wariancie 1 | blanki: na każdym bloku ząb 0,52 × 0,52 × 0,28, przerwy między blokami tworzą krenelaż |
+| Kuźnia | `#5a2e22` / `#43221a`, `#2a2220`, `#33261f` | cegła (12 warstw), sadza od góry i smugi, żar przy podłodze; haki w wariancie 1. Na żywo: rozżarzone pęknięcie w dolnych cegłach, oddycha | co czwarty blok: komin z żarem w środku i dymem |
+| Więzienie | `#3a3c34` / `#2a2c25`, `#44463e`, `#33352e` | wielkie bloki, zacieki wilgoci, mech i śluz w spoinach; kreski dni / żelazne kółko na płytce | 3 żelazne kolce na listwie wzdłuż góry |
+| Graciarnia | `#5c4630` / `#463422`, `#5a4632` (tekstura: deski), `#463826` | pionowe deski ze słojami, szparami, gwoździami i sękami; przybita deska na ukos / blacha z nitami na dziurze | rupiecie: skrzynia, beczka albo stercząca deska (2 bloki na 3) |
+| Galeria | `#6a1e28` / `#4e1620`, `#4a3a2e` (tekstura: ciemna ze złotą ramką), `#3e2a24` | czerwony adamaszek, złota listwa pod sufitem i w połowie, ciemna boazeria z płycinami, listwa przypodłogowa; jaśniejszy ślad po zdjętym obrazie | gzyms: płyta 1,08 × 1,08 × 0,08 ze złotą krawędzią nad całą ścianą, co piąty blok złota urna |
+| Pokój dziecięcy | `#9a8090` / `#76626e`, `#685a64`, `#584c54` | wyblakła tapeta w różowo-miętowe pasy, kremowy fryz z gwiazdkami, groszki niżej, biała listwa; bazgroły kredką / oderwany róg tapety | zabawki: dwa klocki jeden na drugim albo piłka (2 na 5 bloków) |
+
+**Komnata i efekt razem** (decyzja autora: "rodzaj i efekt powinny się nakładać, np. goblinia grota z mgłą, graficznie i mechanicznie"). Mechanicznie są niezależne (`R.rk`, `R.rt`). Na obrazie: podłoga komnaty, na niej nakładka efektu (mgła snuje się po słomie), na wierzchu poświaty rodziny. Efekt zostawia też ślad na licach ścian, które patrzą w jego pokój (`RT_WALL`, `rtWallWash`, wywoływane z `wallDressing` po ozdobach komnaty, więc leży na każdym materiale ściany; od T ≥ 8, ściana wyższa niż 0,3; współrzędne lica: u wzdłuż, v od góry 0..h):
+
+| Efekt | Na ścianie |
+|---|---|
+| Mgła | gradient `rgba(206,214,230,0.42)` od podłogi do 1 pola w górę + kłąb przesuwający się wzdłuż ściany (0,05 pola/s) |
+| Bagno | mokry pas do linii wody (0,32 ± 0,02 pola, falujący) `rgba(28,40,14,0.5)`, jasna linia wody, 3 kępki mchu ze śluzem |
+| Grota | 3 falujące pasy odblasków wody `rgba(160,190,255,0.2)` |
+| Krypta | fiolet `rgba(44,20,64,0.32)` na całym licu, co trzecie lico wydrapany krzyż |
+| Sezam | złoty połysk `rgba(210,170,60,0.09)` i 2 migające błyski |
+| Sanktuarium | ciepłe światło od podłogi do 1,2 pola, oddycha |
+| Zębatki | co drugie lico: brązowa zębatka (r 0,2 pola) obracająca się przy podłodze |
+| Głusza | ściana pochłania światło: gradient od 0,15 u góry do 0,42 przy podłodze |
+| Lodownia | szron na całym licu, biały pas z soplami (co trzeci długi, 0,22-0,32 pola) u góry, czasem spadająca kropla |
+
+Nazwa komnaty (znak + nazwa w kolorze komnaty) stoi przy lewym przednim rogu pokoju, nad nazwą efektu, gdy pokój ma oba (`drawRoomTypeNames`, od T ≥ 14). Znacznik narzędzia komnaty (`drawToolMarkers`) ma kolor i znak komnaty, a dopisek "zamiast: ..." mówi, co zastąpi.
+
+Ikony kafelków komnat (`p8a_icons.js: k_*`): kamienny łuk wejścia (`#4a4c55`, wnętrze w ciemnym kolorze komnaty) z godłem: głowa goblina nad słomą, pająk w sieci, kość z pazurami i krwią, duch w kręgu, nietoperz na tle sierpa księżyca, czaszka między świecami, tarcza na mieczach, kowadło z młotem i iskrami, okienko z kratą i kajdany, półki z rupieciami, portret w złotej ramie na chodniku, klocki i nutka.
+
+W Unity: podłogi jako dekale (sprite'y na warstwie podłogi), ozdoby ścian jako sprite'y na licach (w przestrzeni lica), życie jako małe systemy cząsteczek, poświata jako miękki sprite addytywny.
 
 ### 6.3 Ściany i pochodnie
 
@@ -712,7 +783,7 @@ Prototyp nie ma żadnego pliku graficznego: wszystko rysuje kod. Najwierniej jes
 | Meble, serce z kryształami, bryły pułapek i budowli, łup | proste bryły unlit + elementy 2D wg `ISO_ART`, `drawObjectIso`, `drawHeartIso` |
 | Elementy płaskie i ścienne | sprite'y/quady na podłodze i licach wg `drawItemTop`, `wallArt` |
 | Poświaty | 5 tekstur radialnych 128×128: `torch`, `torchw`, `heart`, `relic`, `gear` (`glowSprite`, przystanki w kodzie) |
-| Ikony kafelków (53) | SVG z `p8a_icons.js: ICONS` przez pakiet Vector Graphics albo zrasteryzowane do PNG 64×64 |
+| Ikony kafelków (65) | SVG z `p8a_icons.js: ICONS` przez pakiet Vector Graphics albo zrasteryzowane do PNG 64×64 |
 | Ikony klas (6 + sakiewka), ekwipunku (7), kłódka, menu, cofnij | ścieżki `CLASS_ICON` (`p1_config.js`), `ITEM_GLYPH` (`p8b_ui.js`), `LOCK`, SVG w `p0b_body.html` |
 | Ziarno UI | tekstura szumu 180×180 kafelkowana (alfa 0,1) |
 | Fonty | Grenze Gotisch, Alegreya Sans, Jersey 10 (TMP) |

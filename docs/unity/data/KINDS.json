@@ -1,0 +1,14 @@
+{
+ "k_goblin": "goblin",
+ "k_spider": "spider",
+ "k_ogre": "ogre",
+ "k_haunt": "haunt",
+ "k_bats": "bats",
+ "k_ossuary": "ossuary",
+ "k_armory": "armory",
+ "k_forge": "forge",
+ "k_prison": "prison",
+ "k_junk": "junk",
+ "k_gallery": "gallery",
+ "k_nursery": "nursery"
+}

@@ -13,8 +13,8 @@ JS = r"""
   G.newRun(false); while (G.modalKind) G.closeModal();
   const run = G.run, L0 = doc.layout;
   const L = { cells: new Map(), edges: new Map(), entrance: L0.entrance, heartKey: L0.heart, entX: L0.entX };
-  L0.cells.forEach(c => L.cells.set(c[0] + ',' + c[1], { cx: c[0], cy: c[1], x0: c[2], y0: c[3], x1: c[4], y1: c[5], lvl: c[6], born: 0, objs: c[7].map(o => o[3] ? [o[0], o[1], o[2], 1] : [o[0], o[1], o[2]]), rt: c[8] || undefined }));
-  [...L.cells.values()].forEach(c => { if (!c.rt) delete c.rt; });
+  L0.cells.forEach(c => L.cells.set(c[0] + ',' + c[1], { cx: c[0], cy: c[1], x0: c[2], y0: c[3], x1: c[4], y1: c[5], lvl: c[6], born: 0, objs: c[7].map(o => o[3] ? [o[0], o[1], o[2], 1] : [o[0], o[1], o[2]]), rt: c[8] || undefined, rk: c[9] || undefined }));
+  [...L.cells.values()].forEach(c => { if (!c.rt) delete c.rt; if (!c.rk) delete c.rk; });
   L0.edges.forEach(e => { const k = e[0] < e[1] ? e[0] + '|' + e[1] : e[1] + '|' + e[0]; L.edges.set(k, { key: k, a: e[0], b: e[1], horiz: !!e[2], pa: e[3], pb: e[4], lvl: e[5], born: 0 }); });
   run.layout = L; run.wave = doc.wave; run.total = 39;
   run.deck = []; G.recomputeMods(); run.items.clear();

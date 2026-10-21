@@ -75,6 +75,11 @@ Spis funkcji z `src/` (Prototype 1.13) z pierwszym zdaniem komentarza, który je
 | `walkable` |  |
 | `rtOf` | room types (Pokoje tab): fog, swamp, grotto, crypt, vault |
 | `isRt` |  |
+| `rkOf` | 1.15: the komnata of a room (KIND_INFO), and what it does (05, 5.8a) |
+| `servedRooms` | the rooms an element serves: slotRoom, or both rooms of a door |
+| `inKind` | an element of a komnata's family serving a room with that komnata |
+| `t3` | the level 3 trait: level 3 or in its komnata |
+| `kindPow` | x1,25 for an element already at level 3 in its komnata |
 | `nbrRooms` | rooms and corridors right next to a room (through its doors), for the grotto's echo |
 | `roomTilesNear` |  |
 | `areaOf` |  |
@@ -464,7 +469,16 @@ Spis funkcji z `src/` (Prototype 1.13) z pierwszym zdaniem komentarza, który je
 | `drawWallRun` | the standing blocks from a to b (sorted by depth): the still ones in one go (south faces, east faces, mortar, tops, edges), a moving one by itself (it pops out of its tile); then the torches and the wall traps on them |
 | `mortar` | mortar: courses of stone on the open faces (k: the block's size, 1 when still) |
 | `drawBlockPop` | a block on its way up or down: it grows a little wider in the middle of the move (the pop) and its faces are all shown |
-| `wallDressing` | what is on a standing block: its torch, the wall traps on its face |
+| `wallDressing` | what is on a standing block: its torch, the wall traps on its face (1.15: also the komnata's ornaments and the effect's wash) |
+| `kindWalls` | 1.15: which komnata each wall face and top belongs to (per map and set of komnaty) |
+| `kindTex`, `kindTopTex` | the face (128x218) and top (64x64) texture of a komnata's walls, painted once |
+| `kindFace` | one face of a komnata's block: its texture through faceMap, the E face darker, the forge's live glow |
+| `drawKindBlock` | a standing block of a komnata: faces, top, edges, crown (WALL_STYLE[k].crown) |
+| `drawKindLips` | the flattened walls of a komnata: its lip colour and top texture |
+| `rockCrown` | jagged stone teeth on top of a cave wall (ogre, bats) |
+| `courses`, `facets`, `per`, `skullT`, `boneT` | texture helpers: stone courses, raw rock facets, tiling along the face, skulls, bones |
+| `rtWallWash` | 1.15: a room's effect on the faces of the walls looking into it (RT_WALL) |
+| `kindWallDeco` | a komnata's ornaments on its standing walls (KIND_WALL) |
 | `torchFlicker` |  |
 | `drawTorch` | a sconce on the wall's face, a flame (a flame faces you), a warm light on the face around it |
 | `drawTorchLight` | the light of the torches on the floor in front of them (flat, under the walls) |
@@ -506,6 +520,19 @@ Spis funkcji z `src/` (Prototype 1.13) z pierwszym zdaniem komentarza, który je
 | `drawDetected` |  |
 | `drawLoot` | Loot by kind: a coin pile, a potion flask, a gear chest (blue glow), a relic (orange glow). The cursed treasure looks like a gear chest to the heroes; you see a faint violet mark on it (and a big X once a priest has... |
 | `drawRoomTypes` | Room types: a tint and a little texture over the whole room, so you see at a glance what each room does. |
+| `drawRoomKinds` | 1.15: the floor of each komnata on screen: its still part from the cache, what moves over it (KIND_LIVE), under the effect |
+| `kindFloorCache` | the still part of a komnata's floor, painted once into a canvas per room at the screen's resolution |
+| `roomSeen` | a room with any part on screen |
+| `drawKindAuras` | a soft glow of the komnata's colour under each element of its family |
+| `drawKindLife` | a little life over the floor of each komnata on screen (screen space) |
+| `kindProps`, `PROP_PLAN` | 1.15: the small things standing in a komnata, planned once per room |
+| `kindPropsSO` | the props on screen join what stands (sorted by depth with heroes and furniture, drawSO kind 5) |
+| `drawProp`, `PROP`, `candles` | one prop, drawn x1,3 around its foot |
+| `pCyl`, `pBall`, `pCone`, `pFlame`, `pLine` | screen-space solids for props and wall pieces |
+| `relief`, `noRelief` | flat things lifted off their floor or face: a soft canvas shadow down and to the right |
+| `wallFrame` | points, boxes and planes in front of one face of a wall |
+| `kindWall3D`, `KIND_WALL3D` | what stands out of a komnata's walls (sconces, shelves, chains, shields, roots, silk...) |
+| `blob`, `boneAt`, `skullAt`, `kH`, `hexA`, `edgeTile`, `roomMid`, `kindRooms` | floor-art helpers of the komnaty |
 | `hpBar` |  |
 | `heartPath` |  |
 | `crystalShape` |  |

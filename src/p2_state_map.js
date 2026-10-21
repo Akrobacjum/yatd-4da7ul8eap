@@ -242,7 +242,7 @@
     const rooms = [], byCell = new Map();
     L.cells.forEach((c, k) => {
       const d = dist.has(k) ? dist.get(k) : maxD;
-      const r = { id: rooms.length, kind: 'room', key: k, cx: c.cx, cy: c.cy, x0: c.x0, y0: c.y0, x1: c.x1, y1: c.y1, dist: d, doors: [], tiles: [], color: tint(d / maxD), born: c.born, lvl: c.lvl || 0, rt: c.rt || null };
+      const r = { id: rooms.length, kind: 'room', key: k, cx: c.cx, cy: c.cy, x0: c.x0, y0: c.y0, x1: c.x1, y1: c.y1, dist: d, doors: [], tiles: [], color: tint(d / maxD), born: c.born, lvl: c.lvl || 0, rt: c.rt || null, rk: c.rk || null };
       rooms.push(r); byCell.set(k, r);
       for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) { tiles[y * WW + x] = FLOOR; roomAt[y * WW + x] = r.id; r.tiles.push([x, y]); }
     });
@@ -322,6 +322,15 @@
   // room types (Pokoje tab): fog, swamp, grotto, crypt, vault
   const rtOf = r => (fl && r >= 0 && fl.rooms[r] && fl.rooms[r].rt) || null;
   const isRt = (r, t) => rtOf(r) === t;
+  // 1.15: the komnata of a room (KIND_INFO), and what it does: its family has the level 3 trait (t3), and those already at
+  // level 3 get KIND_POW more power (kindPow). A trap counts in the room it serves (slotRoom: a wall trap the room it faces),
+  // a monster in the room it stands (floats) for, a door trap (Krata, Zawiasy) in both rooms of its door (slotRoom alone
+  // would often give the corridor, and a corridor has no komnata).
+  const rkOf = r => (fl && r >= 0 && fl.rooms[r] && fl.rooms[r].rk) || null;
+  function servedRooms(type, x, y) { if (ITEMS[type].slot !== 'door') return [slotRoom(type, x, y)]; const dd = fl.doors.get(key(x, y)); return dd ? [dd.a, dd.b] : []; }
+  const inKind = it => { const k = it && KIND_OF[it.type]; return !!k && !!fl && servedRooms(it.type, it.x, it.y).some(r => rkOf(r) === k); };
+  const t3 = it => !!it && ((it.lvl || 1) >= 3 || inKind(it));
+  const kindPow = it => (it.lvl || 1) >= 3 && inKind(it) ? KIND_POW : 1;
   // rooms and corridors right next to a room (through its doors), for the grotto's echo
   function nbrRooms(r) {
     const R = fl && fl.rooms[r]; if (!R) return [];
@@ -348,7 +357,7 @@
   const AREA_MEMO = new WeakMap();
   function areaOf(it) {
     if (it.type === 'arrows' || it.type === 'eyes' || it.type === 'fire') return areaOfRaw(it);   // these stop at anything standing in the way
-    const k = it.type + '|' + it.x + '|' + it.y + '|' + (it.lvl || 1) + '|' + mods.portraitR + '|' + mods.powderR + (DRIFT[it.type] ? '|' + Math.floor(it.gx) + '|' + Math.floor(it.gy) : '');
+    const k = it.type + '|' + it.x + '|' + it.y + '|' + (it.lvl || 1) + (t3(it) ? 't' : '') + '|' + mods.portraitR + '|' + mods.powderR + (DRIFT[it.type] ? '|' + Math.floor(it.gx) + '|' + Math.floor(it.gy) : '');
     const m = AREA_MEMO.get(it);
     if (m && m.tiles === fl.tiles && m.k === k) return m.out;
     const out = areaOfRaw(it); AREA_MEMO.set(it, { tiles: fl.tiles, k, out });
@@ -377,15 +386,15 @@
       case 'portrait': {
         const d = wallDirs(x, y)[0]; if (!d) break;
         const rid = roomOf(x + d[0], y + d[1]);
-        roomTilesNear(x, y, it.lvl >= 3 ? 99 : mods.portraitR, rid).forEach(t => out.push(t));   // level 3: Całun grozy
+        roomTilesNear(x, y, t3(it) ? 99 : mods.portraitR, rid).forEach(t => out.push(t));   // level 3: Całun grozy
         break;
       }
       case 'mirror': {
         const d = wallDirs(x, y)[0]; if (!d) break;
-        roomTilesNear(x, y, it.lvl >= 3 ? 99 : 3, roomOf(x + d[0], y + d[1])).forEach(t => out.push(t));   // level 3: the whole room
+        roomTilesNear(x, y, t3(it) ? 99 : 3, roomOf(x + d[0], y + d[1])).forEach(t => out.push(t));   // level 3: the whole room
         break;
       }
-      case 'bones': { const R = it.lvl >= 3 ? 2 : 1; for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) addIf(x + dx, y + dy, true); break; }
+      case 'bones': { const R = t3(it) ? 2 : 1; for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) addIf(x + dx, y + dy, true); break; }
       case 'creak': {   // the doorway and everything up to 2 tiles from it, on both sides
         out.push([x, y]);
         const dd = fl.doors.get(key(x, y)), rs = dd ? [dd.a, dd.b] : [];
@@ -395,11 +404,11 @@
       case 'coffin': roomTilesNear(x, y, 2, roomOf(x, y)).forEach(t => out.push(t)); break;
       case 'musicbox': roomTilesNear(x, y, 99, roomOf(x, y)).forEach(t => out.push(t)); break;
       case 'shade': case 'bats': {   // around where the floating monster is right now
-        const R = it.type === 'bats' ? (it.lvl >= 3 ? 3 : 2) : 3, gx = it.gx !== undefined ? it.gx : x + 0.5, gy = it.gy !== undefined ? it.gy : y + 0.5;
+        const R = it.type === 'bats' ? (t3(it) ? 3 : 2) : 3, gx = it.gx !== undefined ? it.gx : x + 0.5, gy = it.gy !== undefined ? it.gy : y + 0.5;
         roomTilesNear(Math.floor(gx), Math.floor(gy), R, roomOf(x, y)).forEach(t => out.push(t));
         break;
       }
-      case 'powder': { const R = mods.powderR + (it.lvl >= 3 ? 1 : 0); for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) addIf(x + dx, y + dy, true); break; }
+      case 'powder': { const R = mods.powderR + (t3(it) ? 1 : 0); for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) addIf(x + dx, y + dy, true); break; }
       case 'mimic': DIRS8.forEach(d => addIf(x + d[0], y + d[1], true)); break;
       case 'goblin': case 'ogre': case 'spider': for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) addIf(x + dx, y + dy, true); break;
       case 'archer': roomTilesNear(x, y, 4, roomOf(x, y)).forEach(t => out.push(t)); break;

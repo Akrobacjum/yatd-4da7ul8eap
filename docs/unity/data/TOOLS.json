@@ -11,5 +11,17 @@
  "r_haven": 1,
  "r_gears": 1,
  "r_hush": 1,
- "r_ice": 1
+ "r_ice": 1,
+ "k_goblin": 1,
+ "k_spider": 1,
+ "k_ogre": 1,
+ "k_haunt": 1,
+ "k_bats": 1,
+ "k_ossuary": 1,
+ "k_armory": 1,
+ "k_forge": 1,
+ "k_prison": 1,
+ "k_junk": 1,
+ "k_gallery": 1,
+ "k_nursery": 1
 }

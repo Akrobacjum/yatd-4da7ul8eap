@@ -1056,7 +1056,7 @@ Tylko prototyp: klucze `localStorage`. W Unity: pole w profilu gracza.
 |---|---|---|---|---|
 | 1 Podstawy | spikes, trapdoor, arrows, gate, powder, goblin, archer, loot, lpotion, loot2, loot3, lcursed, dig, tunnel, expand, demolish, upgrade, move | web, fire, mimic, cage, spider, ogre, shaman | wszystkie bez wpisu w `ONB_CARD` (i z `req` spełnionym) | głód serca od fali 2, sklep, talia, combo, chciwość |
 | 2 Strach | + portrait, eyes, bones | + mirror, creak, coffin, musicbox, ghost, shade, bats | + monsterroar, haunt, echo, panic, harvest, chronicle, dread, screams, lastgasp, cageghost, isolation | jak wyżej |
-| 3 Gildia i loch | + crate, rune, altar, decoy, acid, howl, shackles, veil, fortify, r_fog, r_swamp, r_grotto, r_crypt, r_vault, r_haven, r_gears, r_hush, r_ice | bez zmian | + heavyair, cheapwalls | specjaliści gildii od fali 3 (`p3_flow.js: guildAdapt`, sekcja 04) |
+| 3 Gildia i loch | + crate, rune, altar, decoy, acid, howl, shackles, veil, fortify, r_fog, r_swamp, r_grotto, r_crypt, r_vault, r_haven, r_gears, r_hush, r_ice, od 1.15 k_goblin, k_spider, k_ogre, k_haunt, k_bats, k_ossuary, k_armory, k_forge, k_prison, k_junk, k_gallery, k_nursery (komnata działa, gdy odblokowany jest ktoś z jej rodziny, 05 5.8a) | bez zmian | + heavyair, cheapwalls | specjaliści gildii od fali 3 (`p3_flow.js: guildAdapt`, sekcja 04) |
 | 4 Pełna gra | wszystko z `START_UNLOCKED` | wszystkie | + weakspot, anatomy, nightmares, oddbodies, scars, memories, survivors | ciała i fobie (`makeHero`), powracający (`collectReturners`), łowcy skarbów (`makeWave`), wyłom (`planBreach`) |
 
 Zasady dodatkowe:

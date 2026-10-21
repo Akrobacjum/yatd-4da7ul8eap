@@ -102,9 +102,9 @@
   const caged = h => h.state === 'caged';
   const held = h => h.state === 'fight' || h.state === 'wait' || h.state === 'talk' || h.state === 'rest' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || caged(h) || webbed(h);
   function trapMult(h, type, src) {
-    const pierce = type === 'arrows' && src && src.lvl >= 3;   // level 3 arrows go through shields
+    const pierce = type === 'arrows' && src && t3(src);   // level 3 arrows go through shields
     const sh = k => inB('acid', h.room) ? (1 + k) / 2 : k;   // acid: shields protect half as well
-    return (type === 'spikes' && held(h) ? 1.5 : 1) * (caged(h) ? (h.cageIt && h.cageIt.lvl >= 3 ? 2 : 1.5) : 1) * (webbed(h) ? (fl.time < (h.acidWebUntil || -1) ? 1.6 : 1.3) : 1)
+    return (type === 'spikes' && held(h) ? 1.5 : 1) * (caged(h) ? (h.cageIt && t3(h.cageIt) ? 2 : 1.5) : 1) * (webbed(h) ? (fl.time < (h.acidWebUntil || -1) ? 1.6 : 1.3) : 1)
       * (type === 'spikes' && mods.stickySpikes && webbed(h) ? 1 + mods.stickySpikes : 1)
       * (pierce ? 1 : (h.type === 'warrior' && fl.time < h.shieldUpUntil ? sh(h.R.shield) : 1) * sh(shieldCover(h)));
   }
@@ -921,7 +921,7 @@
   const cellCenter = (cx, cy) => [cx * CELL + 4.5, cy * CELL + 4.5];
   const expandRefund = lvl => Math.floor(ITEMS.expand.cost * (Math.pow(2, lvl) - 1) / 2);   // half of what the expansions cost
   function toolCost(t, m) {
-    if (ROOMTYPES[t]) return m && m.has ? 0 : ITEMS[t].cost;   // taking a room type off costs nothing (half comes back)
+    if (ROOMTYPES[t] || KINDS[t]) return m && m.has ? 0 : ITEMS[t].cost;   // taking a room type (1.15: or a komnata) off costs nothing (half comes back)
     if (t === 'expand') return Math.ceil(ITEMS.expand.cost * Math.pow(2, m ? m.lvl : 0) * mods.expandCost);   // 3, 6, 12, 24...: stacking one room gets expensive fast
     if (t === 'dig' && run.freeDigs > 0) return 0;   // Kret
     return Math.max(0, ITEMS[t].cost + (t === 'dig' ? 3 * Math.max(0, run.layout.cells.size - 7) : 0) - (t === 'dig' || t === 'tunnel' ? mods.digDiscount : 0));
@@ -955,6 +955,9 @@
     } else if (ROOMTYPES[tool]) {   // every room can get a character (one at a time)
       const rt = ROOMTYPES[tool];
       fl.rooms.forEach(R => { if (R.kind === 'room') out.push({ tool, room: R.key, has: R.rt === rt, other: R.rt && R.rt !== rt ? R.rt : null, x: (R.x0 + R.x1) / 2 + 0.5, y: (R.y0 + R.y1) / 2 + 0.5 }); });
+    } else if (KINDS[tool]) {   // 1.15: what a room is for (one komnata at a time; an effect may stay beside it)
+      const k = KINDS[tool];
+      fl.rooms.forEach(R => { if (R.kind === 'room') out.push({ tool, room: R.key, has: R.rk === k, other: R.rk && R.rk !== k ? R.rk : null, x: (R.x0 + R.x1) / 2 + 0.5, y: (R.y0 + R.y1) / 2 + 0.5 }); });
     }
     return out;
   }
@@ -995,6 +998,18 @@
         ok = true;
         if (c.rt === rt) { delete c.rt; R.rt = null; const back = Math.floor(ITEMS[m.tool].cost / 2); fl.essence += back; msg = 'Pokój znów zwykły (+' + back + ' Esencji).'; }
         else { const was = c.rt; c.rt = rt; R.rt = rt; msg = 'Pokój: ' + RT_INFO[rt].name + (was ? ' (zamiast: ' + RT_INFO[was].name + ')' : '') + '. ' + ITEMS[m.tool].desc.split(': ').slice(1).join(': ').replace(/ Stuknij znacznik pokoju\.$/, ''); }
+      }
+    } else if (KINDS[m.tool]) {
+      const c = L.cells.get(m.room), R = fl.rooms.find(r => r.key === m.room), k = KINDS[m.tool], K = KIND_INFO[k];
+      if (c && R) {
+        ok = true;
+        if (c.rk === k) { delete c.rk; R.rk = null; const back = Math.floor(ITEMS[m.tool].cost / 2); fl.essence += back; msg = 'Pokój bez komnaty (+' + back + ' Esencji).'; }
+        else {
+          const was = c.rk; c.rk = k; R.rk = k;
+          const mine = [...fl.items.values()].filter(it => KIND_OF[it.type] === k && servedRooms(it.type, it.x, it.y).includes(R.id)).length;
+          msg = 'Komnata: ' + K.name + (was ? ' (zamiast: ' + KIND_INFO[was].name + ')' : '') + '. ' + ITEMS[m.tool].desc.split(' w tym pokoju ')[0].split(': ').slice(1).join(': ') + ' w tym pokoju ' + (K.items.length > 1 ? 'mają' : 'ma') + ' cechę 3. poziomu' + (mine ? ' (działa już na ' + mine + ')' : ', postaw je tutaj') + '.';
+        }
+        fl.threatDirty = true;
       }
     }
     if (!ok) { undoStack.pop(); updateUndoBtn(); note('Tu się nie da'); return false; }
@@ -1074,7 +1089,7 @@
       if (h.type === 'thief' && (tkey === 'spikes' || tkey === 'arrows') && !held(h) && fl.time > h.dodgeCd && Math.random() < h.R.dodge) {
         h.dodgeCd = fl.time + 3; fl.stats.dodges++; say(h, pick(SAY.dodge), 2, null, 'loud'); floatHero(h, 'Unik', '#c9f0b0', 14, -0.6); return;
       }
-      if (fl.time < h.wardUntil && !(tkey === 'arrows' && src.lvl >= 3)) {   // piercing arrows go through; acid corrodes the ward
+      if (fl.time < h.wardUntil && !(tkey === 'arrows' && t3(src))) {   // piercing arrows go through; acid corrodes the ward
         amt *= 1 - h.wardK * (inB('acid', h.room) ? 0.5 : 1); fl.stats.charmSoak = (fl.stats.charmSoak || 0) + 1;
         if (amt <= 0.5) return;
       }

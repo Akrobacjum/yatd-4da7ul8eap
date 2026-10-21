@@ -452,5 +452,113 @@
   "tool": true,
   "rt": "ice",
   "desc": "Lodownia (pokój): ślisko. Co trzeci krok bohater jedzie jedno pole dalej, prosto w to, co tam leży (doświadczeni i złodziej rzadziej). Nikt tu nie odpoczywa. Stuknij znacznik pokoju."
+ },
+ "k_goblin": {
+  "name": "Goblinia nora",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "gobliny",
+  "tool": true,
+  "rk": "goblin",
+  "desc": "Goblinia nora (komnata): Goblin i Szaman w tym pokoju mają cechę 3. poziomu bez ulepszania: Goblin: Podcięcie (trafiony zwalnia na 1,5 s); Szaman: Tarcza ducha (potwory w jego pokoju dostają 30% mniej obrażeń). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_spider": {
+  "name": "Leże pająków",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "pająki i sieci",
+  "tool": true,
+  "rk": "spider",
+  "desc": "Leże pająków (komnata): Pająk i Sieć w tym pokoju mają cechę 3. poziomu bez ulepszania: Pająk: Gniazdo (oplata siecią cały kwadrat 3×3); Sieć: Kwaśna sieć (bohater w tej sieci dostaje +60% obrażeń od pułapek zamiast +30%). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_ogre": {
+  "name": "Jaskinia ogra",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "ogry",
+  "tool": true,
+  "rk": "ogre",
+  "desc": "Jaskinia ogra (komnata): Ogr w tym pokoju ma cechę 3. poziomu bez ulepszania: Ogr: Grzmot (każde uderzenie mocno straszy). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_haunt": {
+  "name": "Nawiedzona sala",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "duchy i cienie",
+  "tool": true,
+  "rk": "haunt",
+  "desc": "Nawiedzona sala (komnata): Duch i Cień w tym pokoju mają cechę 3. poziomu bez ulepszania: Duch: Wycie (straszy z dalszej odległości); Cień: Pożeracz światła (szept gubi samotnego bohatera). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_bats": {
+  "name": "Gniazdo nietoperzy",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "nietoperze",
+  "tool": true,
+  "rk": "bats",
+  "desc": "Gniazdo nietoperzy (komnata): Nietoperze w tym pokoju ma cechę 3. poziomu bez ulepszania: Nietoperze: Chmara (rój sięga 3 pól i płoszy częściej). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_ossuary": {
+  "name": "Kaplica czaszek",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "kości i łucznicy",
+  "tool": true,
+  "rk": "ossuary",
+  "desc": "Kaplica czaszek (komnata): Kości, Trumna i Łucznik w tym pokoju mają cechę 3. poziomu bez ulepszania: Kości: Kostnica (grzechoczą w kwadracie 5×5); Trumna: Pogrzebany żywcem (najbliższy boi się 1,5 raza bardziej i zwalnia na 3 s); Łucznik: Ogniste strzały (trafiony płonie). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_armory": {
+  "name": "Zbrojownia",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "kolce i strzały",
+  "tool": true,
+  "rk": "armory",
+  "desc": "Zbrojownia (komnata): Kolce i Strzały w tym pokoju mają cechę 3. poziomu bez ulepszania: Kolce: Krwawienie (trafiony krwawi przez 3 s); Strzały: Przebijające groty (strzały przebijają tarczę wojownika i talizmany). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_forge": {
+  "name": "Kuźnia",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "ogień i proch",
+  "tool": true,
+  "rk": "forge",
+  "desc": "Kuźnia (komnata): Ogień i Proch w tym pokoju mają cechę 3. poziomu bez ulepszania: Ogień: Napalm (podpalenie trwa 6 s zamiast 3); Proch: Ognisty proch (wybuch sięga o pole dalej i podpala). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_prison": {
+  "name": "Więzienie",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "klatki i kraty",
+  "tool": true,
+  "rk": "prison",
+  "desc": "Więzienie (komnata): Klatka, Zapadnia i Krata w tym pokoju mają cechę 3. poziomu bez ulepszania: Klatka: Kolczasta klatka (uwięziony dostaje 2 razy więcej obrażeń i boi się 2 razy bardziej); Zapadnia: Bezdenny szyb (spadający wychodzi zgubiony i dużo bardziej przestraszony); Krata: Żelazna krata (+2 zamknięcia na falę). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_junk": {
+  "name": "Graciarnia",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "mimiki",
+  "tool": true,
+  "rk": "junk",
+  "desc": "Graciarnia (komnata): Mimik w tym pokoju ma cechę 3. poziomu bez ulepszania: Mimik: Pożeracz (ugryziony traci jeden przedmiot). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_gallery": {
+  "name": "Galeria",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "obrazy i lustra",
+  "tool": true,
+  "rk": "gallery",
+  "desc": "Galeria (komnata): Portret, Oczy i Lustro w tym pokoju mają cechę 3. poziomu bez ulepszania: Portret: Całun grozy (portret straszy cały pokój); Oczy: Wszystkowidzące (samotny albo zgubiony boi się 3 razy bardziej); Lustro: Krzywe zwierciadło (lustro straszy cały pokój). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_nursery": {
+  "name": "Pokój dziecięcy",
+  "cost": 12,
+  "slot": "roomkind",
+  "tag": "pozytywki",
+  "tool": true,
+  "rk": "nursery",
+  "desc": "Pokój dziecięcy (komnata): Pozytywka i Zawiasy w tym pokoju mają cechę 3. poziomu bez ulepszania: Pozytywka: Kołysanka śmierci (kołysanka trwa 8 s); Zawiasy: Trzask (ten w drzwiach zwalnia na 2 s). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
  }
 }

@@ -121,6 +121,18 @@
    "tunnel",
    "expand",
    "demolish",
+   "k_goblin",
+   "k_spider",
+   "k_ogre",
+   "k_haunt",
+   "k_bats",
+   "k_ossuary",
+   "k_armory",
+   "k_forge",
+   "k_prison",
+   "k_junk",
+   "k_gallery",
+   "k_nursery",
    "r_fog",
    "r_swamp",
    "r_grotto",
@@ -130,6 +142,51 @@
    "r_gears",
    "r_hush",
    "r_ice"
+  ],
+  "subs": [
+   {
+    "id": "dig",
+    "label": "Kopanie",
+    "items": [
+     "dig",
+     "tunnel",
+     "expand",
+     "demolish"
+    ]
+   },
+   {
+    "id": "kind",
+    "label": "Komnaty",
+    "items": [
+     "k_goblin",
+     "k_spider",
+     "k_ogre",
+     "k_haunt",
+     "k_bats",
+     "k_ossuary",
+     "k_armory",
+     "k_forge",
+     "k_prison",
+     "k_junk",
+     "k_gallery",
+     "k_nursery"
+    ]
+   },
+   {
+    "id": "effect",
+    "label": "Efekty",
+    "items": [
+     "r_fog",
+     "r_swamp",
+     "r_grotto",
+     "r_crypt",
+     "r_vault",
+     "r_haven",
+     "r_gears",
+     "r_hush",
+     "r_ice"
+    ]
+   }
   ]
  },
  {

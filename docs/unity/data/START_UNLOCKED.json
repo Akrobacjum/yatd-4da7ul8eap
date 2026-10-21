@@ -37,5 +37,17 @@
  "r_haven",
  "r_gears",
  "r_hush",
- "r_ice"
+ "r_ice",
+ "k_goblin",
+ "k_spider",
+ "k_ogre",
+ "k_haunt",
+ "k_bats",
+ "k_ossuary",
+ "k_armory",
+ "k_forge",
+ "k_prison",
+ "k_junk",
+ "k_gallery",
+ "k_nursery"
 ]

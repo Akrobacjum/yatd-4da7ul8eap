@@ -7,5 +7,6 @@
  "tunnel": "dwa sąsiednie pokoje",
  "demolish": "pokój albo przejście",
  "expand": "pokój albo korytarz",
- "roomtype": "cały pokój"
+ "roomtype": "cały pokój",
+ "roomkind": "cały pokój"
 }

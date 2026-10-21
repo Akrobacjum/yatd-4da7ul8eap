@@ -1,0 +1,134 @@
+{
+ "goblin": {
+  "name": "Goblinia nora",
+  "item": "k_goblin",
+  "items": [
+   "goblin",
+   "shaman"
+  ],
+  "tag": "gobliny",
+  "glyph": "♣",
+  "color": "#a7d060"
+ },
+ "spider": {
+  "name": "Leże pająków",
+  "item": "k_spider",
+  "items": [
+   "spider",
+   "web"
+  ],
+  "tag": "pająki i sieci",
+  "glyph": "✳",
+  "color": "#d4cbe8"
+ },
+ "ogre": {
+  "name": "Jaskinia ogra",
+  "item": "k_ogre",
+  "items": [
+   "ogre"
+  ],
+  "tag": "ogry",
+  "glyph": "♠",
+  "color": "#d99a6c"
+ },
+ "haunt": {
+  "name": "Nawiedzona sala",
+  "item": "k_haunt",
+  "items": [
+   "ghost",
+   "shade"
+  ],
+  "tag": "duchy i cienie",
+  "glyph": "✧",
+  "color": "#a6e8ff"
+ },
+ "bats": {
+  "name": "Gniazdo nietoperzy",
+  "item": "k_bats",
+  "items": [
+   "bats"
+  ],
+  "tag": "nietoperze",
+  "glyph": "☾",
+  "color": "#bba2e6"
+ },
+ "ossuary": {
+  "name": "Kaplica czaszek",
+  "item": "k_ossuary",
+  "items": [
+   "bones",
+   "coffin",
+   "archer"
+  ],
+  "tag": "kości i łucznicy",
+  "glyph": "☠",
+  "color": "#efe6cc"
+ },
+ "armory": {
+  "name": "Zbrojownia",
+  "item": "k_armory",
+  "items": [
+   "spikes",
+   "arrows"
+  ],
+  "tag": "kolce i strzały",
+  "glyph": "⚔",
+  "color": "#c9d5e2"
+ },
+ "forge": {
+  "name": "Kuźnia",
+  "item": "k_forge",
+  "items": [
+   "fire",
+   "powder"
+  ],
+  "tag": "ogień i proch",
+  "glyph": "⚒",
+  "color": "#ffa65c"
+ },
+ "prison": {
+  "name": "Więzienie",
+  "item": "k_prison",
+  "items": [
+   "cage",
+   "trapdoor",
+   "gate"
+  ],
+  "tag": "klatki i kraty",
+  "glyph": "⛓",
+  "color": "#bdb19b"
+ },
+ "junk": {
+  "name": "Graciarnia",
+  "item": "k_junk",
+  "items": [
+   "mimic"
+  ],
+  "tag": "mimiki",
+  "glyph": "⌂",
+  "color": "#dcae6c"
+ },
+ "gallery": {
+  "name": "Galeria",
+  "item": "k_gallery",
+  "items": [
+   "portrait",
+   "eyes",
+   "mirror"
+  ],
+  "tag": "obrazy i lustra",
+  "glyph": "▣",
+  "color": "#ecc65e"
+ },
+ "nursery": {
+  "name": "Pokój dziecięcy",
+  "item": "k_nursery",
+  "items": [
+   "musicbox",
+   "creak"
+  ],
+  "tag": "pozytywki",
+  "glyph": "♪",
+  "color": "#f2bcd4"
+ }
+}

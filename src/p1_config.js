@@ -56,7 +56,7 @@
   // Points are the measure of HOW WELL a run went (surviving the waves is the measure of success): the rank at the end.
   const RANKS = [[0, 'Nora'], [150, 'Piwnica'], [400, 'Loch'], [1000, 'Labirynt'], [2500, 'Twierdza grozy'], [6000, 'Legenda']];   // v15: Esencja harvested in the run
   const rankOf = pts => { let i = 0; RANKS.forEach((r, k) => { if (pts >= r[0]) i = k; }); return { i, name: RANKS[i][1], next: RANKS[i + 1] || null }; };
-  const SLOT_LABEL = { floor: 'podłoga', wall: 'ściana', door: 'drzwi', object: 'mebel', dig: 'skała przy lochu', tunnel: 'dwa sąsiednie pokoje', demolish: 'pokój albo przejście', expand: 'pokój albo korytarz', roomtype: 'cały pokój' };
+  const SLOT_LABEL = { floor: 'podłoga', wall: 'ściana', door: 'drzwi', object: 'mebel', dig: 'skała przy lochu', tunnel: 'dwa sąsiednie pokoje', demolish: 'pokój albo przejście', expand: 'pokój albo korytarz', roomtype: 'cały pokój', roomkind: 'cały pokój' };
   const ITEMS = {
     spikes: { name: 'Kolce', cost: 3, slot: 'floor', tag: 'szybkie', cd: 1.5, desc: 'Kolce (podłoga, kłute): jedno pole, szybkie odnowienie. +50%, gdy bohater stoi: walczy, czeka, w sieci albo w klatce. Najlepsze tuż za drzwiami.' },
     web: { name: 'Sieć', cost: 3, slot: 'floor', tag: 'spowalnia', cd: 7, desc: 'Sieć (podłoga): spowalnia w kwadracie 3×3 na 3 s, a bohater w sieci dostaje +30% obrażeń. Mag potrafi ją rozproszyć.' },
@@ -129,7 +129,13 @@
              { id: 'fear', label: 'Strach', items: ['ghost', 'shade', 'bats'] }] },
     { id: 'loot', label: 'Łup', items: ['loot', 'lpotion', 'loot2', 'loot3', 'lcursed'] },
     { id: 'object', label: 'Obiekty', items: ['crate', 'rune', 'altar', 'decoy', 'acid', 'howl', 'shackles', 'veil', 'fortify'] },
-    { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish', 'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'] },   // no Przenieś (a tap moves), no Ulepsz (a double tap upgrades)
+    // 1.15 (author: split what you do to the dungeon into rooms, kinds and effects): Kopanie (the rooms themselves), Komnaty
+    // (what a room is for: one family of traps or monsters works better there), Efekty (what the room does to the heroes)
+    { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish', 'k_goblin', 'k_spider', 'k_ogre', 'k_haunt', 'k_bats', 'k_ossuary', 'k_armory', 'k_forge', 'k_prison', 'k_junk', 'k_gallery', 'k_nursery',
+      'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'],   // no Przenieś (a tap moves), no Ulepsz (a double tap upgrades)
+      subs: [{ id: 'dig', label: 'Kopanie', items: ['dig', 'tunnel', 'expand', 'demolish'] },
+             { id: 'kind', label: 'Komnaty', items: ['k_goblin', 'k_spider', 'k_ogre', 'k_haunt', 'k_bats', 'k_ossuary', 'k_armory', 'k_forge', 'k_prison', 'k_junk', 'k_gallery', 'k_nursery'] },
+             { id: 'effect', label: 'Efekty', items: ['r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'] }] },
     { id: 'deck', label: 'Talia', items: [] }
   ];
   const ITEM_ORDER = TABS.flatMap(t => t.items).concat(['upgrade']);   // Ulepsz stays as a mode the code knows, with no tile in any tab
@@ -231,6 +237,34 @@
     shade: ['Pożeracz światła', 'szept gubi samotnego bohatera'],
     bats: ['Chmara', 'rój sięga 3 pól i płoszy częściej']
   };
+  // 1.15 (author: room kinds that work on a family of units or traps, as many as the prototype's content calls for): a komnata
+  // is what a room is for. Every trap and monster belongs to one family; in a room of its kind it has its level 3 trait without
+  // being upgraded, and one already at level 3 gets KIND_POW more power. A room has one kind and one effect (Efekty) at a time,
+  // both at once is fine; a kind takes no slot. It opens once one of its family is unlocked.
+  const KIND_POW = 1.25, KIND_COST = 12;
+  const KIND_INFO = {
+    goblin: { name: 'Goblinia nora', item: 'k_goblin', items: ['goblin', 'shaman'], tag: 'gobliny', glyph: '♣', color: '#a7d060' },
+    spider: { name: 'Leże pająków', item: 'k_spider', items: ['spider', 'web'], tag: 'pająki i sieci', glyph: '✳', color: '#d4cbe8' },
+    ogre: { name: 'Jaskinia ogra', item: 'k_ogre', items: ['ogre'], tag: 'ogry', glyph: '♠', color: '#d99a6c' },
+    haunt: { name: 'Nawiedzona sala', item: 'k_haunt', items: ['ghost', 'shade'], tag: 'duchy i cienie', glyph: '✧', color: '#a6e8ff' },
+    bats: { name: 'Gniazdo nietoperzy', item: 'k_bats', items: ['bats'], tag: 'nietoperze', glyph: '☾', color: '#bba2e6' },
+    ossuary: { name: 'Kaplica czaszek', item: 'k_ossuary', items: ['bones', 'coffin', 'archer'], tag: 'kości i łucznicy', glyph: '☠', color: '#efe6cc' },
+    armory: { name: 'Zbrojownia', item: 'k_armory', items: ['spikes', 'arrows'], tag: 'kolce i strzały', glyph: '⚔', color: '#c9d5e2' },
+    forge: { name: 'Kuźnia', item: 'k_forge', items: ['fire', 'powder'], tag: 'ogień i proch', glyph: '⚒', color: '#ffa65c' },
+    prison: { name: 'Więzienie', item: 'k_prison', items: ['cage', 'trapdoor', 'gate'], tag: 'klatki i kraty', glyph: '⛓', color: '#bdb19b' },
+    junk: { name: 'Graciarnia', item: 'k_junk', items: ['mimic'], tag: 'mimiki', glyph: '⌂', color: '#dcae6c' },
+    gallery: { name: 'Galeria', item: 'k_gallery', items: ['portrait', 'eyes', 'mirror'], tag: 'obrazy i lustra', glyph: '▣', color: '#ecc65e' },
+    nursery: { name: 'Pokój dziecięcy', item: 'k_nursery', items: ['musicbox', 'creak'], tag: 'pozytywki', glyph: '♪', color: '#f2bcd4' }
+  };
+  const KINDS = {};   // tool id -> kind id
+  const KIND_OF = {};   // trap or monster -> kind id
+  Object.keys(KIND_INFO).forEach(k => {
+    const K = KIND_INFO[k], fam0 = K.items.map(t => ITEMS[t].name), fam = fam0.length > 1 ? [fam0.slice(0, -1).join(', ') + ' i ' + fam0[fam0.length - 1]] : fam0, tr = K.items.filter(t => TRAITS[t]).map(t => ITEMS[t].name + ': ' + TRAITS[t][0] + ' (' + TRAITS[t][1] + ')');
+    KINDS[K.item] = k; K.items.forEach(t => { KIND_OF[t] = k; });
+    ITEMS[K.item] = { name: K.name, cost: KIND_COST, slot: 'roomkind', tag: K.tag, tool: true, rk: k,
+      desc: K.name + ' (komnata): ' + fam[0] + ' w tym pokoju ' + (fam0.length > 1 ? 'mają' : 'ma') + ' cechę 3. poziomu bez ulepszania: ' + tr.join('; ') + '. Te już na 3. poziomie: +' + Math.round((KIND_POW - 1) * 100) + '% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju.' };
+    TOOLS[K.item] = 1; ONB_ITEM[K.item] = 3; START_UNLOCKED.push(K.item);
+  });
   // Hero personalities: about half of the heroes have one; it shows on their plate and changes how they decide.
   const HERO_TRAITS = {
     greedy: { name: ['chciwy', 'chciwa'], w: 1 },
@@ -501,7 +535,7 @@
   const UPG = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
   const RAR_NAME = { c: 'zwykła', r: 'rzadka', l: 'legendarna' }, RAR_COLOR = { c: '#c9c2d8', r: '#6fb7ff', l: '#ff8a3c' }, RAR_SELL = { c: 2, r: 4, l: 6 };
   const DECK_SIZE = 7;
-  const ROOM_TINT = ['#3f4246', '#43424a', '#4a3e45', '#533941', '#5f3239'];   // Prototype 1.0: cold grey stone near the entrance, dried blood deep down
+  const ROOM_TINT = ['#424448', '#44464a', '#46464b', '#48464b', '#4a464a'];   // 1.15 (author: plain room floors greyer): grey stone all the way down, only a breath warmer deep down (1.0-1.14: '#3f4246' to '#5f3239', dried blood deep down)
   const OBJ_KINDS = ['barrel', 'crate', 'statue', 'shelf'];
   const HEART = { kind: 'heart' }, LOOTTRAP = { kind: 'loot' }, BURN = { kind: 'burn' };
   const MON_FACTOR = 0.4;   // monsters acting on their own score and feed fear at a reduced rate

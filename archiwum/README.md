@@ -60,3 +60,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.13.2](1.13.2.html) | 21.10 | koniec przesuwania się gęsiego w ślepym przejściu (stojący przepuszcza idącego) |
 | [Prototype 1.13.3](1.13.3.html) | 21.10 | krótsza scenka przed groźnym pokojem (najwyżej dwóch specjalistów) |
 | [Prototype 1.13.4](1.13.4.html) | 21.10 | koniec dreptania złodzieja przed pułapką ścienną, przywódcy z bombą i w drzwiach przy odwrocie |
+| [Prototype 1.14](1.14.html) | 21.10 | podzakładki Rany / Strach w pasku budowy, odkryte pułapki zostają między runami |

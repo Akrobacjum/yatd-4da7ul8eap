@@ -13,6 +13,8 @@
   const upgCost = it => Math.ceil(ITEMS[it.type].cost * UPG_COST[(it.lvl || 1) + 1]);
   // v14.1: the tray is one row scrolled sideways; each tab remembers where it was scrolled to
   const trayScroll = {}; let trayTab = null;
+  // 1.15: a komnata opens once one of its family is unlocked (nothing to make better before that)
+  const isOpenT = t => !!run && run.unlocked.has(t) && (!KINDS[t] || KIND_INFO[KINDS[t]].items.some(x => run.unlocked.has(x)));
   // 1.14 (author: subcategories in the build bar, side by side like the tabs): the sub of each tab with subs (TABS[].subs),
   // remembered in this browser; a row of sub-tabs under the tabs shows only when at least two of the tab's subs have something
   // this stage brings (else all of the tab, as before). The row keeps its height on every tab, so the map does not jump.
@@ -47,6 +49,7 @@
         b.querySelector('.sl').textContent = ITEMS[t].tag;
         if (LOOT_COLOR[t]) b.querySelector('.sl').style.color = LOOT_COLOR[t];
         else if (ROOMTYPES[t]) b.querySelector('.sl').style.color = RT_INFO[ROOMTYPES[t]].color;
+        else if (KINDS[t]) b.querySelector('.sl').style.color = KIND_INFO[KINDS[t]].color;   // 1.15
         b.addEventListener('pointerdown', e => {   // Prototype 1.0: hold a tile to read what it does
           if (e.button > 0) return;
           hideTip(); tipEat = false; tipAt = [e.clientX, e.clientY];
@@ -64,7 +67,7 @@
             if (selected) setHint(ITEMS[t].desc);   // a mode: how to use it
             return;
           }
-          if (!run.unlocked.has(t)) { nope(b, 'zablokowane'); return; }
+          if (!isOpenT(t)) { nope(b, KINDS[t] && run.unlocked.has(t) ? 'brak rodziny' : 'zablokowane'); return; }
           if ((TOOLS[t] || ITEMS[t].build) && fl.phase !== 'build') { nope(b, 'między falami'); return; }
           if (fl.essence < costOf(t)) { nope(b, 'za mało Esencji'); return; }
           selected = selected === t ? null : t; movingKey = null; movingObj = null;   // choosing from the tray puts down what was in hand
@@ -105,7 +108,7 @@
       if (!b.hidden) b.style.setProperty('--d', String(Math.min(9, shown++)));
       const cst = b.querySelector('.cost');
       cst.textContent = MODES[t] ? '' : String(costOf(t)); cst.classList.toggle('nocost', !!MODES[t]);
-      const locked = !run || !run.unlocked.has(t);
+      const locked = !run || !isOpenT(t);
       const playable = fl && (fl.phase === 'build' || (fl.phase === 'raid' && !TOOLS[t] && !ITEMS[t].build && !MODES[t]));
       const off = locked || !playable || fl.essence < costOf(t);
       if (off && selected === t) selected = null;
@@ -129,7 +132,8 @@
     if (I.tag) box.appendChild(el('div', 'tg', I.tag));
     box.appendChild(el('p', null, I.desc));
     if (LOOT_KIND[t]) { const n = lootCount(t); box.appendChild(el('div', 'tg', 'Każdy kolejny taki łup w lochu: +25% ceny' + (n ? ' (leży już: ' + n + ', bazowo ' + I.cost + ')' : '') + '.')); }
-    if (run && !MODES[t] && !run.unlocked.has(t)) box.appendChild(el('div', 'tw', 'Zablokowany: odblokujesz go kartą ze sklepu (na stałe, także w kolejnych runach).'));
+    if (run && KINDS[t] && run.unlocked.has(t) && !isOpenT(t)) box.appendChild(el('div', 'tw', 'Zablokowana: najpierw odblokuj ' + KIND_INFO[KINDS[t]].items.map(x => ITEMS[x].name).join(' albo ') + ' (kartą ze sklepu).'));
+    else if (run && !MODES[t] && !run.unlocked.has(t)) box.appendChild(el('div', 'tw', 'Zablokowany: odblokujesz go kartą ze sklepu (na stałe, także w kolejnych runach).'));
     box.hidden = false; box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
     box.style.bottom = Math.round(innerHeight - $('#drawer').getBoundingClientRect().top + 6) + 'px';
     tipFor = t; b.classList.add('holding');
@@ -526,7 +530,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.14 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.15 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -576,9 +580,16 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.14'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.15'));
     const ul2 = el('ul', 'conseq');
-    ['1.14: podkategorie w pasku budowy: Pułapki i Potwory mają pod zakładkami przełącznik Rany / Strach (pasek pamięta wybór dla każdej zakładki). Pułapki, które zatrzymują, rozdzielają i spowalniają, są w Ranach.',
+    ['1.15: komnaty. Zakładka Loch dzieli się teraz na Kopanie (kopanie, tunel, poszerzanie, burzenie), Komnaty i Efekty (dawne typy pokoi: Mgła, Bagno, Grota i reszta). Komnata mówi, komu pokój służy: Goblinia nora, Leże pająków, Jaskinia ogra, Nawiedzona sala, Gniazdo nietoperzy, Kaplica czaszek, Zbrojownia, Kuźnia, Więzienie, Graciarnia, Galeria i Pokój dziecięcy. Każda pułapka i każdy potwór należy do jednej z nich.',
+     '1.15: pułapki i potwory z rodziny komnaty, postawione w jej pokoju (pułapka na ścianie liczy się w pokoju, w który patrzy), mają cechę 3. poziomu bez ulepszania, a te już na 3. poziomie dostają +25% mocy. Komnata kosztuje 12 Esencji, nie zajmuje miejsca w pokoju i może być w pokoju razem z efektem. Stuknięcie pokoju, który już ma tę komnatę, zdejmuje ją (wraca połowa), a inna komnata ją zastępuje. Komnata jest zablokowana, dopóki nie odblokujesz nikogo z jej rodziny.',
+     '1.15: w każdej komnacie stoją drobne przedmioty w 3D: w norze świecące grzybki, kamienie, totem i ognisko z polanami, w leżu kokony, skupiska jaj i małe pająki, u ogra kocioł z bulgoczącą zupą i stosy kości, w nawiedzonej sali świece z niebieskim płomieniem i przewrócone krzesła, u nietoperzy stalagmity, w kaplicy piramidki czaszek i świece, w zbrojowni stojaki z bronią, tarcze, strzały w podłodze i tarcza strzelecka, w kuźni kowadło, palenisko, wiadra i sztaby, w więzieniu wiadra, snopki słomy, kajdany i szczur, w graciarni skrzynki, beczki, butelki i książki, w galerii popiersia, wazy, kandelabry i słupki z liną, w pokoju dziecięcym klocki, piłki, bębenki, bączki i miś. Bohaterowie chodzą za nimi i przed nimi, a nic nie stoi na polu z pułapką, potworem albo meblem. Do tego trochę życia (zarodniki, para, iskry, ogniki, kurz, krople, nutki) i poświata w kolorze komnaty pod każdym elementem jej rodziny.',
+     '1.15: ściany komnaty są z innego materiału, mają inny kształt i rzeczy, które z nich wystają: belki i korzenie w norze, zwisający jedwab i kokony w leżu, bryły skał i czaszka na kolcu u ogra, kinkiety z niebieską świecą w nawiedzonej sali, sople skalne i wiszące nietoperze, kości wystające ze ściany czaszek, tarcze na skrzyżowanych włóczniach i blanki w zbrojowni, okap paleniska i kominy w kuźni, łańcuchy z kajdanami i kolce w więzieniu, półki ze słojami w graciarni, złocone ramy, kinkiety i gzyms w galerii, półeczki z zabawkami w pokoju dziecięcym.',
+     '1.15: wszystko poza postaciami ma bryłę: rzeczy dotąd płaskie (sieć, zapadnia, otwarta klatka, gruz po budowli, pułapki na ścianach, uchwyty pochodni, ozdoby ścian) lekko odstają od podłogi albo ściany i rzucają krótki cień. Wielkie pajęczyny malowane na podłodze leża zniknęły.',
+     '1.15: komnata i efekt nakładają się: pokój może być np. Goblinią norą we Mgle. Działają oba, a na obrazie efekt leży na podłodze komnaty i zostawia ślad na jej ścianach (mgła przy ich podstawie, szron i sople w Lodowni, mokry pas i mech w Bagnie, złote błyski w Sezamie, zębatka w Zębatkach, fiolet Krypty, ciepłe światło Sanktuarium, ciemność Głuszy, odblaski wody w Grocie).',
+     '1.15: zwykłe podłogi pokoi są szare (wcześniej im głębiej, tym bardziej czerwonobrązowe), więc komnaty i efekty bardziej się odróżniają.',
+     '1.14: podkategorie w pasku budowy: Pułapki i Potwory mają pod zakładkami przełącznik Rany / Strach (pasek pamięta wybór dla każdej zakładki). Pułapki, które zatrzymują, rozdzielają i spowalniają, są w Ranach.',
      '1.14: odkryte pułapki i potwory zostają na stałe: to, co odblokujesz kartą ze sklepu, masz od początku w kolejnych runach (w pierwszych runach nadal tylko to, co dany etap wprowadza), a jego karta nie wraca do sklepu. Liczy się od tej wersji.',
      '1.13.4: naprawione: złodziej prowadzący drużynę potrafił przestępować między dwoma polami przed pułapką ze strzałami i dostawać strzałę za strzałą (u jednego z testerów od 55 do 10 HP). Na miejscu rozbrajania gra uznawała, że pułapka nie leży już na drodze, więc ruszał dalej, a krok później wracał. Teraz drogą jest to, dokąd idzie drużyna, złodziej trzyma się wybranej pułapki, a gdy ta dwa razy odpali mu w twarz, odpuszcza. Tak samo poprawione: przywódca z bombą (podchodzi na bezpieczne pole w zasięgu rzutu) i odwrót, gdy przyjaciel odpoczywa tuż za drzwiami (reszta siada obok, zamiast przestępować w drzwiach).',
      '1.13.3: krótsza scenka przed groźnym pokojem: mówi przywódca i najwyżej dwóch specjalistów (wcześniej każdy z nich, do 7 dymków i nawet ~19 s postoju). Pozostali specjaliści i tak robią swoje (osłona, zakłócenie, rozbrajanie, tarcza), a sygnałem do biegu jest okrzyk przywódcy na koniec. Średnio postój trwa ok. 8 s zamiast ok. 12,5 s.',
@@ -1430,6 +1441,8 @@
     d.appendChild(el('p', null, T.desc));
     if (up) d.appendChild(el('p', 'note', 'Moc teraz: ' + (TRAPS[it.type] ? '×' + fmt2(LVL_POW[lvl]) : 'HP i siła ×' + fmt2(LVL_MON[lvl])) + '. ' + (tr ? 'Poziom 3 dodaje cechę: ' + tr[0] + ' (' + tr[1] + ').' : '') + ' Ulepszenie nie zajmuje miejsca w pokoju, a poziom pułapki poszerza strefy skill checku.'));
     if (rt) d.appendChild(el('p', 'note', 'Pokój: ' + RT_INFO[rt].name + '. ' + ITEMS[RT_INFO[rt].item].desc.split(': ').slice(1).join(': ').replace(/ Stuknij znacznik pokoju\.$/, '')));
+    if (KIND_OF[it.type] && inKind(it)) d.appendChild(el('p', 'note', 'Komnata: ' + KIND_INFO[KIND_OF[it.type]].name + '. ' + (lvl >= 3 ? 'Ma już 3. poziom, więc komnata daje mu +' + Math.round((KIND_POW - 1) * 100) + '% mocy.' : 'Cecha 3. poziomu działa bez ulepszania' + (tr ? ': ' + tr[0] + ' (' + tr[1] + ')' : '') + '.')));
+    else if (KIND_OF[it.type]) d.appendChild(el('p', 'note', 'Pasuje do komnaty: ' + KIND_INFO[KIND_OF[it.type]].name + ' (zakładka Loch, Komnaty). Tam ma cechę 3. poziomu bez ulepszania.'));
     if (it.dropped) d.appendChild(el('p', 'note', 'Łup po bohaterach nic Cię nie kosztował, więc zdjęcie nic nie zwraca. Możesz go przenieść.'));
     if (it.lf === undefined || !up) d.open = true;
     card.appendChild(d);
@@ -1734,7 +1747,7 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 58;   // 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  const LOG_VERSION = 58;   // 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
@@ -1744,7 +1757,7 @@
   function snapshotLayout() {
     const L = run.layout;
     return { WW, WH, entrance: L.entrance, heart: L.heartKey, entX: L.entX, essence: Math.round(fl.essence), breach: L.breach ? Object.assign({}, L.breach) : null, greedKeep: Math.round(run.greedKeep * 100) / 100,
-      cells: [...L.cells.values()].map(c => [c.cx, c.cy, c.x0, c.y0, c.x1, c.y1, c.lvl || 0, c.objs.map(o => [o[0], o[1], o[2], o[3] ? 1 : 0]), c.rt || null]),
+      cells: [...L.cells.values()].map(c => [c.cx, c.cy, c.x0, c.y0, c.x1, c.y1, c.lvl || 0, c.objs.map(o => [o[0], o[1], o[2], o[3] ? 1 : 0]), c.rt || null, c.rk || null]),   // 1.15: [9] the komnata
       edges: [...L.edges.values()].map(e => [e.a, e.b, e.horiz ? 1 : 0, e.pa, e.pb, e.lvl || 0]),
       items: [...fl.items.values()].map(it => [it.type, it.x, it.y, it.lvl || 1, it.dropped ? 1 : 0]) };
   }
@@ -2227,7 +2240,7 @@
     { id: 'upgrade', wave: 2, text: () => { const it = tutUpTarget(); return 'Dwa szybkie stuknięcia w element to ulepszenie: mocniej bije i ma szersze strefy checku. Stuknij dwa razy ' + (it ? ITEMS[it.type].name.toLowerCase() : 'pułapkę') + ' w kółku (koszt: ' + (it ? upgCost(it) : 6) + ' Esencji).'; }, build: true, tile: () => { const it = tutUpTarget(); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); const it = tutUpTarget(); if (it && fl.essence < upgCost(it)) fl.essence = upgCost(it); }, done: () => !!tutFlags.upgraded, skip: true },
     { id: 'deck', wave: 2, text: () => 'Karta ze sklepu leży w talii: ' + slotsTxt(run.deckSize) + '. Działa do końca runu albo do sprzedaży, a kopie tej samej karty się sumują. Po każdej fali dostajesz darmową kartę; inne kupisz za Esencję. Pierwszy kafelek otwiera sklep.', build: true, hl: ['#tab-deck'], prep: () => { tab = 'deck'; updateTray(); setTrayOpen(true); }, next: true },
     // wave 3
-    { id: 'dig', wave: 3, text: 'Pokój mieści tylko kilka pułapek (licznik w rogu), więc między falami kop nowe pokoje. Zakładka Loch: Nowy pokój, Przejście, Rozbuduj, Wyburz. Spróbuj wykopać pokój.', build: true, hl: ['#tab-dungeon', '#item-dig'], prep: () => { tab = 'dungeon'; updateTray(); setTrayOpen(true); }, done: () => tutFlags.tool, skip: true },
+    { id: 'dig', wave: 3, text: 'Pokój mieści tylko kilka pułapek (licznik w rogu), więc między falami kop nowe pokoje. Zakładka Loch: Nowy pokój, Przejście, Rozbuduj, Wyburz. Spróbuj wykopać pokój.', build: true, hl: ['#tab-dungeon', '#item-dig'], prep: () => { pickTab('dungeon', 'dig'); setTrayOpen(true); }, done: () => tutFlags.tool, skip: true },
     { id: 'end', wave: 3, text: 'To wszystko na pierwszy run. Każdy kolejny run dołoży coś nowego: straszenie, potem gildię z budowlami i typy pokoi, a na końcu ciała i fobie bohaterów. Powodzenia!', build: true, next: true }
   ];
   // 1.04: the moments that matter stop the game once, with a card at the top of the map (the check waits under it)
@@ -2402,7 +2415,7 @@
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
     resolveCheck: p => resolveCheck(p), skipCheck: () => skipCheck(), clearCheck: () => clearCheck(), areaOf, slotOf, shortestPath, frontier, toolMarkers, applyTool, toolCost, get WW() { return WW; }, get WH() { return WH; }, TUT, UPGRADES, UPG, ITEMS, startBuild, applyUpgrade, makeWave, levelStats, recomputeMods, sellCard, upgradePicks, cardMultNow, openModal, queueModal, renderDeckTiles, saveRun, loadSave, resumeRun, clearSave, upgradeItem, removeItem, waveCurve, waveBase, computeBRooms, inB, decoyAlarm, guildAdapt, quietNow, setUser: v => { userStarted = v; }, get userStarted() { return userStarted; }, ignite, trapBoost, calmReady, landFallen, fall, planBreach: () => planBreach(), tutAnySpot, galleryK, stealNeed, portraitRooms, addFear, setTab: t => { tab = t; updateTray(); }, undo, pushUndo, get undoN() { return undoStack.length; }, setTrayOpen, UI, moveItem, moveTarget, setMode: (m, k) => { selected = m; movingKey = k || null; updateTray(); }, get selected() { return selected; }, get movingKey() { return movingKey; }, rankOf, dungeonBounds, regroupAtDoor: () => regroupAtDoor(),
-    patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, nbrRooms, roomCount, sizeMult,
+    patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, t3, kindPow, inKind, slotRoom, servedRooms, kindProps, PROP, PROP_PLAN, KIND_WALL3D, snapshotLayout, KINDS, KIND_INFO, KIND_OF, RT_INFO, nbrRooms, roomCount, sizeMult,
     rollItem, curse, comboNow, get orbs() { return orbs; }, boxOrbs, tileScreen, bfs, say: (h, t, p, d, how) => say(h, t, p, d, how), sayTick, floorBusy, readT, talkAs: (d, l) => talkAs(d, l), greedCurve, greedRaw, addGreed, waveSize, partySize, safestRoom: h => safestRoom(h), planHero: h => planHero(h), lootSeen: it => lootSeen(it), kill: (h, k, a) => kill(h, k, a), damage, loadRecords, BREACH_PATCH, HITEMS, LOOT_KIND, noticeLoot, lootDecision, leader, alive, heroExit, driftTarget, SCARE, CURSED, DRIFT, TABS, objTargetOk, roomOf, dropCarry, holdRemove, buildTap, onbStage, setOnb, onbDone, startGuided, endRun: (r, x) => endRun(r, x), revealPhobia, revealPhys, ONB_STAGES, ONB_CARD, ONB_ITEM, comboHp, onbOk, coachDone,
     get movingObj() { return movingObj; }
   };
