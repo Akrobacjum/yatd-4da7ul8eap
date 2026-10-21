@@ -273,14 +273,14 @@
     return out;
   }
   function newStats() {
-    return { dmgPts: 0, fearPts: 0, scarePts: 0, killPts: 0, lootPts: 0, crystalPts: 0, wavePts: 0, lostPts: 0, lonePts: 0, healPts: 0, edgePts: 0,
+    return { dmgPts: 0, fearPts: 0, scarePts: 0, killPts: 0, lootPts: 0, crystalPts: 0, wavePts: 0, lostPts: 0, lonePts: 0, splitPts: 0, healPts: 0, edgePts: 0,
       kills: 0, killsMon: 0, killsTrap: 0, killsHeart: 0, scared: 0, escaped: 0, left: 0, crystalTaken: 0, crystalLost: 0, crystalSaved: 0,
       loot: 0, lootSeen: 0, lootSkipped: 0, lootRisked: 0, rooms: 0, rumorRooms: 0, rumorTraps: 0, rumorFalse: 0, maxCombo: 1, disarmed: 0, disarmFails: 0,
       detected: 0, learned: 0, notLearned: 0, retreats: 0, panics: 0, flees: 0, partyFlees: 0, scouts: 0, wanders: 0, talks: 0, regroups: 0, fearDealt: 0,
       checks: 0, checkOk: 0, checkCrit: 0, checkMiss: 0, checkSkip: 0, skipLethal: 0, souls: 0, itemsGot: 0, itemsUsed: 0,
       dodges: 0, shields: 0, charms: 0, bombs: 0, potions: 0, heals: 0, cleanses: 0, barriers: 0, dispels: 0, blessed: 0, lines: 0, slept: 0,
       silenceTime: 0, pauseTime: 0, ffTime: 0, essBase: 0, essFear: 0, essSoul: 0, essDrop: 0, built: 0, monstersLost: 0,
-      falls: 0, cages: 0, rescues: 0, abandons: 0, timing: 0, healed: 0, lostTime: 0, loneTime: 0, fearSrc: {}, preps: 0, wards: 0, jams: 0, prepDisarms: 0, breach: 0, sapped: 0, sensed: 0, greedKept: 0,
+      falls: 0, cages: 0, rescues: 0, abandons: 0, timing: 0, healed: 0, lostTime: 0, loneTime: 0, splitTime: 0, splits: 0, splitLost: 0, restScouts: 0, fearSrc: {}, preps: 0, wards: 0, jams: 0, prepDisarms: 0, breach: 0, sapped: 0, sensed: 0, greedKept: 0,
       // v12: gear and powers, getting lost, detours, curses, faith
       swaps: 0, potionsGiven: 0, amulets: 0, boots: 0, goldPicked: 0, cursed: 0, curseLifts: 0, faithOut: 0, detours: 0, gotLost: 0, searches: 0, deathFear: 0, roomsVisited: 0 };
   }
@@ -342,7 +342,7 @@
     saveRun('build');
   }
   function freshParty() {
-    return { plan: 'explore', target: -1, leaderId: -1, talkUntil: -1, waitUntil: -1, retreatRoom: -1, retreatLock: -99, restSince: -1, morale: 1, scoutId: -1,
+    return { plan: 'explore', target: -1, leaderId: -1, talkUntil: -1, waitUntil: -1, retreatRoom: -1, retreatLock: -99, restSince: -1, morale: 1, scoutId: -1, scoutMate: -1, aheadWait: -1, aheadUntil: -1,
       junctions: new Set(), hesitated: new Set(), thinkT: 0, lastSay: {}, ambushT: -9, ambushN: 0, steal: 0, carrierId: -1, rescueId: -1,
       cageDecided: new Set(), abandoned: new Set(), lastTalkAt: -99, chatT: 6, heartSaid: false, queueSay: [], prepped: new Set(), prep: null, prepCd: 0, rushUntil: -1,
       searchId: -1, searchUntil: -1, detour: null, detourCd: 0, wantSearch: true, targetRoom: -1 };
@@ -676,7 +676,7 @@
       dead: false, fled: false, gone: false, flash: 0, acc: 0, accT: 0, cast: e.type === 'priest' ? 1.5 : e.type === 'mage' ? 2 : 0,
       barrierCd: 0, dispelCd: 0, scan: 0.5, hurtAt: -9, edgeAt: -9, playerDmg: 0, loot: 0, orbAcc: 0, inv: e.inv.map(it => Object.assign({}, it, { cdUntil: 0 })),
       shield: 0, shieldUpUntil: -1, shieldCd: 0, dodgeCd: 0, panicUntil: -1, lost: false, noPathT: 0, alone: false, aloneSaid: false, bubble: null,
-      disarmT: null, scoutTarget: -1, scoutUntil: -1, fear: 0, courage: e.courage || R.courage, fleeing: false, crystal: false, fallUntil: -1, cageUntil: -1, cageIt: null,
+      disarmT: null, scoutTarget: -1, scoutUntil: -1, split: false, fear: 0, courage: e.courage || R.courage, fleeing: false, crystal: false, fallUntil: -1, cageUntil: -1, cageIt: null,
       freeT: null, lostT: 0, lootMemo: new Map(), saidTiming: new Set(), felt: new Map(), wanderUntil: -1, wanderTarget: -1, rumorSaid: false, invCap: 3 + Math.floor(e.lvl / 3),
       trait: e.trait || null, rageUntil: -1, raged: false, shoutCd: 0, saidB: new Set(),
       // 1.05: the bard's songs (a few a wave) and calls, the barbarian's fury and axe, a lost one following a voice
@@ -1293,6 +1293,7 @@
     });
     if (P.leaderId === h.id) P.leaderId = -1;
     if (P.scoutId === h.id) P.scoutId = -1;
+    if (P.scoutMate === h.id) P.scoutMate = -1;
   }
 
   /* ================= loot, greed and hero gear ================= */

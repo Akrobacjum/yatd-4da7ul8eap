@@ -89,6 +89,8 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | Jeden `rescueId` | druga decyzja o ratunku nadpisuje pierwszą |
 | `P.steal` | nie spada, gdy drużyna odejdzie od serca |
 | Wyjście z zapadni | nie przechodzi przez `getLost`, więc przywódca nie decyduje o szukaniu |
+| Objazd lidera po czasie (naprawione w 1.16) | do 1.15.1 `P.detour` czyściło tylko `planHero` lidera bez własnej pracy, więc lider zajęty łupem trzymał objazd po jego czasie (w powtórkach autora 3,7 s mgły wisiało do 13 s) i blokował nowe pomyłki i błądzenie we mgle; od 1.16 `partyThink` czyści go po `until` |
+| Zwiad w bardzo zabójczym lochu (1.16) | zwiad wymaga 3+ w załodze i zdrowego złodzieja; w powtórkach runów autora drużyna bywa przerzedzona po kilkunastu sekundach (złodziej często ginie pierwszy), więc zwiadów jest mało (0-0,75 na falę); w spokojniejszym lochu 12 pokoi ok. 2 na falę. Do decyzji autora, czy to wystarcza |
 | Mag i kapłan | rzucają czary także w panice |
 | Przywódca | wybierany według rangi, nie poziomu |
 | Kwestie otwarcia przy wejściu | wypierają się nawzajem |

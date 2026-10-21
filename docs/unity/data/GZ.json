@@ -5,6 +5,7 @@
  "scare": 2.5,
  "lost": 0.12,
  "alone": 0.09,
+ "split": 0.04,
  "loot": 0.4,
  "heal": 0.45,
  "web": 0.25,

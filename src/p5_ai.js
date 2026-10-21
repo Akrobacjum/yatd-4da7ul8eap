@@ -9,6 +9,18 @@
   const tIdx = h => h.ty * WW + h.tx;
   const hdist = (a, b) => { const p = heroPos(a), q = heroPos(b); return Math.hypot(p.x - q.x, p.y - q.y); };
   const panicking = h => fl.time < h.panicUntil;
+  // 1.16 (author: they can get lost, which pays Groza as before, but they can also split up on purpose, e.g. to scout, which
+  // pays slower): the scout, his mate, and a rookie on his own errand left the party on purpose. While they are away from the
+  // rest (4,5+ tiles) they pay GZ.split a second and fear 1/s instead of 'alone' (0,09 and 2,5/s). The way back counts too,
+  // until they stand with the party again. Getting lost on the way (fog, no way, a roll on the way back) ends it: then he pays
+  // as a lost one. Traps that hunt the lonely (eyes, the shade) still see him alone, he is.
+  const onScout = h => !!h && !!fl.party && (h.id === fl.party.scoutId || h.id === fl.party.scoutMate);
+  const splitting = h => onScout(h) || (h.wanderUntil > fl.time && h.wanderTarget >= 0 && isFrontierTile(h.wanderTarget));
+  function startSplit(h, why) {
+    if (!h || h.split) return;
+    h.split = true; fl.stats.splits = (fl.stats.splits || 0) + 1; tl('rz', h.id, why);
+    floatHero(h, 'Zwiad', '#9fe0cf', 12, -0.7);
+  }
   const goingOut = () => { const p = fl.party.plan; return p === 'flee' || p === 'leave' || p === 'escape'; };
   const exiting = h => h.fleeing || h.crystal || goingOut();
   const heartGoals = () => fl.heartAdj.map(t => t[1] * WW + t[0]);
@@ -38,7 +50,7 @@
   function talkGroup(c) {
     const P = fl.party;
     if (!c || c.lost || caged(c)) return [];
-    return [c].concat(alive().filter(h => h !== c && !h.lost && !panicking(h) && !caged(h) && !h.fleeing && h.id !== P.scoutId && !exiting(h) && samePlace(c, h)));
+    return [c].concat(alive().filter(h => h !== c && !h.lost && !panicking(h) && !caged(h) && !h.fleeing && !onScout(h) && !exiting(h) && samePlace(c, h)));
   }
   const talking = h => fl.time < (h.talkUntil || -1);
   // 1.13: where a hero may stand still (talking, waiting, resting): not where the party knows of danger, not where a trap
@@ -155,7 +167,7 @@
   function huddleUp(L) {
     if (!L || L.lost) return;
     const P = fl.party, taken = new Set([L.y * WW + L.x]);
-    const crew = alive().filter(h => h !== L && talking(h) && !h.lost && !caged(h) && !h.fleeing && !panicking(h) && h.id !== P.scoutId && h.state !== 'fight' && h.state !== 'disarm' && h.state !== 'free' && h.state !== 'smash' && !exiting(h));   // 1.13: only the ones in this talk
+    const crew = alive().filter(h => h !== L && talking(h) && !h.lost && !caged(h) && !h.fleeing && !panicking(h) && !onScout(h) && h.state !== 'fight' && h.state !== 'disarm' && h.state !== 'free' && h.state !== 'smash' && !exiting(h));   // 1.13: only the ones in this talk
     crew.sort((a, b) => hdist(a, L) - hdist(b, L)).forEach(h => {
       const k0 = (h.nx !== null ? h.ny : h.y) * WW + (h.nx !== null ? h.nx : h.x);
       if (Math.abs(h.x - L.x) + Math.abs(h.y - L.y) <= 2 && !taken.has(k0)) { taken.add(k0); h.huddleId = L.id; return; }
@@ -319,9 +331,17 @@
         lines.push([L, pick(sway ? SAY.decideYes : SAY.decideNo)]); fl.stats.disputes = (fl.stats.disputes || 0) + 1; tl('dp', greedy.id, sway ? 1 : 0);
       }
       const thief = crewT.find(h => h.type === 'thief');
-      if (!greedy && thief && alive().length >= 3 && P.scoutId < 0 && thief.hp > 0.5 * thief.max && Math.random() < (lureAlt ? 0.9 : 0.55)) {
-        P.scoutId = thief.id; thief.scoutTarget = alt.f; thief.scoutUntil = fl.time + 16; thief.needPlan = true; fl.stats.scouts++;
-        lines.push([thief, pick(SAY.scout)], [L, pick(SAY.scoutReply)]);   // 1.05: the thief himself offers (it used to be anyone)
+      // 1.16: with no (healthy) thief a brave one may offer, less often; in a party of 4+ somebody may go with the scout
+      const vol = thief && thief.hp > 0.5 * thief.max ? thief : crewT.find(o => o.trait === 'brave' && o.type !== 'priest' && o.hp > 0.6 * o.max && !o.crystal);
+      const volP = vol && vol === thief ? (lureAlt ? 0.9 : 0.55) : (lureAlt ? 0.5 : 0.3);
+      if (!greedy && vol && alive().length >= 3 && P.scoutId < 0 && Math.random() < volP) {
+        P.scoutId = vol.id; vol.scoutTarget = alt.f; vol.scoutUntil = fl.time + 16; vol.needPlan = true; fl.stats.scouts++; startSplit(vol, 'scout');
+        lines.push([vol, pick(SAY.scout)]);   // 1.05: the thief himself offers (it used to be anyone)
+        // the mate: anyone close by (the talk group is often just the ones right at the leader's side), not the priest, not a coward
+        const mate = alive().length >= 4 && Math.random() < 0.45 ? alive().filter(o => o !== L && o !== vol && !o.lost && !caged(o) && !o.fleeing && !panicking(o) && o.type !== 'priest' &&
+          o.trait !== 'coward' && o.hp > 0.5 * o.max && !o.crystal && hdist(o, vol) <= 6).sort((a, b) => ((b.trait === 'brave') - (a.trait === 'brave')) || (hdist(a, vol) - hdist(b, vol)))[0] : null;
+        if (mate) { P.scoutMate = mate.id; mate.needPlan = true; startSplit(mate, 'mate'); fl.stats.scoutPairs = (fl.stats.scoutPairs || 0) + 1; lines.push([mate, pick(SAY.splitMate)], [L, pick(SAY.splitReply)]); }
+        else lines.push([L, pick(SAY.scoutReply)]);
       }
       const quiet = crewT.find(o => !lines.some(l => l[0] === o) && o.type !== 'thief');   // 1.12.1: somebody else has a word too
       if (quiet) lines.push([quiet, pick(SAY.councilReply)]);
@@ -377,6 +397,10 @@
     if (!crew.length) return;
     const L = leader();
     P.morale = Math.min(1, P.morale + (crew.some(o => o.type === 'bard' && !o.lost && !caged(o)) ? 0.02 : 0.012) * dt);   // 1.05: a bard's company lifts spirits faster
+    // 1.16 (found in the author's replays: a fog grope of 3,7 s still hung 13 s later): a wrong turn or a grope was only cleared
+    // when the leader planned with no errand of his own, so a leader busy with loot kept an old one, which blocked new wrong turns,
+    // fog gropes and the thief's 'wait here'. Past its time it goes now.
+    if (P.detour && fl.time > P.detour.until) { P.detour = null; if (L) L.needPlan = true; }
     // Prototype 1.01, Mgła: the leader walks into the fog and gropes for the way for a few seconds (once per fog room per wave)
     if (L && !goingOut() && !fl.fearless && L.room >= 0 && isRt(L.room, 'fog') && !P.detour) {
       P.fogDone = P.fogDone || new Set();
@@ -390,7 +414,19 @@
       const others = crew.filter(o => o !== h);
       const nearest = others.length ? Math.min(...others.map(o => hdist(h, o))) : 0;
       h.alone = others.length > 0 && fl.queue.length === 0 && nearest > 4.5;
-      if (h.alone) { fl.stats.loneTime += dt; addFear(h, 2.5 * dt, null, 'alone'); h.acc += addPts(GZ.alone * dt * depthMult(h.room) * mods.loneMult, 'lonePts', h); /* v14: steady Groza for every second alone */ if (!h.aloneSaid && !panicking(h)) { say(h, pick(SAY.alone), 2); h.aloneSaid = true; } }
+      // 1.16: away on purpose: measured from the party (the ones not on the errand), so a scout and his mate are away together
+      if (h.split && (h.lost || h === L)) h.split = false;
+      let away = false;
+      if (h.split) {
+        const rest = others.filter(o => !o.split);
+        away = rest.length > 0 && fl.queue.length === 0 && Math.min(...rest.map(o => hdist(h, o))) > 4.5;
+        if (!away && !splitting(h)) h.split = false;   // back with the party
+      }
+      if (h.split && away) {
+        fl.stats.splitTime += dt; addFear(h, 1 * dt, null, 'split');
+        h.acc += addPts(GZ.split * dt * depthMult(h.room) * (h.alone ? mods.loneMult : 1), 'splitPts', h);
+        h.aloneSaid = true;   // he went on his own: no 'where is everybody?'
+      } else if (h.alone) { fl.stats.loneTime += dt; addFear(h, 2.5 * dt, null, 'alone'); h.acc += addPts(GZ.alone * dt * depthMult(h.room) * mods.loneMult, 'lonePts', h); /* v14: steady Groza for every second alone */ if (!h.aloneSaid && !panicking(h)) { say(h, pick(SAY.alone), 2); h.aloneSaid = true; } }
       else h.aloneSaid = false;
       if (h.hp < 0.35 * h.max) addFear(h, 2.2 * dt, null, 'lowhp');   // v15.1: was 3/s (heavy wounds scare less, fear pays more)
       if (h.crystal && mods.carrierFear) addFear(h, mods.carrierFear * dt, null, 'carrier');
@@ -411,7 +447,13 @@
       const d = L ? hdist(h, L) : 0;
       const hr = h.lost && h.hearUntil > fl.time ? byId(h.hearId) : null;   // 1.05: the one whose voice he follows counts as finding the party
       if (h.lost) { if (d < (isRt(h.room, 'fog') || isRt(L ? L.room : -1, 'fog') ? 1.6 : 4.5) || (hr && !hr.dead && !hr.fled && !hr.lost && hdist(h, hr) < 2.5)) { h.lost = false; h.hearUntil = -1; h.noPathT = 0; h.sepT = 0; h.sepRolled = false; say(h, pick(SAY.found), 3); h.needPlan = true; if (P.searchId === h.id) P.searchId = -1; } }
-      else if (!fl.fearless && !exiting(h) && h.id !== P.scoutId && !caged(h) && !(h.wanderUntil > fl.time)) {
+      else if (!fl.fearless && !exiting(h) && !caged(h) && splitting(h)) {
+        // 1.16: away on purpose: being cut off is the plan, no roll for that; but the fog and a lost way still get him
+        h.sepT = 0; h.sepRolled = false;
+        if (h.noPathT > 3 && d > 6) getLost(h, 'nopath');
+        else if (h.room >= 0 && isRt(h.room, 'fog') && d > 1.5 && Math.random() < dt * 0.22 * Math.max(0.35, 1 - 0.03 * h.lvl) * (h.type === 'thief' ? 0.6 : 1)) getLost(h, 'fog');
+      }
+      else if (!fl.fearless && !exiting(h) && !caged(h)) {
         // cut off from the leader (another room, far away): in a big dungeon, or in the fog, he may lose his way
         const apart = !!L && d > 7 && h.room !== L.room;
         h.sepT = apart ? h.sepT + dt : 0;
@@ -452,25 +494,65 @@
     const fearR = crew.reduce((a, h) => a + h.fear / h.courage, 0) / crew.length;
     // scout coming back
     const sc = byId(P.scoutId);
-    if (sc && (sc.dead || sc.fled || fl.time > sc.scoutUntil || sc.hp < 0.45 * sc.max || (sc.scoutTarget >= 0 && !isFrontierTile(sc.scoutTarget)))) {
-      if (!sc.dead && !sc.fled) say(sc, pick(SAY.scoutBack), 2);
+    // 1.16: he has seen that opening: on to the next one on his side (further from the party than he is), while his time lasts
+    if (sc && !sc.dead && !sc.fled && !sc.lost && sc !== L && fl.time <= sc.scoutUntil && sc.hp >= 0.45 * sc.max && sc.scoutTarget >= 0 && !isFrontierTile(sc.scoutTarget)) {
+      const nb = nextScout(sc, L); if (nb >= 0) { sc.scoutTarget = nb; sc.needPlan = true; fl.stats.scoutSteps = (fl.stats.scoutSteps || 0) + 1; }
+    }
+    if (sc && (sc.dead || sc.fled || sc.lost || sc === L || fl.time > sc.scoutUntil || sc.hp < 0.45 * sc.max || (sc.scoutTarget >= 0 && !isFrontierTile(sc.scoutTarget)))) {
+      if (!sc.dead && !sc.fled && !sc.lost && sc !== L) say(sc, pick(SAY.scoutBack), 2);
       P.scoutId = -1; sc.scoutTarget = -1; sc.needPlan = true;
     }
+    // 1.16: 'wait here, I will take a look': as the party walks into a new room on its way into the unknown (still a way to go),
+    // a healthy thief may go ahead alone while the rest wait for him (up to 8 s, less if he is back sooner). Not at a fork: this
+    // one happens in a dungeon without forks too. One in 40 s at most, from 15 s into the wave, and with a leader who has been here before.
+    if (P.plan === 'explore' && !fl.fearless && !goingOut() && P.scoutId < 0 && !P.detour && P.searchId < 0 && L.room >= 0 && L.room !== P.aheadRoom) {
+      P.aheadRoom = L.room;
+      const R = fl.rooms[L.room];
+      if (R && R.kind === 'room' && L.rank >= 1 && fl.time > (P.aheadCd || 15) && crew.length >= 3 && P.target >= 0 && Math.random() < 0.4) {
+        const th = crew.find(o => o.type === 'thief' && o !== L && o.hp > 0.6 * o.max && !o.crystal && !caged(o) && !o.lost && !panicking(o) && hdist(o, L) <= 8);
+        if (th && Math.hypot(P.target % WW - L.tx, ((P.target / WW) | 0) - L.ty) >= 3) {
+          P.scoutId = th.id; th.scoutTarget = P.target; th.scoutUntil = fl.time + 12; th.needPlan = true; fl.stats.scouts++; fl.stats.aheadScouts = (fl.stats.aheadScouts || 0) + 1;
+          P.aheadCd = fl.time + 40; P.aheadUntil = fl.time + 8; P.waitUntil = Math.max(P.waitUntil, P.aheadUntil); P.aheadWait = th.id;
+          startSplit(th, 'ahead'); say(th, pick(SAY.aheadScout), 2); P.queueSay.push({ id: L.id, text: pick(SAY.aheadReply), at: fl.time + 1.3 });
+        }
+      }
+    }
+    if (P.aheadWait >= 0 && P.scoutId !== P.aheadWait) { P.aheadWait = -1; if (P.waitUntil <= P.aheadUntil) P.waitUntil = Math.min(P.waitUntil, fl.time); }   // he is on his way back: they go on
+    // 1.16: the mate comes back with the scout, or on his own when hurt (or when the scout is gone some other way)
+    const mt = P.scoutMate >= 0 ? byId(P.scoutMate) : null;
+    if (mt && (P.scoutId < 0 || mt.dead || mt.fled || mt.lost || mt === L || mt.hp < 0.45 * mt.max)) {
+      if (P.scoutId >= 0 && !mt.dead && !mt.fled && !mt.lost && mt !== L) say(mt, pick(SAY.scoutBack), 2);
+      P.scoutMate = -1; mt.needPlan = true;
+    } else if (!mt) P.scoutMate = -1;
     if (goingOut()) { /* everyone heads for the exit */ }
     else if (fl.fearless) { if (P.plan !== 'assault' && fl.heartKnown) { P.plan = 'assault'; replanAll(); } }
     else if (P.plan === 'retreat') {
       if (P.restSince < 0 && crew.some(h => h.state === 'rest')) { P.restSince = fl.time; restScene(L, crew); }
+      // 1.16: while they rest, a thief who is whole again (70%+ HP) may go and look around the nearest opening (one roll a rest,
+      // a party of 3+)
+      const th = P.restSince > 0 && !P.restScouted && fl.time - P.restSince > 3 && P.scoutId < 0 && crew.length >= 3 ?
+        crew.find(o => o.type === 'thief' && o !== L && o.hp > 0.7 * o.max && !o.crystal && !caged(o) && !o.lost && !panicking(o)) : null;
+      if (th) {
+        P.restScouted = true;
+        if (Math.random() < 0.5) {
+          const b = bfs(th.x, th.y, { known: true }), f = nearestOf(b, frontier());
+          if (f >= 0 && pathFrom(b, f).length <= 18) {
+            P.scoutId = th.id; th.scoutTarget = f; th.scoutUntil = fl.time + 14; th.state = 'walk'; th.restAt = -1; th.needPlan = true; fl.stats.scouts++; fl.stats.restScouts++;
+            startSplit(th, 'rest'); say(th, pick(SAY.restScout), 2); P.queueSay.push({ id: L.id, text: pick(SAY.scoutReply), at: fl.time + 1.4 });
+          }
+        }
+      }
       // 1.12.1: a real break: at least 10 s once they sit (unless they come in nearly whole), at most 26 s (was: until 70% HP, at most 20 s)
       const restT = P.restSince > 0 ? fl.time - P.restSince : 0;
       if ((avgHp >= 0.7 && (restT >= 10 || (P.restSince < 0 && avgHp >= 0.85))) || restT > 26) {
-        P.plan = fl.heartKnown ? 'assault' : 'explore'; P.retreatLock = fl.time + 15; P.restSince = -1;
+        P.plan = fl.heartKnown ? 'assault' : 'explore'; P.retreatLock = fl.time + 15; P.restSince = -1; P.restScouted = false;
         partySay('restDone', 2, L);
         crew.forEach(h => { if (h.state === 'rest') h.state = 'walk'; h.needPlan = true; });
       }
     } else if (L.R.coord && fl.time > P.retreatLock && (avgHp < (P.plan === 'assault' ? 0.32 : 0.42) || (crew.some(h => h.hp < 0.22 * h.max) && !crew.some(h => h.type === 'priest')))) {
       const room = safestRoom(L);
       if (room >= 0) {
-        P.plan = 'retreat'; P.retreatRoom = room; P.restSince = -1; fl.stats.retreats++; partySay('retreat', 3, L); replanAll();
+        P.plan = 'retreat'; P.retreatRoom = room; P.restSince = -1; P.restScouted = false; fl.stats.retreats++; partySay('retreat', 3, L); replanAll();
         const br = crew.find(o => o !== L && (o.trait === 'brave' || o.type === 'barbarian') && !panicking(o)), cw = crew.find(o => o !== L && o.trait === 'coward' && !panicking(o));   // 1.05: not everyone likes it
         if (br) P.queueSay.push({ id: br.id, text: pick(SAY.argueRetreat), at: fl.time + 1 });
         if (cw) P.queueSay.push({ id: cw.id, text: pick(SAY.agreeRetreat), at: fl.time + (br ? 2 : 1) });
@@ -588,7 +670,7 @@
       } else P.lootWaitId = -1;
     }
     if (P.plan !== 'retreat' && !fl.fearless && !goingOut() && L.R.coord) {
-      const far = crew.filter(h => h !== L && !h.lost && h.id !== P.scoutId && !panicking(h) && h.state !== 'fight' && !caged(h) && hdist(h, L) > 7);
+      const far = crew.filter(h => h !== L && !h.lost && !onScout(h) && !panicking(h) && h.state !== 'fight' && !caged(h) && hdist(h, L) > 7);
       if (far.length && fl.time > P.waitUntil + 2) { P.waitUntil = fl.time + 1.6; fl.stats.regroups++; partySay('regroup', 2, L); }
     }
     // rookies wander off on their own
@@ -596,7 +678,7 @@
       if (h.rank !== 0 || h === L || h.lost || h.wanderUntil > fl.time || caged(h) || Math.random() > 0.004) return;
       const fr = frontier().filter(f => Math.hypot(f % WW - h.tx, ((f / WW) | 0) - h.ty) > 4);
       if (!fr.length) return;
-      h.wanderTarget = pick(fr); h.wanderUntil = fl.time + 10; h.needPlan = true; fl.stats.wanders++; say(h, pick(SAY.wander), 2);
+      h.wanderTarget = pick(fr); h.wanderUntil = fl.time + 10; h.needPlan = true; fl.stats.wanders++; say(h, pick(SAY.wander), 2); startSplit(h, 'wander');
     });
   }
   // 1.05: a lost one calls and the party answers: the nearest one who hears him (14 steps, a bard 26) shouts back and he walks
@@ -618,6 +700,17 @@
     P.queueSay.push({ id: best.id, text: nameFill(pick(best.type === 'bard' ? SAY.bardCall : SAY.answer), h), at: fl.time + 0.8 });
     P.queueSay.push({ id: h.id, text: pick(best.type === 'bard' ? SAY.lostHear : SAY.hearVoice), at: fl.time + 1.8 });
   }
+  // 1.16: the scout's next opening: the nearest known way into the unknown that does not lead back towards the party
+  function nextScout(sc, L) {
+    const b = bfs(sc.x, sc.y, { known: true }), dl = L ? Math.hypot(sc.tx - L.tx, sc.ty - L.ty) : 0;
+    let best = -1, bd = 1e9;
+    frontier().forEach(f => {
+      const d = b.dist[f]; if (d < 0 || d > 14 || d >= bd) return;
+      if (L && Math.hypot(f % WW - L.tx, ((f / WW) | 0) - L.ty) < dl) return;
+      bd = d; best = f;
+    });
+    return best;
+  }
   /* ----- getting lost, wrong turns ----- */
   // The chance to lose the way once cut off from the leader: bigger dungeon and fog = more, experience and a thief's sense = less.
   function lostChance(h) {
@@ -627,6 +720,8 @@
   function getLost(h, why) {
     if (h.lost) return;
     h.lost = true; h.sepRolled = true; h.lostT = 0; h.lostCallT = fl.time + 5; h.needPlan = true;
+    if (h.split) { h.split = false; fl.stats.splitLost = (fl.stats.splitLost || 0) + 1; }   // 1.16: the errand went wrong: now he is lost
+    h.wanderUntil = -1;
     fl.stats.gotLost++; tl('lo', h.id, why); say(h, pick(SAY.lost), 3);
     // the leader decides: go back for him, or let him find his own way
     const P = fl.party, L = leader();
@@ -831,7 +926,7 @@
     if (panicking(h)) { intent = 'panic'; noDanger = true; goal = h.fleeing ? exitG() : randomKnownFar(h); }
     else if (exiting(h)) { intent = h.crystal ? 'carry' : 'exit'; goal = exitG(); }
     else if (fl.fearless && P.plan === 'assault') { intent = 'heart'; goal = heartGoal(); }
-    else if (P.plan === 'retreat' && !h.lost) {
+    else if (P.plan === 'retreat' && !h.lost && !onScout(h)) {
       intent = 'retreat';
       const R = fl.rooms[P.retreatRoom], spots = R.tiles.filter(t => standOk(h, t[0], t[1]) && !heroBlock(h, t[0], t[1]));   // 1.13: a free, safe spot
       if (roomOf(h.tx, h.ty) === P.retreatRoom && (standOk(h, h.x, h.y) || !spots.length)) { h.state = 'rest'; h.path = []; h.intent = intent; return; }
@@ -921,6 +1016,14 @@
         else if (skip && h.intent !== 'avoid' && Math.random() < 0.3) { say(h, pick(SAY.avoid), 2); h.intent = 'avoid'; }
       }
       if (!job && P.scoutId === h.id && h.scoutTarget >= 0) job = { intent: 'scout', goal: h.scoutTarget };
+      if (!job && P.scoutMate === h.id) {   // 1.16: the mate keeps a step behind the scout
+        const s = byId(P.scoutId);
+        if (s && !s.lost) {
+          const g = tIdx(s), sd = B().dist[g];
+          if (sd >= 0 && sd <= 1.5) { h.intent = 'scout'; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.3; return; }
+          if (sd > 0) job = { intent: 'scout', goal: g };
+        }
+      }
       if (job) { intent = job.intent; goal = job.goal; }
       else if (h === L) {
         const dt = P.detour;
@@ -1420,7 +1523,7 @@
     if (h.state === 'wait') { h.timer -= dt; if (h.timer > 0) return; h.state = 'walk'; h.needPlan = true; }
     if (exiting(h) && h.nx === null && isExitTile(h.x, h.y)) { heroExit(h); return; }
     // the party stops to talk, or the leader waits for stragglers
-    if (!fl.fearless && !exiting(h) && !h.lost && !panicking(h) && h.nx === null && (talking(h) || (h.id === P.leaderId && fl.time < P.waitUntil)) && h.id !== P.scoutId && !(h.wanderUntil > fl.time) && !((h.huddle || h.toSafe) && h.path.length)) {
+    if (!fl.fearless && !exiting(h) && !h.lost && !panicking(h) && h.nx === null && (talking(h) || (h.id === P.leaderId && fl.time < P.waitUntil)) && !onScout(h) && !(h.wanderUntil > fl.time) && !((h.huddle || h.toSafe) && h.path.length)) {
       h.state = 'talk'; h.huddle = false; const hl = byId(h.huddleId); if (hl && hl !== h && !hl.dead) lookAt(h, hl.x, hl.y);   // 1.12.1: he faces the leader
       return;
     }

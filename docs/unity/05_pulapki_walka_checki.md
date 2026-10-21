@@ -825,7 +825,8 @@ Krypta to pokój zmarłego. `src = 'death'` budzi fobię krwi. Furia (`startRage
 | klatka | `20 * cageFear * (lvl3 2)`; +15 porzucony; `8 * cageFear`/s bez ratunku; `cageHaunt`/s | `cageHero`, `decideCage`, `partyThink` |
 | sieć | 6 | `fireRaw` |
 | krata | 5 najbliższemu | `fireRaw` |
-| samotność `alone` | 2,5/s (najbliższy towarzysz > 4,5 pola, kolejka wejścia pusta) | `partyThink` |
+| samotność `alone` | 2,5/s (najbliższy towarzysz > 4,5 pola, kolejka wejścia pusta), poza zwiadem | `partyThink` |
+| rozdzielenie `split` | 1/s na zwiadzie z dala od drużyny (1.16, sekcja 06, 6.2.10a) | `partyThink` |
 | zgubienie `lost` | 4/s | `partyThink` |
 | niskie HP `lowhp` | 2,2/s przy HP < 35% | `partyThink` |
 | klątwa `curse` | 2/s | `partyThink` |
@@ -839,7 +840,7 @@ Krypta to pokój zmarłego. `src = 'death'` budzi fobię krwi. Furia (`startRage
 | krzyki `screams`, panika `panic` | karty | `startFlee` |
 | echo `echo` | 40% z Groty | `addFear` |
 
-Samotność i zgubienie płacą też stałą Grozę bez strachu: `GZ.alone * dt * depthMult * mods.loneMult` (0,09/s) i `GZ.lost * dt * depthMult * mods.lostMult` (0,12/s, przez pierwsze 12 s zgubienia) (`partyThink`).
+Samotność i zgubienie płacą też stałą Grozę bez strachu: `GZ.alone * dt * depthMult * mods.loneMult` (0,09/s) i `GZ.lost * dt * depthMult * mods.lostMult` (0,12/s, przez pierwsze 12 s zgubienia) (`partyThink`). Od 1.16 celowe rozdzielenie (zwiad) płaci zamiast samotności `GZ.split * dt * depthMult * (alone ? mods.loneMult : 1)` (0,04/s). Zwiadowca, który jest sam, nadal ma `h.alone`, więc Oczy, Cień, fobia ciemności i Izolacja (źródło `'split'`: ×1,25) traktują go jak samotnego.
 
 ### 5.7.6 Trauma
 

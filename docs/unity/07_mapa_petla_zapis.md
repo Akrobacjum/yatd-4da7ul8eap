@@ -1076,7 +1076,7 @@ Kody zdarzeń:
 | `lootPts` | Esencja za zabrany łup |
 | `crystalPts` | Esencja za odzyskany kryształ |
 | `wavePts` | zawsze 0 (od v15) |
-| `lostPts`, `lonePts` | Esencja z błądzenia i samotności |
+| `lostPts`, `lonePts`, `splitPts` | Esencja z błądzenia, samotności i (1.16) celowego rozdzielenia |
 | `healPts` | Esencja z leczenia przez kapłana |
 | `edgePts` | połowa premii "Na skraju" (rany przy HP < 30%), w Grozie |
 | `kills`, `killsMon`, `killsTrap`, `killsHeart` | zabici razem i wg źródła |
@@ -1092,7 +1092,8 @@ Kody zdarzeń:
 | `disarmed`, `disarmFails` | rozbrojenia udane (także krata, przygotowania) i nieudane |
 | `detected`, `learned`, `notLearned` | pułapki wyczute skanem; zapamiętane po odpaleniu; widziane, ale niezapamiętane |
 | `retreats`, `panics`, `flees`, `partyFlees` | odwroty, paniki, ucieczki pojedyncze i całej drużyny |
-| `scouts`, `wanders`, `talks`, `regroups` | zwiady złodzieja, samotne wędrówki, rozmowy (postoje), czekanie na maruderów |
+| `scouts`, `wanders`, `talks`, `regroups` | zwiady (od 1.16 wszystkie: narada, przodem, na postoju), samotne wędrówki, rozmowy (postoje), czekanie na maruderów |
+| `splits`, `splitLost`, `scoutPairs`, `aheadScouts`, `restScouts`, `scoutSteps` | 1.16: celowe rozdzielenia (każdy bohater osobno, także partner i wypad nowicjusza), z tego zgubieni w trakcie, zwiady we dwójkę, zwiady przodem, zwiady na postoju, przejścia zwiadowcy do następnej granicy |
 | `fearDealt` | suma zadanego strachu (surowe punkty) |
 | `checks`, `checkOk`, `checkCrit`, `checkMiss`, `checkSkip` | skill checki i ich wyniki |
 | `skipLethal` | odpuszczone checki, w których i draśnięcie, i krytyk by zabiły |
@@ -1112,7 +1113,7 @@ Kody zdarzeń:
 | `falls`, `cages`, `rescues`, `abandons` | zapadnie, klatki, uwolnienia, porzucenia uwięzionych |
 | `timing` | weteran przebiegł przez przeładowującą się pułapkę |
 | `healed` | suma wyleczonych HP |
-| `lostTime`, `loneTime` | sekundy zgubienia i samotności |
+| `lostTime`, `loneTime`, `splitTime` | sekundy zgubienia, samotności i (1.16) zwiadu z dala od drużyny |
 | `fearSrc` | mapa źródło -> suma strachu |
 | `preps`, `wards`, `jams`, `prepDisarms` | przygotowania przed pokojem: ile, osłony kapłana, zakłócenia maga, rozbrojenia złodzieja |
 | `breach` | 1 = fala weszła wyłomem |

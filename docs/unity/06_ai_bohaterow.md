@@ -123,7 +123,10 @@ Jeden obiekt `fl.party` (dalej `P`) na falę; tworzony w `setupFl`, częściowo 
 | `retreatLock` | `-99` | przed tym czasem nie ma nowego odwrotu |
 | `restSince` | `-1` | kiedy ktoś pierwszy usiadł do odpoczynku |
 | `morale` | `1` | morale drużyny 0..1 (6.3.6) |
-| `scoutId` | `-1` | złodziej wysłany na zwiad |
+| `scoutId` | `-1` | zwiadowca (złodziej albo, od 1.16, odważny ochotnik) |
+| `scoutMate` | `-1` | partner zwiadowcy, idzie z nim (1.16, 6.2.10a) |
+| `aheadRoom`, `aheadCd`, `aheadWait`, `aheadUntil` | brak, brak (`15`), `-1`, `-1` | zwiad przodem (1.16): ostatni pokój lidera, przed kiedy nie ma następnego, na kogo drużyna czeka i do kiedy |
+| `restScouted` | brak | na tym postoju już losowano zwiad złodzieja (1.16) |
 | `junctions` | `Set` | pokoje, w których już była narada |
 | `hesitated` | `Set` | pola, przed którymi lider już się zawahał |
 | `thinkT` | `0` | zegar `partyThink` |
@@ -161,7 +164,7 @@ Pola `R` używane przez AI: `avoid` (waga omijania zagrożeń), `learn` (szansa 
 | pozycja i ruch | `x, y` (pole), `nx, ny` (pole docelowe kroku albo `null`), `prog` (0..1 postęp kroku), `tx, ty` (pole "logiczne", 6.2.1), `room`, `enteredRoom`, `ldx, ldy` (kierunek ostatniego kroku), `sliding`, `slid`, `path` (lista pól), `blocked` (`-1` albo czas, gdy cel był nieosiągalny), `noPathT` (`0`), `face` (`±1`, w którą stronę patrzy) |
 | myślenie | `needPlan` (`true`), `thinkT` (`0`), `intent` (`'follow'`), `state` (`'walk'`), `timer`, `dur`, `item` (pułapka w robocie), `disarmT` (pułapka, którą zamierza rozbroić), `foe` (potwór w walce), `smashIt`, `freeT` (id uwalnianego), `lootKey`, `lootMemo` (Map: pole łupu -> `{go, t}`) |
 | strach i nastrój | `fear` (`0`), `panicUntil` (`-1`), `fleeing`, `crystal`, `alone`, `aloneSaid`, `shakenUntil` (`-1`), `calmUntil`, `braveUntil`, `braveK`, `cursed`, `rageUntil` (`-1`), `rageCd` (`0`), `raged` (boss finałowy), `shoutCd` (czempion) |
-| gubienie się | `lost`, `lostT`, `lostCallT` (`0`), `sepT`, `sepRolled`, `hearUntil` (`-1`), `hearId` (`-1`), `wanderUntil` (`-1`), `wanderTarget` (`-1`), `scoutTarget`, `scoutUntil` |
+| gubienie się | `lost`, `lostT`, `lostCallT` (`0`), `sepT`, `sepRolled`, `hearUntil` (`-1`), `hearId` (`-1`), `wanderUntil` (`-1`), `wanderTarget` (`-1`), `scoutTarget`, `scoutUntil`, `split` (`false`, 1.16: celowo oddzielony, 6.2.10a) |
 | przedmioty i moce | `inv` (lista `{type, r, charges, cdUntil}`), `invCap` (`3 + floor(lvl/3)`), `gold`, `loot` (licznik zebranych), `wardUntil/wardK` (talizman), `sprintUntil/sprintK` (buty), `calmUntil` (amulet), `giveCd` |
 | klasa | kapłan: `faith`, `faithMax` (`6 + floor(lvl/2)`), `faithT`, `faithSaid`, `cast`, `barrierCd`; mag: `cast`, `dispelCd`, `jamCd`; bard: `songs` (`2 + floor(lvl/4)`), `songCd` (`6`), `callCd` (`0`); barbarzyńca: `smashCd` (`0`); wojownik: `shieldUpUntil`, `shieldCd`; złodziej: `dodgeCd` |
 | stany chwilowe | `slowUntil`, `burnUntil`, `cageUntil`, `cageIt`, `fallUntil`, `gone`, `fellFrom` (Set zapadni), `deepFall`, `napped`, `napUntil`, `restAt`, `dreamSaid`, `lullUntil/lullK/lullRoom`, `healCallT`, `glanceT` |
@@ -223,7 +226,7 @@ Intencja to "po co idzie" (ustawiana w `planHero`, czytana przez innych):
 | `nap` | drzemka w Sanktuarium | brak (siada) |
 | `smash`, `disarm`, `bless`, `bomb` | prace klasowe | miejsce pracy |
 | `loot` | idzie po łup | pole łupu (albo granica w stronę legendarnego) |
-| `scout` | złodziej na zwiadzie | `h.scoutTarget` |
+| `scout` | zwiadowca; od 1.16 także jego partner | `h.scoutTarget`; partner: pole zwiadowcy |
 | `panic` | spanikowany | wyjście (jeśli ucieka) albo daleki znany punkt |
 | `exit`, `carry` | idzie do wyjścia; niesie kryształ | najbliższe wyjście |
 | `avoid` | wojownik omija potwora (tylko chwilowo, nadpisywane, 6.8) | - |
@@ -280,7 +283,7 @@ if state 'talk': jeśli (time >= talkUntil i nie (lider i time < waitUntil)) alb
 if state 'wait': timer -= dt; if timer > 0 return; -> walk + needPlan
 if exiting && stoi && isExitTile(x,y): heroExit(h); return
 if !fearless && !exiting && !lost && !panicking && stoi
-   && (time < P.talkUntil || (lider && time < P.waitUntil)) && nie zwiadowca && nie wędruje: state = 'talk'; return
+   && (time < P.talkUntil || (lider && time < P.waitUntil)) && !onScout(h) && nie wędruje: state = 'talk'; return
 if stoi: krok po ścieżce (6.2.6)
 ruch: prędkość (6.2.2), ślizg (6.2.8), dotarcie -> onEnter(h)
 ```
@@ -488,7 +491,7 @@ heartGoal()= nearestOf(B(), heartGoals()) jeśli osiągalne;
 if panicking(h):                         intent 'panic'; noDanger = true; goal = h.fleeing ? exitG() : randomKnownFar(h)
 elif exiting(h):                         intent = h.crystal ? 'carry' : 'exit'; goal = exitG()
 elif fl.fearless && P.plan === 'assault': intent 'heart'; goal = heartGoal()
-elif P.plan === 'retreat' && !h.lost:
+elif P.plan === 'retreat' && !h.lost && !onScout(h):     (1.16: zwiadowca z postoju nie siada)
    intent 'retreat'
    spots = pola P.retreatRoom ze standOk i bez heroBlock                                  (1.13: wolne, bezpieczne miejsce)
    if roomOf(h.tx,h.ty) === P.retreatRoom && (standOk(h.x,h.y) || !spots.length): h.state = 'rest'; h.path = []; h.intent = intent; return
@@ -513,6 +516,8 @@ else:
      9  łup                                     (6.4.3)
      10 wojownik: potwór w jego pokoju          (6.5.1)
      11 zwiadowca: P.scoutId === h.id && h.scoutTarget >= 0 -> {scout, h.scoutTarget}
+     12 partner (1.16): P.scoutMate === h.id, zwiadowca istnieje i nie jest zgubiony; sd = B().dist[pole zwiadowcy]:
+        sd w 0..1.5 -> intent 'scout', path [], state 'wait', timer 0.3, return;  sd > 0 -> {scout, pole zwiadowcy}
    if job: intent, goal = job
    elif h === L:                                  // lider
       dt = P.detour
@@ -539,7 +544,7 @@ h.blocked = -1; h.path = pathFrom(B(), goal); h.noPathT = 0
 
 ### 6.2.10 Mgła, rozdzielenie i gubienie się
 
-**Kiedy bohater się gubi** (`p5_ai.js: partyThink`, dla każdego żywego poza liderem, nie zgubionego, gdy `!fl.fearless && !exiting(h) && h.id !== P.scoutId && !caged(h) && !(h.wanderUntil > time)`):
+**Kiedy bohater się gubi** (`p5_ai.js: partyThink`, dla każdego żywego poza liderem, nie zgubionego, gdy `!fl.fearless && !exiting(h) && !caged(h)`). Od 1.16 ktoś celowo oddzielony (`splitting(h)`: zwiadowca, partner albo nowicjusz na wypadzie, 6.2.10a) nie ma rzutu za odcięcie (`sepT = 0`, `sepRolled = false`), ale gubi się bez drogi (`noPathT > 3 && d > 6`) i we mgle (ten sam rzut co niżej). Przedtem zwiadowca i wędrujący w ogóle się nie gubili. Dla pozostałych:
 
 ```
 d = hdist(h, L)
@@ -608,6 +613,59 @@ Lider nigdy nie jest zgubiony: w `partyThink` liderowi zawsze `lost = false`, `s
 
 W mgle także: brak wykrywania wzrokiem (`scanTraps` pomija pułapki w pokoju mgły), mag nie "czuje" pułapek, strach +15% (sekcja 05).
 
+
+### 6.2.10a Celowe rozdzielenie: zwiad (1.16)
+
+Autor: bohaterowie mogą się zgubić (Groza jak dotąd), ale mogą też rozdzielić się celowo, np. na zwiad, i to nabija Grozę wolniej.
+
+**Kto jest celowo oddzielony** (`p5_ai.js`):
+```
+onScout(h)   = h.id === P.scoutId || h.id === P.scoutMate
+splitting(h) = onScout(h) || (h.wanderUntil > time && h.wanderTarget >= 0 && isFrontierTile(h.wanderTarget))
+startSplit(h, why): jeśli !h.split: h.split = true; stats.splits++; tl('rz', h.id, why); napis 'Zwiad' (#9fe0cf)
+   why: 'scout' (narada), 'mate' (partner), 'ahead' (zwiad przodem), 'rest' (zwiad na postoju), 'wander' (nowicjusz)
+```
+`h.split` trwa także w drodze powrotnej, aż stanie przy drużynie.
+
+**Co krok `partyThink`, dla każdego z załogi** (przed samotnością, 6.6.5):
+```
+h.alone = (jak dotąd: są inni, kolejka pusta, najbliższy > 4,5)
+if h.split && (h.lost || h === L): h.split = false
+away = false
+if h.split:
+   rest = inni z załogi bez split                    // drużyna, od której odszedł (zwiadowca i partner są osobno razem)
+   away = rest niepuste && kolejka pusta && min hdist(h, rest) > 4.5
+   if !away && !splitting(h): h.split = false        // wrócił
+if h.split && away:
+   stats.splitTime += dt; addFear(h, 1 * dt, null, 'split')
+   Groza GZ.split (0,04) * dt * depthMult(h.room) * (h.alone ? mods.loneMult : 1) -> stat 'splitPts'
+   h.aloneSaid = true                                // nie woła 'Jest tu ktoś?'
+elif h.alone: samotność jak dotąd (2,5/s strachu, GZ.alone 0,09)
+```
+Porównanie (stawki bazowe na sekundę; strach daje dodatkowo Grozę `strach / courage * GZ.fear`, sekcja 03):
+
+| Stan | Groza stała | Strach |
+|---|---|---|
+| zwiad (`split` i z dala) | `0.04` | `1` |
+| sam (`alone`, bez planu) | `0.09` | `2.5` |
+| zgubiony | `0.12` przez 12 s, zwykle też samotność `0.09` | `4`, zwykle też `2.5` |
+
+`h.alone` zostaje prawdą także na zwiadzie (fizycznie jest sam), więc pułapki, które polują na samotnych (Oczy, Cień, fobia ciemności, Izolacja: źródło `'split'` dostaje ×1,25 jak inne, nie ×2,5 jak `'alone'`), widzą go jako samotnego. Zwiadowca z partnerem nie są samotni (stoją razem), ale są z dala od drużyny.
+
+**Koniec przez zgubienie**: `getLost` (6.2.10) przy `h.split`: `split = false`, `stats.splitLost++`; zawsze `wanderUntil = -1`. Zwiad kończy się w kroku 13, bo zwiadowca jest zgubiony.
+
+**Skąd biorą się zwiady** (szczegóły w 6.3.3 i 6.3.7):
+
+| Wyzwalacz | Kto | Szansa |
+|---|---|---|
+| narada na rozwidleniu | złodziej (hp > 50%), a bez niego odważny nie-kapłan (hp > 60%, bez kryształu); 3+ żywych, nikt nie jest na zwiadzie | złodziej `0.55` (`0.9` z łupem przy drugiej drodze), odważny `0.3` (`0.5`) |
+| partner przy naradzie | najbliższy odważny, potem najbliższy inny w promieniu 6 od zwiadowcy: nie lider, nie kapłan, nie tchórz, hp > 50%, bez kryształu; 4+ żywych | `0.45` |
+| zwiad przodem | złodziej (hp > 60%, do 8 pól od lidera) przy wejściu lidera do nowego pokoju; plan `explore`, lider rangi 1+, 3+ w załodze, cel co najmniej 3 pola od lidera, po 15 s fali, co najmniej 40 s od poprzedniego | `0.4` |
+| zwiad na postoju | złodziej z hp > 70%, 3 s po początku odpoczynku, 3+ w załodze; jeden rzut na postój | `0.5` |
+| wypad nowicjusza | jak dotąd (6.2.12) | jak dotąd |
+
+**Widać to**: turkusowy przerywany pierścień pod bohaterem zamiast pomarańczowego samotności (`p7_draw.js`), znak `›` w pasku bohaterów, w karcie bohatera stan `na zwiadzie`, w podsumowaniu fali wiersz `Zwiad (celowo osobno)`, w Szczegółach wiersz `Osobno: na zwiadzie / sam / zgubiony (s)`, ciekawostka `Rozdzieleni` (gdy co najmniej 4 s zwiadu), strach ze źródła `'split'` opisany jako `rozdzielenie (zwiad)`.
+
 ### 6.2.11 Zły skręt na rozwidleniu (`p5_ai.js: maybeDetour`)
 
 Wołane w `onEnter`, gdy lider wchodzi do nowego pokoju (`kind 'room'`).
@@ -642,8 +700,8 @@ if goal < 0: goal = lt
 ```
 
 - Gdy lider wyważa kryształ albo plan to `assault`, reszta idzie od razu do serca (bez objazdu i szukania), i nie zatrzymuje się przy liderze, gdy ten jest w stanie `boss`.
-- Lider czeka na maruderów: `partyThink` (gdy plan nie `retreat`, nie `fearless`, nie wychodzą, `L.R.coord`): `far` = inni (nie zgubieni, nie zwiadowca, nie panikują, nie walczą, nie w klatce) z `hdist > 7`; jeśli są i `time > P.waitUntil + 2`: `P.waitUntil = time + 1.6`, `partySay('regroup', 2)`. Lider w tym czasie stoi w stanie `talk` (6.1.8).
-- Nowicjusz odłącza się sam (`partyThink`, plan `explore`): dla każdego rangi 0, nie lidera, nie zgubionego, nie wędrującego, nie w klatce, z szansą `0.004` na wywołanie (`partyThink` 4 razy na sekundę, ok. 1,6% na sekundę): losowe pole granicy dalej niż 4 od niego, `wanderUntil = time + 10`, `SAY.wander` (2). Wędrujący nie podlega sprawdzaniu zgubienia ani zatrzymaniom na rozmowy.
+- Lider czeka na maruderów: `partyThink` (gdy plan nie `retreat`, nie `fearless`, nie wychodzą, `L.R.coord`): `far` = inni (nie zgubieni, nie na zwiadzie: `!onScout`, nie panikują, nie walczą, nie w klatce) z `hdist > 7`; jeśli są i `time > P.waitUntil + 2`: `P.waitUntil = time + 1.6`, `partySay('regroup', 2)`. Lider w tym czasie stoi w stanie `talk` (6.1.8).
+- Nowicjusz odłącza się sam (`partyThink`, plan `explore`): dla każdego rangi 0, nie lidera, nie zgubionego, nie wędrującego, nie w klatce, z szansą `0.004` na wywołanie (`partyThink` 4 razy na sekundę, ok. 1,6% na sekundę): losowe pole granicy dalej niż 4 od niego, `wanderUntil = time + 10`, `SAY.wander` (2), od 1.16 `startSplit(h, 'wander')`. Wędrujący nie staje do rozmów; od 1.16 nie ma rzutu za odcięcie, ale może się zgubić we mgle i bez drogi (6.2.10, 6.2.10a).
 
 ### 6.2.13 Wejście do lochu: spawn, czekanie, drugi oddział
 
@@ -762,8 +820,10 @@ leader():
  3  crew = alive(); if !crew.length: return
  4  L = leader()
  5  P.morale = min(1, P.morale + (bard w drużynie, nie zgubiony, nie w klatce ? 0.02 : 0.012) * dt)
+    1.16: if P.detour && time > P.detour.until: P.detour = null; L.needPlan = true     (dawniej objazd czyścił tylko
+        planHero lidera bez własnej pracy, więc lider zajęty łupem trzymał stary objazd i blokował nowe pomyłki, mgłę i zwiad przodem)
  6  lider błądzi we mgle (6.2.10)
- 7  dla każdego h z crew: samotność, rany, klątwa, kołysanka, klatka (6.6.5); reakcja na kontr-budowlę (6.3.12);
+ 7  dla każdego h z crew: rozdzielenie (6.2.10a) albo samotność, rany, klątwa, kołysanka, klatka (6.6.5); reakcja na kontr-budowlę (6.3.12);
     if h === L: h.lost = false; h.sepT = 0; dalej następny
     odnalezienie albo zgubienie (6.2.10); zgubiony: strach 4/s, Groza, wołanie (6.2.10)
  8  podanie mikstury przyjacielowi (6.5.8)
@@ -771,7 +831,7 @@ leader():
 10  if P.prep && time >= P.prep.until: finishPrep() else if !P.prep: checkPrep(L)          (6.3.8)
 11  każdy w klatce, a nie w P.cageDecided: decideCage(h, L); P.rescueId nieważny -> -1        (6.5.9)
 12  avgHp = średnia hp/max załogi; fearR = średnia fear/courage załogi
-13  powrót zwiadowcy (6.3.3)
+13  zwiadowca: następna granica albo powrót (6.3.3); zwiad przodem (6.3.3); koniec czekania na zwiadowcę; partner (6.2.10a)
 14  zmiana planu:
       goingOut():        nic (wszyscy do wyjścia)
       elif fl.fearless:  if plan != 'assault' && fl.heartKnown: plan = 'assault'; replanAll()
@@ -834,16 +894,35 @@ if greedy:
    sway = L.trait === 'greedy' || L.hunter || L.rank === 0 || rand < 0.35
    if sway: P.target = alt.f; P.targetRoom = alt.room       // lider ulega chciwemu
    lines.push([L, sway ? decideYes : decideNo])
-thief = żywy złodziej, nie lider, nie zgubiony, nie panikuje, nie ucieka
-if !greedy && thief && alive().length >= 3 && P.scoutId < 0 && thief.hp > 0.5 max && rand < (lureAlt ? 0.9 : 0.55):
-   P.scoutId = thief.id; thief.scoutTarget = alt.f; thief.scoutUntil = time + 16; thief.needPlan = true
-   lines.push([thief, scout], [L, scoutReply])              // złodziej sam się zgłasza na zwiad
+thief = złodziej z crewT
+vol   = thief z hp > 0.5 max, a bez niego (1.16) pierwszy z crewT odważny, nie kapłan, hp > 0.6 max, bez kryształu
+volP  = vol === thief ? (lureAlt ? 0.9 : 0.55) : (lureAlt ? 0.5 : 0.3)
+if !greedy && vol && alive().length >= 3 && P.scoutId < 0 && rand < volP:
+   P.scoutId = vol.id; vol.scoutTarget = alt.f; vol.scoutUntil = time + 16; vol.needPlan = true; stats.scouts++; startSplit(vol, 'scout')
+   lines.push([vol, scout])                                 // sam się zgłasza na zwiad
+   mate = alive().length >= 4 && rand < 0.45 ? partner (6.2.10a) : null
+   if mate: P.scoutMate = mate.id; mate.needPlan = true; startSplit(mate, 'mate'); stats.scoutPairs++
+            lines.push([mate, splitMate], [L, splitReply])  // "Idę z tobą." / "Dobra, rozdzielmy się. Ale na chwilę!"
+   else:    lines.push([L, scoutReply])
 talkAs(1.4 + 0.45 * lines.length, lines)                   // drużyna staje i rozmawia (6.7.5)
 ```
 
 Ostrożny i tchórz tylko mówią; o kierunku decyduje lider (i ewentualnie chciwy).
 
-**Zwiad**: zwiadowca idzie do `scoutTarget` (praca nr 11 w `planHero`, więc wcześniejsze prace złodzieja, np. rozbrajanie i łup, mają pierwszeństwo). Nie staje do rozmów, nie gubi się, nie jest liczony do czekania na maruderów. Wraca (krok 13), gdy: nie żyje albo zbiegł, minęło `scoutUntil`, `hp < 0.45 max` albo cel przestał być granicą; żywy mówi `SAY.scoutBack` (2); `P.scoutId = -1`, `scoutTarget = -1`, `needPlan`.
+**Zwiad**: zwiadowca idzie do `scoutTarget` (praca nr 11 w `planHero`, więc wcześniejsze prace złodzieja, np. rozbrajanie i łup, mają pierwszeństwo), partner za nim (praca nr 12). Nie stają do rozmów, nie są liczeni do czekania na maruderów; od 1.16 gubią się tylko we mgle albo bez drogi (6.2.10). Krok 13 (`partyThink`):
+```
+sc = byId(P.scoutId)
+// 1.16: zobaczył tę granicę -> następna po jego stronie, dopóki ma czas
+if sc żywy, nie zbiegł, nie zgubiony, nie lider, time <= scoutUntil, hp >= 0.45 max, scoutTarget >= 0, !isFrontierTile(scoutTarget):
+   nb = nextScout(sc, L); if nb >= 0: sc.scoutTarget = nb; sc.needPlan = true; stats.scoutSteps++
+if sc && (nie żyje || zbiegł || zgubiony || sc === L || time > scoutUntil || hp < 0.45 max || cel przestał być granicą):
+   jeśli żywy, nie zbiegł, nie zgubiony, nie lider: SAY.scoutBack (2)
+   P.scoutId = -1; scoutTarget = -1; needPlan
+nextScout(sc, L): b = bfs(sc, {known}); najbliższa (b.dist <= 14) granica, która nie jest bliżej lidera niż sc teraz
+```
+Partner (krok 13, po zwiadowcy): gdy `P.scoutId < 0`, nie żyje, zbiegł, zgubiony, jest liderem albo `hp < 0.45 max`: `P.scoutMate = -1`, `needPlan`; `SAY.scoutBack` mówi tylko, gdy zwiadowca nadal jest na zwiadzie.
+
+**Zwiad przodem** (1.16, krok 13, także w lochu bez rozwidleń): `if P.plan === 'explore' && !fearless && !goingOut() && P.scoutId < 0 && !P.detour && P.searchId < 0 && L.room >= 0 && L.room !== P.aheadRoom`: `P.aheadRoom = L.room`; dalej, gdy to pokój (`kind 'room'`), `L.rank >= 1`, `time > (P.aheadCd || 15)`, załoga 3+, `P.target >= 0`, `rand < 0.4`: `th` = złodziej, nie lider, `hp > 0.6 max`, bez kryształu, nie w klatce, nie zgubiony, nie panikuje, `hdist(th, L) <= 8`; jeśli jest i cel jest co najmniej 3 pola od lidera: `P.scoutId = th.id`, `scoutTarget = P.target`, `scoutUntil = time + 12`, `stats.scouts++`, `stats.aheadScouts++`, `P.aheadCd = time + 40`, `P.aheadUntil = time + 8`, `P.waitUntil = max(P.waitUntil, P.aheadUntil)`, `P.aheadWait = th.id`, `startSplit(th, 'ahead')`, `SAY.aheadScout` (2), lider po 1,3 s `SAY.aheadReply`. Drużyna stoi (lider w stanie `talk`). Gdy zwiad się skończy (`P.scoutId !== P.aheadWait`): `P.aheadWait = -1` i jeśli `P.waitUntil <= P.aheadUntil`, czekanie kończy się od razu.
 
 ### 6.3.4 Ile przeszukać przed szturmem (`p5_ai.js: partyThink`, krok 16)
 
@@ -964,6 +1043,8 @@ if (P.plan !== 'retreat' && !nap) || panicking(h) || exiting(h): state 'walk', n
 ```
 
 **Scenka odpoczynku** (od 1.12.1, `p5_ai.js: restScene`): gdy pierwszy usiądzie (`P.restSince` ustawiane pierwszy raz), kolejka `P.queueSay` co 0,6 s (od +0,3 s): lider `restStart`, kapłan (jeśli jest i to nie lider) `restPriest`, losowy inny `restScene`, ktoś jeszcze (albo lider) `restReply`. Potem small talk w odwrocie co 3,5-6,5 s (zamiast 7-13 s), z pulą `chatRest` + `restScene`. Odpoczynek jest spokojem (gra sama przyspiesza, zegar combo płynie ×0,25), a cierpliwość płynie 2 razy wolniej przez cały odpoczynek (6.3.10). W 1.12.1 przez pierwsze 8 s odpoczynku autoprzyspieszenie było wyłączone (`sceneNow`); od 1.13, na prośbę autora, już nie.
+
+**Zwiad na postoju** (1.16, `partyThink`, plan `retreat`): gdy `restSince > 0`, `!P.restScouted`, minęły 3 s odpoczynku, `P.scoutId < 0`, załoga 3+ i jest złodziej (nie lider) z `hp > 0.7 max`, bez kryształu, nie w klatce, nie zgubiony, nie panikuje: `P.restScouted = true` (jeden rzut na postój, także gdy rzut nie wyjdzie); z szansą `0.5`: `f` = najbliższa granica wg `bfs(th, {known})`; jeśli jest i ścieżka ma do 18 pól: `P.scoutId = th.id`, `scoutTarget = f`, `scoutUntil = time + 14`, `state 'walk'`, `restAt = -1`, `stats.scouts++`, `stats.restScouts++`, `startSplit(th, 'rest')`, `SAY.restScout` (2), lider po 1,4 s `SAY.scoutReply`. `planHero` nie sadza zwiadowcy (`P.plan === 'retreat' && !onScout(h)`). `P.restScouted = false` przy nowym odwrocie i przy końcu odpoczynku.
 
 **Koniec odpoczynku** (`partyThink`, od 1.12.1): `restT = restSince > 0 ? time - restSince : 0`; koniec, gdy `(avgHp >= 0.7 && (restT >= 10 || (restSince < 0 && avgHp >= 0.85))) || restT > 26` (do 1.12: `avgHp >= 0.7` albo 20 s od `restSince`). Po końcu: `plan = fl.heartKnown ? 'assault' : 'explore'`, `P.retreatLock = time + 15`, `P.restSince = -1`, `partySay('restDone', 2)`, odpoczywający wstają, `needPlan` wszystkim.
 
@@ -1505,7 +1586,8 @@ Stany `disarm`, `smash`, `free`, `fight` same się przerywają przy `exiting`. P
 
 | Stan | Strach | Źródło |
 |---|---|---|
-| sam (`h.alone`: są inni, kolejka pusta, najbliższy > 4,5 pola) | `2.5` + Groza `GZ.alone` (sekcja 03); raz `SAY.alone` (2), dopóki nie wróci do grupy | `partyThink` |
+| sam (`h.alone`: są inni, kolejka pusta, najbliższy > 4,5 pola), nie na zwiadzie | `2.5` + Groza `GZ.alone` (sekcja 03); raz `SAY.alone` (2), dopóki nie wróci do grupy | `partyThink` |
+| na zwiadzie z dala od drużyny (1.16, 6.2.10a) | `1` (`'split'`) + Groza `GZ.split` | `partyThink` |
 | `hp < 0.35 max` | `2.2` | `partyThink` |
 | niesie kryształ (karta) | `mods.carrierFear` | `partyThink` |
 | w klatce (karta Nawiedzone klatki) | `mods.cageHaunt` | `partyThink` |

@@ -1,6 +1,6 @@
 # Załącznik C: mapa kodu prototypu
 
-Spis funkcji z `src/` (Prototype 1.13) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
+Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.16) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
 
 ## p1_config.js (dane i stałe)
 
@@ -310,6 +310,8 @@ Spis funkcji z `src/` (Prototype 1.13) z pierwszym zdaniem komentarza, który je
 | `answerLost` | 1.05: a lost one calls and the party answers: the nearest one who hears him (14 steps, a bard 26) shouts back and he walks towards the voice, through rooms he does not know too. A Kamień wyjec in his room turns the... |
 | `lostChance` | The chance to lose the way once cut off from the leader: bigger dungeon and fog = more, experience and a thief's sense = less. |
 | `getLost` |  |
+| `startSplit` | 1.16: a deliberate split starts (scout, mate, 'wait here', rest scout, rookie errand): h.split, stats.splits, the 'Zwiad' float |
+| `nextScout` | 1.16: the scout's next opening: the nearest known way into the unknown that does not lead back towards the party |
 | `maybeDetour` | A wrong turn at a junction (a room with 3+ ways out): more likely in a big dungeon and in the fog, rarer for veterans who know the way. |
 | `powerReady` |  |
 | `usePower` |  |

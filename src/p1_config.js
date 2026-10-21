@@ -542,7 +542,9 @@
   const DMG_FACTOR = { trap: 1, loot: 1, burn: 1, monster: MON_FACTOR, heart: 0, other: 0 };
   // v15: one currency. Every event gives a little Groza, measured against the hero (all his HP lost or his whole fear bar filled
   // is about 1,5 Groza), and Esencja = Groza x Chciwość x Combo is paid out at once.
-  const GZ = { dmg: 1.5, fear: 1.6, kill: 1.2, scare: 2.5, lost: 0.12, alone: 0.09, loot: 0.4, heal: 0.45, web: 0.25, cage: 0.45, crystal: 4 };
+  // 1.16 (author: they may also split up on purpose, e.g. to scout, and that pays Groza slower than getting lost): split 0,04
+  // a second while a scout (or his mate, or a rookie on his own errand) is away from the party, instead of 'alone' (0,09)
+  const GZ = { dmg: 1.5, fear: 1.6, kill: 1.2, scare: 2.5, lost: 0.12, alone: 0.09, split: 0.04, loot: 0.4, heal: 0.45, web: 0.25, cage: 0.45, crystal: 4 };
   const fmtE = v => v >= 10 ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1).replace('.', ',').replace(',0', '');
   const ACTS = {};
   const actSrc = type => ACTS[type] || (ACTS[type] = { kind: 'trap', type });   // a tapped monster ability scores like a trap
@@ -558,6 +560,11 @@
     scout: ['Sprawdzę tamte drzwi!', 'Pójdę na zwiad.', 'Zaraz wracam!'],
     scoutReply: ['Tylko szybko!', 'Uważaj na siebie.', 'Nie oddalaj się.'],
     scoutBack: ['Wracam do was!', 'Tam nic ciekawego.'],
+    splitMate: ['Idę z tobą.', 'We dwoje będzie raźniej.', 'Ktoś musi pilnować ci pleców.'],   // 1.16: a mate goes with the scout
+    splitReply: ['Dobra, rozdzielmy się. Ale na chwilę!', 'Wracajcie szybko.', 'Uważajcie na siebie.'],
+    aheadScout: ['Zaczekajcie tu, sprawdzę, co dalej.', 'Pójdę przodem, zaraz wracam.', 'Stójcie. Rozejrzę się pierwsz{y|a}.'],   // 1.16: the thief goes ahead, the party waits
+    aheadReply: ['Dobra, czekamy.', 'Tylko nie przesadź.', 'Masz chwilę.'],
+    restScout: ['Odpoczywajcie, ja się rozejrzę.', 'Sprawdzę, co dalej. Zaraz wracam.', 'Nie usiedzę. Pójdę na zwiad.'],   // 1.16: the thief scouts while they rest
     wander: ['Ja sprawdzę tamte drzwi!', 'Idę sam{|a}, dam radę!', 'Zobaczę, co tam jest!'],
     trap: { spikes: 'Kolce!', arrows: 'Strzały!', fire: 'Ogień!', gate: 'Krata!', powder: 'Wybuch!', mimic: 'Ta skrzynia gryzie!', web: 'Sieć!', trapdoor: 'Zapadnia!', cage: 'Klatka!', portrait: 'Ten obraz się rusza!',
       eyes: 'Coś na mnie patrzy ze ściany!', bones: 'Te kości... ruszają się!', mirror: 'To nie jest moje odbicie!', creak: 'Drzwi same skrzypią!', coffin: 'Trumna się otwiera!', musicbox: 'Skąd ta melodia?!' },

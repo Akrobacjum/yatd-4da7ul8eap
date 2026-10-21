@@ -534,7 +534,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.15.1 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.16 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -584,9 +584,13 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.15.1'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.16'));
     const ul2 = el('ul', 'conseq');
-    ['1.15.1: każda porada samouczka w fali zatrzymuje grę, dopóki jej nie zatwierdzisz albo nie zrobisz tego, o co prosi. Pierwsza (o nowicjuszach) ma przycisk Rozumiem; przy pierwszym skill checku świat stoi, dopóki nie stukniesz; porada o karcie bohatera czeka, aż go stukniesz, a porada o przyspieszaniu, aż przytrzymasz palec (gra rusza wtedy od razu przyspieszona). Wcześniej pierwsza porada nie zatrzymywała gry.',
+    ['1.16: bohaterowie mogą się rozdzielić celowo. Na naradzie przy rozwidleniu złodziej (a gdy go nie ma, czasem ktoś odważny) idzie na zwiad, w drużynie 4+ czasem z kimś do pary ("Idę z tobą"). Przy wejściu do nowego pokoju złodziej może powiedzieć "Zaczekajcie tu, sprawdzę, co dalej" i pójść przodem, a drużyna czeka na niego do 8 s (to działa także w lochu bez rozwidleń). Zwiadowca, który zobaczy jedno przejście, idzie do następnego po swojej stronie, dopóki ma czas. Na postoju zdrowy złodziej może iść się rozejrzeć, a nowicjusz, który rusza sam "sprawdzić tamte drzwi", też jest na zwiadzie. Taki bohater ma turkusowy pierścień i znaczek ›, a w karcie bohatera "na zwiadzie".',
+     '1.16: zwiad nabija Grozę wolniej niż zgubienie: 0,04 na sekundę i lekki strach, dopóki zwiadowca jest z dala od drużyny (sam bez planu: 0,09; zgubiony: 0,12, zwykle do tego samotność i mocny strach). Zwiadowca, który zabłądzi we mgle, nie znajdzie drogi albo zgubi się w drodze powrotnej, staje się zgubionym i od razu płaci pełną stawkę. Pułapki, które polują na samotnych (oczy, cień), widzą samotnego zwiadowcę jako samotnego.',
+     '1.16: podsumowanie fali ma wiersz Zwiad (celowo osobno), Szczegóły pokazują czas na zwiadzie, w samotności i zgubionych, a wśród ciekawostek może trafić się Rozdzieleni.',
+     '1.16: zły skręt przywódcy i błądzenie we mgle kończą się po swoim czasie. Wcześniej potrafiły wisieć dłużej, gdy przywódca zbierał łup, i blokowały nowe pomyłki.',
+     '1.15.1: każda porada samouczka w fali zatrzymuje grę, dopóki jej nie zatwierdzisz albo nie zrobisz tego, o co prosi. Pierwsza (o nowicjuszach) ma przycisk Rozumiem; przy pierwszym skill checku świat stoi, dopóki nie stukniesz; porada o karcie bohatera czeka, aż go stukniesz, a porada o przyspieszaniu, aż przytrzymasz palec (gra rusza wtedy od razu przyspieszona). Wcześniej pierwsza porada nie zatrzymywała gry.',
      '1.15.1: porada samouczka w sklepie to kartka u góry sklepu, która zostaje, aż stukniesz Rozumiem albo weźmiesz kartę. Wcześniej gasła po ok. 2 s i zasłaniała talię.',
      '1.15.1: podzakładki są widoczne zawsze. Ta, w której na tym etapie nauki nic jeszcze nie ma, jest wyszarzona z kłódką, a po stuknięciu mówi, od którego runu się pojawi (np. Strach od 2. runu, Komnaty i Efekty od 3.). Wcześniej w pierwszym runie rząd podzakładek znikał.',
      '1.15: komnaty. Zakładka Loch dzieli się teraz na Kopanie (kopanie, tunel, poszerzanie, burzenie), Komnaty i Efekty (dawne typy pokoi: Mgła, Bagno, Grota i reszta). Komnata mówi, komu pokój służy: Goblinia nora, Leże pająków, Jaskinia ogra, Nawiedzona sala, Gniazdo nietoperzy, Kaplica czaszek, Zbrojownia, Kuźnia, Więzienie, Graciarnia, Galeria i Pokój dziecięcy. Każda pułapka i każdy potwór należy do jednej z nich.',
@@ -965,6 +969,7 @@
     const ck = s.checkCrit + s.checkOk + s.checkMiss;
     if (ck >= 3) pool.push({ k: 'crit', l: 'Krytyki', v: s.checkCrit + ' z ' + ck, d: 'checków w tej fali' });
     if (s.gotLost >= 1) pool.push({ k: 'lost', l: 'Zgubieni', v: String(s.gotLost), d: Math.round(s.loneTime || 0) + ' s samotności' });
+    if (s.splits >= 1 && (s.splitTime || 0) >= 4) pool.push({ k: 'split', l: 'Rozdzieleni', v: s.splits + (s.splits === 1 ? ' raz' : ' razy'), d: Math.round(s.splitTime) + ' s na zwiadzie' + (s.splitLost ? ', zabłądzili: ' + s.splitLost : '') });   // 1.16
     if (s.disarmed >= 2) pool.push({ k: 'dis', l: 'Rozbrojone', v: s.disarmed + (s.disarmed >= 5 ? ' pułapek' : ' pułapki'), d: 'wyłączyli bohaterowie' });
     if (s.lootSeen >= 2) pool.push({ k: 'loot', l: 'Łup', v: s.loot + ' z ' + s.lootSeen, d: 'skarbów, które zobaczyli, zabrali' });
     shuffle(pool); while (out.length < 3 && pool.length) out.push(pool.shift());
@@ -1041,7 +1046,7 @@
   function waveDetails(body, card, m) {
     const s = fl.stats, H = fl.hunger;
     const src = [['Rany', s.dmgPts, '#ff8a7a'], ['Strach', s.fearPts, '#c3b2ff'], ['Ucieczki', s.scarePts, '#8a6fe0'], ['Zabici', s.killPts, '#d8434f'], ['Łup', s.lootPts, '#f2b94b'],
-      ['Combo', s.comboPts || 0, '#a9d4da'], ['Inne', (s.crystalPts || 0) + (s.lostPts || 0) + (s.lonePts || 0) + (s.healPts || 0), '#7d7590']].filter(r => r[1] > 0.05);
+      ['Combo', s.comboPts || 0, '#a9d4da'], ['Inne', (s.crystalPts || 0) + (s.lostPts || 0) + (s.lonePts || 0) + (s.splitPts || 0) + (s.healPts || 0), '#7d7590']].filter(r => r[1] > 0.05);
     const tot = src.reduce((a, r) => a + r[1], 0) || 1;
     const ps = panel(body, 'Skąd Esencja', 'Groza ' + fmtE(fl.base) + ' × średnio ' + fmt2(fl.base > 0 ? fl.score / fl.base : 1));
     const sb = el('div', 'srcbar'); src.forEach(r => { const i = el('i'); i.style.width = (100 * r[1] / tot).toFixed(1) + '%'; i.style.background = r[2]; i.title = r[0]; sb.appendChild(i); }); ps.appendChild(sb);
@@ -1492,7 +1497,7 @@
     card.appendChild(el('p', 'note', 'To nie mnożnik, tylko suma zdarzeń. Każde liczy się względem bohatera i razy mnożnik pokoju (liczba w rogu pokoju: ×1 przy wejściu, do ×' + fmtE(S.depthMax) + ' przy sercu).'));
     const gt = el('table', 'stats');
     [['Rany (pułapki, łup)', 'całe HP bohatera = ' + fmtE(GZ.dmg)], ['Rany od potworów walczących same', 'całe HP = ' + fmt2(GZ.dmg * MON_FACTOR)], ['Strach', 'pełny pasek = ' + fmtE(GZ.fear)], ['Ucieczka ze strachu', fmtE(GZ.scare) + ' (boss 2 razy tyle)'],
-     ['Śmierć bohatera', fmtE(GZ.kill) + ' (boss 2 razy tyle)'], ['Zgubiony / samotny', fmt2(GZ.lost) + ' / ' + fmt2(GZ.alone) + ' na sekundę'], ['Zabrany łup', fmt2(GZ.loot) + ' × rzadkość'], ['Leczenie kapłana', fmt2(GZ.heal) + ' za całe HP'],
+     ['Śmierć bohatera', fmtE(GZ.kill) + ' (boss 2 razy tyle)'], ['Zgubiony / samotny / na zwiadzie', fmt2(GZ.lost) + ' / ' + fmt2(GZ.alone) + ' / ' + fmt2(GZ.split) + ' na sekundę'], ['Zabrany łup', fmt2(GZ.loot) + ' × rzadkość'], ['Leczenie kapłana', fmt2(GZ.heal) + ' za całe HP'],
      ['Sieć / klatka', fmt2(GZ.web) + ' / ' + fmt2(GZ.cage)], ['Odzyskany kryształ', fmtE(GZ.crystal)]]
       .forEach(r => { const tr = el('tr'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, r[1])); gt.appendChild(tr); });
     card.appendChild(gt);
@@ -1504,7 +1509,7 @@
     if (raid || fl.phase === 'summary') {
       card.appendChild(el('h2', 'h2small', 'W tej fali'));
       const pt = el('table', 'stats');
-      [['Rany', s.dmgPts], ['Strach', s.fearPts], ['Ucieczki ze strachu (' + s.scared + ')', s.scarePts], ['Zabici (' + s.kills + ')', s.killPts], ['Łup', s.lootPts], ['Kryształ odzyskany', s.crystalPts], ['Zgubieni i samotni', (s.lostPts || 0) + (s.lonePts || 0)], ['Leczenie kapłana', s.healPts], ['Combo wstecz', s.comboPts || 0]]
+      [['Rany', s.dmgPts], ['Strach', s.fearPts], ['Ucieczki ze strachu (' + s.scared + ')', s.scarePts], ['Zabici (' + s.kills + ')', s.killPts], ['Łup', s.lootPts], ['Kryształ odzyskany', s.crystalPts], ['Zgubieni i samotni', (s.lostPts || 0) + (s.lonePts || 0)], ['Zwiad (celowo osobno)', s.splitPts || 0], ['Leczenie kapłana', s.healPts], ['Combo wstecz', s.comboPts || 0]]
         .filter(r => r[1] > 0).forEach(r => { const tr = el('tr'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, fmtE(r[1]) + ' Esencji')); pt.appendChild(tr); });
       [['Groza razem', fmtE(fl.base)], ['Średnio na punkt Grozy', '×' + fmt2(fl.base > 0 ? fl.score / fl.base : 1)], ['= Esencja z fali', fmtE(fl.score)]].forEach(r => { const tr = el('tr', 'sum'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, r[1])); pt.appendChild(tr); });
       card.appendChild(pt);
@@ -1530,7 +1535,7 @@
     const add = t => { if (t) ul.appendChild(el('li', null, t)); };
     if (live) {
       const st = live.dead ? (fem ? 'Zginęła.' : 'Zginął.') : live.fled ? (live.carriedOut ? 'Wyniósł kryształ.' : live.fleeing ? 'Uciekł ze strachu.' : 'Wyszedł z lochu.') :
-        [live.fleeing ? 'UCIEKA' : '', live.crystal ? 'NIESIE KRYSZTAŁ' : '', caged(live) ? 'w klatce' : '', live.lost ? 'zgubiony' : live.alone ? 'sam' : '', fl.time < live.burnUntil ? 'płonie' : '', live.cursed ? 'przeklęty' : '', fl.time < live.shakenUntil ? 'wstrząśnięty śmiercią' : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
+        [live.fleeing ? 'UCIEKA' : '', live.crystal ? 'NIESIE KRYSZTAŁ' : '', caged(live) ? 'w klatce' : '', live.lost ? 'zgubiony' : live.split ? 'na zwiadzie' : live.alone ? 'sam' : '', fl.time < live.burnUntil ? 'płonie' : '', live.cursed ? 'przeklęty' : '', fl.time < live.shakenUntil ? 'wstrząśnięty śmiercią' : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
       add('Teraz: ' + st + '.');
     }
     add('Charakter: ' + (e.trait ? HERO_TRAITS[e.trait].name[fem ? 1 : 0] + ' (' + TRAIT_TEXT[e.trait] + ')' : 'zwyczajny') + '.');
@@ -1611,7 +1616,7 @@
   }
   const fate = h => h.dead ? (h.female ? 'zginęła' : 'zginął') : h.carriedOut ? (h.female ? 'wyniosła kryształ' : 'wyniósł kryształ') : h.fled ? (h.fleeing ? (h.female ? 'uciekła ze strachu' : 'uciekł ze strachu') : (h.female ? 'wyszła' : 'wyszedł')) : '?';
   // where the fear came from, in plain words
-  const FEAR_SRC = { dmg: 'rany', death: 'śmierć towarzyszy', lost: 'zgubienie', alone: 'samotność', echo: 'echo groty', curse: 'klątwa', panic: 'panika', lowhp: 'ciężkie rany', ambush: 'zasadzki',
+  const FEAR_SRC = { dmg: 'rany', death: 'śmierć towarzyszy', lost: 'zgubienie', alone: 'samotność', split: 'rozdzielenie (zwiad)', echo: 'echo groty', curse: 'klątwa', panic: 'panika', lowhp: 'ciężkie rany', ambush: 'zasadzki',
     carrier: 'klątwa kryształu', roar: 'ryk potworów', haunt: 'nawiedzone klatki', cageAlone: 'porzucenie w klatce', lull: 'kołysanka', other: 'inne',
     heart: 'żar serca', screams: 'krzyki uciekających', phobia: 'fobia', nightmare: 'koszmary' };   // 1.12.1: these showed as raw keys
   const fearSrcName = k => FEAR_SRC[k] || (ITEMS[k] ? ITEMS[k].name.toLowerCase() : k);
@@ -1631,6 +1636,7 @@
     [['Skill checki: krytyk / draśnięcie / pudło / odpuszczone', s.checkCrit + ' / ' + s.checkOk + ' / ' + s.checkMiss + ' / ' + s.checkSkip],
      ['Łup: zobaczony / zabrany / odpuszczony (ryzyko)', s.lootSeen + ' / ' + s.loot + ' / ' + s.lootSkipped],
      ['Narady · zwiady · samotne wypady · zbiórki · odwroty', s.talks + ' · ' + s.scouts + ' · ' + s.wanders + ' · ' + s.regroups + ' · ' + s.retreats],
+     ['Osobno: na zwiadzie / sam / zgubiony (s)', Math.round(s.splitTime || 0) + ' / ' + Math.round(s.loneTime || 0) + ' / ' + Math.round(s.lostTime || 0) + (s.splitLost ? ' · zabłądzili ze zwiadu: ' + s.splitLost : '')],
      ['Paniki · ucieczki · ucieczki całej drużyny', s.panics + ' · ' + s.flees + ' · ' + s.partyFlees],
      ['Pułapki zapamiętane / niezapamiętane / wykryte', s.learned + ' / ' + s.notLearned + ' / ' + s.detected],
      ['Rozbrojone (z tego rozmontowane) / nieudane / odczynione przez kapłana', s.disarmed + ' (' + (s.sapped || 0) + ') / ' + s.disarmFails + ' / ' + s.blessed],
@@ -2435,7 +2441,7 @@
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
     resolveCheck: p => resolveCheck(p), skipCheck: () => skipCheck(), clearCheck: () => clearCheck(), areaOf, slotOf, shortestPath, frontier, toolMarkers, applyTool, toolCost, get WW() { return WW; }, get WH() { return WH; }, TUT, UPGRADES, UPG, ITEMS, startBuild, applyUpgrade, makeWave, levelStats, recomputeMods, sellCard, upgradePicks, cardMultNow, openModal, queueModal, renderDeckTiles, saveRun, loadSave, resumeRun, clearSave, upgradeItem, removeItem, waveCurve, waveBase, computeBRooms, inB, decoyAlarm, guildAdapt, quietNow, setUser: v => { userStarted = v; }, get userStarted() { return userStarted; }, ignite, trapBoost, calmReady, landFallen, fall, planBreach: () => planBreach(), tutAnySpot, galleryK, stealNeed, portraitRooms, addFear, setTab: t => { tab = t; updateTray(); }, undo, pushUndo, get undoN() { return undoStack.length; }, setTrayOpen, UI, moveItem, moveTarget, setMode: (m, k) => { selected = m; movingKey = k || null; updateTray(); }, get selected() { return selected; }, get movingKey() { return movingKey; }, rankOf, dungeonBounds, regroupAtDoor: () => regroupAtDoor(),
-    patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, t3, kindPow, inKind, slotRoom, servedRooms, kindProps, PROP, PROP_PLAN, KIND_WALL3D, snapshotLayout, KINDS, KIND_INFO, KIND_OF, RT_INFO, nbrRooms, roomCount, sizeMult,
+    patchBreach, chooseEntrance, useCharm, useAmulet, useBoots, giveItem, dropItem, pickup, itemValue, getLost, startSplit, onScout, splitting, GZ, maybeDetour, lostChance, checkPos, CHECK_SHAPE, isRt, rtOf, t3, kindPow, inKind, slotRoom, servedRooms, kindProps, PROP, PROP_PLAN, KIND_WALL3D, snapshotLayout, KINDS, KIND_INFO, KIND_OF, RT_INFO, nbrRooms, roomCount, sizeMult,
     rollItem, curse, comboNow, get orbs() { return orbs; }, boxOrbs, tileScreen, bfs, say: (h, t, p, d, how) => say(h, t, p, d, how), sayTick, floorBusy, readT, talkAs: (d, l) => talkAs(d, l), greedCurve, greedRaw, addGreed, waveSize, partySize, safestRoom: h => safestRoom(h), planHero: h => planHero(h), lootSeen: it => lootSeen(it), kill: (h, k, a) => kill(h, k, a), damage, loadRecords, BREACH_PATCH, HITEMS, LOOT_KIND, noticeLoot, lootDecision, leader, alive, heroExit, driftTarget, SCARE, CURSED, DRIFT, TABS, objTargetOk, roomOf, dropCarry, holdRemove, buildTap, onbStage, setOnb, onbDone, startGuided, endRun: (r, x) => endRun(r, x), revealPhobia, revealPhys, ONB_STAGES, ONB_CARD, ONB_ITEM, comboHp, onbOk, coachDone,
     get movingObj() { return movingObj; }
   };

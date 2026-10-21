@@ -63,7 +63,7 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 
 | Plik | Pola i znaczenie |
 |---|---|
-| `GZ` | ile Grozy daje zdarzenie (względem bohatera): `dmg` 1,5 (całe HP), `fear` 1,6 (pełny pasek), `kill` 1,2, `scare` 2,5 (wypędzenie), `lost` 0,12 i `alone` 0,09 (na sekundę), `loot` 0,4, `heal` 0,45, `web` 0,25, `cage` 0,45, `crystal` 4 (szczegóły i miejsca użycia: sekcja 03) |
+| `GZ` | ile Grozy daje zdarzenie (względem bohatera): `dmg` 1,5 (całe HP), `fear` 1,6 (pełny pasek), `kill` 1,2, `scare` 2,5 (wypędzenie), `lost` 0,12, `alone` 0,09 i `split` 0,04 (zwiad, 1.16) (na sekundę), `loot` 0,4, `heal` 0,45, `web` 0,25, `cage` 0,45, `crystal` 4 (szczegóły i miejsca użycia: sekcja 03) |
 | `DMG_FACTOR`, `MON_FACTOR` | mnożnik Grozy z obrażeń według źródła (pułapka 1, łup 1, podpalenie 1, potwór 0,4, serce 0, inne 0); potwory 0,4 |
 | `COMBO_POW`, `COMBO_HP` | 0,12 (siła pułapek na stopień combo), 0,2 (dodatkowe HP bohaterów od fali 5); funkcja `comboHp` w kodzie |
 | `DEFAULTS` | wartości domyślne ustawień i balansu: `waveTime` 120 (cierpliwość), `scale` 1, `heroHp` 100, `heroSpeed` 100, `dmg` 0,7, `monDmg` 1, `essence` 30, `deckSize` 7, `waveIncome` 8, `regenBase` 0, `fearRate` 1, `essenceCap` 40 (nieużywany limit, sekcja 03), `crystals` 3, `comboWin` 3 (okno combo w s), `comboQuiet` 0,25 (zegar combo w ciszy), `essK` 1,1 (mnożnik Esencji z Grozy), `checkDiff` 1, `ffSpeed` 3, `thrBase` 1500, `depthMax` 2,4, `volume` 0,6, `hungerBase` 37, `hungerGrowth` 1,25, `greedW` 1, `autoFF` 1,5, `earlyHp` 1, `music` 0,5, `haptics` 1, `trayAuto` 1, `series` 1, `split` 1, `topPad` 0 |

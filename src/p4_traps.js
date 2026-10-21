@@ -355,6 +355,8 @@
     addFear(h, 25, 'trapdoor');
     if (fl.party.leaderId === h.id) fl.party.leaderId = -1;
     if (fl.party.scoutId === h.id) fl.party.scoutId = -1;
+    if (fl.party.scoutMate === h.id) fl.party.scoutMate = -1;
+    h.split = false;
   }
   function landFallen(h) {
     h.inR = realNow;   // 1.09: pops in where he climbs out

@@ -3135,7 +3135,8 @@
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.ellipse(x, feet, W * 0.95, W * 0.32, 0, 0, Math.PI * 2); ctx.fill();
     const ring = (color, w, dash, a0, a1, k) => { ctx.strokeStyle = color; ctx.lineWidth = w; if (dash) ctx.setLineDash(dash); ctx.beginPath(); ctx.ellipse(x, feet, W * (k || 1.25), W * (k || 1.25) * 0.38, 0, a0 || 0, a1 === undefined ? Math.PI * 2 : a1); ctx.stroke(); if (dash) ctx.setLineDash([]); };
     if (fl.time < h.slowUntil) ring('#a9c6ff', 2);
-    if (h.alone && fl.phase === 'raid') ring('rgba(255,179,92,0.85)', 1.5, [4, 3], 0, Math.PI * 2, 1.5);
+    if (h.split && fl.phase === 'raid') ring('rgba(140,224,200,0.85)', 1.5, [2, 3], 0, Math.PI * 2, 1.5);   // 1.16: away on purpose (a scout)
+    else if (h.alone && fl.phase === 'raid') ring('rgba(255,179,92,0.85)', 1.5, [4, 3], 0, Math.PI * 2, 1.5);
     if (h.hp / h.max < 0.3 && h.state !== 'rest') ring('rgba(255,90,90,' + (0.55 + 0.4 * Math.sin(realNow * 12)).toFixed(2) + ')', 2, null, 0, Math.PI * 2, 1.1);
     if (h.state === 'disarm') ring('#ffe066', 2.5, null, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - h.timer / h.dur), 1.4);
     if (h.cursed) {   // a cursed treasure: a violet haze
@@ -3226,7 +3227,7 @@
   }
   // Party panel in screen space: who is in the dungeon, how hurt, how scared, who carries the crystal.
   // Folded (default): one row of chips with HP and fear bars. Unfolded: the full list with gear. A tap switches.
-  function heroGlyph(hh) { return hh.dead ? '†' : hh.fled ? (hh.fleeing ? '»' : '↑') : hh.crystal ? '◆' : hh.gone ? '↓' : hh.state === 'caged' ? '#' : hh.state === 'rest' ? 'z' : hh.lost ? '?' : hh.fleeing ? '»' : (hh.panicUntil > fl.time) ? '!' : hh.alone ? 's' : ''; }
+  function heroGlyph(hh) { return hh.dead ? '†' : hh.fled ? (hh.fleeing ? '»' : '↑') : hh.crystal ? '◆' : hh.gone ? '↓' : hh.state === 'caged' ? '#' : hh.state === 'rest' ? 'z' : hh.lost ? '?' : hh.fleeing ? '»' : (hh.panicUntil > fl.time) ? '!' : hh.split ? '›' : hh.alone ? 's' : ''; }
   function drawChips(list, label) {
     const cwid = 25, pad = 5, n = list.length, w = Math.min(cw - 12, pad * 2 + n * cwid + 12), h = 30;
     ctx.fillStyle = 'rgba(10,11,13,0.8)'; rr(6, 6, w, h, 3); ctx.fill();

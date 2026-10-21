@@ -62,3 +62,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.13.4](1.13.4.html) | 21.10 | koniec dreptania złodzieja przed pułapką ścienną, przywódcy z bombą i w drzwiach przy odwrocie |
 | [Prototype 1.14](1.14.html) | 21.10 | podzakładki Rany / Strach w pasku budowy, odkryte pułapki zostają między runami |
 | [Prototype 1.15](1.15.html) | 21.10 | komnaty: 12 rodzajów pokoi dla rodzin pułapek i potworów, drobne bryły w pokojach, ściany komnat, płaskie rzeczy lekko odstają |
+| [Prototype 1.15.1](1.15.1.html) | 21.10 | porady samouczka w fali zatrzymują grę, karta samouczka w sklepie zostaje, podzakładki zawsze widoczne |

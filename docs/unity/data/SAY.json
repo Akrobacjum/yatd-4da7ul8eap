@@ -48,6 +48,31 @@
   "Wracam do was!",
   "Tam nic ciekawego."
  ],
+ "splitMate": [
+  "Idę z tobą.",
+  "We dwoje będzie raźniej.",
+  "Ktoś musi pilnować ci pleców."
+ ],
+ "splitReply": [
+  "Dobra, rozdzielmy się. Ale na chwilę!",
+  "Wracajcie szybko.",
+  "Uważajcie na siebie."
+ ],
+ "aheadScout": [
+  "Zaczekajcie tu, sprawdzę, co dalej.",
+  "Pójdę przodem, zaraz wracam.",
+  "Stójcie. Rozejrzę się pierwsz{y|a}."
+ ],
+ "aheadReply": [
+  "Dobra, czekamy.",
+  "Tylko nie przesadź.",
+  "Masz chwilę."
+ ],
+ "restScout": [
+  "Odpoczywajcie, ja się rozejrzę.",
+  "Sprawdzę, co dalej. Zaraz wracam.",
+  "Nie usiedzę. Pójdę na zwiad."
+ ],
  "wander": [
   "Ja sprawdzę tamte drzwi!",
   "Idę sam{|a}, dam radę!",

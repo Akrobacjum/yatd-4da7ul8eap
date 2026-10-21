@@ -340,7 +340,7 @@ Esencja trafia do sakiewki tylko z: wypłat serii (`essIn`, reszta po sercu), Ob
 Stałe (`data/GZ.json`, `data/DMG_FACTOR.json`, `data/MON_FACTOR.json`):
 
 ```
-GZ = { dmg: 1.5, fear: 1.6, kill: 1.2, scare: 2.5, lost: 0.12, alone: 0.09, loot: 0.4, heal: 0.45, web: 0.25, cage: 0.45, crystal: 4 }
+GZ = { dmg: 1.5, fear: 1.6, kill: 1.2, scare: 2.5, lost: 0.12, alone: 0.09, split: 0.04, loot: 0.4, heal: 0.45, web: 0.25, cage: 0.45, crystal: 4 }
 MON_FACTOR = 0.4
 DMG_FACTOR = { trap: 1, loot: 1, burn: 1, monster: 0.4, heart: 0, other: 0 }
 ```
@@ -367,7 +367,8 @@ Każde źródło przechodzi przez `addPts(g, stat, h)` (2.4). Kolumna "stat" to 
 | `lootPts` | Bohater zabiera łup | `GZ.loot × rarity × depthMult(pokój łupu)`, `rarity = ITEMS[type].rarity` (Monety 1, Mikstura 1, Ekwipunek 2, Relikwia 3, Przeklęty 2) | `p3_flow.js: pickup` |
 | `crystalPts` | Kryształ wraca do serca (nosiciel zabity, rzucił kryształ ze strachu, Bezdenna studnia) | `GZ.crystal` (4), bez głębi i bez przypisania do bohatera | `p3_flow.js: crystalReturns` |
 | `lostPts` | Każda sekunda zgubienia (najwyżej 12 s na jedno zgubienie, `h.lostT` zerowane w `getLost`) | `GZ.lost × dt × depthMult(h.room) × mods.lostMult` | `p5_ai.js: partyThink` |
-| `lonePts` | Każda sekunda samotności (inni żyją, kolejka pusta, najbliższy towarzysz dalej niż 4,5 pola) | `GZ.alone × dt × depthMult(h.room) × mods.loneMult` | `p5_ai.js: partyThink` |
+| `lonePts` | Każda sekunda samotności (inni żyją, kolejka pusta, najbliższy towarzysz dalej niż 4,5 pola), poza zwiadem | `GZ.alone × dt × depthMult(h.room) × mods.loneMult` | `p5_ai.js: partyThink` |
+| `splitPts` | 1.16: każda sekunda celowego rozdzielenia (zwiadowca, jego partner, nowicjusz na wypadzie) z dala od reszty drużyny (najbliższy spoza zwiadu dalej niż 4,5 pola); zamiast `lonePts` | `GZ.split × dt × depthMult(h.room) × (h.alone ? mods.loneMult : 1)` | `p5_ai.js: partyThink` (06, 6.2.10a) |
 | `healPts` | Kapłan leczy (suma wyleczonego HP w jednym rzucie) | `healed / kapłan.max × GZ.heal × depthMult(pokój kapłana)` | `p5_ai.js: heroAbilities` |
 | `edgePts` | Dodatek "Na skraju" (patrz niżej) | zapisywane jako **surowa Groza** `0,5 × pts`, nie Esencja | `p3_flow.js: damage` |
 | `wavePts` | Zawsze 0 od v15 | 0 | `p3_flow.js: finishWave` |
@@ -429,7 +430,7 @@ C = fl.chain; if !C: return
 if C.trap ? !comboLive() : (fl.time - C.last > 1.2 || fl.time - C.t0 > 4): payChain()
 ```
 - seria "pułapkowa" (`C.trap`): kończy się, gdy wygaśnie okno combo;
-- seria bez pułapki (zgubiony, samotny, aura ducha, leczenie): kończy się po 1,2 s bez nowej Grozy albo po 4 s od początku.
+- seria bez pułapki (zgubiony, samotny, na zwiadzie, aura ducha, leczenie): kończy się po 1,2 s bez nowej Grozy albo po 4 s od początku.
 
 Dodatkowo `p4_traps.js: fireRaw` wypłaca starą serię pułapkową, gdy nowa pułapka odpala poza oknem (zabezpieczenie; zwykle `chainTick` zrobił to wcześniej w tym samym kroku). Seria bez pułapki, w czasie której odpali pułapka, staje się pułapkową i jej wcześniejsza Groza dostaje końcowe combo.
 
