@@ -3250,7 +3250,7 @@
       const x = 6 + pad + k * cwid + 9, y = 6 + 11;
       ctx.globalAlpha = hh.queued ? 0.5 : (hh.dead || hh.fled ? 0.4 : 1);
       ctx.fillStyle = hh.T.color; ctx.beginPath(); ctx.arc(x, y, 6.5, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = hh.boss ? '#ff8a3c' : hh.R.color; ctx.lineWidth = hh.boss ? 2.4 : 1.6; ctx.stroke();
+      ctx.strokeStyle = hh.boss ? '#ff8a3c' : hh.nemesis ? '#ffd27a' : hh.R.color; ctx.lineWidth = hh.boss || hh.nemesis ? 2.4 : 1.6; ctx.stroke();   // 1.23: a Nemezis has a gold ring
       drawClassIcon(hh.type || (hh.e && hh.e.type), x, y, 10.5, '#1a1424');
       ctx.fillStyle = hh.R.color; ctx.font = numFont(8, true); ctx.textAlign = 'left'; ctx.fillText(String(hh.lvl), x + 7, y - 4);
       if (hh.hp !== undefined && fl.phase === 'raid') {
@@ -3269,7 +3269,7 @@
     return h;
   }
   function drawParty() {
-    const list = fl.heroes.filter(h => !h.dead && !h.fled).concat(fl.queue.map(e => ({ e, T: HEROES[e.type], R: levelStats(e.lvl), lvl: e.lvl, boss: e.boss, queued: true, hp: e.hp, max: e.max, inv: e.inv, fear: 0, courage: 1 })))
+    const list = fl.heroes.filter(h => !h.dead && !h.fled).concat(fl.queue.map(e => ({ e, T: HEROES[e.type], R: levelStats(e.lvl), lvl: e.lvl, boss: e.boss, nemesis: e.nemesis, queued: true, hp: e.hp, max: e.max, inv: e.inv, fear: 0, courage: 1 })))
       .concat(fl.heroes.filter(h => h.dead || h.fled));
     if (!list.length) { uiRects.list = null; return; }
     if (!UI.listOpen) { drawChips(list); return; }
@@ -3469,11 +3469,11 @@
     const list = run.next || [];
     if (!list.length) { uiRects.list = null; return; }
     if (!UI.listOpen) {
-      const hh = drawChips(list.map(e => ({ type: e.type, T: HEROES[e.type], R: levelStats(e.lvl), lvl: e.lvl, boss: e.boss })));
+      const hh = drawChips(list.map(e => ({ type: e.type, T: HEROES[e.type], R: levelStats(e.lvl), lvl: e.lvl, boss: e.boss, nemesis: e.nemesis })));   // 1.23: nemesis
       if (fl.breach) { const fresh = run.layout.breach && run.layout.breach.fresh, bw = fresh ? 62 : 76; ctx.fillStyle = 'rgba(120,20,30,0.85)'; rr(6, 6 + hh + 4, bw, 18, 6); ctx.fill(); ctx.fillStyle = '#ffd0d0'; ctx.font = numFont(10, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(fresh ? 'WYŁOM!' : 'WYŁOM otwarty', 6 + bw / 2, 6 + hh + 13); }
       return;
     }
-    const w = 200, rowH = 15, h = list.length * rowH + 22 + (fl.breach ? rowH : 0);
+    const nem = list.filter(e => e.nemesis), w = 200, rowH = 15, h = list.length * rowH + 22 + (fl.breach ? rowH : 0) + nem.length * rowH;   // 1.23: a row for each bounty
     uiRects.list = { x: 6, y: 6, w, h };
     uiRects.rows = list.map((e, k) => ({ y0: 26 + k * rowH - 7, y1: 26 + (k + 1) * rowH - 7, ref: { entry: e } }));
     ctx.fillStyle = 'rgba(10,11,13,0.78)'; rr(6, 6, w, h, 3); ctx.fill();
@@ -3485,10 +3485,11 @@
       ctx.fillStyle = T0.color; ctx.beginPath(); ctx.arc(16, y, 5, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = R0.color; ctx.lineWidth = 1.6; ctx.stroke();
       drawClassIcon(e.type, 16, y, 9.5, '#1a1424');
-      ctx.fillStyle = R0.color; ctx.font = '600 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText(e.nm[0] + ' · poz. ' + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][e.female ? 1 : 0] : R0.name[e.female ? 1 : 0]).toLowerCase() + (e.returning ? ' · wraca' : e.hunter ? ' · łowca' : e.recruit ? ' · rekrut' : '') + (e.bond && list[e.bond.with] ? ' · ' + bondLabel(e.bond, list[e.bond.with]).toLowerCase() : '') + (e.phobia && ((e.known || []).includes('phobia') || mods.revealAll) ? ' · boi się: ' + PHOBIAS[e.phobia].name : ''), 25, y, w - 24);   // 1.21: the bond
+      ctx.fillStyle = e.nemesis ? '#ffd27a' : R0.color; ctx.font = '600 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left';   // 1.23: a Nemezis in gold, a skull and his title
+      ctx.fillText((e.nemesis ? '☠ ' : '') + nemName(e) + ' · poz. ' + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][e.female ? 1 : 0] : R0.name[e.female ? 1 : 0]).toLowerCase() + (e.returning ? ' · wraca' : e.hunter ? ' · łowca' : e.recruit ? ' · rekrut' : '') + (e.bond && list[e.bond.with] ? ' · ' + bondLabel(e.bond, list[e.bond.with]).toLowerCase() : '') + (e.phobia && ((e.known || []).includes('phobia') || mods.revealAll) ? ' · boi się: ' + PHOBIAS[e.phobia].name : ''), 25, y, w - 24);   // 1.21: the bond
     });
     if (fl.breach) { ctx.fillStyle = '#ff8a8a'; ctx.font = '700 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText(run.layout.breach && run.layout.breach.fresh ? 'Wejdą przez wyłom! (czerwony znacznik)' : 'Wyłom otwarty: wybiorą wejście', 12, 26 + list.length * rowH, w - 16); }
+    nem.forEach((e, k) => { ctx.fillStyle = '#ffd27a'; ctx.font = '700 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText('Nagroda za głowę: ' + bountyOf(e) + ' Esencji (' + e.nm[0] + ')', 12, 26 + (list.length + (fl.breach ? 1 : 0) + k) * rowH, w - 16); });   // 1.23
   }
   function drawOffscreen(T) {
     uiRects.list = null;

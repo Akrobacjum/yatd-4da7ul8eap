@@ -24,7 +24,7 @@
     fl.danger.fill(0);
     const add = (tiles, w) => tiles.forEach(t => { const i = t[1] * WW + t[0]; fl.danger[i] = Math.min(6, fl.danger[i] + w); });
     fl.items.forEach(it => {
-      if (LOOKS_TRAP(it.type) && it.detected && !it.disabled) add(areaOf(it), SCARE[it.type] ? 1 : (it.cd > 0.3 || it.jamUntil > fl.time) ? 0.4 : 4);
+      if (LOOKS_TRAP(it.type) && it.detected && !it.disabled) add(areaOf(it), (SCARE[it.type] ? 1 : (it.cd > 0.3 || it.jamUntil > fl.time) ? 0.4 : 4) * (it.grudgeW === run.wave ? 2 : 1));   // 1.23: a Nemezis' grudge they walk round
       else if (MONSTERS[it.type] && it.hp > 0 && fl.known[it.y * WW + it.x] && !hiddenAmbush(it)) add(DRIFT[it.type] ? roomTilesNear(Math.floor(it.gx), Math.floor(it.gy), 1.5, roomOf(it.x, it.y)) : areaOf(it), it.type === 'archer' ? 1 : DRIFT[it.type] ? 1.5 : 2);
     });
     fl.ghosts.forEach(g => add(g.tiles, 4));
@@ -120,7 +120,7 @@
     const w = by && !by.dead ? by : alive().find(h => h.room === r); sawItem(it, w ? [w] : null, ['decoy']); if (w) { sayNow(['decoy'], () => say(w, pick(SAY.bDecoy), 4)); }
   }
   // 1.05: while a trap fires, the wounds and the fright it causes are remembered by each hero (what he will tell in the tavern)
-  function fire(it, pw, opt) { const prev = fl.firing; fl.firing = it; try { return sayNow(itemTags(it, true), () => fireRaw(it, pw, opt)); } finally { fl.firing = prev; } }   // 1.17.1: what went off is the thing of the moment
+  function fire(it, pw, opt) { const prev = fl.firing, nb = nemBefore(it); fl.firing = it; try { const r = sayNow(itemTags(it, true), () => fireRaw(it, pw, opt)); if (r && nb) nemMissed(it, nb); return r; } finally { fl.firing = prev; } }   // 1.17.1: what went off is the thing of the moment; 1.23: a trap a Nemezis knew misses him
   function feltBy(h, v) { const it = fl && fl.firing; if (!it || !h.felt || !(v > 0)) return; const k = key(it.x, it.y); h.felt.set(k, (h.felt.get(k) || 0) + v); }
   function fireRaw(it, pw, opt) {
     pw = pw || 1; opt = opt || {};
@@ -604,7 +604,7 @@
         }
       }
       let dmgIn = 0;
-      fighters.forEach(h => { dmgIn += h.T.dps * h.R.dps * (h.type === 'warrior' ? 1.4 : 1) * (raging(h) ? 1.5 : 1) * vowK(h) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt; });   // a weapon from your loot cuts monsters down faster; 1.05: so does fury; 1.21: a vow
+      fighters.forEach(h => { dmgIn += h.T.dps * h.R.dps * (h.type === 'warrior' ? 1.4 : 1) * (raging(h) ? 1.5 : 1) * vowK(h) * nemK(h, m) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt; });   // a weapon from your loot cuts monsters down faster; 1.05: so does fury; 1.21: a vow; 1.23: a grudge
       hurtMonster(m, dmgIn);
     });
   }

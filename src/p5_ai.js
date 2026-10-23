@@ -352,7 +352,7 @@
       const c = alive().filter(o => !o.lost && !o.goHome && !panicking(o) && !caged(o) && !(o.fleeing && P.plan !== 'flee') && !inG2(o));
       if (!c.length && P.g2 && alive().some(inG2)) { g2End('last'); return leader(); }   // 1.19: only the second group is left: it is the party now
       const away = o => onScout(o) || o.split ? 1 : 0;   // 1.17: one off on his own errand takes the lead only if nobody else can
-      c.sort((a, b) => (away(a) - away(b)) || (b.rank - a.rank) || (LEADER_ORDER.indexOf(a.type) - LEADER_ORDER.indexOf(b.type)));
+      c.sort((a, b) => (away(a) - away(b)) || (b.rank - a.rank) || (!!b.nemesis - !!a.nemesis) || (LEADER_ORDER.indexOf(a.type) - LEADER_ORDER.indexOf(b.type)));   // 1.23: a Nemezis leads when the rank ties
       L = c[0] || alive()[0] || null;
       P.leaderId = L ? L.id : -1;
     }
@@ -1387,6 +1387,239 @@
     }
     return best;
   }
+  // 1.23 Nemezis: a returner who has come back twice or more, or who got out with a crystal, becomes a Nemezis (collectReturners:
+  // nemesisEntry): a title after his name, +2 levels, courage x1,4, never a rookie, the talisman or amulet he lacks (makeHero), the
+  // rooms he walked into and the traps the party knew there (at spawn the party knows them, like a strong rumour), and a grudge:
+  // the trap or monster (type and tile) that hurt or scared him most. In the dungeon: he goes for it when he sees it (a thief takes
+  // the trap apart, a barbarian smashes it, anyone else marks it and the party walks round it at twice the danger; a monster he
+  // fights, +25% damage), he warns the others before a room he remembers with a trap, he does not panic or run from fear above 15%
+  // HP (nemHold, p3), and the guild's bounty on his head (10 + 5 a return) is paid to you when he dies (kill: nemesisKilled). At most
+  // two in run.returners at a time. run.fallen (up to 12): the heroes who died in the dungeon; a later wave's hero who walks into
+  // the room where one of them died may say so (fallenRoom). The wave's state is P.nem (nemOf).
+  const NEM_TITLE = { thief: ['Złodziej Kryształu', 'Złodziejka Kryształu'], avenger: ['Mściciel', 'Mścicielka'], scar: ['Blizna', 'Blizna'], survivor: ['Ocalały', 'Ocalała'], steady: ['Niezłomny', 'Niezłomna'] };
+  const nemName = e => e.nm[0] + (e && e.nemesis ? ' ' + e.nemesis.title : '');   // "Borys Niezłomny": everywhere the name stands in a list or on the card
+  const bountyOf = e => e && e.nemesis ? 10 + 5 * Math.max(1, e.times || 1) : 0;   // the guild's bounty on his head (Esencja)
+  const nemK = (h, m) => !!h.grudgeOn && h.grudgeOn === m ? 1.25 : 1;   // +25% damage to the monster he holds the grudge against
+  const nemOf = P => P.nem || (P.nem = { warned: new Set(), fallenRooms: new Set(), fallenN: 0, boasts: 0, boastT: -99, bounty: false, bountyT: 0 });
+  // what hurt (fraction of HP) or scared (fraction of courage) him, by the tile it stood on (damageRaw, addFear)
+  function grudgeAdd(h, it, v) {
+    if (!h.grudgeBy || !it || !(v > 0) || it.temp || !(TRAPS[it.type] || MONSTERS[it.type])) return;
+    const k = key(it.x, it.y), g = h.grudgeBy.get(k);
+    if (g && g.type === it.type) g.v += v; else h.grudgeBy.set(k, { type: it.type, x: it.x, y: it.y, v });
+  }
+  // collectReturners: who becomes a Nemezis, and what he takes with him
+  function nemesisEntry(h, e) {
+    const old = h.nemesis, st = fl.stats;
+    if (!old && !(e.times >= 2 || e.crystal)) return;
+    const live = run.returners.filter(r => r.nemesis);
+    if (live.length >= 2) {   // two at a time: the one with fewer returns stays a plain returner (a tie: the newcomer)
+      const weak = live.slice().sort((a, b) => (a.times || 0) - (b.times || 0))[0];
+      if ((e.times || 0) <= (weak.times || 0)) return;
+      weak.nemesis = null; st.nemesisDropped = (st.nemesisDropped || 0) + 1;
+    }
+    const top = [...(h.grudgeBy || new Map()).values()].sort((a, b) => b.v - a.v)[0];
+    const fearTop = Object.entries(h.fearBy || {}).filter(x => TRAPS[x[0]] || MONSTERS[x[0]]).sort((a, b) => b[1] - a[1])[0];
+    const grudge = top ? { type: top.type, x: top.x, y: top.y } : fearTop ? { type: fearTop[0], x: null, y: null } : old ? old.grudge : null;
+    const rooms = new Set(old ? old.rooms : []); (h.rooms || []).forEach(k => rooms.add(k));
+    const traps = new Map((old ? old.traps : []).map(t => [t.k, t.type]));
+    fl.items.forEach((it, k) => { if (LOOKS_TRAP(it.type) && it.detected && !it.temp) { const r = slotRoom(it.type, it.x, it.y); if (r >= 0 && rooms.has(fl.rooms[r].key)) traps.set(k, it.type); } });
+    let tk = 'steady';
+    if (e.crystal) tk = 'thief';
+    else if ((fl.deaths || []).some(d => d.knows.has(h.id)) || (bondOf(h) && bondOf(h).dead)) tk = 'avenger';
+    else if (Object.values(h.dmgBy || {}).reduce((a, v) => a + v, 0) > 0.3 * h.max) tk = 'scar';
+    else if (h.fleeing) tk = 'survivor';
+    e.nemesis = { title: old ? old.title : NEM_TITLE[tk][h.female ? 1 : 0], grudge, since: old ? old.since : run.wave, rooms: [...rooms], traps: [...traps].map(([k, type]) => ({ k, type })) };
+    if (!old) { st.nemesisNew = (st.nemesisNew || 0) + 1; tl('nn', h.id, tk); }
+  }
+  // spawnHero: the rooms he remembers are known to the party (their tiles, walls and doors; the heart, if he was there), the traps
+  // the party knew there and that are still there are detected (no lines); he takes the lead if nobody outranks him
+  function nemesisSpawn(h, talk) {
+    const N = h.nemesis, st = fl.stats, P = fl.party; if (!N) return;
+    st.nemeses = (st.nemeses || 0) + 1; tl('nm', h.id, h.entry.times || 1);
+    const keys = new Set(N.rooms || []); h.nemTraps = new Set();
+    fl.rooms.forEach(R => {
+      if (!keys.has(R.key) || !R.tiles.length) return;
+      R.tiles.forEach(t => { fl.known[t[1] * WW + t[0]] = 1; });
+      R.doors.forEach(d => { fl.known[d.y * WW + d.x] = 1; });
+      if (R.kind === 'room') for (let y = R.y0 - 1; y <= R.y1 + 1; y++) for (let x = R.x0 - 1; x <= R.x1 + 1; x++) if (tileAt(x, y) !== ROCK) fl.known[y * WW + x] = 1;
+      R.seen = true; R.nemKnown = true; st.nemRooms = (st.nemRooms || 0) + 1;
+      if (R.id === fl.heart.room) fl.heartKnown = true;
+    });
+    (N.traps || []).forEach(t => { const it = fl.items.get(t.k); if (!it || it.type !== t.type) return; if (!it.detected) { it.detected = true; st.nemTraps = (st.nemTraps || 0) + 1; } h.nemTraps.add(it); });
+    const g = grudgeItem(h); if (g) h.nemTraps.add(g);
+    fl.threatDirty = true; fl.knowDirty = true;
+    const L = byId(P.leaderId);
+    if (!L || L.dead || L.fled || (!L.boss && L.rank <= h.rank)) P.leaderId = h.id;   // the preferred leader when his rank ties
+    if (talk) { h.nemN0 = P.convoN || 0; say(h, pick(SAY.nemesisIntro), 3, 2.4); }
+    h.nemReplyAt = fl.time + 3.5;   // the others answer him (nemAnswer) once they are in
+  }
+  // the thing he holds the grudge against, if it is in the dungeon and working: on its old tile, else the nearest of its kind
+  function grudgeItem(h) {
+    const g = h.nemesis && h.nemesis.grudge; if (!g) return null;
+    const ok = it => !!it && it.type === g.type && !it.temp && !it.disabled && !it.broken && !(MONSTERS[it.type] && it.hp <= 0);
+    if (g.x != null) { const it = fl.items.get(key(g.x, g.y)); if (ok(it)) return it; }
+    let best = null, bd = 1e9;
+    fl.items.forEach(it => { if (!ok(it)) return; const d = g.x != null ? Math.hypot(it.x - g.x, it.y - g.y) : Math.hypot(it.x - h.tx, it.y - h.ty); if (d < bd) { bd = d; best = it; } });
+    return best;
+  }
+  // one of the others answers him: after his first words (nemesisFollow from one who follows him, else a reply) or a warning
+  function nemAnswer(h, intro) {
+    const P = fl.party, o = alive().filter(x => x !== h && !x.nemesis && calmFor(x) && !exiting(x) && canHear(x, h)).sort((a, b) => hdist(a, h) - hdist(b, h))[0];
+    if (!o || Math.random() >= (intro ? 0.8 : 0.5)) return false;
+    const fol = intro && (h.id === P.leaderId || Math.random() < 0.5);
+    P.queueSay.push({ id: o.id, text: fol ? nameFill(pick(SAY.nemesisFollow), h) : pick(SAY.nemesisReply), at: fl.time + 0.3, prio: 2, late: 5 });
+    fl.stats.nemesisReply = (fl.stats.nemesisReply || 0) + 1;
+    return true;
+  }
+  function nemBoast(h, force) {
+    const N = nemOf(fl.party);
+    if (!calmFor(h) && !force) return false;
+    if (!force && (N.boasts >= 2 || fl.time - N.boastT < 10)) return false;
+    N.boasts++; N.boastT = fl.time; fl.stats.nemesisBoast = (fl.stats.nemesisBoast || 0) + 1; tl('nx', h.id);
+    say(h, pick(SAY.nemesisBoast), 3, 2.2);
+    return true;
+  }
+  // every party tick (partyThink, after finalThink)
+  function nemesisThink(crew, L) {
+    const P = fl.party, N = nemOf(P), st = fl.stats, nems = crew.filter(h => h.nemesis && !h.gone);
+    // the guild's bounty: someone talks about it in a quiet moment early in such a wave (6-60 s; a look once a second)
+    if (!N.bounty && fl.time > 6 && (nems.length || fl.queue.some(e => e.nemesis))) {
+      if (fl.time > 60) N.bounty = true;
+      else if (fl.time >= N.bountyT) { N.bountyT = fl.time + 1; bountyTalk(crew); }
+    }
+    nems.forEach(h => {
+      if (h.nemReplyAt && fl.time >= h.nemReplyAt) { h.nemReplyAt = 0; if ((P.convoN || 0) === (h.nemN0 || 0)) nemAnswer(h, true); }   // not after an exchange his words started
+      nemGrudgeLook(h);
+      nemWarn(h, L);
+      const g = h.grudgeOn;
+      if (g && !h.grudgeDone && MONSTERS[g.type] && g.hp <= 0) { h.grudgeDone = true; st.grudgeDone = (st.grudgeDone || 0) + 1; tl('nd', h.id, g.type); if (!h.dead) nemBoast(h, true); }   // the monster he wanted is dead
+      if (h.crystal && !h.escSaid && Math.min(...exitGoals().map(i => Math.hypot(i % WW - h.tx, ((i / WW) | 0) - h.ty))) <= 2.5) { h.escSaid = true; say(h, pick(SAY.nemesisEscape), 4, 2.2); }   // out with the crystal (said before the door: the bubble goes with him)
+    });
+  }
+  function bountyTalk(crew) {
+    const P = fl.party, N = nemOf(P);
+    if (goingOut() || fl.fearless || crew.some(o => o.state === 'fight' || panicking(o))) return false;
+    const hears = o => crew.filter(x => x !== o && calmFor(x) && !exiting(x) && canHear(x, o));
+    const sp = crew.filter(o => !o.nemesis && calmFor(o) && !exiting(o) && !talking(o) && hears(o).length).sort((a, b) => (+(b.trait === 'greedy' || b.hunter) - +(a.trait === 'greedy' || a.hunter)))[0];
+    if (!sp) return false;
+    const n0 = P.convoN || 0;
+    if (!say(sp, pick(SAY.bountyTalk), 2, null, 'q')) return false;   // now or at the next look
+    N.bounty = true; fl.stats.bountyTalk = (fl.stats.bountyTalk || 0) + 1; tl('bn', sp.id);
+    if ((P.convoN || 0) === n0 && Math.random() < 0.6) { const o = hears(sp).filter(x => !x.nemesis)[0] || hears(sp)[0]; if (o) P.queueSay.push({ id: o.id, text: pick(SAY.bountyReply), at: fl.time + 0.2, prio: 2, late: 4 }); }
+    return true;
+  }
+  // he sees his grudge (in his room): the line once, the trap known (and, if he cannot deal with it, twice as dangerous for the
+  // party's paths), then planHero's grudgeJob for 25 s
+  function nemGrudgeLook(h) {
+    if (h.grudgeSeen || !calmFor(h) || exiting(h)) return;
+    const it = grudgeItem(h); if (!it) return;
+    const r = MONSTERS[it.type] ? roomOf(it.x, it.y) : slotRoom(it.type, it.x, it.y);
+    if (r < 0 || r !== roomOf(h.tx, h.ty) || hiddenAmbush(it)) return;
+    h.grudgeSeen = true; h.grudgeOn = it; h.grudgeUntil = fl.time + 25; (h.nemTraps || (h.nemTraps = new Set())).add(it);
+    fl.stats.grudgeHits = (fl.stats.grudgeHits || 0) + 1; tl('ng', h.id, it.type, it.x, it.y);
+    if (LOOKS_TRAP(it.type)) {
+      if (!it.detected) it.detected = true;
+      if (!((h.type === 'thief' && DISARMABLE[it.type]) || (h.type === 'barbarian' && !inB('shackles', r)))) it.grudgeW = run.wave;   // rebuildThreat: x2
+      fl.threatDirty = true;
+    }
+    say(h, pick(SAY.nemesisGrudge), 3, 2.2);
+    h.needPlan = true;
+  }
+  // planHero: go for the grudge. A trap: a thief takes it apart (the disarm state), a barbarian smashes it (the smash state);
+  // others leave it be (it is marked). A monster: a fight job, whatever his class (not a drifting one).
+  function grudgeJob(h, b) {
+    const it = h.grudgeOn;
+    if (!it || h.grudgeDone || fl.time > (h.grudgeUntil || 0) || fl.items.get(key(it.x, it.y)) !== it || it.disabled || it.broken || (MONSTERS[it.type] && it.hp <= 0) || panicking(h) || h.lost || fl.fearless) return null;
+    if (MONSTERS[it.type]) {
+      if (DRIFT[it.type] || roomOf(it.x, it.y) !== h.room || hiddenAmbush(it)) return null;
+      const i = it.y * WW + it.x; return b.dist[i] > 0 ? { intent: 'fight', goal: i } : null;
+    }
+    if (h.type === 'thief' && DISARMABLE[it.type]) {
+      const g = nearestOf(b, disarmSpots(it).map(t => t[1] * WW + t[0]));
+      if (g < 0) return null;
+      if (b.dist[g] === 0) {
+        h.state = 'disarm'; h.timer = (it.type === 'arrows' || it.type === 'fire' || it.type === 'powder' ? 1.5 : 1.0) * mods.disarm * h.R.disarm * (isRt(h.room, 'swamp') ? 1.5 : 1);
+        h.dur = h.timer; h.item = it; h.disarmT = it; h.path = []; return { intent: 'disarm', goal: -1 };
+      }
+      return { intent: 'disarm', goal: g };
+    }
+    if (h.type === 'barbarian' && !inB('shackles', h.room)) {
+      const g = nearestOf(b, DIRS.map(d => [it.x + d[0], it.y + d[1]]).filter(t => walkable(t[0], t[1])).map(t => t[1] * WW + t[0]));
+      if (g < 0) return null;
+      if (b.dist[g] === 0) { h.state = 'smash'; h.timer = raging(h) ? 0.8 : 1.8; h.dur = h.timer; h.smashIt = { kind: 'b', ref: it, x: it.x, y: it.y }; h.path = []; return { intent: 'smash', goal: -1 }; }
+      return { intent: 'smash', goal: g };
+    }
+    return null;
+  }
+  // updateHero: his grudge trap taken apart or smashed
+  function nemGrudgeDone(h) {
+    if (h.grudgeDone) return;
+    h.grudgeDone = true; fl.stats.grudgeDone = (fl.stats.grudgeDone || 0) + 1; tl('nd', h.id, h.grudgeOn ? h.grudgeOn.type : null);
+    nemBoast(h, true);
+  }
+  // the party is about to walk into a room he remembers with a trap in it (the leader's next 5 steps): he warns them, once a room
+  function nemWarn(h, L) {
+    if (!L || !calmFor(h) || exiting(h) || talking(h) || (L !== h && !canHear(h, L))) return;
+    const N = nemOf(fl.party), cur = roomOf(L.tx, L.ty), keys = h.nemesis.rooms || [];
+    for (const p of (L.path || []).slice(0, 5)) {
+      const r = roomOf(p[0], p[1]); if (r < 0 || r === cur) continue;
+      const R = fl.rooms[r];
+      if (R.kind !== 'room' || N.warned.has(r) || !keys.includes(R.key)) return;
+      const trap = [...(h.nemTraps || [])].some(it => fl.items.get(key(it.x, it.y)) === it && LOOKS_TRAP(it.type) && !it.disabled && slotRoom(it.type, it.x, it.y) === r);
+      if (!trap) return;
+      N.warned.add(r); fl.stats.nemesisWarn = (fl.stats.nemesisWarn || 0) + 1; tl('nw2', h.id, r);
+      const n0 = fl.party.convoN || 0;
+      say(h, pick(SAY.nemesisWarn), 3, 2.2);
+      if ((fl.party.convoN || 0) === n0) nemAnswer(h, false);
+      return;
+    }
+  }
+  // fire() (p4): a trap he knew goes off next to him and misses him
+  function nemBefore(it) {
+    let out = null;
+    fl.heroes.forEach(h => { if (h.nemesis && !h.dead && !h.fled && !h.gone && h.nemTraps && h.nemTraps.has(it)) (out || (out = [])).push([h, h.hp]); });
+    return out;
+  }
+  function nemMissed(it, before) {
+    before.forEach(([h, hp]) => {
+      if (h.dead || h.fled || h.hp < hp - 0.01) return;
+      if (areaOf(it).some(t => Math.max(Math.abs(t[0] - h.tx), Math.abs(t[1] - h.ty)) <= 1)) nemBoast(h, false);
+    });
+  }
+  function nemesisRage(h) {
+    h.nemRaged = true; fl.stats.nemesisRage = (fl.stats.nemesisRage || 0) + 1; tl('nr', h.id);
+    say(h, pick(SAY.nemesisRage), 4, 2.2); floatHero(h, 'Nie ucieknie!', '#ffd27a', 13, -0.9);
+  }
+  // kill (p3): the bounty
+  function nemesisKilled(h, p) {
+    const n = bountyOf(h.entry || h), st = fl.stats;
+    gainEssence(null, n, 'essBounty'); st.bounties = (st.bounties || 0) + 1; tl('nb', h.id, n);
+    addFloat(p.x, p.y - 0.4, 'Nagroda! +' + n + ' Esencji', '#ffd27a', 17, -1.3);
+    if (h.entry) h.entry.bountyPaid = n;
+  }
+  // kill (p3): the tavern remembers where he died (the full game; up to 12, the oldest goes)
+  function rememberFallen(h) {
+    if (stageOf() < 4 || h.room < 0 || !fl.rooms[h.room]) return;
+    const F = run.fallen || (run.fallen = []);
+    F.push({ nm: h.nm.slice(), female: h.female, type: h.type, roomKey: fl.rooms[h.room].key, wave: run.wave, nemesis: h.nemesis ? h.nemesis.title : null });
+    while (F.length > 12) F.shift();
+  }
+  // onEnter: a hero walks into a room where one of the fallen of an earlier wave died: he may say so (70%), once a room a wave,
+  // three a wave; a Nemezis' death is talked about first (nemesisFallen)
+  function fallenRoom(h, r) {
+    const F = run.fallen; if (!F || !F.length || r < 0 || stageOf() < 4) return;
+    const P = fl.party, N = nemOf(P), R = fl.rooms[r];
+    if (N.fallenRooms.has(R.key) || N.fallenN >= 3 || !calmFor(h) || exiting(h) || talking(h)) return;
+    const here = F.filter(f => f.roomKey === R.key && f.wave < run.wave); if (!here.length) return;
+    N.fallenRooms.add(R.key);
+    if (Math.random() >= 0.7) return;
+    const f = here.find(x => x.nemesis) || here[here.length - 1];
+    N.fallenN++; fl.stats.fallenMemory = (fl.stats.fallenMemory || 0) + 1; tl('fm', h.id, f.wave, f.nemesis ? 1 : 0);
+    const n0 = P.convoN || 0;
+    if (!say(h, f.nemesis ? nameFill(pick(SAY.nemesisFallen), f) : bondText(h, 'fallenMemory', f), 3, 2.4) || (P.convoN || 0) !== n0 || Math.random() >= 0.6) return;
+    const o = alive().find(x => x !== h && calmFor(x) && !exiting(x) && canHear(x, h));
+    if (o) P.queueSay.push({ id: o.id, text: pick(SAY.fallenReply), at: fl.time + 0.2, prio: 2, late: 4 });
+  }
   function safestRoom(from) {
     const b = from ? bfs(from.x, from.y, { known: true }) : null;
     let best = -1, bestSc = 1e9;
@@ -1677,6 +1910,7 @@
     shareThink(crew, L, dt);   // 1.20: an amulet in a crisis, gear handed over at ease
     bondThink(crew, L);   // 1.21
     finalThink(crew, L, dt);   // 1.22: the crystal run, the formation
+    nemesisThink(crew, L);   // 1.23: the Nemezis, the bounty talk
     if (!L) return;
     if (P.prep && fl.time >= P.prep.until) finishPrep();
     else if (!P.prep) checkPrep(L);
@@ -2478,6 +2712,7 @@
         const m = h.vowOn, i = m.y * WW + m.x;
         if (m.hp > 0 && fl.items.get(key(m.x, m.y)) === m && !DRIFT[m.type] && roomOf(m.x, m.y) === h.room && B().dist[i] > 0) { job = { intent: 'fight', goal: i }; if (!h.vowFought) { h.vowFought = true; fl.stats.revengeFights = (fl.stats.revengeFights || 0) + 1; } }
       }
+      if (!job && !backing && h.grudgeOn) job = grudgeJob(h, B());   // 1.23: a Nemezis goes for his grudge (25 s from when he sees it)
       if (!job && h.type === 'priest') {
         const cl = fl.time < (h.healForUntil || 0) ? byId(h.healFor) : null;   // 1.17: the one who called him comes first
         const hurt = cl && !cl.dead && !cl.fled && !cl.gone && cl.hp < 0.5 * cl.max && hdist(cl, h) > 2.5 ? cl : alive().filter(o => o !== h && o.hp < 0.5 * o.max && hdist(o, h) > 2.5).sort((a, c) => a.hp / a.max - c.hp / c.max)[0];
@@ -2837,8 +3072,8 @@
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (tileAt(Math.floor(tx) + dx, Math.floor(ty) + dy) === FLOOR) area.push([Math.floor(tx) + dx, Math.floor(ty) + dy]);
     fxTiles(area, '255,140,50', 0.45);
     say(h, pick(SAY.fireball), 1);
-    if (DRIFT[target.type]) hurtMonster(target, 30 * h.R.pow * vowK(h));   // 1.21: a vow
-    area.forEach(t => { const m = fl.items.get(key(t[0], t[1])); if (m && MONSTERS[m.type] && !DRIFT[m.type]) hurtMonster(m, 30 * h.R.pow * vowK(h)); });
+    if (DRIFT[target.type]) hurtMonster(target, 30 * h.R.pow * vowK(h) * nemK(h, target));   // 1.21: a vow; 1.23: his grudge
+    area.forEach(t => { const m = fl.items.get(key(t[0], t[1])); if (m && MONSTERS[m.type] && !DRIFT[m.type]) hurtMonster(m, 30 * h.R.pow * vowK(h) * nemK(h, m)); });
   }
   // 1.10: standing, a hero looks around now and then: at a friend, at loot they saw, at a trap they know, or just away
   function glance(h) {
@@ -2937,7 +3172,9 @@
       if (changed && !exiting(h)) phobiaSight(h, r);
       if (changed) mentorRoom(h, r);   // 1.21
       if (changed) tapRoom(h, r, fresh);   // 1.22
+      if (h.rooms) h.rooms.add(fl.rooms[r].key);   // 1.23: the rooms he walked into (a Nemezis remembers them)
     }
+    if (changed) fallenRoom(h, r);   // 1.23: someone died here in an earlier wave
     if (h.bet) betStep(h);   // 1.21
     if (isExitTile(h.x, h.y) && exiting(h)) { heroExit(h); return; }
     const it = fl.items.get(key(h.x, h.y));
@@ -3045,6 +3282,7 @@
             mentorProud(h, 1.6);   // 1.21
           }
         }
+        if (h.grudgeOn && it === h.grudgeOn && (it.disabled || fl.items.get(key(it.x, it.y)) !== it)) nemGrudgeDone(h);   // 1.23: his grudge, taken apart
         h.state = 'walk'; h.item = null; h.disarmT = null; h.needPlan = true;
       }
       return;
@@ -3053,7 +3291,7 @@
       h.timer -= dt;
       const t = h.smashIt;
       if (!t || exiting(h) || panicking(h) || inB('shackles', h.room)) { h.state = 'walk'; h.smashIt = null; h.needPlan = true; return; }
-      if (h.timer <= 0) { smashDone(h, t); h.state = 'walk'; h.smashIt = null; h.smashCd = fl.time + (raging(h) ? 2 : 5); h.needPlan = true; }
+      if (h.timer <= 0) { smashDone(h, t); if (t.kind === 'b' && h.grudgeOn && t.ref === h.grudgeOn && t.ref.broken) nemGrudgeDone(h); h.state = 'walk'; h.smashIt = null; h.smashCd = fl.time + (raging(h) ? 2 : 5); h.needPlan = true; }   // 1.23: his grudge, smashed
       return;
     }
     if (h.state === 'free') {

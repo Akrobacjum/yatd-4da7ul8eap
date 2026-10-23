@@ -534,7 +534,7 @@
     card.appendChild(row);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.22 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.23 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -584,9 +584,15 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.22'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.23'));
     const ul2 = el('ul', 'conseq');
-    ['1.22: eskorta kryształu. Gdy ktoś niesie kryształ, przywódca (albo najsilniejszy) każe go otoczyć: kto widzi niosącego, idzie tuż przy nim (wojownik z przodu) zamiast każdy swoją drogą do wyjścia. Strażnik obok niosącego bierze na siebie połowę ciosu potwora (wojownik 70%). Eskorta ma słaby złoty krąg.',
+    [
+     '1.23: Nemezis. Bohater, który wraca drugi raz albo uciekł z kryształem, staje się Nemezis: ma przydomek ("Borys Niezłomny", "Wanda Złodziejka Kryształu"), +2 poziomy, o 40% więcej odwagi, talizman albo amulet więcej i nie ucieka ze strachu, dopóki ma więcej niż 15% życia. Najwyżej dwóch naraz.',
+     '1.23: Nemezis pamięta. Pokoje, w których był, drużyna zna od wejścia (jak z mocnej plotki), a znane tam pułapki są od razu wykryte. Ostrzega przed pokojem z pułapką, którą pamięta, i prowadzi drużynę, jeśli nikt nie ma wyższej rangi.',
+     '1.23: uraza. To, co go najbardziej zraniło albo przestraszyło (pułapka albo potwór), jest na jego karcie ("Uraza: ..."). Gdy to zobaczy, idzie po to: złodziej rozbraja, barbarzyńca rozbija, inni omijają (podwójne niebezpieczeństwo), a z potworem walczy o 25% mocniej.',
+     '1.23: nagroda za głowę. Gdy w fali jest Nemezis, lista drużyny i podsumowanie pokazują "Nagroda za głowę: N Esencji" (10 + 5 za każdy powrót). Zabij go, a dostaniesz ją od razu. Ucieknie: wróci znowu, z wyższą nagrodą.',
+     '1.23: polegli. Karczma pamięta, gdzie w Twoim lochu ginęli bohaterowie (ostatnich 12): bohater następnych fal, wchodząc do takiego pokoju, czasem wspomina poległego po imieniu (najwyżej 3 razy na falę). Liczby: nowa komórka "Nemezis".',
+     '1.22: eskorta kryształu. Gdy ktoś niesie kryształ, przywódca (albo najsilniejszy) każe go otoczyć: kto widzi niosącego, idzie tuż przy nim (wojownik z przodu) zamiast każdy swoją drogą do wyjścia. Strażnik obok niosącego bierze na siebie połowę ciosu potwora (wojownik 70%). Eskorta ma słaby złoty krąg.',
      '1.22: przekazanie kryształu. Niosący z mniej niż 35% życia oddaje kryształ zdrowszemu (60%+) towarzyszowi tuż obok (najwyżej 2 razy na falę, nie częściej niż co 6 s).',
      '1.22: ostatni bastion. Gdy duch, cień, nietoperze albo potwór, z którym ktoś walczy, są 3 pola od niosącego, odważny (wojownik i barbarzyńca co drugi raz) staje w najbliższych drzwiach między nim a niosącym i trzyma go do 8 s albo do 25% życia, a potem ucieka. Latające potwory biorą się za niego. Raz na falę.',
      '1.22: poświęcenie. Gdy jedyna znana droga do wyjścia prowadzi przez znaną, naładowaną pułapkę, jeden z nich wchodzi w nią celowo, a reszta czeka, aż się odpali, i przebiega w czasie odnowienia. Raz na falę.',
@@ -976,12 +982,13 @@
     const r = el('div', 'np'); r.dataset.cls = e.type;
     const ic = el('span', 'npi'); ic.innerHTML = classIconSvg(e.type, T.color); r.appendChild(ic);
     const l1 = el('div', 'np1');
-    const nm = el('b', null, e.nm[0]); nm.style.color = T.color; l1.appendChild(nm);
+    const nm = el('b', null, nemName(e)); nm.style.color = T.color; l1.appendChild(nm);   // 1.23: with his title
     l1.appendChild(el('small', null, ' ' + T.name[fem ? 1 : 0] + ' ' + e.lvl));
     if (e.boss) l1.appendChild(el('i', 'tg boss', e.boss === 'final' ? 'przepowiednia' : 'czempion'));
     if (e.trait) l1.appendChild(el('i', 'tg', HERO_TRAITS[e.trait].name[fem ? 1 : 0]));
     if (e.hunter) { const b = el('i', 'tg bag'); b.innerHTML = classIconSvg('bag', '#f2b94b', 'gi'); b.title = 'łowca skarbów'; l1.appendChild(b); }
     if (e.returning) { const b = el('i', 'tg back', '↺'); b.title = 'wraca z blizną'; l1.appendChild(b); }
+    if (e.nemesis) { const b = el('i', 'tg boss', '☠ nemezis'); b.title = 'Nagroda za głowę: ' + bountyOf(e) + ' Esencji'; l1.appendChild(b); }   // 1.23
     if (e.recruit) l1.appendChild(el('i', 'tg', 'rekrut'));
     { const bm = bondMate(e, null); if (bm) l1.appendChild(el('i', 'tg', bondLabel(e.bond, bm))); }   // 1.21: his bond
     r.appendChild(l1);
@@ -997,6 +1004,7 @@
     if (ph) l2.appendChild(el('span', 'bad', ' · boi się: ' + ph));
     const unk = [!(kn.has('phys') || all) ? 'ciało' : '', !(kn.has('phobia') || all) ? 'fobia' : ''].filter(Boolean);
     if (unk.length) l2.appendChild(el('span', 'unk', ' · ? ' + unk.join('/')));
+    if (e.nemesis) { const s = el('span', null, ' · Nagroda za głowę: ' + bountyOf(e) + ' Esencji'); s.style.color = '#ffd27a'; l2.appendChild(s); }   // 1.23
     r.appendChild(l2);
     r.addEventListener('click', () => openModal({ type: 'hero', entry: e, back: lastWaveModal }));   // the hero card, then back to the summary
     return r;
@@ -1054,6 +1062,9 @@
       if (H) part('h', H.fed ? '♥ <b>−' + fmtE(H.need) + '</b>' : '♥ za mało: <b>−' + fmtE(heart) + ' · kryształ</b>');
       part('m', 'dla Ciebie <b>+' + fmtE(mine) + '</b>' + (run.lastIncome ? ' <small>(+' + run.lastIncome + ' po fali)</small>' : ''));
       body.appendChild(rk);
+      fl.heroes.filter(h => h.nemesis).forEach(h => {   // 1.23: the bounty on a Nemezis of this wave: paid, or he got away (and comes back)
+        const p = el('p', 'note', 'Nagroda za głowę: ' + bountyOf(h.entry) + ' Esencji · ' + heroName(h) + ': ' + (h.dead ? 'wypłacona.' : h.fled ? (h.female ? 'uciekła' : 'uciekł') + ', wróci z wyższą nagrodą.' : 'wciąż w lochu.')); p.style.color = '#ffd27a'; body.appendChild(p);
+      });
       if (ate && !m.alarmed) { m.alarmed = true; setTimeout(() => { if (modalKind === 'wave') crystalAlarm(); }, reduceMotion ? 0 : 900); }
       waveChart(panel(body, 'Esencja z fal', 'kreska: porcja serca'), run.waves, run.wave);
       m.fun = m.fun || waveFun();
@@ -1067,6 +1078,7 @@
         const lv = nx.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), g = run.guild;
         const pn = panel(body, 'Fala ' + (run.wave + 1) + ': ' + nx.length + ' bohaterów, poz. ' + (lo === hi ? lo : lo + '-' + hi), g ? 'gildia: ' + HEROES[GUILD_WANT[g.kind]].name[0].toLowerCase() : hungerNeed(run.wave + 1) ? 'serce chce ' + hungerNeed(run.wave + 1) : '', 'nextp');
         const list = el('div', 'nplist'); nx.forEach(e => list.appendChild(nextRow(e))); pn.appendChild(list);
+        nx.filter(e => e.nemesis).forEach(e => { const p = el('p', 'note', '☠ ' + nemName(e) + ' wraca ' + (e.times || 1) + '. raz. Nagroda za głowę: ' + bountyOf(e) + ' Esencji.'); p.style.color = '#ffd27a'; pn.appendChild(p); });   // 1.23
         fitList(list);
       }
     }
@@ -1173,6 +1185,8 @@
       cell('Finał: eskorta / przekazania / ostatni bastion / poświęcenia / ty pierwszy / opukane / nie tędy / szyk',
         (s.escortForms || 0) + ' (' + (s.guardSoaks || 0) + ') / ' + (s.handOvers || 0) + ' / ' + (s.lastStands || 0) + ' / ' + (s.sacrifices || 0) + ' (' + (s.sacrificeFired || 0) + ') / ' + (s.youFirst || 0) + ' / ' +
         (s.taps || 0) + ' (' + (s.tapFound || 0) + ') / ' + (s.notThisWay || 0) + ' / ' + (s.frontLines || 0) + ', ' + (s.woundedBack || 0));   // 1.22
+      cell('Nemezis: w fali / nagrody (Esencja) / urazy (załatwione) / ostrzeżenia / pamięć poległych',
+        (s.nemeses || 0) + ' / ' + (s.bounties || 0) + ' (' + Math.round(s.essBounty || 0) + ') / ' + (s.grudgeHits || 0) + ' (' + (s.grudgeDone || 0) + ') / ' + (s.nemesisWarn || 0) + ' / ' + (s.fallenMemory || 0));   // 1.23
       cell('Kwestie o tym, co widzieli / zamienione / pominięte', (s.sawTalk || 0) + ' / ' + (s.lineSwap || 0) + ' / ' + (s.lineDrop || 0));   // 1.17.1
     }
     fitList(list);
@@ -1606,8 +1620,8 @@
     if (!e) { card.appendChild(el('p', null, 'Tego bohatera już nie ma.')); card.appendChild(btn('primary', 'Zamknij', null, () => { closeModal(); if (m.unpause) setPaused(false); })); return; }
     const h = live || e, T = HEROES[e.type], R = levelStats(e.lvl), fem = e.female, known = live ? live.known : new Set(e.known || []);
     const all = mods.revealAll;
-    card.appendChild(el('div', 'sub', T.name[fem ? 1 : 0] + ' · poz. ' + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][fem ? 1 : 0] : R.name[fem ? 1 : 0]).toLowerCase() + [e.returning ? ' · powracający' : '', e.hunter ? ' · łowca skarbów' : '', e.recruit ? ' · rekrut' : ''].join('')));
-    const hh = el('h2', null, e.nm[0]); hh.style.color = T.color; card.appendChild(hh);
+    card.appendChild(el('div', 'sub', T.name[fem ? 1 : 0] + ' · poz. ' + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][fem ? 1 : 0] : R.name[fem ? 1 : 0]).toLowerCase() + [e.returning ? (e.nemesis ? ' · nemezis' : ' · powracający') : '', e.hunter ? ' · łowca skarbów' : '', e.recruit ? ' · rekrut' : ''].join('')));
+    const hh = el('h2', null, nemName(e)); hh.style.color = T.color; card.appendChild(hh);   // 1.23: with his title
     const tiles = el('div', 'statrow');
     statTile(tiles, Math.round(live ? live.hp : e.hp) + '/' + e.max, 'HP', live && live.hp < 0.35 * e.max ? 'bad' : '');
     const cou = live ? live.courage : e.courage;
@@ -1629,7 +1643,13 @@
     if (e.hunter) add('Łowca skarbów: idzie po łup, nawet gdy to groźne (znak sakiewki).');
     add('Ciało: ' + (e.phys && (known.has('phys') || all) ? PHYS[e.phys].name[fem ? 1 : 0] + ' (' + PHYS[e.phys].text + ')' : 'nie wiadomo') + '.');
     add('Fobia: ' + (e.phobia && (known.has('phobia') || all) ? PHOBIAS[e.phobia].name + ' (straszy 2 razy mocniej)' : 'nie wiadomo') + '.');
-    if (e.scar) add('Blizna: ' + e.scar + (e.times > 1 ? ' (wraca już ' + e.times + '. raz)' : '') + '.');
+    if (e.scar) add('Blizna: ' + e.scar + (e.times > 1 && !e.nemesis ? ' (wraca już ' + e.times + '. raz)' : '') + '.');
+    if (e.nemesis) {   // 1.23: what makes him a Nemezis
+      const g = e.nemesis.grudge;
+      add('Nemezis: wraca ' + (e.times || 1) + '. raz (od fali ' + e.nemesis.since + '), zna pokoje, w których był' + (fem ? 'a' : '') + ', nie ucieka ze strachu powyżej 15% życia.');
+      if (g && ITEMS[g.type]) add('Uraza: ' + ITEMS[g.type].name + (g.x != null ? '' : ' (gdziekolwiek)') + '.');
+      add('Nagroda za głowę: ' + bountyOf(e) + ' Esencji' + (e.bountyPaid ? ' (wypłacona)' : '') + '.');
+    }
     if (live && live.trauma && Object.keys(live.trauma).length) add('Trauma w tej fali: ' + Object.keys(live.trauma).map(k => DMG_TYPES[k]).join(', ') + ' (straszy 1,5 raza mocniej).');
     card.appendChild(ul);
     card.appendChild(el('h2', 'h2small', 'Ekwipunek'));
@@ -1826,6 +1846,7 @@
     run.stacks = run.stacks || {};
     // v14 fields for a run saved by v13: returning heroes, the stash, the shop; cards removed in v14 (Labirynt) drop out of the deck
     if (!run.returners) run.returners = [];
+    if (!Array.isArray(run.fallen)) run.fallen = [];   // 1.23: a run saved before 1.23 has no fallen (its returners have no nemesis: plain returners)
     if (!run.stash) run.stash = [];
     if (typeof run.freePicks !== 'number') run.freePicks = 0;
     if (!sv.gv || sv.gv < 40) {   // v15: points became Esencja (about 150 old points = 1); the heart's store starts empty
@@ -1862,7 +1883,7 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 58;   // 1.22 adds stats: escortForms, escortGuards, guardSoaks, guardSoakDmg, handOvers, lastStands, lastStandT, sacrifices, sacrificeFired, youFirst, taps, tapFound, notThisWay, notThisWayMoved, frontLines, woundedBack, nearExit; timeline ef gs ho lx le sf sd yf tp tf nw fm wb ne. 1.21 adds heroes[].bond (type[:role]:id) and stats: bonds, bondsBy, bondLines, griefs, revengeVows, revengeFights, grownUp, noLeave, noLeaveSaved, mentorWatch, mentorProud, rivalMock, quarrels, quarrelStops, quarrelWins, quarrelSulks, bets, betsWon, betsLost, betsOff; timeline bo bk gf vw gu rm mw mp qq nl ns ob bt be. 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  const LOG_VERSION = 58;   // 1.23 adds heroes[].nem and stats: nemeses, nemesisNew, nemesisDropped, nemRooms, nemTraps, nemesisReply, nemesisWarn, nemesisBoast, nemesisRage, nemesisDown, nemesisOut, nemesisCrystal, grudgeHits, grudgeDone, bounties, essBounty, bountyTalk, fallenMemory; timeline nn nm ng nd nx nr nb no nw2 bn fm. 1.22 adds stats: escortForms, escortGuards, guardSoaks, guardSoakDmg, handOvers, lastStands, lastStandT, sacrifices, sacrificeFired, youFirst, taps, tapFound, notThisWay, notThisWayMoved, frontLines, woundedBack, nearExit; timeline ef gs ho lx le sf sd yf tp tf nw fm wb ne. 1.21 adds heroes[].bond (type[:role]:id) and stats: bonds, bondsBy, bondLines, griefs, revengeVows, revengeFights, grownUp, noLeave, noLeaveSaved, mentorWatch, mentorProud, rivalMock, quarrels, quarrelStops, quarrelWins, quarrelSulks, bets, betsWon, betsLost, betsOff; timeline bo bk gf vw gu rm mw mp qq nl ns ob bt be. 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
@@ -1892,6 +1913,7 @@
       heroes: fl.heroes.map(h => ({ id: h.id, name: h.nm[0], female: h.female, type: h.type, lvl: h.lvl, boss: h.boss, trait: h.trait, max: h.max, courage: h.courage,
         kit: h.entry.inv.map(i => i.type + i.r), end: h.inv.map(i => i.type + i.r), endSrc: h.inv.map(i => (i.src || 'kit')[0]), took: h.loot || 0, load: Math.round(loadOf(h) * 10) / 10, gold: h.gold || 0, cursed: h.cursed ? 1 : 0, lost: h.lost ? 1 : 0, hunter: h.hunter ? 1 : 0,   // 1.20: endSrc, took, load (1.21: the comment stood before cursed, lost and hunter and cut them off)
         bond: h.bond ? h.bond.type + (h.bond.role ? ':' + h.bond.role : '') + ':' + h.bond.id : null,   // 1.21
+        nem: h.nemesis ? (h.entry.times || 1) : 0,   // 1.23: a Nemezis (his return count)
         out: h.dead ? 'dead' : h.carriedOut ? 'crystal' : h.fleeing ? 'scared' : h.fled ? 'left' : 'inside' })),
       entry: fl.spawnAt || 'ent', checkShapes: CHECK_SHAPE,
       layout: run.waveStart, timeline: fl.tl ? { ev: fl.tl.ev, smp: fl.tl.smp } : null, upgrades: run.upgrades.slice(), deck: run.deck.slice(), deckSize: run.deckSize, mods: Object.assign({}, mods) };
@@ -2537,6 +2559,7 @@
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
     resolveCheck: p => resolveCheck(p), skipCheck: () => skipCheck(), clearCheck: () => clearCheck(), areaOf, slotOf, shortestPath, frontier, toolMarkers, applyTool, toolCost, get WW() { return WW; }, get WH() { return WH; }, TUT, UPGRADES, UPG, ITEMS, startBuild, applyUpgrade, makeWave, levelStats, recomputeMods, sellCard, upgradePicks, cardMultNow, openModal, queueModal, renderDeckTiles, saveRun, loadSave, resumeRun, clearSave, upgradeItem, removeItem, waveCurve, waveBase, computeBRooms, inB, decoyAlarm, guildAdapt, quietNow, setUser: v => { userStarted = v; }, get userStarted() { return userStarted; }, ignite, trapBoost, calmReady, landFallen, fall, planBreach: () => planBreach(), tutAnySpot, galleryK, stealNeed, portraitRooms, addFear, setTab: t => { tab = t; updateTray(); }, undo, pushUndo, get undoN() { return undoStack.length; }, setTrayOpen, UI, moveItem, moveTarget, setMode: (m, k) => { selected = m; movingKey = k || null; updateTray(); }, get selected() { return selected; }, get movingKey() { return movingKey; }, rankOf, dungeonBounds, regroupAtDoor: () => regroupAtDoor(),
     lookDone, councilDone, chooseTarget, canHearShout, answerLost, perceiveThink: (L, c) => perceiveThink(L, c), startFlee, cardFit, CARD_NEEDS, monstersTick, rebuildThreat, updateHero, onEnter, hiddenAmbush, skullK, cellLand, vaultSnap, riseGhost, restockForge, stripGear, framesWake, falseCall, taintedSip, reqOk, freshMods, shoutRange,   // 1.18
+    nemesisEntry, nemesisSpawn, nemesisThink, grudgeItem, grudgeJob, grudgeAdd, nemName, bountyOf, nemHold, nemK, nemOf, nemBoast, nemWarn, nemGrudgeLook, nemesisKilled, rememberFallen, fallenRoom, bountyTalk, NEM_TITLE,   // 1.23
     finalThink, finOf, carrierOf, escortThink, escortGoal, guardOf, handThink, threatNear, standStart, standThink, standing, sacrificing, sacStart, sacTick, sacHold, reachAvoid, youFirst, tapRoom, tapStep, notThisWay, formThink, formedFoe, backTile, takeCrystal, crystalReturns, learnTrap, pathFrom, exitGoals, LINE_NEEDS, byId, heroPos, hdist,   // 1.22
     makeBonds, bondOf, bondLabel, bondMate, bondTalk, griefOf, bondHurt, mentorWatch, mentorProud, quarrel, quarrelWon, noLeave, rescueThink, betThink, betStart, betEnd, bondThink, decideCage, missLost, lootBanned, mateBody, vowK, convoStart, riftThink, CONVO, raging, cageHero,   // 1.21
     shareThink, loadOf, carryOf, burden, claimScore, lootReassign, onLootDead, onLootRival, lanternNear, litLantern, dropAt, bodyLoot, CLASS_FIT, CARRY, fitOf, canTake, lootOffer, mimicSpill, douseLantern, bombCook, fogRoll, hasCrowbar, srcText, smashDone, bombJob, heroAbilities, scanTraps, LOOT_GREED, itemLabel, canSee, setGreed, freeCaged, SOLO,   // 1.20

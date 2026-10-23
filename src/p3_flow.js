@@ -137,7 +137,7 @@
     return k;
   }
   const loneMult = h => 1;   // v14: loneliness pays a steady Groza instead of a multiplier (see updateHero)
-  const heroName = h => h.nm[0];
+  const heroName = h => h.nm[0] + (h.nemesis ? ' ' + h.nemesis.title : '');   // 1.23: a Nemezis' title after his name
   const rankName = h => h.boss ? BOSS_NAME[h.boss][h.female ? 1 : 0] : h.R.name[h.female ? 1 : 0];
   const traitName = h => h.trait ? HERO_TRAITS[h.trait].name[h.female ? 1 : 0] : '';
   const lvlLabel = h => 'poz. ' + h.lvl + ' ' + rankName(h).toLowerCase() + (h.trait ? ', ' + traitName(h) : '');
@@ -323,7 +323,7 @@
   function newRun(tutorial, stage) {
     stage = Math.max(1, Math.min(ONB_FULL, stage || (tutorial ? 1 : ONB_FULL)));
     coachHide();   // 1.12 (bug): the guide's card from a run left in the middle stayed on the screen in the next run
-    run = { wave: 1, total: 0, waves: [], crystals: S.crystals, maxCrystals: S.crystals, grozaTotal: 0, greedRep: 1, returners: [], stash: [], freePicks: 0, shop: null, shopOwed: 1, stacks: {}, guild: null, resumed: 0, moleWave: 0, essence: S.essence,
+    run = { wave: 1, total: 0, waves: [], crystals: S.crystals, maxCrystals: S.crystals, grozaTotal: 0, greedRep: 1, returners: [], fallen: [], stash: [], freePicks: 0, shop: null, shopOwed: 1, stacks: {}, guild: null, resumed: 0, moleWave: 0, essence: S.essence,
       items: new Map(), layout: null, rumor: { tiles: new Map(), traps: new Map(), loot: new Map(), heart: -1, gold: 0 }, upgrades: [], unlocked: new Set(START_UNLOCKED.concat(loadFound()).filter(t => onbOk(t, stage))), foundAtStart: loadFound().filter(t => onbOk(t, stage) && !START_UNLOCKED.includes(t)), stage,
       pendingUpgrades: [], continueUsed: false, startedAt: Date.now(), result: null, reason: '', checkHints: 3, tut: tutorial ? 0 : -1, tutorial: !!tutorial,
       mode: 'check', fires: 0, buildSec: 0, raidSec: 0, best: loadBest(), next: null, lastIncome: 0, afterModals: null, over: false,
@@ -553,8 +553,13 @@
       if (cur) { if (g.r > cur.r) inv[inv.indexOf(cur)] = tr; } else inv.push(tr);
     });
     if (pre.wasLost && !inv.some(x => x.type === 'lantern')) inv.push({ type: 'lantern', r: 1, src: 'kit' });
-    return { type, lvl, rank: tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: comboHp(n), inv, trait,
-      courage: Math.round(R.courage * (boss === 'final' ? 2 : boss ? 1.5 : 1) * ck), phys, phobia, known, returning: !!pre.returning, scar: pre.scar || null, times: pre.times || 0 };
+    if (pre.nemesis && inv.length < 3 + Math.floor(lvl / 3)) {   // 1.23: a Nemezis comes better prepared: the talisman or the amulet he lacks, if he has room
+      const t = inv.some(x => x.type === 'charm') ? 'amulet' : 'charm', r = 1 + Math.floor(lvl / 6);
+      if (!inv.some(x => x.type === t)) inv.push({ type: t, r, kit: true, src: 'kit', charges: powerCharges(t, r) });
+    }
+    return { type, lvl, rank: pre.nemesis ? Math.max(1, tierOf(lvl)) : tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: comboHp(n), inv, trait,   // 1.23: a Nemezis is never a rookie
+      courage: Math.round(R.courage * (boss === 'final' ? 2 : boss ? 1.5 : 1) * ck * (pre.nemesis ? 1.4 : 1)), phys, phobia, known, returning: !!pre.returning, scar: pre.scar || null, times: pre.times || 0,   // 1.23: x1,4 for a Nemezis
+      nemesis: pre.nemesis || null };
   }
   // The guild reads the last wave's report and sends the right people (from wave 3): priests and amulets against fear,
   // warriors and talismans against a slaughterhouse, thieves against a minefield, a mage against monsters.
@@ -632,7 +637,7 @@
     });
     // v14: those who got away come back after 2-3 waves, with a name, what they remember and a scar (a phobia or a toughness)
     let back = 0;
-    (run.returners || []).filter(r => r.back <= n && (!r.used || r.used === n)).forEach(r => {
+    (run.returners || []).filter(r => r.back <= n && (!r.used || r.used === n)).sort((a, b) => !!b.nemesis - !!a.nemesis).forEach(r => {   // 1.23: a Nemezis takes the first place
       if (back >= (n >= 8 ? 2 : 1)) return;
       // 1.05: no class twice: he takes the place of his own class (the leader's too: he knows the way), or of someone ordinary
       // when his class is not in the party. In a boss wave the boss leads: a returner of the boss's class waits for the next wave.
@@ -641,8 +646,9 @@
       let idx = same; if (idx < 0) for (let i = list.length - 1; i >= 1; i--) if (!list[i].hunter && !list[i].recruit && !list[i].returning && list[i].type !== GUILD_WANT[g && g.kind]) { idx = i; break; }
       if (idx < 0) return;
       back++;
-      const L = Math.max(list[idx].lvl, r.lvl + 1 + (r.crystal ? 1 : 0));
-      list[idx] = makeHero(r.type, L, n, used, null, { nm: r.nm, female: r.female, phys: r.phys, phobia: r.phobia, trait: r.trait, known: [r.phys ? 'phys' : null, r.phobia ? 'phobia' : null].filter(Boolean), returning: true, scar: r.scar, times: r.times, gear: r.gear, wasLost: r.wasLost });   // 1.20: gear, wasLost
+      const L = Math.max(list[idx].lvl, r.lvl + 1 + (r.crystal ? 1 : 0)) + (r.nemesis ? 2 : 0);   // 1.23: a Nemezis +2 levels
+      list[idx] = makeHero(r.type, L, n, used, null, { nm: r.nm, female: r.female, phys: r.phys, phobia: r.phobia, trait: r.trait, known: [r.phys ? 'phys' : null, r.phobia ? 'phobia' : null].filter(Boolean), returning: true, scar: r.scar, times: r.times, gear: r.gear, wasLost: r.wasLost,   // 1.20: gear, wasLost
+        nemesis: r.nemesis ? Object.assign({}, r.nemesis) : null });   // 1.23
       r.used = n;
     });
     const boss = bossOf(n);
@@ -787,18 +793,20 @@
       gold: 0, cursed: false, faith: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithMax: e.type === 'priest' ? 6 + Math.floor(e.lvl / 2) : 0, faithT: 0,
       wardUntil: -1, wardK: 0, sprintUntil: -1, sprintK: 1, calmUntil: -1, giveCd: 0, sepT: 0, sepRolled: false, shakenUntil: -1, rtSaid: new Set(), lostCallT: 0, hunter: !!e.hunter,
       phys: e.phys || null, phobia: e.phobia || null, known: new Set(e.known || []), returning: !!e.returning, scar: e.scar || null, trauma: {}, fearBy: {}, dmgBy: {}, phobiaSeen: new Set(), saw: new Set(),
-      bond: e.bond ? { type: e.bond.type, id: id + e.bond.with - Math.max(0, (run.next || []).indexOf(e)), role: e.bond.role || null } : null };   // 1.21
+      bond: e.bond ? { type: e.bond.type, id: id + e.bond.with - Math.max(0, (run.next || []).indexOf(e)), role: e.bond.role || null } : null,   // 1.21
+      nemesis: e.nemesis || null, rooms: new Set(), grudgeBy: new Map() };   // 1.23: the rooms he walked into, what hurt or scared him and where (for a Nemezis)
     h.inR = realNow;   // 1.09: pops in
     fl.heroes.push(h);
     if (h.bond && bondOf(h)) { const st = fl.stats, by = st.bondsBy || (st.bondsBy = {}); st.bonds = (st.bonds || 0) + 1; by[h.bond.type] = (by[h.bond.type] || 0) + 1; tl('bo', h.bond.id, h.id, h.bond.type); }   // 1.21: the pair is in
     if (h.returning) tutPop('returner');   // 1.12: the first returner in the first runs
+    if (h.nemesis) nemesisSpawn(h, !(fl.heroes.length === 1 && fl.breach));   // 1.23: what he remembers; nemesisIntro instead of returnBack
     tl('sp', h.id);
     reveal(h);
     if (fl.heroes.length === 1 && fl.breach) say(h, pick(fl.spawnAt === 'breach' ? SAY.breachUse : SAY.doorUse), 3, 2.2);
     else if (h.returning) {   // 1.20: one who brings back something of yours may say so
       const tr = h.inv.some(x => x.src === 'trophy');
       if (tr) { fl.stats.returnGear = (fl.stats.returnGear || 0) + 1; tl('rq', h.id); }
-      say(h, pick(tr && Math.random() < 0.5 ? SAY.returnGear : SAY.returnBack), 3, 2.4);
+      if (!h.nemesis) say(h, pick(tr && Math.random() < 0.5 ? SAY.returnGear : SAY.returnBack), 3, 2.4);   // 1.23: a Nemezis said his own line
     }
     if (h.inv.some(x => x.type === 'lantern')) fl.stats.lanterns = (fl.stats.lanterns || 0) + 1;   // 1.20: parties with a lantern
     if (h.returning && mods.badMemories) h.fear = Math.max(h.fear, mods.badMemories * h.courage);   // Złe wspomnienia
@@ -870,6 +878,7 @@
     if (h.fled || h.dead) return;
     if (!h.crystal && !h.fleeing && fl.time < h.panicUntil) { h.fleeing = true; fl.stats.panicExits = (fl.stats.panicExits || 0) + 1; }   // ran out in a panic: that is a hero scared away
     h.fled = true; h.bubble = null; fl.stats.escaped++; h.outR = realNow; h.outKind = 'out';   // 1.09: fades at the door
+    if (h.nemesis) { fl.stats.nemesisOut = (fl.stats.nemesisOut || 0) + 1; if (h.crystal) fl.stats.nemesisCrystal = (fl.stats.nemesisCrystal || 0) + 1; tl('no', h.id, h.crystal ? 1 : 0); }   // 1.23: he got away (he comes back)
     const P = fl.party;
     if (h.crystal) {
       h.crystal = false; h.carriedOut = true; fl.crystalLost = true; run.crystals = Math.max(0, run.crystals - 1); fl.stats.crystalLost++;
@@ -959,8 +968,8 @@
     if (stageOf() < 4) return;   // 1.12: the returners come with the full game
     run.returners = run.returners || [];
     fl.heroes.forEach(h => {
-      if (!h.fled || h.dead || h.boss || run.returners.length >= 8) return;
-      if (Math.random() >= (h.fleeing ? 0.55 : 0.4) * (1 + (mods.moreReturn || 0))) return;
+      if (!h.fled || h.dead || h.boss || (run.returners.length >= 8 && !h.nemesis)) return;   // 1.23: a Nemezis who got away always comes back (also past the 8)
+      if (!h.nemesis && Math.random() >= (h.fleeing ? 0.55 : 0.4) * (1 + (mods.moreReturn || 0))) return;
       let phys = h.phys, phobia = h.phobia, scar = null;
       const topFear = Object.entries(h.fearBy || {}).sort((a, b) => b[1] - a[1])[0], topDmg = Object.entries(h.dmgBy || {}).sort((a, b) => b[1] - a[1])[0];
       if (h.fleeing && topFear && !phobia) {   // what scared him away becomes a phobia
@@ -968,11 +977,13 @@
         if (k) { phobia = k; scar = 'fobia: ' + PHOBIAS[k].name + ', ' + (h.female ? 'wyniosła' : 'wyniósł') + ' ją z Twojego lochu'; }
       }
       if (!scar && topDmg && topDmg[1] > 0.3 * h.max) { phys = SCAR_RES[topDmg[0]]; scar = PHYS[phys].name[h.female ? 1 : 0] + ' po ranach z Twojego lochu'; }   // the wound that nearly killed him hardened him
-      run.returners.push({ nm: h.nm, female: h.female, type: h.type, lvl: h.lvl, back: run.wave + 2 + (Math.random() < 0.5 ? 1 : 0), phys, phobia, trait: h.trait,
-        scar: scar || 'pamięta Twój loch', times: ((h.entry && h.entry.times) || 0) + 1, crystal: !!h.carriedOut,
+      const e = { nm: h.nm, female: h.female, type: h.type, lvl: h.lvl, back: run.wave + 2 + (Math.random() < 0.5 ? 1 : 0), phys, phobia, trait: h.trait,
+        scar: scar || (h.nemesis && h.entry && h.entry.scar) || 'pamięta Twój loch', times: ((h.entry && h.entry.times) || 0) + 1, crystal: !!h.carriedOut,   // 1.23: a Nemezis keeps his old scar
         // 1.20 (hook for 1.23): the best two things he took from your dungeon come back with him, and one who got lost brings a lantern
         gear: h.inv.filter(x => ['loot', 'relic', 'body', 'trophy'].includes(x.src)).sort((a, b) => b.r - a.r).slice(0, 2).map(x => ({ type: x.type, r: x.r, src: x.src, wave: x.wave || run.wave,
-          ownerNm: x.ownerNm, ownerFem: x.ownerFem, wasRelic: x.src === 'relic' || !!x.wasRelic, charges: powerCharges(x.type, x.r) })), wasLost: !!h.lostEver, goldOut: h.gold || 0 });
+          ownerNm: x.ownerNm, ownerFem: x.ownerFem, wasRelic: x.src === 'relic' || !!x.wasRelic, charges: powerCharges(x.type, x.r) })), wasLost: !!h.lostEver, goldOut: h.gold || 0 };
+      nemesisEntry(h, e);   // 1.23: back 2+ times or out with a crystal: a Nemezis (title, grudge, the rooms and traps he knows)
+      run.returners.push(e);
       fl.stats.returnersOut = (fl.stats.returnersOut || 0) + 1;
     });
   }
@@ -1247,11 +1258,13 @@
     fl.heroes.forEach(o => { if (o !== h && !o.dead && !o.fled && !o.gone && Math.abs(o.tx - h.tx) + Math.abs(o.ty - h.ty) <= 5) lookAt(o, h.x, h.y); });   // 1.10: the others turn to him
     if (kind !== 'heart') h.playerDmg += real * (kind === 'monster' ? MON_FACTOR : 1);
     feltBy(h, real / h.max);   // 1.05: what hurt him (told in the tavern)
+    if ((kind === 'trap' || kind === 'monster') && src && src.x !== undefined) grudgeAdd(h, src, real / h.max);   // 1.23: and where it stood (a Nemezis' grudge)
     if (attr) { const b = bt(attr); if (kind === 'monster') b.passiveDmg += real; else b.dmg += real; }
     if (kind === 'trap') fl.party.morale = Math.max(0.15, fl.party.morale - 0.03);
     if (kind === 'trap' && real > 0 && src && src.x !== undefined) { const hm = fl.party.hurt || (fl.party.hurt = new Map()); (hm.get(src) || hm.set(src, new Set()).get(src)).add(h.id); }   // 1.22: who a trap hurt this wave (notThisWay)
     if (h.hp <= 0) { h.hp = 0; h.dead = true; h.killer = kind === 'monster' ? src : null; kill(h, kind, attr); return; }   // 1.21: killer
     bondHurt(h, real, kind, src);   // 1.21
+    if (h.nemesis && !h.nemRaged && h.hp < 0.3 * h.max) nemesisRage(h);   // 1.23: badly hurt, he will not run this time
     if (kind === 'trap' && real >= 0.25 * h.max && fl.time - (fl.party.lastSay.friendHit || -99) > 5) {   // 1.05: a friend sees it and reacts
       const o = alive().find(q => q !== h && !q.fleeing && !panicking(q) && !q.lost && hdist(q, h) <= 4);
       if (o) { fl.party.lastSay.friendHit = fl.time; fl.party.queueSay.push({ id: o.id, text: nameFill(pick(SAY.friendHit), h), at: fl.time + 0.5, how: 'loud' }); }
@@ -1325,7 +1338,7 @@
     if (mods.deepsleep && attr && ACTIVE[attr] && h.state === 'rest' && isRt(h.room, 'haven')) amt *= 1 + mods.deepsleep;   // 1.18 Sen bez przebudzenia: from your traps and monsters, not his own nightmares
     amt *= phobiaMult(h, attr, src, dtp);   // v14: phobias (x2) and this wave's traumas (x1,5)
     if (attr) h.fearBy[attr] = (h.fearBy[attr] || 0) + amt; else if (src) h.fearBy[src] = (h.fearBy[src] || 0) + amt;
-    if (attr && fl.firing && fl.firing.type === attr) feltBy(h, amt / h.courage);   // 1.05: what scared him (told in the tavern)
+    if (attr && fl.firing && fl.firing.type === attr) { feltBy(h, amt / h.courage); grudgeAdd(h, fl.firing, amt / h.courage); }   // 1.05: what scared him (told in the tavern); 1.23: and where (a grudge)
     const sk = src || attr || 'other'; fl.stats.fearSrc[sk] = (fl.stats.fearSrc[sk] || 0) + amt;
     const before = h.fear;
     h.fear += amt;
@@ -1338,12 +1351,13 @@
     const pk = h.trait === 'coward' ? 0.55 : 0.7;   // cowards panic early
     // 1.05: a barbarian on the edge of panic gets angry instead (once in a while; not in Okowy)
     if (h.type === 'barbarian' && before < pk * lim && h.fear >= pk * lim && !h.fleeing && !h.crystal && fl.time > h.rageCd && startRage(h, 'panic')) { h.fear = Math.max(0, h.fear - 0.25 * lim); fl.stats.rageNoPanic = (fl.stats.rageNoPanic || 0) + 1; return; }
-    if (before < pk * lim && h.fear >= pk * lim && !h.fleeing && !h.crystal && fl.time > h.panicUntil) {
+    if (before < pk * lim && h.fear >= pk * lim && !h.fleeing && !h.crystal && fl.time > h.panicUntil && !nemHold(h)) {   // 1.23: not a Nemezis above 15% HP
       h.panicUntil = fl.time + 2 + Math.random() * 2; h.needPlan = true; fl.stats.panics++; say(h, pick(SAY.panic), 3, 1.8, 'loud');
     }
-    if (h.fear >= lim && h.crystal && !caged(h)) dropCrystal(h);   // v14.1: terror beats greed: the carrier throws the crystal away and runs
+    if (h.fear >= lim && h.crystal && !caged(h) && !nemHold(h)) dropCrystal(h);   // 1.23: nemHold   // v14.1: terror beats greed: the carrier throws the crystal away and runs
     if (h.fear >= lim && !h.fleeing && !h.crystal && !caged(h)) startFlee(h);   // v14.1: the cage holds, fear or not (see cage deaths)
   }
+  const nemHold = h => !!h.nemesis && h.hp > 0.15 * h.max;   // 1.23: a Nemezis does not panic or flee by fear while above 15% HP
   function dropCrystal(h) {
     fl.stats.crystalDropped = (fl.stats.crystalDropped || 0) + 1; tl('cd', h.id);
     say(h, pick(SAY.crystalFear), 4, 2.2); floatHero(h, 'Rzuca kryształ!', '#ff9ab0', 15, -1);
@@ -1351,6 +1365,7 @@
     if (!h.fleeing) startFlee(h);
   }
   function startFlee(h) {
+    if (nemHold(h)) return;   // 1.23: a Nemezis above 15% HP does not run from fear (nor from a heart that repels them)
     if (caged(h)) { freeCaged(h, false, 'panic'); say(h, pick(SAY.cageBreak), 4); }
     h.fleeing = true; h.needPlan = true; fl.stats.flees++; tl('fl', h.id); tutPop('flee');
     if (mods.fleeShock) alive().forEach(o => { if (o !== h && !o.fleeing && canHearShout(o, h)) addFear(o, mods.fleeShock * o.courage, null, 'screams'); });   // Krzyki w ścianach (1.18: who hears his shout, as for every other shout since 1.17)
@@ -1383,7 +1398,7 @@
     const L = leader();
     alive().forEach(o => {
       if (L && o !== L && !canHearShout(o, L) && !o.fleeing) return;
-      o.plan = 'flee'; if (!o.crystal && !caged(o) && o.boss !== 'champion') { o.fleeing = true; }
+      o.plan = 'flee'; if (!o.crystal && !caged(o) && o.boss !== 'champion' && !nemHold(o)) { o.fleeing = true; }   // 1.23: a Nemezis walks out with them like the champion
       o.needPlan = true; if (o.state === 'rest' || o.state === 'talk' || o.state === 'boss' || o.state === 'wait') o.state = 'walk';
     });
     if (L) say(L, pick(SAY.partyFlee), 4, 2.2);
@@ -1419,6 +1434,8 @@
     if (mods.skullwall && rkOf(h.room) === 'ossuary') run.stacks.skullwall = (run.stacks.skullwall || 0) + 1;   // 1.18 Mur z czaszek
     addFloat(p.x, p.y - 0.1, 'Śmierć +' + fmtE(pts) + ' Esencji', '#ff7a86', 15, -0.4);
     const P = fl.party;
+    if (h.nemesis) nemesisKilled(h, p);   // 1.23: the bounty on his head is paid
+    rememberFallen(h);   // 1.23: the tavern will know where he died
     if (h.crystal) crystalReturns(h);   // the crystal falls and rolls back to the heart
     // 1.18 Kocioł ogra: in a Jaskinia ogra nothing spills: 2 Esencji an item and 1 a coin (at most 8 a hero, times the copies)
     if (mods.cauldron && rkOf(h.room) === 'ogre' && (h.inv.length || h.gold > 0)) {
@@ -1440,6 +1457,8 @@
     const echo = mods.farecho && isRt(h.room, 'grotto');   // 1.18 Niosące się echo: who hears a death in a Grota fears it like a witness
     const Lnow = leader();
     if (mods.lastGasp) alive().forEach(o => { if (o.room === h.room) addFear(o, mods.lastGasp * o.courage, null, 'death'); });   // Ostatnie tchnienie
+    const nd = h.nemesis ? alive().find(o => !o.fleeing && !panicking(o) && !caged(o) && canSee(o, h)) : null;   // 1.23: a companion who sees a Nemezis fall
+    if (nd) { say(nd, nameFill(pick(SAY.nemesisDown), h), 4, 2.4); fl.stats.nemesisDown = (fl.stats.nemesisDown || 0) + 1; }
     alive().forEach(o => {
       const near = canSee(o, h), hears = !near && canHearShout(o, h);
       if (!near && !hears) return;
@@ -1458,7 +1477,7 @@
         addFear(o, base * 0.3, null, 'death');
         return;
       }
-      if (Math.random() < 0.55) say(o, nameFill(pick(o.fleeing || goingOut() ? SAY.deathFlee : SAY.death), h), 4, 2.2);   // 1.05: no talk of revenge while running
+      if (o !== nd && Math.random() < 0.55) say(o, nameFill(pick(o.fleeing || goingOut() ? SAY.deathFlee : SAY.death), h), 4, 2.2);   // 1.05: no talk of revenge while running (1.23: nd said nemesisDown)
       const f0 = o.fear;
       addFear(o, base * (o.trait === 'coward' ? 1.5 : 1), null, 'death');
       fl.stats.deathFear += Math.max(0, o.fear - f0);

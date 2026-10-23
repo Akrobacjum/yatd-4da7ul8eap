@@ -1856,7 +1856,53 @@
       'Ała... Wy teraz, ja z tyłu.', 'Za wami się schowam, wybaczcie!'],
     nearExit: ['Widzę światło!', 'Już blisko! Nie zwalniać!', 'Czuję świeże powietrze!', 'Jeszcze parę kroków!', 'Wyjście! Tam, przed nami!',
       'Prawie w domu!', 'Ostatni zakręt, przysięgam!', 'Nie teraz się potknąć! Dalej!', 'Słyszę wiatr! To wyjście!',
-      'Jeszcze trochę, a będziemy bogaci!']
+      'Jeszcze trochę, a będziemy bogaci!'],
+    // 1.23 Nemezis (e123/R4): returners with a grudge, the bounty, the fallen remembered ({g} genitive / {v} vocative filled by the code)
+    nemesisIntro: ['Wrócił{em|am}. Ten loch mnie pamięta.', 'Znam te ściany. Znam każdy ich zgrzyt.', 'Obiecał{em|am} sobie, że tu wrócę.',
+      'Mam z tym lochem rachunek do wyrównania.', 'Przysiągł{em|am} zemstę. Dziś ją biorę.', 'Blizny pamiętają drogę lepiej niż ja.',
+      'Witaj, stary wrogu. Tęskniłeś?', 'Nie śpię po nocach przez to miejsce.', 'Ostatnim razem ledwo uszł{em|am}. Nie dziś.',
+      'Tym razem to ja wyjdę z uśmiechem.'],
+    nemesisGrudge: ['To ty. Poznał{bym|abym} cię wszędzie.', 'Ty! Wciąż noszę twój ślad na skórze.', 'Nareszcie. Ty i ja.',
+      'Czekał{em|am} na to spotkanie.', 'Moja blizna cię pamięta.', 'Dług do spłacenia. Teraz.', 'Tym razem nie ja będę krwawić.',
+      'Ach, mój stary dręczyciel.', 'Co noc mi się śnisz.', 'Dziś się policzymy.'],
+    nemesisWarn: ['Ostrożnie, tam coś na nas czeka.', 'Pamiętam to, co dalej. Nie lubi gości.', 'Patrzcie pod nogi. Ja wtedy nie patrzył{em|am}.',
+      'Tam dalej boli. Wiem, sprawdził{em|am}.', 'Nie dajcie się zwieść ciszy.', 'Gdzieś tam zostawił{em|am} kawał skóry.',
+      'Głowy nisko i oczy otwarte.', 'Słuchajcie, był{em|am} tu już.', 'Następny kawałek jest paskudny.',
+      'Zaraz będzie miejsce, gdzie oberwał{em|am}.'],
+    nemesisReply: ['Skoro ty tak mówisz...', 'Dobrze mieć kogoś, kto tu był.', 'A może po prostu masz pietra?', 'Słyszał{em|am} o tobie w karczmie.',
+      'Twoje blizny mówią same za siebie.', 'Mam nadzieję, że pamięć cię nie myli.', 'Brr. Wolał{bym|abym} tego nie wiedzieć.',
+      'Wierzę ci. Niestety.', 'Skoro tobie się udało, nam też się uda.', 'Nie strasz. I bez tego się trzęsę.'],
+    nemesisFollow: ['Idę za tobą, {v}.', 'Trzymam się ciebie, {v}.', 'Za tobą, {v}. Choćby na samo dno.', 'Ufam ci, {v}. Pokaż drogę.',
+      'Dobra, {v}. Twoje ścieżki, moje nogi.', 'Nie spuszczam cię z oczu, {v}.', 'Gdzie ty, tam i ja, {v}.', 'Pokaż, {v}, którędy się tu przeżywa.',
+      '{v}, ty prowadź. Ja będę słuchać.'],
+    nemesisRage: ['Nie tym razem! Nie ucieknę!', 'Krwawię? Dobrze. Jeszcze żyję.', 'Już raz uciekł{em|am}. Dość!', 'Zostaję! Choćby do końca!',
+      'To wszystko, na co cię stać?!', 'Nie cofnę się ani o krok!', 'Za każdą bliznę! Za każdą!', 'Ból? Znam go. Nie boję się.',
+      'Padnę tu, ale nie na kolanach!', 'Nigdy więcej ucieczki!'],
+    nemesisBoast: ['Ha! Tym razem nic z tego, lochu!', 'Pamiętał{em|am}. I to wystarczyło.', 'Za pierwszym razem bolało. Teraz nie.',
+      'Znam twoje sztuczki, lochu!', 'I co? Wciąż stoję!', 'Raz mnie nabrano. Drugi raz nie.', 'Tak się to robi!',
+      'Drogo zapłacił{em|am} za tę naukę. Opłaciło się.', 'Ledwo, ale prze{szedłem|szłam}!', 'Blizny uczą lepiej niż mistrzowie.'],
+    nemesisEscape: ['Obiecał{em|am}, że wrócę. I proszę!', 'Nie zatrzymałeś mnie, lochu!', 'Kryształ jest mój! Zemsta też!',
+      'Wychodzę bogat{szy|sza} o kryształ i zemstę.', 'To za moje blizny!', 'Opowiedzą o tym w każdej karczmie!', 'Teraz to ty mnie zapamiętasz!',
+      'Wolność! I kryształ w garści!', 'Kto się teraz śmieje, lochu?', 'Tak kończy się zemsta. Pięknie.'],
+    nemesisDown: ['Nawet dla {g} ten loch był za silny.', 'Koniec {g}. Nie wierzę.', 'Jeśli nie {g}, to kto z nas wyjdzie?', 'Bogowie... ciało {g}.',
+      'Tyle zemsty i taki marny koniec {g}.', 'Szliśmy śladem {g}. I co teraz?', 'Krzyk {g}... będę go słyszeć do końca.', 'Bez {g} jesteśmy ślepi.',
+      'Loch zabrał życie {g}. Zemsta przegrała.'],
+    nemesisFallen: ['Zemsta {g} skończyła się w tym lochu.', 'W karczmie wciąż piją za pamięć {g}.', 'Mówią, że duch {g} wciąż tu krąży.',
+      'Z całej sławy {g} zostały tylko opowieści.', 'Gildia wciąż trzyma list z imieniem {g}.', 'Od śmierci {g} nikt tu nie żartuje.',
+      'Na cześć {g}. Niech loch to zapamięta.', 'Z {g} została tylko legenda.', 'W imieniu {g}. Za wszystkie blizny.'],
+    fallenMemory: ['W tym miejscu urwał się ślad {g}.', 'Mówią, że tu wybiła ostatnia godzina {g}.', 'Tutaj... tutaj skończyła się opowieść {g}.',
+      'Ciszej. To miejsce śmierci {g}.', 'Podobno tu jeszcze słychać krzyk {g}.', 'Zdejmijcie kaptury. Tu leży pamięć {g}.',
+      'Podobno z {g} nic tu nie zostało.', 'Brr. Tu się skończyło szczęście {g}.', 'Za duszę {g}. Krótka modlitwa.'],
+    fallenReply: ['Nie chcę skończyć tak samo.', 'Karczmarze lubią zmyślać.', 'Niech spoczywa w pokoju.', 'To nie my. Jeszcze nie.',
+      'Ciarki mi przeszły po plecach.', 'Ostrożnie, skoro tu kogoś dopadło.', 'Bogowie, miejcie tę duszę w opiece.',
+      'Ilu jeszcze tu leży, o których nie wiemy?', 'Lepiej nie zostawać tu długo.', 'Wypijemy za to, jak wrócimy.'],
+    bountyTalk: ['Gildia płaci za ten loch jak za smoka.', 'Za kryształ stąd będzie złoto i chwała.', 'Gildia podobno znów podniosła nagrodę.',
+      'Nagroda czeka. Wystarczy przeżyć.', 'Taka nagroda to nie przypadek.', 'Za tę nagrodę kupię sobie karczmę.',
+      'Gildia nie płaci tyle za byle co.', 'Na tablicy w gildii tylko ten loch.', 'Nagroda za ten loch rośnie z każdym trupem.',
+      'Myśl o nagrodzie, nie o strachu.'],
+    bountyReply: ['Martwym nagrody nie wypłacają.', 'Złoto liczy się po wyjściu.', 'Ja tam wolę żyć biedniej.', 'Pół dla mnie, pamiętaj.',
+      'Nie dziel skóry na niedźwiedziu.', 'Wysoka nagroda, wysokie ryzyko.', 'Ciekawe, ilu już po nią przyszło.', 'Za takie złoto warto się spocić.',
+      'Gildia płaci, bo nikt nie wraca.', 'Najpierw kryształ, potem marzenia.']
   };
   // 1.10: answers to the everyday lines (someone close by says one now and then)
   const CHAT_REPLY = {
@@ -2773,6 +2819,36 @@
       { b: 'barbarian', l: [['B', 'Boisz się, {Av}?'], ['A', 'Pamiętam. To co innego.'], ['B', 'Hm. Mądre słowa jak na ciebie.']] },
       { bt: 'coward', l: [['B', 'Dzięki bogom. Myślał{em|am}, że każesz tam iść.'], ['A', 'Głup{i|ia} nie jestem.'], ['B', 'Dzisiaj nie.']] },
       { l: [['B', 'Inną drogą będzie dłużej.'], ['A', 'Dłużej, ale na własnych nogach.'], ['C', 'Wolę na własnych.']] }
+    ],
+    // 1.17: talk about what they look at, news of a death, the council
+    nemesisIntro: [
+      { bt: 'coward', l: [['B', 'To ty stąd wrócił{A:eś|aś}? Ja chyba zawrócę.'], ['A', 'Za późno. Wejście już za nami.'], ['B', 'Mogł{A:eś|aś} to powiedzieć wcześniej.']] },
+      { b: 'bard', l: [['B', 'Pieśń o twojej zemście już się pisze.'], ['A', 'Zaśpiewasz, jak wyjdziemy.'], ['B', 'Jeśli wyjdziemy, będzie druga zwrotka.']] },
+      { bt: 'greedy', l: [['B', 'Skoro znasz drogę, znasz i skarbiec?'], ['A', 'Znam drogę do bólu. Mnie to wystarcza.'], ['B', 'Mnie nie.']] },
+      { bv: 2, l: [['B', 'Znał{em|am} już mścicieli. Zemsta ślepi.'], ['A', 'Mnie otworzyła oczy.'], ['B', 'Oby ci jej starczyło do końca.']] },
+      { br: 0, l: [['B', 'Naprawdę stąd wyszł{A:eś|aś}? Żyw{A:y|a}?'], ['A', 'Na tyle żyw{y|a}, żeby wrócić.'], ['B', 'Rety...']] },
+      { b: 'priest', l: [['B', 'Zemsta to ciężki bagaż, {Av}.'], ['A', 'Niosę go od dawna.'], ['B', 'Oby bogowie zdjęli go z twoich barków.']] },
+      { l: [['B', 'Ile razy już tu był{A:eś|aś}?'], ['A', 'Dość, żeby mieć tu wrogów.'], ['C', 'I dość, żeby mieć blizny.']] },
+      { b: 'barbarian', l: [['B', 'Zemsta! To rozumiem!'], ['A', 'Tylko mi jej nie zabierz.'], ['B', 'Podzielimy się. Ja biorę resztę.']] }
+    ],
+    fallenMemory: [
+      { bt: 'coward', l: [['B', 'Czemu mówisz to akurat teraz?!'], ['A', 'Żebyś patrzył{B:|a} pod nogi.'], ['B', 'Patrzę. Cały czas patrzę.']] },
+      { b: 'priest', l: [['B', 'Niech ta dusza znajdzie spokój.'], ['A', 'Oby. Tu raczej go nie znajdzie.']] },
+      { l: [['B', 'Skąd wiesz, że to tu?'], ['A', 'Karczmarz rysował mi plan na stole.'], ['B', 'Piwem?'], ['A', 'Rozlanym. Ale wyraźnie.']] },
+      { bt: 'careful', l: [['B', 'Skoro kogoś tu dopadło, to i nas może.'], ['A', 'Dlatego mówię.']] },
+      { b: 'bard', l: [['B', 'Znam pieśń o tym miejscu. Smutną.'], ['A', 'Nie śpiewaj jej tutaj.'], ['B', 'Nawet nie śmiał{bym|abym}.']] },
+      { bt: 'greedy', l: [['B', 'Może coś tu zostało? Sakiewka, pierścień?'], ['A', 'Został pech. Bierzesz?'], ['C', 'Ja niczego tu nie dotykam.']] },
+      { bv: 2, l: [['B', 'Pamiętam tę duszę z gildii.'], ['A', 'Naprawdę? I jaka była?'], ['B', 'Odważna. Za bardzo.']] },
+      { br: 0, l: [['B', 'Czy tu wszyscy kiedyś kończą?'], ['A', 'Nie ci, którzy słuchają starszych.'], ['B', 'To ja słucham!']] }
+    ],
+    bountyTalk: [
+      { bt: 'greedy', l: [['B', 'Ile dokładnie płacą?'], ['A', 'Dość, żebyś przestał{B:|a} pytać.'], ['B', 'Nigdy nie przestaję.']] },
+      { bt: 'coward', l: [['B', 'Wysoka nagroda znaczy wysoki stos trupów.'], ['A', 'Albo bogatych szczęściarzy.'], ['B', 'Wolę być żyw{y|a} i biedn{y|a}.']] },
+      { b: 'thief', l: [['B', 'Gildia płaci, a ja i tak wezmę więcej.'], ['A', 'Podzielimy uczciwie.'], ['B', 'Oczywiście. Uczciwie.']] },
+      { bv: 2, l: [['B', 'Za młodu też liczył{em|am} złoto przed walką.'], ['A', 'I co?'], ['B', 'Mam mniej palców niż wtedy.']] },
+      { b: 'barbarian', l: [['B', 'Nagroda? Ja tu przy{szedłem|szłam} się bić.'], ['A', 'To oddaj mi swoją część.'], ['B', 'O, co to, to nie.']] },
+      { l: [['B', 'Ciekawe, czemu gildia sama tu nie zejdzie.'], ['A', 'Bo ma nas.'], ['C', 'Jakie to krzepiące.']] },
+      { b: 'priest', l: [['B', 'Złoto nie kupi miejsca u bogów.'], ['A', 'Ale kupi niezłą trumnę.'], ['B', 'Wolał{bym|abym} jej nie potrzebować.']] }
     ]
   };
   // 1.13 (author: alone, they talked to the air): what a hero says instead when nobody can hear him (nobody in earshot).
@@ -2948,7 +3024,14 @@
     nearExit: ['Jeszcze trochę... Dam radę.', 'Światło. Nareszcie.', 'Jeszcze tylko kawałek, nogi...', 'Czuję wiatr. Prawie...',
       'Jeśli dojdę, nikt mi nie uwierzy.', 'Sam{|a} z kryształem. Kto by pomyślał.'],
     lastStand: ['Dobra. Ja i te drzwi. Zobaczymy.', 'Nikt tędy nie przejdzie. Nawet bez świadków.', 'Niech przyjdą. Stoję.',
-      'Ładne miejsce na ostatnią walkę. Ciasne.', 'Tu się zatrzymam. Byle tamci zdążyli.', 'Bogowie, jeśli patrzycie, to teraz.']
+      'Ładne miejsce na ostatnią walkę. Ciasne.', 'Tu się zatrzymam. Byle tamci zdążyli.', 'Bogowie, jeśli patrzycie, to teraz.'],
+    // 1.23: alone
+    nemesisIntro: ['Tylko ja i ty, stary lochu.', 'Pamiętam ten zapach. Wrócił{em|am}.', 'Spokojnie. Znasz to miejsce.',
+      'Ten loch zabrał mi sen. Odbiorę go.', 'Moja zemsta, moja sprawa.', 'Śnił{em|am} o tych korytarzach. Złe sny.'],
+    nemesisGrudge: ['Znowu się widzimy. Tylko my dwoje.', 'Nikt nie patrzy. Tym lepiej.', 'Ręce mi drżą... ale nie ze strachu.',
+      'To przez ciebie mam tę bliznę.', 'Sam{|a} na sam z tobą. Wreszcie.', 'Pamiętam, jak to bolało. Ty też zapamiętasz.'],
+    fallenMemory: ['Sam{|a} w miejscu śmierci {g}. Pięknie.', 'Ciekawe, czy duch {g} mnie widzi.', 'Spokój duszy {g}. I mojej skórze też.',
+      'Tu urwała się historia {g}. Moja jeszcze nie.', 'Wybacz, że przechodzę przez twój grób.']
   };
   const SOLO_MUTE = new Set(['prepWard', 'prepJam', 'prepDisarm', 'prepShield', 'lootWait', 'friendHit', 'friendLow', 'rescue', 'scoutReply', 'councilReply', 'prepReply', 'restReply', 'restPriest', 'restScene',
     'argueLoot', 'argueCareful', 'argueCoward', 'argueBrave', 'decideYes', 'decideNo', 'argueSearch', 'replySearch', 'argueRetreat', 'agreeRetreat', 'reassure', 'surviveFirst',
