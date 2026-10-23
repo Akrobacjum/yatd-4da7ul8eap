@@ -32,14 +32,6 @@
   "text": "Na podłogę. Więzi bohatera; jeśli drużyna go nie uwolni, umiera w klatce."
  },
  {
-  "id": "u-portrait",
-  "kind": "unlock",
-  "rar": "c",
-  "unlock": "portrait",
-  "name": "Nowa pułapka: Portret",
-  "text": "Na ścianę. Nie rani, tylko straszy cały kawałek pokoju."
- },
- {
   "id": "u-spider",
   "kind": "unlock",
   "rar": "c",
@@ -132,7 +124,7 @@
   "kind": "instant",
   "rar": "c",
   "name": "Zastrzyk Esencji",
-  "text": "Od razu: +20 Esencji, nawet ponad pojemność.",
+  "text": "Od razu: +20 Esencji.",
   "apply": "fn: () => { fl.essence += 20; run.essence = fl.essence; }"
  },
  {
@@ -166,7 +158,7 @@
   "rar": "c",
   "tag": "odnowa -25%",
   "name": "Szybkie przeładowanie",
-  "text": "Odnowienie wszystkich pułapek krótsze o 25%.",
+  "text": "Odnowienie wszystkich pułapek i zdolności potworów krótsze o 25%.",
   "apply": "fn: m => { m.cooldown *= 0.75; }"
  },
  {
@@ -175,7 +167,7 @@
   "rar": "c",
   "tag": "ściany -20%",
   "name": "Głodne ściany",
-  "text": "Strzały, ogień i portrety przeładowują się o 20% szybciej.",
+  "text": "Strzały, ogień, portrety, oczy i lustra przeładowują się o 20% szybciej.",
   "apply": "fn: m => { m.wallCd *= 0.8; }"
  },
  {
@@ -262,7 +254,7 @@
   "req": "portrait",
   "tag": "portret +",
   "name": "Galeria grozy",
-  "text": "Portret sięga o 2 pola dalej i straszy o 30% mocniej.",
+  "text": "Portret sięga o 2 pola dalej i straszy o 30% mocniej. Portret z cechą 3. poziomu (także w Galerii) i tak straszy cały pokój, więc dostaje tylko strach.",
   "apply": "fn: m => { m.portraitR += 2; m.portraitFear *= 1.3; }"
  },
  {
@@ -273,7 +265,7 @@
   "unique": true,
   "tag": "gniazdo",
   "name": "Pajęcze gniazdo",
-  "text": "Ugryzienie pająka oplata siecią cały kwadrat 3×3.",
+  "text": "Ugryzienie pająka oplata siecią cały kwadrat 3×3 (pająk z cechą 3. poziomu robi to i bez karty), a pajęczyna każdego pająka trzyma 2 s dłużej.",
   "apply": "fn: m => { m.spiderNest = true; }"
  },
  {
@@ -455,7 +447,7 @@
   "rar": "r",
   "tag": "zgubieni ×2",
   "name": "Kręte korytarze",
-  "text": "Zgubiony bohater daje 2 razy więcej Grozy.",
+  "text": "Zgubiony bohater daje 2 razy więcej Grozy (Groza ze zgubienia płynie przez jego pierwsze 12 s).",
   "apply": "fn: m => { m.lostMult *= 2; }"
  },
  {
@@ -510,7 +502,7 @@
   "rar": "r",
   "tag": "plotki /2",
   "name": "Głuche ściany",
-  "text": "Uciekinierzy pamiętają tylko połowę tego, co widzieli.",
+  "text": "Uciekinierzy pamiętają tylko połowę tego, co widzieli: pułapek i pokoi, ale też łupu (następna fala przychodzi mniej chciwa).",
   "apply": "fn: m => { m.rumorKeep *= 0.5; }"
  },
  {
@@ -539,7 +531,7 @@
   "req": "fn: () => run.unlocked.has('web') || run.unlocked.has('spider')",
   "tag": "kolce+sieć",
   "name": "Lepkie kolce",
-  "text": "Kolce zadają 2 razy więcej bohaterom oplątanym siecią lub pajęczyną.",
+  "text": "Kolce zadają 2 razy więcej spowolnionym bohaterom (sieć, pajęczyna, zawiasy, trumna, podcięcie goblina, Gołoledź).",
   "apply": "fn: m => { m.stickySpikes += 1; }"
  },
  {
@@ -664,7 +656,7 @@
   "tag": "rośnie",
   "grows": true,
   "name": "Skarbiec",
-  "text": "Każda fala bez utraty kryształu dodaje +2 Esencji do przychodu po każdej kolejnej fali (do końca runu).",
+  "text": "Każda fala bez kradzieży kryształu dodaje +2 Esencji do przychodu po każdej kolejnej fali (do końca runu).",
   "apply": "fn: m => { m.bank += 1; }"
  },
  {
@@ -692,7 +684,7 @@
   "rar": "r",
   "tag": "odnowa -40%, cena",
   "name": "Przeciążenie",
-  "text": "Pułapki odnawiają się o 40% szybciej, ale każde odpalenie ma 6% szans zepsuć pułapkę do końca fali.",
+  "text": "Pułapki i zdolności potworów odnawiają się o 40% szybciej, ale każde odpalenie pułapki ma 6% szans zepsuć ją do końca fali.",
   "apply": "fn: m => { m.cooldown *= 0.6; m.overload += 0.06; }"
  },
  {
@@ -738,7 +730,7 @@
   "rar": "c",
   "tag": "kłute +25%",
   "name": "Hartowane ostrza",
-  "text": "Obrażenia kłute (kolce, strzały, łucznik, goblin, mimik) +25%.",
+  "text": "Obrażenia kłute (kolce i krwawienie, strzały, łucznik, goblin, mimik, nietoperze) +25%.",
   "apply": "fn: m => { m.dmgType.pierce *= 1.25; }"
  },
  {
@@ -756,7 +748,7 @@
   "rar": "c",
   "tag": "ogień +25%",
   "name": "Olej w szczelinach",
-  "text": "Obrażenia od ognia (ogień, proch, podpalenia) +25%.",
+  "text": "Obrażenia od ognia (ogień, proch, podpalenia; nie krwawienie) +25%.",
   "apply": "fn: m => { m.dmgType.fire *= 1.25; }"
  },
  {
@@ -856,7 +848,7 @@
   "rar": "c",
   "tag": "ucieczka straszy",
   "name": "Krzyki w ścianach",
-  "text": "Każdy bohater, który ucieknie ze strachu, straszy pozostałych (10% ich odwagi).",
+  "text": "Bohater, który ucieknie ze strachu, straszy tych, którzy słyszą jego krzyk (10% ich odwagi; krzyk niesie się 14 kroków, nie przez Głuszę i Kamień wyjec).",
   "apply": "fn: m => { m.fleeShock += 0.1; }"
  },
  {
@@ -1020,7 +1012,288 @@
   "unique": true,
   "tag": "od razu gotowe",
   "name": "Szybki montaż",
-  "text": "Pułapki postawione w trakcie fali są gotowe od razu.",
+  "text": "Pułapki postawione w trakcie fali są gotowe od razu, a ich pierwsze odpalenie ma +50% mocy.",
   "apply": "fn: m => { m.quickArm = true; }"
+ },
+ {
+  "id": "drawers",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => hasRk('junk')",
+  "tag": "szuflady",
+  "name": "Zastawione szuflady",
+  "text": "W Graciarni bohaterowie chętniej się rozglądają, a mimik, pozytywka i proch na przeszukiwanym meblu odpalają 2 razy częściej (mimik prawie zawsze).",
+  "apply": "fn: m => { m.drawers += 1; }"
+ },
+ {
+  "id": "lure",
+  "kind": "card",
+  "rar": "r",
+  "tag": "hałas wabi",
+  "name": "Wabiący hałas",
+  "text": "Odgłos pułapki zza ściany ciągnie każdego przywódcę, także ostrożnego i tchórza, a drużyna pamięta, skąd dobiegł, przez 40 s zamiast 25.",
+  "apply": "fn: m => { m.lure += 1; }"
+ },
+ {
+  "id": "onemore",
+  "kind": "card",
+  "rar": "c",
+  "tag": "narada: dłużej",
+  "name": "Jeszcze chwila",
+  "text": "Na naradzie bohaterowie chętniej głosują, żeby szukać dalej (chciwi i łowcy skarbów 2 razy chętniej), a \"jeszcze chwila\" trwa 45 s zamiast 30.",
+  "apply": "fn: m => { m.onemore += 1; }"
+ },
+ {
+  "id": "thickwalls",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "tag": "krzyk 8 kroków",
+  "name": "Grube mury",
+  "text": "Krzyki niosą się tylko na 8 kroków zamiast 14. Drużyna później dowiaduje się o śmierci, klatce, krysztale i ucieczce, a odcięci szukają dalej sami. Za to mniej osób słyszy śmierć.",
+  "apply": "fn: m => { m.thickwalls = true; }"
+ },
+ {
+  "id": "risen",
+  "kind": "card",
+  "rar": "l",
+  "unique": true,
+  "req": "fn: () => hasRt('crypt')",
+  "tag": "Krypta: duchy",
+  "name": "Wstający umarli",
+  "text": "Bohater, który zginie w Krypcie, wstaje jako duch: Twój potwór do końca fali, nie zajmuje miejsca. Najwyżej 2 na falę.",
+  "apply": "fn: m => { m.risen = true; }"
+ },
+ {
+  "id": "cell",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "req": "fn: () => hasRk('prison')",
+  "tag": "zapadnia → klatka",
+  "name": "Cela pod zapadnią",
+  "text": "Bohater, który spadnie przez zapadnię w Więzieniu, ląduje w gotowej klatce w Więzieniu (jeśli jakaś jest) i klatka zamyka się na nim.",
+  "apply": "fn: m => { m.cell = true; }"
+ },
+ {
+  "id": "vaultsnap",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "req": "fn: () => hasRt('vault')",
+  "tag": "Sezam: alarm",
+  "name": "Zatrzask sezamu",
+  "text": "Gdy bohater podniesie łup w Sezamie, odpalają wszystkie gotowe pułapki w Sezamie (jak alarm wabika, najwyżej raz na 6 s).",
+  "apply": "fn: m => { m.vaultsnap = true; }"
+ },
+ {
+  "id": "wisps",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => hasRt('fog')",
+  "tag": "Mgła prowadzi",
+  "name": "Błędne ogniki",
+  "text": "Przywódca, który błądzi we Mgle, idzie prosto na pułapkę, której drużyna nie zna (jeśli jest w tym pokoju), i błądzi o 2 s dłużej.",
+  "apply": "fn: m => { m.wisps += 1; }"
+ },
+ {
+  "id": "body",
+  "kind": "card",
+  "rar": "r",
+  "req": "fn: () => hasRt('hush')",
+  "tag": "ciało straszy",
+  "name": "Odnalezione ciało",
+  "text": "Kto znajdzie ciało towarzysza, o którego śmierci nie wiedział, boi się jak świadek śmierci. W Głuszy 2 razy mocniej (kolejna kopia: +50%).",
+  "apply": "fn: m => { m.body += 1; }"
+ },
+ {
+  "id": "falsecall",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "req": "fn: () => hasRk('haunt')",
+  "tag": "sala woła",
+  "name": "Fałszywe wołanie",
+  "text": "Zgubiony bohater, który woła drużynę w pobliżu Nawiedzonej sali, czasem słyszy odpowiedź z sali i idzie na ten głos prosto do niej.",
+  "apply": "fn: m => { m.falsecall = true; }"
+ },
+ {
+  "id": "frames",
+  "kind": "card",
+  "rar": "r",
+  "req": "fn: () => hasRk('gallery')",
+  "tag": "Galeria patrzy",
+  "name": "Spojrzenie z ramy",
+  "text": "Bohater, który w Galerii ogląda portret, oczy albo lustro, budzi je: gotowa pułapka odpala sama na niego z 1,5 raza większą mocą.",
+  "apply": "fn: m => { m.frames += 1; }"
+ },
+ {
+  "id": "restock",
+  "kind": "card",
+  "rar": "c",
+  "unique": true,
+  "req": "fn: () => hasRk('forge')",
+  "tag": "proch wraca",
+  "name": "Beczki z kuźni",
+  "text": "Proch w Kuźni po wybuchu wraca w następnej fali razem z meblem, za darmo i na tym samym poziomie.",
+  "apply": "fn: m => { m.restock = true; }"
+ },
+ {
+  "id": "lullsleep",
+  "kind": "card",
+  "rar": "r",
+  "req": "fn: () => hasRk('nursery')",
+  "tag": "kołysanka usypia",
+  "name": "Usypianka",
+  "text": "Ranny bohater (poniżej 60% HP), który w Pokoju dziecięcym słucha kołysanki, zasypia na 4 s (kolejna kopia: +2 s): śpi w miejscu, a koszmary straszą go jak w Sanktuarium.",
+  "apply": "fn: m => { m.lullsleep += 1; }"
+ },
+ {
+  "id": "ambush",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "req": "fn: () => hasRk('goblin')",
+  "tag": "nora: zasadzka",
+  "name": "Zasadzka w norze",
+  "text": "Gobliny i szamani w Gobliniej norze siedzą w ukryciu: bohaterowie nie omijają ich, dopóki goblin nie zaatakuje. Pierwszy cios z ukrycia jest 2 razy mocniejszy.",
+  "apply": "fn: m => { m.ambush = true; }"
+ },
+ {
+  "id": "cocoons",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => hasRk('spider')",
+  "tag": "Leże: strach w sieci",
+  "name": "Kokony",
+  "text": "Bohater oplątany w Leżu pająków (sieć albo pająk) boi się 6 na sekundę, dopóki się nie wyplącze (z fobią pająków 2 razy więcej).",
+  "apply": "fn: m => { m.cocoons += 1; }"
+ },
+ {
+  "id": "cauldron",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => hasRk('ogre')",
+  "tag": "Jaskinia: kocioł",
+  "name": "Kocioł ogra",
+  "text": "Bohater, który zginie w Jaskini ogra, trafia do kotła: jego przedmioty i złoto nie wypadają na podłogę, a Ty dostajesz 2 Esencji za każdy przedmiot i 1 za każdą monetę (najwyżej 8 z jednego bohatera).",
+  "apply": "fn: m => { m.cauldron += 1; }"
+ },
+ {
+  "id": "batscatter",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => hasRk('bats')",
+  "tag": "Gniazdo: gubią się",
+  "name": "Spłoszeni w mrok",
+  "text": "Bohater spłoszony przez nietoperze z Gniazda nietoperzy biegnie na oślep i może się zgubić (40% szans, nowicjusz 60%).",
+  "apply": "fn: m => { m.batscatter += 1; }"
+ },
+ {
+  "id": "skullwall",
+  "kind": "card",
+  "rar": "r",
+  "grows": true,
+  "req": "fn: () => hasRk('ossuary')",
+  "tag": "rośnie",
+  "name": "Mur z czaszek",
+  "text": "Kości, trumny i łucznicy w Kaplicy czaszek działają o 5% mocniej za każdego bohatera, który zginął w Kaplicy w tym runie (najwyżej +50%).",
+  "apply": "fn: m => { m.skullwall += 1; }"
+ },
+ {
+  "id": "strip",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => hasRk('armory')",
+  "tag": "Zbrojownia: zdziera",
+  "name": "Zdarte pancerze",
+  "text": "Trafienie kolcami albo strzałą w Zbrojowni strąca bohaterowi talizman, amulet albo zbroję (50% szans): przedmiot spada obok jako łup.",
+  "apply": "fn: m => { m.strip += 1; }"
+ },
+ {
+  "id": "mire",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => hasRt('swamp')",
+  "tag": "Bagno trzyma",
+  "name": "Grzęzawisko",
+  "text": "W Bagnie spowolnienie od pułapek i potworów (sieć, pająk, zawiasy, trumna, podcięcie goblina) trwa 2 razy dłużej.",
+  "apply": "fn: m => { m.mire += 1; }"
+ },
+ {
+  "id": "farecho",
+  "kind": "card",
+  "rar": "r",
+  "req": "fn: () => hasRt('grotto')",
+  "tag": "Grota niesie krzyk",
+  "name": "Niosące się echo",
+  "text": "Krzyk z Groty (śmierć, klatka, kryształ, ucieczka) słychać 2 razy dalej, a kto usłyszy śmierć w Grocie, boi się jak świadek.",
+  "apply": "fn: m => { m.farecho += 1; }"
+ },
+ {
+  "id": "deepsleep",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => hasRt('haven')",
+  "tag": "Sanktuarium ×2",
+  "name": "Sen bez przebudzenia",
+  "text": "Pułapki i potwory w Sanktuarium zadają śpiącym i odpoczywającym 2 razy więcej ran i strachu.",
+  "apply": "fn: m => { m.deepsleep += 1; }"
+ },
+ {
+  "id": "gearlink",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => hasRt('gears')",
+  "tag": "Zębatki: łańcuch",
+  "name": "Sprzężone tryby",
+  "text": "Gdy pułapka w Zębatkach odpali, inne pułapki w tym pokoju odnawiają się o 1 s szybciej.",
+  "apply": "fn: m => { m.gearlink += 1; }"
+ },
+ {
+  "id": "blackice",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => hasRt('ice')",
+  "tag": "Lodownia: upadek",
+  "name": "Gołoledź",
+  "text": "Kto poślizgnie się w Lodowni, przewraca się: przez 1,5 s jest spowolniony (pułapki zadają mu +30%), a poślizgów jest o połowę więcej.",
+  "apply": "fn: m => { m.blackice += 1; }"
+ },
+ {
+  "id": "badnews",
+  "kind": "card",
+  "rar": "c",
+  "tag": "wieści ×2",
+  "name": "Złe wieści",
+  "text": "Śmierć, o której bohater dowie się później (z krzyku zza ścian albo od towarzysza), straszy go 2 razy mocniej.",
+  "apply": "fn: m => { m.badnews += 1; }"
+ },
+ {
+  "id": "coins",
+  "kind": "card",
+  "rar": "c",
+  "tag": "meble: chciwość",
+  "name": "Podrzucone grosze",
+  "text": "Przeszukany mebel 2 razy częściej kryje monetę, a znaleziona moneta podbija chciwość jak zobaczone Monety.",
+  "apply": "fn: m => { m.coins += 1; }"
+ },
+ {
+  "id": "tainted",
+  "kind": "card",
+  "rar": "c",
+  "tag": "mikstury zepsute",
+  "name": "Zepsute mikstury",
+  "text": "Mikstury z Twojego łupu są zepsute: wypita leczy o połowę słabiej i straszy pijącego (10% odwagi).",
+  "apply": "fn: m => { m.tainted += 1; }"
+ },
+ {
+  "id": "rhythm",
+  "kind": "card",
+  "rar": "c",
+  "tag": "combo +1 s",
+  "name": "Rytm lochu",
+  "text": "Okno combo trwa 1 s dłużej (4 s zamiast 3).",
+  "apply": "fn: m => { m.rhythm += 1; }"
  }
 ]

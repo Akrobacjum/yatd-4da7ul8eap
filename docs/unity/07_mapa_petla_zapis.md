@@ -643,13 +643,14 @@ Pierwsza fala po wyłomie wchodzi nim (`fresh`); `finishWave` ustawia `fresh = f
 ### 7.10.1 `frame` i `frameBody` (`p6_loop.js`)
 
 ```
-frame(now):                                     // requestAnimationFrame
+frame(now):                                     // requestAnimationFrame; od 1.24 z tempem klatek (7.10.9)
   try frameBody(now) catch e: perfErr(e); rzuć ponownie poza pętlą (setTimeout)   // błąd jednej klatki nie zatrzymuje gry
   perfNote(now, czas JS)
-  requestAnimationFrame(frame)
+  requestAnimationFrame(frame)                  // od 1.24: kick()
 
 frameBody(now):
   rdt = min(0.05, (now - lastT) / 1000); realNow += rdt          // czas rzeczywisty, przycięty do 50 ms
+                                                                  // od 1.24: 0,05 tylko w toczącej się fali, poza nią do 1,2 s (klatki rzadziej)
   trayTick(rdt)                                                   // animacja paska (sekcja 08)
   if run && fl:
     fl.check: modal lub pauza -> przesuń zegary checku o rdt; inaczej updateCheck()   // sekcja 05
@@ -665,7 +666,7 @@ frameBody(now):
   napisy (floats) i cząsteczki: życie -= rdt
   shake -= rdt
   idle = budowa i brak dotyku > 2 s i nic w ręce i brak przytrzymania i pasek i kamera w spoczynku
-  rysuj co klatkę, a w idle co drugą klatkę
+  rysuj co klatkę, a w idle co drugą klatkę          // do 1.23; od 1.24 decyduje tempo klatek (7.10.9)
 ```
 Krok symulacji NIE jest stały: `step` dostaje `dt / n`, czyli zwykle 1/60 s przy 60 fps i ×1, a najwyżej 0,05 s czasu gry na podkrok (przy ×6: `rdt` 0,05 s daje `dt` 0,3 i 6 podkroków). Wynik zależy od liczby klatek, więc prototyp nie jest deterministyczny.
 
@@ -732,7 +733,7 @@ gałąź QUIET.r == 0 (stara reguła "cały pokój zajęty") jest martwa przy r 
 21. Serce: bohaterowie w stanie `boss` przy planie `assault` i `fl.ending == null`: `P.steal += dt * (1 + 0.5*(n-1))`; serce parzy pierwszego `damage(5*dt, HEART)`; fala 1 odpycha przy `0.85 * stealNeed`; przy `P.steal >= stealNeed() = 4 / 2^mods.glass` kradzież (`takeCrystal`). Od 1.17, gdy nikt nie stoi przy sercu, `P.steal` maleje o `0,5 × dt` do 0 (napoczęty kryształ osiada z powrotem; do 1.16 postęp zostawał). Szczegóły: sekcja 03/05.
 22. `fl.heartHit -= dt`.
 23. Cierpliwość (1.12.1): `fl.patT += dt × (narada albo odpoczynek ? 0,5 : 1)`; `!fl.fearless && fl.ending == null && fl.patT >= S.waveTime` (domyślnie 120 s) -> `becomeImpatient()`. Do 1.16 wołane raz (ustawiało `fearless`). Od 1.17 woła się co krok, dopóki nie ma `fearless`: pierwszy raz otwiera naradę (`P.council`, sekcja 06, 6.3.10a) albo, bez wyboru, `goHome`; w trakcie narady nic nie robi; wynik narady ustawia `fearless` (dom, szturm) albo cofa `fl.patT` o 30 s ("jeszcze chwila", raz na falę).
-24. Siatka bezpieczeństwa: `fl.patT >= S.waveTime + 60` -> każdy w środku wychodzi (`heroExit`).
+24. Od 1.24: `fl.patT >= S.waveTime + 60` i `!fl.exhausted` -> `waveExhausted()` (bohaterowie wyczerpani wychodzą sami, sekcja 03, 1.7, i sekcja 06, 6.15); `fl.patT >= S.waveTime + 150` -> `waveForceOut()` (każdy w środku wychodzi z miejsca, kryształ wraca do serca). Do 1.23: przy `+ 60` każdy w środku wychodził od razu (`heroExit`).
 25. Koniec fali: kolejka pusta, są bohaterowie i każdy zginął albo wyszedł -> `fl.ending = 1.2`.
 26. Dymki mowy, którym minął czas, znikają.
 
@@ -755,13 +756,13 @@ perfSummary(): null przy < 20 klatkach, inaczej
   {frames, fps, gapMed, gapP90, gapMax, slow (% przerw > 50 ms), jsMed, jsP90, jsMax,
    realSec, frozen (% czasu pod checkiem), dpr, w, h, direct (%), split (%), chunks}
 ```
-`TC` (pamięć podręczna kafli) i `SPLIT` (podzielony ekran) to rysowanie, sekcja 08.
+`TC` (pamięć podręczna kafli) i `SPLIT` (podzielony ekran) to rysowanie, sekcja 08. Od 1.24 `perfNote` liczy czas JS tylko w narysowanych klatkach (tempo klatek, 7.10.9); `PERF` mierzy dalej tylko toczącą się falę.
 
 ### 7.10.7 Liczby losowe
 
 Prototyp używa wyłącznie `Math.random` (w 1.17 138 miejsc w kodzie: `p5_ai.js` 61, `p3_flow.js` 36, `p6_loop.js` 19, `p4_traps.js` 10, `p8b_ui.js` 4, `p1_config.js` 3, `p2_state_map.js` 3, `p7_draw.js` 2) plus pomocnicze `rand`, `pick`, `pickS`, `shuffle`. Brak ziarna, brak możliwości powtórki.
 
-### 7.10.8 Stan fali dopisany w 1.17 (pola `fl`, drużyny i bohatera)
+### 7.10.8 Stan fali dopisany w 1.17 i 1.17.1 (pola `fl`, drużyny i bohatera)
 
 Wszystkie te pola żyją jedną falę (`setupFl` tworzy nowe `fl`, `freshParty` nowe `fl.party`, `spawnHero` nowych bohaterów); nie trafiają do zapisu runu. Szczegóły zachowania: sekcja 06 (6.1.3, 6.1.4, 6.3.3a, 6.3.10a, 6.3.13).
 
@@ -787,10 +788,63 @@ Wszystkie te pola żyją jedną falę (`setupFl` tworzy nowe `fl`, `freshParty` 
 | bohater | `cagedAt` | kiedy zamknęła się klatka (decyzja o ratunku najpóźniej po 20 s) |
 | bohater | `healFor`, `healForUntil` | kapłan: kto go wołał, do kiedy idzie najpierw do niego |
 | bohater | `avoidM` | wojownik: potwór, którego omijanie już skomentował |
+| `fl` | `rkSaid` | 1.17.1: pokoje z komnatą, w których już padła kwestia wejścia `SAY.rkEnter` (raz na pokój w fali, jak `fl.rtSaid`) |
+| `fl.stats` | `sawTalk`, `lineSwap`, `lineDrop`, `lineDropK`, `rkEnter`, `chatTry`, `chatPick` | 1.17.1: kwestie `saw:*` powiedziane; kwestie zamienione i pominięte przez `fitLine` (`lineDropK`: pominięte wg klucza); kwestie wejścia do komnaty; próby small talku i próby z wybraną kwestią (dziennik fali, zakładka Liczby, sekcja 08) |
+| bohater | `saw` | 1.17.1: `Set` tagów tego, co widział albo poczuł w tej fali (tworzony pusty w `spawnHero`; sekcja 06, 6.7.10) |
+| bohater | `sawAt` | 1.17.1: `Map` tag -> `fl.time` pierwszego zobaczenia (tworzony przy pierwszym `sawAdd`); kolejność na karcie bohatera i wybór tematów `sawTalk` |
 
 W Unity: pola `PartyState` i `HeroRuntime` (sekcja 02); `fl.deaths` jako lista rekordów z `HashSet<int>` wiedzących.
 
-W Unity: własny RNG z ziarnem (np. xorshift lub PCG) w kilku niezależnych strumieniach: generowanie lochu, fale i bohaterowie, symulacja fali, sklep, kosmetyka (cząsteczki, wybór kwestii). Ziarno runu zapisać w zapisie gry i w logu; razem ze stałym krokiem (7.10.1) daje to powtórki i testy zgodności z prototypem.
+W Unity: własny RNG z ziarnem (np. xorshift lub PCG) w kilku niezależnych strumieniach: generowanie lochu, fale i bohaterowie, symulacja fali, sklep, kosmetyka (cząsteczki, wybór kwestii). Ziarno runu zapisać w zapisie gry i w logu; razem ze stałym krokiem (7.10.1) daje to powtórki i testy zgodności z prototypem. (Ten akapit dotyczy 7.10.7.)
+
+### 7.10.9 Tempo klatek (1.24, część C; `p6_loop.js: FP, IV_FAST, IV_CALM, IV_STILL, fpBusy, frameIv, frameSig, kick, frame`; `p0_head.html: html.still`)
+
+Autor: telefony się grzeją. Do 1.23 każde odświeżenie ekranu uruchamiało grę i rysowało całą mapę (telefon 90/120 Hz: 90-120 razy na sekundę; budowa w bezczynności co drugie). Od 1.24:
+```
+IV_FAST = 1000/60, IV_CALM = 1000/30, IV_STILL = 1000            // ms między klatkami
+frameIv(now):
+   fala toczy się (raid, bez pauzy, bez okna)                                  -> IV_FAST (najwyżej 60/s; 120 Hz rysuje co drugie odświeżenie)
+   palec na ekranie, ruch w ostatnich 0,25 s, pasek się zwija, kamera się pochyla, coś w ręce albo przytrzymane -> IV_FAST
+   dotyk w ostatnich 2 s albo FP.wake albo fpBusy()                            -> IV_CALM (budowa, pauza, ekrany między falami: 30/s)
+   inaczej                                                                     -> IV_STILL (obraz stoi)
+fpBusy() = orby, napisy, cząsteczki, wstrząs, efekty fl.fx, ruchome ściany, przewodnik, kończąca się fala (fl.ending) bez pauzy i okna
+frame(now): IV_STILL: rysuje tylko, gdy zmienił się podpis obrazu frameSig() (faza, okno, pauza, rozmiary, OX/OY, kamera, widok,
+            liczba elementów i pól, zaznaczenie, fala, podział ekranu), a zegary idą raz na sekundę; nic się nie zmieniło: setTimeout(kick, 100)
+            inne: pomija klatkę, gdy przed terminem (FP.due), termin = max(due + iv, now + iv/2)
+            przy wejściu i wyjściu z IV_STILL przełącza klasę html.still
+            fala rusza po postoju: zegar dostaje rzeczywistą przerwę, świat jedną klatkę (jak przy każdej klatce)
+kick(): prosi o jedną klatkę (requestAnimationFrame), chyba że już prosił
+```
+- Budzi od razu: stuknięcie, klawisz, prawdziwy ruch myszy (ruch bez zmiany pozycji to nie wejście), zmiana rozmiaru i każdy hak testowy (`window.__yatd` to `Proxy`, każda właściwość poza `FP` budzi pętlę).
+- `html.still` zatrzymuje sześć nieskończonych ozdób CSS (blask świecy, bicie serca, połysk paska głodu, bieżący znacznik, żar przycisku gotowości, złoty puls Esencji); wejścia i zanikania nigdy nie czekają; Esencja, za którą coś kupisz, jest wtedy złota i nieruchoma (jak przy "mniej ruchu"). Bezczynność bez rysowania kosztowała do 1.23 75% CPU, bo te ozdoby kazały przeglądarce składać cały ekran 60 razy na sekundę (bez nich 6%).
+- Czas rzeczywisty: poza toczącą się falą klatka może przyjść później (`rdt` do 1,2 s), więc `realNow`, `buildSec` i liczniki przytrzymania mają prawdziwe tempo. Ukryta karta: brak klatek, muzyka nic nie robi. Liczniki czasu: `activeTick` 1 s (7.12.4), muzyka 60 ms (z osłoną), sprawdzanie postoju 100 ms (tylko w postoju), reszta jednorazowa.
+- Pomiar (390×844, deviceScaleFactor 3, płótno 780×1688, mediany 3 przebiegów po 6 s): budowa bez dotyku (48 elementów) 24,7 -> 0 klatek/s, CPU wszystkich procesów 128% -> 3% rdzenia; duża budowa (100 elementów) 123% -> 2%; fala (48 elementów) 49,7 -> 49,1 klatek/s, JS 4,4 -> 4,2 ms (mediana); duża fala (100 elementów, 4-5 bohaterów) 35,1 -> 36,2 klatek/s, JS 5,3 -> 4,8 ms. Ekran 120 Hz: 61 klatek gry na 120 odświeżeń, ten sam czas gry. Cel P1-8 (połowa JS na klatkę przy 100 elementach) nie osiągnięty samą klatką (-9% mediany, -14% p90); ciepło obniżają rzadsze klatki.
+- W Unity: `Application.targetFrameRate` 60 w fali i 30 w budowie, a w bezczynności `OnDemandRendering.renderFrameInterval` (rysowanie tylko po zmianie); symulacja w stałym kroku niezależnie od rysowania.
+
+### 7.10.10 Stan fali dopisany w 1.18-1.24 (pola `fl`, drużyny, bohatera i elementu)
+
+Jak w 7.10.8: żyją jedną falę i nie trafiają do zapisu (wyjątki zaznaczone). Szczegóły: sekcje 05 i 06.
+
+| Gdzie | Pole | Znaczenie |
+|---|---|---|
+| `fl` | `risen`, `snapAt` | 1.18: duchy z Wstających umarłych w tej fali; ostatni alarm Zatrzasku sezamu na pokój |
+| `fl` | `exhausted` | 1.24: wyczerpanie już zaszło |
+| `fl` | `calmUntil` | 1.24: koniec spokojnej przerwy między checkami (sekcja 05, 5.9.10) |
+| `fl` | `essW0`, `itemsW0`, `roomsW0`, `fearUi` | 1.24: Esencja, liczba elementów i komórek na starcie fali; oglądanie strachu `{card, bar}` (7.12.5) |
+| `fl.party` | `g2`, `mutinyDone`, `mutinyHome`, `sulkAfter`, `convoNot` | 1.19: druga grupa, bunt, foch (sekcja 06, 6.10) |
+| `fl.party` | `shareT`, `shareCd`, `gifts`, `lootedDead`, `lootRivals`, `rivalSeen` | 1.20: dzielenie się i haki (6.11) |
+| `fl.party` | `bondAt`, `bondT`, `quarrels`, `betDone`, `betTried` | 1.21: więzi (6.12) |
+| `fl.party` | `hurt`, `fin` | 1.22: kto został zraniony przez którą pułapkę; stan finału (6.13) |
+| `fl.party` | `nem` | 1.23: stan Nemezis (6.14) |
+| bohater | `fallRoom`, `fallRk`, `dream`, `hearGoal`, `predSaid` | 1.18: pokój i komnata zapadni (Cela), sen z Usypianki, cel Fałszywego wołania; 1.20: rozpoznał rzeczy poprzednika |
+| bohater | `owner` w przedmiotach, `lootIt`, `offerKey`, `qWin`, `shareCd`, `lostEver`, `obeyN` | 1.20-1.21: przeszukiwane ciało, oferowany łup, wygrana kłótnia, odnowienie dzielenia, zgubił się w tej fali, ile razy kazano mu zostawić łup |
+| bohater | `bond`, `vowUntil`, `vowOn`, `growAt`, `proudAt`, `watchT`, `mockT`, `bet` | 1.21: więź `{type, id, role}`, zemsta, dorastanie ucznia, pochwała, uwagi mistrza, drwina, zakład |
+| bohater | `escort`, `stand`, `sac`, `firstInto`, `tap`, `taps`, `tapRolled`, `front`, `woundBack`, `backUntil`, `backFrom`, `lsRoll` | 1.22: finał fali |
+| bohater | `nemesis`, `rooms`, `grudgeBy`, `nemTraps`, `grudgeOn`, `grudgeUntil`, `grudgeSeen`, `grudgeDone`, `nemRaged`, `escSaid`, `nemReplyAt`, `nemN0`, `killer` | 1.23: Nemezis (6.14); `killer` = potwór, który go zabił (1.21) |
+| bohater | `tdFalls`, `fellFrom` | 1.24: upadki przez zapadnie w fali (limit, sekcja 05, 5.3.4) |
+| element | `temp`, `shown`, `ambushUntil`, `quick`, `tutSure`, `grudgeW`, `healAcc`, `healT0`, `healBy` | 1.18: duch tymczasowy, zasadzka, Szybki montaż; 1.24: kolce samouczka, uraza Nemezis, leczenie szamana; `w.hl`/`lhl`: wyleczone HP (karta szamana) |
+| element | `belly` | 1.20: brzuch mimika (zostaje między falami i w zapisie) |
+| stos łupu | `item`, `from`, `fromNm`, `fromFem`, `fromWave`, `body`, `knocked`, `firstBy`, `qBan` | 1.20-1.21: rzecz w stosie, czyje ciało, wybity, kto pierwszy zobaczył, ban po kłótni |
 
 ---
 
@@ -835,6 +889,10 @@ W Unity: ustawienia gracza w `PlayerPrefs` (albo w małym pliku JSON) z polem we
 | `yatd-pops` (`POPS_KEY`) | `{id: 1}` widziane karty samouczka | `tutPop`; kasowane przy "Samouczek" od nowa |
 | `yatd-onb` (`ONB_KEY`) | etap nauki 1-5 | `onbStage` / `setOnb` |
 | `yatd-coach` (`COACH_KEY`) | `'1'` = przewodnik ukończony | `tutEnd`; kasowane przy "Samouczek" od nowa |
+| `yatd-found` | lista odkrytych elementów (1.14) | `loadFound` / `saveFound` |
+| `yatd-player` | 1.24: `{name, id}`: identyfikator gracza dla imienia (inne imię = nowy id) | `playerIdNow` (`p2_state_map.js`) |
+| `yatd-name-asked` | 1.24: `'name'` albo `'skipped'`: wersja WWW już pytała o imię | `withName`, `renderName` |
+| `yatd-noask-ess` | 1.24: `'1'` = "Nie pytaj więcej" o niewydaną Esencję | `askUnspent`, `renderUnspent` |
 
 Poza `localStorage`: Service Worker strony WWW trzyma pamięć podręczną `yatd-v1` (Cache Storage, tylko prototyp). Wszystkie odczyty i zapisy są w `try/catch` (brak pamięci nie psuje gry).
 
@@ -856,7 +914,7 @@ replacer(k, v):
 loadSave: JSON.parse z reviverem (__m -> Map, __s -> Set); ważny, gdy v == SAVE_VER i jest run.layout
 clearSave: w endRun (koniec runu każdym sposobem)
 ```
-W zapisie jest cały obiekt `run`: układ lochu (`layout` z `Map` komórek i krawędzi), elementy, plotki (`rumor.tiles`, `rumor.traps`, `rumor.loot`), talia, schowek, sklep, następna fala (`next`), powracający, liczniki, `waveDocs` (bez osi czasu), `waveStart`, `memSpots`, stan samouczka itd. Stanu fali (`fl`) w zapisie nie ma: po wczytaniu mapa i stan fali są budowane od nowa.
+W zapisie jest cały obiekt `run` (od 1.18 także `run.restock`, od 1.21 `run.next[].bond`, od 1.23 `run.fallen` i `run.returners[].nemesis`, `run.next[].nemesis`, od 1.24 `run.fused`, `onbW`, `onbNews`, dziennik kryształów, `activeSec`, `sessions`, `playerId`, `essAtStart`; pola elementów: od 1.20 `item.fromNm` i brzuch mimika `belly`, które `prim` w `saveRun` przepuszcza jawnie): układ lochu (`layout` z `Map` komórek i krawędzi), elementy, plotki (`rumor.tiles`, `rumor.traps`, `rumor.loot`), talia, schowek, sklep, następna fala (`next`), powracający, liczniki, `waveDocs` (bez osi czasu), `waveStart`, `memSpots`, stan samouczka itd. Stanu fali (`fl`) w zapisie nie ma: po wczytaniu mapa i stan fali są budowane od nowa.
 
 Kiedy zapisuje:
 | Moment | Wywołanie |
@@ -882,7 +940,11 @@ rankIdx == null -> rankOf(total).i
 delete run.hungerStore; shopOwed ||= 1; nextFor ??= wave; builtFor ??= wave
 stage >= 3: odblokuj 'howl', 'shackles'
 gv < 38: run.shop = null
-deck i stash: tylko karty istniejące w UPG; mods przeliczone z talii
+deck i stash: tylko karty istniejące w UPG (1.18: także run.shop.ids: nieznane id -> null, np. u-portrait); mods przeliczone z talii
+1.23: run.fallen ||= [] (powracający bez nemesis zostają zwykłymi)
+1.24: run.fused ||= []; drugi egzemplarz karty w talii albo schowku -> run.fused (jedna karta ★); trzecia kopia albo duplikat karty unique -> sprzedany za RAR_SELL;
+      run.fused tylko z id w talii albo schowku; mods = buildMods(); run.sessNew = true (wczytanie = nowe posiedzenie);
+      run zapisany w etapie nauki zachowuje etap (bez onbW); run.crystalsSeen == null -> dziennik kryształów zaczyna się teraz
 stage == 'summary': setupFl('summary'), kamera, afterSummary()       // dokończ wybory po fali, potem budowa
 inaczej:            startBuild(true); gv < 38: nowa fala (makeWave) i zapis; tutResume()
 ```
@@ -909,7 +971,9 @@ W Unity: zapis JSON w `Application.persistentDataPath` (zapis atomowy: plik tymc
 
 ### 7.11.6 Etap nauki, imię, urządzenie
 
-- `yatd-onb`: `onbStage()` = wartość 1-5; brak lub błąd: `loadRecords().runs > 0 ? 5 : 1`. `onbDone(r)` po runie nauki (`r.guided`, nie przerwany przed falą 5): `setOnb(min(5, r.stage + 1))`. "Pomiń samouczek" ustawia 5. Szczegóły: sekcja 08.
+- `yatd-onb`: `onbStage()` = wartość 1-5; brak lub błąd: `loadRecords().runs > 0 ? 5 : 1`. Od 1.24 `onbDone(r)` po runie nauki (`r.guided`, nie przerwany przed falą 5) ustawia 5 (do 1.23 `min(5, r.stage + 1)`), a `onbAdvance` ustawia 5 już przy dojściu do fali 7 (sekcja 03, 5.3). "Pomiń samouczek" ustawia 5. Szczegóły: sekcja 08.
+- `yatd-player` (1.24): `playerIdNow()` tworzy `{name, id: 'p' + czas36 + losowe}` przy pierwszym użyciu imienia (albo pominięciu pytania) i trzyma go dla tego imienia; inne imię na tym urządzeniu (także powrót do wcześniejszego) = nowy id. `run.playerId` w `newRun`; dokument runu i ankieta niosą `playerIdNow()`.
+- Pytanie o imię (1.24, tylko wersja WWW): przed pierwszym nowym runem, gdy imię jest puste i `yatd-name-asked` nie jest ustawione, okno "Jak masz na imię?" (`#name-ask`, "Graj" `#name-ok`, "Pomiń" `#name-skip`; Pomiń zapamiętane). Przyciski startu wołają `withName(go)`. Strona testowa (nie WWW) nigdy nie pyta.
 - `yatd-coach = '1'`: przewodnik pierwszego runu skończony (`tutEnd`).
 - `yatd-name`: imię z pola "Kto testuje", wysyłane w logu jako `player` (max 40 znaków).
 - `deviceId` (`yatd-device`): `Date.now().toString(36) + Math.random().toString(36).slice(2, 8)`, tworzony przy pierwszym uruchomieniu; bez pamięci: `'nostore'`.
@@ -923,7 +987,7 @@ W Unity: identyfikator instalacji (losowy GUID w `PlayerPrefs`), nie `SystemInfo
 
 ### 7.12.1 Przegląd
 
-Po każdej fali gra wysyła dokument fali i podsumowanie runu do bazy, a gracz może pobrać cały run jako plik JSON. Służy to autorowi do analizy balansu (także przez Claude). Wersja formatu: `LOG_VERSION = 58` (`p8b_ui.js`); komentarz przy stałej to historia zmian formatu od wersji 31 (np. 58: Prototype 1.13, rozmowy z nowymi statystykami fali `convos` (zaczęte wymiany), `convoNo` (dlaczego kwestia nie zaczęła wymiany: `breath`, `talk`, `queue`, `luck`, `hush`, `alone`, `fit`) i `toSafety` (zejścia z niebezpiecznego pola), narady tylko dla stojących razem; 57: Prototype 1.12.1, jedno pole na bohatera z nowymi statystykami fali `sidesteps` (zejścia z pola i objazdy) i `squeezes` (przeciśnięcia), dłuższe narady i odpoczynki, cierpliwość `fl.patT`, zegar combo w ciszy ×`S.comboQuiet`, okno 3 s, Groza z ran bez dodatku HP, `S.essK`; 56: etapy nauki, combo +12% na krok, okno 2,5 s; 55: serce znowu je, `stats.essHeart`; 53: `slips`, `naps`, `hushUnlearned`, `hushLost`; 52: `memLost`, `memFires`, `frozen`; 50: `trayPauses`, `pauseTime`; 48: `cpm`, `frozen`, `perf.realSec`, `tut`; 47: `perf`, `errors`). Wersje 1.13.1-1.17 nie zmieniły numeru; 1.16 i 1.17 dopisują tylko nowe statystyki fali (7.12.7) i kody osi czasu (7.12.5: `rz`, `cn`, `gh`, `lk`, `lt`, `hs`), czego komentarz przy stałej nie wymienia.
+Po każdej fali gra wysyła dokument fali i podsumowanie runu do bazy, a gracz może pobrać cały run jako plik JSON. Służy to autorowi do analizy balansu (także przez Claude). Wersja formatu: od 1.24 `LOG_VERSION = 59` (`p8b_ui.js`; do 1.24 część A 58); komentarz przy stałej to historia zmian formatu od wersji 31 (59: 1.24 części D i B, 7.12.4-7.12.5; w 58 dopisywano pola 1.20-1.24 część A bez zmiany numeru; np. 58: Prototype 1.13, rozmowy z nowymi statystykami fali `convos` (zaczęte wymiany), `convoNo` (dlaczego kwestia nie zaczęła wymiany: `breath`, `talk`, `queue`, `luck`, `hush`, `alone`, `fit`) i `toSafety` (zejścia z niebezpiecznego pola), narady tylko dla stojących razem; 57: Prototype 1.12.1, jedno pole na bohatera z nowymi statystykami fali `sidesteps` (zejścia z pola i objazdy) i `squeezes` (przeciśnięcia), dłuższe narady i odpoczynki, cierpliwość `fl.patT`, zegar combo w ciszy ×`S.comboQuiet`, okno 3 s, Groza z ran bez dodatku HP, `S.essK`; 56: etapy nauki, combo +12% na krok, okno 2,5 s; 55: serce znowu je, `stats.essHeart`; 53: `slips`, `naps`, `hushUnlearned`, `hushLost`; 52: `memLost`, `memFires`, `frozen`; 50: `trayPauses`, `pauseTime`; 48: `cpm`, `frozen`, `perf.realSec`, `tut`; 47: `perf`, `errors`). Wersje 1.13.1-1.17 nie zmieniły numeru; 1.16 i 1.17 dopisują tylko nowe statystyki fali (7.12.7) i kody osi czasu (7.12.5: `rz`, `cn`, `gh`, `lk`, `lt`, `hs`), czego komentarz przy stałej nie wymienia.
 
 W Unity: ten sam podział na dokument runu i dokument fali, wysyłka `UnityWebRequest` POST w tle po fali (kolejka offline w pliku), adres i znacznik z konfiguracji builda (`web_config.json`), nie z kodu w repo.
 
@@ -965,21 +1029,26 @@ Pliki na Dysku: `waves_<runId>_<NN>.json`, `runs_<runId>.json` (nadpisywany po k
 
 | Pole | Znaczenie |
 |---|---|
-| `version` | `LOG_VERSION` (57) |
+| `version` | `LOG_VERSION` (59) |
 | `runId`, `startedAt`, `at` | identyfikator, start i chwila wysłania (ISO) |
-| `player`, `device`, `web` | imię (max 40), `deviceId`, 1 = wersja WWW |
-| `tutorial`, `stage`, `guided` | run z przewodnikiem, etap nauki 1-4, run nauki |
-| `status`, `won` | `run.result` (`'active'`, `'win'`, `'end'`, `'quit'`), czy wygrany |
+| `player`, `playerId`, `device`, `web` | imię (max 40), od 1.24 identyfikator gracza (`playerIdNow`), `deviceId`, 1 = wersja WWW |
+| `tutorial`, `stage`, `guided` | run z przewodnikiem, etap nauki 1-4 (od 1.24 w pierwszym runie: osiągnięty etap), run nauki |
+| `status`, `won` | od 1.24 `runStatus()`: `win`, gdy `run.won` (także przy grze dalej po fali 10 i późniejszej przegranej albo wyjściu), inaczej `quit` (wyjście z menu), inaczej `end` (wynik `end` albo 0 kryształów, także gdy ekran przegranej jeszcze proponuje reklamę albo kartę zamknięto na nim), inaczej `active`; `won: true` z innym statusem jest niemożliwe (do 1.23 `run.result`, a przy utracie ostatniego kryształu `active`); czy wygrany |
+| `crystals0`, `crystalEvents` | 1.24: kryształy na starcie i cały dziennik zmian `[{t, delta, cause, wave, why}]` (sekcja 03, 2.13) |
+| `activeSec`, `sessions` | 1.24: sekundy aktywnej gry (akapit pod tabelą) i posiedzenia `[{start, end}]` (ISO) |
+| `endBonus` | 1.24: `round(total) - suma waveMini.sc` (0 w nowym runie; premii końcowej w grze nie ma; run sprzed 1.24 pokazuje tu stare zaokrąglenie) |
 | `waves`, `total`, `best` | liczba zapisanych fal, Esencja runu, rekord przeglądarki |
 | `resumed` | ile razy run wczytano z zapisu |
 | `stacks` | liczniki rosnących kart (`run.stacks`) |
-| `crystals`, `continueUsed` | kryształy, użycie kontynuacji (zawsze `false` w 1.12) |
-| `upgrades`, `deck`, `deckSize`, `sold` | wzięte karty (kolejno), talia, rozmiar talii, sprzedane |
+| `crystals`, `continueUsed` | kryształy, użycie kontynuacji za reklamę (`renderOver` ustawia `true`) |
+| `upgrades`, `deck`, `fused`, `deckSize`, `sold` | wzięte karty (kolejno), talia, od 1.24 połączone karty ★, rozmiar talii, sprzedane |
 | `fires` | liczba odpaleń pułapek w runie |
 | `durationSec`, `buildSec`, `raidSec` | czas runu (zegar ścienny), suma czasu budowy (rzeczywisty), suma czasu fal (czas gry) |
 | `settings` | kopia całego `S` |
 | `waveMini[]` | `{w, sc, t, lost, k, s, lv[], part, fps, cpm, fz}`: fala, Esencja, czas, kryształ stracony, zabici, wypędzeni, poziomy bohaterów, niedokończona, FPS, checki na minutę, % czasu pod checkiem |
-| `tut` | tylko run z przewodnikiem: `{steps, now, max, skipped[], ended}` (sekcja 08) |
+| `tut` | tylko run z przewodnikiem: `{steps, now, max, skipped[], ended}`, od 1.24 `stepIds` (kolejność `TUT`) i `stepTimes` (sekundy na każdym kroku, 0,1 s) (sekcja 08) |
+
+**Czas aktywnej gry (1.24, `p8b_ui.js: activeTick`, licznik 1 s, `ACT_IDLE = 60`, `SESSION_GAP = 300`)**: `run.activeSec` rośnie o rzeczywisty odstęp (najwyżej 5 s), gdy strona jest widoczna, run należy do gracza (`userStarted`, nie skończony) i gracz jest obecny: fala toczy się na ekranie (bez pauzy i okna) albo był dotyk lub klawisz w ostatnich 60 s (budowa, sklep, podsumowania liczą się, gdy gracz działa). Niezależne od tempa klatek. `run.sessions` (najwyżej 80): nowe posiedzenie przy nowym runie, wczytaniu (`sessNew`) albo powrocie po 5+ min bez liczonego ticku. `durationSec` (zegar ścienny) bez zmian; `activeSec <= durationSec`. **Wynik `total`** (1.24): `finishWave` i `quitRun` dodają zaokrąglony wynik rekordu fali, więc `total = suma waveMini.sc` (do 1.23 5724 wobec 5722).
 
 ### 7.12.5 Dokument fali: `logWave(partial)` (`p8b_ui.js`) i `recordWave` (`p3_flow.js`)
 
@@ -987,12 +1056,12 @@ Pliki na Dysku: `waves_<runId>_<NN>.json`, `runs_<runId>.json` (nadpisywany po k
 |---|---|
 | `version`, `runId`, `wave`, `at`, `partial` | jak wyżej; `partial` = fala przerwana przez gracza |
 | `summary` | ostatni wpis `run.waves` z `recordWave` (niżej) |
-| `heroes[]` | `{id, name, female, type, lvl, boss, trait, max, courage, kit[], end[], gold, cursed, lost, hunter, out}`; `kit`/`end` = ekwipunek na wejściu i na końcu jako `typ + rzadkość` (np. `potion1`); `out`: `dead`, `crystal`, `scared`, `left`, `inside` |
+| `heroes[]` | `{id, name, female, type, lvl, boss, trait, max, courage, kit[], end[], endSrc[], took, load, gold, cursed, lost, hunter, bond, nem, out}`; `kit`/`end` = ekwipunek na wejściu i na końcu jako `typ + rzadkość` (np. `potion1`); od 1.20 `endSrc` (pierwsza litera `src` każdego przedmiotu), `took` (`h.loot`), `load` (kg); od 1.21 `bond` ("type[:role]:id"); od 1.23 `nem` (liczba powrotów Nemezis, 0 dla innych); `out`: `dead`, `crystal`, `scared`, `left`, `inside`. Uwaga: od 1.20 do 1.21 komentarz w środku wiersza ucinał `cursed`, `lost`, `hunter` każdego bohatera (naprawione w 1.21) |
 | `entry` | `fl.spawnAt`: `'ent'` albo `'breach'` |
 | `checkShapes` | mapa `CHECK_SHAPE` (typ -> kształt checku, sekcja 05) |
 | `layout` | `run.waveStart` = `snapshotLayout()` z początku fali (niżej) |
 | `timeline` | `{ev, smp, thinned?, cut?}` (niżej) albo `null` |
-| `upgrades`, `deck`, `deckSize` | karty |
+| `upgrades`, `deck`, `fused`, `deckSize` | karty (od 1.24 `fused`) |
 | `mods` | kopia całego obiektu `mods` |
 
 `snapshotLayout()` (w `startWave`, po budowie):
@@ -1021,6 +1090,11 @@ To wystarcza, żeby odtworzyć loch w narzędziu analitycznym (albo w Unity w te
 | `partial`, `perf`, `errors` | `perfSummary()`, błędy z `PERF.errs` (opróżniane) |
 | `checks`, `cpm`, `frozen` | liczba checków (crit+ok+miss+skip), checki na minutę czasu rzeczywistego (`perf.realSec`, gdy > 5 s, inaczej czas gry), % czasu pod checkiem |
 | `memFires`, `skullOff`, `classes`, `trayPauses` | odpalenia z pamięci, uśpione czaszką, klasy drużyny, pauzy paskiem |
+| `crystalEvents` | 1.24: wpisy dziennika kryształów od poprzedniego rekordu fali (z budową przed nią) |
+| `essenceAtStart`, `essenceAtWaveStart` | 1.24: Esencja na początku budowy (przed sklepem, w fali 1 przed dwiema pułapkami startowymi) i niewydana na starcie fali |
+| `itemsCount`, `roomsCount` | 1.24: elementy i komórki lochu na starcie fali |
+| `previewOpened` | 1.24: ile razy w budowie oglądano następną falę (karta wieści, rozwinięta lista drużyny, karta bohatera następnej drużyny, stuknięcie podglądu; `notePreview`) |
+| `fearUi` | 1.24: `{card, bar}`: karty bohaterów otwarte w fali (pokazują strach) i stuknięcia paska strachu (`noteFearUi`) |
 
 Limit rozmiaru (`logWave`): gdy JSON dokumentu > 230000 bajtów, najpierw zostaje co trzecia próbka (`smp`, `thinned: 3`), potem zdarzenia są przycinane do 70% długości, dopóki dokument jest za duży i zdarzeń jest > 100 (`cut: true`). Dokument trafia do `run.waveDocs` (pobranie pliku) i do `pushLog`.
 
@@ -1093,6 +1167,13 @@ Kody zdarzeń:
 | `pa` | 1/0 | pauza / wznowienie |
 | `ff` | 1/0 | przyspieszenie palcem start / koniec |
 | `cb` | koszt | kupiony kryształ; martwe w logu (kupno tylko w budowie, a `tl` zapisuje tylko w fali) |
+| `ab`, `ce`, `vs`, `fw`, `fc`, `ln`, `ta`, `bf`, `cn2`, `st` | różne | 1.18: zasadzka odsłonięta (type, x, y); lądowanie w celi (id, x, y); Zatrzask sezamu (id, pokój, ile); Spojrzenie z ramy (id, type, x, y); Fałszywe wołanie (id, cel); Usypianka (id); zepsuta mikstura (id); Odnalezione ciało (id, id zmarłego); Kocioł ogra (id, Esencja); Zdarte pancerze (id, przedmiot; od 1.20 `st`, wcześniej `sp`) |
+| `rf`, `rj`, `mu` | id, ilu, powód / powód, czas / wyzywający, przywódca, 0/1 | 1.19: rozłam, koniec drugiej grupy, bunt |
+| `gv`, `bl`, `pr`, `qa`, `qo`, `qr`, `la`, `lm`, `kn`, `mx`, `bx`, `bf2`, `rq` | różne | 1.20: podanie sprzętu, grabienie ciała, rozpoznany poprzednik, przydział łupu, oferta łupu, rywale o łup, zgaszona latarnia, łom (krata/klatka), wybity przedmiot, mimik wypluwa, bomba w plecaku, bomba przy przyjaciołach, powracający z trofeum |
+| `bo`, `bk`, `gf`, `vw`, `gu`, `rm`, `mw`, `mp`, `qq`, `nl`, `ns`, `ob`, `bt`, `be` | różne | 1.21: para weszła, słowo pary, żałoba, przysięga zemsty, uczeń dorasta, drwina, uwaga mistrza, pochwała, kłótnia, "nie zostawię", uratowany, sprzeciw nad ciałem, zakład, rozstrzygnięcie zakładu (1/0/-1) |
+| `ef`, `gs`, `ho`, `lx`, `le`, `sf`, `sd`, `yf`, `tp`, `tf`, `nw`, `fm`, `wb`, `ne` | różne | 1.22: eskorta, przejęcie ciosu, przekazanie, bastion start/koniec, poświęcenie start/odpalone, "ty pierwszy", opukiwanie start/znalezisko, "nie tędy", szyk (front), wycofanie rannego, prawie wyszli |
+| `nn`, `nm`, `ng`, `nd`, `nx`, `nr`, `nb`, `no`, `nw2`, `bn`, `fm` | różne | 1.23: nowy Nemezis, Nemezis wszedł, uraza zobaczona, uraza załatwiona, przechwałka, gniew, nagroda, Nemezis wyszedł, ostrzeżenie, rozmowa o nagrodzie, pamięć poległych (ten sam kod `fm` co szyk 1.22, rozróżnia liczba argumentów) |
+| `xh`, `fo` | ilu w środku / id, x, y, stan | 1.24: wyczerpanie, wymuszone wyjście |
 
 ### 7.12.6 Liczniki per typ: `bt(type)` (`p3_flow.js`)
 
@@ -1174,6 +1255,8 @@ Statystyki dopisane w 1.17 (w locie, nie ma ich w `newStats`; sekcja 06):
 | `newsDeaths` | wieści o śmierci przekazane później (`perceiveThink`) |
 | `lootObey` | łupy zostawione na rozkaz przywódcy (`lootDecision`) |
 
+Statystyki 1.18-1.24 (dopisywane w locie; nazwy z komentarza przy `LOG_VERSION`): 1.18 `risen`, `cellDrops`, `vaultSnaps`, `cauldron`, `stripped`, `gearLinks`, `ambushes`, `bodies`, `falseCalls`, `lullNaps`, `frames`, `wisps`, `batLost`, `iceFalls`, `tainted`, `coinGreed`; 1.19 `rifts`, `rift_<powód>`, `g2end_<powód>`, `g2Time`, `merges`, `mutinies`, `mutinyWins`, `mutinyHomes`, `sulks`; 1.20 `lootFallen`, `predecessorSeen`, `greedBody`, `cursePassed`, `bodyLoot`, `bodyLootBy`, `lootDeadObject`, `gearGiven`, `gearTrades`, `amuletGiven`, `tooHeavy`, `loadSlowT`, `lootAssign`, `lootRival`, `lootOffer`, `lootOfferTaken`, `lanternSaves`, `lanternOut`, `lanterns`, `lanternGrope`, `crowbarGate`, `crowbarCage`, `gearKnocked`, `gearBack`, `mimicAte`, `mimicSpill`, `bombCook`, `bombFriendly`, `bombHeld`, `returnGear`; 1.21 `bonds`, `bondsBy`, `bondLines`, `griefs`, `revengeVows`, `revengeFights`, `grownUp`, `noLeave`, `noLeaveSaved`, `mentorWatch`, `mentorProud`, `rivalMock`, `quarrels`, `quarrelStops`, `quarrelWins`, `quarrelSulks`, `bets`, `betsWon`, `betsLost`, `betsOff`; 1.22 `escortForms`, `escortGuards`, `guardSoaks`, `guardSoakDmg`, `handOvers`, `lastStands`, `lastStandT`, `sacrifices`, `sacrificeFired`, `youFirst`, `taps`, `tapFound`, `notThisWay`, `notThisWayMoved`, `frontLines`, `woundedBack`, `nearExit`; 1.23 `nemeses`, `nemesisNew`, `nemesisDropped`, `nemRooms`, `nemTraps`, `nemesisReply`, `nemesisWarn`, `nemesisBoast`, `nemesisRage`, `nemesisDown`, `nemesisOut`, `nemesisCrystal`, `grudgeHits`, `grudgeDone`, `bounties`, `essBounty`, `bountyTalk`, `fallenMemory`; 1.24 `exhausted`, `forcedOut`, `tdSeen`, `checkByShape` (`{kształt: {ok, crit, miss, skip, auto}}`, jedyne nowe pole w `newStats`), `calmAuto`, `unspentAsk`, `unspentGo`, `tutSpike`, `shamanHeal`. Ustawienia w dokumencie (`settings`) od 1.24 mają też `calmWaves`, `calmGap`, `okPulse`, `okSwing`.
+
 Pola dopisywane w locie (nie ma ich w `newStats`; poza tabelą wyżej): `alarms`, `altarBlocks`, `altarHeals`, `answers`, `autoFires` (odpalenia przy `ff`), `bardCalls`, `bardHeard`, `batScatter`, `breachOpen`, `broken`, `cageDeaths`, `charmSoak`, `chorus`, `comboPts`, `crystalDropped`, `cursedSeen`, `disputes`, `echoes`, `essGlut`, `essHeart` (porcja serca), `essWave` (Esencja do sakiewki), `fogGrope`, `healCalls`, `howlBlocks`, `hungerAte`, `hushLost`, `hushUnlearned`, `lootArgue`, `lootWeighed`, `memFires`, `memLost`, `naps`, `panicExits`, `panicked`, `patched`, `phobiaFear`, `prophecy`, `rage`, `rageNoPanic`, `rages`, `regroupsDoor`, `repelled`, `reroutes`, `returnersOut`, `revealed`, `revenge`, `rigged`, `rumorLoot`, `runeBlocks`, `shackleBlocks`, `shouts`, `skullOff`, `slips`, `smashedObj`, `smashes`, `songs`, `speedTime` (martwe), `traumas`, `trayPauses`, `treasureTale`, `upgrades`, `volleys`, `volleyTraps`, `wildfire`. Każde jest licznikiem albo flagą 0/1 ustawianą tam, gdzie zdarzenie zachodzi (nazwa opisuje zdarzenie; miejsca: `grep "stats.<pole>"`).
 
 W Unity: stały, typowany słownik statystyk (np. `enum StatId`) zamiast pól dodawanych w locie; zaokrąglanie dopiero w eksporcie i nie do liczb całkowitych dla wartości ułamkowych.
@@ -1205,12 +1288,14 @@ Błędy (prawdopodobne; w Unity naprawić, chyba że autor zdecyduje inaczej):
 7. `roundStats` zaokrągla do całości także wartości ułamkowe (`greedKept`, `treasureTale`, `essGlut`).
 8. `fl.stats` z budowy trafia do statystyk następnej fali (np. `built`, `upgrades`, `patched`); przy analizie trzeba o tym pamiętać.
 9. `recordWave` zapisuje `heroes[].out = 'crystal'` tylko dla `h.crystal`, a `heroExit` zeruje `h.crystal` i ustawia `h.carriedOut`; niosący, który wyniósł kryształ, ma więc w `summary.heroes` wartość `'left'` (dokument fali `heroes[]` z `logWave` używa `carriedOut` i jest poprawny) (`p3_flow.js: recordWave`).
+10. Od 1.24 `LOG_VERSION` 59, ale dokumenty 1.20-1.24 część A mają 58 przy nowych polach; analiza musi rozpoznawać pola po obecności, nie po wersji. Kod osi czasu `fm` znaczy dwie rzeczy (szyk 1.22 i pamięć poległych 1.23).
+11. Odbiornik Apps Script (`Code.gs`) bez zmian w 1.24: zapisuje każdy dokument do 600 000 znaków; nowe pola tylko go wydłużają.
 
 Martwy kod (nie przenosić albo przenieść świadomie):
 - `tapMove`, `trapNear` (`p8b_ui.js`): nigdzie niewywoływane; tryb `move` nie ma kafelka w pasku, gałąź `selected === 'move'` w `drawSlots` jest nieosiągalna.
 - Tryb `upgrade`: jest w `ITEM_ORDER`, ale w żadnej zakładce, więc `selected === 'upgrade'` nie zdarza się w UI (ulepsza podwójne stuknięcie).
 - `sizeMult`, `cardMultNow`, `infMult`, `loneMult` (zawsze 1), `stats.wavePts` (zawsze 0), `stats.slept`, `stats.essSoul`, `stats.silenceTime`, `stats.speedTime`, `bt().slept`, `DEFAULTS.trayAuto`, `UI.hintOpen`, `UI.speed`, `updateSpeedBtn`, `updatePauseBtn`, `essPulse`, `setHint` (pusta od 1.12), gałąź `QUIET.r == 0`, gałąź pętli w `genStartLayout` (dla N = 3 nie ma pętli), modal `tests` (`renderTests`, `SLIDERS`), `tl('cb')`.
-- `run.continueUsed` jest zawsze `false`.
+- `run.continueUsed`: wbrew wcześniejszemu opisowi ustawiane na `true` przez "Kontynuuj z 1 kryształem" w `renderOver`.
 
 Niespójności:
 - Komentarz przy `toolCost` mówi "3, 6, 12, 24", a przy cenie bazowej 4 rozbudowy kosztują 4, 8, 16, 32 (×`mods.expandCost`).

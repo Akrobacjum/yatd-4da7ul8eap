@@ -30,5 +30,9 @@
  "trayAuto": 1,
  "series": 1,
  "split": 1,
- "topPad": 0
+ "topPad": 0,
+ "calmWaves": 2,
+ "calmGap": 1.5,
+ "okPulse": 1.6,
+ "okSwing": 1.65
 }

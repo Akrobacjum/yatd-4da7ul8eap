@@ -1,13 +1,17 @@
 # Załącznik A: dane wyeksportowane z prototypu
 
-Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (wszystkie pliki tabel przeeksportowane na Prototype 1.17; od 1.13.1 zmieniły się `TABS` w 1.14, w 1.15 `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`, w 1.16 `GZ` i `SAY`, w 1.17 tabele kwestii `SAY`, `SOLO`, `SOLO_MUTE`, `CHAT_REPLY`, `CONVO` i `CONVO_P`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
+Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (wszystkie pliki tabel przeeksportowane na Prototype 1.17.1; **nie przeeksportowane na 1.24**: tabele zmienione i nowe w 1.18-1.24 są wymienione w A.9 i trzeba je wyeksportować `tools/dump.js` przed użyciem w Unity, albo czytać z `src/p1_config.js` 1.24; od 1.13.1 zmieniły się `TABS` w 1.14, w 1.15 `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`, w 1.16 `GZ` i `SAY`, w 1.17 tabele kwestii `SAY`, `SOLO`, `SOLO_MUTE`, `CHAT_REPLY`, `CONVO` i `CONVO_P`, w 1.17.1 `SAY`, `SOLO`, `SOLO_MUTE`, `CONVO`, `CONVO_P` i nowa `LINE_NEEDS`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
 
-- `yatd_content_1.17.json`: wszystkie tabele w jednym pliku: `{ version, source, tables: { ITEMS: ..., UPGRADES: ..., ... } }` (82 tabele), złożony z plików tabel poniżej (stan 1.17; zastąpił `yatd_content_1.16.1.json`). Ten plik warto wczytać w Unity.
+- `yatd_content_1.17.1.json`: wszystkie tabele w jednym pliku: `{ version, source, tables: { ITEMS: ..., UPGRADES: ..., ... } }` (83 tabele; 1.17: 82, doszła `LINE_NEEDS`), złożony z plików tabel poniżej (stan 1.17.1; zastąpił `yatd_content_1.17.json`). Ten plik warto wczytać w Unity.
 - `<NAZWA>.json`: ta sama tabela osobno (wygodne do czytania i porównań).
 - `levelStats_1_30.json`: wynik `levelStats(L)` dla poziomów 1-30 (zaokrąglone do 4 miejsc).
 - `golden_1.13.1.json`: wartości policzone przez działający prototyp do testów (sekcja 09).
 
 Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pól.
+
+## A.0 Stan danych a Prototype 1.24
+
+Eksport w `data/` odpowiada 1.17.1. Różnice w 1.24 (szczegóły A.9): `ITEMS` (zapadnia `cost` 6 i opis z limitem upadków), `HITEMS` (narzędzia `lantern`, `crowbar`, pole `kg` i `tool`), `LOOT_GREED` (`body`), `UPGRADES` (140 kart), `ONB_CARD` (karty 1.18), `DEFAULTS` (`calmWaves`, `calmGap`, `okPulse`, `okSwing`), tabele kwestii `SAY`, `SOLO`, `CONVO`, `LINE_NEEDS` (A.5), nowe `ONB_WAVE`, `CARRY`, `CLASS_FIT`, `FUSE_POW`, `FUSE_K`, `FUSE_GROUP`, `FUSE_INT`, `FUSE_TEXT` oraz funkcje `SCARES`, `HURTS`, `fitOf`, `onbWaveStage`. Plik zbiorczy powinien dostać nazwę `yatd_content_1.24.json`.
 
 ## A.1 Treść gry
 
@@ -54,7 +58,7 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 
 | Plik | Pola i znaczenie |
 |---|---|
-| `UPGRADES` (113) | `id`; `kind`: `unlock` (odblokowanie elementu, pole `unlock`), `instant` (działa raz przy kupnie), `card` (leży w talii i działa przez `apply` na `mods`); `rar`: `c` zwykła, `r` rzadka, `l` legendarna; `name`, `text`, `tag`; `unique` (tylko jedna kopia); `req` (wymagane odblokowanie: id albo funkcja); `grows` (karta z licznikiem rosnącym w runie, np. Głodne kolce); `apply` (kod efektu). Pełna tabela: załącznik B |
+| `UPGRADES` (113 w eksporcie 1.17.1; 140 w 1.24, załącznik B) | `id`; `kind`: `unlock` (odblokowanie elementu, pole `unlock`), `instant` (działa raz przy kupnie), `card` (leży w talii i działa przez `apply` na `mods`); `rar`: `c` zwykła, `r` rzadka, `l` legendarna; `name`, `text`, `tag`; `unique` (tylko jedna kopia); `req` (wymagane odblokowanie: id albo funkcja); `grows` (karta z licznikiem rosnącym w runie, np. Głodne kolce); `apply` (kod efektu). Pełna tabela: załącznik B |
 | `RAR_NAME`, `RARITY_NAME` | nazwy rzadkości kart i łupu |
 | `DECK_SIZE` | 7 miejsc w talii |
 | `RANKS` | progi rang lochu z sumy Esencji w runie: Nora 0, Piwnica 150, Loch 400, Labirynt 1000, Twierdza grozy 2500, Legenda 6000 |
@@ -74,16 +78,21 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 
 ## A.5 Teksty bohaterów
 
-**Rozmiary tabel kwestii (stan 1.17, jedyne miejsce w tym pliku z liczbami; policzone na `data/*.json`):**
+**Rozmiary tabel kwestii (jedyne miejsce w tym pliku z liczbami; 1.17.1 i wcześniej policzone na `data/*.json`, 1.18-1.24 policzone na `src/p1_config.js` danej wersji):**
 
-| Tabela | 1.17 | 1.16.1 (poprzedni eksport) |
-|---|---|---|
-| `SAY` | 269 kluczy, 2535 kwestii (z zagnieżdżonymi) | 222 klucze, 669 kwestii |
-| `SOLO` | 67 kluczy, 431 kwestii | 38 kluczy, 89 kwestii |
-| `SOLO_MUTE` | 39 kluczy | 35 kluczy |
-| `CHAT_REPLY` | 75 zaczepek, 206 odpowiedzi | 19 zaczepek, 31 odpowiedzi |
-| `CONVO` | 85 zestawów, 497 wymian, 1073 kwestie | 74 zestawy, 143 wymiany, 305 kwestii |
-| `CONVO_P` | 78 kluczy | 67 kluczy |
+| Tabela | 1.24 | 1.17.1 | 1.17 | 1.16.1 |
+|---|---|---|---|---|
+| `SAY` | 376 kluczy, 4107 kwestii | 272 klucze, 3173 kwestie (z zagnieżdżonymi) | 269 kluczy, 2535 kwestii | 222 klucze, 669 kwestii |
+| `SOLO` | 84 klucze, 517 kwestii | 68 kluczy, 434 kwestie | 67 kluczy, 431 kwestii | 38 kluczy, 89 kwestii |
+| `SOLO_MUTE` | 40 kluczy | 40 kluczy | 39 kluczy | 35 kluczy |
+| `CHAT_REPLY` | 75 zaczepek, 206 odpowiedzi | 75 zaczepek, 206 odpowiedzi | 75 zaczepek, 206 odpowiedzi | 19 zaczepek, 31 odpowiedzi |
+| `CONVO` | 103 zestawy, 635 wymian, 1429 kwestii | 87 zestawów, 520 wymian, 1125 kwestii | 85 zestawów, 497 wymian, 1073 kwestie | 74 zestawy, 143 wymiany, 305 kwestii |
+| `CONVO_P` | 80 kluczy (nowe zestawy 1.19-1.23 bez wpisu: szansa domyślna 0,5) | 80 kluczy | 78 kluczy | 67 kluczy |
+| `LINE_NEEDS` | 57 tagów, 900 wpisów (899 różnych kwestii) | 57 tagów, 803 wpisy (802 różne kwestie) | - | - |
+
+Przyrost `SAY` po wersjach (klucze, kwestie): 1.18 +3, +14 (`bodyFound`, `lullNap`, `lullDream`); 1.19 +19, +185 (Rozłam); 1.20 +24, +164 (ekwipunek); 1.21 +25, +250 (więzi); 1.22 +19, +185 (finał); 1.23 +14, +136 (Nemezis). Listy kluczy: sekcja 06 (6.3.14, 6.10.4, 6.11.6, 6.12.9, 6.13.7, 6.14.5).
+
+`CHANGES1171.md` podaje w przybliżeniu "SAY ~3180 kwestii, SOLO 437"; policzone na eksporcie wychodzi 3173 i 434 (do porównań brać tabelę wyżej).
 
 `CHANGES117.md` podaje dla stanu przed 1.17 inne liczby `SAY` (230 kluczy, 684 kwestie), a kod i eksport 1.16.1 mają 222 klucze i 669 kwestii; do porównań brać tabelę wyżej.
 
@@ -94,7 +103,8 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 | `CONVO` (od 1.13) | klucz kwestii, która zaczyna rozmowę (klucz `SAY`, przy zagnieżdżonych `trap:spikes`, `phobia:fire`; `monsterDown` bez własnej kwestii: zabicie potwora; `scare` przez `CONVO_ALIAS`) -> lista wymian `{ l: [[mówiący, tekst], ...], b, bt, br, bv, ac, at, w }`: mówiący `A` (ten, kto powiedział kwestię), `B` (przyjaciel w zasięgu słuchu), `C` (ktoś trzeci); `b`/`bt` klasa/charakter B (jedna wartość albo lista), `br`/`bv` ranga B najwyżej/najmniej, `ac`/`at` klasa/charakter A, `w` waga. Mechanika: sekcja 06 (6.7.5a) |
 | `CONVO_ALIAS` | klucz -> zestaw zastępczy (straszące pułapki -> `scare`) |
 | `SOLO` (od 1.13.1) | klucz `SAY` -> kwestie, które bohater mówi zamiast niej, gdy nikt go nie słyszy (myślenie na głos); `chat`, `chat_<charakter>`, `chat_<klasa>` = jego small talk w samotności. Mechanika: sekcja 06 (6.7.5b) |
-| `SOLO_MUTE` | klucze kwestii, które bez słuchaczy w ogóle nie padają (odpowiedzi, zachęty, spory, podziękowania) |
+| `SOLO_MUTE` | klucze kwestii, które bez słuchaczy w ogóle nie padają (odpowiedzi, zachęty, spory, podziękowania; od 1.17.1 `saw`) |
+| `LINE_NEEDS` (od 1.17.1) | tag -> lista dokładnych tekstów kwestii (z `SAY`, `SOLO`, `CONVO`, `CHAT_REPLY`, przed rozwinięciem znaczników), które wolno powiedzieć tylko bohaterowi, który zna ten tag w tej fali (widział, poczuł, nosi). Tagi: pułapki `fire`, `blast`, `spikes`, `arrows`, `gate`, `trapdoor`, `cage`, `web`, `mimic`, `portrait`, `mirror`, `coffin`, `bones`, `eyes`, `musicbox`, `creak`; potwory `spider`, `ghost`, `shade`, `bats`, `monster`; łup `gold`, `potion`, `gear`, `relic`, `cursed`; efekty `fog`, `swamp`, `grotto`, `crypt`, `vault`, `haven`, `gears`, `hush`, `ice`; komnaty `k_<rodzaj>` (12); budowle `acid`, `altar`, `decoy`, `howl`, `rune`, `shackles`, `veil`; oraz `death`, `blood`, `heartSeen`. Kwestia może mieć kilka tagów (wszystkie muszą być znane; jedyna taka w danych: "Coś tu patrzy z trumien." = `coffin` + `crypt`). Kwestie `SAY.saw.<tag>` nie są w tej tabeli: kod sam dokłada im ich tag. Mechanika: sekcja 06 (6.7.10) |
 | `CONVO_P` | klucz -> szansa, że kwestia zacznie rozmowę (0,15 przy "Ał!", do 0,9 przy wpadkach i rzadkich chwilach) |
 
 Co doszło w 1.17 (żaden klucz nie zniknął):
@@ -104,6 +114,12 @@ Co doszło w 1.17 (żaden klucz nie zniknął):
 - `SOLO_MUTE`: doszły `prepWard`, `prepJam`, `prepDisarm`, `prepShield` (przygotowania specjalistów bez słuchaczy nie padają).
 - `CHAT_REPLY`: 17 zaczepek zostało (z większą liczbą odpowiedzi), 2 wypadły (`Nie siadaj na tej płycie!`, `Ta płyta jest luźna. Omijamy.`), 58 nowych. Kluczem jest surowy tekst zaczepki z `SAY` (ze znacznikami płci, przed ich rozwinięciem, small talk w `p5_ai.js: partyThink`), więc zmiana tekstu w `SAY` bez zmiany klucza w `CHAT_REPLY` urywa odpowiedzi.
 - `CONVO` i `CONVO_P`, 11 nowych zestawów z szansą zaczęcia: `lookObj` 0,35, `lookKind` 0,45, `lookProp:portrait`, `lookProp:mirror`, `lookProp:coffin` po 0,45, `lookFind` 0,6, `lookNothing` 0,25, `newsDeath` 0,7, `deathHeard` 0,6, `goHomeAlone` 0,8, `councilGiveIn` 0,5. Istniejące zestawy dostały więcej wymian (143 -> 497).
+
+Co doszło w 1.17.1 (żaden klucz nie zniknął):
+- `SAY`, 3 nowe klucze: `saw` (mapa tag -> 9 kwestii, 58 tagów = 522 kwestie: pułapki 16, potwory 8, łup 5, efekty 9, komnaty `k_*` 12, budowle 8; pogaduszki o tym, co bohater widział w tej fali), `rkEnter` (mapa `k_<komnata>` -> 9 kwestii, 12 komnat = 108 kwestii; pierwszy w pokoju z komnatą mówi, co to za miejsce), `staunch` (6 kwestii: kapłan tamuje krwawienie). `SAY.phobia.spiders` +2 kwestie o pajęczynie (8), 2 kwestie `smashB` przepisane tak, żeby pasowały do każdej budowli. Tagi `SAY.saw` to tagi pamięci (6.7.10) z wyjątkiem `monster`, `death`, `blood`, `heartSeen`; mają za to `goblin`, `archer`, `ogre`, `shaman` i `fortify`, których nie ma w `LINE_NEEDS`.
+- `SOLO`: `staunch` (3 kwestie). `SOLO_MUTE`: `saw` (o tym, co widział, nie mówi do siebie).
+- `CONVO` i `CONVO_P`: `saw` (15 wymian, szansa 0,45; kwestie `saw:<tag>` trafiają do zestawu bazowego `saw`), `rkEnter` (8 wymian, 0,4).
+- `LINE_NEEDS`: nowa tabela (wyżej).
 
 Znaczniki w tekstach (trzeba je obsłużyć w lokalizacji):
 - `{męska|żeńska}` forma zależna od płci mówiącego, np. `Byłem|Byłam` (`p1_config.js: gtext`),
@@ -130,3 +146,60 @@ Te tabele i liczby siedzą w kodzie AI, nie w `p1_config.js`, więc `tools/dump.
 | `COUNCIL_LINE` | `{ home: 'voteHome', storm: 'voteStorm', more: 'voteMore' }` | klucz `SAY` dla głosu na daną opcję narady (6.3.10a) |
 | zasięg krzyku | 14 kroków drogi (`stepsWithin`, BFS po polach przechodnich i drzwiach), w linii prostej najwyżej 14 pól; nie z Głuszy ani z pokoju z Kamieniem wyjcem | `canHearShout` (6.3.13): wołanie o kapłana, klatka (decyzja przywódcy, wybór ratownika), ucieczka drużyny, krzyk śmierci, okrzyk czempiona, wstający bohater przepowiedni, upuszczony kryształ, kradzież kryształu (`p6_loop.js: takeCrystal`) |
 | zasięg słuchu i wzroku | słuch `earshot` (ten sam obszar albo 7 pól w linii), nie w Głuszy; wzrok `samePlace` (ten sam pokój/korytarz albo 3,5 pola) | `canHear`, `canSee` |
+
+## A.8 Stałe pamięci bohatera dodane w 1.17.1 (`p5_ai.js`, `p3_flow.js`, poza `data/`)
+
+Jak w A.7: siedzą w kodzie, `tools/dump.js` ich nie eksportuje. Mechanika: sekcja 06 (6.7.10).
+
+| Stała | Wartość | Do czego |
+|---|---|---|
+| `TAG_CAT` (`p5_ai.js`) | tagi pułapek (16), potworów (`goblin`, `archer`, `spider`, `ogre`, `shaman`, `ghost`, `shade`, `bats`, `monster`), łupu (`gold`, `potion`, `gear`, `relic`, `cursed`) i wszystkie klucze `BUILDINGS` | "rzeczy chwili": gdy trwa `SAY_NOW`, kwestia z takim tagiem musi mówić o rzeczy chwili, a nie tylko o czymś z pamięci (`lineOk`) |
+| `BURN_TAGS` (`p3_flow.js`) | `spikes` -> `['spikes', 'blood']`, `arrows` -> `['arrows', 'fire']`, `powder` -> `['blast', 'fire']`, `fire` -> `['fire']`, `archer` -> `['archer', 'monster', 'fire']`, `trapdoor` -> `['trapdoor', 'fire']`; inne `burnBy` -> `['fire']` | co bohater czuje, gdy płonie albo krwawi (`hurtTags` w `damage`) |
+| `SAW_NAME` (`p5_ai.js`) | `blast` "wybuch prochu", `gold` "monety", `potion` "mikstura", `gear` "ekwipunek", `relic` "relikwia", `cursed` "przeklęty łup", `heartSeen` "serce lochu", `blood` "krew"; reszta z `KIND_INFO` (`k_*`) albo `ITEMS[tag]` / `ITEMS['r_' + tag]` (małe litery) | lista "Widział w tej fali" na karcie bohatera (`sawNames`, 08) |
+| szansa pogaduszki o tym, co widział | `0.45` | small talk: tyle razy kwestia jest tylko z `SAY.saw` dla 2 ostatnich i 1 losowego wcześniejszego tagu (`sawTalk`, 6.7.6) |
+| zasięg wzroku w korytarzu | `3.5` pola (euklidesowo, od `tx, ty`) | `seesSpot`: w pokoju widzi cały pokój (rzecz w drzwiach z obu pokoi), w korytarzu tylko tyle |
+| próg krwi | `hp < 0.4 * max` | ciężko ranny: tag `blood` dla niego i tych, którzy go widzą (`damageRaw`) |
+
+## A.9 Tabele i stałe dodane albo zmienione w 1.18-1.24
+
+### A.9.1 W `p1_config.js` (do eksportu)
+
+| Tabela | Wartość / kształt | Do czego |
+|---|---|---|
+| `ITEMS.trapdoor` | `cost` 6 (było 4), `desc` z "Najwyżej 2 upadki bohatera na falę (elita i poz. 12+: 1), potem widzi zapadnie." | koszt, ulepszenia 12 i 24 (sekcja 05, 5.3.4) |
+| `HITEMS` | + `lantern` (`latarnia`, `w` 0, `use` `tool`, `kg` 1,5, `tool`), `crowbar` (`łom`, `kg` 3, `tool`); każdy przedmiot ma `kg`: mikstura 1, talizman 0,5, amulet 0,5, buty 1,5, bomba 2, broń 3, zbroja 6 | narzędzia i ciężar (sekcja 04, 5.6) |
+| `ITEM_COLOR` | + `lantern` `#ffe08a`, `crowbar` `#b8b0a0` | kwadraciki w plecaku |
+| `CARRY` | `{ warrior: 14, barbarian: 16, priest: 10, bard: 10, thief: 9, mage: 8 }` | udźwig (+0,3 kg za poziom) |
+| `CLASS_FIT`, `fitOf` | sekcja 04, 5.4 | wartość przedmiotu dla klasy |
+| `LOOT_GREED.body` | `[0.075, 0.04]` | chciwość z rzeczy poległego (zobaczone, zabrane) |
+| `UPGRADES` | 140 kart, 28 nowych, bez `u-portrait`; nowe `req` jako funkcje `hasRk`/`hasRt` | załącznik B |
+| `ONB_CARD` | + karty 1.18: komnaty i efekty 3, zachowania 1 | sekcja 03, 5.2 |
+| `ONB_WAVE`, `onbWaveStage` | `[0, 1, 3, 5, 7]` | etap z fali pierwszego runu (sekcja 03, 5.3) |
+| `FUSE_POW`, `FUSE_K` | 2,5; `{ power: 1.1, hero: 1.25 }` | moc połączonej karty (sekcja 03, 3.13) |
+| `FUSE_GROUP` | id karty -> `fear` / `hero` / `ess` / `greed` / `shop` (reszta `power` albo `named`) | cecha połączonej karty |
+| `FUSE_INT` | `['patron', 'mole', 'echoFire', 'freeReroll', 'stashPlus', 'gateUses']` | pola zaokrąglane w dół |
+| `FUSE_TEXT` | grupa -> tekst cechy (`named`: "<Element>: moc jak o poziom wyżej", `power` "+10% tej mocy", `fear` "cały strach w lochu +15%", `hero` "+25% do szansy i efektu", `ess` "+2 Esencji po każdej fali", `greed` "+0,1 chciwości na start fali", `shop` "jedno darmowe odświeżenie sklepu") | UI karty ★ |
+| `SCARES(t)`, `HURTS(t)` | `SCARE[t] \|\| DRIFT[t]`; `DMG_OF[t] && !LOOT_KIND[t]` | słowa "Straszy" / "Rani" w opisach (sekcja 08) |
+| `DEFAULTS` | + `calmWaves` 2, `calmGap` 1,5, `okPulse` 1,6, `okSwing` 1,65 | spokojne checki i szersze okna (sekcja 05, 5.9.10-5.9.11) |
+| `SAY`, `SOLO`, `CONVO`, `LINE_NEEDS` | A.5 | kwestie |
+
+### A.9.2 W kodzie poza `p1_config.js` (nie eksportuje ich `tools/dump.js`)
+
+| Stała | Plik | Wartość | Do czego |
+|---|---|---|---|
+| `EARLY_W` | `p3_flow.js` | `[0, 3, 3.75, 4.3, 4.6]` | trudniejsze fale 1-4 (sekcja 04, 3.9) |
+| `NEM_TITLE` | `p5_ai.js` | `thief` Złodziej/Złodziejka Kryształu, `avenger` Mściciel/Mścicielka, `scar` Blizna, `survivor` Ocalały/Ocalała, `steady` Niezłomny/Niezłomna | tytuły Nemezis (sekcja 04, 6.9) |
+| `BOND_NOUN` | `p3_flow.js` | `friend` Przyjaciel/Przyjaciółka, `sibling` Brat/Siostra, `rival` Rywal/Rywalka, `mentor` Mistrz/Mistrzyni, `apprentice` Uczeń/Uczennica | etykieta więzi |
+| `BOND_KEY`, `GRIEF_KEY` | `p5_ai.js` | więź -> `bondFriend`/`bondSibling`/`bondRival`/`bondMentor`; `griefFriend`/`griefSibling`/`griefRival` | kwestie więzi |
+| `FLOOR_TAP` | `p5_ai.js` | `{ spikes, trapdoor, cage, web }` | co da się opukać |
+| `SHAMAN_GZ` | `p4_traps.js` | 0,02 | Groza z leczenia szamana |
+| `LVL_POW` / `LVL_MON` za poziomem 3 | `p4_traps.js: lvlAt` | ostatni krok jeszcze raz (pułapka 3,6) | połączona karta `named` |
+| `OK_WIDE` | `p6_loop.js` | `pulse: S.okPulse`, `swing: S.okSwing` | okno draśnięcia |
+| `IV_FAST`, `IV_CALM`, `IV_STILL` | `p6_loop.js` | 1000/60, 1000/30, 1000 ms | tempo klatek (sekcja 07, 7.10.9) |
+| `AFX_N`, `AFX_DUR`, `TRAP_FX` | `p7_draw.js` | 64 miejsca; czasy 0,35-1,3 s; typ pułapki -> animacja | animacje (sekcja 08, 6.13b) |
+| `HEALER`, `PV` | `p7_draw.js` | `{ priest, bard }` | podgląd fali |
+| `ACT_IDLE`, `SESSION_GAP` | `p8b_ui.js` | 60 s, 300 s | czas aktywnej gry, posiedzenia |
+| `NOASK_KEY`, `NAME_ASKED` | `p8b_ui.js` | `'yatd-noask-ess'`, `'yatd-name-asked'` | pytania o Esencję i imię |
+| `CARD_ALL` | `p8b_ui.js` | `{ hgallery: true }` | wszystkie potrzeby karty |
+| `LOG_VERSION` | `p8b_ui.js` | 59 | format danych testowych |
+| liczby AI 1.19-1.24 | `p5_ai.js` | sekcja 06, 6.9.1 i 6.10-6.15 | Rozłam, ekwipunek, więzi, finał, Nemezis, wyczerpanie |

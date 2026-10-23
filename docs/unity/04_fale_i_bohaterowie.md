@@ -1,6 +1,6 @@
 # 04. Fale i bohaterowie (kto przychodzi, jak silny, co niesie)
 
-Sekcja specyfikacji portu prototypu "You are the dungeon" (Prototype 1.12.1, HTML/JS) do Unity 6 LTS (C#, Android, pion). Opisuje skład każdej fali, siłę bohaterów, ich tożsamość (klasa, imię, charakter, ciało, fobia, blizna), ekwipunek, gildię, łowców skarbów, powracających, wyłom, plotki z karczmy i cierpliwość fali. Wszystkie liczby są skopiowane z kodu w `/home/claude/yatd-4da7ul8eap/src/`. Źródło każdej reguły podaję jako `plik.js: funkcja`.
+Sekcja specyfikacji portu prototypu "You are the dungeon" (Prototype 1.12.1, HTML/JS, uzupełniana do 1.24) do Unity 6 LTS (C#, Android, pion). Zmiany 1.18-1.24: więzi w drużynie (2.9), narzędzia gildii (2.6a), trudniejsze fale 1-4 (3.9), pochodzenie, ciężar i narzędzia przedmiotów (5.6), powracający z łupem (6.3), wyczerpanie zamiast teleportu na końcu fali (6.7), Nemezis (6.9), pamięć poległych (6.10), nauka w jednym runie (7). Opisuje skład każdej fali, siłę bohaterów, ich tożsamość (klasa, imię, charakter, ciało, fobia, blizna), ekwipunek, gildię, łowców skarbów, powracających, wyłom, plotki z karczmy i cierpliwość fali. Wszystkie liczby są skopiowane z kodu w `/home/claude/yatd-4da7ul8eap/src/`. Źródło każdej reguły podaję jako `plik.js: funkcja`.
 
 Inne sekcje (nie powtarzam ich treści): **03** przebieg runu, ekonomia (Groza × Chciwość × Combo = Esencja), sklep, karty; **05** pułapki, obrażenia, strach, skill checki; **06** AI bohaterów (ruch, decyzje, drużyna, mowa); **07** mapa, stawianie, pętla, zapis; **08** UI, kamera, grafika, audio, samouczek.
 
@@ -20,7 +20,7 @@ Liczby w tej sekcji zapisuję z kropką dziesiętną (jak w kodzie).
 | `run.wave` | Numer bieżącej fali (w budowie: fali, która zaraz wejdzie). |
 | `S` | Ustawienia (`DEFAULTS` + suwaki `SLIDERS`, `p1_config.js`). Tu ważne: `S.scale` = 1 (suwak 0.5-2, "Tempo wzrostu fal"), `S.heroHp` = 100 (50-200, procent), `S.earlyHp` = 1 (0-3), `S.greedW` = 1 (0-3), `S.heroSpeed` = 100 (50-200), `S.waveTime` = 120 (60-300 s, "Cierpliwość fali"). |
 | `mods` | Modyfikatory z kart (sekcja 03, `p3_flow.js: freshMods`). Tu używane: `pactLevels`, `oddBodies`, `revealAll`, `phobiaK`, `weakK`, `traumaK`, `badMemories`, `moreReturn`, `returnGreed`, `itemPower`, `calmK`, `dmgType`, `arsenal`. |
-| `stageOf()` | Etap onboardingu 1.12: `run.stage || ONB_FULL` (`ONB_FULL = 4`), patrz rozdział 7. |
+| `stageOf()` | Etap onboardingu 1.12: `run.stage \|\| ONB_FULL` (`ONB_FULL = 4`), patrz rozdział 7. |
 
 Losowość w prototypie: `Math.random()` daje [0, 1); `pick(a)` wybiera równomiernie; `shuffle(a)` to Fisher-Yates w miejscu (`p2_state_map.js: shuffle`); `rand(a, b)` to liczba całkowita z [a, b] (`p2_state_map.js: rand`).
 
@@ -91,7 +91,7 @@ for i in 0 .. size-1:
     isRecruit = recruit && !isHunter && i == size - hunters - 1 && i >= 2
     bonus     = i == 0 ? 1 + hl : isRecruit ? -3 : hl / 2
     L = max(1, round(base + bonus + rnd() * 1.7 - 1.2))
-    if (n <= 2) L = min(L, tutW1(n) ? 2 : 4)
+    if (tutW1(n)) L = min(L, 2)                 // 1.24; do 1.23: if (n <= 2) L = min(L, tutW1(n) ? 2 : 4)
     e = makeHero(classes[i], L, n, used)
     if isHunter:  e.trait = 'greedy'; e.hunter = true
     if isRecruit: e.recruit = true
@@ -101,7 +101,8 @@ for i in 0 .. size-1:
 - **Szum poziomu**: `rnd() * 1.7 - 1.2` daje przedział [-1.2, 0.5), średnio -0.35.
 - **Przywódca** (indeks 0): +1 poziom + pełna premia chciwości `hl`. Pozostali (także łowcy): `hl / 2`.
 - **Rekrut** ("najnowszy członek jest nowicjuszem przez jedną falę"): tylko w falach, w których drużyna rośnie (`partySize(n) > partySize(n-1)`), od fali 4 i nie w falach bossa. W praktyce: fala 4 (3 -> 4) i fala 11 (4 -> 5); fala 15 (5 -> 6) jest falą bossa, więc bez rekruta. Rekrut to ostatni nie-łowca, o ile ma indeks >= 2; poziom bazowy -3 zamiast `hl/2`. Przy 2 łowcach w fali 4 rekruta nie ma (wypadłby na indeks 1).
-- **Limit poziomu w falach 1-2**: maks. 4, a w pierwszej fali samouczka maks. 2. Nie dotyczy bossów ani powracających (oni i tak nie występują w falach 1-2).
+- **Limit poziomu**: od 1.24 tylko w pierwszej fali samouczka (maks. 2); do 1.23 także maks. 4 w falach 1-2. Nie dotyczy bossów ani powracających.
+- Na końcu `makeWave` (od 1.20) gildia dokłada narzędzia (2.6a), a od 1.21 `makeBonds(list, n)` łączy część bohaterów w pary (2.9).
 - `used` = zbiór imion (mianownik) już nadanych w tej fali (rozdz. 4.1).
 
 ### 2.4 Powracający wstawiani do fali
@@ -110,7 +111,7 @@ Po zbudowaniu listy `makeWave` wstawia powracających (zbieranych przez `collect
 
 ```
 back = 0
-for r in run.returners (w kolejności tablicy)
+for r in run.returners (od 1.23 posortowani: Nemezis pierwszy)
         where r.back <= n && (!r.used || r.used == n):
     if back >= (n >= 8 ? 2 : 1): continue                  // maks. 1 na falę, od fali 8 maks. 2
     same = indeks pierwszego wpisu z type == r.type (albo -1)
@@ -121,18 +122,20 @@ for r in run.returners (w kolejności tablicy)
               i list[i].type != GUILD_WANT[g?.kind]
     if idx < 0: continue
     back++
-    L = max(list[idx].lvl, r.lvl + 1 + (r.crystal ? 1 : 0))
+    L = max(list[idx].lvl, r.lvl + 1 + (r.crystal ? 1 : 0)) + (r.nemesis ? 2 : 0)     // 1.23: Nemezis +2 poziomy
     list[idx] = makeHero(r.type, L, n, used, null, {
         nm: r.nm, female: r.female, phys: r.phys, phobia: r.phobia, trait: r.trait,
         known: [r.phys ? 'phys' : null, r.phobia ? 'phobia' : null] bez null,
-        returning: true, scar: r.scar, times: r.times })
+        returning: true, scar: r.scar, times: r.times,
+        gear: r.gear, wasLost: r.wasLost,                                              // 1.20 (6.3)
+        nemesis: r.nemesis ? kopia(r.nemesis) : null })                                // 1.23 (6.9)
     r.used = n
 ```
 Źródło: `p3_flow.js: makeWave`.
 
 - Powracający zajmuje miejsce **własnej klasy** (także przywódcy, poza falą bossa) albo, gdy jego klasy nie ma w składzie, ostatniego "zwykłego" członka (indeksy od końca do 1, z pominięciem łowców, rekrutów, innych powracających i specjalisty gildii). W fali bossa powracający klasy bossa (indeks 0) czeka na następną falę.
 - Poziom: co najmniej poziom zastępowanego miejsca (zachowuje premię przywódcy i chciwości), a co najmniej `r.lvl + 1`, plus 1, jeśli wtedy wyniósł kryształ (`r.crystal`).
-- Powracający zachowuje imię, płeć, ciało, fobię, charakter (także `null`: nie losuje nowego), bliznę i licznik powrotów. Gracz zna jego ciało i fobię (`known`). Ekwipunek dostaje nowy (`makeKit` z nowego poziomu). Nie jest łowcą ani rekrutem, nawet jeśli zastąpił łowcę lub rekruta tej samej klasy.
+- Powracający zachowuje imię, płeć, ciało, fobię, charakter (także `null`: nie losuje nowego), bliznę i licznik powrotów. Gracz zna jego ciało i fobię (`known`). Ekwipunek dostaje nowy (`makeKit` z nowego poziomu), a od 1.20 dodatkowo do dwóch trofeów z Twojego lochu i latarnię, jeśli się w nim zgubił (6.3). Nie jest łowcą ani rekrutem, nawet jeśli zastąpił łowcę lub rekruta tej samej klasy.
 - `r.used = n` rezerwuje go dla tej fali; warunek `r.used == n` pozwala zbudować tę samą falę ponownie (wznowienie zapisu). `startWave` usuwa z `run.returners` tych z `used === run.wave`. Powracający, który się nie zmieścił, zostaje na liście i może wrócić w dowolnej późniejszej fali.
 
 ### 2.5 Boss
@@ -166,6 +169,42 @@ if g && (g.kind == 'fear' || g.kind == 'kill'):
 - Do fali 5 włącznie przedmiot dostaje tylko specjalista (kapłan przy `fear`, wojownik przy `kill`); od fali 6 każdy członek drużyny (także boss), jeśli ma miejsce w plecaku.
 - Przedmiot gildii ma zawsze **1 użycie** (nie `powerCharges`) i nie ma flagi `kit`. Jeśli bohater ma już przedmiot tego typu, ten dostaje +1 użycie i ewentualnie wyższą moc.
 
+### 2.6a Narzędzia od gildii: latarnia i łom (1.20, `p3_flow.js: makeWave`)
+
+Od fali 4 pełnej gry (`n >= 4 && stageOf() >= 3`), po przedmiotach gildii, najwyżej jedno narzędzie każdego rodzaju na drużynę (`src: 'guild'`, `r: 1`), tylko bohaterowi z miejscem w plecaku (`inv.length < 3 + floor(lvl / 3)`):
+```
+latarnia: odpowiedź gildii 'lost' -> pierwszy z miejscem
+          inaczej: w lochu jest Mgła (komórka z rt 'fog') i rnd() < 0.35 -> losowy nie-boss z miejscem
+łom:      odpowiedź gildii 'block' -> barbarzyńca z miejscem, inaczej pierwszy z miejscem
+          inaczej: w lochu stoi krata i rnd() < 0.3 -> wojownik albo barbarzyńca z miejscem, inaczej losowy z miejscem
+```
+Narzędzia nigdy nie pochodzą z łupu (`rollItem` odfiltrowuje `HITEMS[t].tool`). Działanie: 5.6 i sekcja 06 (6.11).
+
+### 2.9 Więzi w drużynie (1.21, zmienione w 1.24; `p3_flow.js: makeBonds, bondLabel, bondMate, spawnHero`)
+
+```
+makeBonds(list, n):                                // na końcu makeWave, po powracających i bossie
+   if tutW1(n) || list.length < 2: return
+   for k in 0, 1:
+      if rnd() >= (k ? 0.45 : 0.75): break          // 1.24: pierwsza więź 75%, druga 45% (1.21: 55% i 30%)
+      f = indeksy bez więzi i nie-powracający; jeśli < 2: break
+      ment = pary (i, j): list[i].rank >= 1 && (list[j].rank == 0 || list[j].recruit || list[i].rank >= list[j].rank + 1)   // 1.24: uczeń to nowicjusz, rekrut albo ranga niżej
+      riv  = pary i < j, obaj "twardzi" (chciwy, odważny albo łowca)
+      r = rnd()
+      r < 0.15 -> rodzeństwo (sibling)
+      r < 0.35 -> mistrz i uczeń (mentor), jeśli jest para w ment (inaczej przyjaciele)        // 1.24: 20% (1.21: 25%)
+      r < 0.80 -> rywale (rival), para z riv albo dowolna                                       // 1.24: 45% (1.21: 25%)
+      inaczej  -> przyjaciele (friend)
+      para bez wyboru: losowa z f
+      list[a].bond = { type, with: b, role: mentor ? 'mentor' : null }; list[b].bond = { type, with: a, role: mentor ? 'apprentice' : null }
+```
+- Najwyżej jedna więź na bohatera, żadnej dla powracającego, żadnej w pierwszej fali samouczka. Dwóch tej samej klasy nie ma w drużynie (od 1.05), więc rywale to zawsze różne klasy.
+- Zmiana w 1.24: bez nowicjuszy w falach 1-3 (trudniejszy początek, 3.9) mistrzów prawie nie było, więc uczniem może być nowicjusz, rekrut fali albo ktoś o randze niżej.
+- Pomiar na 750 drużynach (fale 2-8, 1.21): 56-58% z więzią, 14-17% z dwiema; przyjaciele 53%, rywale 25%, rodzeństwo 16%, mistrzowie 4%. 1.24 (test `t121_bonds`): ok. 75% drużyn z więzią, ok. 27% z dwiema.
+- `spawnHero`: `h.bond = { type, id: id + e.bond.with - indeks wpisu w run.next, role }` (wchodzą w kolejności listy, więc id partnera = jego indeks); gdy wejdzie drugi z pary: `stats.bonds`, `stats.bondsBy[type]`, oś czasu `bo`.
+- Pokazanie: karta bohatera (po Charakterze, `bondLabel`: "Przyjaciel: Borys", "Rywalka: Wanda", "Mistrz/Mistrzyni" = jego mistrz, "Uczeń/Uczennica" = jego uczeń, według płci partnera; "(zginął/zginęła)" po śmierci partnera), następna drużyna w podsumowaniu (`nextRow`: znacznik), lista drużyny w budowie (`drawNextWave`: " · rywal: wanda"). Zapis i dziennik: `heroes[].bond` = "type[:role]:id".
+- Zachowanie par (słowa, żałoba, zemsta, "Nie zostawię cię", mistrz, rywale, kłótnie, zakłady): sekcja 06, 6.12.
+
 ### 2.7 Przywódca w trakcie fali (`LEADER_ORDER`)
 
 Indeks 0 na liście to tylko "przywódca" przy liczeniu poziomów. W trakcie fali przywódcę wybiera `p5_ai.js: leader()`: jeśli obecny przywódca nie żyje, wyszedł, zniknął (`gone`), zgubił się, panikuje, siedzi w klatce albo ucieka (gdy drużyna nie ucieka), to spośród żywych, niezgubionych, niepanikujących, niezamkniętych i nieuciekających wybiera najwyższy `rank` (tier, rozdz. 3.5), a przy remisie wcześniejszą klasę w `LEADER_ORDER` = wojownik, barbarzyńca, kapłan, bard, mag, złodziej (`data/LEADER_ORDER.json`). Brak kandydatów: pierwszy żywy. Szczegóły zachowania przywódcy: sekcja 06.
@@ -185,9 +224,10 @@ waveCurve(n) = 1 + (1.12*(n-1) + 0.007*(n-1)^2 + (EARLY_LV[n] || 0) + (tutW1(n) 
 grozaTyp(n)  = n <= 10 ? GROZA_TYP[max(0, n)] : 3.0 + 0.3*(n - 10)
 sizeLv(n)    = n < SIZE_LV.length ? SIZE_LV[n] : 0
 endlessLv(n) = n >= 15 ? 1.5 * floor((n - 10) / 5) : 0
-waveBase(n)  = waveCurve(n) + grozaTyp(n)*S.scale + mods.pactLevels + endlessLv(n) + sizeLv(n)*S.scale
+waveBase0(n) = waveCurve(n) + grozaTyp(n)*S.scale + mods.pactLevels + endlessLv(n) + sizeLv(n)*S.scale   // 1.24: krzywa do 1.23
+waveBase(n)  = atW(waveBase0, earlyW(n))         // 1.24: fale 1-4 jak późniejsze fale starej krzywej (3.9); od fali 5 = waveBase0(n)
 ```
-Źródło: `p3_flow.js: waveCurve, grozaTyp, sizeLv, endlessLv, waveBase`.
+Źródło: `p3_flow.js: waveCurve, grozaTyp, sizeLv, endlessLv, waveBase0, earlyW, atW, waveBase`.
 
 Tablice (przepisane w całości, `p3_flow.js`; indeks = numer fali, indeks 0 nieużywany):
 
@@ -278,8 +318,10 @@ tierOf(L) = L <= 2 ? 0 : L <= 5 ? 1 : L <= 9 ? 2 : 3
 ```
 comboHp(n) = 1 + COMBO_HP * min(1, max(0, n - 1) / 4)          // COMBO_HP = 0.2 (p1_config.js)
 bm         = boss == 'final' ? 3 : boss ? 1.7 : 1
-max        = round(HEROES[type].hp * levelStats(lvl).hp * bm * S.heroHp / 100
-                   * (1 + (EARLY_HP[n] || 0) * S.earlyHp) * comboHp(n))
+max        = round(HEROES[type].hp * levelStats(lvl).hp * bm * S.heroHp / 100 * earlyHpK(n))
+hpK0(m)    = (1 + (EARLY_HP[m] || 0) * S.earlyHp) * comboHp(m)               // 1.24: dodatek HP do 1.23
+earlyHpK(n) = max(hpK0(n), atW(hpK0, earlyW(n)))                             // 1.24: HP fali, jak którą gra (nigdy poniżej własnego)
+h.hpK      = atW(comboHp, earlyW(n))                                         // Groza i strach z ran liczone względem max / hpK
 hp         = max                                                // pełne HP na start
 ```
 Źródło: `p3_flow.js: makeHero`; `p1_config.js: comboHp, COMBO_HP`.
@@ -303,7 +345,7 @@ courage = round(levelStats(lvl).courage * (boss == 'final' ? 2 : boss ? 1.5 : 1)
 
 ### 3.8 Tabela przykładowa: fale 1-15
 
-Policzone node'em z kodu (`waveBase`, `levelStats`, `comboHp`, `EARLY_HP`) dla: zwykły run (nie samouczek), `S` domyślne, chciwość z poprzedniej fali 1 (`hl = 0`), bez kart. "E[L]" = wartość oczekiwana poziomu z szumem i limitem fal 1-2, w nawiasie zakres. "Typowy L" = `round(waveBase)` (z limitem 4 w falach 1-2). HP i odwaga dla typowego L, bez bossa i bez charakteru.
+Stan 1.23: od 1.24 fale 1-4 są mocniejsze (3.9); wiersze fal 5-15 i bossów obowiązują dalej. Policzone node'em z kodu (`waveBase`, `levelStats`, `comboHp`, `EARLY_HP`) dla: zwykły run (nie samouczek), `S` domyślne, chciwość z poprzedniej fali 1 (`hl = 0`), bez kart. "E[L]" = wartość oczekiwana poziomu z szumem i limitem fal 1-2, w nawiasie zakres. "Typowy L" = `round(waveBase)` (z limitem 4 w falach 1-2). HP i odwaga dla typowego L, bez bossa i bez charakteru.
 
 | Fala | party / fala | Boss | waveBase | Przywódca E[L] | Reszta E[L] | Typowy L | Ranga | R.hp | ×EARLY_HP | ×comboHp | HP razem (R.hp×E×C) | HP wojownika | HP maga | Odwaga |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -342,6 +384,27 @@ Bossowie (te same założenia, `hl = 0`):
 | 10 | przepowiednia | 21 | 23 | 3020 | 4231 / 2468 / 2821 / 2292 / 2645 / 4760 |
 | 15 | czempion | 26 | 28 | 5072 | 4418 / 2577 / 2945 / 2393 / 2761 / 4970 |
 | 20 | przepowiednia | 39 | 41 | 55033 | 38184 / 22274 / 25456 / 20683 / 23865 / 42957 |
+
+### 3.9 Trudniejszy początek runu (1.24, `p3_flow.js: EARLY_W, earlyW, atW, waveBase0, waveBase, hpK0, earlyHpK, tutW1`)
+
+```
+EARLY_W = [0, 3, 3.75, 4.3, 4.6]                  // fala 1 gra jak dawna fala 3, 2 jak 3,75, 3 jak 4,3, 4 jak 4,6
+earlyW(n) = tutW1(n) || n >= EARLY_W.length ? n : EARLY_W[n]
+atW(f, w) = f(floor(w)) * (1 - k) + f(floor(w) + 1) * k,   k = w - floor(w)      // liniowo między dwiema falami
+```
+Zmienia: poziom bazowy, dodatek HP (`EARLY_HP` × `comboHp`), `hpK` i limit poziomu (zniesiony poza samouczkiem). Bez zmian: liczebność (3 w falach 1-3), klasy klasyczne w falach 1-3, cierpliwość, głód od fali 2, serce w fali 1, poziom następnej fali w podsumowaniu liczony z nowego `waveBase`. Pierwsza fala samouczka (`tutW1`) gra po staremu (2 nowicjuszy, poziom <= 2).
+
+Wartości (`S` domyślne, bez kart; policzone z kodu; średni poziom i HP z testu `t124a_play`, 150 drużyn na falę):
+
+| Fala | `earlyW` | `waveBase` 1.23 -> 1.24 | `earlyHpK` 1.23 -> 1.24 | `hpK` | Średni poziom (1.23) | Średnie HP (1.23) | Bohaterów |
+|---|---|---|---|---|---|---|---|
+| 1 | 3 | 1.50 -> 4.77 | 1.250 -> 1.540 | 1.100 | 4.76 (1.6) | 174 (95) | 3 |
+| 2 | 3.75 | 3.03 -> 5.86 | 1.313 -> 1.593 | 1.137 | 5.82 (2.9) | 203 (121) | 3 |
+| 3 | 4.3 | 4.77 -> 6.54 | 1.540 -> 1.541 | 1.165 | 6.60 (4.8) | 219 (176) | 3 |
+| 4 | 4.6 | 6.22 -> 6.86 | 1.610 -> 1.610 (własny wyższy niż dawnej fali 5) | 1.180 | 6.01 (5.4; rekrut -3) | 234 (219) | 4 |
+| 5-10 | bez zmian | bez zmian | bez zmian | 1.200 | bez zmian | bez zmian | bez zmian |
+
+Skutek uboczny: w falach 1-3 nie ma już nowicjuszy (poziom <= 2), więc mistrzowie więzi 1.21 zniknęli; od 1.24 uczniem może być też rekrut albo ktoś o randze niżej (2.9). W odtworzeniach run strachu autora traci kryształ w fali 2 w 4 na 4 próby (1.23: 0-1), a w fali 3 w 3-4 na 4 (1.23: 1-4): cienka obrona strachem z wczesnego runu autora już nie wystarcza w falach 2-3 (sekcja 09, 11).
 
 ---
 
@@ -405,7 +468,7 @@ Uwaga: tekst "sprawdza podłogę" nie ma pokrycia w kodzie dla charakteru (spowo
 
 `HEROES[type]` (`data/HEROES.json`): `name` [m, f], `hp`, `speed`, `dps`, `color` (kolor postaci/listy), `letter` (litera klasy; w 1.12 nigdzie nieużywana, martwe dane), `greed` (mnożnik wartości łupu).
 
-**Odporności klasy** `CLASS_RES` (`data/CLASS_RES.json`, opis dla gracza `CLASS_RES_TEXT`): mnożnik obrażeń danego typu; brak wpisu = 1. Typ obrażeń wynika z `DMG_OF` (`data/DMG_OF.json`): kłute (spikes, arrows, archer, goblin, mimic, bats), obuchowe (gate, ogre, trapdoor), ogień (fire, powder, a także podpalenie `BURN`), trucizna (spider, shaman, loot = karta Zatruty łup). Pułapki bez typu (np. web, cage, straszące) nie mają mnożnika typu. Pełny mnożnik:
+**Odporności klasy** `CLASS_RES` (`data/CLASS_RES.json`, opis dla gracza `CLASS_RES_TEXT`): mnożnik obrażeń danego typu; brak wpisu = 1. Typ obrażeń wynika z `DMG_OF` (`data/DMG_OF.json`): kłute (spikes, arrows, archer, goblin, mimic, bats), obuchowe (gate, ogre, trapdoor), ogień (fire, powder, a także podpalenie `BURN`; od 1.17.1 bez krwawienia z kolców, `burnBy 'spikes'`, które jest kłute, sekcja 05, 5.3.2), trucizna (spider, shaman, loot = karta Zatruty łup). Pułapki bez typu (np. web, cage, straszące) nie mają mnożnika typu. Pełny mnożnik:
 
 ```
 typeMult(h, dtp):
@@ -455,7 +518,7 @@ phobia = pre.phobia !== undefined ? pre.phobia
 Pola `PHOBIAS` (`data/PHOBIAS.json`; odwrotna mapa `PHOBIA_OF_ATTR` z `attrs`):
 - `name`: nazwa dla gracza.
 - `attrs`: typy elementów (pułapek, potworów), których strach liczy się podwójnie.
-- `types`: typy obrażeń (tylko `fire`: każdy strach z ran od ognia, także podpalenia).
+- `types`: typy obrażeń (tylko `fire`: każdy strach z ran od ognia, także podpalenia; od 1.17.1 nie krwawienie z kolców, do 1.17 ono też budziło fobię ognia).
 - `srcs`: źródła strachu bez elementu (tylko `blood`: `'death'`, czyli strach po śmierci towarzysza).
 - `sees`: elementy, których pierwszy widok straszy.
 - `dark`: fobia ciemności: działa także na każdy strach, gdy bohater jest we Mgle, sam albo zgubiony.
@@ -527,14 +590,14 @@ Gdzie gracz widzi skład:
 
 ### 5.1 Przedmiot i plecak
 
-Przedmiot: `{ type, r, charges?, kit?, cdUntil }`.
-- `type` z `HITEMS` (`data/HITEMS.json`): `potion`, `charm`, `amulet`, `boots`, `bomb`, `weapon`, `armor`.
+Przedmiot: `{ type, r, charges?, kit?, cdUntil }`, od 1.20 także `src`, `owner`, `ownerNm`, `ownerFem`, `wave`, przy przekazanym `gaveNm`, `gaveFem`, `gaveBy` (lista id), przy przeklętym `cursed`, przy latarni `outUntil`, przy zepsutej miksturze (1.18) `tainted`, przy trofeum `wasRelic` (5.6).
+- `type` z `HITEMS` (`data/HITEMS.json`): `potion`, `charm`, `amulet`, `boots`, `bomb`, `weapon`, `armor`, od 1.20 narzędzia `lantern` (latarnia) i `crowbar` (łom).
 - `r` = moc (bez sufitu). Przymiotnik w UI: 1 zwykły, 2 rzadki, 3+ legendarny (`p1_config.js: adj`); kolor `rarColor` (4 i 5+ mają własne).
 - `charges` = liczba użyć mocy na falę (tylko `use: 'power'`); `undefined` = brak limitu (mikstura, bomba: jednorazowe same z siebie; broń, zbroja: pasywne).
 - `kit: true` = z wyposażenia startowego (informacyjne).
 - `cdUntil` = koniec odnowienia (czas fali); przy wejściu zerowane (kopie w `spawnHero`).
 
-Pola `HITEMS`: `name`, `acc` (biernik), `g` (rodzaj gramatyczny m/f/pl), `w` (waga losowania w `rollItem`), `use` (`once` / `power` / `gear`), `cd` (odnowienie mocy w s), `loot: true` (tylko z łupu, nie z wyposażenia).
+Pola `HITEMS`: `name`, `acc` (biernik), `g` (rodzaj gramatyczny m/f/pl), `w` (waga losowania w `rollItem`), `use` (`once` / `power` / `gear`, od 1.20 `tool`), `cd` (odnowienie mocy w s), `loot: true` (tylko z łupu, nie z wyposażenia), od 1.20 `kg` (ciężar) i `tool: true` (narzędzie, nigdy z łupu, `w: 0`).
 
 Plecak: `h.invCap = 3 + floor(lvl / 3)` (`p3_flow.js: spawnHero`). Moce, broń i zbroja: tylko jedna sztuka danego typu (lepsza zastępuje gorszą).
 
@@ -593,6 +656,17 @@ bomb:   0.8 * r / (1 + 0.5 * liczba innych bomb)
 inne:   najlepszy inny tego typu ? max(0, r - best) * 1.2 : r * 1.2 * (ulubiona klasa ? 1.3 : 1)
         ulubione: charm/weapon/armor -> wojownik, amulet -> kapłan, boots -> złodziej
 ```
+Od 1.20 (`CLASS_FIT`, `fitOf(type, cls)` = wartość z tabeli albo 1):
+```
+bomb:     0.8 * r * fitOf('bomb', klasa) / (1 + 0.5 * liczba innych bomb)
+narzędzie: ma już takie ? 0 : 1.5
+inne:     najlepszy inny tego typu ? max(0, r - best) * 1.2 * fit : r * 1.2 * fit
+CLASS_FIT = { weapon: {warrior 1.3, barbarian 1.3, thief 0.8, bard 0.6, priest 0.5, mage 0.3},
+              armor:  {warrior 1.3, barbarian 1.0, priest 0.9, bard 0.7, thief 0.5, mage 0.4},
+              charm:  {warrior 1.3, barbarian 1.1}, amulet: {priest 1.3, bard 1.1, mage 1.1},
+              boots:  {thief 1.3, bard 1.1}, bomb: {mage 1.2, barbarian 1.1, thief 1.1} }
+```
+Zbroja r2: wojownik 3,12, mag 0,96. `giveItem` od 1.20 odmawia też, gdy ciężar po wzięciu (minus to, co zastępuje) przekroczy udźwig (`SAY.tooHeavy` poza ciszą, `stats.tooHeavy`), i nigdy nie wymienia przeklętego przedmiotu (ten sam typ: odmowa z `SAY.cursedKeep`; pełny plecak: przeklęty nigdy nie jest wyrzucany).
 
 **Z łupu** (`p3_flow.js: pickup`, decyzja o podniesieniu w sekcji 06):
 - `loot` (monety): bez przedmiotu, do sakiewki.
@@ -614,10 +688,31 @@ rollItem(r, pool):
 
 ### 5.5 Utrata przedmiotów
 
-- Krytyczny skill check: każdemu trafionemu wypada losowy przedmiot (znika, nie ląduje na podłodze) (`p6_loop.js`, rozstrzygnięcie checku, sekcja 05).
-- Mimik poziomu 3 (Pożeracz): ugryziony traci losowy przedmiot (`p4_traps.js: fireRaw`).
-- Śmierć: cały plecak i sakiewka wysypują się jako łup obok ciała (`p3_flow.js: kill, dropItem`); stosów upuszczonych rzeczy jest maks. 10 (najstarsze znikają).
+- Krytyczny skill check: każdemu trafionemu wypada losowy przedmiot; od 1.20 ląduje obok jako łup "wybity" (`knocked`), który właściciel chce odzyskać (bez chciwości i Grozy, gdy go podniesie), a przepada tylko bez wolnego pola (sekcja 05, 5.9.13).
+- Mimik poziomu 3 (Pożeracz): ugryziony traci losowy przedmiot (`p4_traps.js: fireRaw`); od 1.20 przedmiot trafia do brzucha mimika (najwyżej 6) i wraca na podłogę, gdy mimik zostanie wysadzony albo rozbity (sekcja 05, 5.13.2).
+- Karta Zdarte pancerze (1.18): kolce i strzały w Zbrojowni strącają talizman, amulet albo zbroję jako łup "wybity".
+- Śmierć: cały plecak i sakiewka wysypują się jako łup obok ciała (`p3_flow.js: kill, dropItem`, od 1.20 stosy z `body`); stosów upuszczonych rzeczy jest maks. 10 (od 1.20 najpierw znikają zwykłe stosy, najstarsze pierwsze, potem ciała z wcześniejszych fal, potem ciała tej fali; nigdy właśnie upuszczony). Karta Kocioł ogra (1.18): w Jaskini ogra nic nie wypada, a gracz dostaje Esencję (sekcja 03, 3.9).
+- Bomba w płonącym plecaku może wybuchnąć (sekcja 05, 5.13.2).
 - Użycie: mikstura, bomba znikają; moce tracą użycia.
+
+### 5.6 Pochodzenie, ciężar i narzędzia (1.20, `p1_config.js: HITEMS, CARRY, CLASS_FIT`; `p3_flow.js: spawnHero, pickup, bodyLoot, dropAt, dropItem, loadOf, carryOf, burden, canTake, litLantern, lanternNear, hasCrowbar`)
+
+**Pochodzenie** (`src`): `kit` (z domu, `makeKit`), `guild` (od gildii), `loot` (z Twojego łupu), `relic` (relikwia z Twojego łupu, `loot3`), `body` (z rzeczy poległego: przedmiot `kit`/`guild` wzięty z ciała), `trophy` (trofeum powracającego, 6.3). `spawnHero` dopisuje każdemu przedmiotowi `owner` (id bohatera), `ownerNm`, `ownerFem`, `wave` (gdy ich nie ma). Karta bohatera pokazuje pochodzenie (`srcText`: " - z domu", " - od gildii", " - z Twojego lochu", " - relikwia z Twojego lochu", " - trofeum z fali n", " - z rzeczy <dopełniacz>", " - od <dopełniacz>"; ", przeklęty"; sekcja 08).
+
+**Stos łupu z bohatera** (`dropAt(x, y, item, gold, noGreed, opt)`, `dropItem` to jego nakładka przy bohaterze): typ stosu `loot` (monety), `lpotion` (mikstura), `loot3` tylko dla `src 'relic'` (albo trofeum z `wasRelic`) z `r >= 3`, wszystko inne `loot2` (do 1.19 rzecz zmarłego o mocy 3 była "relikwią"). Pola stosu: `from`, `fromNm`, `fromFem`, `fromWave`, `body` (`opt.body`: wysypany z ciała), `knocked` (`opt.knocked`: wybity z rąk).
+
+**Ciężar** (`kg` w `HITEMS`): mikstura 1, talizman 0,5, amulet 0,5, buty 1,5, bomba 2, broń 3, zbroja 6, latarnia 1,5, łom 3.
+```
+CARRY     = { warrior: 14, barbarian: 16, priest: 10, bard: 10, thief: 9, mage: 8 }
+loadOf(h) = suma kg w plecaku;  carryOf(h) = CARRY[klasa] + 0.3 * lvl
+burden(h) = max(0.84, 1 - 0.4 * max(0, loadOf/carryOf - 0.6))           // prędkość × burden (updateHero)
+canTake(o, x): miejsce w plecaku (albo zastępuje nieprzeklęty tego typu) i loadOf + kg(x) - kg(zastępowanego) <= carryOf
+```
+Ponad 60% udźwigu bohater zwalnia (najwyżej do ×0,84), za pierwszym razem mówi `SAY.heavyLoad` (`stats.loadSlowT` w bohatero-sekundach); na lodzie szansa poślizgu ×`(1 + max(0, load/carry - 0,5))`; ponad 100% nic więcej nie bierze. Pod stopami mały szary ▼ (sekcja 08).
+
+**Latarnia** (narzędzie): zapalona (`litLantern`: nie zgaszona, `outUntil` minął) chroni przed mgłą każdego w 2 polach w tym samym pokoju (`lanternNear`): rzut mgły ×0,3 (`fogRoll`, `stats.lanternSaves`), część mgły w `lostChance` 0,15 zamiast 0,45, błądzenie przywódcy we mgle o połowę krótsze (niosący mówi `SAY.lanternLight` zamiast `fogGrope`, `stats.lanternGrope`), niosący widzi pułapki we mgle w 1 polu (`scanTraps`). Gaśnie na 8 s od ducha, cienia i nietoperzy (sekcja 05, 5.13.2). `stats.lanterns`: bohaterowie, którzy weszli z latarnią.
+
+**Łom** (narzędzie, `hasCrowbar`): przy zamkniętej kracie podważa ten z łomem (albo złodziej) z tempem ×1,5 (złodziej poz. 6+ dodatkowo ×1,5, krata 3. poziomu ×0,5), pierwsza kwestia `SAY.crowbarGate`; ratownik z łomem otwiera klatkę w 0,6 s (złodziej 0,5 s), uwięziony z łomem wyłamuje się sam po 4 s (`SAY.crowbarCage`); `stats.crowbarGate`, `stats.crowbarCage`, oś czasu `lm`. Zachowanie: sekcja 06, 6.11.
 
 ---
 
@@ -678,8 +773,8 @@ Wołane w `finishWave` (rozdz. 1).
 collectReturners():
     if stageOf() < 4: return
     for h in fl.heroes:
-        if !h.fled || h.dead || h.boss || run.returners.length >= 8: continue
-        if rnd() >= (h.fleeing ? 0.55 : 0.4) * (1 + mods.moreReturn): continue
+        if !h.fled || h.dead || h.boss || (run.returners.length >= 8 && !h.nemesis): continue    // 1.23: Nemezis zawsze wraca
+        if !h.nemesis && rnd() >= (h.fleeing ? 0.55 : 0.4) * (1 + mods.moreReturn): continue
         phys = h.phys; phobia = h.phobia; scar = null
         topFear = wpis h.fearBy o największej wartości; topDmg = wpis h.dmgBy o największej wartości
         if h.fleeing && topFear && !phobia:
@@ -688,10 +783,14 @@ collectReturners():
         if !scar && topDmg && topDmg.value > 0.3 * h.max:
             phys = SCAR_RES[topDmg.key]                       // nadpisuje dotychczasowe ciało
             scar = PHYS[phys].name[female] + ' po ranach z Twojego lochu'
-        run.returners.push({ nm, female, type, lvl: h.lvl,
+        e = { nm, female, type, lvl: h.lvl,
             back: run.wave + 2 + (rnd() < 0.5 ? 1 : 0),       // wraca po 2 albo 3 falach
-            phys, phobia, trait: h.trait, scar: scar || 'pamięta Twój loch',
-            times: (h.entry.times || 0) + 1, crystal: !!h.carriedOut })
+            phys, phobia, trait: h.trait, scar: scar || (Nemezis ? stara blizna : null) || 'pamięta Twój loch',
+            times: (h.entry.times || 0) + 1, crystal: !!h.carriedOut,
+            gear: 2 najlepsze (wg r) przedmioty z src loot/relic/body/trophy: {type, r, src, wave, ownerNm, ownerFem, wasRelic, charges},   // 1.20
+            wasLost: !!h.lostEver, goldOut: h.gold || 0 }                                                                              // 1.20
+        nemesisEntry(h, e)                                    // 1.23: tytuł, uraza, pokoje i pułapki (6.9)
+        run.returners.push(e)
 ```
 Źródło: `p3_flow.js: collectReturners`.
 
@@ -699,7 +798,8 @@ collectReturners():
 - Blizna: (a) wypędzony strachem bez fobii dostaje fobię tego, co go najbardziej przestraszyło (element z `PHOBIA_OF_ATTR`, śmierć -> krew, element zadający ogień -> ogień); (b) inaczej, jeśli jeden typ obrażeń zadał mu > 30% maks. HP, dostaje odporność na ten typ (`SCAR_RES`), zastępując dotychczasową cechę ciała (także słabość); (c) inaczej tylko napis "pamięta Twój loch".
 - Wstawienie do fali: rozdz. 2.4 (maks. 1 na falę, od fali 8 maks. 2; poziom co najmniej `lvl + 1`, +1 za wyniesiony kryształ).
 - W fali: kwestia `SAY.returnBack`, karta samouczka `returner`; karta Złe wspomnienia: wchodzi ze strachem `badMemories * courage` (0.3 na kopię); karta Legenda ocalałych: +0.2 chciwości na start za każdego powracającego w `run.next` (`p3_flow.js: greedBonusParts`).
-- Powracający **nie ma mechanicznej pamięci mapy** (wiedza o lochu przychodzi tylko z plotek, rozdz. 6.5), mimo kwestii "Pamiętam każdą pułapkę".
+- Powracający **nie ma mechanicznej pamięci mapy** (wiedza o lochu przychodzi tylko z plotek, rozdz. 6.5), mimo kwestii "Pamiętam każdą pułapkę". Wyjątek od 1.23: Nemezis zna swoje pokoje i pułapki (6.9).
+- **Trofea** (1.20, `makeHero`): do dwóch przedmiotów z `gear` wraca jako `src: 'trophy'` (`kit: false`): lepsze od jego mocy albo sprzętu tego typu zastępuje go, inne trafia na wierzch (ponad `invCap`). Kto się zgubił (`wasLost`), przynosi latarnię (`src: 'kit'`, "z domu"; decyzja: nie "trofeum", bo to nie rzecz z Twojego lochu). Trofeum, które było relikwią, wysypuje się znów jako `loot3`. W fali: `stats.returnGear`, oś czasu `rq`, 50% kwestia `SAY.returnGear` zamiast `returnBack`.
 
 ### 6.4 Wyłom
 
@@ -782,7 +882,7 @@ if fl.queue.length:
 - Pierwszy wchodzi w pierwszym kroku fali, kolejni co 0.3 s, w kolejności listy (przywódca/boss pierwszy, łowcy ostatni). Pojawiają się w punkcie `spawnPt()` (wejście albo wyłom).
 - `GATE_T = 1.8` s (`p6_loop.js`): do tej chwili nikt się nie rusza i nic nie strzela (drużyna zbiera się przy drzwiach, pierwszy mówi `SAY.gate`).
 - Druga grupa (`p3_flow.js: regroupAtDoor`, `spawnHero`): ci, którzy weszli po ucieczce pierwszych, mają strach `0.2 * courage` (nadpisuje strach Złych wspomnień) i kwestię `SAY.secondGroup`. W 1.12 to praktycznie nieosiągalne (5 odstępów × 0.3 s = 1.5 s < 1.8 s), patrz rozdz. 9.
-- `spawnHero(e)` kopiuje z wpisu: typ, `T`, `R`, rank, lvl, boss, płeć, imię, hp, max, kopie przedmiotów (`cdUntil: 0`), odwagę, charakter, ciało, fobię, `known` (Set), returning, bliznę, `hunter`; ustawia stan początkowy: `fear 0`, `invCap`, `cast` (kapłan 1.5, mag 2), `songs` barda, `faith`/`faithMax` kapłana, puste `trauma`, `fearBy`, `dmgBy`, `phobiaSeen`, `felt`, `gold 0`, `cursed false` oraz cały stan AI (sekcja 06). `h.id` = kolejny indeks w `fl.heroes`.
+- `spawnHero(e)` kopiuje z wpisu: typ, `T`, `R`, rank, lvl, boss, płeć, imię, hp, max, kopie przedmiotów (`cdUntil: 0`), odwagę, charakter, ciało, fobię, `known` (Set), returning, bliznę, `hunter`; ustawia stan początkowy: `fear 0`, `invCap`, `cast` (kapłan 1.5, mag 2), `songs` barda, `faith`/`faithMax` kapłana, puste `trauma`, `fearBy`, `dmgBy`, `phobiaSeen`, `felt`, od 1.17.1 `saw` (pamięć tego, co widział w tej fali, sekcja 06, 6.7.10), `gold 0`, `cursed false` oraz cały stan AI (sekcja 06). `h.id` = kolejny indeks w `fl.heroes`.
 - Kwestie przy wejściu (szczegóły sekcja 06): pierwszy wchodzący: `finalAura` (przepowiednia), `champion`, kwestia gildii, `heartRumor` (znają serce z plotek), `rumorStart` z liczbą pułapek z plotek, `rookieBoast` (nowicjusz) albo `enter`; drugi: przy sławie lochu (ranga >= 2) 70% `fame1`/`fame2` (>= 4); dalsi: nowicjusz 35% przechwałka, ostrożny 40% `cautious`; powracający `returnBack`; łowca 60% `hunters`.
 
 ### 6.7 Cierpliwość (120 s), narada i odwrót
@@ -809,7 +909,8 @@ becomeImpatient():
 - **Narada** (1.17, szczegóły w sekcji 06, 6.3.10a): przywódca czeka do 4 s na ciszę, potem każdy, kto stoi przy nim (bez niosącego kryształ, wychodzących, panikujących), głosuje: do domu, szturm (tylko gdy przywódca wie, gdzie jest serce) albo "jeszcze chwila" (raz na falę). Głos zależy od strachu, ran, charakteru (tchórz i ostrożny wolą dom, odważny, chciwy, barbarzyńca, czempion i łowca szturm, chciwy i łowca "jeszcze chwila"), rangi i złota w sakiewce; przywódca liczy się 1,5, elita 1,25. Wynik: dom = `goHome` (jak wyżej, bez kwestii `leave`), szturm = `fl.fearless`, `fl.storm`, `plan 'assault'`, "jeszcze chwila" = cierpliwość cofnięta do 90 s (`fl.patT = min(fl.patT, S.waveTime - 30)`), po 30 s druga narada bez tej opcji. Przegłosowany, który chciał do domu, może wrócić sam (`h.goHome`, kwestia `goHomeAlone`; chętniej tchórz, przestraszony i ciężko ranny). Narada, której nie da się zebrać w 8 s (przywódca zgubiony, w klatce), kończy się powrotem do domu.
 - Zasada finału: **tylko bohater z przepowiedni** (fala 10, 20, 30...) po czasie cierpliwości prowadzi szturm na serce bez narady (przepowiednia pokazuje drogę). Do 1.16 każda inna drużyna po 120 s odchodziła do domu, nawet jeśli znała serce (decyzja autora z 1.01); od 1.17 może też szturmować albo szukać 30 s dłużej, jeśli tak przegłosuje (decyzja autora z 21.10, sekcja 11: do potwierdzenia, bo wraca szturm usunięty w 1.01).
 - `fl.fearless` = tryb po cierpliwości (od 1.17 dopiero po wyniku narady "dom" albo "szturm"): limit strachu ×1.3, szybkość ×1.3, bez narad i przygotowań itd. (sekcja 05/06). HUD pokazuje zamiast czasu "szturm!" albo "odwrót", a w trakcie narady "narada".
-- Siatka bezpieczeństwa: przy `fl.patT >= S.waveTime + 60` (180 s czasu cierpliwości; po "jeszcze chwila" później w czasie fali) wszyscy żywi wychodzą natychmiast (`heroExit`); niosący kryształ w tym momencie oznacza stracony kryształ.
+- Wyczerpanie (od 1.24, `p3_flow.js: waveExhausted`): przy `fl.patT >= S.waveTime + 60` (180 s czasu cierpliwości; po "jeszcze chwila" później w czasie fali) bohaterowie są wyczerpani: druga grupa i zakłady się kończą, wszyscy dostają plan `leave` (niosący kryształ zostaje przy ucieczce), zgubieni odnajdują drogę, czekający przy drzwiach nie wchodzą, napis "Wyczerpany/Wyczerpana", i wychodzą na własnych nogach (sekcja 03, 1.7). Do 1.23 w tym miejscu wszyscy żywi wychodzili natychmiast (`heroExit`), a niosący kryształ go wynosił.
+- Siatka bezpieczeństwa (od 1.24, `waveForceOut`): przy `fl.patT >= S.waveTime + 150` każdy jeszcze w środku wychodzi tam, gdzie stoi ("Ucieka"), a jego kryształ wraca do serca (nie liczy się jako kradzież).
 - Fala kończy się 1.2 s po tym, gdy kolejka jest pusta, a wszyscy nie żyją albo wyszli (`fl.ending = 1.2`).
 - W fali 1 serce odpycha drużynę (nie da się wyrwać kryształu; strach 0.3 odwagi/s przy sercu, przy 85% postępu ucieczka), `p6_loop.js: step` (sekcja 05/06).
 
@@ -828,22 +929,55 @@ becomeImpatient():
 | Nagroda za falę bossa ma poziom `r = 3` zamiast 1 (`run.pendingUpgrades`, sklep w sekcji 03) | `p3_flow.js: finishWave` |
 | Wyróżnienie graficzne: korona, większa figura, pomarańczowa obwódka | `p7_draw.js` (sekcja 08) |
 
+### 6.9 Nemezis (1.23, `p5_ai.js: nemesisEntry, NEM_TITLE, nemName, bountyOf, nemesisSpawn, nemesisKilled`; `p3_flow.js: collectReturners, makeWave, makeHero, kill`)
+
+**Kto zostaje Nemezis** (`nemesisEntry`, wołane w `collectReturners` dla każdego nowego wpisu): wpis z `times >= 2` (wraca drugi raz albo więcej) albo z `crystal` (wyniósł kryształ). Najwyżej dwóch w `run.returners`: trzeci z liczbą powrotów mniejszą lub równą najsłabszemu zostaje zwykłym powracającym; z większą najsłabszy traci `nemesis` (`stats.nemesisDropped`). `stats.nemesisNew`, oś czasu `nn`.
+```
+e.nemesis = { title, grudge, since, rooms, traps }
+title  (NEM_TITLE, według płci, pierwsze pasujące; Nemezis, który znów uciekł, zachowuje tytuł i since):
+   wyniósł kryształ                                -> "Złodziej Kryształu" / "Złodziejka Kryształu"
+   widział śmierć (d.knows w fl.deaths) albo zginął jego partner więzi -> "Mściciel" / "Mścicielka"
+   rany ponad 30% HP (suma h.dmgBy)                -> "Blizna"
+   wyszedł ze strachu (fleeing)                    -> "Ocalały" / "Ocalała"
+   inaczej                                         -> "Niezłomny" / "Niezłomna"
+grudge (uraza) = największy wpis h.grudgeBy (Map pole -> {type, x, y, v}: damageRaw dodaje ułamek HP od pułapki albo potwora z polem,
+                 addFear w trakcie odpalenia ułamek odwagi) z typem pułapki albo potwora
+                 inaczej największy klucz h.fearBy, który jest pułapką albo potworem (x, y = null: "gdziekolwiek"), inaczej stara uraza albo null
+rooms  = pokoje, do których wszedł (h.rooms, Set kluczy, onEnter) + stare
+traps  = wykryte pułapki (LOOKS_TRAP, nie temp) w tych pokojach na końcu fali: [{k, type}] + stare
+```
+Decyzja: `dmgBy` jest kluczowane typem obrażeń (kłute, ogień...), nie elementem, więc dodano `grudgeBy`. Nemezis, który znów ucieknie, zawsze wraca (bez losowania, także ponad limit 8), z `times + 1`, sumą pokoi i pułapek, nową urazą tylko wtedy, gdy ta fala ją dała, i starą blizną, gdy nie dostał nowej. Martwy Nemezis nigdy nie wraca.
+
+**Siła** (`makeWave`, `makeHero`): bierze pierwsze miejsce wśród powracających, poziom = reguła powracającego + 2; `rank = max(1, tierOf(lvl))` (nigdy nowicjusz), odwaga ×1,4, talizman albo amulet, którego nie ma (gdy ma miejsce: `inv.length < 3 + lvl/3`; `r = 1 + floor(lvl / 6)`, `src 'kit'`).
+
+**Wejście** (`nemesisSpawn`, w `spawnHero`): pola, drzwi i ściany jego pokoi stają się znane (`fl.known`), pokoje `R.seen`, `R.nemKnown`; serce znane, jeśli był w jego pokoju (jak mocna plotka); jego pułapki, które wciąż stoją (ten sam typ i pole), są wykryte bez kwestii (`stats.nemTraps`, `nemRooms`); `h.nemTraps` = te pułapki i jego uraza. Zostaje przywódcą, chyba że obecny ma wyższą rangę albo jest bossem; `leader()` przy remisie rangi woli Nemezis. Mówi `nemesisIntro` zamiast `returnBack` (kwestia wyłomu albo drzwi pierwszego wchodzącego zostaje); 3,5 s później ktoś, kto go słyszy, odpowiada (80%): `nemesisFollow` ({v} = on), gdy idzie za nim (on prowadzi albo 50%), inaczej `nemesisReply`; nie, gdy jego kwestia zaczęła rozmowę. `stats.nemeses`, `nemesisReply`, oś czasu `nm`. Zachowanie w lochu (uraza, ostrzeżenia, przechwałki, brak paniki): sekcja 06, 6.14.
+
+**Nagroda za głowę** (`bountyOf(e) = 10 + 5 × max(1, times)`): zabicie Nemezis wypłaca graczowi Esencję (`gainEssence(null, N, 'essBounty')`, napis "Nagroda! +N Esencji", `stats.bounties`, `stats.essBounty`, oś czasu `nb`, `entry.bountyPaid`). W prawdziwym runie 20-30 Esencji. Odtworzenia fal (sekcja 09) nie pokazują nagród, bo każda fala zaczyna nowy run.
+
+**Pokazanie**: tytuł po imieniu (`nemName`, `heroName`: "Borys Niezłomny") na karcie bohatera, w liście następnej drużyny ("☠ nemezis", "Nagroda za głowę: N Esencji"), w zakładce bohaterów, na liście drużyny w budowie (złoty "☠ Borys Niezłomny" i wiersz z nagrodą), złota obwódka żetonu; podsumowanie fali "Nagroda za głowę: N Esencji · Borys Niezłomny: wypłacona. / uciekł, wróci z wyższą nagrodą."; szczegóły w sekcji 08. Zapis: `run.returners[].nemesis` i `run.next[].nemesis` to zwykłe obiekty (sekcja 07); pola bohatera (`rooms`, `grudgeBy`, `nemTraps`) żyją tylko w fali.
+
+### 6.10 Pamięć poległych (1.23, `p5_ai.js: rememberFallen, fallenRoom`)
+
+`run.fallen`: `{ nm, female, type, roomKey, wave, nemesis (tytuł albo null) }` dla każdego bohatera, który zginie w pokoju albo korytarzu (tylko pełna gra, `stageOf() >= 4`, jak powracający); najwyżej 12, najstarszy wypada. Bohater późniejszej fali, który wejdzie do takiego miejsca, może to powiedzieć (sekcja 06, 6.14.5). `resumeRun` daje `run.fallen = []` runowi sprzed 1.23.
+
 ---
 
 ## 7. Onboarding 1.12: co dotyczy bohaterów
 
-`stageOf() = run.stage || ONB_FULL` (`ONB_FULL = 4`). Etap ustala `p8b_ui.js: startGuided` (pierwsze runy "z nauką", `run.guided`); run uruchomiony inaczej (np. testy, "Pomiń samouczek") to pełna gra (etap 4). Samouczek z przewodnikiem (`run.tutorial`) tylko w etapie 1 i tylko gdy przewodnik nie był ukończony (`coachDone`). Teksty nowości: `data/ONB_STAGES.json`.
+`stageOf() = run.stage || ONB_FULL` (`ONB_FULL = 4`). Od 1.24 etap rośnie z falami pierwszego runu (`ONB_WAVE = [0, 1, 3, 5, 7]`, `onbAdvance`, sekcja 03, 5.3): fale 1-2 etap 1, 3-4 etap 2, 5-6 etap 3, od 7 etap 4; kolejne runy to pełna gra. Do 1.23 etap ustalał `p8b_ui.js: startGuided` dla kolejnych czterech runów "z nauką" (`run.guided`); run uruchomiony inaczej (np. testy, "Pomiń samouczek") to pełna gra (etap 4). W tabeli niżej "od etapu" = od fali `ONB_WAVE[etap]` pierwszego runu. Samouczek z przewodnikiem (`run.tutorial`) tylko w etapie 1 i tylko gdy przewodnik nie był ukończony (`coachDone`). Teksty nowości: `data/ONB_STAGES.json`.
 
 | Element | Od etapu | Warunek w kodzie | Źródło |
 |---|---|---|---|
-| Pierwsza fala: 2 nowicjuszy, bez `START_LV`, poziom maks. 2 | samouczek (`run.tutorial`) | `tutW1(n)` | `p3_flow.js: tutW1, partySize, waveCurve, makeWave` |
+| Pierwsza fala: 2 nowicjuszy, bez `START_LV`, poziom maks. 2, bez trudniejszego początku 1.24 i bez więzi | samouczek (`run.tutorial`) | `tutW1(n)` | `p3_flow.js: tutW1, partySize, waveCurve, earlyW, makeWave, makeBonds` |
 | Premia poziomów z chciwości (`hl`) | 1 | zawsze | `p3_flow.js: makeWave` |
 | Straszące pułapki i potwory (istotne dla fobii) | 2 | `ONB_ITEM` | `p1_config.js: ONB_ITEM` |
 | Specjaliści gildii (i jej przedmioty) | 3 | `stageOf() >= 3 && n >= 3` | `p3_flow.js: guildAdapt` |
 | Budowle-kontry, w tym Bastion | 3 | `ONB_ITEM` | `p1_config.js` |
 | Ciała (`phys`) i fobie | 4 | `deep = stageOf() >= 4` | `p3_flow.js: makeHero` |
 | Łowcy skarbów | 4 | `n >= 3 && stageOf() >= 4` | `p3_flow.js: makeWave` |
-| Powracający (nie są nawet zbierani wcześniej) | 4 | `stageOf() < 4: return` | `p3_flow.js: collectReturners` |
+| Powracający (nie są nawet zbierani wcześniej), a z nimi Nemezis | 4 | `stageOf() < 4: return` | `p3_flow.js: collectReturners` |
+| Narzędzia gildii (latarnia, łom) | 3 | `n >= 4 && stageOf() >= 3` | `p3_flow.js: makeWave` |
+| Pamięć poległych (`run.fallen`) | 4 | `stageOf() < 4: return` | `p5_ai.js: rememberFallen, fallenRoom` |
 | Wyłom | 4 | `stageOf() >= 4`, `run.tut < 0`, fala >= 6 | `p3_flow.js: planBreach, startBuild` |
 | Karty o ciałach, fobiach, traumie, powracających (weakspot, anatomy, nightmares, oddbodies, scars, memories, survivors) | 4 | `ONB_CARD` | `p1_config.js: ONB_CARD` |
 
@@ -890,7 +1024,7 @@ becomeImpatient():
 11. **Imiona**: powracający może mieć to samo imię co ktoś już wylosowany w tej fali (`pre.nm` nie jest sprawdzane z `used`).
 12. **Powracający zastępujący łowcę lub rekruta tej samej klasy** (dopasowanie `same` po samej klasie) usuwa flagę `hunter`/`recruit`: łowców jest wtedy mniej niż wyliczono (a powracający łowca zachowuje charakter `greedy`).
 13. **Blizna z ran nadpisuje ciało**: bohater ze słabością (np. `brittle`) może wrócić z odpornością innego typu, a słabość znika. Zgodne z komentarzem ("rana go zahartowała"), ale warto to świadomie zachować.
-14. **Siatka bezpieczeństwa 180 s** wyprowadza też niosącego kryształ, co liczy się jako stracony kryształ (`heroExit`).
+14. **Siatka bezpieczeństwa 180 s** (zmienione w 1.24): do 1.23 wyprowadzała też niosącego kryształ (stracony kryształ); od 1.24 po 180 s jest wyczerpanie (wychodzą sami), a po 270 s utknięci wychodzą z miejsca, kryształ wraca do serca (6.7).
 15. **Pasywny bonus amuletu do wykrywania** (`scanTraps`, `gearR`) działa także przy 0 użyć.
 16. **Przedmiot gildii** ma zawsze 1 użycie niezależnie od mocy; dołożony do istniejącej mocy daje +1 użycie i ewentualnie wyższą moc (bez sprawdzenia, czy to "ten sam" przedmiot).
 17. **`fearResist`**: mnożnik 0.85 bossa działa także na samego bossa (do 1.16 brak warunku `o !== h`; od 1.17 jest to zapisane wprost: `o === h || canSee(h, o) || canHear(h, o)`, a dla reszty działa tylko, gdy są z nim).
@@ -898,17 +1032,22 @@ becomeImpatient():
 19. **Fale >= 15**: limit `waveSize <= 6` sprawia, że boss nie dochodzi jako dodatkowy bohater (zastępuje zwykłego).
 20. Komentarz w `makeWave` mówi, że pierwsze trzy fale to tylko klasy klasyczne, ale gildia w fali 3 może wstawić barda albo barbarzyńcę (zgodne z tekstem onboardingu "od fali 3").
 21. Linia "Fala N+1: poziom ok. X" w podsumowaniu pokazuje `round(waveBase)`, bez premii chciwości i szumu (informacyjne; realne poziomy są na liście drużyny).
+22. **Opis etapów w `p1_config.js`** (komentarz przy `ONB_FULL`) nadal mówi o czterech runach; od 1.24 obowiązuje `ONB_WAVE`.
+23. **Więź mistrza przy braku pary** (1.21-1.24): rzut na mistrza (`0,15 <= r < 0,35`) bez pary w `ment` daje przyjaciół z losową parą, więc faktyczny udział przyjaciół jest wyższy niż 20% z tabeli.
+24. **Nemezis a ranga przywódcy**: `nemesisSpawn` przejmuje prowadzenie, gdy obecny przywódca ma rangę <= jego (nie bossa), choć `leader()` przy następnym wyborze i tak sortuje po randze.
 
 ---
 
 ## 10. Testy akceptacyjne (minimum)
 
 1. `waveSize` dla fal 1-20 (zwykły run i samouczek) zgodny z tabelą w 2.1.
-2. `waveBase(n)` dla `S.scale = 1`, `pactLevels = 0`: wartości z tabeli 3.8 (np. 1.50, 3.03, 4.77, 6.22, 7.29, 9.38, 11.77, 13.08, 15.11, 16.35; samouczek fala 1: 1.00).
+2. `waveBase(n)` dla `S.scale = 1`, `pactLevels = 0`: od 1.24 4.77, 5.86, 6.54, 6.86 (fale 1-4, 3.9), potem jak w tabeli 3.8 (7.29, 9.38, 11.77, 13.08, 15.11, 16.35); `waveBase0` (krzywa do 1.23): 1.50, 3.03, 4.77, 6.22; samouczek fala 1: 1.00.
 3. `levelStats(L)` dla L = 1-30 równe `data/levelStats_1_30.json` (tolerancja 1e-4).
 4. `makeHero('warrior', 9, 5, used, 'champion')` przy `S` domyślnych: `max = 636`, `courage = 327`, brak charakteru i fobii, ekwipunek z poziomu 11.
 5. W żadnej fali nie ma dwóch bohaterów tej samej klasy; w falach 1-3 bez gildii tylko klasy z `CLASSIC`.
-6. Fale 1-2: żaden poziom > 4 (samouczek fala 1: > 2).
+6. Samouczek fala 1: żaden poziom > 2 (od 1.24 limit 4 w falach 1-2 zniesiony).
+11. `makeBonds`: 0-2 więzi, najwyżej jedna na bohatera, żadna dla powracającego ani w fali samouczka; mistrz ma rangę >= 1, uczeń nowicjusza, rekruta albo rangę niżej.
+12. `nemesisEntry`: `times >= 2` albo kryształ daje tytuł z `NEM_TITLE`; najwyżej dwóch Nemezis; nagroda `10 + 5 × times`; Nemezis wraca zawsze, z +2 poziomami, rangą >= 1 i odwagą ×1,4.
 7. `guildAdapt`: dla statystyk z `fearPts + scarePts` > 55% zwraca `fear`; przy remisie sc wygrywa wcześniejsza opcja.
 8. `makeKit`: dla L = 20 maks. 7 losowań, moc 5, powtórzone moce łączą się w `charges`.
 9. `collectReturners`: boss nigdy, maks. 8 na liście, `back` = fala + 2 albo + 3; w `makeWave` maks. 1 (fala >= 8: 2) na falę.

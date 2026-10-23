@@ -4,7 +4,8 @@
   "acc": "miksturę",
   "g": "f",
   "w": 30,
-  "use": "once"
+  "use": "once",
+  "kg": 1
  },
  "charm": {
   "name": "talizman",
@@ -12,7 +13,8 @@
   "g": "m",
   "w": 22,
   "use": "power",
-  "cd": 20
+  "cd": 20,
+  "kg": 0.5
  },
  "amulet": {
   "name": "amulet",
@@ -20,7 +22,8 @@
   "g": "m",
   "w": 16,
   "use": "power",
-  "cd": 30
+  "cd": 30,
+  "kg": 0.5
  },
  "boots": {
   "name": "buty",
@@ -28,14 +31,16 @@
   "g": "pl",
   "w": 14,
   "use": "power",
-  "cd": 15
+  "cd": 15,
+  "kg": 1.5
  },
  "bomb": {
   "name": "bomba",
   "acc": "bombę",
   "g": "f",
   "w": 18,
-  "use": "once"
+  "use": "once",
+  "kg": 2
  },
  "weapon": {
   "name": "broń",
@@ -43,7 +48,8 @@
   "g": "f",
   "w": 14,
   "use": "gear",
-  "loot": true
+  "loot": true,
+  "kg": 3
  },
  "armor": {
   "name": "zbroja",
@@ -51,6 +57,25 @@
   "g": "f",
   "w": 14,
   "use": "gear",
-  "loot": true
+  "loot": true,
+  "kg": 6
+ },
+ "lantern": {
+  "name": "latarnia",
+  "acc": "latarnię",
+  "g": "f",
+  "w": 0,
+  "use": "tool",
+  "kg": 1.5,
+  "tool": true
+ },
+ "crowbar": {
+  "name": "łom",
+  "acc": "łom",
+  "g": "m",
+  "w": 0,
+  "use": "tool",
+  "kg": 3,
+  "tool": true
  }
 }

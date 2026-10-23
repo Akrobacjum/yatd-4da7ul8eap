@@ -17,11 +17,11 @@
  },
  "trapdoor": {
   "name": "Zapadnia",
-  "cost": 4,
+  "cost": 6,
   "slot": "floor",
   "tag": "rozdziela",
   "cd": 8,
-  "desc": "Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony. Złodziej ją rozbroi."
+  "desc": "Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony. Najwyżej 2 upadki bohatera na falę (elita i poz. 12+: 1), potem widzi zapadnie. Złodziej ją rozbroi."
  },
  "cage": {
   "name": "Klatka",

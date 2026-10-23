@@ -1,6 +1,6 @@
 # 05. Pułapki, potwory, walka, strach i skill checki
 
-Ta sekcja opisuje wszystko, co dzieje się między elementem lochu (pułapka, potwór, budowla, łup, skrzynia) a bohaterem: kiedy element może odpalić, co robi na każdym poziomie, jak liczone są obrażenia i strach, jak działają typy pokojów i jak gracz steruje tym przez skill checki. Ekonomia (Groza, Chciwość, wypłata serii combo, głód serca) jest w sekcji 03, skład fal, przedmioty bohaterów i łup w sekcji 04, decyzje AI bohaterów i ich kwestie w sekcji 06, mapa, stawianie elementów, pętla `step` i zapis w sekcji 07, a wygląd checku, kamera, dźwięk i przewodnik w sekcji 08. Pełna lista kart: załącznik B.
+Ta sekcja opisuje wszystko, co dzieje się między elementem lochu (pułapka, potwór, budowla, łup, skrzynia) a bohaterem: kiedy element może odpalić, co robi na każdym poziomie, jak liczone są obrażenia i strach, jak działają typy pokojów i jak gracz steruje tym przez skill checki. Ekonomia (Groza, Chciwość, wypłata serii combo, głód serca) jest w sekcji 03, skład fal, przedmioty bohaterów i łup w sekcji 04, decyzje AI bohaterów i ich kwestie w sekcji 06, mapa, stawianie elementów, pętla `step` i zapis w sekcji 07, a wygląd checku, kamera, dźwięk i przewodnik w sekcji 08. Pełna lista kart: załącznik B. Stan: Prototype 1.24 (zmiany 1.18-1.24 w 5.1.4, 5.3.4, 5.3.9, 5.4.10, 5.9.3, 5.9.4, 5.9.10-5.9.13, 5.10 i 5.13).
 
 Konwencje:
 - Źródło każdej reguły: `plik.js: funkcja`. Wszystkie pliki są w `src/` i po sklejeniu tworzą jeden zasięg (IIFE), więc stałe z jednego pliku są widoczne w innych.
@@ -25,7 +25,7 @@ Konwencje:
 | `DRIFT` | `data/DRIFT.json` | potwory unoszące się za bohaterami, nie blokują przejścia (ghost, shade, bats) |
 | `DISARMABLE` | `data/DISARMABLE.json` | co złodziej rozbraja (mimik i przeklęte nie) |
 | `BUILDINGS` | `data/BUILDINGS.json` | budowle-kontry (rune, altar, decoy, acid, veil, fortify, howl, shackles) |
-| `LOOKS_TRAP(t)` | funkcja | `TRAPS[t] || t === 'decoy'`: co bohaterowie biorą za pułapkę (wykrywanie, plotki) |
+| `LOOKS_TRAP(t)` | funkcja | `TRAPS[t] \|\| t === 'decoy'`: co bohaterowie biorą za pułapkę (wykrywanie, plotki) |
 | `LOOT_KIND` | `data/LOOT_KIND.json` | łupy (loot, lpotion, loot2, loot3, lcursed); nie są `ACTIVE`, nigdy nie odpalają |
 
 Pola `data/ITEMS.json` używane w tej sekcji:
@@ -107,6 +107,16 @@ upgCost(it) = ceil(ITEMS[it.type].cost * UPG_COST[lvl + 1])
 
 ---
 
+### 5.1.4 Połączona karta podnosi poziom (1.24, `p4_traps.js: lvlAt, lvlPow`)
+
+Karta z grupy "named" połączona w ★ (sekcja 03, 3.13) daje `mods.fuseLv[typ] = 1`, a moc elementu liczy się jak o poziom wyżej:
+```
+lvlAt(T, L) = L < T.length ? T[L] : T[last] * (T[last] / T[last - 1]) ^ (L - last)    // za poziomem 3 ostatni krok jeszcze raz
+lvlPow(it)  = TRAPS[typ] ? lvlAt(LVL_POW, lvl + f) : (f ? lvlAt(LVL_MON, lvl + f) / LVL_MON[lvl] : 1)   // f = mods.fuseLv[typ] || 0
+LVL_POW = [1, 1, 1.6, 2.4], LVL_MON = [1, 1, 1.5, 2.2]
+```
+Pułapka poziomu 1 z połączoną kartą ma moc 1,6, poziomu 2: 2,4, poziomu 3: 3,6. Cecha 3. poziomu (`t3`) zależy dalej od prawdziwego poziomu.
+
 ## 5.2 Wyzwalanie
 
 ### 5.2.1 Sloty i pokój elementu
@@ -169,10 +179,11 @@ Warunek "chcę odpalić" dla checku i pamięci (`p6_loop.js: checkWanted`):
 
 ```
 if (!ACTIVE || disabled || cd > 0 || jamUntil > time || skipUntil > time || (potwór && hp <= 0)) return false;
-gate:     ktoś stoi na kracie albo ma ją w path[0] lub path[1]
+gate:     ktoś stoi na kracie, wchodzi na nią (nx, ny) albo stoi obok niej (Manhattan 1) i ma ją w path[0] (1.24; do 1.23 path[0] lub path[1])
 shaman:   inny żywy potwór w jego pokoju ma hp < 0.6 * max
 ghost:    ktoś w jego pokoju jest w odległości <= 3 od (gx, gy)
-trapdoor: ktoś w obszarze, kto jeszcze nie spadł przez tę zapadnię (h.fellFrom)
+trapdoor: ktoś w obszarze, komu zapadnia jeszcze grozi (!tdSafe(h, it), 1.24, 5.3.4); przy okazji ktoś po limicie upadków
+          stojący przy nieznanej zapadni ją widzi (learnTrap(it, 'seen'), stats.tdSeen)
 cage:     ktoś w obszarze, kto nie jest w klatce
 reszta:   heroesInArea(it).length > 0
 ```
@@ -282,7 +293,7 @@ Kwota = wartość przy `pw = 1` (przed checkiem, poziomem i kartami). "×cpow" =
 
 | Typ | Slot | Typ obrażeń (`DMG_OF`) | Rana | Strach | cd (s) | Obszar | Poziom 3 (cecha) | Kształt checku |
 |---|---|---|---|---|---|---|---|---|
-| spikes Kolce | floor | pierce | `35*D` = 24,5 ×cpow | z rany | 1,5 | pole | Krwawienie: podpalenie 3 s | bar |
+| spikes Kolce | floor | pierce | `35*D` = 24,5 ×cpow | z rany | 1,5 | pole | Krwawienie: 3 s ran kłutych (od 1.17.1; wcześniej ogień) | bar |
 | web Sieć | floor | - | 0 | 6 (bez pw, bez cpow) | 7 | 3×3 | Kwaśna sieć: +60% zamiast +30% | spiral |
 | trapdoor Zapadnia | floor | blunt | `20*D` = 14 ×cpow | 25 przy upadku, 10 przy wyjściu | 8 | pole | Bezdenny szyb: zgubiony, +25 strachu | pulse |
 | cage Klatka | floor | - | 0 (ale +50% ran) | `20*cageFear` | 10 | pole | Kolczasta: ×2 ran, ×2 strachu | pulse |
@@ -309,7 +320,8 @@ lvl >= 3 && !h.dead: h.burnUntil = max(h.burnUntil, fl.time + 3); h.burnBy = 'sp
 ```
 
 - Trafia każdego na polu. `trapMult`: ×1,5, gdy bohater stoi (`held`: walka, czekanie, rozmowa, odpoczynek, rozbrajanie, przy sercu, uwalnianie, w klatce, w sieci); Lepkie kolce: ×(1 + `stickySpikes`) w sieci (5.6.2).
-- Krwawienie to zwykłe podpalenie (obrażenia ognia 6·D/s), ale ustawione bezpośrednio, bez `ignite`, więc Pożoga go nie przenosi.
+- Krwawienie korzysta z mechaniki podpalenia (`burnUntil`, 6·D/s, `BURN`), ale ustawione jest bezpośrednio, bez `ignite`, więc Pożoga go nie przenosi. Od 1.17.1 to rana **kłuta**, nie ogień: `damageRaw` daje `dtp = h.burnBy === 'spikes' ? 'pierce' : 'fire'` (5.6.1, krok 6). Działa więc na nie `CLASS_RES.pierce` (wojownik ×0,75, mag ×1,25, kapłan ×1,1, złodziej ×1), ciało (`PHYS`, np. gruboskóry ×0,7), karta Hartowane ostrza (`dmgType.pierce`), trauma `pierce` i rany w `dmgBy.pierce`; do 1.17 liczyło się jako ogień (złodziej ×1,25, mag ×0,7, barbarzyńca ×1,2, kapłan ×0,85, Olej w szczelinach, trauma i fobia ognia), stąd bohater, któremu "śniły się płomienie" w lochu bez ognia. Kolce z cechą 3. poziomu to też kolce w pokoju Zbrojowni (`t3` przez `inKind`, 5.8a).
+- Wygląd: krwawiący ma nad sobą czerwoną kropkę (`#d8434f`/`#ff6b6b`, miga `sin(realNow*12)`), a nie płomień (sekcja 08). Kapłan tamuje krwawienie kwestią `SAY.staunch`, nie `SAY.cleanse` (sekcja 06, 6.5.3). Pamięć bohatera: krwawienie to tagi `spikes` i `blood`, nie `fire` (6.7.10).
 - Złodziej może uniknąć (5.6.1). Głodne kolce: zabójstwo kolcami podbija `run.stacks.hunger` (`kill`).
 
 ### 5.3.3 Sieć (`web`)
@@ -329,14 +341,21 @@ każdy w list: h.slowUntil = fl.time + dur; lvl >= 3: h.acidWebUntil = h.slowUnt
 ### 5.3.4 Zapadnia (`trapdoor`) i upadek
 
 ```
-list.filter(h => !h.fellFrom?.has(it)).forEach(h => {
+list.filter(h => !tdSafe(h, it)).forEach(h => {          // 1.24; do 1.23: !h.fellFrom?.has(it)
   damage(h, 20 * D * mods.fallDmg * pw, it, cpow);
   if (!h.dead) fall(h, pw, it);
 })
 ```
 
+**Limit upadków (1.24, `p4_traps.js: tdCap, tdSafe`; autor: "zapadnie są za mocne")**:
+```
+tdCap(h)      = (h.rank >= 2 || h.lvl >= 12) ? 1 : 2           // elita albo poziom 12+: raz na falę
+tdSafe(h, it) = h.fellFrom?.has(it) || (h.tdFalls || 0) >= tdCap(h)
+```
+`h.tdFalls` liczy upadki bohatera przez dowolne zapadnie w tej fali (w `fall`). Bohater "bezpieczny" nie jest celem zapadni (`fireRaw`), nie liczy się do `heroesInArea` zapadni (więc nie wywoła checku ani czaszki, `p6_loop.js: heroesInArea`) ani do `checkWanted`. Kto przekroczył limit i stanie w obszarze nieznanej, gotowej zapadni, widzi ją: `learnTrap(it, 'seen', h)` (od tej chwili drużyna ją zna i omija jak każdą znaną pułapkę), `stats.tdSeen`. Koszt zapadni od 1.24: 6 Esencji (było 4), więc ulepszenie 12 i 24 (`upgCost`), zwrot przy zdjęciu według `spent`. Opis elementu podaje limit. Karta bohatera: "Zapadnie: n/cap" (gdy spadł albo w lochu jest zapadnia), "(już mu/jej nie grożą)" przy limicie, "(elita albo poz. 12+: spada raz)" przy limicie 1 (sekcja 08).
+
 `fall(h, pw, it)` (`p4_traps.js`):
-1. `h.fellFrom.add(it)` (przez tę zapadnię spada raz na falę), `learnTrap(it, 'seen')` (zapadnia staje się znana), poziom 3: `h.deepFall = true`.
+1. `h.fellFrom.add(it)` (przez tę zapadnię spada raz na falę), od 1.24 `h.tdFalls++`, `learnTrap(it, 'seen')` (zapadnia staje się znana), poziom 3: `h.deepFall = true`; od 1.18 `h.fallRoom`, `h.fallRk` (komnata zapadni, karta Cela pod zapadnią: 5.13).
 2. `h.gone = true`, `state = 'fallen'`, `fallUntil = fl.time + mods.fallTime * max(1, pw)` (`fallTime` 5 s, Głęboka zapadnia +4 s), czyszczenie ścieżki, celu, walki.
 3. Z kryształem i kartą Bezdenna studnia: kryształ wraca do serca (`crystalReturns`).
 4. `addFear(h, 25, 'trapdoor')` (bez pw i cpow). Traci rolę przywódcy i zwiadowcy.
@@ -384,7 +403,7 @@ ignite(h, by, dur = 3):
       o.burnUntil = fl.time + dur; o.burnBy = by       // jeden przeskok
 ```
 
-Podpalenie (`p5_ai.js: updateHero`): `damage(h, 6 * S.dmg * dt, BURN)` (4,2/s). `BURN = { kind: 'burn' }`: typ obrażeń `fire`, atrybut = `h.burnBy`, Groza ×1 (`DMG_FACTOR.burn`). Podpalony nie leczy się odpoczynkiem; kapłan gasi (`burnUntil = fl.time`, zamiast leczenia). Kto podpala: ogień, proch (poziom 3), strzały (karta), łucznik (poziom 3, zdolność i strzał pasywny), zapadnia (Ognista otchłań), kolce (poziom 3, bezpośrednio).
+Podpalenie (`p5_ai.js: updateHero`): `damage(h, 6 * S.dmg * dt, BURN)` (4,2/s). `BURN = { kind: 'burn' }`: typ obrażeń `fire` (od 1.17.1 `pierce`, gdy `burnBy === 'spikes'`: krwawienie, 5.3.2), atrybut = `h.burnBy`, Groza ×1 (`DMG_FACTOR.burn`). Podpalony nie leczy się odpoczynkiem; kapłan gasi (`burnUntil = fl.time`, zamiast leczenia; krwawienie tamuje tak samo). Kto podpala: ogień, proch (poziom 3), strzały (karta), łucznik (poziom 3, zdolność i strzał pasywny), zapadnia (Ognista otchłań); kolce (poziom 3, bezpośrednio) dają tym samym mechanizmem krwawienie, które od 1.17.1 nie jest ogniem (5.3.2).
 
 ### 5.3.8 Portret (`portrait`) i Chór
 
@@ -406,7 +425,7 @@ replanAll(); wstrząs ekranu
 - Zamknięte drzwi są nieprzechodnie (`passable`). Gdy się otworzą, `step` każe wszystkim przeplanować.
 - Brak napisu "pudło" (krata zawsze "trafia" w drogę).
 - Złodziej przy zamkniętej kracie, gdy drużyna czeka, podważa ją w 3 s (×1,5 szybciej od poziomu 6): drzwi otwarte, krata `disabled` i wykryta (`p5_ai.js: partyThink`).
-- Check pyta, gdy ktoś stoi na kracie albo ma ją w dwóch najbliższych krokach ścieżki; czaszka liczy tylko tych na polu kraty.
+- Check pyta (od 1.24, `p6_loop.js: checkWanted`; uzupełnienie 2 do 1.24, decyzja autora), gdy ktoś stoi na polu kraty, właśnie na nie wchodzi (`nx, ny`) albo stoi tuż obok (Manhattan 1) i ma je w `path[0]`; dwa pola dalej krata czeka. Do 1.23 wystarczało pole kraty w dwóch najbliższych krokach ścieżki, więc większość zamknięć tylko odcinała drogę przed drużyną. Czaszka liczy tylko tych na polu kraty. Krata wejściowa fali (`t104_gate`) bez zmian.
 
 ### 5.3.10 Proch (`powder`)
 
@@ -627,6 +646,8 @@ Stawiana tylko w budowaniu (`p7_draw.js: crateOk`): podłoga pokoju, nie przy dr
 
 Czwarty argument to w praktyce `cpow` (mnożnik combo dla ran), nie mnożnik Esencji.
 
+Od 1.17.1 `damage` to opakowanie: `now = hurtTags(h, src)` (podpalenie: `BURN_TAGS[h.burnBy] || ['fire']`, czyli `spikes` -> `['spikes', 'blood']`, `arrows` -> `['arrows', 'fire']`, `powder` -> `['blast', 'fire']`, `fire` -> `['fire']`, `archer` -> `['archer', 'monster', 'fire']`, `trapdoor` -> `['trapdoor', 'fire']`; pułapka albo potwór: `itemTags(src, true)`; inne źródła: `null`). Gdy `now` jest: `sawAdd(h, now)`, przy podpaleniu też `sawNear(h, now)` (widzą go inni), a cała reszta (`damageRaw`, kroki niżej, łącznie ze śmiercią, traumą i fobią) idzie w `sayNow(now, ...)`, więc każda kwestia wywołana raną musi dotyczyć tego, co zraniło (sekcja 06, 6.7.10). Bez `now` od razu `damageRaw`.
+
 ```
 0. if (h.dead || h.fled || amt <= 0 || fl.ending !== null) return
 1. kind = srcKind(src)          // src.kind ('trap' actSrc, 'loot', 'burn', 'heart') | TRAPS → 'trap' | MONSTERS → 'monster' | 'other'
@@ -641,13 +662,15 @@ Czwarty argument to w praktyce `cpow` (mnożnik combo dla ran), nie mnożnik Ese
      d) ZBROJA: ar = gearR(h, 'armor'); if (ar) amt *= 1 - (1 - 0.92^(ar * itemPow(h))) * (Kwas ? 0.5 : 1)
    } else if (caged(h)) amt *= 1.5
 5. if (h.cursed && kind !== 'heart') amt *= 1.3
-6. dtp = kind === 'burn' ? 'fire' : kind === 'heart' ? null : DMG_OF[tkey || src.type || (kind === 'loot' ? 'loot' : '')]
+6. dtp = kind === 'burn' ? (h.burnBy === 'spikes' ? 'pierce' : 'fire')      // 1.17.1: krwawienie z kolców to rana kłuta
+       : kind === 'heart' ? null : DMG_OF[tkey || src.type || (kind === 'loot' ? 'loot' : '')]
    if (dtp) { tk = typeMult(h, dtp); amt *= tk; if (tk !== 1) revealPhys(h, dtp) }
 7. attr = tkey || (monster ? src.type : burn ? (h.burnBy || 'fire') : loot ? 'loot' : null)
 8. real = min(h.hp + h.shield, amt)
    rest = amt; if (h.shield > 0) { ab = min(h.shield, rest * (Kwas ? 0.5 : 1)); h.shield -= ab; rest -= ab }
    h.hp -= rest
-9. inni w odległości Manhattan <= 5 odwracają się; h.playerDmg += real * (monster ? MON_FACTOR : 1) (bez serca);
+9. 1.17.1: h.hp < 0.4 max i nie serce -> sawNear(h, ['blood']) (on i ci, którzy go widzą, 6.7.10);
+   inni w odległości Manhattan <= 5 odwracają się; h.playerDmg += real * (monster ? MON_FACTOR : 1) (bez serca);
    feltBy(h, real / h.max); statystyki bt(attr); kind === 'trap': morale = max(0.15, morale - 0.03)
 10. if (h.hp <= 0) { h.hp = 0; h.dead = true; kill(h, kind, attr); return }   // śmiertelna rana nie daje Grozy za ranę, tylko za śmierć
 11. reakcja przyjaciela (trap, real >= 0.25 max, raz na 5 s); barbarzyńca: real >= 0.2 max i nie serce → furia
@@ -696,7 +719,7 @@ return k * mods.dmgType[dtp] * (mods.arsenal && fl.arsenal4 ? 1 + mods.arsenal :
 - `data/CLASS_RES.json`: mnożnik według klasy i typu; brak wpisu = 1. `data/PHYS.json`: ciało bohatera (`res` per typ, `text` dla UI). `data/DMG_OF.json`: typ obrażeń źródła (bez wpisu: brak typu, np. duch). `data/DMG_TYPES.json`: polskie nazwy typów.
 - `fl.arsenal4` = na starcie fali w lochu są elementy `ACTIVE` wszystkich 4 typów (`startWave`, Pełen arsenał).
 - `revealPhys`: pierwszy raz, gdy ciało (`PHYS`) zmienia ranę danego typu, cecha staje się jawna (kwestia, napis "Słabość/Odporność").
-- `typeMult` działa też na rany pasywne potworów (np. goblin wręcz = kłute) i podpalenie (ogień).
+- `typeMult` działa też na rany pasywne potworów (np. goblin wręcz = kłute) i podpalenie (ogień; krwawienie z kolców od 1.17.1 kłute).
 
 ### 5.6.4 Śmierć: `kill(h, kind, attr)` (`p3_flow.js`)
 
@@ -952,6 +975,7 @@ checkTick():
     if (ff) fire(it, pw || mods.okPw)                     // palec na mapie: wszystko, bez pamięci jak graze
     else if (pw && !lethalFor(it, pw)) fire(it, pw)       // pamięć i nie zabije
   if (ff || fl.time < fl.checkGap) return
+  if (calmChecks() && fl.time < fl.calmUntil) { calmFire(); return }   // 1.24: spokojna przerwa w falach 1-2 (5.9.10)
   // 2) pierwszy element, który potrzebuje checku, otwiera go
   for it of fl.items:
     if (!checkWanted(it) || skullHolds(it) || !needsCheck(it)) continue
@@ -960,7 +984,7 @@ needsCheck(it) = !memPw(it) || lethalFor(it, memPw(it))
 ```
 
 - Kolejność w `fl.items` (kolejność stawiania) decyduje, który element pyta pierwszy. W Unity: lista w kolejności dodania.
-- `fl.checkGap = fl.time + 0,25` po zamknięciu checku (`clearCheck`): nowy check najwcześniej 0,25 s czasu gry później. Pamięć odpala w tym czasie normalnie.
+- `fl.checkGap = fl.time + 0,25` po zamknięciu checku (`clearCheck`): nowy check najwcześniej 0,25 s czasu gry później. Pamięć odpala w tym czasie normalnie. Od 1.24 w falach 1-2 i w samouczku dodatkowo `fl.calmUntil = fl.time + S.calmGap` (1,5 s, 5.9.10).
 - Przy przytrzymanym palcu (`ff`) nowe checki nie startują, a odpalenie z pamięci lub jako graze **nie sprawdza czaszki** (zabija bez pytania; respektuje tylko `skullOff`).
 
 ### 5.9.4 Budowa checku
@@ -970,7 +994,7 @@ inA = heroesInArea(it); shape = CHECK_SHAPE[it.type] || 'bar'
 maxL = max(1, poziomy bohaterów z inA)
 kz = S.checkDiff * (1 + 0.02 * min(10, run.wave - 1)) / LVL_ZONE[it.lvl || 1]     // węższe strefy
 ks = S.checkDiff * (1 + CHECK_LV_SPEED * min(20, maxL - 1))                        // szybszy koralik
-gw = 0.4 / kz          // szerokość obwódki (graze), część kształtu 0..1
+gw = min(0.4 / kz * OK_WIDE[shape], 0.96 - lo - rw)   // szerokość obwódki (graze), część kształtu 0..1; OK_WIDE od 1.24: pulse S.okPulse 1,6, swing S.okSwing 1,65, reszta 1 (5.9.11)
 rw = 0.09 / kz         // szerokość pełnego pola (krytyk)
 lo = shape === 'swing' ? 0.08 : 0.12
 start = lo + rand * max(0, 0.96 - lo - gw - rw)
@@ -1047,7 +1071,7 @@ resolveCheck(p):                       // p: pozycja (testy); stuknięcie: pozyc
   victims = heroesInArea(o) ∪ lock(o) dla wszystkich o
   fire(c.it, pw, { lock: lock(c.it) })
   extra: fire(o, pw, { lock }) jeśli o wciąż na mapie, nie wyłączony, nie zakłócony, potwór żywy
-  crit: wstrząs, napis "KRYTYK!" / "SERIA: KRYTYK!"; każdy żywy z victims z niepustym plecakiem traci losowy przedmiot (przepada)
+  crit: wstrząs, napis "KRYTYK!" / "SERIA: KRYTYK!"; każdy żywy z victims z niepustym plecakiem traci losowy przedmiot: od 1.20 ląduje obok jako łup "wybity" (5.9.13), przepada tylko bez wolnego pola
   ok: napis "Draśnięcie"
 ```
 
@@ -1063,7 +1087,7 @@ all.forEach(o => {
 
 **Czaszka puszczona** (`skullHolds`): element z `skullOff` nie pyta i nie odpala sam, dopóki `lethalFor(it, memPw(it) || okPw)`; gdy przestanie zabijać, `skullOff = false` i wraca do normy. Kasowane też na starcie każdej fali i przy trafionym checku. Czaszka tylko na krytyku (graze nie zabija) nie usypia: po 1,2 s check wraca.
 
-**Zamknięcie**: wynik widać 0,35 s czasu rzeczywistego (`updateCheck`), potem `clearCheck()`: `fl.check = null; fl.checkGap = fl.time + 0,25`. Świat wraca do pełnej prędkości od chwili wyniku (`timeScale` zwalnia tylko `check && !result`).
+**Zamknięcie**: wynik widać 0,35 s czasu rzeczywistego (`updateCheck`), potem `clearCheck()`: `fl.check = null; fl.checkGap = fl.time + 0,25` (od 1.24 w falach 1-2 i samouczku także `fl.calmUntil = fl.time + S.calmGap`). Od 1.24 każdy wynik idzie też do `stats.checkByShape[kształt]` (`shapeStat`: `ok`, `crit`, `miss`, `skip`, `auto`; sekcja 07). Pudło i puszczenie w pierwszej fali samouczka mogą jeszcze odpalić kolce (5.9.12). Świat wraca do pełnej prędkości od chwili wyniku (`timeScale` zwalnia tylko `check && !result`).
 
 **Pauza i okno**: gdy otwarte jest okno albo pauza, `t0`, `prepT0` i `resT` przesuwają się o czas klatki (check stoi).
 
@@ -1092,6 +1116,37 @@ Każdy element checku: `o.cd = cdOf(o.type) * 0,5 || 1` (połowa odnowienia bez 
 - **Auto-przyspieszenie w ciszy** (`autoFF`): `autoFFOn = S.autoFF > 1 && fala && fl.quietT > 0,3 && !fl.check && fl.gateOpen`. Docelowo `S.autoFF` (ustawienie 1-4, domyślnie 1,5; 1 = wyłączone); narasta o 4 na sekundę rzeczywistą, spada od razu (`frameBody`). Nie rozstrzyga checków (w ciszy ich nie ma).
 - `timeScale()`: brak fali, okno albo pauza → 0; check bez wyniku → 0,25; `ff` → `max(S.ffSpeed, 1)`; inaczej `max(1, ffAuto)`.
 - **Cisza** (`quietWhy`, co 0,1 s czasu gry): nie jest cicho, gdy koniec fali, przygotowanie drużyny, brak żywych, ktoś walczy, rozbraja, jest przy sercu, uwalnia albo siedzi w klatce, albo gdy któryś bohater stoi na polu "gorącym" lub w odległości `QUIET.r = 1` kroku od niego. Gorące pola: pole i obszar każdego żywego elementu `ACTIVE` (nie wyłączonego, potwór żywy) albo łupu, którego `cd <= QUIET.cd = 1`. Sąsiedztwo: BFS 4-kierunkowy przez pola `passable` (pole sąsiada sprawdzane, nawet gdy nieprzechodnie). `QUIET = { r: 1, cd: 1 }`; `r = 0` włącza starą regułę "cały pokój" (martwy wariant).
+
+### 5.9.10 Spokojne checki w falach 1-2 (1.24, `p6_loop.js: calmChecks, calmFire, clearCheck`)
+
+Z danych testerów: 23 checki w 29 s pierwszej fali. Od 1.24:
+```
+calmChecks() = S.calmGap > 0 && run && (run.wave <= S.calmWaves || run.tut >= 0)    // DEFAULTS: calmWaves 2, calmGap 1.5
+clearCheck(): ...; if calmChecks(): fl.calmUntil = fl.time + S.calmGap              // czas gry, świat idzie normalnie
+checkTick: po odpaleniach z pamięci, gdy calmChecks() && fl.time < fl.calmUntil: calmFire(); return
+calmFire(): każdy element, który chce checku (checkWanted, !skullHolds, needsCheck):
+   fire(it, mods.okPw) jak draśnięcie, bez zapisu pamięci (zapyta przy następnej gotowości),
+   stats.calmAuto++, bt(typ).ok++, checkByShape[kształt].auto++
+```
+Czaszka w tej przerwie nie pyta (element odpala jak draśnięcie, jak przy przytrzymanym palcu). Od fali 3 (poza samouczkiem) jak do 1.23. Pomiar (`t124d_data`, 4 strzały i 2-3 kolce na trasie, każdy check chybiony, 3 przebiegi): fala 1: 10-16 checków, najmniejsza przerwa 1,5 s, 5-16 draśnięć z automatu; fala 2: 10-14 checków; fala 3: 22-40 checków, najmniejsza przerwa 0,25-0,5 s, 0 z automatu.
+
+### 5.9.11 Szersze okno kręgu i wahadła (1.24, `p6_loop.js: OK_WIDE`; `DEFAULTS.okPulse` 1,6, `okSwing` 1,65)
+
+Testerzy pudłowali 81% kręgów (zapadnia, klatka, kości) i 32% wahadeł (potwory) wobec ok. połowy na pasku. Udział obwódki był ten sam, ale krąg rysuje się na tarczy o promieniu ok. 53 px (okno było pierścieniem 18 px wobec 113 px paska), a strefy wahadła leżą w szybkim środku łuku. Od 1.24 obwódka kręgu ×`S.okPulse`, wahadła ×`S.okSwing`, przycięta tak, żeby strefy zostały na kształcie (`0,96 - lo - rw`); pełne pole krytyku bez zmian (0,085 przy fali 4). Pomiar (fala 4, element poziomu 1, 16 checków na kształt, telefon 390 px):
+
+| Kształt | Udział obwódki przed -> po | Czas koralika w obwódce (ms) | Rozmiar na ekranie (px) |
+|---|---|---|---|
+| bar (kolce, strzały, krata, mimik) | 0,377 (bez zmian) | 421 | 113 |
+| pulse (zapadnia, klatka, kości) | 0,377 -> 0,604 | 400 -> 641 | 18 -> 28 (pierścień) |
+| swing (potwory) | 0,377 -> 0,623 | 263 -> 451 na przejście (są dwa) | 49 -> 82 |
+
+### 5.9.12 Kolce w samouczku zawsze kłują (1.24, `p6_loop.js: tutSpikeSure`)
+
+W pierwszej fali samouczka (`run.tut >= 0 && run.wave === 1`) pudło albo puszczony check kolców, które w tej fali jeszcze nie odpaliły (`it.w.f == 0`) i stoją na mapie bez wyłączenia, odpala je raz z mocą draśnięcia (`cd`, `skipUntil`, `jamUntil` zerowane, `it.tutSure = true`), napis "Kolce i tak kłują", `stats.tutSpike`. Razem z wymogiem stawiania kolców na trasie (sekcja 08, przewodnik) kolce odpalają w 10 na 10 prób z każdym checkiem chybionym (przed zmianą 33 na 47 przy kolcach od ćwierci trasy, 1 na 12 przy drzwiach).
+
+### 5.9.13 Krytyk wybija przedmiot (1.20, `p6_loop.js: resolveCheck`)
+
+Krytyk dalej zabiera każdemu trafionemu z niepustym plecakiem losowy przedmiot, ale od 1.20 przedmiot spada obok jako stos łupu (`dropItem(h, x, 0, noGreed, { knocked: true })`, pole `pile.knocked = h.id`), napis "Wypadł/Wypadła/Wypadły <przedmiot>!", `stats.gearKnocked`, oś czasu `kn`, w 60% kolejkowana kwestia `SAY.gearKnocked`. Bez wolnego pola dookoła przepada jak do 1.19. Właściciel chce go odzyskać (sekcja 06, 6.11.2: `need ×1,5`, ryzyko ×0,8); podniesienie przez właściciela nie jest łupem (bez chciwości i Grozy). Ktoś inny bierze go jak zwykły łup. `startWave` czyści `knocked`. Karta Zdarte pancerze robi to samo kolcami i strzałami w Zbrojowni (5.13).
 
 ---
 
@@ -1155,9 +1210,27 @@ Wartości domyślne: `p3_flow.js: freshMods`. Pełne opisy kart: załącznik B. 
 | `lastGasp` | 0 | Ostatnie tchnienie +0,2 | `kill` |
 | `heartbeat` | 0 | Bijące serce +0,2 | `trapBoost`, `monDmg` |
 | `pack` | 0 | Stado +0,2 | `monDmg` |
-| `quickArm` | false | Szybki montaż | `ARM_TIME` |
+| `quickArm` | false | Szybki montaż | `ARM_TIME` (od 1.18 także pierwsze odpalenie ×1,5, wiersz niżej) |
 | `fearHarvest` | 0 | Żniwa strachu +2 | `heroExit` |
 | `loneMult`, `lostMult` | 1 | Echo samotności, Kręte korytarze ×2 | Groza samotności i zgubienia |
+| `spiderNest` (1.18) | false | Pajęcze gniazdo: także pajęczyna każdego pająka trzyma o 2 s dłużej | `fireRaw` (pająk), `monstersTick` |
+| `quickArm` (1.18) | false | Szybki montaż: pierwsze odpalenie pułapki postawionej w fali ×1,5 (`it.quick`) | `fireRaw` |
+| `rhythm` (1.18) | 0 | Rytm lochu: okno combo +1 s za kopię | `fireRaw`, `setupFl` |
+| `ambush` (1.18) | false | Zasadzka w norze: ukryte gobliny i szamani w Gobliniej norze | `hiddenAmbush`, `rebuildThreat`, `fireRaw`, `monstersTick` |
+| `cell` (1.18) | false | Cela pod zapadnią | `fall`, `cellLand`, `landFallen` |
+| `vaultsnap` (1.18) | false | Zatrzask sezamu | `pickup`, `vaultSnap` |
+| `frames` (1.18) | 0 | Spojrzenie z ramy: moc ×(1 + 0,5 za kopię) | `lookDone`, `framesWake` |
+| `restock` (1.18) | false | Beczki z kuźni | `fireRaw` (proch), `restockForge` |
+| `skullwall` (1.18) | 0 | Mur z czaszek: +5% za śmierć w Kaplicy (licznik `run.stacks.skullwall`), najwyżej +50% | `skullK` w `fireRaw` i `monDmg` |
+| `strip` (1.18) | 0 | Zdarte pancerze: 50% za kopię | `stripGear` |
+| `gearlink` (1.18) | 0 | Sprzężone tryby: -1 s odnowienia innych pułapek pokoju za kopię | `fireRaw` |
+| `batscatter` (1.18) | 0 | Spłoszeni w mrok: zgubienie 40% (nowicjusz 60%) +20% za dalszą kopię | `fireRaw` (nietoperze) |
+| `cocoons` (1.18) | 0 | Kokony: 6 strachu/s za kopię | `partyThink` |
+| `mire` (1.18) | 0 | Grzęzawisko: spowolnienie w Bagnie mija wolniej | `updateHero` |
+| `blackice` (1.18) | 0 | Gołoledź: poślizg ×(1 + 0,5 za kopię), spowolnienie do `time + 1,8` | `onEnter` |
+| `deepsleep` (1.18) | 0 | Sen bez przebudzenia: rany i strach śpiących w Sanktuarium ×(1 + kopie) | `damageRaw`, `addFear` |
+| `risen` (1.18) | false | Wstający umarli | `kill`, `riseGhost` |
+| `fuseLv` (1.24) | `{}` | połączona karta z grupy "named": +1 poziom mocy jej elementu (5.1.4) | `lvlPow` |
 
 ---
 
@@ -1171,7 +1244,7 @@ Zachowaj zachowanie z kodu, chyba że autor zdecyduje inaczej; każdą z tych rz
 4. **Strach bez combo i mocy**: sieć (6), zapadnia (25, 10, 25), klatka (20), krata (5), ogr poziomu 3 (15·pw), kołysanka na sekundę nie mają `cpow` (część także `pw`), choć komentarz 1.12 mówi, że combo wzmacnia "rany i strachy".
 5. **`webbed` = każde spowolnienie**: `trapMult` daje +30% (i kolce ×1,5 przez `held`) każdemu z `slowUntil > time`, także po zawiasach, trumnie, goblinie poziomu 3 czy w strefie pająka; tekst mówi "w sieci".
 6. **Klatka a ucieczka**: komentarz w `partyThink` ("strach rośnie, aż wyłamie kraty i ucieknie") i gałąź `caged` w `startFlee` są martwe, bo `addFear` nie woła `startFlee` dla uwięzionego. Uwięziony bez ratunku zawsze umiera po czasie (boss wyłamuje).
-7. **Głodne ściany** w opisie: strzały, ogień, portrety; w kodzie `WALL_TRAP` obejmuje też oczy i lustro.
+7. **Głodne ściany** (naprawione w 1.18): tekst karty wymienia teraz także oczy i lustra, jak `WALL_TRAP` w kodzie.
 8. **Szybkie przeładowanie, Przeciążenie, Zębatki** skracają też odnowienie zdolności potworów (`cdOf` bez filtra `TRAPS`). Zdolność potworów nie korzysta z `trapBoost` (Bijące serce działa tylko na ich obrażenia pasywne).
 9. **Krata i zawiasy należą do korytarza** (`slotRoom` drzwi = `dd.b`), więc typ pokoju obok ich nie dotyczy, a liczą się do limitu korytarza.
 10. **Licznik kraty w UI** (`p7_draw.js`) pokazuje `gateUses - uses` bez +2 z poziomu 3.
@@ -1180,6 +1253,10 @@ Zachowaj zachowanie z kodu, chyba że autor zdecyduje inaczej; każdą z tych rz
 13. **Śmiertelna rana nie daje Grozy za ranę** (`damage` wraca przed `pts`), tylko Grozę śmierci. Zachować (balans był strojony na tym).
 14. **Krytyk zabiera przedmiot** także tym, którzy wyszli z obszaru, ale są w `lock`, i robi to nawet wtedy, gdy główny element w spowolnieniu został wyłączony i `fire` nic nie zrobił (pętla `victims` nie sprawdza wyniku `fire`).
 15. **Klatka bierze pierwszego z `fl.heroes`**, nie najbliższego ani tego na polu jako pierwszego (na polu jednej klatki zwykle i tak stoi jeden).
+16. **Krwawienie po 1.17.1 a teksty** (naprawione w 1.18-1.24): Hartowane ostrza "kolce i krwawienie, strzały, łucznik, goblin, mimik, nietoperze", Olej w szczelinach "ogień, proch, podpalenia; nie krwawienie"; karta bohatera pisze "krwawi" przy `burnBy === 'spikes'`, inaczej "płonie".
+17. **Zapadnia po limicie (1.24)**: bohater po limicie upadków nie jest celem żadnej zapadni, ale dalej stoi w jej obszarze i liczy się do obszaru innych elementów; zapadnia "widziana" przez niego staje się znana całej drużynie (jak każda wiedza o pułapkach, sekcja 06).
+18. **Draśnięcia z przerwy (1.24)** liczą się do `bt(typ).ok` jak trafione checki, więc karta elementu i statystyka "draśnięcia" w falach 1-2 obejmują też odpalenia bez stuknięcia (`calmAuto` rozdziela je tylko w danych testowych).
+19. **Połączona karta "named" a potwory (1.24)**: `lvlPow` potwora z `fuseLv` to stosunek `LVL_MON` poziomu wyższego do obecnego (poziom 1: ×1,5; 2: ×1,467; 3: ×1,467), a bez połączenia potwór ma moc 1 (rośnie przez HP i siłę). Mnożnik działa w `fireRaw` (zdolność), a `monDmg` (ciosy w walce) go nie używa.
 
 ---
 
@@ -1192,3 +1269,50 @@ Zachowaj zachowanie z kodu, chyba że autor zdecyduje inaczej; każdą z tych rz
 - **Dane**: liczby z tej sekcji, które nie są w `data/` (np. 35, 25, 22, 0,12, 1,15, 0,4, 0,09), przenieś do jednego `Balance` (ScriptableObject) z nazwami jak w prototypie, żeby test zgodności mógł je porównać.
 - **Testy zgodności** (sekcja 09): wartości z tabel 5.3.1 i 5.4.7 przy `pw` 0,7 i 1,8, poziomach 1-3 i combo 1-7; `checkPos` dla każdego kształtu; `lethalFor` dla przypadków brzegowych (krata, klatka, tarcza kapłana, Kwas).
 - **tylko prototyp**: `ARM_TIME` jest `let`, bo test ustawia go przez `setArm` (w Unity stała `Balance.ArmTime = 2`); `resolveCheck(p)` z argumentem służy testom (w Unity metoda `ResolveAt(float p)` tylko w testach); skróty klawiszowe Space i F.
+
+---
+
+## 5.13 Pułapki i potwory w 1.18-1.24 (skrót, szczegóły kart w załączniku B)
+
+### 5.13.1 Karty komnat i efektów (1.18)
+
+21 nowych kart działa tylko z komnatą albo efektem w lochu (`req: () => hasRk(k)` albo `hasRt(t)`). Mechanika tej sekcji:
+
+| Karta | Co zmienia w pułapkach i potworach | Kod |
+|---|---|---|
+| Cela pod zapadnią (`cell`) | bohater, który spadnie przez zapadnię w Więzieniu, ląduje na gotowej klatce w Więzieniu (nie wyłączonej, `cd 0`, nie zakłóconej, wolne pole; najpierw w tym samym pokoju) i klatka odpala na niego (`fire(c, 1)`: jej Groza, combo, ratunek); nie jest zgubiony, Ognista otchłań dalej pali; bez gotowej klatki zwykłe lądowanie | `p4_traps.js: fall, cellLand, landFallen` |
+| Zatrzask sezamu (`vaultsnap`) | łup wzięty w Sezamie odpala każdą gotową pułapkę tego pokoju (jak alarm wabika, bez zużycia), najwyżej raz na 6 s na pokój (`fl.snapAt`) | `p3_flow.js: pickup, vaultSnap` |
+| Spojrzenie z ramy (`frames`) | bohater, który przy rozglądaniu się ogląda w Galerii portret, oczy albo lustro (nie wyłączone, nie wykryte, `cd 0`, nie zakłócone), budzi je: `fire(it, 1 + 0,5 × kopie)` | `p5_ai.js: lookDone, framesWake` |
+| Beczki z kuźni (`restock`) | proch, który wybuchł w swojej Kuźni, trafia do `run.restock {x, y, obj, lvl, spent}` i wraca w następnej budowie z meblem, za darmo i na tym samym poziomie, jeśli pole jest wolne | `p4_traps.js: fireRaw`; `p3_flow.js: startBuild, restockForge` |
+| Zasadzka w norze (`ambush`) | goblin i szaman w swojej Gobliniej norze są ukryci (`!m.shown`): bez zagrożenia na mapie, wojownik ich nie wybiera do walki, nie przerywają rozglądania się; cios goblina z ukrycia ×2, potem `showAmbush` (napis "Zasadzka!"); kto na niego wpadnie w walce, odsłania go, a pierwsza 1 s walki wręcz bije ×2 (`m.ambushUntil`); `setupFl` co falę ukrywa je od nowa | `p4_traps.js: hiddenAmbush, showAmbush, rebuildThreat, fireRaw, monstersTick` |
+| Kokony (`cocoons`) | spowolniony w Leżu pająków, stojący w strefie sieci albo pająka, boi się 6 na sekundę za kopię (atrybut `web`, fobia pająków ×2) | `p5_ai.js: partyThink` |
+| Spłoszeni w mrok (`batscatter`) | nietoperze w swoim Gnieździe: spłoszony (nie przywódca, nie zgubiony) gubi się z szansą nowicjusz 0,6, inni 0,4, +0,2 za każdą dalszą kopię, najwyżej 1 | `p4_traps.js: fireRaw` |
+| Mur z czaszek (`skullwall`, rośnie) | kości, trumna i łucznik w swojej Kaplicy czaszek: `skullK = 1 + min(0,5; 0,05 × śmierci w Kaplicy w runie × kopie)` w `fireRaw` i `monDmg`; licznik `run.stacks.skullwall` rośnie w `kill` | `p4_traps.js: skullK` |
+| Zdarte pancerze (`strip`) | trafienie kolcami albo strzałą w Zbrojowni strąca z szansą `min(1; 0,5 × kopie)` losowy talizman, amulet albo zbroję: spada obok jako łup "wybity" (5.9.13), napis "Strącone: ...", `stats.stripped`, oś czasu `st` | `p4_traps.js: stripGear` |
+| Grzęzawisko (`mire`) | w Bagnie spowolnienie mija wolniej: `slowUntil += dt × (1 - 1 / (1 + kopie))` | `p5_ai.js: updateHero` |
+| Gołoledź (`blackice`) | poślizg w Lodowni ×(1 + 0,5 × kopie), po poślizgu `slowUntil = max(slowUntil, time + 1,8)` (ok. 1,5 s po ślizgu: +30% od pułapek jak w sieci) | `p5_ai.js: onEnter` |
+| Sen bez przebudzenia (`deepsleep`) | rany od pułapek i potworów i strach z atrybutem pułapki albo potwora dla odpoczywającego (`state 'rest'`) w Sanktuarium ×(1 + kopie); koszmar Sanktuarium (atrybut `null`) bez zmian | `p3_flow.js: damageRaw, addFear` |
+| Sprzężone tryby (`gearlink`) | pułapka odpalająca w Zębatkach (nie echo, nie chór) skraca `cd` innych pułapek tego pokoju z `cd > 0` o `kopie` s (do 0) | `p4_traps.js: fireRaw` |
+| Wstający umarli (`risen`, legendarna) | bohater zabity w Krypcie wstaje jako duch po stronie lochu (najwyżej 2 na falę, `fl.risen`): `{type: ghost, hp 60, power 1, lvl 1, cd 1, spent 0, temp: true}` na wolnym polu tego pokoju najbliższym ciała; bez miejsca w pokoju, poza chciwością (Kolekcjoner, Skąpiec, Pozłacane) i gildią; `setupFl` usuwa go przed `validateItems` (bez zwrotu) | `p3_flow.js: kill, riseGhost` |
+
+Zmienione karty pułapek (1.18): Pajęcze gniazdo (sieć 3×3 jak dotąd plus każda pajęczyna trzyma o 2 s dłużej), Szybki montaż (pierwsze odpalenie ×1,5), Rytm lochu (okno combo +1 s za kopię, także `fl.comboWinNow` w Grocie ×1,5). Karta `u-portrait` usunięta.
+
+### 5.13.2 Przedmioty bohaterów a pułapki i potwory (1.20)
+
+- **Brzuch mimika** (Pożeracz, mimik poziomu 3): zjedzony przedmiot trafia do `it.belly` (najwyżej 6, najstarszy wypada), `stats.mimicAte`; ugryzienie ×(1 + 0,1 × min(6, liczba w brzuchu)). Brzuch zostaje między falami (i w zapisie). Mimik wysadzony bombą (`bombJob`) albo rozbity toporem (`smashDone`) wypluwa brzuch wokół mebla jako stosy łupu (`mimicSpill`, `dropAt`), napis "Wypluwa N przedmiot(y/ów)", `SAY.mimicSpill`, `stats.mimicSpill`, oś czasu `mx`. Karta mimika: "W brzuchu: n przedmiotów (gryzie o x% mocniej)".
+- **Latarnia gaśnie** (`douseLantern`): duch, cień albo nietoperze trafiające niosącego zapaloną latarnię gaszą ją na 8 s z szansą 0,5 (cień poziomu 3: zawsze), napis "Zgasła!", `SAY.lanternOut`, `stats.lanternOut`, oś czasu `la`.
+- **Bomba w płonącym plecaku** (`bombCook`, `p3_flow.js`): płonący z bombą co sekundę z szansą `min(0,45; 0,15 × bomby)`: 40 × `S.dmg` × √min(4, r) jemu (ogień), połowa każdemu w 1,5 pola, 10 strachu każdemu w 3 polach (także jemu), napis "Bomba w plecaku!", `stats.bombCook`, oś czasu `bx`.
+- **Bomba przy przyjaciołach**: weteran (ranga 1+, bez furii) nie rzuca, gdy przyjaciel stoi przy potworze (`stats.bombHeld`, raz na potwora); inni rzucają, a przyjaciele obok potwora dostają 20 × `S.dmg` × √min(4, r) (ogień), `stats.bombFriendly`, oś czasu `bf2`.
+
+### 5.13.3 Walka wręcz po 1.21-1.23 (`p4_traps.js: monstersTick`)
+
+Obrażenia bohatera w walce na sekundę mnożą od 1.21 `vowK(h)` (zemsta, ×1,3 przez 30 s) i od 1.23 `nemK(h, m)` (Nemezis przeciw swojej urazie, ×1,25); oba mnożą też kulę ognia maga. Od 1.22: wojownik trzymający front (`w.front === m`) jest bity pierwszy spośród walczących (ogr dalej bije wszystkich), a cios w niosącego kryształ przejmuje w 50% strażnik obok (wojownik 70%, `guardOf`: eskorta, 25%+ HP, nie w klatce, bez paniki, w 1 polu; `stats.guardSoaks`, `guardSoakDmg`, oś czasu `gs`). Duch, cień i nietoperze wybierają za cel bohatera w ostatnim bastionie w 3 polach (`driftTarget`). Szczegóły zachowań: sekcja 06 (6.13-6.14).
+
+### 5.13.4 Szaman i krata (uzupełnienie 2 do 1.24)
+
+- **Szaman** (`p4_traps.js: shamanHeal, healFlush, SHAMAN_GZ = 0,02`): oba leczenia (bierne 8 HP/s w promieniu 2 pól i 60 × `pw` HP z checku dla potworów pokoju) idą przez `shamanHeal`, które leczy dokładnie jak wcześniej i zapisuje wyleczone HP na koncie potwora (`m.healAcc`, `m.healBy`). Raz na sekundę (`monstersTick`; reszta w `finishWave`) `healFlush`: zielone "+N" nad leczonym potworem (zsumowane), `addPts(SHAMAN_GZ × wyleczone / max HP potwora)` jako bierne źródło szamana (`byType.shaman.passivePts`, `it.w.p`, `it.w.hl`), `stats.shamanHeal`. Pełne wyleczenie potwora to 0,02 Grozy (rana wielkości zabójstwa ok. 1,5): ślad. Opis podniesionego szamana (`itemInfo`) i karta elementu: "Wyleczył potworom N HP." (`it.lhl`, `healLine`). Bez `Math.random`.
+- **Krata**: nowy warunek checku w 5.3.9. Diagnoza 1.24 (12 fal na element): szaman, pająk, krata, łucznik i proch działają zgodnie z kodem; "nic nie robi" wynika z ustawienia poza trasą (szaman sam albo bez rannego potwora: 8 z 12 fal; pająk poza trasą 7 z 12) i z braku odpowiedzi na check w pierwszej fali elementu.
+
+### 5.13.5 Animacje pułapek (1.24, sekcja 08)
+
+`fireRaw` kończy się `trapFx(it, area)`: każdy rodzaj pułapki ma krótką animację (kolce, strzały, ogień, krata, zapadnia, klatka, sieć, proch, mimik, portret, oczy, lustro, trumna, kości, pozytywka, zawiasy). Tylko widok, bez losowania; opis w sekcji 08.

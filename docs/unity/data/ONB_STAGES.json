@@ -15,7 +15,7 @@
  {
   "name": "Gildia i loch",
   "news": [
-   "Gildia czyta raporty z fal. Od fali 3 przysyła specjalistę na Twój styl: kapłana z amuletem na strach, wojownika z talizmanem na zabijanie, złodzieja na masę pułapek, maga na potwory, barda na błądzenie, barbarzyńcę na zastawione przejścia. Kogo i po co przysyła, zobaczysz przed falą.",
+   "Gildia czyta raporty z fal i od teraz przysyła specjalistę na Twój styl: kapłana z amuletem na strach, wojownika z talizmanem na zabijanie, złodzieja na masę pułapek, maga na potwory, barda na błądzenie, barbarzyńcę na zastawione przejścia. Kogo i po co przysyła, zobaczysz przed falą.",
    "Zakładka Obiekty: skrzynia i budowle-kontry na specjalistów (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy, Zasłona, Bastion).",
    "Typy pokoi na końcu zakładki Loch: Mgła, Bagno, Grota, Krypta, Sezam, Sanktuarium, Zębatki, Głusza i Lodownia. Każdy zmienia zasady w jednym pokoju (przytrzymaj kafelek, żeby przeczytać)."
   ]
@@ -26,7 +26,7 @@
    "Ciała i fobie: część bohaterów ma słabość albo odporność ciała i fobię, przez którą jedna rzecz straszy ich 2 razy mocniej. Karczma zdradza część z tego przed falą, resztę zobaczysz w lochu (stuknij bohatera).",
    "Powracający: uciekinier może wrócić po 2-3 falach, silniejszy, z blizną i z pamięcią Twojego lochu.",
    "Łowcy skarbów: przy dużej chciwości część drużyny to łowcy (sakiewka przy figurce), chciwsi od reszty.",
-   "Wyłom: od fali 6 gildia może przebić tunel do głębszego pokoju. Załatasz go za Esencję albo zostawisz."
+   "Wyłom: gildia może teraz przebić tunel do głębszego pokoju. Załatasz go za Esencję albo zostawisz."
   ]
  }
 ]

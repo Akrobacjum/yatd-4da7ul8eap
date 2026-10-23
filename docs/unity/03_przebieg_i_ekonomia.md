@@ -1,6 +1,6 @@
 # 03. Przebieg runu i ekonomia
 
-Sekcja opisuje: cykl życia runu (od `newRun` do `endRun`), całą ekonomię (Groza, Chciwość, Combo, Esencja, głód serca, kryształy, przychód), sklep i talię kart (`mods`), rangi i rekordy oraz wpływ etapów nauki 1.12 na zawartość. Wszystkie odwołania do kodu mają postać `plik.js: funkcja` i dotyczą katalogu `src/` prototypu "Prototype 1.12.1". Tabele treści są wyeksportowane do `spec/data/*.json`; tu opisuję tylko ich semantykę.
+Sekcja opisuje: cykl życia runu (od `newRun` do `endRun`), całą ekonomię (Groza, Chciwość, Combo, Esencja, głód serca, kryształy, przychód), sklep i talię kart (`mods`), rangi i rekordy oraz wpływ etapów nauki 1.12 na zawartość. Wszystkie odwołania do kodu mają postać `plik.js: funkcja` i dotyczą katalogu `src/` prototypu "Prototype 1.12.1" (uzupełniane do 1.24: karty 1.18 w 3.9 i załączniku B, połączone karty 3.13, niewydana Esencja 3.14, wyczerpanie na końcu fali 1.7, dziennik kryształów i ostrzeżenie o głodzie 2.13, nauka w jednym runie 5.3, trudniejszy początek runu 1.12). Tabele treści są wyeksportowane do `spec/data/*.json`; tu opisuję tylko ich semantykę.
 
 Inne sekcje: generowanie bohaterów i fal, gildia, powracający, wyłom: **sekcja 04**. Pułapki, obrażenia, strach, skill checki: **sekcja 05**. AI bohaterów i mowa: **sekcja 06**. Mapa, stawianie, pętla, zapis, telemetria: **sekcja 07**. UI, kamera, grafika, audio, samouczek: **sekcja 08**.
 
@@ -110,8 +110,13 @@ Pola `run` ustawiane w `newRun` (pełna lista):
 | `deckSize` | `S.deckSize \|\| DECK_SIZE` (7) | Miejsca w talii. Pakt +1. |
 | `freeDigs` | 0 | Darmowe kopania (Kret). |
 | `lastInterest` | 0 | Odsetki Lichwiarza z ostatniej fali. |
+| `fallen` | [] | 1.23: polegli bohaterowie (do 12) do pamięci poległych (sekcja 04, 6.10; sekcja 06, 6.14). |
+| `onbW`, `onbNews` | `stage < ONB_FULL`, [] | 1.24: run, który odsłania grę z falami (rozdział 5.3), i etapy, których karta "Nowe" czeka na następną budowę. |
+| `crystals0`, `crystalEv`, `crystalEvW`, `crystalsSeen` | `S.crystals`, [], 0, `S.crystals` | 1.24: dziennik zmian kryształów (2.13). |
+| `activeSec`, `sessions` | 0, [] | 1.24: czas aktywnej gry i posiedzenia (sekcja 07, dane testowe). |
+| `playerId` | `playerIdNow()` | 1.24: identyfikator gracza (sekcja 07). |
 
-Pola dopisywane później: `nextFor`, `builtFor` (strażnicy "zrobione dla fali N", `startBuild`), `breachNew` (sekcja 04), `hungerTip` (okno głodu pokazane), `victoryDone`, `endless`, `rankIdx`, `sold` (lista sprzedanych), `memSpots` (sekcja 05), `guided` (run z etapów nauki), `tutLog`, `shopTipShown`, `recorded` (rekordy zapisane), `lastLog` (telemetria), `crystalsBought` (martwe).
+Pola dopisywane później: od 1.24 `fused` (połączone karty ★, 3.13), `essAtStart`, `essAtStartW`, `previewN` (Esencja na początku budowy, oglądanie następnej fali), `sessNew`; od 1.18 `restock` (Beczki z kuźni); `nextFor`, `builtFor` (strażnicy "zrobione dla fali N", `startBuild`), `breachNew` (sekcja 04), `hungerTip` (okno głodu pokazane), `victoryDone`, `endless`, `rankIdx`, `sold` (lista sprzedanych), `memSpots` (sekcja 05), `guided` (run z etapów nauki), `tutLog`, `shopTipShown`, `recorded` (rekordy zapisane), `lastLog` (telemetria), `crystalsBought` (martwe).
 
 Tylko prototyp: `run.id` z `Date.now()` i `Math.random()`. W Unity: `System.Guid.NewGuid()`.
 
@@ -146,16 +151,17 @@ Efekt ekonomiczny: start 30 Esencji minus 6 = 24 do wydania. Zdjęcie takiej pu�
 ### 1.4 `startBuild()` (`p3_flow.js: startBuild`)
 
 Kolejność:
-1. `tutPopDrop()` (UI).
+1. `tutPopDrop()` (UI); od 1.18 `restockForge()` (Beczki z kuźni: proch z `run.restock` wraca z meblem, sekcja 05, 5.13).
 2. `setupFl('build')` (1.5).
 3. Jeżeli `!run.shop || run.shop.wave !== run.wave`: `shopRefresh(true)` (3.4). Każda fala ma świeżą ofertę.
 4. Jeżeli `!run.next || run.nextFor !== run.wave`: `run.next = makeWave(run.wave); run.nextFor = run.wave` (zwykle drużyna jest już zrobiona w `finishWave`).
 5. Jeżeli `run.builtFor !== run.wave` (raz na falę):
    - `run.builtFor = run.wave`;
+   - 1.24: karta "Nowe" etapów otwartych tą falą pierwszego runu (`run.onbNews` -> `queueModal({type: 'onb', stages})`, rozdział 5.3);
    - Kret: `if (mods.mole && run.wave % 2 === 0 && run.moleWave !== run.wave) { run.freeDigs += mods.mole; run.moleWave = run.wave; }` (darmowe kopania sumują się, nie przepadają);
    - wyłom: od fali 6, poza samouczkiem, z p = `BREACH_P` (0,35) `planBreach()` (sekcja 04; tylko etap 4);
    - usunięcie martwego wyłomu.
-6. `fl.cardMult = cardMultNow()` (zawsze 1, martwe).
+6. `fl.cardMult = cardMultNow()` (zawsze 1, martwe). Od 1.24 raz na falę `run.essAtStart = fl.essence` i `run.previewN = 0` (wznowiona budowa ich nie zeruje; telemetria i pytanie o niewydaną Esencję, 3.14).
 7. Reset efektów, zaznaczenia, pauzy i fast-forward; `clearUndo()`; kamera; HUD (sekcja 08).
 8. `saveRun('build')` (sekcja 07).
 
@@ -165,14 +171,15 @@ Kolejność:
 fl = buildMap(run.layout) + {
   items: run.items, phase, essence: run.essence,
   greed: 1, base: 0, combo: 1, lastTrapAt: -99, lastTrapType: null,
-  cclock: 0, lastTrapC: -99, comboWinNow: S.comboWin,
+  cclock: 0, lastTrapC: -99, comboWinNow: S.comboWin + mods.rhythm,      // 1.18: Rytm lochu
   score: 0, fed: 0, fedAt: -1, chain: null, lastPay: null,
   ending: null, endReason: null (martwe), fearless: false,
   crystalLost: false, rerolled: false (martwe, patrz 3.12),
   byType: {}, stats: newStats(), party: freshParty(), ...
 }
+usuń elementy z it.temp (1.18: duch z Wstających umarłych, bez zwrotu)
 validateItems(true)   // elementy bez miejsca wracają jako Esencja (spent albo cost)
-dla każdego elementu: naprawa i reset zegarów; potwory: hp = max (żywe potwory leczą się między falami)
+dla każdego elementu: naprawa i reset zegarów (od 1.18 także shown, ambushUntil, quick); potwory: hp = max (żywe potwory leczą się między falami)
 fl.bRooms = computeBRooms()
 ```
 
@@ -209,7 +216,8 @@ Sprawdzane w `p6_loop.js: step` (czas gry):
 | Warunek | Skutek | Źródło |
 |---|---|---|
 | `fl.patT` (cierpliwość, od 1.12.1: rośnie o `dt`, a o `0,5 × dt`, gdy drużyna się naradza (`fl.time < P.talkUntil`) albo odpoczywa (`plan 'retreat'` i `restSince > 0`); `p6_loop.js: step`) `>= S.waveTime` (120 s) i `!fl.fearless` | `becomeImpatient()`. Od 1.17 (bez bohatera z przepowiedni) **narada** (sekcja 06, 6.3.10a): przywódca i ci, którzy stoją przy nim, głosują według stanu i charakteru: do domu (`goHome`: `fl.fearless = true`, `plan 'leave'`), szturm na serce (tylko gdy przywódca wie, gdzie jest serce: `fl.fearless = true`, `fl.storm = true`, `plan 'assault'`) albo "jeszcze chwila" (raz na falę: `fl.patT = min(fl.patT, S.waveTime - 30)`, czyli +30 s cierpliwości i druga narada już bez tej opcji). Gdy nie ma wyboru (serce nieznane przywódcy i +30 s już użyte) albo nie da się zebrać narady w 8 s: od razu do domu jak do 1.16. Przegłosowany, który chciał do domu, może wrócić sam (`h.goHome`). Bohater z przepowiedni: bez narady, zna serce i szturmuje (`plan 'assault'`, `fl.storm = true`). Do 1.16 każda inna drużyna po 120 s wracała do domu. | `p3_flow.js: becomeImpatient, goHome`, `p5_ai.js: councilThink, councilDone` |
-| `fl.patT >= S.waveTime + 60` (180 s czasu cierpliwości; po "jeszcze chwila" odpowiednio później w czasie fali) | Siatka bezpieczeństwa: każdy żywy i nie-wyszły bohater (także "zniknięty" w zapadni: `h.gone = false`) przechodzi przez `heroExit(h)`. **Nosiciel kryształu wynosi go wtedy (kryształ stracony).** | `p6_loop.js: step` |
+| `fl.patT >= S.waveTime + 60` (180 s czasu cierpliwości; po "jeszcze chwila" odpowiednio później w czasie fali), raz (`fl.exhausted`) | Od 1.24 **wyczerpanie** (`waveExhausted`): druga grupa się kończy (`g2End('out')`), zakłady odwołane, ostatni bastion i poświęcenie kończą się, bez narady, fochów, buntu, zwiadu, przygotowania i objazdu, `fl.fearless = true`, `fl.storm = false`, `fl.queue = []` (reszta drużyny zostaje na zewnątrz), `P.plan = 'leave'` (chyba że już uciekają albo niosą kryształ), plan każdego bohatera czyszczony (niosący kryształ zostaje przy `escape`), zgubiony odnajduje drogę, odpoczywający, rozmawiający i czekający wstają; napis "Wyczerpany/Wyczerpana" nad każdym, kwestia `SAY.leave` przywódcy, `stats.exhausted`, oś czasu `xh`. Bohaterowie wychodzą na własnych nogach. Do 1.23 w tym miejscu wszyscy byli od razu wyprowadzani (`heroExit` tam, gdzie stali), a nosiciel wynosił kryształ. | `p3_flow.js: waveExhausted`, `p6_loop.js: step` |
+| `fl.patT >= S.waveTime + 150` | Od 1.24 prawdziwa siatka bezpieczeństwa (`waveForceOut`): każdy jeszcze w środku (utknął: klatka bez otwarcia, brak drogi) wychodzi tam, gdzie stoi, z napisem "Ucieka" i zwykłym zanikaniem (`heroExit`, `h.gone = false`); kryształ, który niesie, wraca do serca (`crystalSaved`, "Kryształ wraca!", wpis `saved` w dzienniku kryształów, to nie kradzież); `stats.forcedOut`, oś czasu `fo`. W 200 falach testowych (1.24) wyczerpanie zdarzało się 1-2 razy, wymuszone wyjście ani razu. | `p3_flow.js: waveForceOut`, `p6_loop.js: step` |
 | `fl.queue.length === 0 && fl.heroes.length && wszyscy (dead \|\| fled)` | `fl.ending = 1.2` | `p6_loop.js: step` |
 | Fala 1: drużyna przy sercu, `P.steal >= 0,85 × stealNeed()` | Serce ich odpycha: strach, ucieczka, `plan 'leave'` (fala 1 nie może ukraść kryształu); od 1.17 kwestię mówi ktoś przy sercu albo ktoś, kto słyszy kogoś przy sercu. | `p6_loop.js: step` |
 
@@ -219,16 +227,16 @@ Uwaga: bohater "zniknięty" (spada w zapadni, `h.gone`) nie jest ani `dead`, ani
 
 ### 1.8 `finishWave()` (`p3_flow.js: finishWave`), dokładna kolejność
 
-1. Tylko gdy `fl.phase === 'raid'`. `fl.check = null; ff = false; fl.finishing = true` (blokuje karty samouczka).
+1. Tylko gdy `fl.phase === 'raid'`. `fl.check = null; ff = false; fl.finishing = true` (blokuje karty samouczka). Od 1.24 `healFlush` dla każdego potwora z niewypłaconym leczeniem szamana (sekcja 05, 5.13.4).
 2. `payChain()`: niedokończona seria jest wypłacana przed rozliczeniem serca (2.4).
 3. `run.greedNext = fl.stats.treasureTale || 0` (2.6).
-4. Statystyki elementów fali na ich karty: `it.lf/lh/lp/lk` z `it.w` (`lp = round(w.p)`, od 1.16.1 `w.p` = przyrost `fl.prov` w odpaleniach, sekcja 05), potem `it.w = null` (UI, sekcja 08).
+4. Statystyki elementów fali na ich karty: `it.lf/lh/lp/lk` (od 1.24 też `it.lhl`, wyleczone HP szamana) z `it.w` (`lp = round(w.p)`, od 1.16.1 `w.p` = przyrost `fl.prov` w odpaleniach, sekcja 05), potem `it.w = null` (UI, sekcja 08).
 5. `run.raidSec += fl.time`.
 6. Plotki (jeśli ktoś wyszedł żywy, `fl.anyOut`): sekcja 04/06. Wynik: `rr` (pokoje), `rt` (pułapki).
 7. `run.layout.breach.fresh = false` (sekcja 04).
 8. Skarbiec: `if (!fl.crystalLost && mods.bank) run.stacks.bank++`.
 9. `fl.stats.wavePts = 0` (brak premii za samą falę od v15).
-10. `feedHeart()` (2.7).
+10. `feedHeart()` (2.7); od 1.24 zjedzony kryształ idzie do dziennika (`crystalEv(-1, 'hunger', 'fed/need')`) i ma napis nad sercem "Głód pochłonął kryształ!" z wstrząsem i wibracją (2.13).
 11. Zwycięstwo: `if (run.wave === RUN_WAVES && run.crystals > 0 && !run.won) { run.won = true; fl.victory = true; }`.
 12. `run.grozaTotal += fl.base; run.greedRep = fl.greed`.
 13. `checkThresholds(run.total + fl.score)`: ogłoszenia nowych rang (rozdział 4).
@@ -236,19 +244,21 @@ Uwaga: bohater "zniknięty" (spada w zapadni, `h.gone`) nie jest ani `dead`, ani
 15. Odsetki i przychód (2.10): `run.lastInterest`, `income`, `run.lastIncome`, `run.essence = fl.essence + income; fl.essence = run.essence`.
 16. `collectReturners()` (sekcja 04; tylko etap 4).
 17. `recordWave(rr, rt)`: dopisuje rekord do `run.waves`.
-18. `run.total += fl.score`; `if (run.total > run.best) { run.best = run.total; saveBest(run.best); }`.
+18. `run.total += run.waves[ostatni].score` (od 1.24 zaokrąglony wynik z rekordu fali, więc `total` = suma `waveMini.sc` co do jednostki; do 1.23 `fl.score`, np. 5724 wobec 5722); `if (run.total > run.best) { run.best = run.total; saveBest(run.best); }`.
+18a. Od 1.24 `onbAdvance(run.wave + 1)`: pierwszy run otwiera następny etap przed zrobieniem następnej drużyny (rozdział 5.3).
 19. `if (run.crystals > 0) { run.next = makeWave(run.wave + 1); run.nextFor = run.wave + 1; }` (podsumowanie pokazuje następną drużynę).
 20. `logWave(false)`: telemetria, tylko prototyp.
 21. `if (run.crystals > 0) saveRun('summary')`.
 22. `fl.phase = 'summary'`; `queueModal({ type: 'wave', rr, rt, out })`.
 
-`recordWave` (`p3_flow.js: recordWave`) zapisuje m.in.: `wave`, `score` (round `fl.score`), `time`, `crystalLost`, `heroes[]` (typ, poziom, boss, los: `dead/scared/crystal/left`), `hunger` (obiekt z 2.7), `groza`, `greed`, `crystals`, `essence`, `stats` (zaokrąglone), `items` (statystyki per typ elementu), `partial`. Dla gry w Unity potrzebne są: `stats` (gildia czyta `fearPts, scarePts, dmgPts, killPts, lostPts, lonePts, kills, gotLost, reroutes`), `heroes.length`, `score`, `hunger`, `crystalLost`, `items` (najlepsze elementy na ekranie końca). Reszta (perf, cpm, frozen, errors) to telemetria, tylko prototyp.
+`recordWave` (`p3_flow.js: recordWave`; od 1.24 także `crystalEvents`, `essenceAtStart`, `essenceAtWaveStart`, `itemsCount`, `roomsCount`, `previewOpened`, `fearUi`, sekcja 07) zapisuje m.in.: `wave`, `score` (round `fl.score`), `time`, `crystalLost`, `heroes[]` (typ, poziom, boss, los: `dead/scared/crystal/left`), `hunger` (obiekt z 2.7), `groza`, `greed`, `crystals`, `essence`, `stats` (zaokrąglone), `items` (statystyki per typ elementu), `partial`. Dla gry w Unity potrzebne są: `stats` (gildia czyta `fearPts, scarePts, dmgPts, killPts, lostPts, lonePts, kills, gotLost, reroutes`), `heroes.length`, `score`, `hunger`, `crystalLost`, `items` (najlepsze elementy na ekranie końca). Reszta (perf, cpm, frozen, errors) to telemetria, tylko prototyp.
 
 ### 1.9 Podsumowanie fali i kolejność okien
 
 Okno `'wave'` (`p8b_ui.js: renderWave`), dane ekonomiczne:
 - nagłówek: `fl.victory` -> "Zwycięstwo!"; `fl.crystalLost` -> "Kryształ skradziony"; serce zjadło kryształ -> "Serce zjadło kryształ"; inaczej "Fala odparta". Duża liczba `+fl.score` "Esencji z fali";
 - kafelki: sakiewka `run.essence`; serce `♥ need` (syte / zjadło kryształ) albo "-" ("głód od fali 2"); kryształy `crystals/maxCrystals`; zabici · przestraszeni;
+- od 1.24 pod kafelkami: linia "Zabici: K (A pkt z ran) · Wystraszeni: X (Y pkt ze strachu)" (także przy 0) i czerwona linia o utracie kryształu (`crystalWhy`): "Głód pochłonął kryształ: serce chciało N Esencji z tej fali, a dostało M." albo "Kryształ skradziony: <imię> (<klasa> <poziom>) wyniósł/wyniosła go z lochu.";
 - rachunek: `Groza fl.base × (fl.score / fl.base) = fl.score`; serce `−need` albo `za mało: −fed · kryształ`; `dla Ciebie +mine (+lastIncome po fali)`, gdzie `heart = min(need, fl.fed)`, `mine = ate ? 0 : max(0, fl.score - heart)`;
 - wykres Esencji z fal, 2-3 ciekawostki (`waveFun`), panel następnej fali;
 - "Szczegóły" (`p8b_ui.js: waveDetails`): pasek "Skąd Esencja" z `dmgPts, fearPts, scarePts, killPts, lootPts, comboPts` i "Inne" = `crystalPts + lostPts + lonePts + splitPts + healPts`; zakładki Co dalej / Bohaterowie / Elementy / Liczby.
@@ -288,7 +298,7 @@ Okno `'hungerTip'` (`p8b_ui.js: renderHungerTip`): tekst o głodzie z bieżącym
 
 **Przegrana.** Run nie kończy się w trakcie fali, nawet gdy kryształy spadną do 0 (fala gra dalej). Po podsumowaniu `afterSummary` pokazuje okno `'over'` (`p8b_ui.js: renderOver`):
 - nagłówek zależny od `fl.hunger.ate`: "Serce zjadło ostatni kryształ" albo "Ostatni kryształ wyniesiony";
-- jeśli `!run.continueUsed`: "Kontynuuj z 1 kryształem" (symulacja reklamy: 3 kroki po 700 ms czasu rzeczywistego), potem `run.continueUsed = true; run.crystals = 1; run.maxCrystals = max(run.maxCrystals, 1); proceedToBuild()`. Nagrody z tej fali (`pendingUpgrades`) przechodzą normalnie;
+- jeśli `!run.continueUsed`: "Kontynuuj z 1 kryształem" (symulacja reklamy: 3 kroki po 700 ms czasu rzeczywistego), potem `run.continueUsed = true; run.crystals = 1; run.maxCrystals = max(run.maxCrystals, 1); proceedToBuild()`; od 1.24 wpis w dzienniku kryształów `crystalEv(+1, 'other', 'continue')`. Nagrody z tej fali (`pendingUpgrades`) przechodzą normalnie;
 - "Zakończ run" -> `endRun(ate ? 'Serce zjadło ostatni kryształ.' : 'Bohaterowie wynieśli wszystkie kryształy.', 'end')`.
 
 Tylko prototyp: symulacja reklamy. W Unity: reklama nagradzana (np. LevelPlay Rewarded) z tym samym efektem po potwierdzeniu nagrody, raz na run.
@@ -309,7 +319,7 @@ queueModal({ type: 'end' })
 
 Przypadek brzegowy: jeśli fala 10 skończy się z 0 kryształami, a gracz użyje reklamy, gra przechodzi do fali 11 i `run.won` już nigdy nie zostanie ustawione (warunek sprawdza tylko `run.wave === RUN_WAVES`). Run może się skończyć tylko wynikiem `'end'` albo `'quit'`.
 
-**Przerwanie.** `quitRun()` (`p3_flow.js: quitRun`, wywoływane z menu w trakcie gry): jeśli trwa fala, `recordWave(0, 0, true)` (rekord częściowy), `run.total += fl.score`, `logWave(true)`; potem `endRun('Run przerwany przez gracza.', 'quit')`. Otwarta seria combo nie jest wypłacana przed doliczeniem (drobna rozbieżność, patrz rozdział 6); od 1.16.1 część serca z tej serii jest już w `fl.score` (`heartLive`), a przepada tylko reszta `E - pre` (dopłata combo i część dla sakiewki).
+**Przerwanie.** `quitRun()` (`p3_flow.js: quitRun`, wywoływane z menu w trakcie gry): jeśli trwa fala, `recordWave(0, 0, true)` (rekord częściowy), `run.total += ` zaokrąglony wynik tego rekordu (od 1.24; wcześniej `fl.score`), `logWave(true)`; potem `endRun('Run przerwany przez gracza.', 'quit')`. Otwarta seria combo nie jest wypłacana przed doliczeniem (drobna rozbieżność, patrz rozdział 6); od 1.16.1 część serca z tej serii jest już w `fl.score` (`heartLive`), a przepada tylko reszta `E - pre` (dopłata combo i część dla sakiewki).
 
 **Ekran końca** (`p8b_ui.js: renderEnd`): opisany w rozdziale 4.
 
@@ -318,6 +328,12 @@ Przypadek brzegowy: jeśli fala 10 skończy się z 0 kryształami, a gracz użyj
 Zapisy: `saveRun('build')` w `startBuild`, `seedStartTraps`, `startWave` i po zmianach w budowie; `saveRun('summary')` w `finishWave`, tylko gdy `run.crystals > 0`. `endRun` czyści zapis. Wznowienie (`p8b_ui.js: resumeRun`) ze stanu `'summary'` robi `setupFl('summary')` i od razu `afterSummary()` (okno podsumowania nie jest pokazywane ponownie); ze stanu `'build'` robi `startBuild(true)`.
 
 Luka: przy przegranej (kryształy 0) zapis `'summary'` nie powstaje, a zapis `'build'` sprzed fali zostaje do czasu kliknięcia "Zakończ run". Zamknięcie aplikacji na oknie `'over'` pozwala wczytać budowę sprzed przegranej fali. W Unity zapisz stan przegranej (albo wyczyść zapis) od razu w `finishWave`.
+
+---
+
+### 1.12 Trudniejszy początek runu (1.24, szczegóły w sekcji 04, 3.9)
+
+Autor: "pierwsze 2 runy są za łatwe; pierwszy run ma być tak trudny, jak teraz trzeci, druga połowa runu bez zmian". Odczytanie: pierwsze fale każdego runu. Fala 1 gra jak dawna fala 3, fala 2 jak 3,75, fala 3 jak 4,3, fala 4 jak 4,6, od fali 5 bez zmian (`EARLY_W = [0, 3, 3.75, 4.3, 4.6]`): poziomy, dodatek HP i zniesiony limit 4 poziomów w falach 1-2. Bez zmian: liczebność (3 w falach 1-3), klasy klasyczne w falach 1-3, cierpliwość, głód od fali 2 i serce, które w fali 1 nie oddaje kryształu (nowy gracz nie straci kryształu w fali 1). Pierwsza fala samouczka zostaje łagodna (`tutW1`). Skutek ekonomiczny w odtworzeniach dwóch runów autora: run zabijania płaci więcej w falach 2-4 (twardsi bohaterowie dłużej krwawią), run strachu mniej (więcej odwagi) i traci w nich więcej kryształów; fale 6-10 w granicach szumu (sekcja 09).
 
 ---
 
@@ -719,17 +735,40 @@ Cofnij (`p8b_ui.js: pushUndo`, `undo`, maks. 30 kroków, tylko w budowie) przywr
 
 ---
 
+### 2.13 Dziennik kryształów i ostrzeżenie o głodzie (1.24, `p3_flow.js: crystalEv, crystalSync, crystalEvTake`; `p8b_ui.js: hungerRisk, crystalWhy`)
+
+Dane testerów pokazały kryształy znikające "bez powodu": to był głód (`hunger.ate`), który nie liczył się do `crystalLost`. Od 1.24 każda zmiana `run.crystals` ma przyczynę:
+
+| Przyczyna (`cause`) | Gdzie | `delta` | `why` |
+|---|---|---|---|
+| `stolen` | `heroExit` (wyniesiony) | -1 | klasa i poziom |
+| `hunger` | `feedHeart` | -1 | `fed/need` |
+| `saved` | kryształ odniesiony do serca: zabity nosiciel (`crystalReturns`), Bezdenna studnia, wymuszone wyjście po 150 s | 0 | klasa albo `forcedOut` |
+| `card` | Żarłoczne serce (+1), Pakt (-1 albo 0) w `applyUpgrade` | +1 / -1 / 0 | id karty |
+| `other` | reklama "Kontynuuj z 1 kryształem" (`continue`), martwe `buyCrystal` (`buy`), zmiana spoza dziennika wykryta przez `crystalSync` (`unlogged`) | dowolna | jak obok |
+
+```
+crystalEv(delta, cause, why): pomija delta 0 poza 'saved'; dopisuje { t: fala ? round(fl.time, 0.1) : null, delta, cause, wave, why } do run.crystalEv; run.crystalsSeen += delta
+crystalSync(): jeśli run.crystalsSeen != run.crystals -> crystalEv(różnica, 'other', 'unlogged')    // przed każdym rekordem fali i runu
+crystalEvTake(): crystalSync(); zwraca wpisy od ostatniego rekordu fali (run.crystalEvW)          // rekord fali: to, co przyszło od poprzedniego, z budową
+```
+Niezmiennik: `crystals0 + suma(delta) = crystals` (dla runu i dla każdej fali). Run zapisany przed 1.24 zaczyna dziennik od chwili wczytania.
+
+**Pokazanie głodu.** Napis nad sercem "Głód pochłonął kryształ!" (wstrząs, wibracja), linia w podsumowaniu fali (1.9). **Ostrzeżenie w budowie** (`hungerRisk`): gdy nadchodząca fala ma głód (`need > 0`) i ostatnia fala dała mniej niż `1,25 × need` albo serce zjadło kryształ w poprzedniej fali, wiersz serca w HUD robi się czerwony "⚠ N z fali albo kryształ" z szybkim biciem serca, a jego `title` mówi "Głód: jeśli ta fala da mniej niż N Esencji, serce zje kryształ (ostatnia fala dała M)." Pytanie o niewydaną Esencję powtarza ostrzeżenie (3.14).
+
+---
+
 ## 3. Sklep i talia
 
 ### 3.1 Karty: pola w `data/UPGRADES.json`
 
-113 wpisów. Pola:
+140 wpisów (1.18: 113 -> 140: 28 nowych kart, usunięta `u-portrait`). Pola:
 - `id`: klucz (`UPG[id]`, `p1_config.js`).
 - `kind`: `'card'` (żyje w talii, zajmuje miejsce, kopie się sumują), `'unlock'` (na stałe odblokowuje element `u.unlock`, bez miejsca), `'instant'` (jednorazowy efekt `u.apply()`, bez miejsca).
-- `rar`: `'c'` zwykła, `'r'` rzadka, `'l'` legendarna. Liczności: card c 47, r 41, l 6; unlock c 15; instant c 1, r 2, l 1.
-- `unique`: najwyżej jedna kopia w talii + schowku (`arrows, spider, ghost, trails, well, nopick, anatomy, reliquary, quickarm`).
-- `req`: wymaganie: string = `run.unlocked.has(req)`; funkcja (w JSON jako źródło `"fn: ..."`) = wywołanie (jedyna: `sticky` wymaga `web` albo `spider`). Karty z `req`: `web, fire, mimic, cage, portrait, spider, ghost, hgallery(ghost), sticky, wildfire(fire), choir(portrait), cageghost(cage)`.
-- `grows`: karta rosnąca z licznikiem `run.stacks[id]` (`hunger, chronicle, granary, bank, tempered`).
+- `rar`: `'c'` zwykła, `'r'` rzadka, `'l'` legendarna. Liczności (1.24): card c 63, r 52, l 7; unlock c 14; instant c 1, r 2, l 1.
+- `unique`: najwyżej jedna kopia w talii + schowku i nigdy nie łączy się w ★ (`arrows, spider, ghost, trails, well, nopick, anatomy, reliquary, quickarm`, od 1.18 `thickwalls, risen, cell, vaultsnap, falsecall, restock, ambush`).
+- `req`: wymaganie: string = `run.unlocked.has(req)`; funkcja (w JSON jako źródło `"fn: ..."`) = wywołanie. Karty z `req`: `web, fire, mimic, cage, portrait, spider, ghost, hgallery(ghost), sticky (web albo spider), wildfire(fire), choir(portrait), cageghost(cage)`; od 1.18 21 kart komnat i efektów z `req: () => hasRk(k)` albo `hasRt(t)` ("ten element jest w lochu": `fl.rooms.some(R => R.rk === k)`, analogicznie efekt): `drawers(junk), cell(prison), falsecall(haunt), frames(gallery), restock(forge), lullsleep(nursery), ambush(goblin), cocoons(spider), cauldron(ogre), batscatter(bats), skullwall(ossuary), strip(armory)` (komnaty) i `risen(crypt), vaultsnap(vault), wisps(fog), body(hush), mire(swamp), farecho(grotto), deepsleep(haven), gearlink(gears), blackice(ice)` (efekty). Taka karta nigdy nie wypada bez swojego elementu (`reqOk` przy losowaniu).
+- `grows`: karta rosnąca z licznikiem `run.stacks[id]` (`hunger, chronicle, granary, bank, tempered`, od 1.18 `skullwall`).
 - `tag`, `name`, `text`: teksty UI.
 - `apply`: dla `card` funkcja `m => {...}` modyfikująca obiekt `mods`; dla `instant` funkcja bez argumentu działająca na `run`/`fl`. W JSON jako string źródła. W Unity: każda karta jako dane + mały zestaw typów efektu (np. `Mul(field, k)`, `Add(field, k)`, `Set(field, true)`), patrz 3.9.
 
@@ -750,7 +789,7 @@ rareP  = r >= 2 ? 1 : min(0.6, 0.15 + 0.02 × f)
 legP   = r >= 3 ? 1 : r >= 2 ? min(0.4, 0.15 + 0.01 × f) : min(0.15, 0.03 + 0.005 × f)
 rarOk(u) = u.rar === 'c' || (u.rar === 'r' && rand() < rareP) || (u.rar === 'l' && rand() < legP)   // losowane osobno dla każdej karty
 pool   = UPGRADES.filter(u => u.kind !== 'unlock' && reqOk(u) && (ONB_CARD[u.id] || 1) <= stageOf()
-                          && !(u.unique && has(u.id)) && rarOk(u))
+                          && !(u.unique && has(u.id)) && !isFused(u.id) && rarOk(u))     // 1.24: połączona ★ nie wypada trzeci raz
 picks = []
 if r === 3: leg = shuffle(pool.filter(l)); if leg.length: picks.push(leg[0])            // boss: gwarantowana legendarna
 if locked.length && (r >= 2 || rand() < 0.5): picks.push(locked[0])                    // odblokowanie
@@ -784,7 +823,7 @@ shopRoll():
     ids  = upgradePicks(owed).map(id)
     more = upgradePicks(1).map(id).filter(id => !ids.includes(id))
     if more.length: ids.push(more[0])
-    return ids.filter(id => !(UPG[id].unique && run.stash.includes(id))).slice(0, 4)   // zwykle 4 oferty
+    return ids.filter(id => !(UPG[id].unique && run.stash.includes(id)) && !isFused(id)).slice(0, 4)   // zwykle 4 oferty; 1.24: bez ★
 
 shopRefresh(fresh):
     same = run.shop && run.shop.wave === run.wave
@@ -807,13 +846,14 @@ shopBuy(i):
     u = UPG[run.shop.ids[i]]; jeśli brak albo faza != 'build': 'no'
     free = run.freePicks > 0; price = free ? 0 : priceOf(u)
     if !free && fl.essence < price: return 'ess'
-    toStash = u.kind === 'card' && run.deck.length >= run.deckSize
+    fz = fuses(u)                                                      // 1.24: kopia karty, którą masz w talii albo schowku (3.13)
+    toStash = u.kind === 'card' && !fz && run.deck.length >= run.deckSize
     if toStash && run.stash.length >= stashCap(): return 'full'        // nic nie pobrano
     free ? run.freePicks-- : fl.essence -= price
     run.shop.ids[i] = null                                              // miejsce "Kupione"
     toStash ? (run.stash.push(id), run.upgrades.push(id)) : applyUpgrade(u)
     run.essence = fl.essence; recomputeMods(); saveRunSoon()
-    return toStash ? 'stash' : 'ok'
+    return toStash ? 'stash' : fz ? 'fused' : 'ok'
 ```
 Ceny: unlock 8, instant według rzadkości. Instant i unlock nigdy nie idą do schowka.
 
@@ -839,10 +879,11 @@ stashCap()  = STASH_BASE + (mods.stashPlus || 0)                // 3, Głęboki 
 sellOf(u)   = round(RAR_SELL[u.rar] × (mods.sellK || 1))         // RAR_SELL = { c: 2, r: 4, l: 6 } (p1_config.js), Lombard ×2
 toStash(i)  : jeśli schowek pełny albo brak karty -> false; deck[i] -> stash; recomputeMods()
 fromStash(i): jeśli talia pełna -> false; stash[i] -> deck; recomputeMods()
-sellCard(i) : usuń z talii, run.sold.push(id), addEss(sellOf(u)), recomputeMods()
-sellStash(i): usuń ze schowka, run.sold.push(id), addEss(sellOf(u))
+sellFor(id) = sellOf(UPG[id]) × (isFused(id) ? 2 : 1)            // 1.24: połączona ★ sprzedaje się za dwie
+sellCard(i) : usuń z talii, run.sold.push(id), unfuse(id), addEss(sellFor(id)), recomputeMods()
+sellStash(i): usuń ze schowka, run.sold.push(id), unfuse(id), addEss(sellFor(id))
 ```
-- Talia: `run.deck` (tablica id, kopie dozwolone poza `unique`), rozmiar `run.deckSize` (`S.deckSize || DECK_SIZE`, 7; Pakt +1 na stałe).
+- Talia: `run.deck` (tablica id; do 1.23 kopie dozwolone poza `unique`, od 1.24 każde id najwyżej raz w talii i schowku razem, bo druga kopia łączy się w ★, 3.13), rozmiar `run.deckSize` (`S.deckSize || DECK_SIZE`, 7; Pakt +1 na stałe).
 - Schowek: karty nieaktywne (nie wchodzą do `mods`), ale liczą się do Kolekcji w schowku i do `unique`.
 - Sprzedaż i schowek tylko między falami (`renderCard` w fali pokazuje "Karty sprzedajesz tylko między falami").
 - `addEss(n)`: `fl.essence += n; run.essence = fl.essence`.
@@ -854,21 +895,25 @@ sellStash(i): usuń ze schowka, run.sold.push(id), addEss(sellOf(u))
 applyUpgrade(u):                                  // p8b_ui.js
     unlock:  run.unlocked.add(u.unlock); saveFound(u.unlock)        // 1.14: na stałe, także w kolejnych runach
     instant: u.apply()
+    instant: od 1.24 także crystalEv(zmiana kryształów, 'card', u.id)                  // 2.13
+    card, gdy fuses(u): fuseCard(u.id)                                // 1.24: druga kopia łączy się z tą w talii albo schowku (3.13)
     card:    run.deck.push(u.id); recomputeMods()
     run.upgrades.push(u.id)
 
 recomputeMods():                                  // p3_flow.js
-    mods = freshMods()
-    for id in run.deck (w kolejności talii): UPG[id].apply(mods)       // dwie kopie = dwa wywołania
+    mods = buildMods()                            // 1.24; do 1.23: freshMods() + pętla niżej
+buildMods():
+    m = freshMods()
+    for id in run.deck (w kolejności talii): run.fused zawiera id i karta nie jest unique ? fuseApply(UPG[id], m) : UPG[id].apply(m)
     for id in keys(run.stacks): if !run.deck.includes(id): delete run.stacks[id]
     if fl: fl.threatDirty = true
     updateTray()
 ```
-Mnożenia (`*=`) się składają (dwie kopie Szybkiego przeładowania: 0,75² = 0,5625), dodawania (`+=`) sumują. Licznik karty rosnącej przepada, gdy w talii nie ma już żadnej kopii, czyli **także po odłożeniu do schowka** (tekst karty mówi tylko o sprzedaży).
+Mnożenia (`*=`) się składają (do 1.23 dwie kopie Szybkiego przeładowania: 0,75² = 0,5625; od 1.24 połączona ★: 0,75^2,75), dodawania (`+=`) sumują. Licznik karty rosnącej przepada, gdy w talii nie ma już żadnej kopii, czyli **także po odłożeniu do schowka** (tekst karty mówi tylko o sprzedaży).
 
 Niektóre efekty są "zamrażane" przy postawieniu elementu: `mods.monster` (Weterani) ustawia `hp` i `power` potwora w chwili `tryPlace`/`seedStartTraps`, więc dotyczy tylko nowo postawionych.
 
-Wpływ na `run` przy wczytaniu zapisu: `resumeRun` odtwarza `mods` tak samo (bez `updateTray`), odrzucając id kart, których nie ma w `UPG`.
+Wpływ na `run` przy wczytaniu zapisu: `resumeRun` odtwarza `mods` przez `buildMods()` (bez `updateTray`), odrzucając id kart, których nie ma w `UPG` (od 1.18 także z `run.shop.ids`, np. usunięta `u-portrait`). Od 1.24 run zapisany przed łączeniem z dwiema kopiami karty (w talii albo w talii i schowku) wraca z jedną kartą ★ (trzecia kopia albo duplikat karty `unique` jest sprzedany za `RAR_SELL`).
 
 
 **Odkrycia na stałe (1.14, `p3_flow.js: loadFound`, `saveFound`):** każdy element odblokowany kartą `unlock` trafia do kolekcji tej przeglądarki (`localStorage` `yatd-found`, tablica id; `loadFound` odrzuca id, których nie ma w `ITEMS`). `newRun` dodaje kolekcję do `run.unlocked` (przez `onbOk` etapu runu, więc pierwsze runy dalej pokazują tylko swój etap), a karty takich elementów nie wypadają już w sklepie, bo `upgradePicks` i `shopRoll` biorą tylko `!run.unlocked.has(u.unlock)`. Wczytanie zapisanego runu (`resumeRun`) dopisuje do kolekcji odblokowania z `run.upgrades` (run sprzed 1.14) i dokłada kolekcję do `run.unlocked`. Samouczek od nowa nie czyści kolekcji. W Unity: kolekcja w profilu gracza (zapis lokalny i w chmurze), nie w zapisie runu.
@@ -980,7 +1025,12 @@ Domyślne wartości z `p3_flow.js: freshMods`. Kolumna "Karty" podaje id karty i
 | `goldDust` | 0 | golddust: +0,5 | `p3_flow.js: noticeLoot` |
 | `reliquary` | false | reliquary: true | `p3_flow.js: noticeLoot`, `pickup` |
 | `pack` | 0 | pack: +0,2 | `p4_traps.js: monDmg` |
-| `quickArm` | false | quickarm: true | `p8b_ui.js: tryPlace` |
+| `quickArm` | false | quickarm: true | `p8b_ui.js: tryPlace`; od 1.18 `p4_traps.js: fireRaw` (pierwsze odpalenie ×1,5) |
+| `cauldron` (1.18) | 0 | cauldron: +1 (Esencja z kotła: `min(8, 2 × przedmioty + monety) × kopie`, `stats.essDrop`, `fl.stats.cauldron`) | `p3_flow.js: kill` |
+| `coins` (1.18) | 0 | coins: +1 (szansa monety w meblu ×(1 + kopie); znaleziona moneta podbija chciwość jak zobaczone Monety) | `p5_ai.js: lookDone` |
+| `tainted` (1.18) | 0 | tainted: +1 (mikstury z Twojego łupu zepsute) | `p3_flow.js: pickup`, `p5_ai.js: taintedSip` |
+| pozostałe pola 1.18: `drawers, lure, onemore, thickwalls, risen, cell, vaultsnap, wisps, body, falsecall, frames, restock, lullsleep, ambush, cocoons, batscatter, skullwall, strip, mire, farecho, deepsleep, gearlink, blackice, badnews, rhythm` | 0 albo false | po jednej karcie o tym samym id (efekt kopii: załącznik B) | sekcja 05 (5.10, 5.13) i 06 (6.3, 6.6) |
+| `fuseLv` (1.24) | `{}` | połączona karta z grupy "named": `fuseLv[typ] += 1` | `p4_traps.js: lvlPow` (sekcja 05, 5.1.4) |
 
 Mechanika efektów bojowych (kolce, ogień, strach, fobie, skill checki): sekcja 05. Tu ważne są pola ekonomiczne: `regen, greedMult, pickGreed, goldDust, reliquary, greedStart, greedFlat, collector, miser, crystalPts, gilded, stashGreed, returnGreed, glass, depthBonus, soulMult, scareMult, loneMult, lostMult, fearHarvest, income, usurer, bank, granary, hungerK, storeK, shopDisc, freeReroll, sellK, stashPlus, patron, digDiscount, expandCost, buildingCost, mole`.
 
@@ -1005,10 +1055,48 @@ CARD_NEEDS = { spikes: ['spikes'], walls: ['arrows','fire','portrait'], powder: 
   firepit: ['trapdoor'], cageghost: ['cage'], monsterroar: MON_T, sharp: ['spikes','arrows','archer','goblin','mimic'], heavy: ['gate','ogre','trapdoor'],
   oil: ['fire','powder'], venom: ['spider','shaman','lcursed'], pack: MON_T, well: ['trapdoor'], golddust: ['loot'], reliquary: ['loot3'], greed: LOOT_T, nopick: LOOT_T }
 ```
+Zmiany 1.18: `walls` + `eyes`, `mirror`; `sharp` + `bats`; `venom` bez `lcursed`; `hgallery` = `['ghost', 'portrait']` i `CARD_ALL = { hgallery: true }` (potrzebne wszystkie, brakujące są wymienione: "Brak w lochu: Portret."); nowe potrzeby komnat i efektów `k_<komnata>` i `r_<efekt>` dla 21 kart z 3.1 (sprawdzane w `fl.rooms` przez `needHas`, więc oferta, której element zdjęto po losowaniu, mówi "Brak w lochu: Kuźnia."), `tainted: ['lpotion']` (karta bez `req`, ale bez mikstury w Twoim łupie nic nie robi). `needHas` pomija elementy `temp` (duch z Wstających umarłych).
 
 ### 3.12 Martwy kod sklepu
 
 Okno `'upgrade'` (`p8b_ui.js: renderUpgrade`, `renderPickSection`, `takeCard`, `renderReplace`, `finishPick`, `pickSub`) nie jest nigdzie kolejkowane od v14 (sklep zastąpił wybór 1 z 3). Zawiera m.in. "Losuj ponownie (symulacja reklamy, raz na falę)" z flagą `fl.rerolled` i ekran "Talia pełna: co sprzedajesz?". Nie portować. W Unity zakup karty przy pełnej talii idzie do schowka (3.5).
+
+### 3.13 Połączone karty ★ (1.24, `p1_config.js: FUSE_POW, FUSE_K, FUSE_GROUP, FUSE_INT, FUSE_TEXT`; `p3_flow.js: buildMods, fuseElems, fuseGroup, fusePow, fuseText, applyFrac, fuseApply, isFused, ownsCard, fuseCard`; `p8b_ui.js: fuses, unfuse, sellFor, cardName`)
+
+Autor: duplikaty karty mają się łączyć w jedną mocniejszą kartę z lepszym mnożnikiem i jakąś cechą.
+
+- `run.fused`: id kart połączonych (w talii albo w schowku). Każde id jest w talii albo schowku najwyżej raz. Wzięcie karty, którą już masz (`shopBuy`, także za darmową kartę; `applyUpgrade`; martwe okno `takeCard`), łączy ją z tą kartą (`fuseCard`): bez nowego miejsca, więc pełna talia nie przeszkadza (bez ekranu wymiany i schowka). Karty `unique` nigdy się nie łączą (i dalej nie wypadają, gdy je masz); połączona karta nie wypada już w sklepie ani w wyborze.
+- **Moc**: połączona karta działa jak `fusePow(u) = FUSE_POW × (FUSE_K[grupa] || 1)` kopii: 2,5, grupa `power` ×1,1 (2,75), grupa `hero` ×1,25 (3,125).
+- **`applyFrac(u, m, p)`**: najpierw całe kopie, potem ułamek `f` jeszcze jednej, pole po polu: pole, które kopie mnożyły (ten sam stosunek dwa razy), rośnie o `stosunek^f`, pole, do którego dodawały, o `f` kroku (także pola zagnieżdżone, np. `dmgType`). Pola-liczniki (`FUSE_INT`: `patron, mole, echoFire, freeReroll, stashPlus, gateUses`) są po tym zaokrąglane w dół.
+- **Cecha grupy** (`fuseApply`; grupa: `fuseGroup(u)` = `named`, gdy id karty albo jej `req` (string) to pułapka albo potwór; inaczej `FUSE_GROUP[id]`, domyślnie `power`):
+
+| Grupa | Karty (1.24) | Cecha (`FUSE_TEXT`) | Kod |
+|---|---|---|---|
+| `named` | spikes, powder, gate, web, fire, mimic, trapdoor, cage, portrait, hgallery, wildfire, choir, cageghost (arrows, spider, ghost są `unique`) | "<Element>: moc jak o poziom wyżej" | `mods.fuseLv[typ] = 1`, `lvlPow` (sekcja 05, 5.1.4) |
+| `power` (domyślna) | cooldown, walls, monster, loottrap, suicide, sticky, blood, calm, echofire, gambler, hunger, chronicle, tempered, bloodpact, overload, firepit, sharp, heavy, oil, venom, arsenal, pack, cauldron, skullwall, gearlink, rhythm (oraz karty `unique` bez wpisu) | "+10% tej mocy" | moc ×2,75 zamiast ×2,5 |
+| `fear` | lonely, maze, haunt, echo, panic, monsterroar, nightmares, scars, memories, dread, screams, isolation, heavyair, lastgasp, body, frames, lullsleep, cocoons, batscatter, farecho, deepsleep | "cały strach w lochu +15%" | `fearMult ×= 1,15` |
+| `hero` | disarm, curse, deaf, cursed, weakspot, oddbodies, survivors, drawers, lure, onemore, wisps, strip, mire, blackice, badnews, tainted | "+25% do szansy i efektu" | moc ×3,125 |
+| `ess` | essence, income, usurer, dig, mole, harvest, soul, granary, bank, cheapwalls, wager, gluttony, fasting, heartbeat | "+2 Esencji po każdej fali" | `income += 2` |
+| `greed` | greed, fever, depth, infamous, collector, miser, glass, gilded, golddust, coins | "+0,1 chciwości na start fali" | `greedFlat += 0,1` |
+| `shop` | broker, luckydraw, pawnshop, deepstash, patron, hoard | "jedno darmowe odświeżenie sklepu" | `freeReroll += 1` |
+
+Decyzje: dig, mole i cheapwalls (budowanie lochu) w grupie `ess`, loottrap (rani) w `power`, depth w `greed`. Pełne przypisanie każdej karty: załącznik B (kolumna "★").
+- **Karty rosnące** zachowują licznik (`run.stacks[id]`); połączona liczy się na nim jak 2,75 kopii (grupa `power`).
+- **Sprzedaż** połączonej daje cenę dwóch (`sellFor`, talia, schowek, ekran wymiany) i zdejmuje ★ (`unfuse`).
+- **Widok**: złota ramka i nazwa z "★ " (sklep, kafelki talii, schowek, arkusz karty, okno karty: `.fused`, `.fuseline`), wiersz cechy `fuseText(u)` = "★ Połączona: działa jak 2,5 kopii, <cecha>." (tekst zawsze mówi 2,5, także dla grup `power` i `hero`, gdzie cecha dopowiada resztę); oferta i wybór: "połączy się w ★" i "Połączy się w ★: <cecha>"; komunikat sklepu "...: połączona w ★ (jedno miejsce)."; notka na ekranie wyboru: druga kopia łączy się.
+- **Zapis i dane**: `run.fused` idzie z runem; stary zapis z dwiema kopiami wraca z jedną ★ (3.8); logi mają `fused` obok `deck` (sekcja 07).
+
+### 3.14 Niewydana Esencja (1.24, `p8b_ui.js: cheapestItem, askUnspent, renderUnspent, updateHud`; testerzy zaczynali fale 6-9 z 119-449 Esencji)
+
+```
+cheapestItem(): najtańszy element, który gracz może teraz postawić (pułapki, potwory, łup, budowle; bez narzędzi, efektów
+                pokoi i komnat; dostępny w etapie i odblokowany), przeliczany, gdy zmieni się liczba elementów, odblokowań, etap albo mods.buildingCost
+HUD: w budowie, bez otwartego okna, gdy floor(fl.essence) >= cheapestItem().cost: licznik #h-score pulsuje złoto (.afford; "mniej ruchu": złoty, bez pulsu)
+askUnspent(): przy "Wypuść falę" w budowie, poza przewodnikiem (run.tut < 0), bez 'yatd-noask-ess' w localStorage:
+   e = floor(fl.essence); e0 = run.essAtStart ?? e; ch = cheapestItem()
+   jeśli ch istnieje, e >= ch.cost i e > 0,5 × e0: stats.unspentAsk++, okno 'unspent'
+```
+Okno: "Przed falą N", "Masz X Esencji", "Rozpocząć falę mimo to? Niewydana Esencja nie broni lochu. Najtańszy element: <nazwa> (<koszt>)." (+ ostrzeżenie o głodzie, gdy `hungerRisk`), pole "Nie pytaj więcej" (zapisywane na urządzeniu jako `yatd-noask-ess`, także dla kolejnych runów), przyciski "Buduj dalej" i "Wypuść falę mimo to" (`#unspent-go`, `stats.unspentGo`). Samo `startWave()` nigdy nie pyta (testy wołające je bez zmian).
 
 ---
 
@@ -1048,7 +1136,9 @@ Tylko prototyp: `localStorage`. W Unity: plik zapisu profilu (sekcja 07) albo Pl
 
 ## 5. Etapy nauki 1.12 (wpływ na zawartość i ekonomię)
 
-### 5.1 Mechanika etapów
+Od 1.24 etapy nie są już kolejnymi runami, tylko falami jednego, pierwszego runu (5.3). Zawartość etapów (5.2) i funkcje `stageOf`, `onbOk` zostają; zmienia się to, kiedy etap rośnie.
+
+### 5.1 Mechanika etapów (stan 1.12-1.23; zmiany 1.24 w 5.3)
 
 Stałe: `ONB_FULL = 4`; `data/ONB_STAGES.json` (nazwy i teksty nowości: 1 Podstawy, 2 Strach, 3 Gildia i loch, 4 Pełna gra); `data/ONB_ITEM.json` (od którego etapu element jest dostępny, domyślnie 1); `data/ONB_CARD.json` (od którego etapu karta może wypaść, domyślnie 1).
 
@@ -1085,6 +1175,29 @@ Zasady dodatkowe:
 - `upgradePicks` filtruje odblokowania przez `onbOk(u.unlock)` i karty przez `ONB_CARD[u.id] <= stageOf()`; karty z `req` odpadają, dopóki wymagany element nie jest odblokowany.
 - Gałęzie ekonomii zależne od etapu: Kolekcjoner/Skąpiec/Zła sława działają zawsze; `returnGreed` (Legenda ocalałych) ma sens dopiero na etapie 4, ale sama karta `survivors` też jest od etapu 4. Łowcy skarbów (chciwsi bohaterowie) tylko od etapu 4, więc na etapach 1-3 wysoka chciwość jest "tańsza".
 - Samouczek (etap 1, `run.tutorial`): fala 1 ma 2 nowicjuszy (sekcja 04), wyłom wyłączony (`run.tut >= 0`).
+- Od 1.18 karty komnat i efektów mają `ONB_CARD` 3 (jak same komnaty i efekty), a karty zachowań bohaterów (lure, onemore, thickwalls, badnews, coins, tainted, rhythm) 1.
+
+### 5.3 Nauka w jednym runie (1.24, `p1_config.js: ONB_WAVE, onbWaveStage`; `p3_flow.js: onbAdvance, finishWave, startBuild`; `p8b_ui.js: startGuided, onbDone, renderOnb, renderStart`)
+
+Autor: odsłanianie gry w jednym runie zamiast czterech.
+```
+ONB_WAVE = [0, 1, 3, 5, 7]                        // etap s od fali ONB_WAVE[s]
+onbWaveStage(w) = w >= 7 ? 4 : w >= 5 ? 3 : w >= 3 ? 2 : 1
+newRun: run.onbW = stage < ONB_FULL; run.onbNews = []
+startGuided(): newRun(!coachDone(), 1); run.guided = true; saveRun('build')     // zawsze etap 1; przewodnik, jeśli nie był ukończony
+onbAdvance(w):                                    // finishWave, przed makeWave(run.wave + 1)
+   if !run.onbW: return
+   s = onbWaveStage(w); from = run.stage || ONB_FULL; if s <= from: return
+   run.stage = s
+   START_UNLOCKED + loadFound() z onbOk(t, s) -> run.unlocked; run.foundAtStart przeliczone
+   etapy from+1..s -> run.onbNews (karta "Fala N · nauka / Nowe: ..." przed sklepem następnej budowy, startBuild)
+   if s >= ONB_FULL: run.onbW = false; setOnb(5)  // fala 7: gra uznana za poznaną
+onbDone(r) (endRun): r.guided i nie (quit przed falą 5) -> setOnb(5)
+```
+- Fale 1-2: etap 1 (rdzeń), 3-4: etap 2 (straszenie), 5-6: etap 3 (gildia, budowle, efekty pokoi, komnaty), od 7: pełna gra (ciała, fobie, powracający, łowcy, wyłom). Etap rośnie na końcu fali przed nim, więc następna drużyna, podsumowanie i sklep należą już do nowego etapu.
+- Kolejne runy to od razu pełna gra. Przeglądarka w środku dawnych czterech runów (`yatd-onb` 2-4) gra pełną grę (`renderStart` pokazuje "Samouczek / Pomiń samouczek" tylko przy `onbStage() <= 1`). Run zapisany przed 1.24 w jakimś etapie zachowuje swój etap (bez `onbW`). Odkrycia (`yatd-found`) działają według etapu (odkryte lustro przychodzi z falą 3).
+- Teksty: ekran startowy ("Pierwszy run z przewodnikiem" / "Pierwszy run: gra odsłania się z falami"), Jak grać, karty etapów ("od teraz" zamiast "od fali 3/6"), wyszarzone podzakładki ("od fali 3", `subWhen`). Przewodnik skrócony (sekcja 08).
+- Pierwsza fala samouczka zostaje łagodna (`tutW1`), mimo trudniejszego początku zwykłych runów (1.12).
 
 ---
 
@@ -1093,7 +1206,7 @@ Zasady dodatkowe:
 Błędy i niespójności (do decyzji autora, w Unity zachowaj zachowanie prototypu, chyba że opisano inaczej):
 1. **Zapis przy przegranej:** przy 0 kryształach `finishWave` nie zapisuje stanu `'summary'`, więc stary zapis `'build'` sprzed fali przeżywa; zamknięcie aplikacji na oknie `'over'` pozwala powtórzyć przegraną falę (1.11). Zalecenie: zapisać stan przegranej albo wyczyścić zapis.
 2. **"Jeszcze raz" w pierwszych runach** (poprawione w 1.12.1): `renderEnd` woła `startGuided()`, gdy `onbStage() <= 4`, a w pełnej grze `newRun(false)`; w 1.12 zawsze `newRun(false)`, czyli pełną grę z pominięciem etapów nauki.
-3. **Karta `u-portrait` jest nieosiągalna:** na etapie 1 `onbOk('portrait')` jest fałszem, od etapu 2 portret jest już w `run.unlocked` (z `START_UNLOCKED`).
+3. **Karta `u-portrait`** (usunięta w 1.18): była nieosiągalna; stare zapisy pomijają jej id w talii, schowku i ofercie sklepu.
 4. **Wygrana po reklamie w fali 10 niemożliwa:** warunek wygranej sprawdza tylko `run.wave === RUN_WAVES`; kontynuacja po przegranej fali 10 przechodzi do fali 11 bez szansy na `run.won`.
 5. **Karty rosnące tracą licznik przy odłożeniu do schowka** (`recomputeMods` kasuje `run.stacks[id]`, gdy karty nie ma w talii), a tekst mówi tylko o sprzedaży ostatniej kopii.
 6. **Skarbiec** ignoruje kryształ zjedzony przez głód (liczy tylko `fl.crystalLost` z kradzieży), mimo tekstu "bez utraty kryształu".
@@ -1102,10 +1215,13 @@ Błędy i niespójności (do decyzji autora, w Unity zachowaj zachowanie prototy
 9. **UI gildii pokazuje inną liczbę łowców:** `p8b_ui.js: waveDetails` używa `huntersN(run.greedRep)`, a `makeWave` `huntersN(greedRaw(run.greedRep))`; poza tym wiersz o łowcach pojawia się też na etapach 1-3, gdzie łowców nie ma.
 10. **`quitRun` w trakcie fali** nie wypłaca otwartej serii przed doliczeniem `fl.score` do `run.total` (od 1.16.1 część serca z tej serii jest już w `fl.score`; przepada reszta `E - pre`).
 11. **Post w wielu kopiach** może zepchnąć chciwość poniżej 1, a nawet do zera lub poniżej (2.6). Brak ograniczenia.
-12. **Siatka bezpieczeństwa 180 s** wypycha nosiciela kryształu przez `heroExit`, co liczy się jak wyniesienie kryształu. Prawdopodobnie zamierzone, ale warto potwierdzić.
-13. **Tekst karty Zastrzyk Esencji** ("nawet ponad pojemność") i komentarz przy `roomCount` ("+3% points for every room over 5") są nieaktualne: limitu sakiewki nie ma, rozległość daje +0,05 chciwości za pokój ponad 5.
+12. **Siatka bezpieczeństwa 180 s** (zmienione w 1.24): po 180 s bohaterowie są wyczerpani i wychodzą sami; dopiero po 270 s utknięci wychodzą z miejsca, a ich kryształ wraca do serca (1.7).
+13. **Tekst karty Zastrzyk Esencji** (poprawiony w 1.18 na "Od razu: +20 Esencji.") i komentarz przy `roomCount` ("+3% points for every room over 5") są nieaktualne: limitu sakiewki nie ma, rozległość daje +0,05 chciwości za pokój ponad 5.
 14. **Kradzież przy 0 kryształach** jest możliwa (2.9), łącznie z Grozą za "uratowany" kryształ.
-15. **Martwy ekran wymiany karty** (`renderReplace`) pokazuje cenę `RAR_SELL` bez `sellK` (Lombard); nie portować (3.12).
+15. **Martwy ekran wymiany karty** (`renderReplace`) pokazuje cenę `RAR_SELL` bez `sellK` (Lombard); nie portować (3.12). Martwe okno wyboru (`renderUpgrade`, `takeCard`) dostało w 1.24 obsługę łączenia, ale dalej nic go nie otwiera.
+16. **Tekst połączonej karty (1.24)**: zawsze "działa jak 2,5 kopii", choć grupy `power` i `hero` działają jak 2,75 i 3,125 kopii (cecha "+10%" / "+25%" opisuje różnicę słowami).
+17. **Ułamek kopii (1.24)**: `applyFrac` rozpoznaje "mnożenie" po równym stosunku dwóch kolejnych kopii; pole, które karta ustawia na stałą wartość (np. `true`) albo zmienia nieliniowo, zostaje po całych kopiach. Do sprawdzenia przy przenoszeniu każdej karty z grupy innej niż `named`.
+18. **Wyczerpanie a "jeszcze chwila" (1.24)**: `waveExhausted` ustawia `P.councilMore = true` i kasuje naradę, więc po 180 s nie ma już drugiej narady; wyczerpanie przychodzi po 180 s czasu cierpliwości, który w naradach i odpoczynku płynie wolniej.
 
 Martwy kod i pola bez efektu: `DEFAULTS.essenceCap`, `S.fearRate`, `S.thrBase` (suwaki istnieją, nic ich nie czyta); `S.regenBase` = 0 (mechanizm działa, ale wyłączony); `mods.labyrinth`, `mods.gateDur` (brak karty); `stats.essSoul`, `stats.wavePts` (zawsze 0); `run.thrIdx`, `run.mode`, `fl.endReason`, `fl.rerolled`; `infMult`, `sizeMult`, `cardMultNow`, `loneMult`, `nextThr`; `buyCrystal`/`crystalCost`; okno `'upgrade'` i jego funkcje; gałąź `r = 2` w `upgradePicks`; parametr `resume` w `startBuild`; `run.afterModals` jako mechanizm (wywoływane natychmiast).
 

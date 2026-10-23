@@ -7082,5 +7082,1804 @@
     ]
    ]
   }
+ ],
+ "riftStart": [
+  {
+   "l": [
+    [
+     "B",
+     "Rozdzielać się w takim miejscu? Szaleństwo."
+    ],
+    [
+     "A",
+     "Szaleństwem jest iść za stadem."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Nie róbcie tego... razem jest bezpieczniej!"
+    ],
+    [
+     "A",
+     "To chodź z nami."
+    ],
+    [
+     "B",
+     "Ja? Nie, nie..."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Jak tam jest skarb, to dzielimy się, jasne?"
+    ],
+    [
+     "A",
+     "Kto znajdzie, ten bierze."
+    ],
+    [
+     "B",
+     "Tak nie było umowy!"
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Niech bogowie mają was w opiece."
+    ],
+    [
+     "A",
+     "Niech raczej mają oko na was."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Rozłam w drużynie! Będzie z tego pieśń."
+    ],
+    [
+     "A",
+     "Byle nie żałobna."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Złe miejsce na kłótnie. Bardzo złe."
+    ],
+    [
+     "A",
+     "To nie kłótnia. To wybór."
+    ],
+    [
+     "C",
+     "Kłótnia. Wierz mi."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Niech idą. Szybciej zrozumieją."
+    ],
+    [
+     "C",
+     "Albo szybciej znajdą skarb."
+    ],
+    [
+     "B",
+     "To by było najgorsze."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Ha! Upart{A:y|a} jak osioł. Podoba mi się."
+    ],
+    [
+     "A",
+     "Osioł przynajmniej wie, dokąd idzie."
+    ]
+   ]
+  }
+ ],
+ "mutinyStart": [
+  {
+   "l": [
+    [
+     "B",
+     "Bunt? Tu, teraz?"
+    ],
+    [
+     "A",
+     "Lepiej teraz niż nad grobem."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Przestańcie się kłócić, błagam..."
+    ],
+    [
+     "C",
+     "Cicho. To ważne."
+    ]
+   ]
+  },
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Śmiało powiedziane, {Av}."
+    ],
+    [
+     "A",
+     "Ktoś musiał."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Bunt na pokładzie! Uwielbiam."
+    ],
+    [
+     "C",
+     "To nie statek, głupcze."
+    ],
+    [
+     "B",
+     "Ale bunt prawdziwy."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Spokojnie. Ochłońmy wszyscy."
+    ],
+    [
+     "A",
+     "Ochłoniemy w grobie."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Bogowie, dajcie nam zgodę..."
+    ],
+    [
+     "A",
+     "Bogowie dali mi rozum. Używam go."
+    ]
+   ]
+  },
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Widział{em|am} już takie bunty. Kończą się źle."
+    ],
+    [
+     "A",
+     "Ten skończy się dobrze."
+    ],
+    [
+     "B",
+     "Każdy buntownik tak mówi."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "A kto potem dzieli łup?"
+    ],
+    [
+     "C",
+     "Naprawdę? W takiej chwili?"
+    ]
+   ]
+  }
+ ],
+ "mergeG2": [
+  {
+   "l": [
+    [
+     "B",
+     "Znowu razem. Dziwnie mi ulżyło."
+    ],
+    [
+     "A",
+     "Mnie też. Nie mów nikomu."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Rozstanie i powrót! Klasyka ballad."
+    ],
+    [
+     "A",
+     "Tylko bez ballady o pogrzebie."
+    ],
+    [
+     "B",
+     "Zobaczymy, jak się skończy."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "No to kto znalazł więcej?"
+    ],
+    [
+     "A",
+     "Liczymy później."
+    ],
+    [
+     "B",
+     "Liczymy teraz."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "I po co było się rozdzielać?"
+    ],
+    [
+     "A",
+     "Żeby było o czym gadać."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Ha! Wszyscy w kupie. Tak lubię."
+    ],
+    [
+     "A",
+     "Bo w tłoku łatwiej o bójkę."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Następnym razem nikt się nie odłącza."
+    ],
+    [
+     "A",
+     "Powiedz to tym upartym."
+    ],
+    [
+     "C",
+     "Patrzę właśnie na jednego."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Nigdy więcej rozdzielania. Nigdy."
+    ],
+    [
+     "A",
+     "Zgoda. Tym razem zgoda."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Dzięki bogom, że się odnaleźliśmy."
+    ],
+    [
+     "A",
+     "Bogom i moim nogom."
+    ]
+   ]
+  }
+ ],
+ "sulkOff": [
+  {
+   "l": [
+    [
+     "B",
+     "Obraził{A:|a} się."
+    ],
+    [
+     "C",
+     "Przejdzie {A:mu|jej}."
+    ],
+    [
+     "B",
+     "Oby zanim coś {A:go|ją} zje."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "A",
+     "I nie idźcie za mną!"
+    ],
+    [
+     "B",
+     "Nikt nie zamierzał."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Jak nie wróci, kto weźmie {A:jego|jej} działkę?"
+    ],
+    [
+     "C",
+     "Wstydu nie masz."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Sam{A:|a} w tym lochu? Głupota."
+    ],
+    [
+     "C",
+     "Duma zawsze jest głupia."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "{A:Odszedł|Odeszła} w gniew i mrok... Ładne."
+    ],
+    [
+     "C",
+     "Nie układaj teraz pieśni."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Może ktoś za {A:nim|nią} pójdzie?"
+    ],
+    [
+     "C",
+     "Ty?"
+    ],
+    [
+     "B",
+     "...Nie, ja nie."
+    ]
+   ]
+  },
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Znam ten typ. Wróci, jak zgłodnieje."
+    ],
+    [
+     "C",
+     "Albo jak się wystraszy."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Niech bogowie {A:go|ją} strzegą. I uczą pokory."
+    ],
+    [
+     "C",
+     "Pokory? {An}? Powodzenia."
+    ]
+   ]
+  }
+ ],
+ "griefFriend": [
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Niech bogowie przyjmą tę duszę."
+    ],
+    [
+     "A",
+     "Niech lepiej mi ją oddadzą."
+    ],
+    [
+     "B",
+     "Wiem. Przykro mi, {Av}."
+    ]
+   ]
+  },
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "{Av}, opłaczemy później. Teraz trzymaj się."
+    ],
+    [
+     "A",
+     "Jak mam się trzymać?"
+    ],
+    [
+     "B",
+     "Razem z nami. Krok za krokiem."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Zginiemy tu wszyscy... wszyscy!"
+    ],
+    [
+     "A",
+     "Zamknij się. Proszę."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Ułożę o tym pieśń. Obiecuję."
+    ],
+    [
+     "A",
+     "Niech będzie piękna. Na to zasługuje."
+    ],
+    [
+     "B",
+     "Będzie. I prawdziwa."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Przykro mi, {Av}. Naprawdę."
+    ],
+    [
+     "A",
+     "Wiem... dzięki."
+    ],
+    [
+     "C",
+     "Ale ten loch nie śpi. Uważajmy."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Zostało coś po... no wiesz?"
+    ],
+    [
+     "A",
+     "Nie teraz! Na bogów!"
+    ],
+    [
+     "C",
+     "Na bogów, miej trochę wstydu."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Polegli w walce piją z przodkami."
+    ],
+    [
+     "A",
+     "Oby tak było."
+    ],
+    [
+     "B",
+     "Tak jest. Wypijemy za to."
+    ]
+   ]
+  }
+ ],
+ "quarrelStart": [
+  {
+   "l": [
+    [
+     "B",
+     "Znowu? Jak dzieci."
+    ],
+    [
+     "A",
+     "To moje i tyle!"
+    ],
+    [
+     "B",
+     "Dzielcie się, bo nikt nic nie dostanie."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "A może oddacie to mnie? Dla zgody."
+    ],
+    [
+     "A",
+     "Nawet nie marz."
+    ],
+    [
+     "C",
+     "Ha! Trzeci się znalazł."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Chciwość to grzech. Opamiętajcie się."
+    ],
+    [
+     "A",
+     "Grzech to oddać swoje."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Kłócicie się, a loch słucha."
+    ],
+    [
+     "A",
+     "Niech słucha. To moje."
+    ],
+    [
+     "B",
+     "Ciszej chociaż."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Pieśń o dwóch upartych. Już się pisze."
+    ],
+    [
+     "A",
+     "Nie wtrącaj się."
+    ],
+    [
+     "B",
+     "Za późno. Mam refren."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Rzućcie monetą i po sprawie."
+    ],
+    [
+     "A",
+     "Nie będę rzucać o swoje."
+    ],
+    [
+     "C",
+     "Jak dwa osły nad jednym żłobem."
+    ]
+   ]
+  }
+ ],
+ "betStart": [
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Wariat. Kompletny wariat."
+    ],
+    [
+     "A",
+     "Wariat, który zaraz zarobi."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Stawiam na pułapkę. Dwie monety."
+    ],
+    [
+     "A",
+     "Już je sobie liczę."
+    ],
+    [
+     "C",
+     "Ja też stawiam na pułapkę."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Nie kuś losu, {Av}. Bogowie słuchają."
+    ],
+    [
+     "A",
+     "To niech patrzą uważnie."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Po co? Dla jednej monety?"
+    ],
+    [
+     "A",
+     "Dla sławy. Moneta to dodatek."
+    ],
+    [
+     "B",
+     "Sława na cmentarzu."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Niech ktoś szykuje bandaże."
+    ],
+    [
+     "A",
+     "Nie będą potrzebne."
+    ],
+    [
+     "C",
+     "Zobaczymy, zobaczymy."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Jak przejdziesz, zaśpiewam o tym."
+    ],
+    [
+     "A",
+     "A jak nie?"
+    ],
+    [
+     "B",
+     "Też zaśpiewam. Smutniej."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Ha! To lubię! Idź!"
+    ],
+    [
+     "A",
+     "Patrz i podziwiaj."
+    ]
+   ]
+  }
+ ],
+ "rivalMock": [
+  {
+   "l": [
+    [
+     "B",
+     "Dajcie spokój, ktoś tu krwawi."
+    ],
+    [
+     "A",
+     "Krwawi i przegrywa."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Kpisz z rannego? Wstydź się."
+    ],
+    [
+     "A",
+     "Z rywala. To co innego."
+    ]
+   ]
+  },
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Kiedyś to ciebie spotka, {Av}."
+    ],
+    [
+     "A",
+     "Ale nie dziś."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Ten pojedynek to skarb dla pieśni."
+    ],
+    [
+     "A",
+     "Zapisz wynik. Ja prowadzę."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Wy się kiedyś nawzajem pozabijacie."
+    ],
+    [
+     "A",
+     "Nie kuś."
+    ],
+    [
+     "C",
+     "Byle nie przy mnie."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Jak możesz się śmiać? Tu się umiera!"
+    ],
+    [
+     "A",
+     "Właśnie dlatego się śmieję."
+    ]
+   ]
+  }
+ ],
+ "bondFriend": [
+  {
+   "l": [
+    [
+     "B",
+     "Miło patrzeć na taką przyjaźń."
+    ],
+    [
+     "A",
+     "Rzadkość w tym fachu."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Przyjaźń przyjaźnią, łup dzielimy po równo."
+    ],
+    [
+     "A",
+     "Ty zawsze o jednym."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Pieśń o wiernych druhach? Mam to!"
+    ],
+    [
+     "A",
+     "Tylko bez smutnego końca."
+    ],
+    [
+     "B",
+     "Nic nie obiecuję."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Pilnujecie się nawzajem. Mądrze."
+    ],
+    [
+     "A",
+     "Zawsze tak robimy."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "A mnie kto popilnuje?"
+    ],
+    [
+     "A",
+     "Ty też trzymaj się blisko."
+    ],
+    [
+     "C",
+     "Ja ciebie. Może."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Dobrze mieć kogoś za plecami w boju!"
+    ],
+    [
+     "A",
+     "Najlepiej na świecie."
+    ]
+   ]
+  },
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Widział{em|am} wiele takich przyjaźni. Dbajcie o nią."
+    ],
+    [
+     "A",
+     "Mamy taki zamiar."
+    ]
+   ]
+  }
+ ],
+ "handOver": [
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Odpocznij, {Av}. Teraz my."
+    ],
+    [
+     "A",
+     "Tylko go nie zgubcie."
+    ],
+    [
+     "B",
+     "Prędzej zgubimy głowy."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Ciekawe, kto teraz dostanie większą działkę."
+    ],
+    [
+     "A",
+     "Ten, kto przeżyje."
+    ],
+    [
+     "B",
+     "Czyli warto przeżyć."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Trzymaj się, {Av}. Bogowie widzą."
+    ],
+    [
+     "A",
+     "Niech lepiej coś zrobią."
+    ],
+    [
+     "B",
+     "Robią. Ciągle oddychasz."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Ojej, tyle krwi..."
+    ],
+    [
+     "A",
+     "Mojej. Nie twojej. Spokojnie."
+    ],
+    [
+     "B",
+     "Na razie nie mojej..."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Dobrze zrobi{A:łeś|łaś}, {Av}."
+    ],
+    [
+     "A",
+     "Wiem. Boli i tak."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Ha! Tylko tyle, {Av}?"
+    ],
+    [
+     "A",
+     "Zamienimy się? Ty krwawisz, ja się śmieję."
+    ],
+    [
+     "B",
+     "Dobra wymiana. Kiedy indziej."
+    ]
+   ]
+  },
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Widział{em|am} gorsze rany."
+    ],
+    [
+     "A",
+     "Bardzo mnie pocieszasz."
+    ],
+    [
+     "B",
+     "Nie miało być."
+    ]
+   ]
+  }
+ ],
+ "lastStand": [
+  {
+   "l": [
+    [
+     "B",
+     "{Av}, nie rób tego!"
+    ],
+    [
+     "A",
+     "Już robię. Biegnij!"
+    ],
+    [
+     "B",
+     "Uparciuch!"
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Ja... ja nie zostanę. Przepraszam!"
+    ],
+    [
+     "A",
+     "Nikt cię nie prosi. Uciekaj!"
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Ułożę o tym pieśń, {Av}!"
+    ],
+    [
+     "A",
+     "Byle nie smutną."
+    ],
+    [
+     "B",
+     "Będzie głośna. Obiecuję."
+    ]
+   ]
+  },
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Chciał{bym|abym} stać tam z tobą."
+    ],
+    [
+     "A",
+     "Wiem. Biegnij."
+    ],
+    [
+     "B",
+     "Nie umieraj za szybko!"
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Błogosławię cię, {Av}."
+    ],
+    [
+     "A",
+     "Przyda się. Idź już!"
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "{Av}! Chodź z nami!"
+    ],
+    [
+     "A",
+     "Później! Uciekajcie!"
+    ],
+    [
+     "C",
+     "Słyszysz, {Bv}? Szybciej!"
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Twoja działka przejdzie na nas?"
+    ],
+    [
+     "A",
+     "Tylko jak zginę. Nie licz na to."
+    ],
+    [
+     "B",
+     "Liczę na ciebie. Na działkę trochę też."
+    ]
+   ]
+  }
+ ],
+ "youFirst": [
+  {
+   "l": [
+    [
+     "B",
+     "Sprytnie, {Av}. Bardzo sprytnie."
+    ],
+    [
+     "A",
+     "Doświadczenie, nie spryt."
+    ],
+    [
+     "B",
+     "Tchórzostwo, nie doświadczenie."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Tylko nie ja, tylko nie ja..."
+    ],
+    [
+     "A",
+     "Spokojnie. Ktoś musi."
+    ],
+    [
+     "B",
+     "No właśnie. Ktoś."
+    ]
+   ]
+  },
+  {
+   "bt": "brave",
+   "l": [
+    [
+     "B",
+     "Trzeba było mnie posłać. Już był{bym|abym} tam."
+    ],
+    [
+     "A",
+     "No to następnym razem ty."
+    ],
+    [
+     "B",
+     "Trzymam za słowo."
+    ]
+   ]
+  },
+  {
+   "b": "thief",
+   "l": [
+    [
+     "B",
+     "Puszczasz kogoś przodem? A ja to od czego?"
+    ],
+    [
+     "A",
+     "Ty pilnuj tyłów."
+    ],
+    [
+     "B",
+     "Tyły nie mają pułapek. Zwykle."
+    ]
+   ]
+  },
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Stara sztuczka. Też jej używał{em|am}."
+    ],
+    [
+     "A",
+     "I dlatego żyjesz."
+    ],
+    [
+     "B",
+     "Między innymi."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Kto pierwszy, ten pierwszy przy skarbach."
+    ],
+    [
+     "A",
+     "Albo pierwszy w grobie."
+    ],
+    [
+     "B",
+     "Ryzyko zawodowe."
+    ]
+   ]
+  }
+ ],
+ "notThisWay": [
+  {
+   "l": [
+    [
+     "B",
+     "Skąd wiesz, co tam jest?"
+    ],
+    [
+     "A",
+     "Wiem. Wystarczy."
+    ],
+    [
+     "B",
+     "Dobra, wierzę na słowo."
+    ]
+   ]
+  },
+  {
+   "br": 0,
+   "l": [
+    [
+     "B",
+     "Ale tam może być skarb!"
+    ],
+    [
+     "A",
+     "I grób. Często jedno przy drugim."
+    ],
+    [
+     "B",
+     "To brzmi jak przysłowie."
+    ],
+    [
+     "A",
+     "Bo nim jest."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Pierwszy rozsądny głos dzisiaj."
+    ],
+    [
+     "A",
+     "Ciesz się, póki słychać."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Szkoda. Pachniało złotem."
+    ],
+    [
+     "A",
+     "Krwią pachniało. Uwierz mi."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Boisz się, {Av}?"
+    ],
+    [
+     "A",
+     "Pamiętam. To co innego."
+    ],
+    [
+     "B",
+     "Hm. Mądre słowa jak na ciebie."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Dzięki bogom. Myślał{em|am}, że każesz tam iść."
+    ],
+    [
+     "A",
+     "Głup{i|ia} nie jestem."
+    ],
+    [
+     "B",
+     "Dzisiaj nie."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Inną drogą będzie dłużej."
+    ],
+    [
+     "A",
+     "Dłużej, ale na własnych nogach."
+    ],
+    [
+     "C",
+     "Wolę na własnych."
+    ]
+   ]
+  }
+ ],
+ "nemesisIntro": [
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "To ty stąd wrócił{A:eś|aś}? Ja chyba zawrócę."
+    ],
+    [
+     "A",
+     "Za późno. Wejście już za nami."
+    ],
+    [
+     "B",
+     "Mogł{A:eś|aś} to powiedzieć wcześniej."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Pieśń o twojej zemście już się pisze."
+    ],
+    [
+     "A",
+     "Zaśpiewasz, jak wyjdziemy."
+    ],
+    [
+     "B",
+     "Jeśli wyjdziemy, będzie druga zwrotka."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Skoro znasz drogę, znasz i skarbiec?"
+    ],
+    [
+     "A",
+     "Znam drogę do bólu. Mnie to wystarcza."
+    ],
+    [
+     "B",
+     "Mnie nie."
+    ]
+   ]
+  },
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Znał{em|am} już mścicieli. Zemsta ślepi."
+    ],
+    [
+     "A",
+     "Mnie otworzyła oczy."
+    ],
+    [
+     "B",
+     "Oby ci jej starczyło do końca."
+    ]
+   ]
+  },
+  {
+   "br": 0,
+   "l": [
+    [
+     "B",
+     "Naprawdę stąd wyszł{A:eś|aś}? Żyw{A:y|a}?"
+    ],
+    [
+     "A",
+     "Na tyle żyw{y|a}, żeby wrócić."
+    ],
+    [
+     "B",
+     "Rety..."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Zemsta to ciężki bagaż, {Av}."
+    ],
+    [
+     "A",
+     "Niosę go od dawna."
+    ],
+    [
+     "B",
+     "Oby bogowie zdjęli go z twoich barków."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Ile razy już tu był{A:eś|aś}?"
+    ],
+    [
+     "A",
+     "Dość, żeby mieć tu wrogów."
+    ],
+    [
+     "C",
+     "I dość, żeby mieć blizny."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Zemsta! To rozumiem!"
+    ],
+    [
+     "A",
+     "Tylko mi jej nie zabierz."
+    ],
+    [
+     "B",
+     "Podzielimy się. Ja biorę resztę."
+    ]
+   ]
+  }
+ ],
+ "fallenMemory": [
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Czemu mówisz to akurat teraz?!"
+    ],
+    [
+     "A",
+     "Żebyś patrzył{B:|a} pod nogi."
+    ],
+    [
+     "B",
+     "Patrzę. Cały czas patrzę."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Niech ta dusza znajdzie spokój."
+    ],
+    [
+     "A",
+     "Oby. Tu raczej go nie znajdzie."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Skąd wiesz, że to tu?"
+    ],
+    [
+     "A",
+     "Karczmarz rysował mi plan na stole."
+    ],
+    [
+     "B",
+     "Piwem?"
+    ],
+    [
+     "A",
+     "Rozlanym. Ale wyraźnie."
+    ]
+   ]
+  },
+  {
+   "bt": "careful",
+   "l": [
+    [
+     "B",
+     "Skoro kogoś tu dopadło, to i nas może."
+    ],
+    [
+     "A",
+     "Dlatego mówię."
+    ]
+   ]
+  },
+  {
+   "b": "bard",
+   "l": [
+    [
+     "B",
+     "Znam pieśń o tym miejscu. Smutną."
+    ],
+    [
+     "A",
+     "Nie śpiewaj jej tutaj."
+    ],
+    [
+     "B",
+     "Nawet nie śmiał{bym|abym}."
+    ]
+   ]
+  },
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Może coś tu zostało? Sakiewka, pierścień?"
+    ],
+    [
+     "A",
+     "Został pech. Bierzesz?"
+    ],
+    [
+     "C",
+     "Ja niczego tu nie dotykam."
+    ]
+   ]
+  },
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Pamiętam tę duszę z gildii."
+    ],
+    [
+     "A",
+     "Naprawdę? I jaka była?"
+    ],
+    [
+     "B",
+     "Odważna. Za bardzo."
+    ]
+   ]
+  },
+  {
+   "br": 0,
+   "l": [
+    [
+     "B",
+     "Czy tu wszyscy kiedyś kończą?"
+    ],
+    [
+     "A",
+     "Nie ci, którzy słuchają starszych."
+    ],
+    [
+     "B",
+     "To ja słucham!"
+    ]
+   ]
+  }
+ ],
+ "bountyTalk": [
+  {
+   "bt": "greedy",
+   "l": [
+    [
+     "B",
+     "Ile dokładnie płacą?"
+    ],
+    [
+     "A",
+     "Dość, żebyś przestał{B:|a} pytać."
+    ],
+    [
+     "B",
+     "Nigdy nie przestaję."
+    ]
+   ]
+  },
+  {
+   "bt": "coward",
+   "l": [
+    [
+     "B",
+     "Wysoka nagroda znaczy wysoki stos trupów."
+    ],
+    [
+     "A",
+     "Albo bogatych szczęściarzy."
+    ],
+    [
+     "B",
+     "Wolę być żyw{y|a} i biedn{y|a}."
+    ]
+   ]
+  },
+  {
+   "b": "thief",
+   "l": [
+    [
+     "B",
+     "Gildia płaci, a ja i tak wezmę więcej."
+    ],
+    [
+     "A",
+     "Podzielimy uczciwie."
+    ],
+    [
+     "B",
+     "Oczywiście. Uczciwie."
+    ]
+   ]
+  },
+  {
+   "bv": 2,
+   "l": [
+    [
+     "B",
+     "Za młodu też liczył{em|am} złoto przed walką."
+    ],
+    [
+     "A",
+     "I co?"
+    ],
+    [
+     "B",
+     "Mam mniej palców niż wtedy."
+    ]
+   ]
+  },
+  {
+   "b": "barbarian",
+   "l": [
+    [
+     "B",
+     "Nagroda? Ja tu przy{szedłem|szłam} się bić."
+    ],
+    [
+     "A",
+     "To oddaj mi swoją część."
+    ],
+    [
+     "B",
+     "O, co to, to nie."
+    ]
+   ]
+  },
+  {
+   "l": [
+    [
+     "B",
+     "Ciekawe, czemu gildia sama tu nie zejdzie."
+    ],
+    [
+     "A",
+     "Bo ma nas."
+    ],
+    [
+     "C",
+     "Jakie to krzepiące."
+    ]
+   ]
+  },
+  {
+   "b": "priest",
+   "l": [
+    [
+     "B",
+     "Złoto nie kupi miejsca u bogów."
+    ],
+    [
+     "A",
+     "Ale kupi niezłą trumnę."
+    ],
+    [
+     "B",
+     "Wolał{bym|abym} jej nie potrzebować."
+    ]
+   ]
+  }
  ]
 }

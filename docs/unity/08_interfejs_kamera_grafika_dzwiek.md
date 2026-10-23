@@ -1,8 +1,18 @@
 # 08. Interfejs, sterowanie, kamera, grafika, dźwięk i samouczek
 
-Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 1.17 (niżej). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
+Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 1.24 (`LOG_VERSION = 59`; niżej). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
+
+## Zmiany w 1.18-1.24 (skrót)
+
+- **1.24 mapa bez ramki** (2.8): płótno pod całym ekranem, HUD, szuflada i przyciski stoją na mapie na lekkim cieniu; w poziomie kolumna po prawej.
+- **1.24 następna fala w budowie bez stuknięcia** (6.13a), **pasek strachu** pod paskiem HP i stuknięcie w niego (6.7), linia "Zabici / Wystraszeni" w podsumowaniu, słowa "Rani" / "Straszy" w opisach (3.8, 2.5 podpowiedź kafelka).
+- **1.24 animacje** bohaterów i pułapek (6.13b); **znaczniki na niskich ścianach** od frontu ze strzałką (6.13).
+- **1.24 samouczek w jednym runie** i krótszy przewodnik (8), pytanie o imię w wersji WWW, pytanie o niewydaną Esencję i pulsujący licznik (2.2, 3.21), ostrzeżenie o głodzie w wierszu serca (2.2), linia o utraconym krysztale (3.8), "Zapadnie: n/limit" na karcie bohatera (3.14).
+- **1.24 połączone karty ★** w sklepie, talii, schowku i oknie karty (3.9, 3.16); **tempo klatek** i zatrzymywanie ozdób CSS w bezczynności (sekcja 07, 7.10.9); zielone "+N" leczenia szamana i "Wyleczył potworom N HP." w opisie podniesionego szamana (`itemInfo`) i na karcie elementu (6.10).
+- **1.19-1.23**: pierścienie pod drugą grupą, strażnikiem, przeszukującym ciało i latarnią, ▼ przy przeciążonym, narzędzia w plecaku, złota obwódka Nemezis (6.7); karta bohatera z pochodzeniem przedmiotów, ciężarem, więzią, Nemezis i nagrodą (3.14); kratki Liczb: Rozłam, Ekwipunek, Więzi, Finał, Nemezis (3.8); napisy nad bohaterami (6.10).
+- Ekran startowy: "Prototype 1.24 · 10 fal i finał", "Co nowego w Prototype 1.24" z wpisami 1.24 na górze (starsze zostają).
 
 ## Zmiany w 1.12.1 (skrót)
 
@@ -10,6 +20,13 @@ Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenome
 - Narady i odpoczynek to scenki z kilkoma dymkami po kolei; drużyna podchodzi do przywódcy i patrzy na niego (sekcja 06, 6.7.5); w ich trakcie bez autoprzyspieszenia.
 - Pasek czasu w HUD pokazuje czas cierpliwości `fl.patT` (w scenkach płynie 2 razy wolniej).
 - Nowa karta "Wieści z karczmy", komunikaty sklepu nad przyciskiem, poprawki z listy w rozdziale 10.
+
+## Zmiany w 1.17.1 (skrót)
+
+- Karta bohatera, "Ta fala": nowy punkt "Widział w tej fali: ..." / "Widziała w tej fali: ..." (co bohater widział albo poczuł w tej fali, w kolejności zobaczenia; 3.14).
+- Zakładka Liczby: nowa kratka "Kwestie o tym, co widzieli / zamienione / pominięte" (3.8).
+- Krwawienie (kolce 3. poziomu i kolce w Zbrojowni) ma nad figurą czerwoną kropkę zamiast płomyka (6.7).
+- Ekran startowy: podtytuł "Prototype 1.17.1 · 10 fal i finał", 3 nowe wpisy w "Co nowego w Prototype 1.17.1" (3.3).
 
 ## Zmiany w 1.17 (skrót)
 
@@ -171,6 +188,10 @@ Warstwy (z-index): świeca/winieta 1, baner 2, coach 3, `#fx` 6, `#tip` 8, overl
 | `hungry` | fala/podsumowanie, niesyte | "serce X/N" (różowa `#ff9aa6`) | bicie 0,55 s; pasek czerwony gradient `#e0505c`→`#8a1a28`→`#5c0e16` z połyskiem 2,8 s |
 | `fed` | najedzone | "serce syte" (`--bile`) | ♥ `--bile`, bicie 1,8 s, pasek zielony `#b4dc84`→`#557a33`→`#34501f` |
 
+**Ostrzeżenie o głodzie** (1.24, `hungerRisk`, sekcja 03, 2.13): w budowie, gdy nadchodząca fala ma głód i ostatnia fala dała mniej niż 1,25 × próg (albo serce zjadło kryształ), etykieta "⚠ N z fali albo kryształ", wiersz czerwony z szybkim biciem serca, a `title` wiersza: "Głód: jeśli ta fala da mniej niż N Esencji, serce zje kryształ (ostatnia fala dała M)."
+
+**Esencja, za którą coś kupisz** (1.24, `.afford`, `cheapestItem`): w budowie bez okna, gdy Esencja >= koszt najtańszego elementu, licznik `#h-score` pulsuje złotem; przy "mniej ruchu" i w bezczynności (`html.still`) jest złoty i nieruchomy. Pasek cierpliwości `#h-bar` jest od 1.24 zapisywany tylko przy zmianie (wcześniej co klatkę wymuszał przeliczenie układu).
+
 Wypełnienie paska = `fl.fed / need` (animacja szerokości 0,25 s). Od 1.16.1 `fl.fed` rośnie przy każdym zdarzeniu Grozy (`heartLive`, sekcja 03, 2.4), więc pasek rusza od razu, a nie dopiero przy wypłacie serii; czerwone orby lecą wtedy z pola wyniku do ♥ co ok. 0,6 Esencji. Orb dolatujący do ♥ powiększa je (`heartHit`, skala 1,55, 0,32 s). Element `#h-hmark` (znacznik progu) jest zawsze ukryty.
 
 ### 2.3 Równanie Groza × Chciwość × Combo = Esencja (`updateHud`, `p0_head.html: .eqrow`)
@@ -237,7 +258,7 @@ Zasady: start fali zawsze zwija (`p3_flow.js: startWave`); start budowy rozwija 
 
 **Zakładka Talia** (`renderDeckTiles`, kafelki 100 px, `.dslot`, górna ramka 3 px w kolorze rzadkości): najpierw kafelek **Sklep** (mosiądz; podpis "wróć do sklepu", "gratis: N" z pulsującą złotą obwódką, gdy są darmowe karty, albo "między falami"; w fali ukryty), potem po jednym kafelku na każde miejsce talii (tag = `u.tag` albo "rośnie: N", nazwa w 2 liniach; puste "wolne miejsce" przerywane), potem miejsca schowka (przerywane, 80% krycia, tag "schowek"; w fali ukryte). Stuknięcie karty otwiera okno karty (w fali pauzuje), stuknięcie schowka otwiera sklep.
 
-**Podpowiedź kafelka** (`#tip`, `showTip`): przytrzymanie kafelka 380 ms (bez ruchu > 10 px) pokazuje płytę nad szufladą (dolna krawędź 6 px nad szufladą, szer. `min(440px, 100% - 32px)`, tło `#16181c`, górna ramka 2 px `#6b7079`, wjazd 0,16 s): nazwa Grenze 22 px + "N Esencji" w `--ess`, tag 11 px wersalikami, opis 14 px (`ITEMS[t].desc`), dla łupu "Każdy kolejny taki łup w lochu: +25% ceny (leży już: n, bazowo c).", dla zablokowanego czerwone "Zablokowany: odblokujesz go kartą ze sklepu.". Wibracja 12 ms. Puszczenie chowa podpowiedź, a koniec przytrzymania nie liczy się jako stuknięcie (`tipEat`). Zrzut: `03_tile_tip.png`.
+**Podpowiedź kafelka** (`#tip`, `showTip`): przytrzymanie kafelka 380 ms (bez ruchu > 10 px) pokazuje płytę nad szufladą (dolna krawędź 6 px nad szufladą, szer. `min(440px, 100% - 32px)`, tło `#16181c`, górna ramka 2 px `#6b7079`, wjazd 0,16 s): nazwa Grenze 22 px + "N Esencji" w `--ess`, tag 11 px wersalikami, opis 14 px (`ITEMS[t].desc`), dla łupu "Każdy kolejny taki łup w lochu: +25% ceny (leży już: n, bazowo c).", dla zablokowanego czerwone "Zablokowany: odblokujesz go kartą ze sklepu.". Od 1.24 pod opisem słowa z małym rombem: "Rani" (`.hurt`) i/lub "Straszy" (`.scare`) (`effWords`: Straszy dla pułapek straszących i unoszących się potworów, Rani dla raniących, nietoperze oba; także na kartach odblokowania); licznik pokazań `tutFlags.tipN` (krok przewodnika `hold`). Wibracja 12 ms. Puszczenie chowa podpowiedź, a koniec przytrzymania nie liczy się jako stuknięcie (`tipEat`). Zrzut: `03_tile_tip.png`.
 
 ### 2.6 Pasek akcji (`.actions`, `updateAction`)
 
@@ -272,6 +293,14 @@ Przycisku pauzy nie ma od 1.07: pauzą jest otwarty pasek budowy.
 
 W Unity: Canvas Scaler z rozdzielczością referencyjną 390×844, dopasowanie do szerokości; te progi jako warianty układu.
 
+### 2.8 Mapa bez ramki (1.24, część B; `p0_head.html`, `p2_state_map.js`, `p6_loop.js: resize, splitPolys`, `p7_draw.js: draw, floorT, screenT, faceMap, viewBox, onScreen`, `p8b_ui.js: localXY`)
+
+- Płótno `#cv` leży pod całym ekranem (z-index 0, rozmiar `FW × FH`); `#stage` zostaje w układzie jako wolna część ekranu między HUD a szufladą: kamera kadruje loch w niej jak dotąd (`cw × ch`), a jej róg w płótnie to `OX, OY`. Cztery transformacje rysowania dodają `OX/OY`; przycinanie (`viewBox`, `onScreen`, `roomSeen`, szacunek kafli) obejmuje całe płótno, więc loch rysuje się też pod HUD i szufladą; połówki podzielonego ekranu są przycinane do całego płótna (`SPLIT.fullPolys`), kadrowane w widoku jak dotąd. Stuknięcia (`localXY`) i orby odejmują / dodają `OX/OY`. Zwinięcie szuflady nie zmienia już rozmiaru płótna. Hak testowy `w2s` zwraca współrzędne płótna.
+- Ramka zniknęła (bez obramowania, zaokrągleń i cienia pierścienia); blask świecy, winieta krawędzi i alarm kryształu obejmują cały ekran. HUD, szuflada i rząd akcji stoją na mapie (z-index 2) bez płyty: miękki ciemny gradient pod górnym rzędem (`.hud::before`) i pod dołem (`.drawer::before`), cienie tekstu na małych napisach, pudełka równania i kafelki paska lekko prześwitujące. Stuknięcia między elementami HUD trafiają w mapę (`pointer-events: none` na rzędach HUD, włączone na ich elementach; rząd równania tylko tak szeroki jak pudełka).
+- **Poziom** (decyzja: stary układ zostawiał mapie 4 px na ekranie 390 px wysokości): przy `orientation: landscape and max-height: 560px` HUD, szuflada i przyciski są kolumną po prawej (`min(360px, 46vw)`), mapa zajmuje lewą stronę i biegnie pod kolumną; zwarty HUD (bez rzędu rangi, mniejsze równanie i pasek).
+- Stuknięcie nad bohaterem przy górnej krawędzi mapy (poza widokiem) trafia w jego figurę i pasek strachu (sprawdzanie także poza mapą; budowa bez zmian).
+- Zrzuty (repo prototypu, `e124/shots/`): `b_port_build.png`, `b_port_raid.png`, `b_land_build.png`, `b_land_raid.png`, `b_frame_390x844.png`, `b_frame_844x390.png` (przed: `before_*`). W Unity: kamera renderuje na cały ekran, UI (Canvas Screen Space Overlay) na wierzchu z gradientami; obszar kadrowania kamery = prostokąt między HUD a szufladą (`Screen.safeArea` minus wysokości UI).
+
 ## 3. Ekrany i okna
 
 ### 3.1 Mechanika okien (`openModal`, `closeModal`, `queueModal`)
@@ -293,7 +322,7 @@ W Unity: Canvas Scaler z rozdzielczością referencyjną 390×844, dopasowanie d
 
 ### 3.3 Start (`renderStart`, zrzut `01_start.png`)
 
-Od góry: podtytuł "Prototype 1.17 · 10 fal i finał" (opis niżej dotyczy 1.14; w 1.17 zmieniły się tylko podtytuł i lista "Co nowego", która ma 123 wpisy, w tym 6 wpisów 1.17: zwiedzanie i przeszukiwanie mebli, narada po 2 minutach, wiedza tylko z tego, co widzą i słyszą, ok. 3 razy więcej i prawdziwsze dymki, pułapka słyszana zza ściany i charakter przywódcy w wyborze drogi, poprawki AI); h1 "You are the dungeon"; akapit wstępu; rekordy (jeśli są: "Twój rekord: N Esencji zebranej w runie (ranga: X) · najdalej: fala F · wygrane: W z R."); pole "Kto testuje (opcjonalnie)" (tylko prototyp); przyciski; wiersz web (tylko prototyp); rozwijane **Jak grać** (17 akapitów w tablicy literalnej w `renderStart`, zasady całej gry, do przeniesienia jako tekst lokalizowany) i **Co nowego w Prototype 1.14** (99 wpisów dziennika zmian od v14 do 1.14, druga tablica w `renderStart`); przycisk "Ustawienia" (dźwięk, wibracje, skill checki).
+Od góry: podtytuł "Prototype 1.17.1 · 10 fal i finał" (opis niżej dotyczy 1.14; w 1.17 i 1.17.1 zmieniły się tylko podtytuł i lista "Co nowego" (od 1.17.1 "Co nowego w Prototype 1.17.1"), która ma 126 wpisów: na początku 3 wpisy 1.17.1 (bohaterowie mówią tylko o tym, co widzieli albo poczuli; nowe kwestie: 522 pogaduszki, 108 kwestii wejścia do komnaty, 23 rozmowy, karta bohatera pokazuje, co widział; krwawienie z kolców to rana kłuta, nie ogień), w 1.17 było 123, w tym 6 wpisów 1.17: zwiedzanie i przeszukiwanie mebli, narada po 2 minutach, wiedza tylko z tego, co widzą i słyszą, ok. 3 razy więcej i prawdziwsze dymki, pułapka słyszana zza ściany i charakter przywódcy w wyborze drogi, poprawki AI); h1 "You are the dungeon"; akapit wstępu; rekordy (jeśli są: "Twój rekord: N Esencji zebranej w runie (ranga: X) · najdalej: fala F · wygrane: W z R."); pole "Kto testuje (opcjonalnie)" (tylko prototyp); przyciski; wiersz web (tylko prototyp); rozwijane **Jak grać** (17 akapitów w tablicy literalnej w `renderStart`, zasady całej gry, do przeniesienia jako tekst lokalizowany) i **Co nowego w Prototype 1.14** (99 wpisów dziennika zmian od v14 do 1.14, druga tablica w `renderStart`); przycisk "Ustawienia" (dźwięk, wibracje, skill checki).
 
 Przyciski (`startbtns`; `onbStage()` z rozdz. 8.1; `sv` = zapisany run):
 
@@ -341,7 +370,7 @@ Nagłówek: podtytuł "Fala N/10 · m:ss", tytuł "Zwycięstwo!" / "Kryształ sk
 
 Widok główny (ciało):
 
-1. Cztery kafelki statystyk (`statrow`): "masz Esencji" (czerwony), serce ("♥ N" "serce syte" zielony / "zjadło kryształ" różowy, albo "-" "głód od fali 2"), "k/max" "kryształy", "zabici · przestr.".
+1. Cztery kafelki statystyk (`statrow`): "masz Esencji" (czerwony), serce ("♥ N" "serce syte" zielony / "zjadło kryształ" różowy, albo "-" "głód od fali 2"), "k/max" "kryształy", "zabici · przestr.". Od 1.24 pod nimi: "Zabici: K (A pkt z ran) · Wystraszeni: X (Y pkt ze strachu)" (`#wave-fear-line`, także przy 0, bo straszenie to też droga) i czerwona linia `#wave-crystal-why` (`crystalWhy`): "Głód pochłonął kryształ: serce chciało N Esencji z tej fali, a dostało M." / "Kryształ skradziony: <imię> (<klasa> <poziom>) wyniósł/wyniosła go z lochu."; od 1.23 dla każdego Nemezis fali "Nagroda za głowę: N Esencji · Borys Niezłomny: wypłacona." albo "...: uciekł, wróci z wyższą nagrodą.".
 2. **Rozliczenie** (`reck`, 12,5 px, części wjeżdżają po 0,45 / 0,8 / 1,15 s): "Groza G × m = E", "♥ -N" albo "♥ za mało: -X · kryształ", "dla Ciebie +Y (+P po fali)".
 3. Panel "Esencja z fal" (prawy dopisek "kreska: porcja serca"): wykres `waveChart` z miejscem na każdą z 10 fal (przyszłe przerywane), słupek gradient `--ess-hi`→`--ess`→`--ess-lo`, fala ze stratą szara, różowa kreska 2 px = porcja serca, bieżąca fala pełne krycie z poświatą i wartością u stopy słupka (Jersey 11,5 px biały z cieniem), numery fal pod spodem.
 4. 2-3 **ciekawostki** (`waveFun`): "Ulubiona pułapka" (zawsze pierwsza, gdy jest), losowo z: "Zabójca fali", "Cichy zabójca/pomocnik", "MVP bohaterów", "Najbardziej przerażony", "Najwyższe combo", "Krytyki", "Zgubieni", "Rozdzieleni" (1.16: "N razy", "X s na zwiadzie", gdy co najmniej 4 s), od 1.17 "Zwiedzali" (gdy co najmniej 2 rozglądania: "N razy", opis "znaleźli N monetę/monety/monet" albo "nic nie znaleźli", z dopiskiem ", obudzili pułapkę: N", gdy przeszukanie odpaliło pułapkę) i "Narada" (gdy była narada po cierpliwości: wartość "szturm", "jeszcze chwila" albo "do domu", w tej kolejności ważności, gdy narad było kilka; opis "przegłosowani wrócili sami: N" albo "zdecydowali razem"), "Rozbrojone", "Łup". Etykieta mosiądz 9,5 px wersalikami, wartość 13,5 px, opis 11 px w 2 liniach.
@@ -351,7 +380,7 @@ Stopka: przy zwycięstwie "Graj dalej" (fale bez końca) i "Zakończ: zwycięstw
 
 Widok **Szczegóły**: panel "Skąd Esencja" (prawy dopisek "Groza G × średnio m") z paskiem źródeł 12 px (kolory: Rany `#ff8a7a`, Strach `#c3b2ff`, Ucieczki `#8a6fe0`, Zabici `#d8434f`, Łup `#f2b94b`, Combo `#a9d4da`, Inne `#7d7590`) i legendą 4 największych; zakładki (`seg`, jak zakładki paska): **Co dalej** (lista punktów z rombami: serce, fala następna, gildia, głód, Esencja po fali, plotki, opowieści o skarbach, zabrany łup, co gildia słyszy o chciwości, wyłom, przygotowania, budowle, błądzenie, przedmioty, wiara, saperzy, ranga), **Bohaterowie** (ikona, imię, klasa, los: zginął czerwony, wyniósł kryształ pomarańczowy, uciekł ze strachu fiolet, wyszedł szary), **Elementy** (nazwa, pasek, "E · n traf."), **Liczby** (siatka 2 kolumn: krytyk/draśnięcie/pudło, ciosy z pamięci, najwyższe combo, łup zobaczony/zabrany, rozbrojone/odczynione, plotki, zapadnie/klatki, serce/dla Ciebie, czas/przyspieszenie; w 1.17 bez zmian).
 
-`statsTable(s)` (`p8b_ui.js`) to osobna, dłuższa tabela liczb fali, której **nic nie woła** (martwy kod, rozdział 10). 1.16 i 1.17 dopisały do niej wiersze (zwiad, zwiedzanie, narada, wieści), więc od poprawki wydania 1.17 te liczby są też w zakładce Liczby (`renderWave`, `cur === 'nums'`) jako cztery kratki: "Osobno: zwiad / sam / zgubiony (s)" (`splitTime`, `loneTime`, `lostTime`), "Rozglądania / monety / pułapki z szukania" (`looks`, `goldFound`, `lookTraps`), "Narada: dom / szturm / chwila · sami do domu" (`councilHome`, `councilStorm`, `councilMore`, `goHome`) i "Słyszane zza ściany / wieści o śmierci" (`heard`, `newsDeaths`). `lookNo` i `lootObey` są tylko w logach (sekcja 07).
+`statsTable(s)` (`p8b_ui.js`) to osobna, dłuższa tabela liczb fali, której **nic nie woła** (martwy kod, rozdział 10). 1.16 i 1.17 dopisały do niej wiersze (zwiad, zwiedzanie, narada, wieści), więc od poprawki wydania 1.17 te liczby są też w zakładce Liczby (`renderWave`, `cur === 'nums'`) jako cztery kratki: "Osobno: zwiad / sam / zgubiony (s)" (`splitTime`, `loneTime`, `lostTime`), "Rozglądania / monety / pułapki z szukania" (`looks`, `goldFound`, `lookTraps`), "Narada: dom / szturm / chwila · sami do domu" (`councilHome`, `councilStorm`, `councilMore`, `goHome`) i "Słyszane zza ściany / wieści o śmierci" (`heard`, `newsDeaths`). Od 1.17.1 piąta kratka: "Kwestie o tym, co widzieli / zamienione / pominięte" (`sawTalk`, `lineSwap`, `lineDrop`; sekcja 06, 6.7.10). Kolejne kratki: 1.19 "Rozłam: grupy / bunty (udane) / obrażeni / powroty"; 1.20 "Ekwipunek: z ciał / podane (amulety) / przydział / oferty / za ciężkie / latarnia ratuje / łom"; 1.21 "Więzi: pary / żałoba (zemsta) / nie zostawię (uratowani) / mistrz: uwagi, pochwały / kpiny / kłótnie (przerwane) / sprzeciw nad ciałem / zakłady: wygrane-przegrane"; 1.22 "Finał: eskorta / przekazania / ostatni bastion / poświęcenia / ty pierwszy / opukane / nie tędy / szyk" (eskorty z przejęciami, poświęcenia odpalone, opukania ze znaleziskami, szyk z wycofaniami); 1.23 "Nemezis: w fali / nagrody (Esencja) / urazy (załatwione) / ostrzeżenia / pamięć poległych". Zakładka Co dalej (1.20): przekazane, z ciał, wybite, zgaszone latarnie, bomby w ogniu. Panel następnej drużyny: znacznik więzi (1.21), "☠ nemezis" i "Nagroda za głowę: N Esencji" w drugiej linii (1.23), tytuł ikon ekwipunku mówi, skąd przedmiot, narzędzia w białej ramce, trofea pomarańczowe (1.20); "☠ Borys Niezłomny wraca N. raz. Nagroda za głowę: N Esencji." (1.23). `lookNo` i `lootObey` są tylko w logach (sekcja 07); tak samo `lineDropK`, `rkEnter`, `chatTry` i `chatPick` (1.17.1).
 
 ### 3.9 Sklep (`renderShop`, zrzut `08_shop.png`)
 
@@ -365,6 +394,8 @@ Otwiera się na początku każdej budowy od fali 2 (po podsumowaniu) i z kafelka
 - Stopka: "Do budowy fali N" z podpisem "darmowe karty poczekają: k" albo "sklep: pierwszy kafelek w Talii" → zamyka.
 
 Komunikaty po akcji (`m.msg`: "W talii: X.", "Za mało Esencji…", "Nowa oferta."…) idą do `setHint`, który w 1.12 nic nie robi (rozdz. 10).
+
+**Połączone karty ★ (1.24)**: oferta karty, którą już masz, ma w linii rodzaju "połączy się w ★" i pod opisem "Połączy się w ★: <cecha>" (klasa `.fuse`, `.fz`); zakup daje komunikat "...: połączona w ★ (jedno miejsce)."; slot talii i schowka połączonej karty ma złotą ramkę (`.fused`) i nazwę z "★ " (`cardName`); arkusz karty złoty, "Sprzedaj +s" z ceną dwóch kart (`sellFor`). Nazwy kart w Unity: ten sam przedrostek "★ ". Linia rodzaju odblokowania od 1.24 ma też słowa "rani" / "straszy" (`kindShort`, `effWords`).
 
 ### 3.10 Koniec przegranej fali (`renderOver`)
 
@@ -384,9 +415,13 @@ Przed pierwszym ekranem końca runu w wersji web: 5 pytań z przyciskami (`SURVE
 
 ### 3.14 Karta bohatera (`renderHero`, zrzut `09_hero_card.png`)
 
-Otwiera: stuknięcie figury w fali, wiersz listy drużyny, wiersz następnej fali. W fali gra się pauzuje i wznawia po zamknięciu. Podtytuł "Klasa · poz. L ranga[ · powracający][ · łowca skarbów][ · rekrut]", imię Grenze w kolorze klasy, kafelki: HP "h/max" (różowy < 35%), strach "%" "strach z N odwagi" (różowy > 60%), wiara kapłana albo liczba przedmiotów; lista: Teraz (stan żywego), Charakter, Umie, Klasa (odporności), Łowca skarbów, Ciało, Fobia (albo "nie wiadomo"), Blizna, Trauma; "Ekwipunek" (lista z mocą, ładunkami, odnowieniem; sakwa); "Ta fala" (rany wg typów, 4 największe źródła strachu); notka o odkrywaniu ciała i fobii; przycisk "Zamknij" albo "Wróć". Treść: sekcje 04 i 06.
+Otwiera: stuknięcie figury w fali, wiersz listy drużyny, wiersz następnej fali. W fali gra się pauzuje i wznawia po zamknięciu. Podtytuł "Klasa · poz. L ranga[ · powracający][ · łowca skarbów][ · rekrut]", imię Grenze w kolorze klasy, kafelki: HP "h/max" (różowy < 35%), strach "%" "strach z N odwagi" (różowy > 60%), wiara kapłana albo liczba przedmiotów; lista: Teraz (stan żywego), Charakter, Umie, Klasa (odporności), Łowca skarbów, Ciało, Fobia (albo "nie wiadomo"), Blizna, Trauma; "Ekwipunek" (lista z mocą, ładunkami, odnowieniem; sakwa); "Ta fala" (rany wg typów, 4 największe źródła strachu, od 1.17.1 "Widział/Widziała w tej fali: ..."); notka o odkrywaniu ciała i fobii; przycisk "Zamknij" albo "Wróć". Treść: sekcje 04 i 06.
 
-Wiersz "Teraz" (żywy): "Zginął/Zginęła." / "Wyniósł kryształ." / "Uciekł ze strachu." / "Wyszedł z lochu." albo lista po przecinku: "UCIEKA", "NIESIE KRYSZTAŁ", "w klatce", jeden z: "zgubiony", "wraca sam do domu" (1.17, przegłosowany na naradzie), "na zwiadzie" (1.16), "rozgląda się" (1.17, ogląda coś przy rozglądaniu się, `h.look` nieskończone), "sam" (w tej kolejności pierwszeństwa), dalej "płonie", "przeklęty", "wstrząśnięty śmiercią", stan z `STATE_TEXT`. Stany "zgubiony" i "wraca sam do domu" nie mają formy żeńskiej (w Unity dodać).
+Wiersz "Teraz" (żywy): "Zginął/Zginęła." / "Wyniósł kryształ." / "Uciekł ze strachu." / "Wyszedł z lochu." albo lista po przecinku: "UCIEKA", "NIESIE KRYSZTAŁ", "w klatce", jeden z: "zgubiony", "wraca sam/sama do domu" (1.17, przegłosowany na naradzie; forma żeńska od 1.24), od 1.19 "prowadzi drugą grupę" / "w drugiej grupie", "na zwiadzie" (1.16), "rozgląda się" (1.17, ogląda coś przy rozglądaniu się, `h.look` nieskończone), "sam" (w tej kolejności pierwszeństwa), dalej "krwawi" (od 1.24 przy `burnBy === 'spikes'`) albo "płonie", "przeklęty", "wstrząśnięty śmiercią", stan z `STATE_TEXT`. Stany "zgubiony" i "sam" nie mają formy żeńskiej (w Unity dodać).
+
+Dopisane w 1.20-1.24: przy każdym przedmiocie, skąd pochodzi (`srcText`: " - z domu", " - od gildii", " - z Twojego lochu", " - relikwia z Twojego lochu", " - trofeum z fali n", " - z rzeczy <dopełniacz>", " - od <dopełniacz>", ", przeklęty"; narzędzia samą nazwą, latarnia "(zgaszona)"), "Ciężar: a,b / c,d kg (zwalnia)", u tego, kto wyszedł: "Zabrał(a) z lochu: n łupu, m monet" (1.20); po Charakterze więź: "Przyjaciel: Borys", "Rywalka: Wanda", "Mistrz/Mistrzyni", "Uczeń/Uczennica", "(zginął/zginęła)" (1.21); u Nemezis tytuł w nagłówku (h2) i "nemezis" w podtytule, "Nemezis: wraca N. raz (od fali s), zna pokoje...", "Uraza: <nazwa>" (" (gdziekolwiek)" bez pola), "Nagroda za głowę: N Esencji" ("(wypłacona)" po śmierci), wiersz Blizny bez powtórzenia liczby powrotów (1.23); "Zapadnie: n/limit" (gdy spadł albo w lochu jest zapadnia), "(już mu/jej nie grożą)" przy limicie, "(elita albo poz. 12+: spada raz)" przy limicie 1 (1.24). Karta otwarta w fali liczy się do `fearUi.card` (1.24).
+
+"Ta fala" (żywy bohater w fali, nie z kolejki) ma do trzech punktów: "Rany w tej fali: kłute 12, ogień 5." (`dmgBy` >= 1, nazwy z `DMG_TYPES`), "Strach w tej fali: ..." (4 największe źródła) i od 1.17.1 "Widział w tej fali: ..." / "Widziała w tej fali: ..." (`sawNames(live)`, `p5_ai.js`): tagi z `h.saw` bez `monster`, posortowane rosnąco po `h.sawAt` (kolejność zobaczenia), zamienione na nazwy przez `sawName` (stałe `SAW_NAME`: "wybuch prochu", "monety", "mikstura", "ekwipunek", "relikwia", "przeklęty łup", "serce lochu", "krew"; komnaty z `KIND_INFO[...].name`, reszta z `ITEMS[tag]` albo `ITEMS['r_' + tag]`, małymi literami), puste pominięte, po przecinku, np. "Widział w tej fali: mgła, goblin, kolce, krew, monety." Nagłówek "Ta fala" pojawia się, gdy jest którykolwiek z trzech punktów. `death` nie jest w `h.saw` (liczone z `fl.deaths`, sekcja 06, 6.7.10), więc się nie pokazuje. Do 1.23 krwawiący miał w wierszu "Teraz" "płonie"; od 1.24 "krwawi".
 
 ### 3.15 Karta elementu (`renderItem`)
 
@@ -411,6 +446,16 @@ Ze stuknięcia równania (w fali pauzuje). Wzór i objaśnienie, "Groza: co prze
 ### 3.19a Wieści z karczmy (`renderNews`, od 1.12.1)
 
 Stuknięcie w "Fala X/10" w budowie (`#h-wave`) otwiera kartę: podtytuł "Wieści z karczmy", nagłówek = nazwa fali (`waveName()`), akapity = zdania z `waveHint()` (liczba i poziom bohaterów, boss, głód serca w tej fali, wyłom, gildia, plotki), przycisk "Zamknij" (`#news-close`). Zastępuje dawny komunikat u góry ekranu.
+
+### 3.20a Okna dodane w 1.24 (`renderUnspent`, `renderName`, `renderOnb`)
+
+- **"Masz X Esencji"** (`unspent`, 3.21): podtytuł "Przed falą N", tekst "Rozpocząć falę mimo to? Niewydana Esencja nie broni lochu. Najtańszy element: <nazwa> (<koszt>)." (+ "Uwaga na głód: serce chce N Esencji z tej fali."), pole "Nie pytaj więcej", przyciski "Buduj dalej" i "Wypuść falę mimo to" (`#unspent-go`). Reguła: sekcja 03, 3.14.
+- **"Jak masz na imię?"** (`name`, tylko wersja WWW, przed pierwszym nowym runem bez imienia): podtytuł "Zanim zaczniesz", tekst "Imię albo pseudonim. Dzięki niemu autor odróżni Twoje gry od gier innych osób, także na tym samym telefonie.", pole (max 40, przykład "np. Kasia"), "Graj" (pusta nazwa: fokus), "Pomiń" (link). Sekcja 07, 7.11.6.
+- **Karta etapu** (`onb`): od 1.24 w pierwszym runie "Fala N · nauka" i "Nowe: <etapy>" z punktami `ONB_STAGES[k].news`, notka "Od fali X: <następny etap>." albo "To już cała gra. Kolejne runy zaczną się od niej. Wszystkie zasady znajdziesz w Jak grać na ekranie startowym."; przycisk "Gramy" (`#onb-go`); pokazywana przed sklepem budowy, w której etap się otwiera. Run zapisany przed 1.24: "Run s z 4 · nauka" i "Następny run doda: ...".
+
+### 3.21 Pytanie o niewydaną Esencję
+
+Przycisk akcji w budowie: `askUnspent()` przed `startWave()`; gdy zwraca prawdę, otwiera okno 3.20a i fala nie startuje. Nie w przewodniku. Testy klikające "Wypuść falę" z Esencją muszą nacisnąć `#unspent-go` albo ustawić `yatd-noask-ess`.
 
 ### 3.20 Martwe okna
 
@@ -721,8 +766,9 @@ Na podłodze radialna poświata `rgba(216,67,79,0.42)` r 1,6 pola; przy kradzie�
 - **Klatki**: 4 klatki chodu (0 stoi, 1 i 3 nogi w rozkroku, ciało 1 px wyżej), 4 klatki na sekundę (`floor(realNow × 4 + id × 0,37) mod 4`), tylko gdy idzie w fali i gra nie stoi. Wariant "flash" (cały biały, obrys półbiały) przy trafieniu.
 - **Rozmiar**: `figH = clamp(T × 1,1, 27, 50)` px (czempion ×1,18, bohater z przepowiedni ×1,3), rysowany w 1,15 × figH; skala całkowita w pikselach urządzenia `k = max(1, round(H × DPR / 28))`, bez wygładzania. Figura nigdy nie jest mniejsza niż 27 px. Stopy stoją w punkcie podłogi z `heroPos` (pozycja interpolowana między polami + przesunięcie wg id: (id mod 3 - 1) × 0,14 w x i połowa tego w y, żeby się nie nakładali).
 - **Na ziemi**: cień (elipsa 0,95W × 0,32W, W = 0,36H), kropki ścieżki (6 następnych pól, kolor klasy, 45%), pierścienie: spowolniony `#a9c6ff`, na zwiadzie (1.16, fala) przerywany turkusowy `rgba(140,224,200,0.85)` [2, 3] zamiast pomarańczowego, sam (fala) przerywany pomarańczowy, bliski śmierci (< 30% HP) pulsujący czerwony, rozbrajający żółty łuk postępu.
-- **Na figurze**: łowca skarbów = sakiewka `#8a6a2c` przy biodrze; boss = złota korona `#d9b44a` nad głową; przeklęty = fioletowa mgiełka; amulet = fioletowa poświata; buty = 3 linie pędu; płonący = migający płomyk; talizman = pulsująca niebieska elipsa; tarcza wojownika = łuk `#7fb8ff` z przodu; na lodzie: przechylony, iskry lodu za nim; barbarzyńca rozbijający: drganie.
+- **Na figurze**: łowca skarbów = sakiewka `#8a6a2c` przy biodrze; boss = złota korona `#d9b44a` nad głową; przeklęty = fioletowa mgiełka; amulet = fioletowa poświata; buty = 3 linie pędu; płonący = migający płomyk (`#ff9a3c`/`#ffd27a`, `sin(realNow*20)`, kółko r = max(2,5, 0,07H) przed twarzą); od 1.17.1 krwawiący (`burnBy === 'spikes'`) = w tym samym miejscu czerwona kropka (`#d8434f`/`#ff6b6b`, `sin(realNow*12)`); talizman = pulsująca niebieska elipsa; tarcza wojownika = łuk `#7fb8ff` z przodu; na lodzie: przechylony, iskry lodu za nim; barbarzyńca rozbijający: drganie.
 - **Nad głową**: paski HP (`#6fd38a` / `#ff6b6b` ≤ 35%), strach (`#b48cff`, pełny = ucieka), tarcza (`#7fb8ff`, nad HP), wiara kapłana (`#ffe9a8`); szerokość `max(0,56T, 0,62H)`, wysokość `max(2, 0,07T)`, tło `rgba(0,0,0,0.65)`; poziom (liczba) przy głowie w kolorze rangi z ciemnym obrysem; niesiony kryształ (różowy romb); sakwa ze złotem (kropka `#f2b94b` + liczba); uciekający "»"/"«" `#c3b2ff` drgające; pod stopami kwadraciki ekwipunku (do 6, kolory przedmiotów, przygaszone na odnowieniu, T ≥ 14); znak nad paskami: "!!" panika `#ff6b6b`, "?" zgubiony `#ffe066`, "..." narada, "z" odpoczynek.
+- **Dopisane w 1.19-1.24** (`p7_draw.js: drawHero`, `fearBar`): pierścienie pod stopami: bursztynowy pod członkami drugiej grupy (1.19), szary łuk postępu przy przeszukiwaniu ciała (`state 'loot'`, 1.20), ciepłe koło 1,5 pola pod zapaloną latarnią (1.20), blady złoty pierścień `rgba(255,214,120,0.4)` pod strażnikiem, gdy jest niosący (1.22); kwadraciki ekwipunku: narzędzia w białej ramce, przeklęty fioletowy i pulsujący, zgaszona latarnia przygaszona, mały szary "▼" po prawej przy przeciążeniu (`burden < 1`) (1.20); Nemezis: złota obwódka żetonu na liście (1.23). **Pasek strachu** (1.24, P1-4; testerzy w ogóle nie widzieli strachu): osobny pasek pod paskiem HP, nigdy na nim: szerokość `max(0,56T, 0,62H, 22)` px, wysokość `max(3, 0,09T)`, ciemna oprawa `rgba(0,0,0,0.72)`, tło `rgba(79,63,143,0.6)`, wypełnienie `#b48cff`, przy 75%+ miga `#ece4ff` (bez "mniej ruchu"), znacznik na końcu (1,5 px `#ece4ff`) = wyjście; prostokąty pasków zapisywane co klatkę (`FEARR`), stuknięcie w pasek (z zapasem 6/8 px) liczy `fearUi.bar` i otwiera kartę bohatera (`fearBarAt`).
 - **Animacje 1.09**: wejście w drzwiach (`inR`): skala `0,35 + 0,65 easeOutBack` i krycie w 0,36 s; ugięcie od ciosu (`flash` 0,12 s): szerzej 1 + 0,12q, niżej 1 - 0,1q; wyjście (`HERO_OUT` 0,7 s): **śmierć** przewrócenie o 90° (kąt ∝ t², t = k/0,5), mały podskok, zanik od 55%; **zapadnia** spłaszczenie (ky 1-k, kx 1-0,3k), krycie 1-0,6k; **wyjście z lochu** zanik.
 
 ### 6.8 Potwory (`ISO_ART`, `drawCorpse`)
@@ -742,7 +788,7 @@ Kto i kiedy mówi: sekcja 06. Prezentacja (1.08, styl reszty gry), zrzut `06_wav
 
 ### 6.10 Unoszące się napisy i cząsteczki
 
-- **Napisy** (`addFloat`, `drawFloats`): stoją na punkcie podłogi i unoszą się (0,9 pola/s × 0,9T), życie 1,2 s, krycie `life/0,5`; font Jersey `max(11, rozmiar × T / 52)`, obrys 3 px `rgba(10,11,13,0.9)`. Napis z tym samym znacznikiem w pobliżu (1,6 pola) zastępuje starszy; inne w tym samym miejscu przesuwają się o 0,34 w górę. Przykłady: Groza nad bohaterem "+G" `#c3b2ff` 16 (sam: `#e6dcff` "+G sam!"), "KRYTYK!" / "SERIA: KRYTYK!" `#ff6b6b` 19, "Draśnięcie" `#8be38f` 14, "Pudło" `#a69bbb` 15, "Kryształ skradziony!" `#ff6b6b` 18, "Serce syte!" `#ff9aa4` 16, "Śmierć +E Esencji" `#ff7a86` 15, "Nowa ranga: X!" `#cbb0ff` 16, "Poziom N" `#ffb35c` 15, "+N Esencji" `#ff7a86` 14 (zdjęcie), "Przeniesione" `#d8d2c4` 13, "Serce ich odpycha!" `#ff9ab0` 15.
+- **Napisy** (`addFloat`, `drawFloats`): stoją na punkcie podłogi i unoszą się (0,9 pola/s × 0,9T), życie 1,2 s, krycie `life/0,5`; font Jersey `max(11, rozmiar × T / 52)`, obrys 3 px `rgba(10,11,13,0.9)`. Napis z tym samym znacznikiem w pobliżu (1,6 pola) zastępuje starszy; inne w tym samym miejscu przesuwają się o 0,34 w górę. Dopisane w 1.18-1.24 (kolor, rozmiar): "Zasadzka!" `#a7d060` 15, "Szybki montaż ×1,5" `#ffd27a` 13, "Strącone: X" `#c9d5e2` 12, "Zasypia" `#e6d2ff` 12 (1.18); "Rozłam" / "Obrażony/Obrażona" `#e8b26a` 13, "Bunt!" `#e8b26a` 14 (1.19); "Zabiera rzeczy X" `#c9c2b8` 12, "Od X: <przedmiot>" w kolorze przedmiotu 12, "Zgasła!" `#ffe08a` 13, "Bomba w plecaku!" `#ffb35c` 14, "Wypluwa N przedmiotów" `#d8434f` 13, "Opukana!" `#ffe066` 13 (1.20, 1.22); "Żałoba" / "Szok" `#c9b6e8` 14, "Zemsta!" `#ff7a6b` 15, "Dorasta" `#9fe0cf` 12, "Drwina" `#e8b26a` 13, "Kłótnia!" `#e8b26a` 14, "Zakład!" / "Wygrany zakład" `#ffd27a` 13/12, "Nie zostawię!" (1.21, 1.24); "Ostatni bastion!" `#ffd27a` 15, "Przekazuje kryształ" / "Niesie kryształ" `#ff9ab0` 14/13, "Poświęca się" `#ffd27a` 13 (1.22, 1.24); "Nagroda! +N Esencji" `#ffd27a` 17, "Nie ucieknie!" `#ffd27a` 13 (1.23); "Wyczerpany/Wyczerpana" `#c9c2d8` 12, "Ucieka" `#c9c2d8` 13, "Kryształ wraca!" `#ff7a86` 15, "Głód pochłonął kryształ!" `#ff6b6b` 18, "Kolce i tak kłują" `#ffd27a` 13, zielone "+N" leczenia szamana `#7fe08a` 13 (1.24). Przykłady: Groza nad bohaterem "+G" `#c3b2ff` 16 (sam: `#e6dcff` "+G sam!"), "KRYTYK!" / "SERIA: KRYTYK!" `#ff6b6b` 19, "Draśnięcie" `#8be38f` 14, "Pudło" `#a69bbb` 15, "Kryształ skradziony!" `#ff6b6b` 18, "Serce syte!" `#ff9aa4` 16, "Śmierć +E Esencji" `#ff7a86` 15, "Nowa ranga: X!" `#cbb0ff` 16, "Poziom N" `#ffb35c` 15, "+N Esencji" `#ff7a86` 14 (zdjęcie), "Przeniesione" `#d8d2c4` 13, "Serce ich odpycha!" `#ff9ab0` 15.
 - **Cząsteczki** (`burst`, `drawParticles`): n kwadracików 0,08T na wysokości 0,35, prędkość (0,6..1,6) × 2,2 pola/s w losowym kierunku, tarcie ×0,9 na klatkę, życie 0,5-0,8 s, krycie `life × 2,2`. **Pierścienie** na podłodze: promień dąży do `maxR` (12/s), grubość `max(2, 0,08T)`. Przykłady: kurz `#9a9286` ×7 + pierścień `#b9b2a6` 0,15 → 0,85, 0,32 s; ulepszenie `#ffb35c` ×12 + pierścień 0,2 → 1,1, 0,4 s; śmierć bohatera `#d8434f` ×16; krytyk wybija przedmiot (kolor rzadkości ×10); śmierć potwora `#8a8378` ×8.
 
 ### 6.11 Orby (`p6_loop.js: gainEssence, grozaOrbs, boxOrbs`; `p7_draw.js: drawOrbs`)
@@ -775,7 +821,7 @@ Logika (strefy, czasy, kształt dla typu, czaszka): sekcja 05. Zrzut: `05_wave_c
 
 | Znacznik | Wygląd | Źródło |
 |---|---|---|
-| wolne miejsce dla wybranego kafelka | przerywana ramka `rgba(242,185,75,0.75)` (wcięcie 0,12, grubość `max(1, 0,04T)`, kreska 0,12T/0,1T); na stojącej ścianie rysowana na jej licu | `drawSlots`, `markTile`, `drawWallMarks` |
+| wolne miejsce dla wybranego kafelka | przerywana ramka `rgba(242,185,75,0.75)` (wcięcie 0,12, grubość `max(1, 0,04T)`, kreska 0,12T/0,1T); na stojącej ścianie rysowana na jej licu; od 1.24 na ściętej (niskiej, `wallH <= 0,2`) ścianie od frontu na wierzchu jej wargi razem ze znakami ścian (po ścianach), z małym trójkątem-strzałką w stronę pokoju, w który pułapka strzeli (pokój pierwszego sąsiada podłogi, jak przy wysokich ścianach, `slotRoom`); do 1.23 ramka niskiej ściany leżała na podłodze pod wargą i była przez nią zasłonięta, więc żadna niska ściana jej nie pokazywała (reguły stawiania były dobre: 48-52 miejsc przy niskich ścianach wobec 33-37 przy wysokich w lochu 4 pokoi). Znaczniki niesienia i pierścień przewodnika idą tą samą drogą. Zrzuty `b_walls_near.png`, `b_walls_placed.png` | `drawSlots`, `markTile`, `markRing`, `drawWallMarks` |
 | element w ręce | pulsująca fioletowa ramka `rgba(195,178,255, 0,6±0,4)` (grubość `max(2, 0,08T)`), cele przerywane `rgba(195,178,255,0.8)` | `drawCarry` |
 | koszt ulepszenia | czerwona pigułka `rgba(255,85,98,0.95)` z "↑c" (za mało: szara) nad elementem w ręce | `costTag` |
 | przytrzymanie | od 15% czasu: pierścień r 0,62T, tło `rgba(16,17,20,0.7)`, wypełnia się na czerwono `#ff6b6b`; napis "zdejmij" `#ffd0d0` | `drawHold`, `drawHoldLabel` |
@@ -783,6 +829,34 @@ Logika (strefy, czasy, kształt dla typu, czaszka): sekcja 05. Zrzut: `05_wave_c
 | wyłom | pulsujący czerwony pierścień + "WYŁOM" i "stuknij: załataj (20)"; po otwarciu arkusza przez 4 s 2 fale pierścieni co 1,2 s (r 0,8 → 3) | `drawBreachMark`, `drawBreachLabel` |
 | cel samouczka | pulsujący złoty pierścień r 0,6 ± 0,1 | `drawTutTarget` |
 | etykieta pokoju | "×1,7" (mnożnik głębokości) przy przednim prawym rogu pokoju, w budowie także "zajęte/pojemność" (czerwone `#ff9a9a` gdy pełny); pokoje skrajne `rgba(255,170,140,0.95)` | `drawRoomLabels` |
+
+### 6.13a Podgląd następnej fali w budowie (1.24, P1-1; `p7_draw.js: drawPreview, PV, fitTxt`)
+
+Testerzy nie wiedzieli, kto przyjdzie ("ściana fali 5"). Drużyna była już zrobiona przed budową (`run.next`), więc nic się nie przesunęło: budowa rysuje ją u góry mapy bez stuknięcia, w miejscu zwiniętych chipów: chipy (krążek co 25 px: klasa, poziom, korona czempiona albo bohatera z przepowiedni, złoty pierścień Nemezis, zielony krzyżyk uzdrowiciela: kapłan, bard), a obok (na wąskim ekranie pod nimi) dwie linie: F1 600 11 px "Fala N/10: X bohaterów, poz. a-b", F2 500 10,5 px "✚ leczy: kapłanka, bard · czempion (poz. 9) · chciwy, ostrożna" (uzdrowiciele pierwsi, potem boss "z przepowiedni"/"czempion" z poziomem, potem charaktery bez powtórzeń), ucinane z wielokropkiem (`fitTxt`). Wiersz ma 34 px, gdy słowa mieszczą się obok (pierwsza wersja 58 px zasłaniała mapę). Teksty liczone raz na drużynę i szerokość (`PV`). Stuknięcie otwiera pełną listę jak dotąd i liczy się do `previewOpened` (`notePreview`). Sprawdzone na 10 falach: kolejka i wchodzący bohaterowie to podgląd.
+
+### 6.13b Animacje bohaterów i pułapek (1.24, część B; `p7_draw.js: AFX, AFX_N, AFX_DUR, afx, heroFx, trapFx, TRAP_FX, drawAfx`)
+
+Pula 64 miejsc używanych po kolei (najstarsze ustępuje, bez alokacji w pętli klatki), rysowanych pionowo po tym, co stoi, a przed znakami (tylko w fali), długość 0,35-1,3 s czasu rzeczywistego (`AFX_DUR`), bez `Math.random`, żadnej przy "mniej ruchu" (`AFXN` liczy uruchomione, dla testów). Symulacja nietknięta (te same fale z ziarnem dają identyczny wynik przed i po).
+
+| Rodzaj (`AFX_DUR`, s) | Kiedy | Wygląd |
+|---|---|---|
+| `shield` 0,6 | tarcza wojownika (przygotowanie, znana pułapka) | uniesiona tarcza i pierścień |
+| `heal` 0,9 | leczenie kapłana | złote pierścienie i krzyżyki na każdym leczonym |
+| `ward` 0,8 | oczyszczenie, zdjęta klątwa, bariera | zimne pierścienie, kopuła |
+| `exorcism` 0,8 | egzorcyzm | słup światła na duchu |
+| `fireball` 0,5 | kula ognia maga | pocisk ze smugą i wybuch |
+| `jam` 0,9 | zakłócenie maga | fioletowy puls na każdej pułapce pokoju |
+| `notes` 1,3 | pieśń i wołanie barda; pozytywka | nuty w górę |
+| `rage` 0,8, `smash` 0,5 | furia i cios barbarzyńcy | czerwona aura; łuk topora i kurz przy celu |
+| `sparks` 0,5 | rozbrajanie złodzieja (błogosławieństwo: światło) | iskry |
+| `dodge` 0,45 | unik | powidok |
+| `potion` 0,9, `throw` 0,55 | mikstura (podana: rzucona) | fiolka nad głową, zielone iskry; łuk rzutu |
+| `charm` 0,7, `boots` 0,6 | talizman, amulet; buty | żeton w górę i pierścień; kurz i linia skrzydeł |
+| `light` 1,1, `pry` 0,7 | latarnia ratuje przed mgłą albo oświetla drogę; łom przy kracie albo klatce | koło światła; dźwignia i iskry |
+| bomba | rzut bomby | łuk lotu i wybuch |
+| `spikes` 0,45, `arrow` 0,35, `fire` 0,6, `gate` 0,45, `trapdoor` 0,6, `cage` 0,5, `web` 0,55, `powder` 0,6, `mimic` 0,45, `glare` 0,8 (portret), `gaze` 0,7 (oczy), `flash` 0,6 (lustro), `mist` 0,9 (trumna), `rattle` 0,55 (kości), `notes` (pozytywka), `creak` 0,6 | koniec każdego odpalenia (`trapFx(it, area)`) | kolce w górę; strzały lecą wzdłuż swojej linii (do mebla albo ściany); strumień ognia nad polami; opadające kraty; otwarta zapadnia; spadająca klatka; strzał sieci; błysk i dym prochu; szczęki mimika; czerwone oczy i promienie portretu; promień spojrzenia oczu; błysk lustra; mgła trumny; grzechot kości; nuty; łuki dźwięku zawiasów. Dawne pozy (`it.anim`) zostają |
+
+W 6 falach organicznych (lochy fal 4-8 z wieloma typami) startuje 20+ rodzajów; każda umiejętność i każdy typ pułapki sprawdzone osobno. Zrzuty `b_fx_heroes.png`, `b_fx_traps.png`. W Unity: pula efektów (VFX Graph albo sprite'y) wyzwalana zdarzeniami symulacji, czasy z tabeli.
 
 ### 6.14 Co musi dostarczyć grafika w Unity
 
@@ -854,9 +928,11 @@ Brak dźwięków dla przycisków, pułapek, śmierci, kryształów i odpuszczone
 - **Efekty**: wyrenderuj 5 krótkich klipów (WAV, Decompress On Load) albo syntezuj w `OnAudioFilterRead`/`AudioClip.Create`.
 - Start muzyki od razu (w aplikacji nie ma wymogu dotknięcia); pauza aplikacji wycisza.
 
-## 8. Samouczek i nauka (1.12)
+## 8. Samouczek i nauka (1.12; od 1.24 w jednym runie)
 
-### 8.1 Etapy pierwszych runów (`ONB_STAGES`, `onbStage`, `onbDone`)
+Od 1.24 (część B, decyzja autora: odsłanianie nowych rzeczy w jednym runie) etapy otwierają się z falami pierwszego runu (`ONB_WAVE = [0, 1, 3, 5, 7]`, sekcja 03, 5.3), a przewodnik jest krótszy (8.3a). Opis 8.1-8.3 to stan 1.12-1.23; karty ważnych chwil, coach i pamięć urządzenia bez zmian.
+
+### 8.1 Etapy pierwszych runów (`ONB_STAGES`, `onbStage`, `onbDone`; stan do 1.23)
 
 Etap w pamięci urządzenia `yatd-onb`: 1-4 = który run nauki jest następny, 5 = gra poznana. Domyślnie 1, a urządzenie, które ma już rozegrane runy sprzed 1.12, startuje od 5. Run z nauki przesuwa etap po zakończeniu (`onbDone`: tylko run rozpoczęty ścieżką nauki, `guided`; wyjście przed falą 5 się nie liczy). Co odsłania każdy etap (elementy `ONB_ITEM`, karty `ONB_CARD`, mechaniki): sekcje 03-05; tu prezentacja:
 
@@ -904,6 +980,32 @@ Mechanika: `tutTick` sprawdza `done` co klatkę (krok z `next` czeka na przycisk
 
 **Karta samouczka w sklepie** (od 1.15.1, `#shop-tip`, `.shoptip`, tylko `run.tutorial`): kartka w stylu karty ważnej chwili (lewa krawędź `--gold-hi`), nałożona na górę sklepu (absolutnie, 10 px od krawędzi karty, z-index 6): "Po każdej fali jedną kartę bierzesz tu za darmo (Weź za darmo), a kolejne kupisz za Esencję. Wzięta karta trafia do talii na dole i działa do końca runu. Odblokowanie (fioletowy pasek) daje nową pułapkę albo potwora na stałe." + "Samouczek" + "Rozumiem". Zostaje, aż gracz stuknie Rozumiem albo weźmie kartę (`run.shopTipDone`). Do 1.15 był to komunikat `m.msg` nad przyciskiem, który gasł po ok. 2,2 s (animacja `shopmsg` 2,8 s) i zasłaniał talię.
 
+### 8.3a Przewodnik i etapy od 1.24 (`TUT`, `startGuided`, `onbAdvance`, `renderStart`, `tutWayOnly`, `tutSpikeSure`, `tutLogOf`)
+
+**Ekran startowy**: przy `onbStage() <= 1` przyciski "Samouczek" ("Pierwszy run z przewodnikiem") albo, gdy przewodnik był już ukończony, "Nowy run" ("Pierwszy run: gra odsłania się z falami"), oraz "Pomiń samouczek" ("Cała gra od razu"); inaczej "Nowy run" ("Pełna gra") i "Samouczek" ("Nauka od nowa: run z przewodnikiem, gra odsłania się z falami": `setOnb(1)`, kasuje `yatd-coach` i `yatd-pops`). Wszystkie przez `withName` (pytanie o imię w wersji WWW). `startGuided()` = zawsze etap 1 (`newRun(!coachDone(), 1)`, `run.guided = true`).
+
+**Etapy w runie**: fale 1-2 etap 1, 3-4 etap 2 ("Nowe: strach"), 5-6 etap 3 ("Nowe: gildia i loch"), od 7 pełna gra; karta etapu przed sklepem budowy tej fali (3.20a); fala 7 albo koniec runu nauki po fali 5 ustawia `yatd-onb` 5. Wyszarzone podzakładki mówią "od fali 3" (`subWhen`). Karty ważnych chwil (8.4) działają w runie nauki jak dotąd.
+
+**Kroki (`TUT`, nadal 16, tylko jedno stawianie wymagane)**:
+
+| # | id | Fala / faza | Co mówi i o co prosi | Zakończenie |
+|---|---|---|---|---|
+| 1 | intro | 1 budowa | loch postawił 2 pułapki blisko serca, same nie wystarczą | "Dalej" |
+| 2 | spikes | 1 budowa | wybierz Kolce (zakładka Pułapki) | Kolce wybrane albo postawione |
+| 3 | place | 1 budowa | postaw na trasie, pole z pulsującym kółkiem (`tutPathTile(0,25)`) albo inne pole na ich drodze; poza trasą (od ćwierci najkrótszej ścieżki) odmowa "Na trasie: pole z kółkiem" (`tutWayOnly`, `tutFlags.offWay`) | więcej kolców |
+| 4 | hold | 1 budowa | nowy: przytrzymaj palec na kafelku Strzały: rozwinie się opis (podświetla `#item-arrows`) | opis pokazany (`tutFlags.tipN`); "Pomiń krok" |
+| 5 | move | 1 budowa | opcjonalny: stuknij pułapkę w kółku, potem pole z przerywaną ramką; z pułapką w ręce tekst zmienia się na "Masz ją w ręce: stuknij pole z przerywaną ramką, żeby ją tam postawić." | przeniesienie; "Pomiń krok" |
+| 6 | spend | 1 budowa | opcjonalny: "Masz jeszcze N Esencji…", strzały także na niską ścianę od frontu (strzałka pokazuje pokój) | jak dotąd; "Pomiń krok" |
+| 7 | go | 1 budowa | wypuść falę; ▲ Budowa zatrzymuje grę | start fali; bez pytania o niewydaną Esencję |
+| 8-11 | novice, check, herocard, ff | 1 fala | bez zmian | bez zmian |
+| 12 | loot | 2 budowa | mówi o łupie (zakładka Łup) | "Dalej" (do 1.23: postaw Monety) |
+| 13 | upgrade | 2 budowa | opcjonalny: dwa stuknięcia w element w kółku | ulepszenie; "Pomiń krok" |
+| 14 | deck | 2 budowa | karta w talii; od 1.24 także "druga kopia łączy się z pierwszą w złotą kartę ★" | "Dalej" |
+| 15 | dig | 3 budowa | mówi o kopaniu (zakładka Loch) | "Dalej" (do 1.23: wykop pokój) |
+| 16 | end | 3 budowa | "Ten run odsłoni resztę gry z falami: teraz straszenie, od fali 5 gildię z budowlami i typy pokoi, od fali 7 ciała i fobie bohaterów, powracających i wyłom. Kolejne runy to od razu cała gra." | "Gramy!" |
+
+Usunięty krok `arrows` (postaw strzały na ścianie). Decyzja o przytrzymaniu: "przytrzymaj palec na kafelku" dotyczy kafelka paska (już otwierał opis po 380 ms bez ruchu, `showTip`); na mapie przytrzymanie ma swoje zadania (budowa: zdjęcie po 0,55 s, fala: przyspieszenie po 0,28 s), więc osobne przytrzymanie "informacyjne" na mapie by z nimi walczyło. W pierwszej fali kolce przewodnika kłują przynajmniej raz (sekcja 05, 5.9.12). Dziennik: `tut.stepIds` i `tut.stepTimes` (sekundy na każdym kroku) w dokumencie runu (sekcja 07).
+
 ### 8.4 Karty ważnych chwil (`TUT_POP`, `tutPop`)
 
 Krótka karta w coachu u góry mapy (klasy `top pop`: lewa krawędź `--gold-hi`, złota obwódka), tekst + "Gra stoi" + "Rozumiem". **Zatrzymuje grę** (`setPaused(true)`); check czeka pod kartą. Kolejka, gdy przyjdą dwie. Zamknięcie: następna z kolejki albo wznowienie gry i powrót kroku przewodnika.
@@ -937,6 +1039,8 @@ Run z samouczkiem zapisuje się jak każdy. Po wczytaniu: liczniki "postaw więc
 | `yatd12-save` | zapisany run (sekcja 07) |
 | `yatd15-records`, `yatd15-best` | rekordy |
 | `yatd-name`, `yatd-device`, `yatd-survey` | tylko prototyp |
+| `yatd-player`, `yatd-name-asked` | 1.24: identyfikator gracza dla imienia, pytanie o imię już było (wersja WWW) |
+| `yatd-noask-ess` | 1.24: "Nie pytaj więcej" o niewydaną Esencję |
 
 ## 9. Tylko prototyp: odpowiedniki w Unity
 
@@ -952,6 +1056,8 @@ Run z samouczkiem zapisuje się jak każdy. Po wczytaniu: liczniki "postaw więc
 | "Co nowego" (dziennik zmian) | `renderStart` | brak w wydaniu (ewentualnie "Nowości" dla graczy) |
 | "Za reklamę", "Kontynuuj z 1 kryształem" (symulacja) | `renderShop`, `renderOver` | prawdziwe reklamy nagradzane (sekcja 03) |
 | demonstracyjny loch za ekranem startowym | boot `p8b_ui.js` | może zostać (tło menu) |
+| tempo klatek `FP`, `html.still`, `window.__yatd` jako `Proxy` (1.24) | `p6_loop.js`, `p0_head.html`, `p8b_ui.js` | `Application.targetFrameRate`, `OnDemandRendering` (sekcja 07, 7.10.9) |
+| pytanie o imię i `playerId` (1.24) | `withName`, `renderName`, `playerIdNow` | konto gracza albo identyfikator instalacji; imię opcjonalne |
 
 ## 10. Błędy, martwy kod i niespójności zauważone przy opisie
 
@@ -969,4 +1075,7 @@ Run z samouczkiem zapisuje się jak każdy. Po wczytaniu: liczniki "postaw więc
 12. **Dymki ucinają tekst** po 2 liniach (`wrapText` zwraca najwyżej 2), bez wielokropka.
 13. **Legenda checku**: warunek `run.checkHints >= 0` jest zawsze prawdziwy, więc legenda pokazuje się w pierwszych 3 checkach każdej fali (prawdopodobnie zamierzone, ale licznik `checkHints` nie ma już sensu).
 14. **`statsTable` martwa** (`p8b_ui.js`): funkcja nie jest nigdzie wołana; wiersze dopisane do niej w 1.16 i 1.17 przez to się nie pokazywały (a "Co nowego" 1.16 obiecało czas na zwiadzie w Szczegółach). Od poprawki wydania 1.17 najważniejsze z nich są kratkami w zakładce Liczby; samą funkcję można usunąć.
-15. **Stany bez formy żeńskiej** w karcie bohatera (1.17): "wraca sam do domu" (i od dawna "zgubiony", "sam") nie zmieniają się dla bohaterki, choć napis nad postacią ("Wraca sama") się zmienia.
+15. **Stany bez formy żeńskiej** w karcie bohatera (1.17): "zgubiony" i "sam" nie zmieniają się dla bohaterki ("wraca sama do domu" poprawione do 1.24).
+16. **Podgląd fali ucina słowa** (1.24): przy długich nazwach uzdrowicieli druga linia kończy się wielokropkiem w środku słowa ("z przepowi…"); test `t124b_ui` raz na kilka przebiegów tego nie przechodzi (tak samo na stronie sprzed części C).
+17. **`setHint('Bohaterowie są wyczerpani: wychodzą.')`** i inne podpowiedzi 1.19-1.24 (rozłam, "nie zostawię", narada z rozłamem, "jeszcze chwila" z liczbą sekund) trafiają do martwego `setHint`; widać tylko napisy nad bohaterami.
+18. **Pasek strachu przy podzielonym ekranie** (1.24): `drawWorld` rysuje bohaterów w każdej połówce (z maską połówki, a przycinanie obejmuje cały ekran), a `fearBar` zapisuje prostokąt także dla paska zakrytego maską; `FEARR` zbiera prostokąty obu połówek, a `fearBarAt` bierze ostatnio narysowany, więc stuknięcie w widoczny pasek może trafić w niewidoczny pasek innego bohatera z drugiej połówki (możliwe, nie sprawdzone w teście). W Unity sprawdzać trafienie w obrębie połówki.

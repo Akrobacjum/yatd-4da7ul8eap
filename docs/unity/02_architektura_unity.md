@@ -4,10 +4,10 @@ Ta sekcja to propozycja techniczna dla wersji w Unity: wersja silnika, pakiety, 
 
 ## 2.1 Cele techniczne
 
-1. **Wierność prototypowi.** Gra ma zachowywać się jak Prototype 1.12.1 (autor ocenił wygląd, działanie i dźwięk bardzo wysoko). Każda reguła ma odpowiednik w kodzie prototypu, a specyfikacja wskazuje plik i funkcję.
+1. **Wierność prototypowi.** Gra ma zachowywać się jak Prototype 1.24 (specyfikacja pisana na 1.12.1 i uzupełniana do 1.24; autor ocenił wygląd, działanie i dźwięk bardzo wysoko). Każda reguła ma odpowiednik w kodzie prototypu, a specyfikacja wskazuje plik i funkcję.
 2. **Symulacja oddzielona od wyglądu.** Cała logika (loch, bohaterowie, pułapki, ekonomia, AI) w czystym C# bez MonoBehaviour, sterowana krokiem czasu. Dzięki temu da się ją testować bez edytora (testy EditMode) i odtwarzać zapisane fale.
 3. **Dane zamiast kodu.** Elementy, karty, klasy, poziomy i kwestie bohaterów są w JSON wyeksportowanym z prototypu (`data/`). Strojenie liczb nie wymaga zmian w kodzie.
-4. **Telefon.** Pion, jedna ręka, płynne 60 klatek na średnim Androidzie, mało alokacji w pętli.
+4. **Telefon.** Pion (od 1.24 prototyp działa też w poziomie), jedna ręka, płynne 60 klatek w fali na średnim Androidzie, 30 w budowie i rysowanie na żądanie w bezczynności (telefony się grzały, 1.24), mało alokacji w pętli.
 5. **Kod pisze głównie Claude.** Autor ma małe doświadczenie w programowaniu, więc struktura ma być prosta, przewidywalna i dobrze nazwana; każdy moduł ma testy.
 
 ## 2.2 Silnik i pakiety
@@ -95,14 +95,15 @@ Nie ma potrzeby zgodności liczb losowych z prototypem (JS i C# i tak losują w 
 
 Katalog `data/` (w repo: `docs/unity/data/`) zawiera eksport tabel z `src/p1_config.js` (opis plików: załącznik A):
 
-- `yatd_content_1.17.json`: wszystkie tabele w jednym pliku (`tables.ITEMS`, `tables.UPGRADES`, `tables.HEROES`...; stan Prototype 1.17),
+- `yatd_content_1.17.1.json`: wszystkie tabele w jednym pliku (`tables.ITEMS`, `tables.UPGRADES`, `tables.HEROES`...; stan Prototype 1.17.1; tabele zmienione w 1.18-1.24 trzeba wyeksportować na nowo, lista w załączniku A, A.0 i A.9),
 - te same tabele osobno (`ITEMS.json`, `UPGRADES.json`, ...),
 - `levelStats_1_30.json`: policzone statystyki poziomów 1-30,
 - `golden_1.13.1.json`: wartości policzone przez działający prototyp (skład i poziom fal 1-20, głód serca, krzywa chciwości, ceny, koszty narzędzi, domyślne `mods` i `S`).
 
 Funkcje w danych (np. `apply` kart, `req`) są zapisane jako tekst źródłowy z prefiksem `fn: `. W Unity:
-- **karty**: przepisz 98 funkcji `apply` na listę operacji (`ModOp { field, op: Add|Mul|Set, value }`) albo, prościej, na `switch (card.id)` w jednym pliku `CardEffects.cs`. Pełna lista z kodem: załącznik B. Karty `instant` (Żarłoczne serce, Zastrzyk Esencji, Hojny kupiec, Pakt) działają na `run` raz, przy kupnie.
-- **wymagania kart** (`req`): napis = id elementu, który musi być odblokowany; funkcja = warunek z kilku odblokowań (np. Lepkie kolce: sieć albo pająk).
+- **karty**: przepisz 126 funkcji `apply` (122 karty talii i 4 jednorazowe w 1.24; w 1.17.1 98) na listę operacji (`ModOp { field, op: Add|Mul|Set, value }`) albo, prościej, na `switch (card.id)` w jednym pliku `CardEffects.cs`. Pełna lista z kodem: załącznik B. Karty `instant` (Żarłoczne serce, Zastrzyk Esencji, Hojny kupiec, Pakt) działają na `run` raz, przy kupnie.
+- **wymagania kart** (`req`): napis = id elementu, który musi być odblokowany; funkcja = warunek z kilku odblokowań (np. Lepkie kolce: sieć albo pająk) albo, od 1.18, "ta komnata / ten efekt jest w lochu" (`hasRk`, `hasRt`).
+- **połączone karty ★** (1.24): moc karty jako `p` kopii (2,5 / 2,75 / 3,125) wymaga, żeby operacje karty dało się nałożyć ułamkowo (mnożenie: `k^p`, dodawanie: `p × krok`); w modelu `ModOp` to proste, w `switch` trzeba dodać parametr mocy (sekcja 03, 3.13).
 - **teksty** (`desc`, `text`, `SAY`, `CHAT_REPLY`, `ONB_STAGES`): do tabel lokalizacji, klucz = id + pole.
 
 Narzędzie edytora "Import prototype data" powinno umieć wczytać nowszy eksport (gdyby prototyp się jeszcze zmienił) i pokazać różnice. Skrypt eksportu: `docs/unity/tools/dump.js` (node, czyta `src/p1_config.js`), skrypt wartości wzorcowych: `docs/unity/tools/golden.py` (Playwright na zbudowanej stronie).
@@ -153,11 +154,14 @@ Jedna scena gry (`Game`) z warstwami: loch 3D, aktorzy, efekty, UI. Ekran starto
 - Bez alokacji w `Step`: pule obiektów na pływające liczby, cząsteczki, orby i dymki; listy wielokrotnego użytku dla BFS.
 - Prototyp ma liczniki płynności (`PERF`, `perfNote`) i zapisuje je w danych testowych. W Unity: Profiler + własny licznik klatek w danych testowych (sekcja 07).
 - Ściany kładące się wokół drużyny (sekcja 08) to animacja skali, nie przebudowa siatki.
+- Tempo klatek (1.24, sekcja 07, 7.10.9): fala najwyżej 60 klatek/s (także na ekranach 90/120 Hz), budowa, pauza i ekrany między falami 30, a bez ruchu i dotyku przez 2 s obraz stoi (rysowany tylko po zmianie) i nieskończone animacje UI się zatrzymują. W Unity: `Application.targetFrameRate` i `OnDemandRendering.renderFrameInterval`, symulacja w stałym kroku niezależnie od rysowania. Pomiar prototypu: bezczynna budowa 125% -> 3% CPU; sama klatka fali przy 100 elementach tylko -9% (dużo drobnych rysunków).
+- Animacje 1.24 (sekcja 08, 6.13b) z puli 64 miejsc bez alokacji; w Unity pula efektów.
+- Mapa bez ramki (1.24): kamera rysuje cały ekran, UI na wierzchu; kadrowanie kamery liczone dla prostokąta między HUD a szufladą.
 
 ## 2.9 Zasady pisania kodu (dla kolejnych czatów)
 
 - Nazwy i komentarze w kodzie po angielsku, teksty dla gracza tylko przez lokalizację (polski bazowy).
 - Każda reguła przeniesiona z prototypu ma w komentarzu odnośnik `// proto: p3_flow.js hungerNeed`, a stałe mają te same nazwy co w prototypie (`COMBO_POW`, `BREACH_P`, `CHECK_SLOW`...). Dzięki temu specyfikacja, prototyp i kod Unity dają się porównać wyszukiwaniem.
-- Najpierw test, potem kod: dla formuł testy z `golden_1.13.1.json`, dla zachowań scenariusze (sekcja 09).
+- Najpierw test, potem kod: dla formuł testy z `golden_1.13.1.json` (od 1.24 `waveBase` fal 1-4 inne, sekcja 09), dla zachowań scenariusze (sekcja 09).
 - Nie "poprawiaj" zachowania prototypu po cichu. Błędy i niespójności znalezione przy przenoszeniu wpisuj do sekcji 11 i pytaj autora.
 - Ręczne sprawdzenie: prototyp można uruchomić lokalnie (`index.html` z repo w przeglądarce) albo na stronie testowej; w konsoli przeglądarki obiekt `window.__yatd` daje dostęp do stanu (`__yatd.run`, `__yatd.fl`, `__yatd.mods`) i funkcji (pełna lista na końcu `src/p8b_ui.js`).

@@ -1,10 +1,10 @@
 # 06. AI bohaterów i rozmowy
 
-Ta sekcja opisuje "mózg" drużyny bohaterów z prototypu (Prototype 1.12.1, uzupełniane do 1.17): kto prowadzi, dokąd idą, co wiedzą, kiedy biorą łup, kiedy się wycofują, szturmują serce albo uciekają, jak każda klasa używa swoich umiejętności i przedmiotów, oraz cały system mowy (dymki, kolejki, rozmowy, katalog kluczy `SAY`). Od 1.17 także: co kto widzi i słyszy (percepcja, plan każdego bohatera, wieści, 6.3.13), ciekawość (rozglądanie się po pokoju i dźwięki zza ściany, 6.3.3a) i narada na końcu cierpliwości (6.3.10a).
+Ta sekcja opisuje "mózg" drużyny bohaterów z prototypu (Prototype 1.12.1, uzupełniane do 1.17.1): kto prowadzi, dokąd idą, co wiedzą, kiedy biorą łup, kiedy się wycofują, szturmują serce albo uciekają, jak każda klasa używa swoich umiejętności i przedmiotów, oraz cały system mowy (dymki, kolejki, rozmowy, katalog kluczy `SAY`). Od 1.17 także: co kto widzi i słyszy (percepcja, plan każdego bohatera, wieści, 6.3.13), ciekawość (rozglądanie się po pokoju i dźwięki zza ściany, 6.3.3a) i narada na końcu cierpliwości (6.3.10a). Od 1.17.1: pamięć bohatera (co widział albo poczuł w tej fali) i dopasowanie kwestii do niej (6.7.10). Od 1.18-1.24 (stan Prototype 1.24): karty zachowań bohaterów (6.3.14), Rozłam: druga grupa, bunt, foch (6.10, 1.19), ekwipunek w zachowaniu (6.11, 1.20), więzi i dramaty (6.12, 1.21), finał fali (6.13, 1.22), Nemezis i pamięć poległych (6.14, 1.23), wyczerpanie na końcu fali i częstość zdarzeń (6.15, 1.24).
 
-Źródła: `p5_ai.js` (w całości), z `p3_flow.js` części: mowa (`say`, `sayTick`, `earshot`...), spawn i start fali (`spawnHero`, `regroupAtDoor`, `becomeImpatient`, `goHome`, `heroExit`), strach w zachowaniu (`addFear`, `startFlee`, `partyFlee`, `dropCrystal`, `crystalReturns`, `kill`), łupy (`noticeLoot`, `pickup`, `giveItem`, `dropItem`, `itemValue`, `curse`); z `p6_loop.js`: `step`, `takeCrystal`, `stealNeed`, `GATE_T`; z `p2_state_map.js`: przejezdność, wiedza o mapie, `bfs`; z `p4_traps.js`: `learnTrap`, `rebuildThreat`, `disarmSpots`, klatka, zapadnia, potwory (tylko to, co dotyczy decyzji bohaterów); z `p1_config.js`: `nameGen`, `nameFill`, `pickS` i tabele kwestii.
+Źródła: `p5_ai.js` (w całości), z `p3_flow.js` części: mowa (`say`, `sayTick`, `earshot`...), spawn i start fali (`spawnHero`, `regroupAtDoor`, `becomeImpatient`, `goHome`, `heroExit`), strach w zachowaniu (`addFear`, `startFlee`, `partyFlee`, `dropCrystal`, `crystalReturns`, `kill`), łupy (`noticeLoot`, `pickup`, `giveItem`, `dropItem`, `itemValue`, `curse`); z `p6_loop.js`: `step`, `takeCrystal`, `stealNeed`, `GATE_T`; z `p2_state_map.js`: przejezdność, wiedza o mapie, `bfs`; z `p4_traps.js`: `learnTrap`, `rebuildThreat`, `disarmSpots`, klatka, zapadnia, potwory (tylko to, co dotyczy decyzji bohaterów); z `p1_config.js`: `nameGen`, `nameFill`, `pickS` i tabele kwestii (od 1.17.1 także `LINE_NEEDS`).
 
-Dane (katalog `spec/data/`): `SAY.json`, `CHAT_REPLY.json`, `HEROES.json`, `HERO_TRAITS.json`, `levelStats_1_30.json`, `LEADER_ORDER.json`, `SMASHABLE_OBJ.json`, `HITEMS.json`, `LOOT_GREED.json`, `LOOT_KIND.json`, `ITEMS.json`, `DRIFT.json`, `SCARE.json`, `CURSED.json`, `DISARMABLE.json`, `BUILDINGS.json`, `DEFAULTS.json`, `GZ.json`.
+Dane (katalog `spec/data/`): `SAY.json`, `CHAT_REPLY.json`, `HEROES.json`, `HERO_TRAITS.json`, `levelStats_1_30.json`, `LEADER_ORDER.json`, `SMASHABLE_OBJ.json`, `HITEMS.json`, `LOOT_GREED.json`, `LOOT_KIND.json`, `ITEMS.json`, `DRIFT.json`, `SCARE.json`, `CURSED.json`, `DISARMABLE.json`, `BUILDINGS.json`, `DEFAULTS.json`, `GZ.json`, od 1.17.1 `LINE_NEEDS.json`.
 
 Gdzie indziej:
 - sekcja 03: przebieg runu i fali, ekonomia (Groza, Chciwość, Combo, `addPts`), zapis plotek po fali (`finishWave`), ocena sławy lochu;
@@ -28,7 +28,7 @@ Konwencje:
 | `caged(h)` | `h.state === 'caged'` | `p3_flow.js: caged` |
 | `panicking(h)` | `fl.time < h.panicUntil` | `p5_ai.js` |
 | `goingOut()` | `P.plan` to `'flee'`, `'leave'` albo `'escape'` (plan drużyny, czyli przywódcy) | `p5_ai.js` |
-| `planOf(h)` | 1.17: plan, który zna ten bohater: `h.plan || P.plan` (6.3.13) | `p5_ai.js` |
+| `planOf(h)` | 1.17: plan, który zna ten bohater: `h.plan \|\| P.plan` (6.3.13) | `p5_ai.js` |
 | `goingOutH(h)` | 1.17: `planOf(h)` to `'flee'`, `'leave'` albo `'escape'` | `p5_ai.js` |
 | `exiting(h)` | `h.fleeing` albo `h.crystal` albo `h.goHome` (1.17: przegłosowany na naradzie wraca sam) albo `goingOutH(h)` (do 1.16 `goingOut()`): bohater idzie do wyjścia | `p5_ai.js` |
 | `samePlace(a, b)` | ten sam pokój albo korytarz (`roomOf(tx, ty)` równe i >= 0) albo odległość <= 3,5 pola | `p5_ai.js` |
@@ -52,6 +52,16 @@ Konwencje:
 | `exitGoals()` | pole wejścia i (jeśli jest) pole wyłomu | `p5_ai.js` |
 | `replanAll()` | wszystkim bohaterom `needPlan = true` | `p5_ai.js: replanAll` |
 | `nearestOf(b, list)` | z listy indeksów pól ten o najmniejszym `b.dist >= 0` | `p5_ai.js: nearestOf` |
+| `inG2(h)` | 1.19: bohater należy do drugiej grupy (`P.g2.ids`) | `p5_ai.js` |
+| `g2Leader()` | 1.19: przywódca drugiej grupy (wybiera nowego, gdy obecny odpadł; 6.10) | `p5_ai.js` |
+| `groupLeaderOf(h)` | 1.19: przywódca grupy bohatera: `inG2(h) ? g2Leader() : leader()` | `p5_ai.js` |
+| `splitting(h)` | zwiad, partner, wypad nowicjusza, od 1.19 także druga grupa (Groza `GZ.split`) | `p5_ai.js` |
+| `bondOf(h)` | 1.21: partner więzi, gdy więź jest wzajemna (także martwy); `bondType(h, t)` | `p5_ai.js` |
+| `calmFor(o)` | 1.21: żyje, w lochu, nie zgubiony, nie w klatce, bez paniki, nie ucieka | `p5_ai.js` |
+| `carrierOf()` | 1.22: niosący kryształ (`P.carrierId`, żywy, w lochu) | `p5_ai.js` |
+| `standing(h)`, `sacrificing(h)` | 1.22: trwa jego ostatni bastion / poświęcenie | `p5_ai.js` |
+| `cheb(ax, ay, bx, by)` | 1.22: odległość Czebyszewa | `p5_ai.js` |
+| `nemHold(h)` | 1.23: Nemezis powyżej 15% HP (nie panikuje, nie ucieka ze strachu) | `p3_flow.js` |
 
 ## 6.1 Architektura AI
 
@@ -84,7 +94,8 @@ step(dt):
   monstersTick(dt)
   kradzież kryształu przy sercu (6.3.9); 1.17: nikt przy sercu -> P.steal maleje o 0.5/s
   if !fl.fearless && fl.ending === null && fl.patT >= S.waveTime: becomeImpatient()   // 6.3.10; od 1.17 otwiera naradę (6.3.10a)
-  if fl.ending === null && fl.time >= S.waveTime + 60: każdy żywy -> heroExit (siatka bezpieczeństwa)
+  if fl.ending === null && !fl.exhausted && fl.patT >= S.waveTime + 60: waveExhausted()     // 1.24 (6.15); do 1.23: każdy żywy -> heroExit
+  if fl.ending === null && fl.patT >= S.waveTime + 150: waveForceOut()                     // 1.24: prawdziwa siatka bezpieczeństwa
   if kolejka pusta i wszyscy dead/fled: fl.ending = 1.2
   dymki: bubble.until <= time -> bubble = null
 ```
@@ -104,6 +115,7 @@ Ważne:
 | szukanie pułapek wzrokiem | co `0.5` s (`h.scan`, start `0.5`) | `p5_ai.js: updateHero, scanTraps` |
 | rozglądanie się | co `1.6 + rand*2.8` s, tylko w stanie `talk`/`wait` | `p5_ai.js: glance` |
 | small talk | `P.chatT` start `6`, potem `7 + rand*6` s | `p5_ai.js: partyThink` |
+| pamięć: co kto widzi (1.17.1) | co `0.25` s (`sawSweep` na początku `perceiveThink`), do tego przy wejściu do pokoju, odpaleniu, ranie i zdarzeniach (6.7.10) | `p5_ai.js: sawSweep` |
 | wołanie zgubionego | pierwsze `5` s po zgubieniu, potem co `6 + 3*rand` s | `p5_ai.js: getLost, partyThink` |
 | przywódca zauważa brak zgubionego (1.17) | najwcześniej `4` s po zgubieniu, gdy go nie słyszy; szukanie do `14` s (do 1.16: decyzja od razu, `12` s) | `p5_ai.js: perceiveThink, missLost` |
 | wieść o śmierci (1.17) | co `0.25` s najwyżej jedna para "wie - nie wie" na każdą śmierć | `p5_ai.js: perceiveThink` |
@@ -119,7 +131,15 @@ Ważne:
 | objazd (zły skręt) | trwa do `10` s, potem przerwa `15` s | `p5_ai.js: maybeDetour` |
 | przygotowanie przed groźnym pokojem | od 1.12.1 `max(3, talkLen)` s (do 1.12: `2.4` s), potem przerwa `4` s, bieg `6` s | `p5_ai.js: startPrep, finishPrep` |
 | blokada odwrotu po odpoczynku | `15` s | `p5_ai.js: partyThink` |
-| cierpliwość fali | `S.waveTime` = `120` s (suwak 60-300), siatka bezpieczeństwa +`60` s | `p6_loop.js: step` |
+| cierpliwość fali | `S.waveTime` = `120` s (suwak 60-300); od 1.24 wyczerpanie +`60` s, siatka bezpieczeństwa +`150` s (do 1.23 siatka +`60` s) | `p6_loop.js: step` |
+| druga grupa (1.19) | rozejście w `20` s albo nic z tego; scalenie najwcześniej po `8` s; zwiad do `40` s (foch i bunt `25` s) | `p5_ai.js: g2Start, g2Think` |
+| bunt (1.19, 1.24) | od `20` s fali, `25%/s`, raz na falę | `p5_ai.js: mutinyThink` |
+| niespokojny rozłam (1.19, 1.24) | od `15` s, `6%/s`, najwyżej 2 rozłamy na falę | `p5_ai.js: riftThink` |
+| dzielenie się (1.20) | co `1` s; odnowienie `8` s na bohatera, `4` s na drużynę, `10` s po podaniu amuletu | `p5_ai.js: shareThink` |
+| więzi (1.21) | pierwsze słowo pary `4-20` s po wejściu (porzucone po `25` s); w small talku raz na `30` s; mistrz `25` s; rywal `12` s (1.24) | `p5_ai.js: bondThink, bondTalk, mentorWatch, rivalJab` |
+| zakład (1.21, 1.24) | od `8` s, raz na falę, rozglądanie raz na sekundę, zakład `8` s, odwołany po `12` s | `p5_ai.js: betThink, betStart, betEnd` |
+| finał (1.22) | przekazanie co `6` s (najwyżej 2), bastion `8` s, poświęcenie `6 + 0,6/krok` s, "ty pierwszy" co `40` s (najwyżej 2), wycofanie rannego `4` s | `p5_ai.js: finalThink` (6.13) |
+| Nemezis (1.23) | odpowiedź `3,5` s po wejściu; uraza `25` s; rozmowa o nagrodzie `6-60` s; przechwałka co `10` s (najwyżej 2) | `p5_ai.js: nemesisThink` (6.14) |
 
 ### 6.1.3 Obiekt drużyny (`p3_flow.js: freshParty`)
 
@@ -168,6 +188,13 @@ Jeden obiekt `fl.party` (dalej `P`) na falę; tworzony w `setupFl`, częściowo 
 | `lookCd` | `0` | 1.17: przed tym czasem nie ma nowego rozglądania (`time + 18` po końcu poprzedniego) |
 | `sound` | `null` | 1.17: dźwięk zza ściany, który słyszał przywódca `{x, y, t, room}` (wpływa na wybór celu przez 25 s) |
 | `soundCd` | `0` | 1.17: przed tym czasem `hearFar` nic nie robi (`time + 10`) |
+| `g2` | brak | 1.19: druga grupa `{leaderId, ids (Set), plan, target, born, why, until, said, apart?, partner?}` (6.10) |
+| `mutinyDone`, `mutinyHome`, `sulkAfter`, `convoNot` | brak | 1.19: bunt w tej fali już był; kiedy po wygranym buncie idą do domu; kto i kiedy odchodzi obrażony `{id, at}`; kogo wykluczyć z rozmowy po kwestii `{key, ids}` |
+| `shareT`, `shareCd`, `gifts`, `lootedDead`, `lootRivals`, `rivalSeen` | brak | 1.20: zegar i odnowienie dzielenia się, haki dla 1.21-1.22 (6.11) |
+| `bondAt`, `bondT`, `quarrels`, `betDone`, `betTried` | brak | 1.21: pierwsze słowo par, ostatnie słowo pary, pary po kłótni, zakład w fali, próby zakładu (6.12) |
+| `hurt` | brak | 1.22: `Map` pułapka -> Set id bohaterów, których zraniła w tej fali (`damageRaw`; "nie tędy") |
+| `fin` | brak | 1.22: stan finału fali (`finOf`, 6.13) |
+| `nem` | brak | 1.23: stan Nemezis w fali (`nemOf`, 6.14) |
 
 Pola dopisywane w trakcie: `rescuerId` (kto uwalnia), `fogDone` (pokoje mgły już "przebłądzone" przez lidera), `blockT`, `blockSaid`, `liftT` (zamknięta krata), `gateDetourUntil` (objazd przez kratę), `lootClaim` (Map: pole łupu -> id bohatera), `lootWaitId`, `lootWaitT` (lider czeka na zbierającego), `ambushSaid`, `loggedPlan` (do logu, tylko prototyp). Od 1.17 także: `lookAsk` (`{room, at}`: przywódca wszedł do nowego pokoju, rzut na rozglądanie po 0,9 s), `lookRolled` (Set pokoi, w których już rzucano), `seen` (obiekt `id -> {x, y, t}`: gdzie przywódca ostatnio widział albo słyszał każdego), `searchGoal` (pole, do którego przywódca wraca po zgubionego: ostatnie znane miejsce), `rescueQ` (lista uwięzionych czekających na ratunek, gdy ratują już kogoś innego), `lastL` (id przywódcy z poprzedniego `partyThink`; nowy przywódca przynosi swój plan, 6.3.13), `queueCur` i `sayingQ` (kolejka w trakcie obsługi i kwestia właśnie mówiona, 6.7.3).
 
@@ -190,6 +217,7 @@ Pola `R` używane przez AI: `avoid` (waga omijania zagrożeń), `learn` (szansa 
 | stany chwilowe | `slowUntil`, `burnUntil`, `cageUntil`, `cageIt`, `fallUntil`, `gone`, `fellFrom` (Set zapadni), `deepFall`, `napped`, `napUntil`, `restAt`, `dreamSaid`, `lullUntil/lullK/lullRoom`, `healCallT`, `glanceT` |
 | mowa | `bubble` (`{text, prio, at, until, loud}`), `saidUntil`, `sayQ` (lista kwestii czekających), flagi "raz na falę": `ghostSaid`, `shadeSaid`, `batSaid`, `spiderSaid`, `rumorSaid`, `saidTiming` (Set pułapek), `saidB` (Set: Okowy w pokoju) |
 | pamięć do karczmy | `felt` (Map: pułapka -> ile go zraniła/przestraszyła; sekcja 03), `fearBy`, `dmgBy`, `trauma`, `phobiaSeen`, `known` |
+| 1.17.1 | `saw` (`Set` tagów: co widział albo poczuł w tej fali; tworzony w `spawnHero`), `sawAt` (`Map` tag -> czas pierwszego zobaczenia, przy pierwszym `sawAdd`); 6.7.10 |
 | 1.17 (dopisywane w trakcie) | `plan` (plan drużyny, który zna ten bohater; brak = `P.plan`, 6.3.13), `goHome` (przegłosowany na naradzie wraca sam do domu, 6.3.10a), `look` (`{kind, sub, x, y, st, it, dwell, at, done}`: co ogląda przy rozglądaniu się, 6.3.3a), `lostAt`, `lostNoticed` (kiedy się zgubił i czy przywódca już to zauważył), `cagedAt` (kiedy zamknęła się klatka), `healFor`, `healForUntil` (kapłan: kto go wołał i do kiedy idzie najpierw do niego), `avoidM` (wojownik: potwór, którego omijanie już skomentował) |
 
 `h.rtSaid` jest tworzone, ale nieużywane (kod używa `fl.rtSaid`), patrz 6.8.
@@ -209,6 +237,7 @@ Pola `R` używane przez AI: `avoid` (waga omijania zagrożeń), `learn` (szansa 
 | `boss` | przy sercu, wyważa kryształ | `onEnter` przy sercu w planie `assault` | plan nie `assault`, `exiting`, panika |
 | `caged` | w klatce | `p4_traps.js: cageHero` | `freeCaged`, `cageEnds` |
 | `fallen` | spada przez zapadnię (`gone = true`) | `p4_traps.js: fall` | `landFallen` po `fallUntil` |
+| `loot` | 1.20: klęczy przy ciele i przeszukuje je (`h.lootIt`, `timer` 1,0 s, złodziej 0,5 s) | `pickup` stosu z `body` | koniec: `bodyLoot`; wyjście, panika, ucieczka przerywają (nic nie bierze); rana nie |
 
 ```
               +-------------------- needPlan / thinkT --------------------+
@@ -252,6 +281,10 @@ Intencja to "po co idzie" (ustawiana w `planHero`, czytana przez innych):
 | `panic` | spanikowany | wyjście (jeśli ucieka) albo daleki znany punkt |
 | `exit`, `carry` | idzie do wyjścia; niesie kryształ | najbliższe wyjście |
 | `avoid` | wojownik omija potwora (tylko chwilowo, nadpisywane, 6.8) | - |
+| `pry` | 1.20: z łomem albo złodziej idzie do zamkniętej kraty, gdy drużyna czeka | pole przy kracie |
+| `escort` | 1.22: strażnik niosącego kryształ (6.13.1) | `escortGoal` |
+| `first` | 1.22: wysłany "ty pierwszy" do pokoju z pułapką (6.13.5) | `firstInto.goal` |
+| `lead` dla przywódcy drugiej grupy, `rescue`, `search` w ratunku | 1.19, 1.21: `g2Goal`, `rescueJob` (6.10, 6.12.4) | |
 
 ### 6.1.7 Plany drużyny `P.plan`
 
@@ -262,7 +295,8 @@ Intencja to "po co idzie" (ustawiana w `planHero`, czytana przez innych):
 | `retreat` | idą do najbezpieczniejszego pokoju i odpoczywają |
 | `flee` | cała drużyna ucieka (strach) |
 | `escape` | mają kryształ: wszyscy do wyjścia |
-| `leave` | koniec cierpliwości (narada zdecydowała "do domu" albo nie było wyboru) albo serce ich odepchnęło: wracają do domu |
+| `leave` | koniec cierpliwości (narada zdecydowała "do domu" albo nie było wyboru), serce ich odepchnęło albo (1.24) wyczerpanie: wracają do domu |
+| `regroup`, `rescue` | 1.19, 1.21: tylko plan drugiej grupy (`P.g2.plan`): wracają do reszty / idą po partnera (6.10, 6.12.4) |
 
 ```
 explore --(serce znane przywódcy: heartP(), przeszukali dość albo minął limit, avgHp grupy >= 0.5)--> assault
@@ -467,9 +501,12 @@ h.path.shift(); h.nx, h.ny = n; h.prog = 0
 r = roomOf(h.x,h.y); changed = r >= 0 && r !== h.enteredRoom
 if r >= 0: h.room = r; h.enteredRoom = r
 reveal(h)
+1.17.1: if changed: sawRoom(h, r)                                // co widzi, wchodząc (6.7.10), przed kwestiami pokoju
 if r >= 0 && fl.rooms[r].kind === 'room':
    if !R.visited: R.visited = true
    if R.rt && !exiting(h) && r nie w fl.rtSaid: fl.rtSaid.add(r); say(h, SAY[RT_SAY[rt]], 3)   // pierwszy w pokoju z charakterem
+   1.17.1: if SAY.rkEnter['k_' + R.rk] && !exiting(h) && r nie w fl.rkSaid:                   // pierwszy w pokoju z komnatą
+      fl.rkSaid.add(r); stats.rkEnter++; say(h, SAY.rkEnter['k_' + R.rk], R.rt ? 2 : 3)
    if changed && h jest liderem: maybeDetour(h, r)                                              // 6.2.11
       1.17: if !P.detour: P.lookAsk = {room: r, at: time + 0.9}                                  // rzut na rozglądanie się (6.3.3a)
    if changed && !exiting(h): phobiaSight(h, r)                                                // sekcja 05
@@ -487,7 +524,9 @@ if mag && h.R.sight && pokój kind 'room' && !R.sensed && !exiting(h) && !inB('r
 h.needPlan = true
 ```
 
-`RT_SAY` (`p5_ai.js`): `fog: 'rtFog', swamp: 'rtSwamp', grotto: 'rtGrotto', crypt: 'rtCrypt', vault: 'rtVault', haven: 'rtHaven', gears: 'rtGears', hush: 'rtHush', ice: 'rtIce'`. `fl.rtSaid` żyje jedną falę.
+`RT_SAY` (`p5_ai.js`): `fog: 'rtFog', swamp: 'rtSwamp', grotto: 'rtGrotto', crypt: 'rtCrypt', vault: 'rtVault', haven: 'rtHaven', gears: 'rtGears', hush: 'rtHush', ice: 'rtIce'`. `fl.rtSaid` i (1.17.1) `fl.rkSaid` żyją jedną falę.
+
+Kwestia komnaty (1.17.1, `SAY.rkEnter`, 9 na komnatę) pada bez warunku `changed`, jak kwestia efektu, i nie zależy od pamięci (kwestie `rkEnter` nie mają tagów w `LINE_NEEDS`). W pokoju z efektem i komnatą ma priorytet 2 po kwestii efektu z priorytetem 3: gdy ten sam bohater właśnie dostał dymek efektu, `say` odrzuca kwestię komnaty (aktywny dymek o wyższym priorytecie, 6.7.2), a `fl.rkSaid` i `stats.rkEnter` są już ustawione, więc w takim pokoju kwestia komnaty zwykle przepada (6.8 #35).
 
 ### 6.2.8 Lodownia: ślizg (`p5_ai.js: onEnter, slipChance`)
 
@@ -847,11 +886,12 @@ scenka odpoczynku (restScene): mówią tylko ci, którzy już siedzą razem (sam
 ```
 leader():
   L = byId(P.leaderId)
-  if !L || L.dead || L.fled || L.gone || L.lost || L.goHome || panicking(L) || caged(L) || (L.fleeing && P.plan !== 'flee'):
+  if !L || L.dead || L.fled || L.gone || L.lost || L.goHome || panicking(L) || caged(L) || (L.fleeing && P.plan !== 'flee') || inG2(L):
      c = alive() bez: zgubionych, wracających samotnie (goHome, 1.17), panikujących, w klatce, uciekających
-         (uciekający dopuszczeni tylko w planie 'flee')
+         (uciekający dopuszczeni tylko w planie 'flee'), od 1.19 członków drugiej grupy
+     if !c.length && P.g2 && ktoś żyje w drugiej grupie: g2End('last'); return leader()     // 1.19: została tylko druga grupa: jest drużyną
      away(o) = onScout(o) || o.split ? 1 : 0                // 1.17: kto jest na własnym wypadzie, prowadzi tylko, gdy nie ma nikogo innego
-     c.sort: away rosnąco, potem rank malejąco, przy remisie indeks typu w LEADER_ORDER rosnąco
+     c.sort: away rosnąco, potem rank malejąco, potem (1.23) Nemezis przed innymi, przy remisie indeks typu w LEADER_ORDER rosnąco
      L = c[0] || alive()[0] || null
      P.leaderId = L ? L.id : -1
   return L
@@ -877,6 +917,7 @@ Od 1.17 nowy przywódca przynosi swoją wiedzę: gdy w `perceiveThink` przywódc
         planHero lidera bez własnej pracy, więc lider zajęty łupem trzymał stary objazd i blokował nowe pomyłki, mgłę i zwiad przodem)
  5a 1.17: perceiveThink(L, crew): plan bohaterów, ostatnie znane miejsca, zauważenie zgubionego, wieści o śmierci (6.3.13)
  5b 1.17: if P.council: councilThink(L) (6.3.10a)
+    1.19: g2Think(L); sulkThink(L) (6.10)
  5c 1.17: ratowany już nie w klatce (albo nie żyje) -> P.rescueId = P.rescuerId = -1; następny z P.rescueQ, który wciąż siedzi (6.5.9)
  5d 1.17: lookThink(L, crew): rzut na rozglądanie się (P.lookAsk), przebieg i koniec (6.3.3a)
  6  lider błądzi we mgle (6.2.10)
@@ -884,11 +925,13 @@ Od 1.17 nowy przywódca przynosi swoją wiedzę: gdy w `perceiveThink` przywódc
     if h === L: h.lost = false; h.sepT = 0; dalej następny
     odnalezienie albo zgubienie (6.2.10); zgubiony: strach 4/s, Groza, wołanie (6.2.10)
  8  podanie mikstury przyjacielowi (6.5.8)
+ 8a 1.20: shareThink(crew, L, dt) (6.11.4); 1.21: bondThink(crew, L) (6.12); 1.22: finalThink(crew, L, dt) (6.13); 1.23: nemesisThink(crew, L) (6.14)
  9  if !L: return
 10  if P.prep && time >= P.prep.until: finishPrep() else if !P.prep: checkPrep(L)          (6.3.8)
 11  każdy w klatce, a nie w P.cageDecided: decideCage(h, L), od 1.17 tylko gdy przywódca słyszy krzyk z klatki
     (canHearShout(L, h)) albo minęło 20 s od zamknięcia (h.cagedAt); P.rescueId nieważny -> -1        (6.5.9)
 12  grp = groupOf(L) (1.17; wcześniej cała załoga); avgHp = średnia hp/max grupy; fearR = średnia fear/courage grupy
+    1.19: mutinyThink(L, grp, dt, avgHp, fearR); riftThink(L, grp, dt) (6.10)
 13  zwiadowca: następna granica albo powrót (6.3.3); zwiad przodem (6.3.3); koniec czekania na zwiadowcę; partner (6.2.10a)
 14  zmiana planu:
       goingOut():        nic (wszyscy do wyjścia)
@@ -898,10 +941,10 @@ Od 1.17 nowy przywódca przynosi swoją wiedzę: gdy w `perceiveThink` przywódc
 15  if !goingOut() && (fearR > [0.75, 0.85, 0.95, 1][L.rank] || (P.morale < 0.2 && L.rank < 2)): partyFlee()   (6.6.3)
 16  przeszukanie i decyzja o szturmie (6.3.4)
 17  P.searchId nieważny -> -1 (6.2.10)
-18  plan 'explore': cel ważny? inaczej chooseTarget(L) (6.3.3); brak celu i heartP() -> assault
+18  plan 'explore': cel ważny? inaczej chooseTarget(L) (6.3.3) i od 1.22 notThisWay(L, crew) (6.13.7); brak celu i heartP() -> assault
 19  zamknięta krata (6.3.11)
 20  zasadzka (6.3.12)
-21  small talk (6.7.6)
+21  small talk (6.7.6); od 1.21 wybrany z więzią w 25% mówi zamiast tego słowo do partnera (6.12.2)
 22  wołanie o kapłana (6.5.3)
 23  lider czeka na zbierającego łup (6.4.5)
 24  lider czeka na maruderów (6.2.12)
@@ -1388,12 +1431,12 @@ if gateShut && L.blocked >= 0 && !goingOut():               // ostatni plan lide
       if plan 'explore': chooseTarget(L); replanAll()
       moved = plan 'explore' && P.target >= 0 && (P.target !== before || wasPlan !== 'explore')
       if !moved && wasPlan 'assault': plan = 'assault'; P.gateDetourUntil = 0
-      L: (moved ? SAY.gateReroute : SAY.gateWait) (3, dur 2.2); if !moved: P.liftT = 0
+      L: (moved ? SAY.gateReroute : SAY.gateWait) (3, dur 2.2), 1.17.1 w sayNow(['gate']); if !moved: P.liftT = 0
    if P.blockSaid && plan !== 'explore':                     // czekają: złodziej podważa kratę
       door = najbliższe lidera zamknięte drzwi
       th = złodziej nie panikujący, nie uciekający, w odległości <= 1.6 od tych drzwi
       if na drzwiach stoi Krata && th:
-         pierwszy raz: th mówi SAY.gateLever (3, dur 2; do 1.16 jedna kwestia zaszyta w kodzie)
+         pierwszy raz: th mówi SAY.gateLever (3, dur 2; do 1.16 jedna kwestia zaszyta w kodzie); 1.17.1: sawAdd(th, ['gate']), sayNow(['gate'])
          P.liftT += dt * (th.lvl >= 6 ? 1.5 : 1)
          if P.liftT >= 3: drzwi otwarte; krata disabled + detected; threatDirty; replanAll()
 else: P.blockT = 0; P.liftT = 0; if !gateShut: P.blockSaid = false
@@ -1405,7 +1448,7 @@ Gdy drzwi się otworzą (`step`), wszyscy przeplanowują. Złodziej nie ma osobn
 ### 6.3.12 Inne odruchy drużyny
 
 - **Zasadzka** (`partyThink` krok 20): `fireRaw` przy każdej pułapce, która objęła kogoś z grupy przywódcy (od 1.17: trafiony to przywódca albo widzi go lub słyszy; do 1.16 ktokolwiek w lochu), robi `ambushN++` jeśli poprzednia była mniej niż 3 s temu (inaczej `ambushN = 1`) i `ambushT = time`. Gdy `ambushN >= 3`, `time - ambushT < 0.6` i od ostatniej zasadzki minęło ponad 12 s (`P.ambushSaid`): `ambushN = 0`, `talk(1.0, [SAY.ambush])`, każdy z grupy przywódcy (od 1.17; wcześniej każdy żywy) +6 strachu (`'ambush'`). Kapłan traktuje każde liczone trafienie w ostatnich 2 s (`P.ambushT`) jako powód do bariery (6.5.3).
-- **Kontr-budowle** (`partyThink` krok 7): pierwszy, kto wejdzie do pokoju z budowlą `altar`, `rune`, `acid`, `veil`, `howl` albo `shackles`, mówi `SAY.b<Typ>` (3), raz na pokój i typ w fali (`fl.bSaid`). Pierwszeństwo ma klasa, której budowla szkodzi (Ołtarz: kapłan, Runa: mag, Kwas: wojownik, Kamień wyjec: bard, Okowy: barbarzyńca), jeśli jest w tym pokoju; Zasłona nie ma preferencji. Umocnienie (`fortify`) i Wabik nie mają kwestii przy wejściu (Wabik wygląda jak pułapka).
+- **Kontr-budowle** (`partyThink` krok 7): pierwszy, kto wejdzie do pokoju z budowlą `altar`, `rune`, `acid`, `veil`, `howl` albo `shackles`, mówi `SAY.b<Typ>` (3), raz na pokój i typ w fali (`fl.bSaid`). Pierwszeństwo ma klasa, której budowla szkodzi (Ołtarz: kapłan, Runa: mag, Kwas: wojownik, Kamień wyjec: bard, Okowy: barbarzyńca), jeśli jest w tym pokoju; Zasłona nie ma preferencji. Umocnienie (`fortify`) i Wabik nie mają kwestii przy wejściu (Wabik wygląda jak pułapka). Od 1.17.1 mówiący dostaje typ budowli do pamięci, a kwestia idzie w `sayNow([typ])` (6.7.10).
 - **Serce znalezione**: patrz 6.3.4 (`heartSeen`/`heartLater`) i 6.3.13 (kiedy przywódca o nim wie).
 
 ### 6.3.13 Percepcja i plany bohaterów: nikt nie wie przez ściany (1.17, `p5_ai.js: planOf, goingOutH, exiting, hushAt, canSee, canHear, stepsWithin, canHearShout, perceives, groupOf, heartP, heartTold, perceiveThink, missLost`; `p3_flow.js: kill, startFlee, partyFlee, crystalReturns, damage, fearResist`; `p6_loop.js: takeCrystal, step`)
@@ -1481,6 +1524,24 @@ Każdy, kto zobaczył albo usłyszał, trafia do `d.knows`. Morale -0,25 raz, gd
 
 Test: `tests/t117_ai.py` (bohater pokoje dalej nie reaguje na śmierć od razu, przywódca obok ją widział, dalszy dowiaduje się, gdy dołączy: wie, boi się, `newsDeaths >= 1`; sekcja 09).
 
+### 6.3.14 Karty zachowań bohaterów (1.18; teksty i liczby kopii w załączniku B)
+
+| Karta | Co zmienia w decyzjach bohaterów | Kod |
+|---|---|---|
+| Wabiący hałas (`lure`) | dźwięk pułapki zza ściany (`P.sound`) liczy się przez `25 + 15 × kopie` s (40 s) i ciągnie każdego przywódcę: `sndK = -2,5` (bez karty: odważny, chciwy, nowicjusz -2,5; ostrożny, tchórz +2; inni -1); `hearFar` i Głusza bez zmian | `chooseTarget` |
+| Jeszcze chwila (`onemore`) | głos "jeszcze chwila" +0,6 × kopie (×2 dla chciwego i łowcy); wynik "jeszcze chwila" daje `30 + 15 × kopie` s (45 s), podpowiedź mówi liczbę sekund; dalej raz na falę | `councilVote`, `councilDone` |
+| Grube mury (`thickwalls`, jedna) | krzyk niesie się 8 kroków zamiast 14 (`shoutRange`): później docierają śmierć, klatka, kryształ, ucieczka, okrzyk czempiona i przepowiedni, wołanie kapłana, Krzyki w ścianach | `shoutRange`, `canHearShout` |
+| Niosące się echo (`farecho`) | krzyk z Groty sięga `14 × (1 + kopie)` (28; z Grubymi murami 16); kto tylko słyszy śmierć w Grocie, boi się jak świadek | `shoutRange`; `p3_flow.js: kill` |
+| Złe wieści (`badnews`) | śmierć znana ze słuchu albo od towarzysza straszy ×(1 + kopie); świadkowie i Odnalezione ciało bez zmian | `kill`, `perceiveThink` |
+| Odnalezione ciało (`body`) | `kill` zapisuje, gdzie leży ciało (`d.x, d.y, d.room, d.hush`); kto nie wie o śmierci i jest w tym samym miejscu (`samePlace`), dowiaduje się tam: strach jak świadek `max(15 × panic, 0,12 × odwaga + 4)` ×2 Głusza ×2 Krypta ×1,5 tchórz ×(1 + 0,5 × (kopie - 1)), wstrząs 9 s, morale -0,25 dla przywódcy, `SAY.bodyFound` (sam: `SOLO.bodyFound`); od 1.21 partner zmarłego: żałoba zamiast tego (6.12.3) | `perceiveThink` |
+| Fałszywe wołanie (`falsecall`, jedna) | zgubiony wołający w promieniu 14 (koszt drogi) od Nawiedzonej sali (nie swojego pokoju), gdy nikt nie odpowiada albo w 60%: `h.hearGoal` = pole najbliższe środka sali, `hearUntil +7 s`, `SAY.hearVoice`; idzie tam każdą drogą, zostaje zgubiony | `answerLost`, `falseCall`, `planHero` |
+| Błędne ogniki (`wisps`) | przywódca błądzący we Mgle idzie na pole w zasięgu nieznanej pułapki tego pokoju najbliższe jemu (co najmniej 1 pole), błądzi o `2 × kopie` s dłużej (od 1.20 latarnia skraca błądzenie o połowę, te 2 s zostają) | `partyThink` |
+| Zastawione szuflady (`drawers`) | w Graciarni szansa rozglądania się +0,3 × kopie; pułapka na przeszukiwanym meblu odpala z `min(0,95; SEARCH_TRAP × (1 + kopie))`: mimik 0,55 -> 0,95, pozytywka 0,45 -> 0,9, proch 0,2 -> 0,4 | `lookRoll`, `lookDone` |
+| Podrzucone grosze (`coins`) | szansa monety w meblu ×(1 + kopie) (0,18 / 0,3 -> 0,36 / 0,6); znaleziona moneta podbija chciwość `LOOT_GREED.gold[0] × greedMult × (1 + goldDust) / (1 + 0,15 × lootSeen)` i liczy się do `lootSeen` | `lookDone` |
+| Zepsute mikstury (`tainted`) | mikstura z Twojego łupu (nie upuszczona przez bohatera) dostaje `item.tainted`; wypita (sam, przed groźnym pokojem, podana przez przyjaciela) leczy ×0,5 i straszy 0,1 × odwaga × max(1, kopie) | `pickup`, `taintedSip`, `updateHero`, `startPrep`, `partyThink` |
+| Usypianka (`lullsleep`) | ranny (< 60% HP), na którego gra kołysanka w Pokoju dziecięcym, nie drzemał w tej fali, stoi, idzie, rozmawia albo czeka (nie w klatce, bez paniki, nie wychodzi, nie płonie): drzemka jak w Sanktuarium na `4 + 2 × (kopie - 1)` s z `h.dream`, `SAY.lullNap`; we śnie koszmar 3,5 strachu/s i leczenie ×0,5, `SAY.lullDream` | `partyThink`, `updateHero` |
+| Zasadzka w norze, Kokony, Spłoszeni w mrok, Gołoledź, Grzęzawisko, Sen bez przebudzenia, Spojrzenie z ramy | ukryci potwory nie są omijani, nie przerywają rozglądania, wojownik ich nie wybiera; reszta: sekcja 05, 5.13.1 | `planHero`, `lookRoll` |
+
 ## 6.4 Łupy
 
 Rodzaje łupu (`LOOT_KIND.json`, rzadkość z `ITEMS.json`): `loot` = złoto (rzadkość 1), `lpotion` = mikstura (1), `loot2` = ekwipunek (2), `loot3` = relikwia (3), `lcursed` = przeklęty skarb (2, wygląda jak ekwipunek). `lootLevel(it) = ITEMS[it.type].rarity || 0`. Łup upuszczony przez bohatera (`dropItem`) ma `dropped = true` i dokładny przedmiot w `it.item` albo złoto w `it.gold`.
@@ -1504,6 +1565,8 @@ noticeLoot(it, by); (lcursed: checkCursed(it)); return true
 - inaczej: mikstura -> `SAY.lootPotionSeen` (2; do 1.16 trzy kwestie zaszyte w kodzie); reszta -> `SAY['loot' + min(3, r)]` (prio `r >= 2 ? 3 : 2`).
 
 Łup "widziany" (`seenWave === run.wave`) jest celem dla wszystkich (wiedza wspólna). Łup z plotki jest widziany od początku fali (6.3.5).
+
+1.17.1: bez `by` `noticeLoot` kończy się po Chciwości; z `by`: `sawAdd(by, itemTags(it))`, a kwestia idzie w `sayNow(itemTags(it))`, więc musi pasować do rodzaju tego łupu (6.7.10). Do pamięci innych łup trafia przez `sawSweep` (łup jest zawsze widoczny w swoim pokoju).
 
 ### 6.4.2 Przeklęty skarb (`p5_ai.js: checkCursed`)
 
@@ -1625,7 +1688,7 @@ Po śmierci cały ekwipunek i złoto bohatera wypadają jako łup (`kill`, sekcj
 
 ### 6.4.7 Klątwa (`p3_flow.js: curse`)
 
-Wzięcie `lcursed`: `h.cursed = true`, przedmiot do plecaka po cichu (jeśli jest miejsce), `SAY.cursedPick` (3, dur 2.2). Skutki: obrażenia x1,3, przedmioty słabsze o połowę (`itemPow`), moce dłużej się odnawiają (x1,5), strach +2/s, wygasanie strachu o połowę wolniej (sekcja 05). Zdejmuje ją kapłan poz. 4+ za 3 wiary (6.5.3).
+Wzięcie `lcursed`: `h.cursed = true`, przedmiot do plecaka po cichu (jeśli jest miejsce), `SAY.cursedPick` (3, dur 2.2; od 1.17.1 `sawAdd(h, ['cursed'])` i kwestia w `sayNow(['cursed', 'gear'])`). Skutki: obrażenia x1,3, przedmioty słabsze o połowę (`itemPow`), moce dłużej się odnawiają (x1,5), strach +2/s, wygasanie strachu o połowę wolniej (sekcja 05). Zdejmuje ją kapłan poz. 4+ za 3 wiary (6.5.3).
 
 ## 6.5 Zachowania klas, przedmioty, klatka, zapadnia
 
@@ -1688,20 +1751,23 @@ potem: walk, needPlan
 spend(n): faith >= n -> faith -= n, true; inaczej raz SAY.faithLow (3), false
 1 klątwa (poz. 4+, faith >= 3): 1.17: najpierw przeklęty przyjaciel w near, potem on sam -> spend(3): cursed = false; cast 3;
      przyjaciel: SAY.curseLift z imieniem (3); on sam: SAY.curseSelf (3, 1.17); return
-2 leczenie (1 wiara), gdy ktoś płonie || najsłabszy w near < 0.75 max || suma brakującego HP w near > 0.6 * jego max:
-     cast 3; płonący: gaszenie zamiast leczenia; reszta: +min(22 * R.pow * ak, brakujące)
+2 leczenie (1 wiara), gdy ktoś płonie (albo krwawi) || najsłabszy w near < 0.75 max || suma brakującego HP w near > 0.6 * jego max:
+     cast 3; płonący: gaszenie zamiast leczenia (burnUntil = time); reszta: +min(22 * R.pow * ak, brakujące)
+     1.17.1: cleansed = (cleansed === 'fire' || o.burnBy !== 'spikes') ? 'fire' : 'blood'   // choć jeden płonący = ogień
 3 duchy, cienie, nietoperze w odległości <= 3 (pozycja unoszenia): gdy cast === 3 (modlił się) albo faith > 0:
      cast 3; każdy dostaje 25 * R.pow * ak (gratis, część modlitwy)
-4 Ołtarz i wyleczył: z szansą 0.25 SAY.bAltar (2)
-5 gaszenie: SAY.cleanse (3)
+4 Ołtarz i wyleczył: z szansą 0.25 SAY.bAltar (2), 1.17.1 w sayNow(['altar'])
+5 gaszenie: stats.cleanses++; 1.17.1: cleansed === 'fire' -> sayNow(['fire'], SAY.cleanse (3))
+                                   cleansed === 'blood' -> sayNow(['spikes', 'blood'], SAY.staunch (3))   // tamuje krwawienie
 6 bariera (3 wiary): barrierCd <= 0 && near >= 2 && (pułapka trafiła kogoś < 2 s temu || ktoś w near < 0.45 max) && faith >= 3:
      shield = max(shield, 12 * R.pow * ak) każdemu w near; barrierCd = 14; SAY.barrier (3); cast 3
 7 wyleczył: Groza dla gracza (healed / h.max * GZ.heal * depthMult, sekcja 03); SAY.heal (1), chyba że gasił
 ```
   Do 1.16 kapłan modlił się także w panice i w ucieczce (6.8 #16, naprawione w 1.17).
+  Do 1.17 krwawienie z kolców (`burnBy 'spikes'`, sekcja 05, 5.3.2) też było "gaszone" kwestią `SAY.cleanse` ("Gaszę ogień!"); od 1.17.1 kapłan, który zatamował tylko krwawienie, mówi `SAY.staunch` (6 kwestii, sam: `SOLO.staunch`, 3). Gdy w `near` płonie choć jeden, mówi `cleanse`. Obie kwestie idą w `sayNow` (6.7.10), więc filtr dopuszcza tylko kwestie o ogniu albo o krwi i kolcach.
 - **Idzie do rannego** (`planHero` praca nr 3): od 1.17 najpierw ten, kto go wołał (`healFor`, przez 10 s, koszt drogi <= 20), inaczej najsłabszy z `hp < 0.5 max`, dalej niż 2,5, koszt drogi <= 12.
 - **Wołanie o kapłana** (`partyThink` krok 22, wersja 1.05): gdy jest kapłan (nie zgubiony, nie panikuje, nie w klatce), każdy inny z `hp < 0.4 max`, który nie wychodzi, nie zgubiony, nie w klatce, nie panikuje, jest dalej niż 3 od kapłana i nie w Głuszy, od 1.17 tylko gdy kapłan słyszy jego krzyk (`canHearShout(pr, h)`), najwyżej co 14 s: `SAY.callHealer` z imieniem kapłana (2), kolejka kapłan `SAY.healerReply` (+1,1), `kapłan.needPlan`, od 1.17 `pr.healFor = h.id`, `pr.healForUntil = time + 10` (do 1.16 kapłan odpowiadał z dowolnej odległości, a potem szedł do najsłabszego, niekoniecznie do wołającego).
-- **Zdejmowanie klątwy z portretów** (`blessJob`, praca nr 7, ranga 1+, `faith >= 1`): znane, nieodczynione straszaki z `CURSED` (`portrait`, `eyes`, `bones`, `mirror`) w odległości <= 8 od lidera, których nikt inny nie bierze; najbliższe miejsce z `disarmSpots`. Na miejscu: `faith--`, stan `disarm`, `timer = 1.5 * R.disarm * (Ołtarz ? 2 : 1)`, `SAY.bless` albo `SAY.bAltar` (3). Na koniec bez szansy wpadki i bez saperki: odczyniony do końca fali, kwestia `SAY.blessDone` (1.17); przerwany odpaleniem: `SAY.blessHit` (1.17).
+- **Zdejmowanie klątwy z portretów** (`blessJob`, praca nr 7, ranga 1+, `faith >= 1`): znane, nieodczynione straszaki z `CURSED` (`portrait`, `eyes`, `bones`, `mirror`) w odległości <= 8 od lidera, których nikt inny nie bierze; najbliższe miejsce z `disarmSpots`. Na miejscu: `faith--`, stan `disarm`, `timer = 1.5 * R.disarm * (Ołtarz ? 2 : 1)`, `SAY.bless` albo `SAY.bAltar` (3; od 1.17.1 `bAltar` w `sayNow(['altar'])`). Na koniec bez szansy wpadki i bez saperki: odczyniony do końca fali, kwestia `SAY.blessDone` (1.17); przerwany odpaleniem: `SAY.blessHit` (1.17).
 - **Wyczuwa przeklęty skarb** (poz. 6+, 6.4.2). **Osłona przed groźnym pokojem** (6.3.8). Kapłan rangi 1+ uspokaja innych w promieniu 3 (mniej strachu, sekcja 05). Żaden kapłan nie idzie po legendarny łup w nieznane (6.4.3).
 
 ### 6.5.4 Mag
@@ -1924,8 +1990,13 @@ Stałe (`p3_flow.js`): `SAY_GAP = 0.3` s; `SAYQ_LIFE = [0, 1.4, 2.6, 4]` (ile sp
 ### 6.7.2 `say(h, text, prio, dur, how)` (`p3_flow.js: say`)
 
 ```
-if !h || h.dead || h.fled || h.gone || !text: return false
-prio = prio || 1
+if !h || h.dead || h.fled || h.gone || !text || !fl: return false
+prio = prio || 1; pool = null
+if fl.phase === 'raid' && aloneNow(h):                             // 1.13.1: sam (6.7.5b)
+   k = lineKey(text); kb = część k przed ':'
+   SOLO[k] || SOLO[kb]: pool = ta lista; text = losowa z pool
+   inaczej kb w SOLO_MUTE: return true                             // nie pada, "powiedziane"
+if fl.phase === 'raid': text = fitLine(h, text, pool); if !text: return true   // 1.17.1: tylko o tym, co zna (6.7.10)
 loud = how === 'loud' || prio >= 4 || inChaos(h); b = h.bubble
 if b aktywny && b.prio > prio: return false                        // ważniejsza kwestia nie daje się przerwać (bez kolejki!)
 if b aktywny && b.prio === prio && time - b.at < 0.7: return false  // ta sama waga: nie częściej niż co 0.7 s
@@ -1938,6 +2009,10 @@ hush = h.room >= 0 && isRt(h.room, 'hush')                        // Głusza: us
 t   = hush ? (loud ? '…!' : '…') : gtext(text, h.female)
 len = hush ? 1.4 : loud ? (dur || 1.9) : max(dur || 1.9, readT(t))
 h.bubble = {text: t, prio, at: time, until: time + len, loud}; h.saidUntil = time + len
+(sayHook(h, text, SAY_NOW): tylko testy, 1.17.1)
+1.17.1: lineKey(text) zaczyna się od 'saw:' -> stats.sawTalk++
+stats.lines++
+if !hush: convoAfter(h, text)                                     // może zacząć rozmowę (6.7.5a)
 if !loud:                                                         // zwraca się do słuchacza
    to = najbliższy (po tx,ty) inny w earshot; każdy inny w earshot i w odległości <= 4: lookAt(o, h.x, h.y)
    if to: lookAt(h, to.x, to.y)
@@ -1945,6 +2020,7 @@ return true
 ```
 
 - Kwestia odrzucona przez wyższy priorytet aktywnego dymka **przepada** (nie trafia do kolejki).
+- 1.17.1: `fitLine` działa przed sprawdzeniem dymka i kolejki, na tekście już zamienionym na `SOLO`. Do kolejki `h.sayQ` trafia tekst po dopasowaniu, a przy ponownej próbie z `sayTick` dopasowanie liczy się jeszcze raz (już bez rzeczy chwili, ale jej tagi są wtedy w pamięci). Kwestia, dla której nie ma pasującej, nie pada, a `say` zwraca `true` (jak przy `SOLO_MUTE`).
 - `gtext` wybiera formę wg płci: szablon `{forma męska|forma żeńska}`. **Tylko prototyp:** podmiana wyrażeniem regularnym. Odpowiednik: Unity Localization (Smart Strings) z wyborem płci mówiącego.
 
 ### 6.7.3 Kolejki
@@ -2019,10 +2095,12 @@ convoStart(A, key):
   zestaw = CONVO[key] || CONVO[CONVO_ALIAS[key]] || CONVO[klucz bazowy]; brak -> koniec
   rand > CONVO_P[key] (albo aliasu, bazowego; domyślnie 0,5) -> 'luck';  A w Głuszy -> 'hush'
   słuchacze = żywi w zasięgu słuchu A (6.7.4), nie zgubieni, nie w klatce, nie w chaosie, nie w rozmowie; brak -> 'alone'
-  pasujące wymiany: A nie zniknął/nie zginął, jeśli mówi; klasa i charakter A (ac, at); B ze słuchaczy z klasą b,
-     charakterem bt, rangą <= br i >= bv; wymiana z C wymaga 2 słuchaczy. Waga w × 1,6, gdy wymiana ma warunki
-     (pasujące do sytuacji wygrywają z ogólnymi). Brak -> 'fit'
-  B = losowy pasujący, C = losowy inny słuchacz
+  pasujące wymiany: A nie zniknął/nie zginął, jeśli mówi; klasa i charakter A (ac, at); 1.17.1: A zna wszystkie swoje
+     kwestie wymiany (knows(A, 'A'): lineOk na każdej kwestii roli A, 6.7.10); B ze słuchaczy z klasą b, charakterem bt,
+     rangą <= br i >= bv, 1.17.1: którzy znają wszystkie kwestie roli B; wymiana z C wymaga 2 słuchaczy. Waga w × 1,6,
+     gdy wymiana ma warunki (pasujące do sytuacji wygrywają z ogólnymi). Brak -> 'fit'
+  B = losowy pasujący, C = losowy inny słuchacz (1.17.1: tylko z tych, którzy znają kwestie roli C; brak -> C = null,
+     a kwestie C są pomijane przy wstawianiu do kolejki)
   t0 = max(time + 0,3, A.saidUntil + SAY_GAP); oczekiwany = t0      // od 1.13.1: od chwili, gdy A skończy kwestię, która ją zaczęła
   kwestie do P.queueSay po kolei: { id, text: convoFill(tekst), at: t0, prio 2, cv: nr wymiany, late: oczekiwany - t0 + 3,5 },
      oczekiwany += readT(tekst) + SAY_GAP + 0,1
@@ -2036,6 +2114,7 @@ kolejka (6.7.3): kwestia spóźniona o > late (od at; inne kwestie 10 s) przepad
 - `convoFill`: `{A:m|ż}` `{B:...}` `{C:...}` = forma wg płci tej osoby; `{An}` `{Aa}` `{Av}` (B, C) = jej imię (mianownik, biernik, wołacz); `{m|ż}` bez litery zostaje do `gtext` w `say` (płeć mówiącego).
 - Od 1.17 (6.7.3) rozmowę może zacząć też kwestia powiedziana z kolejki drużyny (do 1.16 `convoStart` widział w kolejce tę samą kwestię i zawsze odmawiał 'queue'). Mówiący w trakcie rozmowy drużyny (`talking`) dalej nie zaczyna wymiany.
 - Zestawy: liczby w 6.7.9; od 1.17 każdy zestaw ma ok. 3 razy więcej wymian, a nowe zestawy to `lookObj`, `lookProp:portrait`, `lookProp:mirror`, `lookProp:coffin`, `lookKind`, `lookFind`, `lookNothing`, `newsDeath`, `deathHeard`, `goHomeAlone`, `councilGiveIn`, z `CONVO_P`: `lookObj` 0,35, `lookKind` 0,45, trzy `lookProp` 0,45, `lookFind` 0,6, `lookNothing` 0,25, `newsDeath` 0,7, `deathHeard` 0,6, `goHomeAlone` 0,8, `councilGiveIn` 0,5. Zestawy z 1.13: wpadki (`trap`, `trap:web`, `trap:trapdoor`, `trap:cage`, `scare`, `trap:portrait`, `hurt`, `disarmFail`, `disarmHit`, `slip`, `cursedPick`, `panic`, `cowardRun`, `crystalDrop`), sukcesy (`disarmDone`, `dodge`, `monsterDown`, `detect`, `resistHit`, `loot1-3`, `gold`, `freed`, `found`, `steal`), moce i działania (`shield`, `heal`, `fireball`, `fight`, `smash`, `rage`, `song`, `bless`, `cleanse`, `barrier`, `charmUse`, `bootsUse`, `potion`, `timing`), lęki (`phobia:*`, `ghost`, `bats`, `spider`, `lull`, `nightmare`, `seenBuilt`), drużyna (`enter`, `champion`, `rookie`, `rookieBoast`, `vetWarn`, `elite`, `explore`, `cautious`, `heartSeen`, `assault`, `retreat`, `restDone`, `rumor`, `fame2`, `gateWait`, `nap`, `goldHeavy`, `weakHit`, `learn`, `alone`, `landed`).
+- 1.17.1: sprawdzenie `lineOk` dzieje się w chwili `convoStart`, na surowym tekście z `CONVO` (przed `convoFill`), czyli w trakcie rzeczy chwili kwestii, która zaczęła rozmowę (`SAY_NOW`, 6.7.10). Kwestie wymiany mówione później z kolejki przechodzą jeszcze przez `fitLine` w `say`, ale wypełnione znaczniki `{A:...}`, `{An}` nie pasują już do wzorców, więc dla nich liczy się tylko to sprawdzenie (6.8 #34). Nowe zestawy 1.17.1: `saw` (15 wymian, `CONVO_P` 0,45) i `rkEnter` (8 wymian, 0,4).
 - Klucze bez zestawu (np. `chat_*`, `callHealer`, `potionGive`, kwestie narady) nie zaczynają rozmów: mają już swoje odpowiedzi (`CHAT_REPLY`, kolejki 6.7.5).
 - Pomiar (10 fal testu z gęstymi pułapkami, 1.13): ok. 1,5-2,5 wymiany na falę; najczęstsze odmowy: kolejka zajęta w pobliżu, przerwa, los. Test: `tests/t113_talk.py`.
 
@@ -2059,6 +2138,7 @@ talkAs: kwestia "ktokolwiek" (null) idzie do kogoś innego niż ten, kto zaczą�
 - Rozmowy (6.7.5a) i tak wymagają słuchacza, więc samotny ich nie zaczyna.
 - 1.17: nowe klucze `SOLO` dla kwestii, które mogą paść, gdy nikogo nie ma w pobliżu: narada samotnego przywódcy (`councilOpen`, `decideHome`, `decideStorm`, `decideMore`), rozglądanie się w pojedynkę (`lookStart`, `lookEnd`), `scoutBack`, `partyFlee`, `gateLever`, `detour`, `detourBack`, `fogGrope`, `searchLost`, `leaveLost`, `heartLater`, `prophecy`, `gateReroute`, `disarm`, `chatFlee`, `rtFog`, `rtSwamp`, `rtGrotto`, `rtGears`, `rtIce`, `rtVault`, `rtHaven`, `shieldLead`, `hearSound`, `hearScream`; dotychczasowe klucze dostały ok. 3 razy więcej kwestii (liczby w 6.7.9). Kwestie `SOLO` nie mają imion (`{n}` nie jest wypełniane).
 - 1.17: `SOLO_MUTE` dostało kwestie specjalistów przygotowania (`prepWard`, `prepJam`, `prepDisarm`, `prepShield`): samotny nie mówi, co zrobi dla drużyny.
+- 1.17.1: `SOLO_MUTE` dostało `saw` (o tym, co widział, sam nie mówi; small talk samotnego i tak nie bierze `sawTalk`), a `SOLO` klucz `staunch` (3 kwestie: kapłan sam tamuje sobie krwawienie). Kwestia z `SOLO` przechodzi przez filtr pamięci jak każda inna, a zamiennik jest losowany z tej samej listy `SOLO` (`fitLine(h, text, pool)`, 6.7.10).
 - 1.17: dzięki wzorcom w `lineKey` (6.7.5a) kwestie z imieniem też mają klucz, więc samotny dostaje ich wersję `SOLO` albo je przemilcza (`SOLO_MUTE`), zamiast mówić do powietrza z czyimś imieniem.
 
 ### 6.7.6 Small talk (`p5_ai.js: partyThink` krok 21)
@@ -2087,7 +2167,11 @@ else:
    bard: SAY.bardIdle; barbarzyńca: SAY.barbIdle
    rank 0 && !scared: SAY.rookie; rank 2+: SAY.elite
    zawsze: SAY.chatIdle (1.17; do 1.16 3 zaszyte: "Słyszycie to?", "Trzymajcie się blisko.", "Patrzcie pod nogi.")
-line = losowa z lines
+1.17.1: sl = (h && !aloneNow(h) && !(h.fleeing || h.crystal || goingOut())) ? sawTalk(h) : []   // 6.7.10
+        lines += sl
+        fit = h ? (sl niepuste && rand < 0.45 ? sl : okLines(h, lines)) : []   // prawie połowa pogaduszek o tym, co widzieli
+line = losowa z fit (brak -> null)
+stats.chatTry++; line -> stats.chatPick++
 if line && say(h, line, 1, 2.2):
    fearLine  = mood 'fear' i linia z SAY.shaken albo SAY.chatScared
    greedLine = mood 'greed' i linia z SAY.chatRich
@@ -2096,8 +2180,11 @@ if line && say(h, line, 1, 2.2):
        : greedLine ? inny: nie zgubiony, careful, hdist <= 6 : null
    if ans && rand < 0.6: kolejka ans: (fearLine ? SAY.reassure : SAY.surviveFirst) (+1.6)
    elif !ans && CHAT_REPLY[line] && rand < 0.55:
-      o = inny w earshot, nie zgubiony, nie panikuje, nie w klatce -> kolejka o: losowa z CHAT_REPLY[line] (+0.4, prio 1)
+      o = inny w earshot, nie zgubiony, nie panikuje, nie w klatce
+      1.17.1: rep = okLines(o, CHAT_REPLY[line]); rep niepuste -> kolejka o: losowa z rep (+0.4, prio 1)
 ```
+Wersja 1.17.1: pula jest filtrowana pamięcią mówiącego (`okLines`: tylko kwestie, których tagi zna, 6.7.10), także pula `SOLO` samotnego i kwestia `friendLow` z imieniem; pogaduszki `SAY.saw` dochodzą tylko w towarzystwie (`sawTalk`: 2 najświeższe tematy i 1 losowy wcześniejszy). Odpowiedź z `CHAT_REPLY` jest filtrowana pamięcią odpowiadającego; gdy żadna mu nie pasuje, nikt nie odpowiada.
+
 Wersja 1.05: small talk "wie, co się dzieje": w drodze do wyjścia o wyjściu, przy odpoczynku o ranach, bez rozmów o bogactwie, gdy ktoś się boi, jest ranny albo ktoś zginął.
 
 Śmierć nadal blokuje rozmowy o bogactwie przez `fl.stats.kills` (ktokolwiek zginął w tej fali, także pokoje dalej i bez wieści), a nastrój "wstrząśnięty" (`shakenUntil`) ma od 1.17 tylko ten, kto o śmierci wie (6.3.13).
@@ -2131,9 +2218,11 @@ Szablony w tekstach `SAY.json` (sprawdzone skryptem): `{m|f}` forma wg płci mó
 
 ### 6.7.9 Katalog kluczy `SAY.json`
 
-**Rozmiar tabel kwestii (Prototype 1.17, policzone na `p1_config.js` i `data/*.json`; jedyne miejsce w tej sekcji z tymi liczbami, tabela z poprzednią wersją także w załączniku A, A.5):** `SAY` 269 kluczy, 2535 kwestii (1.16.1: 222 klucze, 669 kwestii; mediana długości 26 znaków, 90% do 38, najdłuższa 58); `SOLO` 67 kluczy, 431 kwestii (było 38 / 89); `CONVO` 85 zestawów, 497 wymian, 1073 kwestie (było 74 / 143 / 305); `CHAT_REPLY` 75 zaczepek, 206 odpowiedzi (było 19 / 31). Klucze nowych zachowań z 1.17 (narada, rozglądanie się, dźwięki, wieści, rozdzielone klucze) mają zwykle po 9 kwestii (`tellDeath` 7; mapy `lookObj`, `lookProp`, `lookKind`: 9 na podklucz) i po 6 w `SOLO` (`shieldLead`, `hearSound`, `hearScream` po 3); klucze przeniesione z kodu mają 3-9; stare klucze ok. 3 razy więcej niż w 1.16; `SAY.trap` ma po 3 kwestie na typ. Kwestie pisało 9 równoległych przebiegów z walidatorem (szablony, długość <= 60, bez pauz i cudzysłowów, bez powtórzeń), a każdą starą kwestię sprawdzono z jej wyzwalaczem w kodzie (ok. 120 przepisanych albo usuniętych).
+**Rozmiar tabel kwestii (Prototype 1.17.1, policzone na `data/*.json`; jedyne miejsce w tej sekcji z tymi liczbami, tabela z poprzednimi wersjami także w załączniku A, A.5):** `SAY` 272 klucze, 3173 kwestie (1.17: 269 kluczy, 2535 kwestii; 1.16.1: 222 klucze, 669 kwestii; mediana długości w 1.17 26 znaków, 90% do 38, najdłuższa 58); `SOLO` 68 kluczy, 434 kwestie (1.17: 67 / 431; 1.16.1: 38 / 89); `CONVO` 87 zestawów, 520 wymian, 1125 kwestii (1.17: 85 / 497 / 1073; 1.16.1: 74 / 143 / 305); `CHAT_REPLY` 75 zaczepek, 206 odpowiedzi (bez zmian od 1.17; 1.16.1: 19 / 31); `LINE_NEEDS` (1.17.1) 57 tagów, 803 wpisy (802 różne kwestie: 614 z `SAY`, 128 z `CONVO`, 55 z `SOLO`, 4 kwestie `SAY` będące zaczepkami `CHAT_REPLY`, 2 odpowiedzi `CHAT_REPLY`). 1.17.1 dodało `SAY.saw` (58 tagów po 9 = 522), `SAY.rkEnter` (12 po 9 = 108), `SAY.staunch` (6), 2 kwestie `phobia.spiders` (o pajęczynie) i `SOLO.staunch` (3); 2 kwestie `smashB` przepisano tak, żeby pasowały do każdej budowli ("Precz z tym paskudztwem!", "Topór rozwiąże ten problem!"). Klucze nowych zachowań z 1.17 (narada, rozglądanie się, dźwięki, wieści, rozdzielone klucze) mają zwykle po 9 kwestii (`tellDeath` 7; mapy `lookObj`, `lookProp`, `lookKind`: 9 na podklucz) i po 6 w `SOLO` (`shieldLead`, `hearSound`, `hearScream` po 3); klucze przeniesione z kodu mają 3-9; stare klucze ok. 3 razy więcej niż w 1.16; `SAY.trap` ma po 3 kwestie na typ. Kwestie pisało 9 równoległych przebiegów z walidatorem (szablony, długość <= 60, bez pauz i cudzysłowów, bez powtórzeń), a każdą starą kwestię sprawdzono z jej wyzwalaczem w kodzie (ok. 120 przepisanych albo usuniętych).
 
-Wartość to lista wariantów (losowany jeden, `pick`), a dla `trap` mapa `typ pułapki -> lista` (od 1.17; wcześniej jeden tekst, losuje `pickS`), dla `trauma`, `weakHit`, `resistHit` mapa `typ obrażeń (pierce, blunt, fire, poison) -> lista`, dla `phobia` mapa `fobia (fire, spiders, closed, ghosts, blood, dark) -> lista`, od 1.17 `lookObj` (barrel, crate, statue, shelf), `lookProp` (portrait, mirror, eyes, coffin, bones) i `lookKind` (12 komnat: goblin, spider, ogre, haunt, bats, ossuary, armory, forge, prison, junk, gallery, nursery) `-> lista`. Teksty są w pliku; tu tylko kiedy padają.
+Wartość to lista wariantów (losowany jeden, `pick`), a dla `trap` mapa `typ pułapki -> lista` (od 1.17; wcześniej jeden tekst, losuje `pickS`), dla `trauma`, `weakHit`, `resistHit` mapa `typ obrażeń (pierce, blunt, fire, poison) -> lista`, dla `phobia` mapa `fobia (fire, spiders, closed, ghosts, blood, dark) -> lista`, od 1.17 `lookObj` (barrel, crate, statue, shelf), `lookProp` (portrait, mirror, eyes, coffin, bones) i `lookKind` (12 komnat: goblin, spider, ogre, haunt, bats, ossuary, armory, forge, prison, junk, gallery, nursery) `-> lista`, od 1.17.1 `saw` (58 tagów pamięci, 6.7.10) i `rkEnter` (`k_<komnata>`, 12) `-> lista`. Teksty są w pliku; tu tylko kiedy padają.
+
+Od 1.17.1 każda kwestia w fali przechodzi przez filtr pamięci (`fitLine`, 6.7.10): kwestia z tagami z `LINE_NEEDS`, których mówiący nie zna, jest zamieniana na pasującą z tej samej listy albo nie pada. Kolumna "Kiedy" mówi, kiedy kod sięga po klucz, a nie, że kwestia na pewno padnie.
 
 Oznaczenia w kolumnie "prio / tryb": liczba = `prio`; **G** = głośna (`how 'loud'` albo prio 4); **S** = spokojna; **K** = kolejka drużyny `P.queueSay` (prio 2, dur 1,8, czeka na swoją kolej, chyba że podano inaczej); **PS** = `partySay` (ten sam klucz najwyżej co 5 s, mówi lider); `d` = `dur`. Każda kwestia staje się głośna, gdy mówiący panikuje, ucieka albo jest w klatce.
 
@@ -2188,7 +2277,8 @@ Oznaczenia w kolumnie "prio / tryb": liczba = `prio`; **G** = głośna (`how 'lo
 | `rumorFalse` | plotka o pułapce okazała się fałszywa (`checkGhostRumors`) | ten, kto zobaczył | 2 |
 | `seenBuilt` | gracz postawił pułapkę na ich oczach (`p8b_ui.js: tryPlace`) | świadek | 3 |
 | `rtFog`, `rtSwamp`, `rtGrotto`, `rtCrypt`, `rtVault`, `rtHaven`, `rtGears`, `rtHush`, `rtIce` | pierwszy, kto wejdzie do pokoju danego typu (raz na pokój w fali, nie wychodzący; `onEnter`, `RT_SAY`) | on | 3 |
-| `bAltar` | wejście do pokoju z Ołtarzem (3); osłona przed pokojem przy Ołtarzu (4); odczynianie przy Ołtarzu (3); leczenie przy Ołtarzu, szansa 0,25 (2) | kapłan pierwszy | 3 / 4 / 3 / 2 |
+| `rkEnter` (mapa: `k_<komnata>`, 12) | 1.17.1: pierwszy, kto wejdzie do pokoju z komnatą (raz na pokój w fali, `fl.rkSaid`, nie wychodzący; `onEnter`); po kwestii efektu w tym samym pokoju zwykle przepada (6.8 #35) | on | 3 (2, gdy pokój ma też efekt) |
+| `bAltar` | wejście do pokoju z Ołtarzem (3); osłona przed pokojem przy Ołtarzu (4); odczynianie przy Ołtarzu (3); leczenie przy Ołtarzu, szansa 0,25 (2); od 1.17.1 zawsze w `sayNow(['altar'])` (tak samo `bRune`, `bHowl`, `bDecoy` i kwestie wejścia do pokoju z budowlą ze swoim typem) | kapłan pierwszy | 3 / 4 / 3 / 2 |
 | `bRune` | wejście do pokoju z Runą (3); zagłuszenie pułapek zablokowane przez Runę (4) | mag pierwszy | 3 / 4 |
 | `bAcid` | wejście do pokoju z Kwasem | wojownik pierwszy | 3 |
 | `bVeil` | wejście do pokoju z Zasłoną | ktokolwiek pierwszy | 3 |
@@ -2244,21 +2334,22 @@ Oznaczenia w kolumnie "prio / tryb": liczba = `prio`; **G** = głośna (`how 'lo
 
 | Klucz | Kiedy | Kto | prio / tryb |
 |---|---|---|---|
-| `fight`, `avoid` | wojownik szarżuje na potwora; wojownik omija groźnego potwora (szansa 0,3 na plan; od 1.17 raz na potwora) | wojownik | 2 |
+| `fight`, `avoid` | wojownik szarżuje na potwora; wojownik omija groźnego potwora (szansa 0,3 na plan; od 1.17 raz na potwora); od 1.17.1 w `sayNow(itemTags(potwór))`: kwestia musi pasować do tego potwora | wojownik | 2 |
 | `ghost` | pierwszy raz w aurze ducha (raz na falę) | on | 3, G |
 | `ghostOnly` | wojownik po `ghost`: zawsze zablokowane (6.8) | wojownik | 2 |
 | `shade` | pierwszy raz przy cieniu (raz na falę); cel szeptu przy każdym odpaleniu cienia | on | 3, G |
 | `bats`, `batScatter` | pierwszy raz w roju (raz na falę); spłoszony przez nietoperze | on | 3 G / 2 G |
 | `spider` | pierwszy raz oplątany przez pająka w walce | on | 2, G |
 | `fireball`, `dispel` | mag rzuca kulę ognia; rozprasza sieć | mag | 1 / 3 |
-| `smash`, `smashB` | barbarzyńca rąbie mebel / budowlę | barbarzyńca | 3 |
+| `smash`, `smashB` | barbarzyńca rąbie mebel / budowlę (od 1.17.1 `smashB` w `sayNow([typ budowli])`) | barbarzyńca | 3 |
 | `rage`, `rageNoPanic`, `revenge` | furia: po trafieniu; zamiast paniki; po śmierci przyjaciela (z imieniem) | on | 4, d 2.2 |
 
 **E. Leczenie, wsparcie, moce**
 
 | Klucz | Kiedy | Kto | prio / tryb |
 |---|---|---|---|
-| `heal`, `cleanse`, `barrier`, `curseLift` | modlitwa: leczenie; gaszenie ognia; bariera; zdjęcie klątwy z przyjaciela (z imieniem) | kapłan | 1 / 3 / 3 / 3 |
+| `heal`, `cleanse`, `barrier`, `curseLift` | modlitwa: leczenie; gaszenie ognia (od 1.17.1 gdy w `near` płonie choć jeden, w `sayNow(['fire'])`); bariera; zdjęcie klątwy z przyjaciela (z imieniem) | kapłan | 1 / 3 / 3 / 3 |
+| `staunch` | 1.17.1: modlitwa zatamowała tylko krwawienie z kolców (nikt w `near` nie płonął), w `sayNow(['spikes', 'blood'])`; do 1.17 mówił wtedy `cleanse` ("Gaszę ogień!"); `SOLO.staunch` | kapłan | 3 |
 | `curseSelf` | 1.17: kapłan zdejmuje klątwę z samego siebie (przyjaciel ma pierwszeństwo) | kapłan | 3 |
 | `faithLow` | brak wiary na modlitwę (raz, aż wiara wróci do 2); brak wiary na osłonę przed pokojem; small talk kapłana z wiarą <= 1 | kapłan | 3 / 3 / 1 |
 | `callHealer`, `healerReply` | ranny (< 40%) daleko od kapłana woła (od 1.17 tylko gdy kapłan słyszy krzyk, `canHearShout`); kapłan odpowiada (+1,1) i idzie najpierw do wołającego | ranny, kapłan | 2 / K |
@@ -2318,7 +2409,7 @@ Oznaczenia w kolumnie "prio / tryb": liczba = `prio`; **G** = głośna (`how 'lo
 | `shaken` | small talk wstrząśniętego (do 6 s po końcu wstrząsu; od 1.17 wstrząśnięty jest tylko ten, kto o śmierci wie) | on | 1 |
 | `trauma` (mapa wg typu obrażeń) | pierwsza rana tego typu, która zbiła hp poniżej 35% (z kartą 50%) | on | 4, d 2.2 |
 | `weakHit`, `resistHit` (mapy) | ciało ujawnia słabość / odporność na typ obrażeń (sekcja 05) | on | 3, d 1.8, G |
-| `phobia` (mapa wg fobii) | fobia się ujawnia | on | 4, d 2.2 |
+| `phobia` (mapa wg fobii) | fobia się ujawnia (od 1.17.1 `phobia.spiders` ma 8 kwestii, 2 o pajęczynie z tagiem `web`: w trakcie rzeczy chwili, np. rany od pająka, padają tylko, gdy rzeczą chwili jest sieć, poza nią tylko u kogoś, kto sieć widział) | on | 4, d 2.2 |
 | `finalRage` | bohater z przepowiedni poniżej 50% HP | on | 4, d 2.4 |
 | `crystalFear` | niosący rzuca kryształ ze strachu | on | 4, d 2.2 |
 
@@ -2359,6 +2450,7 @@ Oznaczenia w kolumnie "prio / tryb": liczba = `prio`; **G** = głośna (`how 'lo
 | `chatGold` | 1.17 (do 1.16 zaszyte): niesie >= 2 złota (razem z `goldHeavy`) |
 | `chatRich` | 1.17 (do 1.16 zaszyte): chciwość > 1,5, bez strachu, wstrząsu i śmierci w fali, HP > 50%; kwestia o bogactwie, dostaje `surviveFirst` |
 | `chatIdle` | 1.17 (do 1.16 zaszyte): zawsze w puli |
+| `saw` (mapa: tag pamięci -> 9 kwestii, 58 tagów: pułapki 16, potwory 8, łup 5, efekty 9, komnaty 12, budowle 8) | 1.17.1: pogaduszka o tym, co widział w tej fali (`sawTalk`: 2 najświeższe tematy + 1 losowy wcześniejszy); w towarzystwie, poza wyjściem; w 45% small talku kwestia jest tylko z nich, inaczej dochodzą do puli; w `SOLO_MUTE` (6.7.10) |
 | `friendLow` | ktoś inny ma < 30% HP (z imieniem); od 1.17 tylko ktoś, kogo mówiący widzi albo słyszy |
 | `reassure` | odpowiedź na kwestię strachu (odważny, lider albo bard w odległości <= 6, szansa 0,6) |
 | `surviveFirst` | odpowiedź ostrożnego na kwestię o bogactwie (szansa 0,6) |
@@ -2366,6 +2458,163 @@ Oznaczenia w kolumnie "prio / tryb": liczba = `prio`; **G** = głośna (`how 'lo
 Plus w small talku używane: `rookie`, `shaken`, `goldHeavy`, `cursedPick`, `faithLow` (wyżej). Samotny mówi `SOLO.chat`, `SOLO.chat_<cecha>`, `SOLO.chat_<klasa>` (6.7.5b).
 
 **K. Martwe klucze**: `charm` (nieużywany; talizman mówi `charmUse`). W praktyce nigdy nie słychać też `ghostOnly` (6.8); `learn` pada od 1.17.
+
+### 6.7.10 Pamięć bohatera i dopasowanie kwestii (1.17.1, `p5_ai.js`: blok po `groupOf`; `p3_flow.js: say, damage, hurtTags`; dane `LINE_NEEDS`)
+
+Decyzja autora (1.17.1): "wojownik powiedział, że płomienie będą mu się śniły, a na planszy nie było nigdzie ognia. Niech mówią o komnatach, efektach, potworach, łupach i pułapkach, które widzą albo widzieli." Przyczyna tej jednej kwestii: krwawienie z kolców liczyło się jako ogień (trauma ognia, sekcja 05, 5.3.2). Przyczyna ogólna: każda kwestia mogła paść niezależnie od tego, co jest w lochu. Od 1.17.1 każdy bohater pamięta, co widział albo poczuł w tej fali, a kwestia, która wspomina rzecz, pada tylko u kogoś, kto tę rzecz zna.
+
+**Pamięć.** `h.saw` (`Set` tagów, tworzony pusty w `spawnHero`) i `h.sawAt` (`Map` tag -> `fl.time` pierwszego zobaczenia, tworzona przy pierwszym `sawAdd`). Żyje jedną falę (bohater powstaje co falę), nie trafia do zapisu. `sawAdd(h, tags)` dopisuje tylko nowe tagi (czas pierwszego zobaczenia się nie zmienia).
+
+| Grupa | Tagi | Skąd tag |
+|---|---|---|
+| pułapki (16) | `fire`, `blast`, `spikes`, `arrows`, `gate`, `trapdoor`, `cage`, `web`, `mimic`, `portrait`, `mirror`, `coffin`, `bones`, `eyes`, `musicbox`, `creak` | typ pułapki (`powder` = `blast`) |
+| potwory | `goblin`, `archer`, `spider`, `ogre`, `shaman`, `ghost`, `shade`, `bats` oraz `monster` | typ potwora + `monster` |
+| łup | `gold`, `potion`, `gear`, `relic`, `cursed` | `LOOT_KIND` |
+| efekty pokoi | `fog`, `swamp`, `grotto`, `crypt`, `vault`, `haven`, `gears`, `hush`, `ice` | `R.rt` |
+| komnaty (12) | `k_goblin`, `k_spider`, `k_ogre`, `k_haunt`, `k_bats`, `k_ossuary`, `k_armory`, `k_forge`, `k_prison`, `k_junk`, `k_gallery`, `k_nursery` | `'k_' + R.rk` |
+| budowle | `rune`, `altar`, `acid`, `veil`, `decoy`, `howl`, `shackles`, `fortify` | klucze `BUILDINGS` |
+| inne | `death` (zna czyjąś śmierć), `heartSeen` (był w pokoju serca), `blood` (krew: ciężko ranny, krwawienie, śmierć z bliska) | niżej |
+
+```
+itemTags(it, fired):                              // czym rzecz jest dla oka (fired: co robi, gdy odpala)
+  t = it.type; brak -> []
+  MONSTERS[t]       -> [t, 'monster']
+  t === 'lcursed'   -> it.cursedKnown ? ['cursed', 'gear'] : ['gear']   // wygląda jak sprzęt, dopóki kapłan nie wyczuje klątwy
+  LOOT_KIND[t]      -> [LOOT_KIND[t]]
+  t === 'powder'    -> fired && t3(it) ? ['blast', 'fire'] : ['blast']
+  t === 'arrows' && fired && mods.arrowBurn -> ['arrows', 'fire']
+  TRAPS[t] || BUILDINGS[t] -> [t]
+  inaczej []
+```
+
+**Co trafia do pamięci i kiedy:**
+
+| Gdzie | Kto | Tagi |
+|---|---|---|
+| `sawSweep()` na początku `perceiveThink` (każdy tick drużyny, co 0,25 s) | każdy żywy (nie `dead`, `fled`, `gone`) | `sawRoomTags(h, roomOf(h.tx, h.ty))` i `itemTags(it)` każdej rzeczy, którą widać (`sawVisible`) z miejsca, w którym stoi (`seesSpot`) |
+| `onEnter` przy zmianie obszaru (`changed`), przed kwestiami pokoju (6.2.7) | wchodzący | `sawRoom(h, r)`: `sawRoomTags` + każda widoczna rzecz, której `itemRooms` zawiera `r` |
+| `fireRaw` (przed `hearFar`) | trafieni (`list`, z `opt.lock`) i każdy, kto widzi miejsce | `sawItem(it, list)`: `itemTags(it, true)`; ukryta pułapka trafia do pamięci dopiero, gdy odpali |
+| `damage` (`p3_flow.js`) | ranny; przy podpaleniu albo krwawieniu także ci, którzy go widzą (`sawNear`) | `hurtTags(h, src)` (niżej) |
+| `damageRaw`: `hp < 0.4 max` (nie serce) | ranny i ci, którzy go widzą (`sawNear`) | `blood` |
+| `kill` | każdy żywy, który widzi śmierć (`canSee`) | `blood` |
+| `noticeLoot` | ten, kto zauważył łup | `itemTags(it)` |
+| `pickup` | podnoszący | `itemTags(it)` |
+| `curse` | przeklęty | `cursed` |
+| `lookDone`: moneta z mebla | przeszukujący | `gold` |
+| `phobiaSight` | ten, którego rzecz przestraszyła | `itemTags(it)` |
+| `learnTrap` z `by` | ten, kto wykrył (albo zapamiętał) pułapkę | `itemTags(it)` |
+| `driftTick`: duch w zasięgu aury (2,6 pola na 3. poziomie, inaczej 1,6), cień <= 1,4, nietoperze (1,6 / 1,0) | ten bohater | `itemTags(m)` |
+| `monstersTick`: sieć pająka na celu | oplątany | `web`, `spider`, `monster` |
+| `decoyAlarm` | każdy, kto widzi Wabik, i mówiący `w` | `sawItem(it, [w], ['decoy'])` |
+| `partyThink`: kwestia budowli przy wejściu (6.3.12) | mówiący | typ budowli |
+| `partyThink`: złodziej podważa kratę (`gateLever`, pierwszy raz) | złodziej | `gate` |
+| `planHero`: wojownik szarżuje (`fight`) albo omija potwora (`avoid`) | wojownik | `itemTags(potwór)` |
+| `fitLine` w trakcie `SAY_NOW` | mówiący | tagi kwestii, które należą do rzeczy chwili |
+
+Bez zapisu w pamięci, liczone na bieżąco (`knowsTag`): `death` = jakiś wpis `fl.deaths` ma go w `knows` (6.3.13); `gold` = niesie monety (`h.gold > 0`); `cursed` = jest przeklęty.
+
+```
+sawRoomTags(h, r):   r < 0 albo brak fl.rooms[r] -> nic
+   R.rt; 'k_' + R.rk; r === fl.heart.room -> 'heartSeen'; każda budowla b (oprócz 'decoy') z inB(b, r) -> b
+itemSpot(it)  = potwór z gx: [floor(gx), floor(gy)]; inaczej [x, y]
+itemRooms(it) = pułapka: servedRooms(type, x, y) (drzwi: oba obszary dd.a, dd.b; ściana: pokój, w który patrzy);
+                inaczej [roomOf(itemSpot)]
+seesSpot(h, x, y, rooms): r = roomOf(h.tx, h.ty); r >= 0 ? rooms.includes(r) : hypot(h.tx - x, h.ty - y) <= 3.5
+sawVisible(it):
+   potwór: hp > 0
+   'decoy': it.alarmed (do alarmu wygląda jak kolce)
+   łup, budowla: zawsze
+   nie pułapka: nie
+   'gate': it.detected || drzwi zamknięte teraz (closedUntil > time)
+   'musicbox', 'creak': nie (słychać je, gdy grają: wtedy sawItem w fireRaw)
+   inne pułapki: it.detected || SCARE[t] || t === 'fire'      // straszaki są po to, żeby je widzieć; ogień płonie na widoku
+sawNear(h, tags): h i każdy żywy o z canSee(o, h)
+```
+
+`roomOf` daje id także korytarzowi (6.0), więc w korytarzu bohater widzi wszystko, co należy do tego korytarza (także kratę i zawiasy w jego drzwiach), a promień 3,5 pola działa tylko na polu drzwi (`roomOf = -1`). Komentarz w kodzie i opis zmian mówią "w korytarzu 3,5 pola" (6.8 #36).
+
+**Rana: co czuje** (`p3_flow.js: hurtTags`, `BURN_TAGS`):
+```
+hurtTags(h, src): k = srcKind(src)
+   k === 'burn'            -> BURN_TAGS[h.burnBy] || ['fire']
+   k === 'trap' || 'monster' -> itemTags(src, true)
+   inaczej null             // serce, łup-pułapka, inne: damage idzie od razu do damageRaw, bez nowej rzeczy chwili
+BURN_TAGS = { spikes: ['spikes', 'blood'], arrows: ['arrows', 'fire'], powder: ['blast', 'fire'], fire: ['fire'],
+              archer: ['archer', 'monster', 'fire'], trapdoor: ['trapdoor', 'fire'] }
+damage(h, amt, src, cm): martwy/uciekł/amt <= 0/koniec fali -> return
+   now = hurtTags(h, src); !now -> damageRaw(...)
+   sawAdd(h, now); k === 'burn' -> sawNear(h, now)          // inni widzą, jak płonie albo krwawi
+   sayNow(now, () => damageRaw(h, amt, src, cm))             // rana, śmierć, trauma, słabość, fobia, ból: o tym, co zraniło
+```
+
+**Rzecz chwili** (`SAY_NOW`). `sayNow(tags, f)`: zapamiętuje poprzednią wartość, ustawia `SAY_NOW = new Set(tags)` (pusta lista albo `null` -> `null`), woła `f`, przywraca poprzednią (także przy wyjątku). Każda kwestia powiedziana w trakcie `f` (także zagnieżdżona, np. krzyk śmierci w ranie od pułapki w trakcie odpalenia) jest sprawdzana względem tej rzeczy:
+
+| Miejsce | `SAY_NOW` |
+|---|---|
+| `fire(it)` (całe odpalenie, `fireRaw`) | `itemTags(it, true)` |
+| `damage` (cała rana z `damageRaw`, w tym `kill`, trauma, `revealPhys`, fobia) | `hurtTags(h, src)` |
+| `noticeLoot` (kwestia `loot1-3`, `lootPotionSeen`, `lootFlee`) | `itemTags(it)` |
+| `pickup`: złoto (`gold`, `goldHeavy`) | `['gold']` |
+| `curse` (`cursedPick`), `checkCursed` (`cursedWarn`) | `['cursed', 'gear']` |
+| `learnTrap` z `by` (`learn`, `detect`, `amulet`); `nastyTrap` | `itemTags(it)` |
+| `planHero`: `fight`, `avoid` | `itemTags(potwór)` (ten, na którego idzie / którego omija) |
+| `smashJob`: `smashB` | `[typ budowli]` (mebel: `null`) |
+| `partyThink`: kwestie budowli przy wejściu | `[typ]` |
+| `partyThink`: `gateReroute`, `gateWait`, `gateLever` | `['gate']` |
+| `bAltar` (`finishPrep`, `blessJob`, `heroAbilities`), `bRune` (`finishPrep`), `bHowl` (`bardTick`) | `['altar']`, `['rune']`, `['howl']` |
+| `decoyAlarm`: `bDecoy` | `['decoy']` |
+| `heroAbilities`: `cleanse` / `staunch` | `['fire']` / `['spikes', 'blood']` |
+| `phobiaSight` (strach i ujawnienie fobii) | `itemTags(it)` |
+
+**Filtr kwestii.**
+```
+lineTags(text):        // raz budowana mapa tekst -> tagi
+   z LINE_NEEDS: każdy tekst z listy tagu dostaje ten tag (kwestia może mieć kilka)
+   z SAY.saw: każda kwestia SAY.saw[tag] dostaje swój tag (mówić o rzeczy można tylko, gdy się ją zna)
+   teksty z {n} {a} {v} {g}: wzorzec jak w lineKey (6.7.5a): znaczniki -> '.+?', całość ^...$
+   wynik: tagi dokładnego tekstu, inaczej pierwszego pasującego wzorca, inaczej null (kwestia bez wymagań)
+TAG_CAT = tagi pułapek (16), potworów (z 'monster'), łupu (5) i wszystkie klucze BUILDINGS   // "rzeczy"
+knowsTag(h, t):
+   t === 'death'  -> jakiś d z fl.deaths ma d.knows.has(h.id)
+   t === 'gold' && h.gold > 0, t === 'cursed' && h.cursed -> true
+   inaczej SAY_NOW?.has(t) || h.saw?.has(t)
+lineOk(h, text): tg = lineTags(text); brak -> true
+   każdy x z tg: (SAY_NOW && TAG_CAT[x]) ? SAY_NOW.has(x) : knowsTag(h, x)
+```
+W trakcie rzeczy chwili kwestia o pułapce, potworze, łupie albo budowli musi dotyczyć właśnie tej rzeczy (nie wystarczy, że widział ją wcześniej: "Złoto!" nie pada, gdy patrzy na miksturę, choć złoto widział). Pozostałe tagi (efekty, komnaty, `death`, `blood`, `heartSeen`) zawsze sprawdza pamięć; tagi rzeczy chwili liczą się jako znane.
+
+```
+linePool(k) = k bez ':' -> SAY[k]; 'a:b' -> SAY[a][b]; jako lista (albo null)
+fitLine(h, text, pool):                     // w say, tylko w fali, po zamianie na SOLO (6.7.2)
+   t = text
+   if !lineOk(h, t):
+      k = lineKey(t)
+      alt = (pool || linePool(k) || []) bez kwestii z {n}/{a}/{v}/{g}, tylko te z lineOk(h, x)
+      alt puste: stats.lineDrop++; stats.lineDropK[k || '?']++; return null     // say zwraca true: "powiedziane", bez dymka
+      stats.lineSwap++; t = losowa z alt
+   if SAY_NOW: tagi t, które są w SAY_NOW -> sawAdd(h, ...)                     // o czym mówi teraz, o tym wie
+   return t
+okLines(h, list) = list.filter(x => lineOk(h, x))
+```
+- `pool` to lista `SOLO`, gdy samotny dostał kwestię z `SOLO` (zamiennik też z `SOLO`); inaczej pula klucza kwestii w `SAY`. Kwestia bez klucza (`CONVO`, `CHAT_REPLY`, kwestie składane w kodzie), która nie pasuje, przepada (`lineDropK['?']`); takie kwestie są filtrowane wcześniej (rozmowy w `convoStart`, odpowiedzi w small talku).
+- Zamienników z imieniem nie ma, bo nie wiadomo, kogo wstawić.
+- Kwestie `CONVO` ze znacznikami `{A:...}`, `{An}` itd. są w `say` już wypełnione i nie pasują do żadnego wzorca (wzorce znają tylko `{n} {a} {v} {g}`), więc filtr działa dla nich tylko w `convoStart` (6.7.5a).
+
+**Gdzie filtr działa:** każda kwestia w fali przez `say` (6.7.2); small talk (`okLines` na całej puli, odpowiedzi `CHAT_REPLY` dla odpowiadającego, 6.7.6); rozmowy (każdy uczestnik tylko z kwestiami, które zna, 6.7.5a). Poza falą (`fl.phase !== 'raid'`) filtra nie ma.
+
+**Pogaduszki o tym, co widzieli** (`SAY.saw`, 58 tagów po 9 kwestii, 6.7.9). `sawTalk(h)`: tagi z `h.saw`, które mają kwestie w `SAY.saw`, posortowane malejąco po `h.sawAt` (najświeższe pierwsze; przy równym czasie kolejność dopisania); tematy = 2 pierwsze + 1 losowy z reszty (gdy są więcej niż 2); wynik = wszystkie kwestie tych tematów. W small talku (6.7.6), gdy bohater nie jest sam (`aloneNow`), nie ucieka, nie niesie kryształu i drużyna nie wychodzi (`goingOut()`): z szansą 0,45 kwestia jest tylko z tych tematów, inaczej dołączają do zwykłej puli. `saw` jest w `SOLO_MUTE` (sam o tym nie mówi). Rozmowy: `CONVO.saw` (15 wymian, `CONVO_P.saw` 0,45; kwestia `saw:<tag>` szuka zestawu `CONVO['saw:<tag>']`, a dalej bazowego `saw`).
+
+**Kwestia wejścia do komnaty** (`SAY.rkEnter`, 12 komnat po 9): pierwszy w pokoju z komnatą (raz na pokój w fali, `fl.rkSaid`, nie wychodzący) mówi, co to za miejsce, z priorytetem 3, a 2, gdy pokój ma też efekt (kwestia efektu padła wtedy przed nią z priorytetem 3, 6.2.7, 6.8 #35); `stats.rkEnter++`. Rozmowy: `CONVO.rkEnter` (8 wymian, 0,4). Kwestie `rkEnter` nie mają tagów w `LINE_NEEDS` (mówi je ten, kto właśnie wszedł, a `sawRoom` już dopisało komnatę).
+
+**Statystyki fali** (`fl.stats`, zakładka Liczby, sekcja 08): `sawTalk` (kwestie z klucza `saw:*`, liczone w `say` po ustawieniu dymka), `lineSwap`, `lineDrop`, `lineDropK` (pominięte wg klucza; tylko log), `rkEnter`, `chatTry` (każdy tick zegara small talku, także bez mówiącego), `chatPick` (z wybraną kwestią). Test (`tests/t1171_saw.py`) podpina `sayHook(h, text, SAY_NOW)` w `say` (`setSayHook`, **tylko prototyp**).
+
+Pomiar (`CHANGES1171.md`, odtworzenia 2 runów autora, 9 fal, 4 próby): kwestii na run tyle co w 1.17 (450-490), ok. 15-24 zamienione, prawie żadna pominięta; Esencja w granicach szumu (sekcja 09).
+
+**W Unity:**
+- Tagi jako enum (albo stałe tekstowe w danych); pamięć `HashSet<Tag>` + `Dictionary<Tag, float>` w `HeroRuntime`, czyszczone co falę.
+- `LINE_NEEDS` kluczować identyfikatorem kwestii (np. `trauma.fire/3`, `CONVO` po zestawie i numerze), nie tekstem. **Tylko prototyp:** dopasowanie po dokładnym tekście i wyrażeniach regularnych (zmiana tekstu w `SAY` bez zmiany w `LINE_NEEDS` po cichu zdejmuje kwestii wymagania).
+- `SAY_NOW` jako jawny kontekst przekazywany do systemu mowy (np. `using (Speech.Moment(tags))` albo parametr zdarzenia), a nie zmienna globalna; w Core nie ma wyjątków przerywających, ale kontekst trzeba przywracać jak stos.
+- Kolejność: `sawSweep` przed resztą `perceiveThink`, `sawRoom` przed kwestiami wejścia, `sawItem` przed kwestiami odpalenia i przed `hearFar`, `sawAdd` w `damage` przed `damageRaw`.
 
 ## 6.8 Błędy, martwy kod, niespójności (do przeniesienia do sekcji 11)
 
@@ -2404,6 +2653,17 @@ Zachowanie prototypu odtwarzaj wiernie; poniższe zgłoś autorowi (sekcja 02, z
 31. **Kwestie nie mówiły prawdy** (naprawione w 1.17 wraz z przeglądem kwestii): "Za mną, osłonię was!" u wojownika, który się cofa albo idzie za kimś (`shieldLead`); "Złoto!" po miksturę (`lootPotion`); "Rozbrojone!" z ust kapłana (`blessDone`/`blessHit`); okrzyk przy bramie od pierwszego w kolejce, a nie przywódcy (`gate`); "najpierw reszta" przy szturmie bez szukania (`heartLater`); mag i złodziej obiecujący zająć się pułapkami w pokoju z samymi potworami (`prepJam`, `prepDisarm`); drugi głos narady jako kopia pierwszego (`deliberate2`); `bez {a}` (biernik) zamiast dopełniacza (`{g}`).
 32. **Nowy przywódca przynosił swój plan** (1.17, `perceiveThink`; naprawione w poprawce wydania 1.17): przejmowanie planu nowego przywódcy działa teraz tylko wtedy, gdy nikt z pozostałych nie zna starego planu, cierpliwość jeszcze trwa (`!fl.fearless`) i w fali nie skradziono kryształu; wcześniej po powrocie do domu drużyna mogła znów zwiedzać albo szturmować aż do siatki bezpieczeństwa. (`p5_ai.js: perceiveThink`)
 33. **Rozmowy o naradzie prawie nie startują**: `CONVO` ma zestawy `goHomeAlone` i `councilGiveIn`, ale te kwestie padają w trakcie narady, gdy mówiący `talking`, a `convoStart` wtedy odmawia (6.3.10a). (`p5_ai.js: councilThink, convoStart`)
+34. **Rozmowy a pamięć (1.17.1)**: `convoStart` sprawdza `lineOk` uczestników w chwili startu, a więc w trakcie rzeczy chwili kwestii, która zaczęła rozmowę (`SAY_NOW`): kwestia B o tej samej rzeczy przechodzi, choć B może jej nie mieć w pamięci, a kwestia o innej rzeczy, którą B widział wcześniej, nie przechodzi. Kwestie mówione potem z kolejki są sprawdzane bez `SAY_NOW` (przez `fitLine`, tylko gdy tekst po `convoFill` pasuje do `LINE_NEEDS`, czyli bez znaczników `{A:...}`/`{An}`); niepasująca nie pada, a wymiana idzie dalej bez niej. Gdy żaden słuchacz nie zna kwestii roli C, `C = null` i kwestie C były po cichu pomijane (naprawione w 1.21: wymiana z rolą C jest proponowana tylko z B, dla którego ktoś inny w zasięgu słuchu zna kwestie C) (`p5_ai.js: convoStart`).
+35. **Kwestia komnaty po kwestii efektu przepada (1.17.1)**: w pokoju z efektem i komnatą `onEnter` mówi najpierw kwestię efektu (prio 3), a zaraz potem kwestię komnaty z prio 2; `say` odrzuca ją, bo ten sam bohater ma aktywny dymek o wyższym priorytecie (bez kolejki, 6.7.2). `fl.rkSaid` i `stats.rkEnter` są ustawiane przed `say`, więc kwestia nie wraca, a licznik ją liczy. Kwestia komnaty pada w takim pokoju tylko wtedy, gdy obie trafiły do kolejki `h.sayQ` (ktoś w pobliżu mówił) i kwestia komnaty doczeka tam (najwyżej 2,6 s) końca dymka efektu, albo gdy kwestia efektu w ogóle nie padła (`p5_ai.js: onEnter`). Pewnie zamiar był odwrotny ("2 po kwestii efektu" = po niej, z kolejki). Częściowo naprawione w 1.18: w pokoju z efektem kwestia komnaty idzie do kolejki drużyny (+0,2 s, prio 2, ważna 5 s); `stats.rkEnter` dalej liczy ją przed powiedzeniem.
+36. **"W korytarzu 3,5 pola" (1.17.1)**: `seesSpot` porównuje obszary, gdy `roomOf(h.tx, h.ty) >= 0`, a `roomOf` daje id także korytarzowi; promień 3,5 pola działa więc tylko na polu drzwi, a w korytarzu bohater widzi wszystko, co do niego należy (potwory, łup, krata i zawiasy w jego drzwiach), na całej długości. Komentarz w kodzie i opis zmian mówią o 3,5 pola w korytarzu (`p5_ai.js: seesSpot`).
+37. **`fitLine` przed sprawdzeniem dymka (1.17.1)**: w `say` dopasowanie (i liczniki `lineSwap`/`lineDrop`, i dopisanie tagów rzeczy chwili do pamięci) dzieje się przed odrzuceniem przez aktywny dymek o wyższym priorytecie i przed wstawieniem do `h.sayQ`; kwestia, która w końcu nie pada, i tak zostawia ślad w statystykach i pamięci. `say` zwraca `true` dla kwestii pominiętej przez filtr, więc wołający uznaje ją za powiedzianą (`p3_flow.js: say`).
+38. **`stats.chatTry` (1.17.1)** rosło przy każdym ticku zegara small talku, także gdy nikt nie mógł mówić (pusta pula, `h = null`); od 1.21 rośnie tylko, gdy wybrano mówiącego (także gdy zamiast pogaduszki powie słowo pary), więc nadal nie liczy prób powiedzenia kwestii (`p5_ai.js: partyThink`).
+39. **Ten sam kod osi czasu `fm` (1.22, 1.23)**: `formThink` zapisuje `tl('fm', ...)` dla szyku w walce, a `fallenRoom` `tl('fm', ...)` dla pamięci poległych; w danych testowych nie da się ich rozróżnić bez liczby argumentów (`p5_ai.js: formThink, fallenRoom`). W Unity nadać osobne kody.
+40. **Komentarze niezgodne z kodem po 1.24**: nad `betThink` "60%+ HP" i "70% roll" (kod: 50% i 85%), nad `bondHurt` "a trap, 20%+ HP, 30%, once in 20 s" (kod: 8%+, 80%, 12 s), nad `makeBonds` "siblings 15%, a mentor 25%, rivals 25%" w części opisu (kod: 15%, 20%, 45%), nad `handThink` "under 35% HP ... 60%+ HP within 1,5 tiles" (kod: 50%, 50%, 2,5).
+41. **`riftThink` liczy limit 2 po wszystkich rozłamach** (`fl.stats.rifts`, także foch, bunt, narada i ratunek), a rozłam z rozwidlenia po `rift_fork`; niespokojny rozłam może więc nie mieć szans po dwóch fochach w tej fali.
+42. **`waveExhausted` czyści `fl.queue`**: bohaterowie jeszcze przed drzwiami nigdy nie wchodzą i nie liczą się do statystyk fali; zamierzone ("reszta drużyny zostaje na zewnątrz"), ale zmienia skład podsumowania.
+43. **`g2Goal` przy zakończonej grupie (naprawione w 1.24)**: `leader()` może zakończyć drugą grupę (`g2End('last')`) w trakcie `planHero` jej przywódcy; do 1.23 `g2Goal` czytał wtedy `fl.party.g2` = null (wyjątek w odtworzeniu).
+44. **Nemezis i `nemesisSpawn` przy remisie rangi** przejmuje prowadzenie także od przywódcy tej samej rangi (warunek `L.rank <= h.rank`), a `leader()` przy remisie i tak go woli: zgodne, ale przywódca-boss nigdy nie oddaje prowadzenia.
 
 ## 6.9 Dla implementacji w Unity
 
@@ -2415,7 +2675,12 @@ Zachowanie prototypu odtwarzaj wiernie; poniższe zgłoś autorowi (sekcja 02, z
 | `thinkT` po planie | `0.45 + rand*0.3` | `planHero` |
 | `GATE_T` | 1,8 s | `p6_loop.js` |
 | odstęp spawnu | 0,3 s; czekanie drugiego oddziału do 8 s | `step` |
-| `S.waveTime` | 120 s; siatka bezpieczeństwa +60 s (czasu cierpliwości `fl.patT`) | `DEFAULTS.json`, `step` |
+| `S.waveTime` | 120 s; od 1.24 wyczerpanie +60 s i siatka bezpieczeństwa +150 s (czasu cierpliwości `fl.patT`; do 1.23 siatka +60 s) | `DEFAULTS.json`, `step` |
+| druga grupa, bunt, rozłam (1.19, 1.24) | 6.10: rozejście 20 s, scalenie po 8 s, zwiad 40 s (foch, bunt 25 s); bunt od 20 s, 25%/s, głos przywódcy 1,5, wyzywającego 1 (elita 1,25); niespokojny od 15 s, 6%/s, cel 4+ pola od celu drużyny, najwyżej 2 rozłamy; z narady 65% / 35% | `p5_ai.js` |
+| dzielenie się (1.20) | 6.11.4: amulet przy strachu >= 60% od spokojnego < 40%; sprzęt przy zysku >= 1,0; 35% poza postojem; 2 pola | `shareThink` |
+| więzi (1.21, 1.24) | 6.12: zemsta 30 s ×1,3; uczeń dorasta po 20 s ×1,15; drwina 8% HP albo strach 8% odwagi, 80%, co 12 s; zakład 85%, 8 s; kłótnia: przerwanie 40%, ban 10 s, foch 30%; sprzeciw nad ciałem morale -0,05 | `p5_ai.js` |
+| finał (1.22, 1.24) | 6.13: eskorta 35%+ HP, tempo ×1,05 (wojownik ×1,2) do ×1,4, przejęcie 50% (wojownik 70%); przekazanie < 50% HP albo strach 60%, odbiorca 50%+ HP i +20 pkt, 2,5 pola; bastion 40%+ HP, 8 s, do 25% HP; poświęcenie 35%+ HP, 12 kroków; "ty pierwszy" 60%, 40 s; opukiwanie 60%, 35%, ×0,7; szyk 30% HP | `p5_ai.js` |
+| Nemezis (1.23) | 6.14: uraza 25 s, zagrożenie ×2, `nemK` 1,25; bez paniki powyżej 15% HP; ostrzeżenie 5 kroków; przechwałka 2 na falę co 10 s; nagroda `10 + 5 × times` | `p5_ai.js` |
 | narada (1.17) | cisza do 4 s, bez grupy po 8 s do domu; głos lidera 1,5, elity 1,25; "jeszcze chwila" `patT = min(patT, waveTime - 30)`, raz na falę; do 4 głosów na głos, do 2 marudzących (0,6); powrót sam `min(0.85, 0.2 + 0.35 tchórz + 0.3*strach + 0.25 przy hp < 35%)`; wagi głosów 6.3.10a | `councilThink`, `councilVote`, `councilDone` |
 | percepcja (1.17) | widzi: `samePlace` (pokój/korytarz albo 3,5 pola); słyszy: `earshot` 7 pól, nie Głusza; krzyk: 14 kroków drogi, nie Głusza ani Kamień wyjec; zgubiony zauważony po 4 s; wieść o śmierci: 0,6 dalekiego strachu, wstrząs 5 s; krzyk śmierci: 1,3 dalekiego strachu, wstrząs 5 s; widziana śmierć: wstrząs 9 s; klatka zauważona bez krzyku po 20 s | `p5_ai.js` (6.3.13) |
 | rozglądanie się (1.17) | rzut 0,9 s po wejściu przywódcy, raz na pokój; `p` 0,15-0,55 wg cechy + nowicjusz 0,15 + rzeczy (-0,2 / 0,1 / 0,2) + komnata 0,15 - ranni 0,25 - późno (> 60% cierpliwości) 0,15; nie po 80% cierpliwości ani przy morale < 0,45; 10 s, oglądanie 1,5-3 s, droga <= 12 kroków, przerwa 18 s; tchórz zostaje 0,6, ogląda do 3 pól; `SEARCH_TRAP` mimik 0,55, pozytywka 0,45, proch 0,2; moneta 0,3 (chciwy, złodziej) / 0,18; prośba odrzucona 0,3 | `lookRoll`, `lookThink`, `lookDone` (6.3.3a) |
@@ -2448,7 +2713,8 @@ Zachowanie prototypu odtwarzaj wiernie; poniższe zgłoś autorowi (sekcja 02, z
 | klatka | ratunek: elita zawsze, inaczej `fearR < 0.6` i 0,5 (nowicjusz) / 0,8; uwalnianie 0,8 s (złodziej) / 1,8 s; czekanie na ratownika +8 s | `decideCage`, `planHero`, `cageEnds` |
 | nowicjusz odłącza się | 0,004 na `partyThink`, 10 s, cel > 4 pola | `partyThink` |
 | mowa | `SAY_GAP 0.3`, `SAYQ_LIFE [0, 1.4, 2.6, 4]`, `readT = clamp(1.1 + 0.042*len, 1.6, 3.4)`, earshot 7 pól lub ten sam obszar, kolejka bohatera 2 wpisy, kolejka drużyny przeterminowana po 10 s, ta sama waga co 0,7 s | `p3_flow.js` |
-| small talk | co 7-13 s; odpowiedź 0,6 (pocieszenie) albo 0,55 (`CHAT_REPLY`) | `partyThink` |
+| small talk | co 7-13 s; odpowiedź 0,6 (pocieszenie) albo 0,55 (`CHAT_REPLY`); 1.17.1: pogaduszka tylko z `SAY.saw` z szansą 0,45, tematy: 2 najświeższe + 1 losowy | `partyThink`, `sawTalk` |
+| pamięć (1.17.1) | wzrok: w pokoju cały pokój (rzecz w drzwiach z obu obszarów), na polu drzwi 3,5 pola; krew: `hp < 0.4 max`; rzeczy chwili `TAG_CAT`; `BURN_TAGS` (6.7.10, załącznik A.8) | `seesSpot`, `damageRaw`, `lineOk`, `hurtTags` |
 
 ### 6.9.2 Scenariusze testowe AI (uzupełnienie sekcji 09)
 
@@ -2468,3 +2734,353 @@ Zachowanie prototypu odtwarzaj wiernie; poniższe zgłoś autorowi (sekcja 02, z
 14. **Ciekawość (1.17)**: loch 10 pokoi, chciwy i ostrożny w drużynie: rozglądanie się startuje, bohaterowie podchodzą do rzeczy i stoją przy nich, rozglądanie się kończy; mebel z mimikiem może odpalić na końcu przeszukania.
 15. **Dźwięk zza ściany (1.17)**: pułapka w pokoju bez bohaterów do 12 pól od przywódcy -> `stats.heard` +1, `P.sound` ustawione (przywódca słyszał), kwestia `hearSound` albo `hearScream`.
 16. **Dopełniacz imion (1.17)**: `nameGen` daje Wandy, Jadwigi, Zofii, Heli, Borysa; `nameFill('bez {g}', Ewa)` = "bez Ewy"; żaden dymek nie zawiera surowego szablonu (`{` `}`).
+17. **Pamięć i filtr kwestii (1.17.1)**: `lineTags('Każdy płomień będzie mi się śnił...')` zawiera `fire`; bohater bez `fire` w pamięci: `lineOk` = false, a `fitLine` daje inną pasującą kwestię albo `null` (nigdy tę); po `sawAdd(h, ['fire'])` może ją powiedzieć. Pamięć `{gold}`: "Złoto!" pasuje; w `sayNow(['potion'])` nie pasuje, w `sayNow(['gold'])` pasuje. Pusta pamięć i `sayNow(['gate'])`: kwestia z tagiem `gate` pasuje. Kwestia z tagiem `death` pasuje dopiero, gdy wpis w `fl.deaths` ma bohatera w `knows`.
+18. **Krwawienie to nie ogień (1.17.1)**: bohater z `burnBy = 'spikes'` przez 1 s: `dmgBy.pierce > 0`, brak `dmgBy.fire`, w pamięci `blood`, bez `fire`; nad figurą czerwona kropka; kapłan, który go opatrzy, mówi `staunch`, nie `cleanse`.
+19. **Nikt nie mówi o tym, czego nie ma (1.17.1)**: losowe lochy (co najmniej 7 pokoi, 2 efekty, 2 komnaty, 10 elementów z 9 losowych typów, fala 5, do 220 s, kilka prób): żadna kwestia z tagiem nie pada bez znanego tagu (sprawdzane w chwili powiedzenia, z `SAY_NOW`), żaden bohater nie ma w pamięci tagu, którego nie ma w lochu ("w lochu" = `itemTags(it, true)` każdego elementu, efekty i komnaty pokoi oraz `blood`, `death`, `heartSeen`; do tego każdy łucznik i zapadnia z Ognistą otchłanią dają ogień, pająk sieć, przeklęty łup `cursed` i `gear`); loch bez ognia, prochu, Kaplicy czaszek i Kuźni oraz bez kart ognia: nikt nie ma `fire` i nie pada żadna kwestia o ogniu. Test prototypu: `tests/t1171_saw.py` (z `--nofire`).
+20. **Wejście do komnaty (1.17.1)**: pierwszy w pokoju z komnatą (bez efektu) mówi kwestię `rkEnter` tej komnaty, raz na pokój; drugi wchodzący nie. W pokoju z efektem i komnatą zachowanie jak w 6.8 #35 (do decyzji, czy poprawić).
+
+## 6.10 Rozłam: druga grupa, bunt, foch (1.19; zmiany 1.24; `p5_ai.js: inG2, g2Leader, groupLeaderOf, g2Start, g2End, g2Target, g2Think, g2Goal, mutinyThink, riftThink, sulkThink, leader, chooseTarget, councilThink, councilDone, lootDecision, convoStart`)
+
+Drużyna może się rozpaść na dwie. Druga grupa (`P.g2`: przywódca, członkowie, własny plan i cel) zwiedza osobno i łączy się z resztą, gdy się spotkają. Jej członkowie są z dala celowo (`h.split`, Groza zwiadu `GZ.split`, 6.2.10a, przez `splitting()`), dopóki nie wrócą. Naraz tylko jedna druga grupa.
+
+### 6.10.1 Życie grupy
+
+```
+g2Start(D, joiners, plan, target, why):             // why: fork | restless | council | sulk | mutiny | rescue (1.21)
+   if P.g2 || !D: false
+   P.g2 = { leaderId: D.id, ids: Set(D + joiners), plan, target, born: time, why,
+            until: time + (why sulk|mutiny ? 25 : 40), said: false }
+   każdy członek: plan = plan grupy, needPlan, startSplit(o, 'rift'), wanderUntil = -1, lootKey = null
+   stats.rifts++, stats['rift_' + why]++, tl('rf'); podpowiedź (nie przy fochu), napis "Rozłam" / "Obrażony/Obrażona" (foch, bunt) / "Nie zostawię!" (ratunek)
+g2End(why):                                          // merge | fizzle | out | gone | last
+   P.g2 = null; członkowie needPlan (merge: plan = P.plan); stats['g2end_' + why]++, stats.g2Time += czas, merge: stats.merges++, tl('rj')
+g2Leader(): obecny przywódca grupy, jeśli żyje, w lochu, nie zgubiony, nie w klatce, bez paniki, nie wraca sam, nie ucieka;
+   inaczej najwyższa ranga z grupy (brak: g2End('gone')); gdy grupa straciła głowę, plan 'regroup' i kolejkowane g2LeaderDown
+g2Target(L2, Lm): granica (frontier) w znanej mapie o najmniejszym d - 0.6 × min(odległość od celu drużyny, 12) + rand × 2   // z dala od reszty
+g2Think(Lm) (partyThink, po naradzie):
+   członek, który widzi albo słyszy przywódcę grupy, przejmuje plan grupy
+   reszta wychodzi, a ktoś z grupy słyszy krzyk przywódcy drużyny: g2End('out')   (nie grupa z narady, nie foch, nie ratunek przed końcem)
+   ratunek: rescueThink (6.12.4)
+   drużyna szturmuje (fearless && storm) i grupa słyszy krzyk: plan 'assault'
+   najpierw muszą się rozejść (nikt z grupy nie jest samePlace z kimś z reszty): G.apart; inaczej po 20 s g2End('fizzle')
+   spotkanie: G.apart, po 8 s od narodzin, ktoś z grupy samePlace z kimś z reszty i go widzi albo słyszy:
+       foch/bunt: sulkBack od przywódcy grupy; inaczej mergeG2 i 70% mergeReply; g2End('merge')
+   explore i (time > until albo nic do odkrycia): plan 'regroup'; assault bez znanego serca: explore
+   explore bez ważnego celu: G.target = g2Target (brak: regroup)
+   po 5 s, 2+ członków, przywódca nie mówi: raz g2Lead
+g2Goal(h, heartGoal): brak grupy (zakończona w trakcie myślenia) -> pole przywódcy drużyny (1.24); assault -> serce; regroup -> pole przywódcy drużyny; inaczej G.target
+```
+`planHero`: przywódca grupy ma pracę `lead` z celem `g2Goal` (od 1.24 tylko gdy `P.g2` dalej istnieje); członkowie idą za nim (`groupLeaderOf`). Odległość do zgubienia i odnalezienia liczona do przywódcy własnej grupy; czekanie na maruderów pomija drugą grupę; `missLost` nie dla członków; `perceiveThink` nie nadpisuje im planu.
+
+### 6.10.2 Skąd się bierze
+
+| Źródło | Warunek | Kod |
+|---|---|---|
+| rozwidlenie (`fork`) | w trakcie narady przy rozwidleniu (6.3.3), plan `explore`, bez `fearless`, po 15 s, bez zwiadowcy, 3+ w grupie rozmowy, najwyżej 2 takie na falę; odszczepieniec: chciwy, którego przywódca nie posłuchał (50%), inaczej rywal przywódcy (1.21; ranga 1+, HP > 50%), inaczej odważny, chciwy albo łowca rangi 1+ z HP > 50% (20%); ×1,3 przy morale < 0,6, ×1,5 dla rywala; idzie drugą drogą z 1-2 podobnymi (chciwi, odważni, łowcy, barbarzyńcy, nowicjusze); po rozłamie nie ma zwiadu | `chooseTarget` |
+| niespokojny (`restless`) | `riftThink`: plan `explore`, bez narady i `fearless`, nikt nie wychodzi, bez zwiadowcy, 3+ w grupie, od 15 s (1.24; było 20), łącznie najwyżej 2 rozłamy na falę, nikt nie rozmawia, 8 s od ostatniej rozmowy; kandydaci: chciwy, odważny, łowca, barbarzyńca albo rywal przywódcy, ranga 1+ (od 1.24 także chciwy nowicjusz i łowca), bez kryształu, HP > 50%, strach < 50% odwagi; szansa `dt × 0,06` (1.24; było 0,025) ×1,5 przy morale < 0,6, ×1,5 gdy rywal jest kandydatem (i on idzie pierwszy); cel `g2Target` co najmniej 4 pola od celu drużyny (1.24; było 6); dołącza do 2 podobnych (do `grupa - 3`); kwestie `riftStart` ({v} = przywódca), `riftJoin`, `riftLeader` | `riftThink` |
+| narada (`council`) | na naradzie końca cierpliwości wynik "do domu", w lochu 4+ żywych, 2+ przegłosowanych za szturmem albo "jeszcze chwila" (bez kryształu, HP > 40%): 65%, gdy wśród nich jest odważny, chciwy albo łowca, inaczej 35%; zostają (najwyżej 3) i szukają dalej (`riftCouncilStorm`/`riftCouncilMore`; szturm tylko przy `heartP()`); drugi wracający sam mówi `homeTogether` i od pierwszego taka decyzja jest o 0,2 łatwiejsza | `councilThink`, `councilDone` |
+| bunt (`mutiny`) | 6.10.3 | `mutinyThink` |
+| foch (`sulk`) | przegrany bunt dumnego (45%), odrzucony stary przywódca po buncie (60%), dwa razy kazano mu zostawić łup (40%, nie ostrożny ani tchórz), od 1.21 przegrany w kłótni o łup (30%): `P.sulkAfter`, potem `sulkThink` robi grupę jednoosobową (`assault`, gdy serce znane i to odważny albo łowca, inaczej `explore`), `stats.sulks`, sam mówi `SOLO.sulkOff` | `sulkThink`, `lootDecision`, `quarrel` |
+| ratunek (`rescue`) | 1.21 "Nie zostawię cię" (6.12.4) | `noLeave` |
+
+Grupa z narady i foch nie idą za resztą do domu, gdy słyszą, że reszta wychodzi.
+
+### 6.10.3 Bunt (`mutinyThink`, raz na falę)
+
+```
+if P.mutinyDone || P.council || P.g2 || goingOut() || fl.fearless || !L || grp < 3 || time < 20                       // 1.24: od 20 s (było 30)
+   || (P.morale > 0.85 && fearR < 0.25 && avgHp > 0.8) || ktoś rozmawia || time - P.lastTalkAt < 6: return
+dead = przywódca wie o śmierci w tej fali
+if !dead && avgHp > 0.8 && fearR < 0.25 && P.morale > 0.75: return                   // 1.24 (było: morale <= 0.55 i śmierć albo HP < 55% albo strach > 45%)
+if rand > dt × 0.25: return                                                         // 1.24: 25%/s (było 10%/s)
+restless(o) = odważny || chciwy || łowca || barbarzyńca || (rywal przywódcy)
+C = z grupy bez przywódcy: nie zgubiony, bez kryształu, HP > 50%, strach < 50% odwagi, oraz jedno z:
+    rank > L.rank; restless i rank >= L.rank; L.rank 0 i rank >= 1; rank >= L.rank i HP% > HP% przywódcy + 25 pkt;
+    restless i rank >= L.rank - 1, gdy przywódca ranny (< 60% HP) albo wstrząśnięty (strach > 40% odwagi)          // 1.24
+    sortowanie: ranga malejąco, odważny pierwszy
+głosy: przywódca 1,5, wyzywający 1 (elita 1,25); każdy inny popiera wyzywającego, gdy
+    0.4 + fr + (1 - hp%) + (tchórz/ostrożny 0.5) - (odważny 0.5) + 0.25 × (C.rank - L.rank) + (rand - 0.5) × 0.8 > 0.9      // fr = strach/odwaga, max 1,5
+kwestie: [C, mutinyStart {v}=L], do 3 innych mutinyBack/mutinyStay; P.convoNot wyklucza starego przywódcę z rozmowy
+wygrana: L mutinyYield albo (dumny: odważny, chciwy, łowca albo elita; 60%) mutinyRefuse + sulkOff (foch po kwestiach); C mutinyWin;
+         P.leaderId = C; jeśli fearR > 0.55 || avgHp < 0.45 || C tchórz albo ostrożny: P.mutinyHome (do domu po kwestiach, stats.mutinyHomes)
+przegrana: C mutinyLose; odważny albo chciwy 45%: sulkOff i foch
+stats.mutinies, mutinyWins, tl('mu'); napis "Bunt!"
+```
+
+### 6.10.4 Kwestie, widok, liczby
+
+- Kwestie (`SAY`, 19 kluczy): `riftStart`, `riftJoin`, `riftLeader`, `riftCouncilMore`, `riftCouncilStorm`, `homeTogether`, `mergeG2`, `mergeReply`, `g2Lead`, `g2LeaderDown`, `mutinyStart`, `mutinyBack`, `mutinyStay`, `mutinyYield`, `mutinyRefuse`, `mutinyWin`, `mutinyLose`, `sulkOff`, `sulkBack`; `SOLO`: `sulkOff`, `g2LeaderDown`, `sulkBack`; `CONVO`: `riftStart`, `mutinyStart`, `mergeG2`, `sulkOff`. `P.convoNot = {key, ids}`: stary przywódca nie komentuje swojego buntu, dołączający swojego rozłamu (`convoStart`).
+- Karta bohatera: stan "prowadzi drugą grupę" / "w drugiej grupie"; Liczby: "Rozłam: grupy / bunty (udane) / obrażeni / powroty"; bursztynowy pierścień pod członkami (sekcja 08).
+- Odtworzenia 1.19: ok. 1-2 rozłamy i ok. 1 foch na run 10 fal; bunty rzadkie (morale rzadko dość niskie). 1.24 (200 fal, 6.15): rozłam w 34% fal, bunt w 32%, foch w 26%, rozłam z narady 0% (potrzebuje 2+ przegłosowanych w drużynie 4+), ratunek 2%, powrót do domu po buncie w 4%.
+
+## 6.11 Ekwipunek i łup w zachowaniu (1.20; `p5_ai.js: lootDecision, claimScore, lootReassign, onLootRival, lootOffer, onLootDead, shareThink, fogRoll, lostChance, planHero, updateHero, onEnter`; `p3_flow.js: noticeLoot, pickup, bodyLoot, giveItem, curse`)
+
+Dane przedmiotów (pochodzenie, ciężar, narzędzia): sekcja 04, 5.6. Decyzje autora: wybierano prostszą opcję tam, gdzie plan dawał wybór.
+
+### 6.11.1 Rzeczy poległych i poprzedników
+
+- `kill`: plecak i sakiewka spadają z `{ body: true }` (stosy znają ciało: `it.body`, `fromNm`).
+- `noticeLoot` stosu z ciała: chciwość `LOOT_GREED.body = [0,075; 0,04]` (połowa sprzętu, bez Sezamu, Relikwiarza i Złotego pyłu; `stats.greedBody`); kto wie o tej śmierci (`fl.deaths` tej fali), mówi `SAY.lootFallen` z imieniem zmarłego (`stats.lootFallen`). Stos z ciała z wcześniejszej fali, widziany pierwszy raz: 60%, że widzący go rozpozna (`SAY.predecessorGear`, prio 3, zamiast zwykłej kwestii łupu), strach 5% odwagi (źródło `death`), raz na bohatera (`h.predSaid`); słyszący dostają `gear` do pamięci (`stats.predecessorSeen`, oś czasu `pr`). Decyzja: tylko stosy z ciała, bo kwestie mówią, że nikt nie wrócił.
+- **Klątwa na przedmiocie**: `curse(h, item)` oznacza go `cursed`; podniesienie (`pickup`, `bodyLoot`) przeklętego przeklina biorącego (`stats.cursePassed`); `lootSeen`, `checkCursed` (kapłan to czuje) i `itemTags` traktują stos z przeklętym przedmiotem jak `lcursed`; zdjęta klątwa czyści też jego przedmioty (`heroAbilities`); przeklętego nie da się oddać ani wymienić.
+
+### 6.11.2 Ciało do przeszukania, wybity przedmiot
+
+- `pickup` stosu z ciała: bohater klęka (`state 'loot'`, 1,0 s, złodziej 0,5 s; `h.lootIt`), nie gdy wychodzi, panikuje albo siedzi w klatce i nie nad ciałem, które już przeglądał (`lootMemo` z `body: true`, 60 s), od 1.21 nigdy nad partnerem więzi (`mateBody`). `held()` (kolce ×1,5) i spokój liczą `loot` jako zajęcie; `startFlee` przerywa.
+- `bodyLoot(h, it)`: wszystkie stosy tego ciała (ten sam `body` i `fromWave`) w 1,5 pola: monety zawsze, przedmiot o `itemValue >= 0,6`, który `giveItem` przyjmie (po cichu; `kit`/`guild` staje się `src: 'body'`). Każdy wzięty stos liczy się jak łup: chciwość `LOOT_GREED.body[1]`, `h.loot`, Groza `GZ.loot × 2 × depthMult` (rzadkość 2); Pułapka na łup i Zatrzask sezamu raz. Każdy zostawiony stos tego ciała dostaje w jego `lootMemo` "nie" na 60 s. Napis "Zabiera rzeczy <dopełniacz>".
+- `lootDecision` stosu z ciała: ×0,7 dla tego, kto wie o tej śmierci (nie chciwy, nie łowca), ×0,5 dla kapłana (nie mikstura dla rannego), ×1,2 dla złodzieja, chciwego i łowcy. Własny wybity przedmiot (`it.knocked === h.id`): `need ×1,5`, ryzyko ×0,8; podniesienie przez właściciela po cichu, kolejkowane `SAY.gearBack`, `stats.gearBack`, i **nie jest łupem** (bez chciwości, Grozy, `h.loot`, `stats.loot`). Decyzja autora: bez tego Esencja w odtworzeniach rosła o 25-30% (odtworzenia rozstrzygają wiele checków krytykiem).
+- `onLootDead(h, deadId, items, pile)`: zawsze `P.lootedDead.push`; z czymś wziętym `stats.bodyLoot`, `bodyLootBy[klasa]`, oś czasu `bl`, 60% `SAY.lootDead` (sam: `SOLO.lootDead`). Sprzeciw: 6.12.8.
+
+### 6.11.3 Kto bierze łup
+
+- `noticeLoot`: `it.firstBy` = pierwszy, kto go zobaczył w tej fali (`startWave` czyści).
+- `claimScore(h, it)` = wartość dla niego (`itemValue`; bez przedmiotu: mikstura 3 dla rannego, inaczej 0,5; monety 1,5 złodziejowi, chciwemu i łowcy, inaczej 0,6; reszta 1, chciwemu 1,5) + 0,5 dla pierwszego, który widział.
+- `lootReassign(h, cl, it, k, steps)` (`planHero`, gdy łup ma już chętnego): obaj w 8 krokach / polach; gdy `claimScore(h) >= claimScore(cl) + 0,8` i przywódca grupy rangi 1+ (żaden z nich, bez paniki) słyszy obu: roszczenie przechodzi, stary chętny dostaje "nie" na 7 s, przywódca mówi `SAY.lootAssign` ({n}/{v} = biorący), `stats.lootAssign`, oś czasu `qa`. Dwóch chciwych albo łowców bez takiego przywódcy: `onLootRival` (raz na parę i stos, `stats.lootRival`, oś czasu `qr`); od 1.21 chciwy, łowca albo rywal chętnego kłóci się (6.12.7).
+- Odmowa podniesienia (bez potrzeby, bez miejsca, za ciężkie): wylosowany przedmiot zostaje w stosie (`it.item`; do 1.19 znikał), a `lootOffer`: przyjaciel z tej samej grupy, który go widzi, nie zgubiony, nie w klatce, bez paniki, nie wychodzi, może go wziąć i ma z niego 1+: `SAY.lootOffer`, jego "nie" kasowane, `o.offerKey`, kolejkowane `SAY.lootOfferTake`, `stats.lootOffer`, oś czasu `qo`; `lootDecision` daje mu `need >= 1,2`; wzięcie: `stats.lootOfferTaken`.
+
+### 6.11.4 Dzielenie się (`shareThink`, raz na sekundę, po bloku mikstur)
+
+```
+1) kryzys: spokojny (strach < 40% odwagi) z gotowym nieprzeklętym amuletem oddaje go temu, kto ma strach >= 60% odwagi, nie ma gotowego
+   amuletu i nie jest pod jego działaniem, w 2 polach, widzą się: do ręki (bez sprawdzania plecaka i ciężaru), useAmulet od razu,
+   giveCd 10 s (wspólne z miksturami), stats.amuletGiven, SAY.amuletGive, napis "Od X: amulet"
+2) w spokoju (nie fearless, nikt nie wychodzi, nie odwrót, P.shareCd minęło): zawsze przy rozmowie, odpoczynku, zbiórce albo postoju przed pokojem, inaczej 35%;
+   dwóch z tej samej grupy, 2 pola, widzą się, obaj spokojni (bez paniki, klatki, zgubienia, wyjścia, walki, przeszukania, zagrożenia na polu,
+   znanego potwora w pokoju); najlepszy przedmiot z itemValue(o) - itemValue(g) >= 1.0, który o może wziąć (nie mikstura, nie przeklęty,
+   nigdy z powrotem do tego, kto dał: gaveBy); lepszy tego samego rodzaju odsyła stary przedmiot o do g (gdy ma dla g wartość i g może go wziąć)
+   albo na podłogę; potem wymiana: najlepszy przedmiot o wart dla g 1+ więcej; shareCd 8 s obu, P.shareCd 4 s
+   stats.gearGiven, gearTrades, P.gifts, tl('gv'), SAY.giveGear, kolejkowane giveGearThanks, napis "Od X: <przedmiot>"
+```
+
+### 6.11.5 Latarnia, łom, ciężar, bomby
+
+- Mgła: `fogRoll(h, dt)` (oba miejsca w `partyThink`): `p = dt × 0,22 × max(0,35; 1 - 0,03 × lvl) × (złodziej 0,6)`; zapalona latarnia w 2 polach w tym pokoju zatrzymuje 70% rzutów (`stats.lanternSaves`, od 1.24 animacja światła). `lostChance`: część mgły 0,15 z latarnią (0,45 bez). Błądzenie przywódcy we mgle o połowę krótsze z latarnią obok, niosący mówi `SAY.lanternLight`. `scanTraps`: niosący widzi pułapki we mgle w 1 polu.
+- Łom: przy zamkniętej kracie podważa ten z łomem obok kraty, inaczej złodziej; tempo ×1,5 (złodziej poz. 6+) ×1,5 (łom) ×0,5 (krata 3. poziomu). `planHero`: gdy drużyna czeka przy zamkniętej kracie (`P.blockSaid`, plan nie `explore`), ten z łomem albo złodziej (nie w drugiej grupie, bez paniki) idzie do kraty (`intent 'pry'`) i tam czeka (do 1.19 złodziej podważał tylko, gdy akurat stał obok). Klatka: ratownik z łomem 0,6 s, złodziej 0,5 s; uwięziony z łomem po 4 s sam (`freeCaged(h, false, 'pry')`).
+- Ciężar: prędkość × `burden(h)`; pierwszy raz `SAY.heavyLoad`; poślizg na lodzie ×`(1 + max(0, load/carry - 0,5))`.
+- Bomby w ogniu i przy przyjaciołach: sekcja 05, 5.13.2 (kwestie `bombCook` głośno prio 4, kolejkowane `bombFriendly`).
+
+### 6.11.6 Kwestie i liczby
+
+`SAY` (24 klucze, 164 kwestie): `lootFallen`, `predecessorGear`, `cursedKeep`, `lootDead`, `lootDeadObject`, `lootDeadReply`, `giveGear`, `giveGearThanks`, `amuletGive`, `tooHeavy`, `heavyLoad`, `lootAssign`, `lootOffer`, `lootOfferTake`, `lanternLight`, `lanternOut`, `crowbarGate`, `crowbarCage`, `gearKnocked`, `gearBack`, `mimicSpill`, `bombCook`, `bombFriendly`, `returnGear`; `SOLO`: `lootDead`, `cursedKeep`, `crowbarGate`, `bombCook`. Kwestie o rzeczach zmarłych nigdy nie używają płci zmarłego. `LINE_NEEDS`: kwestie latarni z mgłą `fog`, płonącej bomby z ogniem `fire`, łomu `gate`/`cage`, mimika `mimic`. Liczby (1.24, 200 fal): dzielenie się 34% fal, wymiana 1%, amulet 20%, oferta 30%, latarnia 38% (ratuje 12%), łom 0% (w lochach autora brak klatek, kraty rzadko odcinają drogę), przeszukanie ciała 39%.
+
+## 6.12 Więzi i dramaty (1.21; zmiany 1.24; `p5_ai.js: bondOf, bondTalk, griefOf, vowK, bondHurt, rivalJab, rivalScare, mentorWatch, mentorProud, mentorRoom, mentorNear, quarrel, quarrelWon, noLeave, rescueThink, rescueJob, betThink, betStart, betEnd, betStep, bondThink`; `p3_flow.js: makeBonds, kill, damageRaw, addFear, say`)
+
+Pary powstają w `makeBonds` (sekcja 04, 2.9). Wszystko dzieje się tylko między dwoma, którzy się widzą; kwestie z {v} nazywają partnera (nigdy jego płci). `bondText(h, k, o)`: kwestia z imieniem partnera, sam: wersja `SOLO`; `say()` od 1.21 podmienia w samotności tylko kwestie `SOLO` bez imienia.
+
+### 6.12.1 Słowo pary (`bondThink`, `bondTalk`)
+
+Każda para dostaje losowy moment 4-20 s po otwarciu drzwi; kwestia (`bondFriend` / `bondSibling` / `bondRival` / `bondMentor`) idzie przez kolejkę drużyny (przy drzwiach jest tłok) i przepada po 25 s. Mistrz mówi do ucznia, nigdy odwrotnie; w innych parach jeden z dwóch. Odpowiedź partnera `bondReply` 60%; bez niej może zacząć się `CONVO` (zestaw `bondFriend`), z partnerem wykluczonym (`P.convoNot`). `stats.bondLines`, oś czasu `bk`. W small talku wybrany z więzią w 25% mówi słowo pary zamiast pogaduszki (raz na 30 s na parę, tylko w ciszy, partner w zasięgu wzroku).
+
+### 6.12.2 Żałoba i zemsta (`griefOf`, `kill`, `perceiveThink`)
+
+Partner zmarłego, który widzi śmierć albo słyszy krzyk (`d.knows`), zamiast zwykłej kwestii i strachu woła `griefOf(o, dead, base, d)`; dowiadujący się później (wieść od towarzysza): kwestia mówiącego, potem jego żałoba (kolejka) zamiast `newsDeath`; znalezienie ciała: żałoba zamiast `bodyFound`. Od 1.24 napis "Żałoba" (rywal: "Szok").
+```
+rywal:                    griefRival, strach × 0.5
+uczeń zmarłego mistrza:   griefMentor, strach × 1.5, growAt = time + 20: jeśli przeżyje, odwaga × 1.15 do końca fali ("Dorasta", stats.grownUp)
+przyjaciel, rodzeństwo, mistrz zmarłego ucznia (griefFriend):
+   nie ucieka i (odważny || barbarzyńca || wojownik 50%) i startRage(o, 'vow', dead):
+      revengeVow ({v} = zmarły; sam SOLO), vowUntil = time + 30, vowOn = potwór, który go zabił (d.killer, żywy), strach × 0.3,
+      stats.revengeVows, revenge, napis "Zemsta!" (1.24)
+   inaczej kwestia żałoby, strach × 1.5
+(tchórz: strach × 1.5 na wierzch, jak dotąd)
+```
+Zemsta: `planHero` daje pracę walki z `vowOn`, dopóki żyje i jest w jego pokoju (nie unoszący się duch ani cień); `vowK(h) = 1,3` do obrażeń wręcz potworów i kuli ognia maga. Wszystkie kwestie żałoby i `revengeVow` są w `LINE_NEEDS.death` (mówi je tylko ten, kto zna tę śmierć; jest dopisywany do `d.knows` przed kwestią). `stats.griefs`, `revengeFights`; oś czasu `gf`, `vw`, `gu`.
+
+### 6.12.3 Mistrz i uczeń
+
+- `mentorWatch(m, a)` (raz na 25 s, mistrz go widzi): uczeń wchodzi do pokoju ze znaną pułapką (`mentorRoom`, `onEnter`) albo traci od pułapki lub potwora 10%+ HP (`bondHurt`); `SAY.mentorWatch` ({v} = uczeń), 60% kolejkowane `apprenticeReply`.
+- `mentorProud(a)` (raz na 25 s): uczeń rozbroił pułapkę albo 3 s po trafieniu, które zostawiło go poniżej 30% HP, jeśli żyje (`h.proudAt`); `SAY.mentorProud`.
+- Uczeń idzie za mistrzem zamiast za przywódcą, gdy mistrz idzie za przywódcą w 6 polach, widzi go, nie ma własnej pracy, ta sama grupa; `lostChance ×0,7` z mistrzem w 3 polach w zasięgu wzroku (`mentorNear`).
+- `stats.mentorWatch`, `mentorProud`; oś czasu `mw`, `mp`.
+
+### 6.12.4 "Nie zostawię cię" (`noLeave`, `rescueThink`, `rescueJob`)
+
+- `decideCage`: przywódca nigdy nie zostawia w klatce własnego partnera (nie rywala). Gdy zostawia kogoś, `noLeave(c, L, pole)`; gdy rezygnuje ze zgubionego (`missLost`), `noLeave(zgubiony, L, ostatnio widziane pole)`.
+- `noLeave`: partner (przyjaciel, rodzeństwo, mistrz/uczeń; nie rywal), spokojny, nie wychodzi, bez kryształu, nie przywódca, nie na zwiadzie, drugiej grupy jeszcze nie ma, i słyszy przywódcę (albo sam nim jest) albo krzyk uwięzionego: kolejkowane `noLeave` ({v} = przyjaciel) i `noLeaveReply` uwięzionego; `g2Start(m, [], 'rescue', pole, 'rescue')`, `P.g2.partner`, `P.g2.apart = true`, uwięziony przestaje być porzucony (koniec strachu samotnej klatki). Podpowiedź "X nie zostawi przyjaciela: wraca po niego sam(a).", napis "Nie zostawię!".
+- Plan `rescue` (`rescueJob` dla przywódcy drugiej grupy): do pola obok klatki, potem `state 'free'` (zwykłe otwieranie, także czasy łomu); po zgubionego: do miejsca, gdzie był ostatnio, potem (widziany, słyszany albo miejsce osiągnięte) do jego pola dowolną drogą.
+- `rescueThink` (`g2Think`): zgubiony blisko (2,5 pola) i w zasięgu wzroku jest odnaleziony (`SAY.found`); uwolniony albo odnaleziony w 6 polach dołącza do grupy (`stats.noLeaveSaved`) i idą `regroup` (do przywódcy, potem zwykłe scalenie); martwy, zniknął albo minęło 40 s: `regroup`. Grupa ratunku zostaje, gdy inni wychodzą, nie musi się rozchodzić, nie scala się przed końcem.
+- Zwykły ratunek: partner uwięzionego jest pierwszym kandydatem na ratownika; `cageEnds` czeka do 8 s dłużej, gdy grupa ratunku partnera jest w drodze. `stats.noLeave`, `noLeaveSaved`; oś czasu `nl`, `ns`. Decyzja: przy szukaniu zgubionego przez przywódcę partner idzie z drużyną.
+
+### 6.12.5 Rywale (`bondHurt`, `rivalJab`, `rivalScare`)
+
+Od 1.24: rana od pułapki albo potwora 8%+ HP widziana przez rywala (do 1.23: tylko pułapka i 20%+ HP, co przy wysokich poziomach prawie nie zdarzało się: 0 na 200 fal) albo, nowe, strach 8%+ odwagi od pułapki lub potwora (`addFear` -> `rivalScare`; wtedy kwestie bez słów "Ała", "Boli", "Uważaj" i odpowiedzi bez "draśnięcie", "zabiło", "Nic mi nie jest"); szansa 80%, raz na 12 s, zajęty: kolejka; `rivalMock` ({v} = trafiony), kolejkowane `rivalMockReply`, trafiony wykluczony z rozmowy; napis "Drwina", `stats.rivalMock`, oś czasu `rm`. Rywal przywódcy jest pierwszym kandydatem do rozłamu (×1,5, 6.10.2) i do kłótni o łup.
+
+### 6.12.6 Zakład (`betThink`, `betStart`, `betEnd`, `betStep`)
+
+```
+betThink (bondThink, co tick): raz na falę, nie w odwrocie, bez fearless, nikt nie wychodzi, od 8 s (1.24; było 10), bez rozmowy dłuższej niż 3 s
+   rv = rywal, który go widzi i jest spokojny
+   kandydat: nie przywódca, ranga 1+ (albo z rv, albo łowca), HP > 50% (1.24; było 60%), spokojny, nie wychodzi, nie w drugiej grupie,
+      nie na zwiadzie ani wypadzie, nie mówi, idzie (walk), w pokoju, bez kryształu;
+      odważny, chciwy, łowca, barbarzyńca albo z rv (1.24; było: odważny albo rywal); rozgląda się raz na sekundę
+   pułapki: wykryte, włączone, cd <= 0, w jego pokoju, jeszcze nie próbowane dla tej pary
+   pułapka, której obszar dotyka drogi przywódcy, jego drogi albo drogi drużyny (partyWay), inaczej (1.24) każda z przechodnim polem w obszarze
+   jeden rzut na bohatera i pułapkę: 85% (1.24; było 70%)
+   przyjmujący: rv, inaczej ktoś spokojny, kto go widzi i nie mówi
+betStart: betStart (przyjmujący wykluczony z rozmowy), kolejkowane betTake ({v} = zakładający), napis "Zakład!"; h.bet na 8 s:
+   planHero daje pracę do najdalszego pola obszaru z noDanger (przechodzi przez obszar)
+betStep (onEnter): w obszarze, potem z niego bez trafienia: wygrana (betWin {v} = przyjmujący, moneta od przyjmującego, napis "Wygrany zakład")
+trafiony tą pułapką (bondHurt) albo zabity: przegrana (betLose przyjmującego {v} = zakładający, moneta od zakładającego); nie wszedł w 12 s: odwołany
+stats.bets, betsWon, betsLost, betsOff; oś czasu bt, be
+```
+Zakład jest dobry dla gracza (bohater wchodzi w pułapkę celowo), więc z założenia rzadki. 1.21: ok. 1 na 6-8 fal; 1.24: w 34% fal.
+
+### 6.12.7 Kłótnia o łup (`quarrel`, `quarrelWon`)
+
+`lootReassign`: przydział przywódcy (claimScore +0,8) jak w 1.20; inaczej chcący zajętego łupu (chciwy, łowca albo rywal chętnego, w 8 krokach, nie zbanowany) woła `quarrel(h, cl, it, k)`: raz na parę na falę, widzą się, spokojni, nie wychodzą, nie mówią. Napis "Kłótnia!" (1.24), `quarrelStart` ({v} = drugi; drugi wykluczony z rozmowy), kolejkowane `quarrelReply`. Przywódca grupy (żaden z nich, spokojny, widzi obu) przerywa w 40%: `SAY.lootStop`, roszczenie kasowane, `it.qBan` = nikt przez 10 s (`stats.quarrelStops`). Inaczej wygrywa wyższy wynik: ranga + 1 (chciwy albo łowca) + 1 (barbarzyńca) + 1 (przywódca) + rand × 0,5; roszczenie jego, `it.qBan` = przegrany przez 10 s (`lootDecision`, `pickup`), kolejkowane `quarrelLose`; przegrany chciwy, łowca albo rywal (nie przywódca) odchodzi obrażony w 30% (foch 1.19, `stats.quarrelSulks`). `quarrelWin`, gdy zwycięzca podniesie łup (`pickup`, `bodyLoot`; `stats.quarrelWins`). `stats.quarrels`; oś czasu `qq`. Ok. 0,6 kłótni na falę (1.21), 1,5 (1.24, 55% fal).
+
+### 6.12.8 Grabienie poległych (`onLootDead`, `mateBody`)
+
+Sprzeciw: partner zmarłego zawsze (jeśli widzi grabiącego), inaczej kapłan albo ostrożny, który wie o tej śmierci, w 50% (nie chciwy, nie łowca): `lootDeadObject` ({v} = grabiący) i `lootDeadReply`; `P.morale -= 0,05` (min. 0,15); `stats.lootDeadObject`, oś czasu `ob`. Partnera ma tylko śmierć z tej fali (id są falowe). `mateBody`: partner nigdy nie przeszukuje ciała swojej pary.
+
+### 6.12.9 Kwestie i liczby
+
+`SAY` (25 kluczy po 10 kwestii): `bondFriend`, `bondSibling`, `bondRival`, `bondMentor`, `bondReply`, `griefFriend`, `griefSibling`, `griefMentor`, `griefRival`, `revengeVow`, `noLeave`, `noLeaveReply`, `mentorWatch`, `apprenticeReply`, `mentorProud`, `rivalMock`, `rivalMockReply`, `quarrelStart`, `quarrelReply`, `quarrelWin`, `quarrelLose`, `betStart`, `betTake`, `betWin`, `betLose`; `SOLO`: `griefFriend` (6), `revengeVow` (6); `CONVO`: `griefFriend` (7), `quarrelStart` (6), `betStart` (7), `rivalMock` (6), `bondFriend` (7). Liczby: "Więzi: pary / żałoba (zemsta) / nie zostawię (uratowani) / mistrz: uwagi, pochwały / kpiny / kłótnie (przerwane) / sprzeciw nad ciałem / zakłady: wygrane-przegrane" (sekcja 08). Od 1.21 `convoStart` proponuje wymianę z rolą C tylko wtedy, gdy ktoś inny w zasięgu słuchu zna kwestie C (do 1.20 wymiana na trzy głosy szła bez C).
+
+## 6.13 Finał fali (1.22; zmiany 1.24; `p5_ai.js: finOf, finalThink, escortThink, escortGoal, escortPace, guardOf, handThink, threatNear, standStart, standThink, lsBrave, reachAvoid, sacStart, sacTick, sacHold, youFirst, tapRoom, tapStep, notThisWay, formThink, formedFoe, backTile`)
+
+`finalThink(crew, L, dt)` co tick (`partyThink`, po `bondThink`); stan fali w `P.fin` (`finOf`). Przy ucieczce z kryształem (`carrierOf()` i `P.plan === 'escape'`): eskorta, przekazanie, ostatni bastion, poświęcenie, "prawie wyszli"; od 1.24 bez kryształu, gdy w drużynie 2+: ostatni bastion za przyjaciela ciężko rannego (< 30% HP) albo panikującego z potworem przy nim (nie w klatce, nie zgubiony, `threatNear`). Zawsze: `standThink`, `sacTick`, `formThink`.
+
+### 6.13.1 Eskorta
+
+- `escortThink`: nowy niosący (z serca): ci, którzy go widzą, spokojni, na planie ucieczki, 35%+ HP, nie wracają sami, nie w bastionie ani poświęceniu, dostają `h.escort`; przywódca (jeśli jest wśród nich) albo najzdrowszy mówi `escortForm`, strażnik (wojownik pierwszy, inaczej najbliższy) kolejkuje `escortGuard` ({v} = niosący), niosący `carrierThanks`. Nikt go nie widzi: formują się, gdy ktoś zobaczy; kto zobaczy później, dołącza. Przekazany kryształ zachowuje straż (bez nowego wołania). `stats.escortForms`, `escortGuards`; oś czasu `ef`.
+- `escortGoal(h, c, b)` (`planHero`, gałąź wychodzenia, `exit` z `escort`, nie ucieka, nie wraca sam): wolne bezpieczne pole (`danger <= 1`) w 2 krokach (Manhattan) od miejsca, gdzie niosący będzie za krok (`path[0]`), poza jego bieżącym, następnym i 3 kolejnymi polami; wojownik wokół pola 3 kroki przed nim (z przodu, waga odległości ×2), reszta najbliżej niosącego; + 0,25 × koszt drogi. Brak miejsca (przejście): pole niosącego (strażnik staje krok przed nim). Niosący poza zasięgiem wzroku i dalej niż 8 pól: wyjście jak dotąd. Na swoim polu czeka 0,15 s, w drodze patrzy znów po 0,25 s (`intent 'escort'`).
+- `escortPace(h)` (prędkość w `updateHero`): strażnik idący na swoje pole idzie co najmniej tempem niosącego ×1,05 (wojownik ×1,2), najwyżej 1,4 swojego (`clamp(..., 1, 1,4)`). Decyzja: bez tego złodziej z kryształem (1,9) zostawiał kapłana i maga (1,3).
+- Przejęcie ciosu (`monstersTick`): sekcja 05, 5.13.3. Złoty pierścień pod strażnikiem (sekcja 08).
+
+### 6.13.2 Przekazanie (`handThink`)
+
+```
+scared = strach niosącego >= 60% odwagi; hurt = HP < 50% (1.24; było 35%)
+weak (1.24) = !hurt && !scared && pierwsze przekazanie fali && niosący to mag, kapłan albo bard
+if (!hurt && !scared && !weak) || przekazań >= 2 || time - ostatnie < 6 || niosący w klatce: return
+odbiorca: HP >= 50% (1.24; było 60%) i
+   weak:   wojownik albo barbarzyńca z HP >= 70%
+   inaczej: HP% >= HP% niosącego + 20 pkt (przestraszony niosący: bez tej różnicy, ale odbiorca ze strachem < 40% odwagi)
+   spokojny, nie wraca sam, nie w bastionie ani poświęceniu, w 2,5 pola (1.24; było 1,5), widzi niosącego; najzdrowszy
+kryształ przechodzi (P.carrierId, plan odbiorcy 'escape', fleeing = false); walka, czekanie, rozmowa, odpoczynek -> walk
+stats.handOvers, tl('ho'); napisy "Przekazuje kryształ" (1.24) i "Niesie kryształ"
+handOver ({v} = odbiorca; z okLines: kwestia o krwawieniu tylko, gdy wie, że krwawi; 1.24: niosący nie ranny bez kwestii o ranach),
+handTake kolejkowane (chyba że kwestia zaczęła rozmowę); zajęta "podłoga": obie w kolejce
+```
+Statystyki kradzieży bez zmian.
+
+### 6.13.3 Ostatni bastion (`standStart`, `standThink`, `threatNear`, `lsBrave`)
+
+- `threatNear(c)`: unoszący się potwór (duch, cień, nietoperze; `gx/gy`) albo potwór wręcz, z którym ktoś walczy, w 3 polach (nie ukryty w zasadzce); najbliższy.
+- `standStart` (raz na falę): kandydat spokojny, przy krysztale na planie ucieczki (od 1.24 za przyjaciela: dowolny plan, nie z kryształem, nie w drugiej grupie, nie na zwiadzie), nie wraca sam, 40%+ HP, nie w poświęceniu, w 6 polach od chronionego, `lsBrave` (odważny, od 1.24 elita, albo wojownik/barbarzyńca z rzutem 50% raz na falę); najbliższy potworowi. Miejsce: najbliższe drzwi (najwyżej 6 kroków, nie wejście, nie na drodze niosącego, bliżej potwora niż niosący i bliżej niosącego, w 5 polach od niego) pokoju niosącego, potwora albo swojego, inaczej tam, gdzie stoi. `h.stand = { m, goal, door, until: +8 s, cid, cr }`; napis "Ostatni bastion!" (1.24; było "Zostaje!"); `lastStand` głośno prio 4 (sam `SOLO`; kwestie o drzwiach, progu i ciasnocie tylko w drzwiach), przyjaciel, który go słyszy, kolejkuje `lastStandReply` ({v} = on).
+- `planHero` (przed gałęzią wychodzenia): do miejsca z `noDanger`; tam potwór wręcz w zasięgu = `state 'fight'` (`updateHero` nie przerywa tej walki z powodu wychodzenia), inaczej `wait`; `toSafety` go nie przesuwa. `driftTarget`: unoszący się potwór wybiera stojącego w 3 polach.
+- `standThink`: koniec po 8 s, poniżej 25% HP, przy panice albo ucieczce, gdy potwór zginie albo gdy chroniony zniknie (kryształ: `carrierOf()`; od 1.24 przyjaciel: dopóki żyje i jest w lochu); potem biegnie do wyjścia. `stats.lastStands`, `lastStandT`; oś czasu `lx`, `le`. Pierwsza wersja 1.24 stawała też za przyjacielem tylko przestraszonym (80%+): zabierała mu duchy i loch strachu płacił ok. 10% mniej w falach 6-10, więc tego nie ma.
+
+### 6.13.4 Poświęcenie (`sacStart`, `sacTick`, `sacHold`, `reachAvoid`)
+
+- `sacStart` (rozglądanie raz na sekundę, raz na falę): znana droga niosącego do wyjścia (`bfs known, noDanger`) i pierwsza znana, gotowa (`cd <= 0,3`, nie zakłócona) pułapka podłogowa albo ścienna, której obszar dotyka pierwszych 12 kroków tam, gdzie `fl.danger >= 1`; nie klatka (trzymałaby go) ani rekwizyt strachu. "Nie ma innej drogi": `reachAvoid` (znana droga od niosącego do wyjścia omijająca obszar) się nie udaje, a niosący nie stoi już w obszarze. Bohater: odważny, inaczej kapłan (30%), inaczej najzdrowszy; na planie ucieczki, spokojny, nie wraca sam, nie w bastionie, 35%+ HP, w 8 polach, nie niosący. Cel: przechodnie pole obszaru, do którego dojdzie (najpierw na drodze niosącego, najbliższe). `sacrifice` ('q' albo kolejka), `sacrificeReply` ({v} = on) od słyszącego; napis "Poświęca się"; `F.sac = { ..., until: +6 + 0,6 × kroki, wait: +4 + 0,6 × kroki }`.
+- `planHero`: do celu z `noDanger`, potem stoi w nim (`wait`, bez `toSafety`), aż pułapka odpali na niego zwykłą drogą (check albo sama).
+- `sacTick`: `cd > 0` = odpaliła: `sacrificeDone` (głośno, jeśli żyje), `stats.sacrificeFired`; koniec, gdy odpaliła, on martwy/zniknął/przestraszony, pułapki nie ma albo minął `until`.
+- `sacHold(h)` (`updateHero`, przed krokiem): inni wychodzący (bez paniki) stają, gdy jeden z ich 2 następnych kroków jest w obszarze, aż odpali albo minie `wait`. Decyzja: `P.waitUntil` trzyma tylko przywódcę i nie przy wychodzeniu, więc wstrzymanie jest osobne. `stats.sacrifices`; oś czasu `sf`, `sd`.
+
+### 6.13.5 "Ty pierwszy" (`youFirst`), opukiwanie podłogi (`tapRoom`, `tapStep`), "nie tędy" (`notThisWay`)
+
+- `youFirst(h, n)` (`updateHero`, przed krokiem): zwiedzający tchórz albo ostrożny (nie wychodzi, bez paniki, nie zgubiony, nie w drugiej grupie, nie na zwiadzie) przed wejściem do pokoju ze znaną pułapką albo rekwizytem (`LOOKS_TRAP`, wykryte, włączone); każdy pokój raz (60%), raz na 40 s, 2 na falę. Wysłany: spokojny, widzi go, w 4 polach, nie walczy; najpierw jego rywal, potem nowicjusz, potem najbliższy. `o.firstInto = { room, goal: krok albo dwa w głąb pokoju na drodze tchórza, until: +6 s }` (praca `first`, kasowana, gdy jest w pokoju); tchórz czeka 1,5 s. `youFirst` ({v} = wysłany), `youFirstReply`. `stats.youFirst`; oś czasu `yf`.
+- `tapRoom(h, r, fresh)` (`onEnter`, nowy pokój): ostrożny albo złodziej-nowicjusz wchodzący do pokoju, przez który nikt jeszcze nie przeszedł albo w 4 s od pierwszego (`R.visitT`), 60%, 3 pokoje na falę (`h.taps`): `h.tap`, `tapFloor` (sam `SOLO`); w tym pokoju idzie ×0,7. Wychodzi bez znaleziska: `tapNothing` (40%). `tapStep(h, n)`: każda ukryta, działająca pułapka podłogowa (kolce, zapadnia, klatka, sieć) w 1 polu (Czebyszew) od następnego kroku ma jeden rzut 35% na falę (`h.tapRolled`); znaleziona: `learnTrap(it, 'tap', h)` (znalazca mówi `tapFound`), `stats.detected`, napis "Opukana!", staje i planuje od nowa. `stats.taps`, `tapFound`; oś czasu `tp`, `tf`.
+- `notThisWay(L, crew)` (`partyThink`, po nowym celu): raz na falę, znana droga przywódcy do `P.target` przechodzi przez pokój (nie jego) ze znaną, działającą pułapką z `P.hurt` (`damageRaw` pamięta, kogo każda pułapka zraniła); mówiący: spokojny, słyszy przywódcę, nie przywódca, ranga 2+ albo zraniony przez nią (pierwszeństwo). Kolejkowane `notThisWay` (kwestie "Byłem tam", "Raz mi wystarczyło", "Pamiętam to miejsce" tylko od zranionego), potem `chooseTarget(L, room)`: `bfs` z `costRoom` (+20 za pole tego pokoju) i +1000 za cel w nim, bez narady przy rozwidleniu. `stats.notThisWay`, `notThisWayMoved`; oś czasu `nw`.
+
+### 6.13.6 Szyk w walce (`formThink`, `formedFoe`, `backTile`)
+
+Każdy potwór wręcz, z którym ktoś walczy (nie przy wychodzeniu), z wojownikiem obok (spokojny, 30%+ HP, nie wycofany, w pokoju potwora albo 2 pola) i kimś jeszcze: `w.front = m` (`planHero` posyła go na potwora; `monstersTick` bije go pierwszego, ogr dalej wszystkich), `frontLine` raz na walkę; kapłan albo mag walczący z nim (bez furii) wychodzi z walki. Walczący poniżej 30% HP (raz na falę, nie w bastionie) z wojownikiem albo innym walczącym obok: `woundedBack`, 4 s poza walką (`backUntil`, `backFrom`), `backTile` (wolne bezpieczne pole 2-3 pola od potwora, za wojownikiem, najbliższe), bez prac walki. `formedFoe(h)`: potwór jego pokoju trzymany przez wojownika (także gdy wojownik do niego idzie); kapłan i mag nie dołączają do tej walki i trzymają się 2-4 pola od niej. `stats.frontLines`, `woundedBack`; oś czasu `fm`, `wb`.
+
+### 6.13.7 Prawie wyszli, kwestie, liczby
+
+- Niosący w 6 polach od wyjścia: kolejkowane `nearExit` raz na falę (sam `SOLO`). `stats.nearExit`; oś czasu `ne`.
+- `SAY` (19 kluczy, 185 kwestii): `escortForm`, `escortGuard`, `carrierThanks`, `handOver`, `handTake`, `lastStand`, `lastStandReply`, `sacrifice`, `sacrificeReply`, `sacrificeDone`, `youFirst`, `youFirstReply`, `tapFloor`, `tapFound`, `tapNothing`, `notThisWay`, `frontLine`, `woundedBack`, `nearExit`; `SOLO`: `tapFloor`, `nearExit`, `lastStand` (po 6); `CONVO`: `handOver` (7), `lastStand` (7), `youFirst` (6), `notThisWay` (7). `LINE_NEEDS.blood`: `woundedBack` "Krwawię... Zasłońcie mnie!", `handOver` "Dalej ty, {v}. Krwawię jak prosię." i `CONVO handOver` "Ojej, tyle krwi..." (ranny poniżej 40% HP zna `blood`).
+- Odtworzenia 1.22 (7 serii na run): utracone kryształy +14%, Esencja +5% względem 1.21 (w granicach: +25% / -10%). 1.24 (200 fal, 6.15): eskorta 22% fal, przekazanie 10%, bastion 46%, poświęcenie 6%, "ty pierwszy" 18%, opukiwanie 28%, "nie tędy" 28%, szyk 40%.
+
+## 6.14 Nemezis w lochu i pamięć poległych (1.23; `p5_ai.js: nemOf, grudgeAdd, nemesisSpawn, grudgeItem, nemAnswer, nemBoast, nemesisThink, bountyTalk, nemGrudgeLook, grudgeJob, nemGrudgeDone, nemWarn, nemBefore, nemMissed, nemesisRage, nemesisKilled, rememberFallen, fallenRoom`; `p3_flow.js: nemHold, damageRaw, addFear, startFlee, partyFlee, kill, heroExit`; `p4_traps.js: fire, rebuildThreat, monstersTick`)
+
+Kto zostaje Nemezis, tytuły, siła, wejście i nagroda: sekcja 04, 6.9. Tu zachowanie. Stan fali `P.nem = { warned, fallenRooms, fallenN, boasts, boastT, bounty, bountyT }`. `nemesisThink(crew, L)` co tick po `finalThink`.
+
+### 6.14.1 Uraza
+
+- `grudgeItem(h)`: element tego typu na starym polu, inaczej najbliższy działający tego typu gdziekolwiek (nie `temp`, nie wyłączony, nie rozbity, żywy potwór).
+- `nemGrudgeLook(h)`: spokojny, nie wychodzi, rzecz w jego pokoju (nie potwór ukryty w zasadzce): raz `nemesisGrudge`, `h.grudgeOn`, 25 s na załatwienie, pułapka staje się wykryta; jeśli on jej nie załatwi (złodziej i `DISARMABLE` albo barbarzyńca bez Okowów), dostaje `grudgeW = run.wave`, a jej zagrożenie liczy się ×2 w `rebuildThreat` (z limitem 6 jak dotąd). `stats.grudgeHits`; oś czasu `ng`.
+- `grudgeJob(h, b)` (`planHero`, po zemście, przed leczeniem kapłana; nie w panice, nie zgubiony, bez `fearless`): złodziej i pułapka `DISARMABLE`: do miejsca rozbrajania, potem zwykły stan `disarm` (wpadka, mechanizm samobójczy, saper jak zwykle); barbarzyńca (nie w Okowach): do pola obok, potem `smash` z `{ kind: 'b', ref: pułapka }` (`smashDone` oznacza ją rozbitą i wyłączoną na falę); inni: bez pracy. Potwór (nie unoszący się) w jego pokoju: praca walki (`intent 'fight'`) bez względu na klasę; `nemK(h, m) = 1,25` do obrażeń wręcz i kuli ognia.
+- Załatwione (rozbrojona/zdjęta, rozbita, potwór martwy): `stats.grudgeDone`, `nemesisBoast`; oś czasu `nd`.
+
+### 6.14.2 Ostrzeżenia, przechwałki, brak paniki, ucieczka z kryształem
+
+- `nemWarn`: następne 5 kroków przywódcy wchodzi do pokoju (kind `room`), który pamięta, z jedną z `h.nemTraps` działającą w nim; raz na pokój na falę; słyszy przywódcę (albo prowadzi); `nemesisWarn`, odpowiedź 50% (`nemAnswer`) chyba że zaczęła się rozmowa. `stats.nemesisWarn`; oś czasu `nw2`.
+- `nemesisRage`: poniżej 30% HP raz (`damageRaw`), napis "Nie ucieknie!", `stats.nemesisRage`, oś czasu `nr`.
+- `nemHold(h)` (`p3_flow.js`): Nemezis powyżej 15% HP nie panikuje (`addFear`), nie upuszcza kryształu ze strachu, `startFlee` od razu wraca (także odpychanie serca i uwolnienie z klatki), a `partyFlee` nie oznacza go jako uciekającego (wychodzi z nimi jak czempion).
+- `nemesisBoast`: pułapka z `h.nemTraps` odpala (`fire()` w `p4_traps.js`: `nemBefore`/`nemMissed`), a on w 1 polu od jej obszaru nie stracił HP: najwyżej 2 na falę, co 10 s; zawsze po załatwionej urazie. `stats.nemesisBoast`; oś czasu `nx`.
+- `nemesisEscape`: niesie kryształ, 2,5 pola od wyjścia (przed drzwiami, bo dymek znika przy wyjściu). `heroExit`: `stats.nemesisOut`, `nemesisCrystal`; oś czasu `no`.
+- `nemesisDown` ({g} = on): towarzysz, który widzi jego śmierć (nie ucieka, bez paniki, nie w klatce), mówi to (prio 4) zamiast zwykłej kwestii śmierci. `stats.nemesisDown`.
+
+### 6.14.3 Rozmowa o nagrodzie (`bountyTalk`)
+
+Z Nemezis w fali (w lochu albo w kolejce), od 6 s, rozglądanie raz na sekundę do 60 s: nikt nie walczy ani nie panikuje, nikt nie wychodzi; spokojny (nie on; chciwy albo łowca pierwszy), którego ktoś słyszy, mówi `bountyTalk` (teraz albo przy następnym spojrzeniu), `bountyReply` 60% chyba że zaczęła się rozmowa. `stats.bountyTalk`; oś czasu `bn`.
+
+### 6.14.4 Pamięć poległych (`rememberFallen`, `fallenRoom`)
+
+`fallenRoom(h, r)` (`onEnter`, nowy pokój albo korytarz): poległy z wcześniejszej fali zginął tutaj; pierwszy spokojny bohater, który wchodzi (nie wychodzi, nie mówi), oznacza pokój na tę falę i w 70% mówi: `nemesisFallen` ({g}), gdy jeden z nich był Nemezis, inaczej `fallenMemory` ({g} = ostatni; sam `SOLO`); `fallenReply` 60% chyba że zaczęła się rozmowa; 3 na falę. `stats.fallenMemory`; oś czasu `fm` (ten sam kod co szyk w walce, 6.13.6). Decyzja: wchodzący w panice albo biegnący nie zużywa pokoju (następny spokojny może mówić).
+
+### 6.14.5 Kwestie i liczby
+
+`SAY` (14 kluczy, 136 kwestii): `nemesisIntro`, `nemesisGrudge`, `nemesisWarn`, `nemesisReply`, `nemesisFollow` ({v}), `nemesisRage`, `nemesisBoast`, `nemesisEscape`, `nemesisDown` ({g}), `nemesisFallen` ({g}), `fallenMemory` ({g}), `fallenReply`, `bountyTalk`, `bountyReply`; `SOLO`: `nemesisIntro` (6), `nemesisGrudge` (6), `fallenMemory` (5, cztery z {g}); `CONVO`: `nemesisIntro` (8), `fallenMemory` (8), `bountyTalk` (7) (startują same po kwestii A, `convoAfter`). {g}/{v} wypełnia `nameFill` (wpis poległego ma `nm` i `female`). Liczby: "Nemezis: w fali / nagrody (Esencja) / urazy (załatwione) / ostrzeżenia / pamięć poległych". 1.24 (200 fal): Nemezis w 24% fal, nagroda wypłacona 2%, rozmowa o nagrodzie 4%, pamięć poległych 50%.
+
+## 6.15 Wyczerpanie na końcu fali i częstość zdarzeń (1.24; `p3_flow.js: waveExhausted, waveForceOut`; `p6_loop.js: step`)
+
+### 6.15.1 Wyczerpanie zamiast teleportu
+
+Autor: pod koniec najazdu bohaterowie czasem znikali, a fala kończyła się przypadkowo. Do 1.23 `step` przy `fl.patT >= S.waveTime + 60` wyprowadzał każdego w środku tam, gdzie stał (także zniknięty w zapadni); od 1.17-1.22 (narada "jeszcze chwila", szturm, druga grupa, fochy, bastion) zdarzało się to częściej.
+```
+waveExhausted() (raz, fl.exhausted; stats.exhausted, tl('xh', ilu w środku)):
+   P.g2 -> g2End('out'); P.council = null; P.councilMore = true; P.sulkAfter = null; P.mutinyHome = 0; P.scoutId = P.scoutMate = -1; P.prep = null; P.detour = null
+   poświęcenie zakończone; fl.fearless = true; fl.storm = false; fl.queue = []            // reszta drużyny zostaje na zewnątrz
+   if P.plan nie 'escape' i nie 'flee': P.plan = 'leave'
+   każdy żywy w lochu: zakład odwołany (betEnd, jako betsOff), bastion i poświęcenie zakończone, h.plan = null (niosący zostaje przy 'escape'),
+      split, wander, zemsta i łup kasowane, needPlan; zgubiony odnajduje drogę (lost = false, reveal); rest/talk/wait/boss -> walk;
+      napis "Wyczerpany/Wyczerpana" (nie nad spadającym)
+   przywódca: SAY.leave; setHint('Bohaterowie są wyczerpani: wychodzą.') (setHint martwe, napisy to niosą)
+waveForceOut() (każdy krok od fl.patT >= S.waveTime + 150):
+   każdy żywy w lochu: niesie kryształ -> wraca do serca (crystalSaved, "Kryształ wraca!", crystalEv(0, 'saved', 'forcedOut'));
+   h.gone = false; napis "Ucieka"; stats.forcedOut, tl('fo', id, x, y, stan); heroExit(h)
+```
+Inne miejsca znikania sprawdzone w 1.24: `h.gone` ustawia tylko `fall()` (zapadnia) i bohater zawsze wraca (`landFallen` albo `cellLand`; fala nie kończy się, gdy ktoś spada); `heroExit` tylko na polu wyjścia (`updateHero`, dwa razy) i w siatce; wyłom to pole wyjścia z tym samym zanikaniem; mgła tylko przyciemnia (alfa 0,55). W 200 falach testowych stara siatka zadziałałaby 0 razy, wyczerpanie 1-2 razy, wymuszone wyjście 0.
+
+### 6.15.2 Czy zdarzenia 1.19-1.23 działają (pomiar 1.24, `e124/evcount.py`)
+
+Cały run (fale 1-10 grane dalej: powracający, Nemezis, polegli, więzi przechodzą), każda fala to loch autora z tej fali (układ, elementy, talia), pełna gra, checki losowo (40% krytyk, 42% draśnięcie, 18% pudło); 10 runów każdego z dwóch runów autora = 200 fal. Średnia liczba na falę / udział fal ze zdarzeniem:
+
+| Zdarzenie | 1.23 | 1.24 | Uwagi |
+|---|---|---|---|
+| rozłam (wszystkie) | 0,30 / 26% | 0,39 / 34% | |
+| niespokojny | 0,08 / 6% | 0,07 / 7% | małe lochy rzadko mają drugą drogę |
+| foch | 0,21 / 20% | 0,29 / 26% | |
+| z narady | 0 / 0% | 0 / 0% | potrzeba 2+ przegłosowanych za "jeszcze chwila"/szturmem w drużynie 4+; narady w ok. 12-16% fal |
+| ratunek ("nie zostawię") | 0,01 / 2% | 0,01 / 2% | |
+| bunt | 0,00 / 0% (1 na 200) | 0,32 / 32% | |
+| scalenie | 0,12 / 12% | 0,13 / 12% | |
+| podanie / wymiana sprzętu | 0,45 / 27%, 0,01 / 0% | 0,56 / 34%, 0,01 / 1% | wymiana rzadka z założenia (1+ w obie strony) |
+| podany amulet | 0,22 / 19% | 0,25 / 20% | |
+| oferta łupu | 0,56 / 29% | 0,62 / 30% | |
+| latarnia (ratuje) | 0,41 / 40% (12%) | 0,40 / 38% (12%) | |
+| łom: krata / klatka | 0 / 0% | 0 / 0% | działa w testach jednostkowych; w lochach autora brak klatek |
+| przeszukanie ciała | 1,20 / 43% | 1,01 / 39% | |
+| słowo pary | 0,41 / 37% | 0,69 / 60% | |
+| żałoba (zemsta) | 0,28 / 27% (7%) | 0,42 / 34% (10%) | |
+| drwina rywala | 0,00 / 0% | 0,56 / 26% | |
+| kłótnia | 1,56 / 60% | 1,52 / 55% | |
+| sprzeciw nad ciałem | 0,12 / 8% | 0,14 / 12% | |
+| zakład | 0,04 / 4% | 0,34 / 34% | |
+| eskorta | 0,17 / 18% | 0,22 / 22% | idzie za kradzieżami (22% -> 32% fal, trudniejsze fale 1-4) |
+| przekazanie | 0,02 / 2% | 0,10 / 10% | ok. jedna trzecia fal z kradzieżą |
+| ostatni bastion | 0,01 / 1% | 0,46 / 46% | |
+| poświęcenie | 0,05 / 5% | 0,07 / 6% | |
+| "ty pierwszy" | 0,18 / 17% | 0,20 / 18% | |
+| opukiwanie | 0,48 / 28% | 0,45 / 28% | |
+| "nie tędy" | 0,43 / 44% | 0,28 / 28% | |
+| szyk (front) | 0,85 / 47% | 0,79 / 40% | |
+| Nemezis w fali | 0,14 / 14% | 0,24 / 24% | |
+| nagroda / rozmowa o nagrodzie | 0,01 / 1%, 0,02 / 2% | 0,03 / 2%, 0,04 / 4% | |
+| pamięć poległych | 1,02 / 57% | 0,96 / 50% | |
+
+Zmiany 1.24 (dramatyczne zdarzenia mniej więcej raz na 2-3 fale, każde z napisem na starcie): zakład (6.12.6), drwina rywala (6.12.5), więzi 75% / 45%, rywale 45%, mistrzowie 20% (sekcja 04, 2.9), kłótnia z napisem "Kłótnia!", bunt (6.10.3), rozłam (6.10.2), żałoba z napisem "Żałoba"/"Szok" i "Zemsta!", ostatni bastion także za rannym przyjacielem i dla elity (6.13.3), przekazanie (6.13.2). Rzadkie z założenia albo przez warunki i zostawione: rozłam z narady, łom, wymiana sprzętu.

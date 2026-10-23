@@ -1,4 +1,17 @@
 {
+ "sulkOff": [
+  "Niewdzięczni... wszyscy co do jednego.",
+  "Pokażę im. Sam{|a} sobie poradzę.",
+  "Nikt mnie nie słucha. Nigdy.",
+  "Głupia kłótnia... głupi loch...",
+  "I dobrze. Przynajmniej cisza.",
+  "Jeszcze będą mnie prosić..."
+ ],
+ "bodyFound": [
+  "Ciało... to ktoś od nas.",
+  "Nie... Leży tu, a nikt o tym nie wie.",
+  "Sam{|a} z ciałem przyjaciela... Nie wytrzymam."
+ ],
  "staunch": [
   "Krew stanęła. Dobrze.",
   "Zatamowane. Mogę iść dalej.",
@@ -568,5 +581,107 @@
   "Ktoś krzyczy... to chyba jeden z naszych!",
   "Ten krzyk... znam ten głos.",
   "Krzyk! Gdzieś blisko..."
+ ],
+ "g2LeaderDown": [
+  "Został{em|am} sam{|a}. Muszę znaleźć resztę.",
+  "I co teraz? Do pozostałych, póki się da.",
+  "Trzeba było zostać z resztą...",
+  "Nikogo. Tylko ja i ten loch. Wracam do swoich.",
+  "Spokojnie. Znajdę ich. Muszę ich znaleźć.",
+  "Ten upór drogo nas kosztował. Wracam."
+ ],
+ "sulkBack": [
+  "Dobra... sam{|a} tu długo nie pociągnę.",
+  "Wrócę. Ale nie przeproszę.",
+  "Chyba przesadził{em|am}. Trochę.",
+  "Gdzie oni są? Trzeba ich znaleźć.",
+  "Ech. Duma dumą, a życie życiem.",
+  "Za cicho tu bez nich. Wracam."
+ ],
+ "lootDead": [
+  "Nikt nie widzi... wybacz.",
+  "Nie zostawię tego tu, w ciemności.",
+  "Wezmę. Ktoś musi to stąd wynieść.",
+  "Przepraszam. Muszę przeżyć.",
+  "Sam{|a} jestem. Każda rzecz się przyda.",
+  "Mnie to teraz bardziej potrzebne. Wybacz."
+ ],
+ "cursedKeep": [
+  "Nie zamienię. To zostaje przy mnie.",
+  "Inne? Nie. Mam swoje skarby.",
+  "Nikt mi tego nie zabierze."
+ ],
+ "crowbarGate": [
+  "Sam{|a} podważę tę kratę. Jakoś.",
+  "Łom w szparę i ciągnę...",
+  "No dalej, kraciska..."
+ ],
+ "bombCook": [
+  "Gorę... a te bomby zaraz...",
+  "Bomby się grzeją! Zaraz będzie po mnie!",
+  "Ogień i proch. Głupi{|a} ja."
+ ],
+ "griefFriend": [
+  "{v}... i został{em|am} sam{|a}.",
+  "Nie ma cię, {v}. Nikogo nie ma.",
+  "Mówię do ciebie, {v}, a ty milczysz.",
+  "Jak mam iść dalej bez ciebie, {v}?",
+  "{v}... cisza tu taka straszna.",
+  "Tylko ja i ten loch, {v}. Tylko ja."
+ ],
+ "revengeVow": [
+  "Pomszczę cię, {v}. Choćbym miał{|a} paść.",
+  "Ten loch odpowie za ciebie, {v}.",
+  "Sam{|a}, ale nie bezbronn{y|a}. Za ciebie, {v}.",
+  "Słyszysz, przeklęty lochu? Odpłacę ci.",
+  "Obiecuję ci to, {v}. Zemstę.",
+  "Nikt nie słyszy tej przysięgi. Tylko ty, {v}."
+ ],
+ "tapFloor": [
+  "Opukam. Nie ma się co spieszyć.",
+  "No, kijku, nie zawiedź mnie.",
+  "Nikt nie patrzy, a i tak stukam. Mądrze.",
+  "Lepiej stracić kij niż nogę.",
+  "Powoli. Nie ma kto mnie wyciągnąć.",
+  "Puk... i słuchamy."
+ ],
+ "nearExit": [
+  "Jeszcze trochę... Dam radę.",
+  "Światło. Nareszcie.",
+  "Jeszcze tylko kawałek, nogi...",
+  "Czuję wiatr. Prawie...",
+  "Jeśli dojdę, nikt mi nie uwierzy.",
+  "Sam{|a} z kryształem. Kto by pomyślał."
+ ],
+ "lastStand": [
+  "Dobra. Ja i te drzwi. Zobaczymy.",
+  "Nikt tędy nie przejdzie. Nawet bez świadków.",
+  "Niech przyjdą. Stoję.",
+  "Ładne miejsce na ostatnią walkę. Ciasne.",
+  "Tu się zatrzymam. Byle tamci zdążyli.",
+  "Bogowie, jeśli patrzycie, to teraz."
+ ],
+ "nemesisIntro": [
+  "Tylko ja i ty, stary lochu.",
+  "Pamiętam ten zapach. Wrócił{em|am}.",
+  "Spokojnie. Znasz to miejsce.",
+  "Ten loch zabrał mi sen. Odbiorę go.",
+  "Moja zemsta, moja sprawa.",
+  "Śnił{em|am} o tych korytarzach. Złe sny."
+ ],
+ "nemesisGrudge": [
+  "Znowu się widzimy. Tylko my dwoje.",
+  "Nikt nie patrzy. Tym lepiej.",
+  "Ręce mi drżą... ale nie ze strachu.",
+  "To przez ciebie mam tę bliznę.",
+  "Sam{|a} na sam z tobą. Wreszcie.",
+  "Pamiętam, jak to bolało. Ty też zapamiętasz."
+ ],
+ "fallenMemory": [
+  "Sam{|a} w miejscu śmierci {g}. Pięknie.",
+  "Ciekawe, czy duch {g} mnie widzi.",
+  "Spokój duszy {g}. I mojej skórze też.",
+  "Tu urwała się historia {g}. Moja jeszcze nie.",
+  "Wybacz, że przechodzę przez twój grób."
  ]
 }

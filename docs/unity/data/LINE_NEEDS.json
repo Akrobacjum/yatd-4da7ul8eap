@@ -55,7 +55,10 @@
   "Kręci mi się w głowie... krew...",
   "{n}, tutaj! Krwawię!",
   "Krew to krew. Każdy ma jej pełno.",
-  "Złoto nie ucieknie. Krew ucieka."
+  "Złoto nie ucieknie. Krew ucieka.",
+  "Krwawię... Zasłońcie mnie!",
+  "Dalej ty, {v}. Krwawię jak prosię.",
+  "Ojej, tyle krwi..."
  ],
  "bones": [
   "Te kości... ruszają się!",
@@ -102,7 +105,9 @@
   "Jak tam w klatce, {Av}?",
   "Żelazne kraty... Ile by za nie dali?",
   "Kiepski zamek. Wstyd dla lochu.",
-  "Pierwsza klatka? Do trzeciej się przywyka."
+  "Pierwsza klatka? Do trzeciej się przywyka.",
+  "Mam łom! Wyłamuję pręty!",
+  "Pręty nie wytrzymają łomu."
  ],
  "coffin": [
   "Trumna się otwiera!",
@@ -165,6 +170,15 @@
   "To coś cuchnie czarną magią."
  ],
  "death": [
+  "Ciało! To {n}...",
+  "Znalazł{em|am} {a}. Już nie żyje.",
+  "Nie... {n} tu leży. Nikt nic nie słyszał?",
+  "{v}?! Kiedy to się stało?",
+  "Ktoś tu leży... to {n}! Nie...",
+  "Nikt nie słyszał, jak {n} umiera...",
+  "Ciało... to ktoś od nas.",
+  "Nie... Leży tu, a nikt o tym nie wie.",
+  "Sam{|a} z ciałem przyjaciela... Nie wytrzymam.",
   "Nie! {n}!",
   "Straciliśmy {a}!",
   "Pomścimy cię, {v}!",
@@ -217,7 +231,69 @@
   "Loch zbiera żniwo.",
   "Ktokolwiek to był, niech spoczywa w pokoju.",
   "Oby to był ktoś obcy.",
-  "Ktoś nie żyje."
+  "Ktoś nie żyje.",
+  "{v}! Nie... tylko nie ty!",
+  "Nie, nie, nie... {v}!",
+  "{v}... obiecaliśmy sobie wrócić.",
+  "Dlaczego ty, {v}? Dlaczego nie ja?",
+  "{v}... kto mi teraz popilnuje pleców?",
+  "{v}... to nie może być prawda.",
+  "Tyle lat razem, {v}. Tyle lat...",
+  "Bogowie, nie... {v}!",
+  "{v}... jeszcze ci nie oddał{em|am} długu.",
+  "Nie wierzę... nie wierzę, {v}...",
+  "{v}... i został{em|am} sam{|a}.",
+  "Nie ma cię, {v}. Nikogo nie ma.",
+  "Mówię do ciebie, {v}, a ty milczysz.",
+  "Jak mam iść dalej bez ciebie, {v}?",
+  "{v}... cisza tu taka straszna.",
+  "Tylko ja i ten loch, {v}. Tylko ja.",
+  "{v}! Nie! Krew z mojej krwi!",
+  "Co ja powiem mamie, {v}?",
+  "{v}... jak wrócę do domu bez ciebie?",
+  "Miał{em|am} cię pilnować, {v}...",
+  "Ojciec mi tego nie wybaczy... {v}...",
+  "Od kołyski razem, {v}. Do teraz.",
+  "Nie zabieraj mi rodziny, przeklęty lochu!",
+  "{v}... dom będzie teraz taki pusty.",
+  "{v}... rodzina się nie rozdziela. Nie tak.",
+  "Kto mi zostanie z rodziny, {v}?",
+  "{v}... kto mnie teraz nauczy?",
+  "Nie zdążył{em|am} ci podziękować, {v}...",
+  "Wszystko, co umiem, mam od ciebie, {v}.",
+  "{v}, nie zostawiaj mnie sam{ego|ą}...",
+  "Co teraz, {v}? Co mam robić?!",
+  "{v}... przecież ty znasz każdy loch!",
+  "Nie! Bez ciebie nie dam rady, {v}!",
+  "Twoje lekcje zostaną ze mną, {v}. Przysięgam.",
+  "{v}... jeszcze tyle chciał{em|am} się nauczyć.",
+  "Kto mi teraz powie, gdzie stawiać stopy, {v}?",
+  "{v}... to nie tak miało się skończyć.",
+  "Z kim ja się teraz będę ścigać, {v}?",
+  "Nie dokończyliśmy zakładu, {v}...",
+  "Zawsze chciał{em|am} cię pokonać, {v}. Nie tak.",
+  "Kłóciliśmy się o wszystko, {v}. Wszystko...",
+  "Nie mam już z kim przegrywać, {v}...",
+  "{v}... nie zdążył{em|am} powiedzieć: szanuję cię.",
+  "Kto mi teraz powie, że jestem do niczego, {v}?",
+  "Psiakrew, {v}... nie ty.",
+  "Wygrana bez ciebie nic nie jest warta, {v}.",
+  "Ten loch zapłaci za ciebie, {v}. Przysięgam.",
+  "Zniszczę to, co ci to zrobiło, {v}.",
+  "Słyszysz mnie, lochu?! Zapłacisz!",
+  "{v}, rozwalę ten loch kamień po kamieniu.",
+  "Za ciebie, {v}. Wszystko teraz za ciebie.",
+  "Przysięgam na twoje imię, {v}: pomszczę cię.",
+  "To coś pożałuje, że cię tknęło, {v}.",
+  "Zemsta, {v}. Obiecuję ci zemstę.",
+  "Spalę serce tego lochu, {v}. Dla ciebie.",
+  "Krew za krew, {v}.",
+  "Pomszczę cię, {v}. Choćbym miał{|a} paść.",
+  "Ten loch odpowie za ciebie, {v}.",
+  "Sam{|a}, ale nie bezbronn{y|a}. Za ciebie, {v}.",
+  "Słyszysz, przeklęty lochu? Odpłacę ci.",
+  "Obiecuję ci to, {v}. Zemstę.",
+  "Nikt nie słyszy tej przysięgi. Tylko ty, {v}."
  ],
  "decoy": [
   "To była zmyłka!",
@@ -274,7 +350,12 @@
   "Już zgasło. Bogom dzięki.",
   "Czuć tu spaleniznę.",
   "Lepiej czuć, niż płonąć.",
-  "Gasić modlitwą? Woda by była tańsza."
+  "Gasić modlitwą? Woda by była tańsza.",
+  "Płonę, a mam przy sobie bomby!",
+  "Gorę! A bomby ze mną!",
+  "Ogień przy bombach! Uciekać!",
+  "Gorę... a te bomby zaraz...",
+  "Ogień i proch. Głupi{|a} ja."
  ],
  "fog": [
   "Nic nie widać w tej mgle...",
@@ -301,7 +382,9 @@
   "Biało i cicho. Nie lubię.",
   "Mgła. Gorzej być nie może.",
   "Sam{|a} we mgle. Wspaniale.",
-  "Tylko spokojnie. To tylko mgła."
+  "Tylko spokojnie. To tylko mgła.",
+  "Mgła gęsta, ale latarnia daje radę.",
+  "Ta mgła nie lubi latarni."
  ],
  "gate": [
   "Krata!",
@@ -338,7 +421,12 @@
   "Żelazo ustąpi. Zawsze ustępuje.",
   "Krata. Poszukam innej drogi.",
   "Krata mnie nie zatrzyma. Inna droga.",
-  "Żelazo? Dobrze. Są inne drzwi."
+  "Żelazo? Dobrze. Są inne drzwi.",
+  "Krata kontra łom. Zobaczymy.",
+  "Podważę te pręty. Chwila.",
+  "Na tę kratę mam łom.",
+  "Sam{|a} podważę tę kratę. Jakoś.",
+  "No dalej, kraciska..."
  ],
  "gear": [
   "Porządny sprzęt!",
@@ -679,7 +767,8 @@
  "mimic": [
   "Ten mebel gryzie!",
   "Mimik!",
-  "Ten mebel ma zęby!"
+  "Ten mebel ma zęby!",
+  "Ten mebel miał pełny brzuch!"
  ],
  "mirror": [
   "W lustrze coś jest!",
@@ -715,6 +804,14 @@
   "Ha! Niech wszystkie potwory przyjdą naraz!"
  ],
  "musicbox": [
+  "Ta kołysanka... oczy same się zamykają...",
+  "Tylko na chwilkę... ta melodia...",
+  "Mama tak nuciła... śpię...",
+  "Tak cicho gra... zasypiam...",
+  "Pozytywka gra mi w głowie... nie mogę się obudzić!",
+  "Śni mi się ta melodia... i coś w ciemności...",
+  "Kołysanka... ktoś nuci mi do ucha...",
+  "Obudźcie mnie! Ta muzyka nie przestaje!",
   "Skąd ta melodia?!",
   "Pozytywka gra sama!",
   "Kołysanka? Tutaj?!",

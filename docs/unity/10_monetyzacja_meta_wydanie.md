@@ -21,10 +21,12 @@ Prototyp sprawdzał tylko pętlę rozgrywki, więc ta część jest najmniej ust
 | Miejsce | Zachowanie w prototypie | Kod |
 |---|---|---|
 | Sklep, przycisk "Za reklamę" | jedno darmowe odświeżenie oferty na sklep (napis "już użyte" po użyciu), bez prawdziwej reklamy | `p8b_ui.js: renderShop` (`shopReroll(true)`, `run.shop.ad`) |
-| Koniec runu (0 kryształów) | "Kontynuuj z 1 kryształem", odliczanie "Reklama... 3, 2, 1" (co 0,7 s), raz na run (`run.continueUsed`), potem `proceedToBuild()`; obok "Zakończ run" | `p8b_ui.js: renderOver` |
+| Koniec runu (0 kryształów) | "Kontynuuj z 1 kryształem", odliczanie "Reklama... 3, 2, 1" (co 0,7 s), raz na run (`run.continueUsed`), potem `proceedToBuild()`; obok "Zakończ run"; od 1.24 wpis w dzienniku kryształów (`crystalEv(+1, 'other', 'continue')`), a status runu wraca z `end` na `active` | `p8b_ui.js: renderOver` |
 | Starsze okno wyboru karty | "Losuj ponownie (symulacja reklamy, raz na falę)" | `p8b_ui.js: renderPickSection` (sprawdź, czy ten ekran jest jeszcze używany: od 1.0 karty wybiera się w sklepie, sekcja 03) |
 
 W Unity te miejsca to punkty wpięcia reklam nagradzanych (rewarded). Do czasu M6: ta sama symulacja.
+
+Zmiany 1.18-1.24 bez wpływu na monetyzację, ale ważne dla mety: wszystko, co nowe, żyje w runie (połączone karty ★, więzi, Nemezis z nagrodą za głowę, pamięć poległych `run.fallen`); między runami dalej tylko odkryte elementy (`yatd-found`), etap nauki i rekordy. Od 1.24 nauka mieści się w pierwszym runie, więc pierwsza reklama pełnoekranowa "od 2. runu" (10.1) trafia na gracza, który zna już całą grę. Otwarte pytanie z danych testerów: wygrany run trwa 27-54 min aktywnej gry, w tym 50-70% budowy; czy na telefon potrzebny jest krótszy tryb (sekcja 11). Nagroda za głowę Nemezis i odblokowania mogą być naturalnym miejscem na trofea metagry (do decyzji).
 
 ## 10.3 Technika (M6)
 
@@ -44,7 +46,7 @@ W Unity te miejsca to punkty wpięcia reklam nagradzanych (rewarded). Do czasu M
 | Prowizja | EOG, UK, USA od 30.06.2026: 10% + 5% opłaty rozliczeniowej do 1 mln USD rocznie (sprawdzić aktualne zasady przed wydaniem) |
 | Nazwa pakietu | np. `com.bacjumgames.<gra>`, nie da się jej zmienić po publikacji |
 | Docelowe API Androida | aktualne wymaganie Google Play na dany rok (sprawdzić w Play Console) |
-| Formularze | polityka prywatności (gra wysyła dane testowe: identyfikator urządzenia i opcjonalne imię testera), sekcja "Bezpieczeństwo danych", klasyfikacja wiekowa (IARC), grupa docelowa |
+| Formularze | polityka prywatności (gra wysyła dane testowe: identyfikator urządzenia, od 1.24 identyfikator gracza `playerId` i imię albo pseudonim z pytania w wersji WWW, czas aktywnej gry i posiedzenia), sekcja "Bezpieczeństwo danych", klasyfikacja wiekowa (IARC), grupa docelowa |
 | Testerzy | autor planuje testerów spoza znajomych dopiero przy wersji w Unity, tuż przed wydaniem (obawa przed zarzutem "AI slop" i plagiatu bez własnej grafiki) |
 
 Uwaga: sprawy organizacyjne (konto, firma, podatki) autor odłożył na później; najpierw produkt.
