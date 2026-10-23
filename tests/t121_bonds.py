@@ -32,13 +32,13 @@ MAKE = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => {
     L.forEach((e, k) => { if (!e.bond) return; const o = L[e.bond.with];
       if (!o || !o.bond || o.bond.with !== k || o.bond.type !== e.bond.type || o === e) fails.push('a bond not mutual: ' + JSON.stringify(e.bond));
       if (e.returning) fails.push('a returner has a bond');
-      if (e.bond.type === 'mentor' && !(e.bond.role === 'mentor' ? e.rank >= 1 && o.rank === 0 : e.rank === 0 && o.rank >= 1)) fails.push('mentor ranks: ' + e.rank + '/' + o.rank);
+      if (e.bond.type === 'mentor' && !(e.bond.role === 'mentor' ? e.rank >= 1 && (o.rank === 0 || o.recruit || e.rank > o.rank) : o.rank >= 1 && (e.rank === 0 || e.recruit || o.rank > e.rank))) fails.push('mentor ranks: ' + e.rank + '/' + o.rank);   // 1.24: an apprentice is a rookie, the recruit or a rank lower
       if (e.bond.role === 'mentor') cnt.types.mentor = (cnt.types.mentor || 0) + 1; else if (e.bond.type !== 'mentor' && k < e.bond.with) cnt.types[e.bond.type] = (cnt.types[e.bond.type] || 0) + 1; });
     if (pairs > 2 || b.length % 2) fails.push('bonds a party: ' + b.length);
   }
   out.make = cnt;
-  ok(Math.abs(cnt.one / cnt.parties - 0.55) < 0.08, 'a bond in about 55% of parties: ' + (cnt.one / cnt.parties).toFixed(2));
-  ok(cnt.two / cnt.parties > 0.08 && cnt.two / cnt.parties < 0.25, 'a second bond in about 16%: ' + (cnt.two / cnt.parties).toFixed(2));
+  ok(Math.abs(cnt.one / cnt.parties - 0.75) < 0.08, 'a bond in about 75% of parties (1.24; was 55%): ' + (cnt.one / cnt.parties).toFixed(2));
+  ok(cnt.two / cnt.parties > 0.15 && cnt.two / cnt.parties < 0.4, 'a second bond in about 27% (1.24; was 16%): ' + (cnt.two / cnt.parties).toFixed(2));
   ok(['friend', 'sibling', 'rival', 'mentor'].every(t => cnt.types[t] > 0), 'every kind of bond: ' + JSON.stringify(cnt.types));
   // shown: the hero card (before the wave), the label; spawned: h.bond, bondOf, counted
   const nx = G.makeWave(4).slice(0, 4); nx.forEach(e => { e.bond = null; e.returning = false; });

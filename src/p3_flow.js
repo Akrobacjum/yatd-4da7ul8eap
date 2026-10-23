@@ -266,15 +266,57 @@
       // 1.18: the new cards (komnaty, room effects, the heroes' behaviour)
       drawers: 0, lure: 0, onemore: 0, thickwalls: false, risen: false, cell: false, vaultsnap: false, wisps: 0, body: 0, falsecall: false, frames: 0,
       restock: false, lullsleep: 0, ambush: false, cocoons: 0, cauldron: 0, batscatter: 0, skullwall: 0, strip: 0, mire: 0, farecho: 0, deepsleep: 0,
-      gearlink: 0, blackice: 0, badnews: 0, coins: 0, tainted: 0, rhythm: 0 };
+      gearlink: 0, blackice: 0, badnews: 0, coins: 0, tainted: 0, rhythm: 0,
+      fuseLv: {} };   // 1.24: element type -> extra levels from a fused card (lvlPow)
   }
   // The deck decides the mods: start from scratch and lay every card on top (two copies = applied twice). Selling a card really removes it.
+  // 1.24: a fused ★ card (run.fused) is laid on 2,5 times (2,75 or 3,125 by its group) and adds its property (fuseApply)
   function recomputeMods() {
-    mods = freshMods();
-    run.deck.forEach(id => { const u = UPG[id]; if (u && u.apply) u.apply(mods); });
+    mods = buildMods();
     Object.keys(run.stacks || {}).forEach(id => { if (!run.deck.includes(id)) delete run.stacks[id]; });   // a growing card sold for good starts from zero
     if (fl) fl.threatDirty = true;
     updateTray();
+  }
+  // 1.24 Połączone karty (p1: FUSE_GROUP): the deck's mods (recomputeMods and a resumed run)
+  function buildMods() {
+    const m = freshMods(), fz = new Set(run.fused || []);
+    run.deck.forEach(id => { const u = UPG[id]; if (!u || !u.apply) return; if (fz.has(id) && !u.unique) fuseApply(u, m); else u.apply(m); });
+    return m;
+  }
+  const fuseElems = u => [u.id, typeof u.req === 'string' ? u.req : null].filter(t => t && ITEMS[t] && (TRAPS[t] || MONSTERS[t]));   // 1.24: the element(s) a card names
+  const fuseGroup = u => fuseElems(u).length ? 'named' : FUSE_GROUP[u.id] || 'power';   // 1.24
+  const fusePow = u => FUSE_POW * (FUSE_K[fuseGroup(u)] || 1);   // 1.24: 2,5, 2,75 (power) or 3,125 (hero)
+  const fuseText = u => '★ Połączona: działa jak ' + fmt2(FUSE_POW).replace(/,?0+$/, '') + ' kopii, ' + FUSE_TEXT[fuseGroup(u)](fuseElems(u).map(t => ITEMS[t].name).join(' i ')) + '.';   // 1.24: the property line
+  // a card laid on p times, p fractional: the whole copies, then the share f of one more copy, field by field: a field the copies
+  // multiplied (the same ratio twice) grows by that ratio to the power f, one they added to by f of the step
+  function applyFrac(u, m, p) {
+    const n = Math.floor(p + 1e-9), f = p - n, snap = () => JSON.parse(JSON.stringify(m));
+    if (f < 1e-6 || n < 2) { for (let i = 0; i < Math.max(1, Math.round(p)); i++) u.apply(m); return; }
+    const s0 = snap(); u.apply(m); const s1 = snap(); u.apply(m); const s2 = snap();
+    for (let i = 2; i < n; i++) u.apply(m);
+    const step = (o, a, b, c) => { for (const k in o) {
+      if (a[k] && typeof a[k] === 'object') { step(o[k], a[k], b[k], c[k]); continue; }
+      if (typeof c[k] !== 'number' || typeof b[k] !== 'number' || c[k] === b[k]) continue;
+      if (a[k] !== 0 && b[k] !== 0 && Math.abs(b[k] / a[k] - c[k] / b[k]) < 1e-9) o[k] *= Math.pow(c[k] / b[k], f); else o[k] += (c[k] - b[k]) * f;
+    } };
+    step(m, s0, s1, s2);
+  }
+  function fuseApply(u, m) {
+    const g = fuseGroup(u), was = {}; FUSE_INT.forEach(k => { was[k] = m[k]; });
+    applyFrac(u, m, fusePow(u));
+    FUSE_INT.forEach(k => { if (m[k] !== was[k]) m[k] = Math.floor(m[k] + 1e-6); });
+    if (g === 'named') fuseElems(u).forEach(t => { m.fuseLv[t] = (m.fuseLv[t] || 0) + 1; });
+    else if (g === 'fear') m.fearMult *= 1.15;
+    else if (g === 'ess') m.income += 2;
+    else if (g === 'greed') m.greedFlat += 0.1;
+    else if (g === 'shop') m.freeReroll += 1;
+  }
+  const isFused = id => !!run && (run.fused || []).includes(id);   // 1.24
+  const ownsCard = id => !!run && (run.deck.includes(id) || (run.stash || []).includes(id));   // 1.24: in the deck or the stash (a copy taken now fuses with it)
+  function fuseCard(id) {   // 1.24: the second copy: the one in the deck or the stash becomes ★ (no new slot)
+    const u = UPG[id]; if (!u || u.unique || isFused(id) || !ownsCard(id)) return false;
+    (run.fused = run.fused || []).push(id); recomputeMods();
+    return true;
   }
   // Point multipliers from cards that look at the dungeon as it stands right now.
   // Rozległość lochu: a bigger dungeon is a louder legend, +3% points for every room over 5.
@@ -309,7 +351,8 @@
       silenceTime: 0, pauseTime: 0, ffTime: 0, essBase: 0, essFear: 0, essSoul: 0, essDrop: 0, built: 0, monstersLost: 0,
       falls: 0, cages: 0, rescues: 0, abandons: 0, timing: 0, healed: 0, lostTime: 0, loneTime: 0, splitTime: 0, splits: 0, splitLost: 0, restScouts: 0, fearSrc: {}, preps: 0, wards: 0, jams: 0, prepDisarms: 0, breach: 0, sapped: 0, sensed: 0, greedKept: 0,
       // v12: gear and powers, getting lost, detours, curses, faith
-      swaps: 0, potionsGiven: 0, amulets: 0, boots: 0, goldPicked: 0, cursed: 0, curseLifts: 0, faithOut: 0, detours: 0, gotLost: 0, searches: 0, deathFear: 0, roomsVisited: 0 };
+      swaps: 0, potionsGiven: 0, amulets: 0, boots: 0, goldPicked: 0, cursed: 0, curseLifts: 0, faithOut: 0, detours: 0, gotLost: 0, searches: 0, deathFear: 0, roomsVisited: 0,
+      checkByShape: {} };   // 1.24 (D, P0-6): filled by shapeStat (p6)
   }
   // 1.12: stage = which of the first runs this is (ONB_STAGES); the guide (tutorial) goes with the first one. Anything else is the full game.
   const stageOf = () => (run && run.stage) || ONB_FULL;
@@ -324,16 +367,32 @@
     stage = Math.max(1, Math.min(ONB_FULL, stage || (tutorial ? 1 : ONB_FULL)));
     coachHide();   // 1.12 (bug): the guide's card from a run left in the middle stayed on the screen in the next run
     run = { wave: 1, total: 0, waves: [], crystals: S.crystals, maxCrystals: S.crystals, grozaTotal: 0, greedRep: 1, returners: [], fallen: [], stash: [], freePicks: 0, shop: null, shopOwed: 1, stacks: {}, guild: null, resumed: 0, moleWave: 0, essence: S.essence,
-      items: new Map(), layout: null, rumor: { tiles: new Map(), traps: new Map(), loot: new Map(), heart: -1, gold: 0 }, upgrades: [], unlocked: new Set(START_UNLOCKED.concat(loadFound()).filter(t => onbOk(t, stage))), foundAtStart: loadFound().filter(t => onbOk(t, stage) && !START_UNLOCKED.includes(t)), stage,
+      items: new Map(), layout: null, rumor: { tiles: new Map(), traps: new Map(), loot: new Map(), heart: -1, gold: 0 }, upgrades: [], unlocked: new Set(START_UNLOCKED.concat(loadFound()).filter(t => onbOk(t, stage))), foundAtStart: loadFound().filter(t => onbOk(t, stage) && !START_UNLOCKED.includes(t)), stage, onbW: stage < ONB_FULL, onbNews: [],   /* 1.24 (B): a run below the full game opens it wave by wave */
       pendingUpgrades: [], continueUsed: false, startedAt: Date.now(), result: null, reason: '', checkHints: 3, tut: tutorial ? 0 : -1, tutorial: !!tutorial,
       mode: 'check', fires: 0, buildSec: 0, raidSec: 0, best: loadBest(), next: null, lastIncome: 0, afterModals: null, over: false,
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), thrIdx: 0, greedKeep: 0, greedNext: 0, waveDocs: [], won: false, logState: '', waveStart: null, deck: [], deckSize: S.deckSize || DECK_SIZE, freeDigs: 0, lastInterest: 0 };
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), thrIdx: 0, greedKeep: 0, greedNext: 0, waveDocs: [], won: false, logState: '', waveStart: null, deck: [], deckSize: S.deckSize || DECK_SIZE, freeDigs: 0, lastInterest: 0,
+      crystals0: S.crystals, crystalEv: [], crystalEvW: 0, crystalsSeen: S.crystals, activeSec: 0, sessions: [], playerId: playerIdNow() };   // 1.24 (D): the crystal log (P0-2), the time played (P0-3), who plays (P0-5)
     mods = freshMods();
     floats = []; particles = []; paused = false; ff = false;
     run.layout = genStartLayout();
     startBuild();
     seedStartTraps();
     if (run.tut >= 0) tutStart();
+  }
+  // 1.24 (B, item 3): the guided run's stage follows the wave it gets to (ONB_WAVE); what the new stage opens is unlocked at the end of
+  // the wave before (so the next party, the summary and the shop already belong to it) and its card comes with the next build
+  // (onbNews). Reaching the full game counts the first run as learnt: the next run is the full game.
+  function onbAdvance(w) {
+    if (!run || !run.onbW) return false;
+    const s = onbWaveStage(w), from = run.stage || ONB_FULL;
+    if (s <= from) return false;
+    run.stage = s;
+    START_UNLOCKED.concat(loadFound()).forEach(t => { if (onbOk(t, s)) run.unlocked.add(t); });
+    run.foundAtStart = loadFound().filter(t => onbOk(t, s) && !START_UNLOCKED.includes(t));
+    for (let k = from + 1; k <= s; k++) (run.onbNews || (run.onbNews = [])).push(k);
+    if (s >= ONB_FULL) { run.onbW = false; setOnb(5); }
+    updateTray();
+    return true;
   }
   // v15.1: the first wave starts with two traps on the heroes' way, paid from the starting Esencja (1.01: 30 - 6 = 24; taken down,
   // they give it back). On their own they do not hold the wave (a bot with only these: the crystal is lost nearly every time).
@@ -403,12 +462,14 @@
     if (!run.next || run.nextFor !== run.wave) { run.next = makeWave(run.wave); run.nextFor = run.wave; }   // 1.05: usually made at the end of the last wave
     if (run.builtFor !== run.wave) {
       run.builtFor = run.wave;
+      if (run.onbNews && run.onbNews.length) { queueModal({ type: 'onb', stages: run.onbNews.slice() }); run.onbNews = []; }   // 1.24 (B): what this wave of the first run opens
       if (mods.mole && run.wave % 2 === 0 && run.moleWave !== run.wave) { run.freeDigs += mods.mole; run.moleWave = run.wave; }   // Kret: a free room every second wave
       // a breach stays until you patch it; from wave 6 the guild may dig a new one (one at a time)
       if (!run.layout.breach && run.wave >= 6 && run.tut < 0 && Math.random() < BREACH_P && planBreach()) { rebuildDungeon(true); run.breachNew = run.wave; }
       if (run.layout.breach && !fl.breach) delete run.layout.breach;   // its wall is gone (dug over, demolished): nothing left to come through
     }
     fl.cardMult = cardMultNow();
+    if (run.essAtStartW !== run.wave) { run.essAtStartW = run.wave; run.essAtStart = fl.essence; run.previewN = 0; }   // 1.24 (D, P0-6): essenceAtStart, previewOpened (a resumed build keeps them)
     floats = []; particles = []; orbs = [];
     selected = null; movingKey = null; movingObj = null; holdInfo = null; paused = false; ff = false;
     clearUndo(); setTrayOpen(UI.trayBuild || run.tut >= 0);
@@ -534,7 +595,7 @@
     const female = pre.nm ? pre.female : Math.random() < 0.4, pool = (female ? NAMES_F : NAMES_M).filter(nm => !used.has(nm[0]));
     const nm = pre.nm || pick(pool.length ? pool : (female ? NAMES_F : NAMES_M)); used.add(nm[0]);
     const R = levelStats(lvl), T = HEROES[type], bm = boss === 'final' ? 3 : boss ? 1.7 : 1;
-    const max = Math.round(T.hp * R.hp * bm * S.heroHp / 100 * (1 + (EARLY_HP[n] || 0) * S.earlyHp) * comboHp(n));   // 1.12: comboHp
+    const max = Math.round(T.hp * R.hp * bm * S.heroHp / 100 * earlyHpK(n));   // 1.12: comboHp; 1.24: earlyHpK (the HP of the wave it plays like)
     let trait = null;
     if (!boss && Math.random() < 0.5) trait = pick(Object.keys(HERO_TRAITS));   // about half of them have a personality
     if (pre.trait !== undefined) trait = pre.trait;
@@ -557,7 +618,7 @@
       const t = inv.some(x => x.type === 'charm') ? 'amulet' : 'charm', r = 1 + Math.floor(lvl / 6);
       if (!inv.some(x => x.type === t)) inv.push({ type: t, r, kit: true, src: 'kit', charges: powerCharges(t, r) });
     }
-    return { type, lvl, rank: pre.nemesis ? Math.max(1, tierOf(lvl)) : tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: comboHp(n), inv, trait,   // 1.23: a Nemezis is never a rookie
+    return { type, lvl, rank: pre.nemesis ? Math.max(1, tierOf(lvl)) : tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: atW(comboHp, earlyW(n)), inv, trait,   // 1.23: a Nemezis is never a rookie; 1.24: atW
       courage: Math.round(R.courage * (boss === 'final' ? 2 : boss ? 1.5 : 1) * ck * (pre.nemesis ? 1.4 : 1)), phys, phobia, known, returning: !!pre.returning, scar: pre.scar || null, times: pre.times || 0,   // 1.23: x1,4 for a Nemezis
       nemesis: pre.nemesis || null };
   }
@@ -610,7 +671,19 @@
   const SIZE_LV = [0, 0, 0, 0, 0, 0, 0, 1.5, 1.5, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0];
   const sizeLv = n => n < SIZE_LV.length ? SIZE_LV[n] : 0;
   const endlessLv = n => n >= 15 ? 1.5 * Math.floor((n - 10) / 5) : 0;   // what the 7th, 8th... hero used to add
-  const waveBase = n => waveCurve(n) + grozaTyp(n) * S.scale + mods.pactLevels + endlessLv(n) + sizeLv(n) * S.scale;
+  const waveBase0 = n => waveCurve(n) + grozaTyp(n) * S.scale + mods.pactLevels + endlessLv(n) + sizeLv(n) * S.scale;   // 1.24: the curve up to 1.23
+  // 1.24 (author: the first 2 runs are too easy; the first run should be as hard as the third is now, the second half of the run
+  // unchanged. Our reading: the first waves of a run): waves 1-4 play like a later wave of the old curve: wave 1 like the old
+  // wave 3, wave 2 like 3,75, wave 3 like 4,3, wave 4 like 4,6; from wave 5 as before. Levels, the HP bonus (EARLY_HP, comboHp)
+  // and the level cap follow (the old cap of 4 levels in waves 1-2 is gone); the party size (3 in waves 1-3), the four classic
+  // classes in waves 1-3, patience, the hunger (from wave 2) and the heart that will not give the crystal up in wave 1 stay.
+  // The tutorial's first wave (tutW1: run.tutorial and wave 1) stays as it was: 2 rookies.
+  const EARLY_W = [0, 3, 3.75, 4.3, 4.6];
+  const earlyW = n => tutW1(n) || !(n < EARLY_W.length) ? n : EARLY_W[n];   // 1.24: the old wave a wave plays like
+  const atW = (f, w) => { const a = Math.floor(w), k = w - a; return k > 1e-9 ? f(a) * (1 - k) + f(a + 1) * k : f(a); };   // 1.24: f between two waves
+  const hpK0 = m => (1 + (EARLY_HP[m] || 0) * S.earlyHp) * comboHp(m);   // 1.24: the HP bonus up to 1.23
+  const earlyHpK = n => Math.max(hpK0(n), atW(hpK0, earlyW(n)));   // 1.24: never below its own (wave 4: the old wave 5 has less bonus)
+  const waveBase = n => atW(waveBase0, earlyW(n));   // 1.24
   const bossOf = n => n % 5 === 0 ? (n % 10 === 0 ? 'final' : 'champion') : null;
   const waveName = () => 'Fala ' + run.wave + (run.wave <= RUN_WAVES ? '/' + RUN_WAVES : '');
   // Each wave is new people: the first ones are rookies, then they keep getting better. Every 5th wave a boss leads them.
@@ -629,7 +702,7 @@
       const isHunter = i >= size - hunters, isRecruit = recruit && !isHunter && i === size - hunters - 1 && i >= 2;
       const bonus = i === 0 ? 1 + hl : isRecruit ? -3 : hl / 2;
       let L = Math.max(1, Math.round(base + bonus + Math.random() * 1.7 - 1.2));
-      if (n <= 2) L = Math.min(L, tutW1(n) ? 2 : 4);
+      if (tutW1(n)) L = Math.min(L, 2);   // 1.24: only the tutorial's first wave keeps a cap (waves 1-2 had 4)
       const e = makeHero(t, L, n, used);
       if (isHunter) { e.trait = 'greedy'; e.hunter = true; }   // 1.05: a treasure hunter is a mark on any class (the bag), not a thief
       if (isRecruit) e.recruit = true;
@@ -677,7 +750,7 @@
     makeBonds(list, n);   // 1.21
     return list;
   }
-  // 1.21 Więzi i dramaty: some of them come in pairs. A party gets 0-2 bonds (the first 55%, a second 30%), one bond a hero at
+  // 1.21 Więzi i dramaty: some of them come in pairs. A party gets 0-2 bonds (the first 55%, a second 30%; 1.24: 75% and 45%, rivals 45%, mentors 20%), one bond a hero at
   // most, none for a returner (1.23 may give him one) and none in the tutorial's first wave: siblings 15%, a mentor (rank 1+) and
   // his apprentice (a rookie) 25% when there is such a pair, rivals 25% (two of a kind: both greedy or brave, else any two),
   // friends the rest. e.bond = { type, with: the other's index in this list, role: 'mentor' / 'apprentice' / null }; the hero
@@ -686,16 +759,17 @@
     if (tutW1(n) || list.length < 2) return;
     const tough = e => e.trait === 'greedy' || e.trait === 'brave' || e.hunter;
     for (let k = 0; k < 2; k++) {
-      if (Math.random() >= (k ? 0.3 : 0.55)) break;
+      if (Math.random() >= (k ? 0.45 : 0.75)) break;   // 1.24: more pairs (was 55% and 30%): grief, rivals' jabs and bets were seldom seen
       const f = list.map((e, i) => i).filter(i => !list[i].bond && !list[i].returning);
       if (f.length < 2) break;
       const ment = [], riv = [];
-      f.forEach(i => f.forEach(j => { if (i === j) return; if (list[i].rank >= 1 && list[j].rank === 0) ment.push([i, j]); if (i < j && tough(list[i]) && tough(list[j])) riv.push([i, j]); }));
+      const app = (m, a) => m.rank >= 1 && (a.rank === 0 || a.recruit || m.rank >= a.rank + 1);   // 1.24: an apprentice is a rookie, the recruit or one a rank lower (the harder first waves have no rookies)
+      f.forEach(i => f.forEach(j => { if (i === j) return; if (app(list[i], list[j])) ment.push([i, j]); if (i < j && tough(list[i]) && tough(list[j])) riv.push([i, j]); }));
       const r = Math.random();
       let type = 'friend', pr = null;
       if (r < 0.15) type = 'sibling';
-      else if (r < 0.4) { if (ment.length) { type = 'mentor'; pr = pick(ment); } }
-      else if (r < 0.65) { type = 'rival'; if (riv.length) pr = pick(riv); }
+      else if (r < 0.35) { if (ment.length) { type = 'mentor'; pr = pick(ment); } }   // 1.24: a mentor 20% (was 25%)
+      else if (r < 0.8) { type = 'rival'; if (riv.length) pr = pick(riv); }   // 1.24: rivals 45% (was 25%: a rival's jab came in 1 wave of 5)
       if (!pr) { const a = pick(f); pr = [a, pick(f.filter(i => i !== a))]; }
       list[pr[0]].bond = { type, with: pr[1], role: type === 'mentor' ? 'mentor' : null };
       list[pr[1]].bond = { type, with: pr[0], role: type === 'mentor' ? 'apprentice' : null };
@@ -735,6 +809,7 @@
         (fl.spawnAt === 'breach' ? ' · wchodzą przez wyłom!' : fl.breach ? ' · wchodzą drzwiami' : ''));
       if (run.wave === 1 && run.tut < 0) setHint('Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.'); }
     fl.tl = { ev: [], smp: [], smpT: 0 };
+    fl.essW0 = fl.essence; fl.itemsW0 = fl.items.size; fl.roomsW0 = run.layout.cells.size;   // 1.24 (D, P0-6): essenceAtWaveStart, itemsCount, roomsCount
     run.waveStart = snapshotLayout();
     if (fl.breach) { fl.stats.breachOpen = 1; if (fl.spawnAt === 'breach') { tl('br', fl.breach.x, fl.breach.y); fl.stats.breach = 1; } }
   }
@@ -873,6 +948,45 @@
     if (L) say(L, pick(SAY.leave), 3);
     setHint('Bohaterom skończyła się cierpliwość: odwrót, wracają do domu.');
   }
+  // 1.24 (author: at the end of a raid the heroes sometimes vanished and the wave ended at random): up to 1.23 everyone still
+  // inside 60 s after the end of patience was teleported out (councils, storms, second groups, sulkers and last stands made that
+  // common). Now at that moment they are worn out: every one still inside gets the plan to go home and walks out (the second
+  // group ends, bets, last stands and sacrifices are called off, nobody sulks or wanders off, a lost one finds his way, the party
+  // fears nothing on the way out, the ones still waiting at the door do not come in), with a float over each.
+  function waveExhausted() {
+    const P = fl.party, L = leader(), crew = alive();
+    fl.exhausted = true; fl.stats.exhausted = (fl.stats.exhausted || 0) + 1; tl('xh', crew.length);   // 1.24
+    if (P.g2) g2End('out');
+    P.council = null; P.councilMore = true; P.sulkAfter = null; P.mutinyHome = 0; P.scoutId = -1; P.scoutMate = -1; P.prep = null; P.detour = null;
+    const F = P.fin; if (F && F.sac) F.sac.done = true;
+    fl.fearless = true; fl.storm = false; fl.queue = [];   // the rest of the party stays outside
+    if (P.plan !== 'escape' && P.plan !== 'flee') P.plan = 'leave';
+    fl.heroes.forEach(h => {
+      if (h.dead || h.fled) return;
+      if (h.bet && !h.bet.done) betEnd(h, false);
+      if (h.stand && !h.stand.done) h.stand.done = true;
+      if (h.sac) h.sac.done = true;
+      if (!h.crystal && h.plan !== 'escape') h.plan = null;
+      h.split = false; h.wanderUntil = -1; h.vowUntil = 0; h.vowOn = null; h.lootKey = null; h.needPlan = true;
+      if (h.lost) { h.lost = false; h.hearUntil = -1; h.noPathT = 0; h.sepT = 0; h.sepRolled = false; if (!h.gone) reveal(h); }
+      if (h.state === 'rest' || h.state === 'talk' || h.state === 'wait' || h.state === 'boss') h.state = 'walk';
+      if (!h.gone) floatHero(h, 'Wyczerpan' + (h.female ? 'a' : 'y'), '#c9c2d8', 12, -0.9);
+    });
+    if (L) say(L, pick(SAY.leave), 3);
+    setHint('Bohaterowie są wyczerpani: wychodzą.');
+  }
+  // 1.24: the true safety net (a hero stuck somewhere): 150 s after the end of patience the ones still inside run out where they
+  // stand, with a float and the fade; a crystal one of them carries goes back to the heart (stats.forcedOut, timeline 'fo')
+  function waveForceOut() {
+    const P = fl.party;
+    fl.heroes.forEach(h => {
+      if (h.dead || h.fled) return;
+      if (h.crystal) { h.crystal = false; if (P.carrierId === h.id) P.carrierId = -1; fl.stats.crystalSaved++; floatTile(fl.heart.x, fl.heart.y, 'Kryształ wraca!', '#ff7a86', 15, -1); crystalEv(0, 'saved', 'forcedOut'); }   // 1.24 (D): logged
+      h.gone = false; floatHero(h, 'Ucieka', '#c9c2d8', 13, -0.9);
+      fl.stats.forcedOut = (fl.stats.forcedOut || 0) + 1; tl('fo', h.id, h.tx, h.ty, h.state);   // 1.24
+      heroExit(h);
+    });
+  }
   // A hero walks out of the dungeon. With a crystal it is your loss; scared out of his wits it is your win. Either way, he talks.
   function heroExit(h) {
     if (h.fled || h.dead) return;
@@ -881,7 +995,8 @@
     if (h.nemesis) { fl.stats.nemesisOut = (fl.stats.nemesisOut || 0) + 1; if (h.crystal) fl.stats.nemesisCrystal = (fl.stats.nemesisCrystal || 0) + 1; tl('no', h.id, h.crystal ? 1 : 0); }   // 1.23: he got away (he comes back)
     const P = fl.party;
     if (h.crystal) {
-      h.crystal = false; h.carriedOut = true; fl.crystalLost = true; run.crystals = Math.max(0, run.crystals - 1); fl.stats.crystalLost++;
+      const c0 = run.crystals; h.crystal = false; h.carriedOut = true; fl.crystalLost = true; run.crystals = Math.max(0, run.crystals - 1); fl.stats.crystalLost++;
+      crystalEv(run.crystals - c0, 'stolen', h.type + ' ' + h.lvl);   // 1.24 (D, P0-2)
       floatTile(fl.ent.x, fl.ent.y, 'Kryształ stracony!', '#ff6b6b', 18, -0.6); shake = Math.max(shake, 0.3); tl('cx', h.id); buzz([90, 60, 90]);
       if (P.carrierId === h.id) P.carrierId = -1;
     } else if (h.fleeing) {
@@ -901,9 +1016,10 @@
   function finishWave() {
     if (fl.phase !== 'raid') return;
     fl.check = null; ff = false; fl.finishing = true;   // 1.05: no tutorial card from here on (it used to pop up over the summary)
+    fl.items.forEach(m => { if (m.healAcc > 0) healFlush(m); });   // 1.24 (C, addendum 2): the shaman's last heals count
     payChain();   // Prototype 1.01: an unfinished combo chain is cashed in before the heart is counted
     run.greedNext = fl.stats.treasureTale || 0;   // v15.1: tales of treasure from the scared ones, for the next wave only
-    fl.items.forEach(it => { const w = it.w || {}; it.lf = w.f || 0; it.lh = w.h || 0; it.lp = Math.round(w.p || 0); it.lk = w.k || 0; it.w = null; });   // what each element did this wave (shown on its card)
+    fl.items.forEach(it => { const w = it.w || {}; it.lf = w.f || 0; it.lh = w.h || 0; it.lp = Math.round(w.p || 0); it.lk = w.k || 0; it.lhl = Math.round(w.hl || 0); it.w = null; });   // 1.24 (C, addendum 2): lhl = HP healed (shaman)   // what each element did this wave (shown on its card)
     run.raidSec += fl.time;
     // rumours: if anyone made it out alive, what the party knew walks out with them
     const out = fl.anyOut;
@@ -953,9 +1069,10 @@
     fl.essence = run.essence;
     collectReturners();
     recordWave(rr, rt);
-    run.total += fl.score;
+    run.total += run.waves[run.waves.length - 1].score;   // 1.24 (D, P0-4): the wave's recorded (rounded) score, so total = the sum of the waves (was fl.score: 5724 against 5722)
     if (run.total > run.best) { run.best = run.total; saveBest(run.best); }
     // 1.05: the next party is known right away: the wave summary shows who comes (classes, skills, gear, what the tavern knows)
+    onbAdvance(run.wave + 1);   // 1.24 (B): the guided run opens the next stage before the next party is made
     if (run.crystals > 0) { run.next = makeWave(run.wave + 1); run.nextFor = run.wave + 1; }
     logWave(false);
     if (run.crystals > 0) saveRun('summary');
@@ -996,8 +1113,30 @@
     const h = fl.hunger = { need, got: Math.round(fl.score * 10) / 10, fedAmt: Math.round(fl.fed * 10) / 10, fedAt: fl.fedAt >= 0 ? Math.round(fl.fedAt) : null };
     h.fed = fl.fed >= need - 0.001;
     if (h.fed) tl('hg', 'fed', need);
-    else { run.crystals = Math.max(0, run.crystals - 1); h.ate = true; fl.stats.hungerAte = 1; tl('hg', 'ate', Math.round(need - fl.fed)); }
+    else {
+      const c0 = run.crystals; run.crystals = Math.max(0, run.crystals - 1); h.ate = true; fl.stats.hungerAte = 1; tl('hg', 'ate', Math.round(need - fl.fed));
+      crystalEv(run.crystals - c0, 'hunger', Math.round(fl.fed) + '/' + need);   // 1.24 (D, P0-2): the hidden loss the testers' data showed (hunger.ate, never crystalLost)
+      floatTile(fl.heart.x, fl.heart.y, 'Głód pochłonął kryształ!', '#ff6b6b', 18, -1.2); shake = Math.max(shake, 0.25); buzz([90, 60, 90]);
+    }
   }
+  // 1.24 (D, P0-2): every change of run.crystals with its cause (stolen | hunger | saved | card | other): run.crystalEv for the whole run
+  // (the runs record) and each wave record's crystalEvents (what came since the last wave record, the build phase before it
+  // included), so crystals0 + the sum of the deltas = crystals. 'saved' (a crystal carried back to the heart) has delta 0. A change
+  // made anywhere else is caught by crystalSync as 'other' (why 'unlogged'), so the sum always holds.
+  function crystalEv(delta, cause, why) {
+    if (!run || (!delta && cause !== 'saved')) return;
+    if (!run.crystalEv) { run.crystalEv = []; run.crystalEvW = 0; }
+    if (run.crystalsSeen == null) run.crystalsSeen = run.crystals - delta;
+    const e = { t: fl && fl.phase === 'raid' ? Math.round(fl.time * 10) / 10 : null, delta, cause, wave: run.wave };
+    if (why) e.why = String(why);
+    run.crystalEv.push(e); run.crystalsSeen += delta;
+  }
+  function crystalSync() {
+    if (!run) return;
+    if (run.crystalsSeen == null) { run.crystalsSeen = run.crystals; return; }   // a run saved before 1.24: the log starts here
+    if (run.crystalsSeen !== run.crystals) crystalEv(run.crystals - run.crystalsSeen, 'other', 'unlogged');
+  }
+  function crystalEvTake() { crystalSync(); const L = run.crystalEv || [], out = L.slice(run.crystalEvW || 0); run.crystalEvW = L.length; return out; }
   function roundStats(s) { const o = {}; for (const k in s) o[k] = typeof s[k] === 'object' ? roundStats(s[k]) : Math.round(s[k]); return o; }
   // Points thresholds: each one crossed earns a buff after the wave (rare pick). They grow by 60% each.
   // v14.1: points no longer give cards (author's decision 19.10). They feed the heart and set the rank; a new rank is announced.
@@ -1019,7 +1158,9 @@
       hunger: fl.hunger || null, groza: Math.round(fl.base), grozaTotal: Math.round(run.grozaTotal || 0), greedRep: Math.round((run.greedRep || 1) * 100) / 100, guild: run.guild ? run.guild.kind : null,
       autoFF: Math.round(fl.autoFFTime || 0), crystals: run.crystals, greed: Math.round(fl.greed * 100) / 100, rumorRooms: rr, rumorTraps: rt, rooms: run.layout.cells.size,
       essence: Math.round(fl.essence), stats: roundStats(fl.stats), items, partial: !!partial, perf: ps, errors: PERF.errs.length ? PERF.errs.splice(0) : undefined,
-      checks: nChk, cpm: realMin > 0 ? Math.round(nChk / realMin * 10) / 10 : 0, frozen: ps ? ps.frozen : null, memFires: s0.memFires || 0, skullOff: s0.skullOff || 0, classes: fl.heroes.map(h => h.type), trayPauses: s0.trayPauses || 0 });
+      checks: nChk, cpm: realMin > 0 ? Math.round(nChk / realMin * 10) / 10 : 0, frozen: ps ? ps.frozen : null, memFires: s0.memFires || 0, skullOff: s0.skullOff || 0, classes: fl.heroes.map(h => h.type), trayPauses: s0.trayPauses || 0,
+      crystalEvents: crystalEvTake(), essenceAtStart: run.essAtStart != null ? Math.round(run.essAtStart) : null, essenceAtWaveStart: fl.essW0 != null ? Math.round(fl.essW0) : null,   // 1.24 (D, P0-2, P0-6)
+      itemsCount: fl.itemsW0 != null ? fl.itemsW0 : fl.items.size, roomsCount: fl.roomsW0 != null ? fl.roomsW0 : run.layout.cells.size, previewOpened: run.previewN || 0, fearUi: Object.assign({ card: 0, bar: 0 }, fl.fearUi || {}) });   // 1.24 (D, P0-6)
   }
   // after the wave summary: game over, or upgrades and the next build phase
   function afterSummary() {
@@ -1048,7 +1189,7 @@
     if (!run || run.over) return;
     if (fl.phase === 'raid') {
       fl.check = null; run.raidSec += fl.time;
-      recordWave(0, 0, true); run.total += fl.score; logWave(true);
+      recordWave(0, 0, true); run.total += run.waves[run.waves.length - 1].score; logWave(true);   // 1.24 (D, P0-4)
     }
     endRun('Run przerwany przez gracza.', 'quit');
   }
@@ -1234,7 +1375,7 @@
     if (tkey) {
       // self-defence first: the thief may dodge a single hit, a talisman's ward (a power the hero switches on) soaks part of it
       if (h.type === 'thief' && (tkey === 'spikes' || tkey === 'arrows') && !held(h) && fl.time > h.dodgeCd && Math.random() < h.R.dodge) {
-        h.dodgeCd = fl.time + 3; fl.stats.dodges++; say(h, pick(SAY.dodge), 2, null, 'loud'); floatHero(h, 'Unik', '#c9f0b0', 14, -0.6); return;
+        h.dodgeCd = fl.time + 3; fl.stats.dodges++; say(h, pick(SAY.dodge), 2, null, 'loud'); floatHero(h, 'Unik', '#c9f0b0', 14, -0.6); heroFx('dodge', h); return;   // 1.24 (B): an afterimage
       }
       if (fl.time < h.wardUntil && !(tkey === 'arrows' && t3(src))) {   // piercing arrows go through; acid corrodes the ward
         amt *= 1 - h.wardK * (inB('acid', h.room) ? 0.5 : 1); fl.stats.charmSoak = (fl.stats.charmSoak || 0) + 1;
@@ -1325,7 +1466,7 @@
     const barb = h.type === 'barbarian';
     h.rageUntil = fl.time + (barb ? 8 : 6); h.rageCd = fl.time + (barb ? 14 : 20); fl.stats.rages = (fl.stats.rages || 0) + 1; tl('rg2', h.id, why);
     say(h, why === 'vow' && dead ? bondText(h, 'revengeVow', dead) : why === 'death' && dead ? nameFill(pick(SAY.revenge), dead) : why === 'panic' ? pick(SAY.rageNoPanic) : pick(SAY.rage), 4, 2.2);   // 1.21: vow
-    floatHero(h, 'Furia!', '#ff9a9a', 13, -0.8);
+    floatHero(h, 'Furia!', '#ff9a9a', 13, -0.8); heroFx('rage', h);   // 1.24 (B): a red aura
     return true;
   }
   const raging = h => fl.time < h.rageUntil && !inB('shackles', h.room);
@@ -1342,6 +1483,7 @@
     const sk = src || attr || 'other'; fl.stats.fearSrc[sk] = (fl.stats.fearSrc[sk] || 0) + amt;
     const before = h.fear;
     h.fear += amt;
+    if (attr && ACTIVE[attr] && amt >= 0.08 * h.courage && h.bond && h.bond.type === 'rival') rivalScare(h);   // 1.24: his rival saw him scared
     const pts = addPts(amt / h.courage * GZ.fear * depthMult(h.room) * loneMult(h), 'fearPts', h); fl.stats.fearDealt += amt; h.acc += pts;   // v15: Groza against his courage
     if (attr) { const b = bt(attr); b.fear += amt; b.fearPts += pts; }
     // Grota: the scream echoes into the rooms and corridors next door (40%, and the echo does not echo again)
@@ -1406,7 +1548,7 @@
   // The carrier loses the crystal (killed, or down a bottomless well): it rolls back to the heart and the others decide what now.
   function crystalReturns(h) {
     const P = fl.party;
-    h.crystal = false; P.carrierId = -1; fl.stats.crystalSaved++; tl('cs', h.id);
+    h.crystal = false; P.carrierId = -1; fl.stats.crystalSaved++; tl('cs', h.id); crystalEv(0, 'saved', h.type);   // 1.24 (D, P0-2)
     const cp = addPts(GZ.crystal, 'crystalPts');
     floatTile(fl.heart.x, fl.heart.y, 'Kryształ wraca! +' + fmtE(cp) + ' Esencji', '#ff7a86', 17, -1);
     // 1.17: only those who see it or hear the cry shout and turn back; the decision is the leader's group's, and the others learn

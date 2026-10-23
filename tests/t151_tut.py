@@ -2,6 +2,8 @@
 # guide of run 1 over its first three waves: move a trap, spikes, arrows, release the wave, answer a check, open a hero
 # card, hold to speed up; wave 2: coins, a double-tap upgrade, the deck; wave 3: dig a room, the end. Every step must be
 # reached and none skipped; the run summary logs the progress.
+# 1.24 (B, the slim guide): spikes and their place, a held tile (its description), moving, spend, the wave; wave 2: loot (said),
+# the upgrade, the deck; wave 3: digging (said), the end. The spend step may be skipped (it was before too).
 import asyncio, json, sys
 from playwright.async_api import async_playwright
 BASE='file:///tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scratchpad/test/page15.html'
@@ -31,17 +33,19 @@ async def main():
             if s['id'] != sid: fails.append('expected step %s, got %s' % (sid, s['id']))
             return s
         await expect('intro'); await page.click('#coach .next'); await page.clock.run_for(300)
+        # 1.24 (B): placing is shown once (spikes), then the held tile, then moving (the arrows step is gone)
+        await expect('spikes'); await page.click('#item-spikes'); await page.clock.run_for(300)
+        await expect('place'); t = await target(page)
+        if t: await tap(page, t)
+        await expect('hold')
+        hb = await page.evaluate("(() => { const r = document.querySelector('#item-arrows').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()")
+        await page.mouse.move(hb[0], hb[1]); await page.mouse.down(); await page.clock.run_for(500); await page.mouse.up(); await page.clock.run_for(300)
         s = await expect('move')
         t = await target(page)
         if t:
             await tap(page, t)
             tg = await page.evaluate("(t => { const G=__yatd, it=G.fl.items.get(t[0]+','+t[1]); G.fl.items.delete(t[0]+','+t[1]); let r=null; for (const q of G.shortestPath()) if (G.canPlace(it.type, q[0], q[1]) && Math.abs(q[0]-t[0])+Math.abs(q[1]-t[1]) <= 6 && (q[0]!==t[0]||q[1]!==t[1])) { r=q; break; } G.fl.items.set(t[0]+','+t[1], it); return r; })", t)
             if tg: await tap(page, tg, 400)
-        await expect('spikes'); await page.click('#item-spikes'); await page.clock.run_for(300)
-        await expect('place'); t = await target(page)
-        if t: await tap(page, t)
-        await expect('arrows'); await page.click('#item-arrows'); await page.clock.run_for(300); t = await target(page)
-        if t: await tap(page, t)
         s = await expect('spend')
         for i in range(14):
             s = await step(page)
@@ -97,9 +101,7 @@ async def main():
             await page.evaluate("(() => { const G=__yatd; const k=G.modalKind; if (k==='shop') { const x=document.querySelector('#shop-close'); if (x) x.click(); else G.closeModal(); return; } const b = document.querySelector('#card .btn.primary'); if (b) b.click(); else G.closeModal(); })()")
             await page.clock.run_for(300)
         # wave 2: coins, the upgrade, the deck
-        await expect('loot'); await page.click('#tab-loot'); await page.click('#item-loot'); await page.clock.run_for(200)
-        lt = await page.evaluate("(() => { const G=__yatd, P=G.shortestPath(); for (let k=Math.floor(P.length*0.5);k<P.length;k++){ if (G.canPlace('loot',P[k][0],P[k][1])) return P[k]; } return null; })()")
-        if lt: await tap(page, lt)
+        await expect('loot'); await page.click('#coach .next'); await page.clock.run_for(200)   # 1.24 (B): said, not demanded
         await expect('upgrade'); await page.screenshot(path=OUT + '03_upgrade.png')
         await page.evaluate("__yatd.setMode(null)"); await page.clock.run_for(100)
         t = await target(page)
@@ -119,9 +121,7 @@ async def main():
         # wave 3: dig, the end
         await expect('dig')
         if not (await step(page))['tray']: fails.append('the bar is open in the build')
-        await page.click('#item-dig'); await page.clock.run_for(300)
-        m = await page.evaluate("(() => { const G=__yatd; const ms=G.toolMarkers('dig'); return ms[0] ? [ms[0].x - 0.5, ms[0].y - 0.5] : null; })()")
-        if m: await tap(page, m)
+        await page.click('#coach .next'); await page.clock.run_for(200)   # 1.24 (B): said, not demanded
         s = await expect('end'); await page.screenshot(path=OUT + '07_end.png')
         await page.click('#coach .next'); await page.clock.run_for(200)
         s = await step(page); print('end', s)

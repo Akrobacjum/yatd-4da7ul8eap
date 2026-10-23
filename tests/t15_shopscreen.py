@@ -13,6 +13,7 @@ async def main():
         while await page.evaluate("__yatd.modalKind"): await page.evaluate("__yatd.closeModal()")
         await page.evaluate("(() => { const G=__yatd, P=G.shortestPath(); let n=0; for (const q of P) if (n<4 && G.canPlace('spikes', q[0], q[1])) { G.tryPlace('spikes', q[0], q[1]); n++; } })()")
         await page.click('#btn-action'); await page.clock.run_for(300)
+        await page.evaluate("(() => { const b = document.querySelector('#unspent-go'); if (b) b.click(); })()")   # 1.24 D: past the question about unspent Esencja
         print('end', await page.evaluate(RUNW))
         await page.clock.run_for(500)
         if await page.query_selector('#settle-next'): await page.clock.run_for(4000); await page.click('#settle-next'); await page.clock.run_for(400)   # 1.02: the settle screen waits for Dalej
@@ -25,6 +26,7 @@ async def main():
         await page.click('#tab-deck'); await page.clock.run_for(200)
         print('build tiles', await page.evaluate("[...document.querySelectorAll('#tray .dslot')].map(e => e.innerText.replace(/\\n/g,' ')).join(' | ')"))
         await page.click('#btn-action'); await page.clock.run_for(800)
+        await page.evaluate("(() => { const b = document.querySelector('#unspent-go'); if (b) b.click(); })()")   # 1.24 D: past the question about unspent Esencja
         await page.evaluate("__yatd.setTrayOpen && __yatd.setTrayOpen(true)"); await page.evaluate("__yatd.setTab('deck')"); await page.clock.run_for(300)
         print('raid tiles', await page.evaluate("[...document.querySelectorAll('#tray .dslot')].map(e => e.innerText.replace(/\\n/g,' ')).join(' | ')"))
         await page.screenshot(path=OUT+'raid_deck.png')

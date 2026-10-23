@@ -7,8 +7,9 @@
     ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
   }
   function draw() {
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx.fillStyle = '#060709'; ctx.fillRect(0, 0, cw, ch);
+    fearRN = 0;   // 1.24 (B, P1-4): the fear bars of this frame
+    ctx.setTransform(DPR, 0, 0, DPR, DPR * OX, DPR * OY);   // 1.24 (B): the view's corner is at OX, OY of the canvas
+    ctx.fillStyle = '#060709'; ctx.fillRect(-OX, -OY, FW, FH);
     if (!fl) return;
     const V = splitViews();   // 1.03: one screen, or two halves with a camera each
     withViews(V, T => { drawWorld(T); if (!V) drawOffscreen(T); drawBubbles(T); });
@@ -29,7 +30,7 @@
     cam.s = keep.s; cam.ox = keep.ox; cam.oy = keep.oy;
   }
   function drawDivider(V) {   // an iron bar along the cut, fading in as the halves part
-    const n = [Math.cos(SPLIT.ang), Math.sin(SPLIT.ang)], d = [-n[1], n[0]], c = [cw / 2, ch / 2], L = Math.hypot(cw, ch);
+    const n = [Math.cos(SPLIT.ang), Math.sin(SPLIT.ang)], d = [-n[1], n[0]], c = [cw / 2, ch / 2], L = Math.hypot(FW, FH);   // 1.24 (B): to the screen's edges
     const line = () => { ctx.beginPath(); ctx.moveTo(c[0] - d[0] * L, c[1] - d[1] * L); ctx.lineTo(c[0] + d[0] * L, c[1] + d[1] * L); ctx.stroke(); };
     ctx.save(); ctx.globalAlpha = V[0].e; ctx.lineCap = 'butt';
     ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 10; line();
@@ -42,7 +43,7 @@
   // The floor and everything painted on it (zones, fog, slots, flat traps) is drawn as before, in tile pixels, through floorT:
   // the floor plane turned and tilted. Walls are boxes. What stands (furniture, monsters, heroes, standing traps) is drawn
   // upright on the screen at its spot of the floor, nearest last.
-  function floorT(z) { const T = cam.s, b = R2 * SP; ctx.setTransform(DPR * R2, DPR * b, -DPR * R2, DPR * b, DPR * (WH * R2 * T - cam.ox), DPR * ((HM - (z || 0)) * CP * T - cam.oy)); }
+  function floorT(z) { const T = cam.s, b = R2 * SP; ctx.setTransform(DPR * R2, DPR * b, -DPR * R2, DPR * b, DPR * (WH * R2 * T - cam.ox + OX), DPR * ((HM - (z || 0)) * CP * T - cam.oy + OY)); }   // 1.24 (B): + OX, OY
   // 1.07 (author: what is flat lies on a floor or a wall, only the figures face the camera): the unit square on a tile of the
   // floor at height z, turned so that its bottom edge looks the way d points (the art then reads from the room)
   function tileMap(x, y, z, d) {
@@ -58,15 +59,15 @@
     else tileMap(it.x, it.y, WALL_LIP + L, w.d);
     return w;
   }
-  function screenT() { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); }
+  function screenT() { ctx.setTransform(DPR, 0, 0, DPR, DPR * OX, DPR * OY); }   // 1.24 (B)
   // the tiles that can show on screen (with room for walls and figures standing out of them)
   function viewBox() {
-    const P = [[0, 0], [cw, 0], [0, ch], [cw, ch]].map(p => fromView((p[0] + cam.ox) / cam.s, (p[1] + cam.oy) / cam.s));
+    const P = [[-OX, -OY], [FW - OX, -OY], [-OX, FH - OY], [FW - OX, FH - OY]].map(p => fromView((p[0] + cam.ox) / cam.s, (p[1] + cam.oy) / cam.s));   // 1.24 (B): the whole screen
     const xs = P.map(p => p.x), ys = P.map(p => p.y);
     return { x0: clamp(Math.floor(Math.min(...xs)) - 1, 0, WW - 1), y0: clamp(Math.floor(Math.min(...ys)) - 1, 0, WH - 1),
       x1: clamp(Math.ceil(Math.max(...xs)) + 3, 0, WW - 1), y1: clamp(Math.ceil(Math.max(...ys)) + 3, 0, WH - 1) };
   }
-  const onScreen = (p, m) => p[0] > -m && p[0] < cw + m && p[1] > -m && p[1] < ch + m * 1.6;
+  const onScreen = (p, m) => p[0] > -OX - m && p[0] < FW - OX + m && p[1] > -OY - m && p[1] < FH - OY + m * 1.6;   // 1.24 (B): the whole screen
   // 1.07: walls are blocks, and a wall that would hide floor from the camera lies flat (a lip).
   // 1.09 (author): the standing walls are twice as high (1,7 tiles); which walls lie flat stays as it was (worked out for the old
   // height, 0,85, in the wave view), so a room with nobody in it looks as before, only its far walls are higher. A high wall can
@@ -112,7 +113,8 @@
     // (1,7 in 32 bits is not 1,7, and every wall was sent on a move to where it already stood)
     const cur = new Float64Array(n), from = new Float64Array(n), to = new Float64Array(n), t0 = new Float64Array(n), pp = new Float64Array(n);
     for (let i = 0; i < n; i++) if (fl.tiles[i] === WALL) cur[i] = from[i] = to[i] = stand[i] ? WALL_H : WALL_LIP;
-    Object.assign(WA, { tiles: fl.tiles, ww: WW, wh: WH, stand, occ, own, roomWalls, torches, cur, from, to, t0, pp, RW, sig: '', focus: new Map(), moving: new Set() });
+    const torchAt = new Map(); torches.forEach(t => { const k = t.y * WW + t.x; if (!torchAt.has(k)) torchAt.set(k, []); torchAt.get(k).push(t); });   // 1.24 (C): a block's torches by its index
+    Object.assign(WA, { tiles: fl.tiles, ww: WW, wh: WH, stand, occ, own, roomWalls, torches, torchAt, cur, from, to, t0, pp, RW, sig: '', focus: new Map(), moving: new Set() });
     return WA;
   }
   // which rooms and halls are open now: where the heroes stand, and past a door they are within 2 tiles of
@@ -180,7 +182,7 @@
   // maps the unit square (u along a to b, v from the top z1 down to z0) onto an upright face of the dungeon
   function faceMap(ax, ay, bx, by, z0, z1) {
     const A = W2S(ax, ay, z1), B = W2S(bx, by, z1), C = W2S(ax, ay, z0);
-    ctx.setTransform(DPR * (B[0] - A[0]), DPR * (B[1] - A[1]), DPR * (C[0] - A[0]), DPR * (C[1] - A[1]), DPR * A[0], DPR * A[1]);
+    ctx.setTransform(DPR * (B[0] - A[0]), DPR * (B[1] - A[1]), DPR * (C[0] - A[0]), DPR * (C[1] - A[1]), DPR * (A[0] + OX), DPR * (A[1] + OY));   // 1.24 (B): + OX, OY
   }
   // A box standing on the floor: footprint centred on (cx, cy), w along x, d along y, h high, from z0. Colours: top, south, east.
   function isoBox(cx, cy, w, d, h, top, south, east, z0) {
@@ -209,24 +211,18 @@
       if (wallUp(H[i]) || (WA.moving.has(i) && WA.pp[i] > 0)) ups.push(i); else lips.push(i);   // a block still waiting for its turn is drawn as what it is now
     }
     const L = WALL_LIP;
-    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x, y + 1) < L + 0.001) quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)); }); ctx.fillStyle = WALL_S; ctx.fill();
-    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; if (wallH(x + 1, y) < L + 0.001) quad(W2S(x + 1, y, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, L), W2S(x + 1, y, L)); }); ctx.fillStyle = WALL_E; ctx.fill();
-    ctx.beginPath(); lips.forEach(i => { const x = i % WW, y = (i - x) / WW; quad(W2S(x, y, L), W2S(x + 1, y, L), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)); }); ctx.fillStyle = LIP_TOP; ctx.fill();
+    // 1.24 (C): the lips' outlines from the block cache (wallPaths), laid with the camera's transform: the same shapes as before
+    WA.anyRk = fl.rooms.some(R => R.rk);   // (once a frame; kindWallDeco and kindWall3D asked it for every block)
+    const LS = new Path2D(), LE = new Path2D(), LT = new Path2D(), LJ = new Path2D();
+    lips.forEach(i => { const e = lipPaths(i); if (e.S) LS.addPath(e.S); if (e.E) LE.addPath(e.E); LT.addPath(e.T); if (e.J) LJ.addPath(e.J); });
+    ctx.save(); viewT(); ctx.fillStyle = WALL_S; ctx.fill(LS); ctx.fillStyle = WALL_E; ctx.fill(LE); ctx.fillStyle = LIP_TOP; ctx.fill(LT); ctx.restore(); ctx.fillStyle = LIP_TOP;
     drawKindLips(lips, T);   // 1.15
     // a fine joint where a lip meets the floor, so the outline of the rooms stays readable
-    ctx.strokeStyle = 'rgba(150,155,170,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
-    const walkT = (x, y) => { const t = tileAt(x, y); return t === FLOOR || t === DOOR; };
-    lips.forEach(i => {
-      const x = i % WW, y = (i - x) / WW, edge = (ax, ay, bx, by) => { const a = W2S(ax, ay, L), b = W2S(bx, by, L); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); };
-      if (walkT(x, y - 1)) edge(x, y, x + 1, y);
-      if (walkT(x - 1, y)) edge(x, y, x, y + 1);
-      if (walkT(x, y + 1)) edge(x, y + 1, x + 1, y + 1);
-      if (walkT(x + 1, y)) edge(x + 1, y, x + 1, y + 1);
-    });
-    ctx.stroke();
+    ctx.save(); viewT(); ctx.strokeStyle = 'rgba(150,155,170,0.16)'; ctx.lineWidth = 1 / cam.s; ctx.stroke(LJ); ctx.restore(); ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(150,155,170,0.16)';   // (the state the old code left)
     wallItems.forEach(it => { if (!wallUp(wallH(it.x, it.y))) drawWallItem(it, T, false); });
     ups.sort((a, b) => (a % WW + Math.floor(a / WW)) - (b % WW + Math.floor(b / WW)));
     WA.items = wallItems;
+    const itemAt = WA.itemAt = new Map(); wallItems.forEach(it => { const k = it.y * WW + it.x; if (!itemAt.has(k)) itemAt.set(k, []); itemAt.get(k).push(it); });   // 1.24 (C): a block's wall traps by its index
     return ups.map(i => ({ i, d: i % WW + Math.floor(i / WW) + 1 }));
   }
   // the standing blocks from a to b (sorted by depth): the still ones in one go (south faces, east faces, mortar, tops, edges),
@@ -235,19 +231,16 @@
     const H = WA.cur, quad = (p, q, r, s) => { ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.lineTo(r[0], r[1]); ctx.lineTo(s[0], s[1]); ctx.closePath(); };
     const sOpen = i => { const x = i % WW, y = (i - x) / WW; return wallH(x, y + 1) < H[i] - 0.001; }, eOpen = i => { const x = i % WW, y = (i - x) / WW; return wallH(x + 1, y) < H[i] - 0.001; };
     let run = []; const KWs = kindWalls();
-    const flush = () => {
+    const flush = () => {   // 1.24 (C): the run's outlines from the block cache (wallPaths), laid with the camera's transform
       if (!run.length) return;
-      ctx.beginPath(); run.forEach(i => { if (!sOpen(i)) return; const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x, y + 1, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, h), W2S(x, y + 1, h)); }); ctx.fillStyle = WALL_S; ctx.fill();
-      ctx.beginPath(); run.forEach(i => { if (!eOpen(i)) return; const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x + 1, y, 0), W2S(x + 1, y + 1, 0), W2S(x + 1, y + 1, h), W2S(x + 1, y, h)); }); ctx.fillStyle = WALL_E; ctx.fill();
-      if (T >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); run.forEach(i => mortar(i, H[i], sOpen(i), eOpen(i), 1)); ctx.stroke(); }
-      ctx.beginPath(); run.forEach(i => { const x = i % WW, y = (i - x) / WW, h = H[i]; quad(W2S(x, y, h), W2S(x + 1, y, h), W2S(x + 1, y + 1, h), W2S(x, y + 1, h)); }); ctx.fillStyle = WALL_TOP; ctx.fill();
-      ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
-      run.forEach(i => {
-        const x = i % WW, y = (i - x) / WW, h = H[i];
-        if (sOpen(i)) { const p = W2S(x, y + 1, h), q = W2S(x + 1, y + 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
-        if (eOpen(i)) { const p = W2S(x + 1, y, h), q = W2S(x + 1, y + 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
-      });
-      ctx.stroke();
+      const PS = new Path2D(), PE = new Path2D(), PM = new Path2D(), PT = new Path2D(), PG = new Path2D();
+      run.forEach(i => { const e = wallPaths(i, H[i], sOpen(i), eOpen(i)); if (e.S) PS.addPath(e.S); if (e.E) PE.addPath(e.E); PM.addPath(e.M); PT.addPath(e.T); if (e.G) PG.addPath(e.G); });
+      ctx.save(); viewT();
+      ctx.fillStyle = WALL_S; ctx.fill(PS); ctx.fillStyle = WALL_E; ctx.fill(PE);
+      if (T >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1 / cam.s; ctx.stroke(PM); }
+      ctx.fillStyle = WALL_TOP; ctx.fill(PT);
+      ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1 / cam.s; ctx.stroke(PG);
+      ctx.restore(); ctx.fillStyle = WALL_TOP; ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1;   // (the state the old code left)
       run.forEach(i => wallDressing(i, T));
       run = [];
     };
@@ -259,14 +252,49 @@
     flush();
   }
   // mortar: courses of stone on the open faces (k: the block's size, 1 when still)
-  function mortar(i, h, sO, eO, k) {
+  function mortar(i, h, sO, eO, k, g, PJ) {   // 1.24 (C): g, PJ = a Path2D and the view projection (the block cache); else the canvas, W2S
+    g = g || ctx; PJ = PJ || W2S;
     const x = i % WW, y = (i - x) / WW, o = (tileHash(x, y) % 3 - 1) * 0.12, c = Math.max(2, Math.round(h / 0.42)), m0 = 0.5 - k / 2, m1 = 0.5 + k / 2;
-    if (sO) { const m = (a, za, b, zb) => { const p = W2S(x + a, y + m1, za), q = W2S(x + b, y + m1, zb); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); };
+    if (sO) { const m = (a, za, b, zb) => { const p = PJ(x + a, y + m1, za), q = PJ(x + b, y + m1, zb); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); };
       for (let j = 1; j < c; j++) m(m0, h * j / c, m1, h * j / c);
       for (let j = 0; j < c; j++) { const u = m0 + k * (j % 2 ? 0.5 + o : 0.25 - o / 2); m(u, h * j / c, u, h * (j + 1) / c); } }
-    if (eO) { const m = (a, za, b, zb) => { const p = W2S(x + m1, y + a, za), q = W2S(x + m1, y + b, zb); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); };
+    if (eO) { const m = (a, za, b, zb) => { const p = PJ(x + m1, y + a, za), q = PJ(x + m1, y + b, zb); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); };
       for (let j = 1; j < c; j++) m(m0, h * j / c, m1, h * j / c);
       for (let j = 0; j < c; j++) { const u = m0 + k * (j % 2 ? 0.5 - o : 0.3 + o / 2); m(u, h * j / c, u, h * (j + 1) / c); } }
+  }
+  // 1.24 (C): a wall block's outlines in view units (vX, vY: the screen without the camera's scale and shift), made once for its height,
+  // its open faces and the tilt, and laid down with viewT (the camera as a transform; a stroke 1/s wide is the old 1 px). Lips the same.
+  const WP = { p: null, tiles: null, ww: 0, m: new Map(), l: new Map() };
+  const VP = (x, y, z) => [vX(x, y), vY(x, y, z)];
+  function viewT() { const s = cam.s; ctx.setTransform(DPR * s, 0, 0, DPR * s, DPR * (OX - cam.ox), DPR * (OY - cam.oy)); }
+  function wpFresh() { if (WP.p !== VIEW.p || WP.tiles !== fl.tiles || WP.ww !== WW) { WP.p = VIEW.p; WP.tiles = fl.tiles; WP.ww = WW; WP.m.clear(); WP.l.clear(); } }
+  const pQuad = (P, a, b, c, d) => { P.moveTo(a[0], a[1]); P.lineTo(b[0], b[1]); P.lineTo(c[0], c[1]); P.lineTo(d[0], d[1]); P.closePath(); return P; };
+  function wallPaths(i, h, sO, eO) {
+    wpFresh();
+    const k = h + (sO ? 's' : '') + (eO ? 'e' : ''), c = WP.m.get(i); if (c && c.k === k) return c;
+    const x = i % WW, y = (i - x) / WW, M = new Path2D(), G = new Path2D();
+    mortar(i, h, sO, eO, 1, M, VP);
+    if (sO) { const p = VP(x, y + 1, h), q = VP(x + 1, y + 1, h); G.moveTo(p[0], p[1]); G.lineTo(q[0], q[1]); }
+    if (eO) { const p = VP(x + 1, y, h), q = VP(x + 1, y + 1, h); G.moveTo(p[0], p[1]); G.lineTo(q[0], q[1]); }
+    const e = { k, S: sO ? pQuad(new Path2D(), VP(x, y + 1, 0), VP(x + 1, y + 1, 0), VP(x + 1, y + 1, h), VP(x, y + 1, h)) : null,
+      E: eO ? pQuad(new Path2D(), VP(x + 1, y, 0), VP(x + 1, y + 1, 0), VP(x + 1, y + 1, h), VP(x + 1, y, h)) : null,
+      M, T: pQuad(new Path2D(), VP(x, y, h), VP(x + 1, y, h), VP(x + 1, y + 1, h), VP(x, y + 1, h)), G: sO || eO ? G : null };
+    WP.m.set(i, e); return e;
+  }
+  function lipPaths(i) {
+    wpFresh();
+    const x = i % WW, y = (i - x) / WW, L = WALL_LIP, sO = wallH(x, y + 1) < L + 0.001, eO = wallH(x + 1, y) < L + 0.001, k = (sO ? 's' : '') + (eO ? 'e' : ''), c = WP.l.get(i);
+    if (c && c.k === k) return c;
+    const walkT = (a, b) => { const t = tileAt(a, b); return t === FLOOR || t === DOOR; }, J = new Path2D();
+    let any = false; const edge = (ax, ay, bx, by) => { const a = VP(ax, ay, L), b = VP(bx, by, L); J.moveTo(a[0], a[1]); J.lineTo(b[0], b[1]); any = true; };
+    if (walkT(x, y - 1)) edge(x, y, x + 1, y);
+    if (walkT(x - 1, y)) edge(x, y, x, y + 1);
+    if (walkT(x, y + 1)) edge(x, y + 1, x + 1, y + 1);
+    if (walkT(x + 1, y)) edge(x + 1, y, x + 1, y + 1);
+    const e = { k, S: sO ? pQuad(new Path2D(), VP(x, y + 1, 0), VP(x + 1, y + 1, 0), VP(x + 1, y + 1, L), VP(x, y + 1, L)) : null,
+      E: eO ? pQuad(new Path2D(), VP(x + 1, y, 0), VP(x + 1, y + 1, 0), VP(x + 1, y + 1, L), VP(x + 1, y, L)) : null,
+      T: pQuad(new Path2D(), VP(x, y, L), VP(x + 1, y, L), VP(x + 1, y + 1, L), VP(x, y + 1, L)), J: any ? J : null };
+    WP.l.set(i, e); return e;
   }
   // a block on its way up or down: it grows a little wider in the middle of the move (the pop) and its faces are all shown
   function drawBlockPop(i, T) {
@@ -773,9 +801,9 @@
     }
   };
   function kindWall3D(i, T) {
-    if (T < 12 || !fl.rooms.some(R => R.rk)) return;
+    if (T < 12 || !WA.anyRk) return;   // 1.24 (C): WA.anyRk, WA.torchAt (were: every room, every torch, for every block)
     const x = i % WW, y = (i - x) / WW, h = WA.cur[i];
-    if (h < WALL_H * 0.6 || fl.items.has(key(x, y)) || WA.torches.some(q => q.x === x && q.y === y)) return;
+    if (h < WALL_H * 0.6 || fl.items.has(key(x, y)) || WA.torchAt.has(i)) return;
     const t = reduceMotion ? 0 : realNow, sel = tileHash(x * 5 + 1, y * 3 + 2) % 3;
     [[0, 1, 'S'], [1, 0, 'E']].forEach(([dx, dy, face]) => {
       if (tileAt(x + dx, y + dy) !== FLOOR || wallH(x + dx, y + dy) >= h - 0.001) return;
@@ -791,8 +819,8 @@
     kindWallDeco(i, T);
     kindWall3D(i, T);   // 1.15: what stands out of a komnata's wall
     rtWallWash(i, T);   // 1.15: the room's effect over the wall's stuff
-    if (T >= 10 && h > WALL_H * 0.6) WA.torches.forEach(t => { if (t.x === x && t.y === y && !fl.items.has(key(x, y))) drawTorch(t, T); });
-    (WA.items || []).forEach(it => { if (it.x === x && it.y === y) drawWallItem(it, T, true); });
+    if (T >= 10 && h > WALL_H * 0.6 && WA.torchAt.has(i)) WA.torchAt.get(i).forEach(t => { if (!fl.items.has(key(x, y))) drawTorch(t, T); });   // 1.24 (C): by the block's index
+    if (WA.itemAt && WA.itemAt.has(i)) WA.itemAt.get(i).forEach(it => drawWallItem(it, T, true));
   }
   function torchFlicker(x, y) { return 0.86 + 0.14 * Math.sin(realNow * 8.3 + x * 1.7) * Math.sin(realNow * 5.1 + y * 2.3); }
   function drawTorch(t, T) {   // a sconce on the wall's face, a flame (a flame faces you), a warm light on the face around it
@@ -890,6 +918,7 @@
     drawWallMarks(T);
     later.forEach(drawSO);
     drift.forEach(it => drawItemUp(it, T));   // ghosts, shades and bats float above everything
+    if (fl.phase === 'raid') drawAfx(T);   // 1.24 (B): what the heroes and the traps do
     // 4. signs over the world (upright, readable)
     fl.items.forEach(it => { if (it.jamUntil > fl.time && fl.phase === 'raid') { const p = itemAnchor(it); ctx.fillStyle = '#e6dcff'; ctx.font = numFont(Math.max(10, T * 0.4)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', p[0], p[1]); } });
     drawRoomTypeNames(T);
@@ -918,6 +947,8 @@
     if (h > 0.2 && (d[0] === 1 || d[1] === 1)) return { x: it.x + 0.5 + d[0] * 0.5, y: it.y + 0.5 + d[1] * 0.5, z: Math.max(0.1, Math.min(h, 1.2) - 0.45), face: d };
     return { x: it.x + 0.5 + d[0] * 0.3, y: it.y + 0.5 + d[1] * 0.3, z: 0.32, face: null, d };
   }
+  const FLAG_INK = [0, 1, 2].map(v => 'rgba(0,0,0,' + (0.05 + v * 0.04).toFixed(2) + ')');   // 1.24 (C)
+  const DANGER_INK = new Map();   // 1.24 (C): the danger tint's colour by its text (the same strings, made once)
   function drawTiles(x0, y0, x1, y1, T, g) {   // 1.03: g = the context to draw on (a cached chunk)
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const i = y * WW + x, t = fl.tiles[i], px = x * T, py = y * T;
@@ -939,7 +970,7 @@
         const hf = tileHash(x, y), v = hf % 7;
         g.fillStyle = fl.rooms[fl.roomAt[i]].color; g.fillRect(px, py, T + 0.5, T + 0.5);
         g.fillStyle = 'rgba(5,5,9,0.24)'; g.fillRect(px, py, T + 0.5, T + 0.5);   // 1.07: a darker floor, closer to the dark of the walls
-        if (v < 3) { g.fillStyle = 'rgba(0,0,0,' + (0.05 + v * 0.04).toFixed(2) + ')'; g.fillRect(px, py, T + 0.5, T + 0.5); }   // flagstones of uneven colour
+        if (v < 3) { g.fillStyle = FLAG_INK[v]; g.fillRect(px, py, T + 0.5, T + 0.5); }   // flagstones of uneven colour (1.24 (C): the same three colours, made once)
         else if (v === 6) { g.fillStyle = 'rgba(215,225,240,0.04)'; g.fillRect(px, py, T + 0.5, T + 0.5); }
         g.fillStyle = 'rgba(220,230,245,0.04)';
         g.fillRect(px + T * 0.1, py + T * 0.12, T * 0.34, T * 0.24);
@@ -1002,7 +1033,7 @@
   const TC_DIRECT = [600, 760];
   function drawTileLayer(x0, y0, x1, y1, T) {
     if (TC.tiles !== fl.tiles || TC.dpr !== DPR) { TC.map.clear(); TC.px = 0; TC.tiles = fl.tiles; TC.dpr = DPR; }
-    const nT = Math.min((x1 - x0 + 1) * (y1 - y0 + 1), cw * ch / (T * T * SP));   // 1.07: the tiles really on the screen (the box around the turned screen holds about twice as many)
+    const nT = Math.min((x1 - x0 + 1) * (y1 - y0 + 1), FW * FH / (T * T * SP));   // 1.24 (B): the whole screen   // 1.07: the tiles really on the screen (the box around the turned screen holds about twice as many)
     if (TC.direct ? nT > TC_DIRECT[1] : nT < TC_DIRECT[0]) { TC.direct = !TC.direct; if (TC.direct) { TC.map.clear(); TC.px = 0; } }
     if (TC.direct) { drawTiles(x0, y0, x1, y1, T, ctx); return; }
     TC.tick++;
@@ -1029,7 +1060,7 @@
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const d = fl.danger[y * WW + x];
       if (d < 0.4) continue;
-      ctx.fillStyle = 'rgba(255,80,80,' + Math.min(0.22, d * 0.05).toFixed(3) + ')';
+      const a = Math.min(0.22, d * 0.05), ink = DANGER_INK.get(a) || (DANGER_INK.size < 4096 ? DANGER_INK.set(a, 'rgba(255,80,80,' + a.toFixed(3) + ')').get(a) : 'rgba(255,80,80,' + a.toFixed(3) + ')'); ctx.fillStyle = ink;   // 1.24 (C)
       ctx.fillRect(x * T, y * T, T, T);
     }
   }
@@ -1823,7 +1854,7 @@
   // a room with any part on screen (its floor, and a little above it)
   function roomSeen(R, T) {
     const P = [W2S(R.x0, R.y0, 0), W2S(R.x1 + 1, R.y0, 0), W2S(R.x0, R.y1 + 1, 0), W2S(R.x1 + 1, R.y1 + 1, 0)];
-    return Math.max(...P.map(p => p[0])) > -T && Math.min(...P.map(p => p[0])) < cw + T && Math.max(...P.map(p => p[1])) > -T && Math.min(...P.map(p => p[1])) < ch + T * 2;
+    return Math.max(...P.map(p => p[0])) > -OX - T && Math.min(...P.map(p => p[0])) < FW - OX + T && Math.max(...P.map(p => p[1])) > -OY - T && Math.min(...P.map(p => p[1])) < FH - OY + T * 2;   // 1.24 (B): the whole screen
   }
   // the still part of a komnata's floor, painted once into a canvas per room (again when the room, its komnata or the zoom
   // changes by a step), at the screen's resolution: a phone draws one picture a frame instead of hundreds of strokes
@@ -2285,9 +2316,9 @@
   };
   // a standing wall of a komnata: dress the face (or faces) that look into it; every other wall tile, none with a torch or a trap
   function kindWallDeco(i, T) {
-    if (T < 12 || !fl.rooms.some(R => R.rk)) return;
+    if (T < 12 || !WA.anyRk) return;   // 1.24 (C): as kindWall3D
     const x = i % WW, y = (i - x) / WW, h = WA.cur[i];
-    if (h < WALL_H * 0.6 || fl.items.has(key(x, y)) || WA.torches.some(q => q.x === x && q.y === y)) return;
+    if (h < WALL_H * 0.6 || fl.items.has(key(x, y)) || WA.torchAt.has(i)) return;
     const t = reduceMotion ? 0 : realNow;
     [[0, 1, 'S'], [1, 0, 'E']].forEach(([dx, dy, face]) => {
       if (tileAt(x + dx, y + dy) !== FLOOR || wallH(x + dx, y + dy) >= h - 0.001) return;
@@ -2408,6 +2439,22 @@
       ctx.restore();
     });
   }
+  // 1.24 (B, P1-4: testers did not see fear at all): each hero's fear as a violet bar under his HP, a notch at its end (the way out),
+  // glowing when he is close to running; where it stands is kept for a tap (fearBarAt: noteFearUi('bar'))
+  const FEARR = []; let fearRN = 0;
+  function fearBar(cx, y, w, hgt, frac, id) {
+    const f = clamp(frac, 0, 1), x0 = cx - w / 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.72)'; ctx.fillRect(x0 - 1, y - 1, w + 2, hgt + 2);
+    ctx.fillStyle = 'rgba(79,63,143,0.6)'; ctx.fillRect(x0, y, w, hgt);
+    ctx.fillStyle = f >= 0.75 && !reduceMotion && Math.sin(realNow * 10) > 0 ? '#ece4ff' : '#b48cff'; ctx.fillRect(x0, y, w * f, hgt);
+    ctx.fillStyle = '#ece4ff'; ctx.fillRect(x0 + w - 1.5, y - 1.5, 1.5, hgt + 3);
+    const r = FEARR[fearRN] || (FEARR[fearRN] = { x: 0, y: 0, w: 0, h: 0, id: -1 }); fearRN++;
+    r.x = x0; r.y = y; r.w = w; r.h = hgt; r.id = id;
+  }
+  function fearBarAt(sx, sy) {   // the hero whose fear bar is under a tap (a finger's slack around it)
+    for (let i = fearRN - 1; i >= 0; i--) { const r = FEARR[i]; if (sx >= r.x - 6 && sx <= r.x + r.w + 6 && sy >= r.y - 8 && sy <= r.y + r.h + 8) { const h = fl.heroes[r.id]; if (h && !h.dead && !h.fled && !h.gone) return h; } }   // the one drawn last (on top) first
+    return null;
+  }
   function hpBar(cx, y, w, frac, color, T) {
     ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(cx - w / 2, y, w, Math.max(2, T * 0.07));
     ctx.fillStyle = color; ctx.fillRect(cx - w / 2, y, w * clamp(frac, 0, 1), Math.max(2, T * 0.07));
@@ -2511,12 +2558,12 @@
   // after the walls and drawn upright on the wall's face (UPM). ins: how far in from the tile's edge.
   let UPM = [];
   function markTile(x, y, T, ins, stroke, lw, dash) {
-    if (fl.tiles[y * WW + x] === WALL && wallH(x, y) > 0.2) { UPM.push({ x, y, ins, stroke, lw, dash, ring: false }); return; }
+    if (fl.tiles[y * WW + x] === WALL) { UPM.push({ x, y, ins, stroke, lw, dash, ring: false, lip: wallH(x, y) <= 0.2 }); return; }   // 1.24 (B): a cut wall's lip too (it was drawn under the lip)
     ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.setLineDash(dash ? [T * 0.12, T * 0.1] : []);
     ctx.strokeRect(x * T + T * ins, y * T + T * ins, T * (1 - 2 * ins), T * (1 - 2 * ins)); ctx.setLineDash([]);
   }
   function markRing(x, y, T, r, stroke, lw) {
-    if (fl.tiles[y * WW + x] === WALL && wallH(x, y) > 0.2) { UPM.push({ x, y, r, stroke, lw, ring: true }); return; }
+    if (fl.tiles[y * WW + x] === WALL) { UPM.push({ x, y, r, stroke, lw, ring: true, lip: wallH(x, y) <= 0.2 }); return; }   // 1.24 (B): a cut wall's lip too
     ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.beginPath(); ctx.arc((x + 0.5) * T, (y + 0.5) * T, T * r, 0, Math.PI * 2); ctx.stroke();
   }
   function drawWallMarks(T) {   // frames on full walls, on the wall's face
@@ -2525,6 +2572,7 @@
       ctx.strokeStyle = m.stroke; ctx.lineWidth = m.lw / T;
       if (m.ring) { ctx.beginPath(); ctx.arc(0.5, 0.5, m.r * 0.75, 0, Math.PI * 2); ctx.stroke(); }
       else { ctx.setLineDash(m.dash ? [0.12, 0.1] : []); ctx.strokeRect(m.ins, m.ins, 1 - 2 * m.ins, 1 - 2 * m.ins); }
+      if (m.lip && !m.ring && m.dash) { ctx.setLineDash([]); ctx.fillStyle = m.stroke; ctx.beginPath(); ctx.moveTo(0.36, 0.62); ctx.lineTo(0.64, 0.62); ctx.lineTo(0.5, 0.86); ctx.closePath(); ctx.fill(); }   // 1.24 (B): on a low wall an arrow to the room it would face
       ctx.restore();
     });
     UPM = [];
@@ -3184,11 +3232,11 @@
       ctx.beginPath(); ctx.ellipse(x + face * W * 0.2, mid, W * 1.6, H * 0.55, 0, face > 0 ? -Math.PI * 0.4 : Math.PI * 0.6, face > 0 ? Math.PI * 0.4 : Math.PI * 1.4); ctx.stroke();
     }
     // above the head: health, fear, ward, faith
-    const bw = Math.max(T * 0.56, H * 0.62), bh = Math.max(2, T * 0.07), b0 = top - 4 - bh * 2;
+    const bw = Math.max(T * 0.56, H * 0.62, 22), bh = Math.max(2, T * 0.07), fh = Math.max(3, T * 0.09), b0 = top - 6 - bh - fh;   // 1.24 (B, P1-4): the fear bar thicker, under HP, never over it
     hpBar(x, b0, bw, h.hp / h.max, h.hp / h.max > 0.35 ? '#6fd38a' : '#ff6b6b', T);
-    hpBar(x, b0 + bh + 1, bw, h.fear / (h.courage * (fl.fearless ? 1.3 : 1)), '#b48cff', T);   // fear: full bar = runs away
+    fearBar(x, b0 + bh + 2, bw, fh, h.fear / (h.courage * (fl.fearless ? 1.3 : 1)), h.id);   // fear: full bar = runs away
     if (h.shield > 0) hpBar(x, b0 - bh - 1, bw, h.shield / h.max, '#7fb8ff', T);
-    if (h.type === 'priest' && h.faithMax) hpBar(x, b0 + 2 * (bh + 1), bw, h.faith / h.faithMax, '#ffe9a8', T);   // faith
+    if (h.type === 'priest' && h.faithMax) hpBar(x, b0 + bh + fh + 4, bw, h.faith / h.faithMax, '#ffe9a8', T);   // faith
     // the level beside the head, in the colour of the rank
     ctx.font = numFont(Math.max(10, H * 0.34), true); ctx.textAlign = face > 0 ? 'right' : 'left'; ctx.textBaseline = 'middle';
     ctx.lineWidth = 3; ctx.strokeStyle = OUT; ctx.strokeText(String(h.lvl), x - face * W * 0.95, top + H * 0.22); ctx.fillStyle = h.R.color; ctx.fillText(String(h.lvl), x - face * W * 0.95, top + H * 0.22);
@@ -3219,6 +3267,233 @@
     else if (h.lost) sign('?', '#ffe066', H * 0.42, Math.sin(realNow * 5) * 1.5);
     else if (h.state === 'talk') sign('...', '#e8dfc8', H * 0.32, 0);
     else if (h.state === 'rest') sign('z', '#c9c2d8', H * 0.32, Math.sin(realNow * 3) * 2);
+  }
+  /* ================= 1.24 (B): animations of what the heroes and the traps do ================= */
+  // A pool of AFX_N slots used in turn (the oldest goes first): a kind, where (tiles, z = height), a second point (a projectile's
+  // target), a hero it follows, a colour, its start and length in real seconds. Drawn after what stands, before the signs.
+  const AFX_N = 64, AFX = [], AFXN = {};
+  for (let i = 0; i < AFX_N; i++) AFX.push({ on: false, kind: '', x: 0, y: 0, z: 0, x2: 0, y2: 0, hid: -1, col: '', t0: 0, dur: 1, n: 0, d: null });
+  let afxI = 0;
+  const AFX_DUR = { shield: 0.6, heal: 0.9, ward: 0.8, exorcism: 0.8, fireball: 0.5, jam: 0.9, notes: 1.3, rage: 0.8, smash: 0.5, sparks: 0.5, dodge: 0.45, potion: 0.9, throw: 0.55, charm: 0.7, boots: 0.6, light: 1.1, pry: 0.7,
+    spikes: 0.45, arrow: 0.35, fire: 0.6, gate: 0.45, trapdoor: 0.6, cage: 0.5, web: 0.55, powder: 0.6, mimic: 0.45, glare: 0.8, gaze: 0.7, flash: 0.6, mist: 0.9, rattle: 0.55, creak: 0.6 };
+  function afx(kind, x, y, o) {
+    AFXN[kind] = (AFXN[kind] || 0) + 1;
+    if (reduceMotion || !fl || fl.phase !== 'raid' || !(x >= -1) || !(y >= -1)) return null;
+    const f = AFX[afxI]; afxI = (afxI + 1) % AFX_N;
+    o = o || {};
+    f.on = true; f.kind = kind; f.x = x; f.y = y; f.z = o.z || 0; f.x2 = o.x2 !== undefined ? o.x2 : x; f.y2 = o.y2 !== undefined ? o.y2 : y;
+    f.hid = o.h ? o.h.id : -1; f.col = o.col || '#ffffff'; f.t0 = realNow; f.dur = o.dur || AFX_DUR[kind] || 0.6; f.n = (o.n || 0) + afxI * 0.37; f.d = o.d || null;
+    return f;
+  }
+  function heroFx(kind, h, o) { if (!h || h.dead || h.fled) return null; const p = heroPos(h); return afx(kind, p.x, p.y, Object.assign({ h }, o || {})); }
+  // a trap going off (fireRaw): its own animation
+  const TRAP_FX = { spikes: 'spikes', fire: 'fire', gate: 'gate', trapdoor: 'trapdoor', cage: 'cage', web: 'web', powder: 'powder', mimic: 'mimic', portrait: 'glare', eyes: 'gaze', mirror: 'flash', coffin: 'mist', bones: 'rattle', musicbox: 'notes', creak: 'creak' };
+  function trapFx(it, area) {
+    const t = it.type, x = it.x + 0.5, y = it.y + 0.5;
+    if (t === 'arrows') { wallDirs(it.x, it.y).forEach(d => { let k = 1; while (k < 40 && walkable(it.x + d[0] * k, it.y + d[1] * k)) k++; const e = Math.max(0.6, k - 1); afx('arrow', x, y, { x2: x + d[0] * e, y2: y + d[1] * e, z: 0.6 }); }); return; }   // (a short one into the furniture before the wall)
+    const kind = TRAP_FX[t]; if (!kind) return;
+    if (WALL_ITEM[t]) {
+      const w = wallSpot(it);
+      let fx2 = x, fy2 = y;
+      if (area && area.length) { let bd = -1; area.forEach(a => { const dd = Math.abs(a[0] - it.x) + Math.abs(a[1] - it.y); if (dd > bd) { bd = dd; fx2 = a[0] + 0.5; fy2 = a[1] + 0.5; } }); }
+      afx(kind, w.x, w.y, { z: w.z, x2: fx2, y2: fy2, d: area || null });
+      return;
+    }
+    const z = ON_OBJECT[t] ? 0.5 : t === 'gate' || t === 'creak' ? 0.7 : 0;
+    const d = t === 'gate' || t === 'creak' ? fl.doors.get(key(it.x, it.y)) : null;
+    afx(kind, x, y, { z, d: t === 'web' || t === 'fire' ? area : null, n: d && d.horiz ? 1 : 0, col: t === 'musicbox' ? '#e6d2ff' : undefined });
+  }
+  const AFX_DRAW = {
+    shield(f, k, P, T, H, face) {
+      const s = 0.35 + 0.65 * easeOutBack(Math.min(1, k * 2.5)), r = Math.max(4, H * 0.17), cx = P[0] + face * H * 0.2, cy = P[1] - H * 0.5;
+      ctx.globalAlpha = 1 - k * k; ctx.translate(cx, cy); ctx.scale(s, s);
+      ctx.beginPath(); ctx.moveTo(-r, -r * 1.1); ctx.lineTo(r, -r * 1.1); ctx.lineTo(r, 0); ctx.quadraticCurveTo(r, r * 0.9, 0, r * 1.45); ctx.quadraticCurveTo(-r, r * 0.9, -r, 0); ctx.closePath();
+      ctx.fillStyle = 'rgba(60,109,176,0.85)'; ctx.fill(); ctx.strokeStyle = '#cfe3ff'; ctx.lineWidth = 1.5 / s; ctx.stroke();
+      ctx.strokeStyle = 'rgba(127,184,255,' + (1 - k).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(0, 0, r * (1.5 + k * 2), 0, Math.PI * 2); ctx.stroke();
+    },
+    heal(f, k, P, T, H) {
+      ctx.strokeStyle = f.col; ctx.lineWidth = Math.max(1.5, T * 0.05);
+      for (let i = 0; i < 2; i++) { const q = k - i * 0.25; if (q < 0) continue; ctx.globalAlpha = (1 - q) * 0.9; ctx.beginPath(); ctx.ellipse(P[0], P[1], T * (0.2 + 0.7 * q), T * (0.2 + 0.7 * q) * SP, 0, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.fillStyle = f.col; const c = Math.max(1.5, T * 0.05);
+      for (let i = 0; i < 3; i++) { const q = k - i * 0.12; if (q < 0) continue; ctx.globalAlpha = 1 - q; const x = P[0] + (i - 1) * T * 0.28, y = P[1] - H * (0.35 + 0.8 * q); ctx.fillRect(x - c * 2, y - c / 2, c * 4, c); ctx.fillRect(x - c / 2, y - c * 2, c, c * 4); }
+    },
+    ward(f, k, P, T) {
+      const r = T * (0.6 + 1.8 * k);
+      ctx.globalAlpha = 1 - k; ctx.strokeStyle = '#7fb8ff'; ctx.lineWidth = Math.max(2, T * 0.06);
+      ctx.beginPath(); ctx.ellipse(P[0], P[1], r, r * 0.8, 0, Math.PI, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(P[0], P[1], r, r * SP, 0, 0, Math.PI * 2); ctx.stroke();
+    },
+    exorcism(f, k, P, T, H) {
+      const w = T * 0.5 * (1 - 0.5 * k), h = H * 2.2, g = ctx.createLinearGradient(0, P[1] - h, 0, P[1]);
+      g.addColorStop(0, 'rgba(255,242,192,0)'); g.addColorStop(1, 'rgba(255,242,192,' + (0.7 * (1 - k)).toFixed(2) + ')');
+      ctx.fillStyle = g; ctx.fillRect(P[0] - w / 2, P[1] - h, w, h);
+    },
+    fireball(f, k, P, T) {
+      const A = W2S(f.x, f.y, 0.9), B = W2S(f.x2, f.y2, 0.5);
+      if (k < 0.75) {
+        const q = k / 0.75, r = Math.max(3, T * 0.13);
+        for (let j = 3; j >= 0; j--) { const u = Math.max(0, q - j * 0.07), x = A[0] + (B[0] - A[0]) * u, y = A[1] + (B[1] - A[1]) * u - Math.sin(Math.PI * u) * T * 0.6; ctx.globalAlpha = j ? 0.35 / j : 1; ctx.fillStyle = j ? '#ff7a2c' : '#ffd27a'; ctx.beginPath(); ctx.arc(x, y, r * (j ? 1.2 : 1), 0, Math.PI * 2); ctx.fill(); }
+      } else { const q = (k - 0.75) / 0.25; ctx.globalAlpha = 1 - q; ctx.strokeStyle = '#ff9a3c'; ctx.lineWidth = Math.max(2, T * 0.08); ctx.beginPath(); ctx.arc(B[0], B[1], T * (0.2 + 0.8 * q), 0, Math.PI * 2); ctx.stroke(); }
+    },
+    jam(f, k, P, T) {
+      ctx.strokeStyle = '#b48cff'; ctx.lineWidth = Math.max(1.5, T * 0.05);
+      for (let i = 0; i < 2; i++) { const q = (k * 2 + i * 0.5) % 1; ctx.globalAlpha = (1 - q) * (1 - k * 0.5); ctx.beginPath(); ctx.ellipse(P[0], P[1], T * (0.15 + 0.5 * q), T * (0.15 + 0.5 * q) * SP, 0, 0, Math.PI * 2); ctx.stroke(); }
+    },
+    notes(f, k, P, T, H) {
+      ctx.fillStyle = f.col; ctx.font = numFont(Math.max(11, T * 0.42)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (let i = 0; i < 3; i++) { const q = k - i * 0.16; if (q < 0) continue; ctx.globalAlpha = Math.min(1, (1 - q) * 1.4); ctx.fillText(i % 2 ? '♫' : '♪', P[0] + (i - 1) * T * 0.25 + Math.sin(q * 7 + i * 2 + f.n) * T * 0.15, P[1] - H * (0.9 + q * 1.1)); }
+    },
+    rage(f, k, P, T, H) {
+      const cy = P[1] - H * 0.5, r = H * 0.65 * (1 + 0.15 * Math.sin(k * 25)), g = ctx.createRadialGradient(P[0], cy, r * 0.2, P[0], cy, r);
+      g.addColorStop(0, 'rgba(255,80,50,' + (0.45 * (1 - k)).toFixed(2) + ')'); g.addColorStop(1, 'rgba(255,80,50,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(P[0], cy, r * 0.8, r, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1 - k; ctx.strokeStyle = '#ff6b4a'; ctx.lineWidth = Math.max(1.5, T * 0.04);
+      for (let i = 0; i < 4; i++) { const a = -Math.PI / 2 + (i - 1.5) * 0.5, l0 = H * 0.55, l1 = l0 + H * 0.3 * k; ctx.beginPath(); ctx.moveTo(P[0] + Math.cos(a) * l0, cy + Math.sin(a) * l0); ctx.lineTo(P[0] + Math.cos(a) * l1, cy + Math.sin(a) * l1); ctx.stroke(); }
+    },
+    smash(f, k, P, T, H, face) {
+      const cy = P[1] - H * 0.55, a0 = face > 0 ? -Math.PI * 0.75 : -Math.PI * 0.25, sw = face > 0 ? Math.PI * 0.9 : -Math.PI * 0.9;
+      ctx.globalAlpha = 1 - k; ctx.strokeStyle = '#e8e0d0'; ctx.lineWidth = Math.max(2, T * 0.08); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(P[0], cy, H * 0.6, a0, a0 + sw * Math.min(1, k * 2), sw < 0); ctx.stroke();
+      if (k > 0.35) { const B = W2S(f.x2, f.y2, 0), q = (k - 0.35) / 0.65; ctx.globalAlpha = 1 - q; ctx.strokeStyle = '#b9b2a6'; ctx.beginPath(); ctx.ellipse(B[0], B[1], T * (0.2 + 0.6 * q), T * (0.2 + 0.6 * q) * SP, 0, 0, Math.PI * 2); ctx.stroke(); }
+    },
+    sparks(f, k, P, T) {
+      const Q = W2S(f.x, f.y, 0.3); ctx.globalAlpha = 1 - k; ctx.strokeStyle = '#ffe066'; ctx.lineWidth = Math.max(1.2, T * 0.035);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9 + f.n, l0 = T * 0.1 * k, l1 = T * (0.12 + 0.35 * k); ctx.beginPath(); ctx.moveTo(Q[0] + Math.cos(a) * l0, Q[1] + Math.sin(a) * l0 * 0.8); ctx.lineTo(Q[0] + Math.cos(a) * l1, Q[1] + Math.sin(a) * l1 * 0.8); ctx.stroke(); }
+    },
+    dodge(f, k, P, T, H, face) {
+      ctx.fillStyle = 'rgba(220,240,200,0.5)';
+      for (let i = 1; i <= 3; i++) { ctx.globalAlpha = (1 - k) * (0.5 - i * 0.12); ctx.beginPath(); ctx.ellipse(P[0] - face * H * (0.18 * i + 0.3 * k), P[1] - H * 0.5, H * 0.16, H * 0.45, 0, 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = 1 - k; ctx.strokeStyle = '#c9f0b0'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 3; i++) { const y = P[1] - H * (0.25 + 0.2 * i), x = P[0] - face * H * 0.35; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - face * H * (0.3 + 0.3 * k), y); ctx.stroke(); }
+    },
+    potion(f, k, P, T, H) {
+      const r = Math.max(2.5, T * 0.1), x = P[0], y = P[1] - H * (1.05 + 0.3 * Math.min(1, k * 2));
+      ctx.globalAlpha = 1 - Math.max(0, k - 0.6) / 0.4; ctx.translate(x, y); ctx.rotate(-0.5 * Math.min(1, k * 2));
+      ctx.fillStyle = '#8be38f'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#d6efe0'; ctx.fillRect(-r * 0.35, -r * 2, r * 0.7, r * 1.2); ctx.strokeStyle = '#1b2a1e'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.setTransform(1, 0, 0, 1, 0, 0); screenT(); ctx.globalAlpha = 1 - k; ctx.fillStyle = '#b4f5b0';
+      for (let i = 0; i < 6; i++) { const a = i * 1.05 + k * 3 + f.n; ctx.fillRect(P[0] + Math.cos(a) * H * 0.3 - 1.5, P[1] - H * (0.15 + 0.85 * k + 0.08 * (i % 3)) - 1.5, 3, 3); }
+    },
+    throw(f, k, P, T) {
+      const A = W2S(f.x, f.y, 1.0), B = W2S(f.x2, f.y2, 0.3);
+      if (k < 0.75) { const q = k / 0.75, x = A[0] + (B[0] - A[0]) * q, y = A[1] + (B[1] - A[1]) * q - Math.sin(Math.PI * q) * T * 1.1; ctx.fillStyle = f.col; ctx.strokeStyle = '#1a1424'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, Math.max(2.5, T * 0.1), 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      else { const q = (k - 0.75) / 0.25; ctx.globalAlpha = 1 - q; ctx.strokeStyle = f.col; ctx.lineWidth = Math.max(2, T * 0.07); ctx.beginPath(); ctx.arc(B[0], B[1], T * (0.2 + 0.9 * q), 0, Math.PI * 2); ctx.stroke(); }
+    },
+    charm(f, k, P, T, H) {
+      const cy = P[1] - H * (0.5 + 0.7 * k), s = Math.max(3, T * 0.12);
+      ctx.globalAlpha = 1 - k; ctx.fillStyle = f.col; ctx.beginPath(); ctx.moveTo(P[0], cy - s); ctx.lineTo(P[0] + s * 0.7, cy); ctx.lineTo(P[0], cy + s); ctx.lineTo(P[0] - s * 0.7, cy); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = f.col; ctx.lineWidth = Math.max(1.5, T * 0.05); ctx.beginPath(); ctx.ellipse(P[0], P[1] - H * 0.5, H * (0.3 + 0.3 * k), H * (0.55 + 0.2 * k), 0, 0, Math.PI * 2); ctx.stroke();
+    },
+    boots(f, k, P, T, H, face) {
+      for (let i = 0; i < 3; i++) { const q = Math.max(0, k - i * 0.1); ctx.globalAlpha = 0.6 * (1 - q); ctx.fillStyle = '#c8b48c'; ctx.beginPath(); ctx.arc(P[0] - face * H * (0.3 + 0.25 * i + 0.3 * q), P[1] - 2 - H * 0.08 * q, T * 0.08 * (1 + q), 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = 1 - k; ctx.strokeStyle = '#e8c27a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(P[0] - face * H * 0.1, P[1] - H * 0.15); ctx.quadraticCurveTo(P[0] - face * H * 0.35, P[1] - H * 0.35, P[0] - face * H * 0.5, P[1] - H * 0.2); ctx.stroke();
+    },
+    light(f, k, P, T) {
+      const r = T * (0.4 + 1.6 * Math.min(1, k * 1.5)), g = ctx.createRadialGradient(P[0], P[1], 0, P[0], P[1], r);
+      g.addColorStop(0, 'rgba(255,224,138,' + (0.45 * (1 - k)).toFixed(2) + ')'); g.addColorStop(1, 'rgba(255,224,138,0)');
+      ctx.translate(P[0], P[1]); ctx.scale(1, SP); ctx.translate(-P[0], -P[1]); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(P[0], P[1], r, 0, Math.PI * 2); ctx.fill();
+    },
+    pry(f, k, P, T) {
+      const Q = W2S(f.x, f.y, 0.5), a = -0.9 + 0.8 * Math.sin(Math.min(1, k * 1.6) * Math.PI / 2), L = T * 0.6;
+      ctx.globalAlpha = 1 - Math.max(0, k - 0.7) / 0.3; ctx.strokeStyle = '#9aa6bb'; ctx.lineWidth = Math.max(2, T * 0.07); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(Q[0] - Math.cos(a) * L * 0.5, Q[1] - Math.sin(a) * L * 0.5); ctx.lineTo(Q[0] + Math.cos(a) * L * 0.5, Q[1] + Math.sin(a) * L * 0.5); ctx.stroke();
+      if (k > 0.45) { ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 1.2; const tx = Q[0] + Math.cos(a) * L * 0.5, ty = Q[1] + Math.sin(a) * L * 0.5; for (let i = 0; i < 4; i++) { const b = i * 1.6 + f.n, l = T * 0.2 * (k - 0.45) * 2; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + Math.cos(b) * l, ty + Math.sin(b) * l); ctx.stroke(); } }
+    },
+    // the traps
+    spikes(f, k, P, T) {
+      const h = T * 0.5 * Math.sin(Math.PI * Math.min(1, k * 1.4)), w = T * 0.06;
+      ctx.fillStyle = '#e9edf3'; ctx.strokeStyle = '#2a2a30'; ctx.lineWidth = 1;
+      [[0, -0.22], [-0.22, 0], [0, 0], [0.22, 0], [0, 0.22]].forEach(o => { const q = W2S(f.x + o[0], f.y + o[1], 0); ctx.beginPath(); ctx.moveTo(q[0] - w, q[1]); ctx.lineTo(q[0], q[1] - h); ctx.lineTo(q[0] + w, q[1]); ctx.closePath(); ctx.fill(); ctx.stroke(); });
+    },
+    arrow(f, k, P, T) {
+      const A = W2S(f.x, f.y, f.z), B = W2S(f.x2, f.y2, f.z), dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+      const x = A[0] + dx * k, y = A[1] + dy * k, l = Math.max(8, T * 0.5);
+      ctx.strokeStyle = '#d9c9a8'; ctx.lineWidth = Math.max(1.5, T * 0.045); ctx.beginPath(); ctx.moveTo(x - ux * l, y - uy * l); ctx.lineTo(x, y); ctx.stroke();
+      ctx.fillStyle = '#e9edf3'; ctx.beginPath(); ctx.moveTo(x + ux * l * 0.25, y + uy * l * 0.25); ctx.lineTo(x - uy * l * 0.15, y + ux * l * 0.15); ctx.lineTo(x + uy * l * 0.15, y - ux * l * 0.15); ctx.closePath(); ctx.fill();
+    },
+    fire(f, k, P, T) {
+      const tiles = f.d || [[f.x - 0.5, f.y - 0.5]];
+      for (let i = 0; i < tiles.length && i < 9; i++) {
+        const q = W2S(tiles[i][0] + 0.5, tiles[i][1] + 0.5, 0), h = T * (0.45 + 0.35 * Math.sin(Math.PI * k)) * (1 + 0.2 * Math.sin(i * 3 + k * 22 + f.n)), w = T * 0.22;
+        ctx.globalAlpha = 1 - k * 0.7; ctx.fillStyle = '#ff7a2c'; ctx.beginPath(); ctx.moveTo(q[0] - w, q[1]); ctx.quadraticCurveTo(q[0] - w * 0.8, q[1] - h * 0.6, q[0], q[1] - h); ctx.quadraticCurveTo(q[0] + w * 0.8, q[1] - h * 0.6, q[0] + w, q[1]); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffd27a'; ctx.beginPath(); ctx.moveTo(q[0] - w * 0.5, q[1]); ctx.quadraticCurveTo(q[0], q[1] - h * 0.7, q[0] + w * 0.5, q[1]); ctx.closePath(); ctx.fill();
+      }
+    },
+    gate(f, k, P, T) {
+      const e = Math.min(1, k / 0.45), z1 = 1.3, zb = z1 * (1 - e * e), hz = f.n === 1;
+      ctx.strokeStyle = '#8a93a2'; ctx.lineWidth = Math.max(2, T * 0.06);
+      for (let i = 0; i < 4; i++) { const o = -0.3 + i * 0.2, ax = hz ? f.x + o : f.x, ay = hz ? f.y : f.y + o, a = W2S(ax, ay, z1 + 0.2), b = W2S(ax, ay, zb); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+      if (k > 0.45) { const q = (k - 0.45) / 0.55, G = W2S(f.x, f.y, 0); ctx.globalAlpha = 1 - q; ctx.strokeStyle = '#b9b2a6'; ctx.lineWidth = Math.max(1.5, T * 0.05); ctx.beginPath(); ctx.ellipse(G[0], G[1], T * (0.3 + 0.5 * q), T * (0.3 + 0.5 * q) * SP, 0, 0, Math.PI * 2); ctx.stroke(); }
+    },
+    trapdoor(f, k, P, T) {
+      const o = Math.sin(Math.PI * k);
+      ctx.fillStyle = '#050506'; ctx.strokeStyle = '#6b5a44'; ctx.lineWidth = Math.max(1.5, T * 0.05);
+      ctx.beginPath(); ctx.ellipse(P[0], P[1], T * 0.5 * o, T * 0.5 * o * SP, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    },
+    cage(f, k, P, T, H) {
+      const e = Math.min(1, k / 0.55), zb = 1.6 * (1 - e * e), hgt = 0.95, r = 0.38;
+      ctx.globalAlpha = 1 - Math.max(0, k - 0.75) / 0.25; ctx.strokeStyle = '#a9b3c4'; ctx.lineWidth = Math.max(1.5, T * 0.05);
+      for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3, x = f.x + Math.cos(a) * r, y = f.y + Math.sin(a) * r, p0 = W2S(x, y, zb), p1 = W2S(x, y, zb + hgt); ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); }
+      const c = W2S(f.x, f.y, zb + hgt); ctx.beginPath(); ctx.ellipse(c[0], c[1], T * r * 1.1, T * r * 1.1 * SP, 0, 0, Math.PI * 2); ctx.stroke();
+    },
+    web(f, k, P, T) {
+      const e = Math.min(1, k * 2.5), R = T * 1.4 * e;
+      ctx.globalAlpha = 0.85 * (1 - Math.max(0, k - 0.4) / 0.6); ctx.strokeStyle = '#e6ebff'; ctx.lineWidth = Math.max(1, T * 0.03);
+      for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; ctx.beginPath(); ctx.moveTo(P[0], P[1]); ctx.lineTo(P[0] + Math.cos(a) * R, P[1] + Math.sin(a) * R * SP); ctx.stroke(); }
+      for (let j = 1; j <= 2; j++) { ctx.beginPath(); ctx.ellipse(P[0], P[1], R * j / 2.5, R * j / 2.5 * SP, 0, 0, Math.PI * 2); ctx.stroke(); }
+    },
+    powder(f, k, P, T, H) {
+      const Q = W2S(f.x, f.y, f.z);
+      const fr = T * (0.4 + 1.3 * k), g = ctx.createRadialGradient(Q[0], Q[1], 0, Q[0], Q[1], fr); g.addColorStop(0, 'rgba(255,246,208,1)'); g.addColorStop(0.45, 'rgba(255,170,70,0.85)'); g.addColorStop(1, 'rgba(255,110,40,0)');
+      ctx.globalAlpha = Math.pow(1 - k, 1.5); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Q[0], Q[1], fr, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.55 * (1 - k); ctx.fillStyle = '#4a4650';
+      for (let i = 0; i < 5; i++) { const a = i * 1.26 + f.n; ctx.beginPath(); ctx.arc(Q[0] + Math.cos(a) * T * 0.6 * k, Q[1] - H * 0.9 * k + Math.sin(a) * T * 0.2, T * 0.18 * (0.6 + k), 0, Math.PI * 2); ctx.fill(); }
+    },
+    mimic(f, k, P, T) {
+      const Q = W2S(f.x, f.y, f.z), gap = T * 0.28 * (1 - Math.sin(Math.PI * Math.min(1, k * 1.5))), w = T * 0.4;
+      ctx.globalAlpha = 1 - Math.max(0, k - 0.6) / 0.4; ctx.fillStyle = '#d8434f'; ctx.strokeStyle = '#2a1015'; ctx.lineWidth = 1;
+      [-1, 1].forEach(s => { const y = Q[1] + s * gap; ctx.beginPath(); ctx.ellipse(Q[0], y, w, T * 0.12, 0, s < 0 ? Math.PI : 0, s < 0 ? Math.PI * 2 : Math.PI); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#f2ece2'; for (let i = 0; i < 4; i++) { const x = Q[0] - w * 0.6 + i * w * 0.4; ctx.beginPath(); ctx.moveTo(x - T * 0.04, y); ctx.lineTo(x, y - s * T * 0.09); ctx.lineTo(x + T * 0.04, y); ctx.closePath(); ctx.fill(); } ctx.fillStyle = '#d8434f'; });
+    },
+    glare(f, k, P, T) {
+      const Q = W2S(f.x, f.y, f.z), r = Math.max(1.6, T * 0.06) * (1 + 0.5 * Math.sin(k * 18));
+      ctx.globalAlpha = 1 - k; ctx.strokeStyle = '#a08ce8'; ctx.lineWidth = Math.max(1, T * 0.035);
+      for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + 0.3, l0 = T * 0.25, l1 = T * (0.3 + 0.7 * k); ctx.beginPath(); ctx.moveTo(Q[0] + Math.cos(a) * l0, Q[1] + Math.sin(a) * l0); ctx.lineTo(Q[0] + Math.cos(a) * l1, Q[1] + Math.sin(a) * l1); ctx.stroke(); }
+      ctx.fillStyle = '#ff4a4a'; ctx.shadowColor = '#ff4a4a'; ctx.shadowBlur = 6; [-1, 1].forEach(s => { ctx.beginPath(); ctx.arc(Q[0] + s * T * 0.1, Q[1] - T * 0.05, r, 0, Math.PI * 2); ctx.fill(); });
+    },
+    gaze(f, k, P, T) {
+      const A = W2S(f.x, f.y, f.z), B = W2S(f.x2, f.y2, 0.6);
+      ctx.globalAlpha = 0.8 * (1 - k); ctx.strokeStyle = '#ffe066'; ctx.lineWidth = Math.max(1.5, T * 0.14 * (1 - k)); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(A[0] + (B[0] - A[0]) * Math.min(1, k * 3), A[1] + (B[1] - A[1]) * Math.min(1, k * 3)); ctx.stroke();
+    },
+    flash(f, k, P, T) {
+      const Q = W2S(f.x, f.y, f.z), l = T * 0.75 * Math.sin(Math.PI * k), a0 = k * 1.2;
+      ctx.globalAlpha = 1 - k * 0.5; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1.5, T * 0.05);
+      for (let i = 0; i < 4; i++) { const a = a0 + i * Math.PI / 2; ctx.beginPath(); ctx.moveTo(Q[0] - Math.cos(a) * l, Q[1] - Math.sin(a) * l); ctx.lineTo(Q[0] + Math.cos(a) * l, Q[1] + Math.sin(a) * l); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(190,220,255,' + (0.5 * (1 - k)).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(Q[0], Q[1], T * 0.35, 0, Math.PI * 2); ctx.fill();
+    },
+    mist(f, k, P, T, H) {
+      for (let i = 0; i < 4; i++) { const q = Math.max(0, k - i * 0.1); ctx.globalAlpha = 0.6 * (1 - q); ctx.fillStyle = i % 2 ? '#3c2850' : '#5a4670'; ctx.beginPath(); ctx.arc(P[0] + (i - 1.5) * T * 0.18 + Math.sin(q * 6 + i) * T * 0.08, P[1] - T * 0.2 - H * 0.9 * q, T * 0.15 * (1 + q), 0, Math.PI * 2); ctx.fill(); }
+    },
+    rattle(f, k, P, T) {
+      ctx.strokeStyle = '#e8e0d0'; ctx.lineWidth = Math.max(1.5, T * 0.05); ctx.lineCap = 'round'; ctx.globalAlpha = 1 - Math.max(0, k - 0.6) / 0.4;
+      for (let i = 0; i < 6; i++) { const x = P[0] + (i - 2.5) * T * 0.13, y = P[1] - Math.abs(Math.sin(k * Math.PI * 3 + i * 1.3)) * T * 0.3, a = i * 0.8 + k * 9, l = T * 0.07; ctx.beginPath(); ctx.moveTo(x - Math.cos(a) * l, y - Math.sin(a) * l); ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); ctx.stroke(); }
+    },
+    creak(f, k, P, T) {
+      const Q = W2S(f.x, f.y, f.z); ctx.strokeStyle = '#d9c9a8'; ctx.lineWidth = Math.max(1.2, T * 0.04);
+      for (let i = 0; i < 3; i++) { const q = k - i * 0.15; if (q < 0) continue; ctx.globalAlpha = 1 - q; ctx.beginPath(); ctx.arc(Q[0], Q[1], T * (0.25 + 0.25 * i + 0.4 * q), -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke(); }
+    }
+  };
+  function drawAfx(T) {
+    for (let i = 0; i < AFX_N; i++) {
+      const f = AFX[i]; if (!f.on) continue;
+      const k = (realNow - f.t0) / f.dur; if (k >= 1 || k < -0.01) { if (k >= 1) f.on = false; continue; }
+      let x = f.x, y = f.y, face = 1, h = null;
+      if (f.hid >= 0) { h = fl.heroes[f.hid]; if (h && !h.dead && !h.gone) { const p = heroPos(h); x = p.x; y = p.y; face = h.face || 1; } }
+      const P = W2S(x, y, f.z); if (!onScreen(P, T * 4)) continue;
+      const fn = AFX_DRAW[f.kind]; if (!fn) { f.on = false; continue; }
+      ctx.save(); fn(f, Math.max(0, k), P, T, figH(T, h && h.boss), face); ctx.restore();
+    }
+    ctx.globalAlpha = 1;
   }
   function drawParticles(T, flat) {   // 1.07: rings lie on the floor (floor pass), sparks fly upright (second pass)
     particles.forEach(p => {
@@ -3268,6 +3543,49 @@
     uiRects.list = { x: 6, y: 6, w, h };
     return h;
   }
+  // 1.24 (B, P1-1: testers did not know who comes; the wave 5 wall): the next party in the build without a tap: how many and their
+  // levels, each one's class and level (a crown for a champion, a gold ring for a Nemezis, a green cross for a healer: priest and
+  // bard), the leader, the healers and their traits in words. It is the party that comes in (run.next, made before the build).
+  // A tap opens the full list (notePreview). The text is worked out once per party and width.
+  const HEALER = { priest: 1, bard: 1 }, PV = { list: null, w: 0, l1: '', l2: '' };
+  function fitTxt(s, mw) { if (ctx.measureText(s).width <= mw) return s; while (s.length > 4 && ctx.measureText(s + '…').width > mw) s = s.slice(0, -1); return s + '…'; }
+  function drawPreview(list) {
+    const cwid = 25, pad = 5, n = list.length, F1 = '600 11px "Alegreya Sans", system-ui, sans-serif', F2 = '500 10.5px "Alegreya Sans", system-ui, sans-serif';
+    if (PV.list !== list || PV.cw !== cw) {
+      const lv = list.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), boss = list.find(e => e.boss), heal = list.filter(e => HEALER[e.type]), tr = [];
+      list.forEach(e => { if (e.trait && HERO_TRAITS[e.trait]) { const t = HERO_TRAITS[e.trait].name[e.female ? 1 : 0]; if (!tr.includes(t)) tr.push(t); } });
+      const bits = [];
+      if (boss) bits.push((boss.boss === 'final' ? 'z przepowiedni' : 'czempion') + ' (poz. ' + boss.lvl + ')');   // the boss first: it was cut off behind long healer names
+      if (heal.length) bits.push('✚ ' + heal.map(e => HEROES[e.type].name[e.female ? 1 : 0].toLowerCase()).join(', '));   // the healers (their chips have the green cross too)
+      if (tr.length) bits.push(tr.join(', '));
+      const t1 = waveName() + ': ' + n + (n === 1 ? ' bohater' : ' bohaterów') + ', poz. ' + (lo === hi ? lo : lo + '-' + hi), t2 = bits.join(' · ');
+      ctx.font = F1; const m1 = ctx.measureText(t1).width; ctx.font = F2; const m2 = t2 ? ctx.measureText(t2).width : 0;
+      const chips = pad * 2 + n * cwid, room = cw - 12;
+      PV.side = chips + m1 + 26 <= room;   // the words beside the chips (as low as the old chip row), or under them on a narrow view
+      const w = PV.side ? Math.min(room, chips + Math.max(m1, m2) + 26) : Math.min(room, Math.max(chips + 12, 200, m1 + 30, m2 + 16));   // as wide as its words need, never past the view
+      PV.tx = PV.side ? 6 + chips + 4 : 12;
+      ctx.font = F1; PV.l1 = fitTxt(t1, w - (PV.tx - 6) - 18);
+      ctx.font = F2; PV.l2 = t2 ? fitTxt(t2, w - (PV.tx - 6) - (PV.side ? 18 : 8)) : ''; PV.heal = heal.length > 0;
+      PV.list = list; PV.cw = cw; PV.w = w; PV.h = PV.side ? 34 : 30 + 15 + (PV.l2 ? 13 : 0);
+    }
+    const w = PV.w, h = PV.h;
+    ctx.fillStyle = 'rgba(10,11,13,0.82)'; rr(6, 6, w, h, 3); ctx.fill();
+    list.forEach((e, k) => {
+      const x = 6 + pad + k * cwid + 9, y = 6 + (PV.side ? 15 : 12), T0 = HEROES[e.type], R0 = levelStats(e.lvl);
+      ctx.fillStyle = T0.color; ctx.beginPath(); ctx.arc(x, y, 6.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = e.boss ? '#ff8a3c' : e.nemesis ? '#ffd27a' : R0.color; ctx.lineWidth = e.boss || e.nemesis ? 2.4 : 1.6; ctx.stroke();
+      drawClassIcon(e.type, x, y, 10.5, '#1a1424');
+      ctx.fillStyle = R0.color; ctx.font = numFont(8, true); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(String(e.lvl), x + 7, y - 4);
+      if (e.boss) { ctx.fillStyle = '#ffd34d'; ctx.beginPath(); ctx.moveTo(x - 4, y - 8); ctx.lineTo(x - 4.5, y - 12.5); ctx.lineTo(x - 2, y - 10); ctx.lineTo(x, y - 13); ctx.lineTo(x + 2, y - 10); ctx.lineTo(x + 4.5, y - 12.5); ctx.lineTo(x + 4, y - 8); ctx.closePath(); ctx.fill(); }   // a crown
+      if (HEALER[e.type]) { ctx.fillStyle = '#0b0c0e'; ctx.fillRect(x + 2.5, y + 3, 7, 7); ctx.fillStyle = '#8be38f'; ctx.fillRect(x + 5.25, y + 3.75, 1.5, 5.5); ctx.fillRect(x + 3.25, y + 5.75, 5.5, 1.5); }   // a healer's cross
+    });
+    ctx.fillStyle = '#8e939a'; ctx.font = numFont(10, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('▾', 6 + w - 9, 6 + 15);
+    const y1 = PV.side ? (PV.l2 ? 6 + 11 : 6 + 17) : 6 + 30 + 6, y2 = PV.side ? 6 + 24 : 6 + 30 + 19;
+    ctx.textAlign = 'left'; ctx.font = F1; ctx.fillStyle = '#e6e1d6'; ctx.fillText(PV.l1, PV.tx, y1);
+    if (PV.l2) { ctx.font = F2; ctx.fillStyle = PV.heal ? '#b4e3b0' : '#c9c2b8'; ctx.fillText(PV.l2, PV.tx, y2); }
+    uiRects.list = { x: 6, y: 6, w, h };
+    return h;
+  }
   function drawParty() {
     const list = fl.heroes.filter(h => !h.dead && !h.fled).concat(fl.queue.map(e => ({ e, T: HEROES[e.type], R: levelStats(e.lvl), lvl: e.lvl, boss: e.boss, nemesis: e.nemesis, queued: true, hp: e.hp, max: e.max, inv: e.inv, fear: 0, courage: 1 })))
       .concat(fl.heroes.filter(h => h.dead || h.fled));
@@ -3313,7 +3631,7 @@
     if (!fxc) fxc = c.getContext('2d');
     fxc.setTransform(DPR, 0, 0, DPR, 0, 0); fxc.clearRect(0, 0, W, H); fxDirty = orbs.length > 0;
     if (!orbs.length) return;
-    const cr = cv.getBoundingClientRect(), R = id => $(id).getBoundingClientRect(), sr = R('#h-score'), hr = R('#h-heart'), gr = R('#eq-g'), kr = R('#eq-c'), mr = R('#eq-k');
+    const cr0 = cv.getBoundingClientRect(), cr = { left: cr0.left + OX, top: cr0.top + OY }, R = id => $(id).getBoundingClientRect(), sr = R('#h-score'), hr = R('#h-heart'), gr = R('#eq-g'), kr = R('#eq-c'), mr = R('#eq-k');   // 1.24 (B): the view's corner on the page
     const mid = r => [r.left + r.width / 2, r.top + r.height / 2];
     const TG = { score: mid(sr), heart: hr.width ? mid(hr) : mid(sr), groza: gr.width ? mid(gr) : mid(sr), greed: kr.width ? mid(kr) : mid(sr), combo: mr.width ? mid(mr) : mid(sr) };
     const at = (o, u) => {
@@ -3469,7 +3787,7 @@
     const list = run.next || [];
     if (!list.length) { uiRects.list = null; return; }
     if (!UI.listOpen) {
-      const hh = drawChips(list.map(e => ({ type: e.type, T: HEROES[e.type], R: levelStats(e.lvl), lvl: e.lvl, boss: e.boss, nemesis: e.nemesis })));   // 1.23: nemesis
+      const hh = drawPreview(list);   // 1.24 (B, P1-1): who comes, without a tap
       if (fl.breach) { const fresh = run.layout.breach && run.layout.breach.fresh, bw = fresh ? 62 : 76; ctx.fillStyle = 'rgba(120,20,30,0.85)'; rr(6, 6 + hh + 4, bw, 18, 6); ctx.fill(); ctx.fillStyle = '#ffd0d0'; ctx.font = numFont(10, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(fresh ? 'WYŁOM!' : 'WYŁOM otwarty', 6 + bw / 2, 6 + hh + 13); }
       return;
     }

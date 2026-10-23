@@ -15,6 +15,19 @@
   S.speedsV = 109;   // saved with the settings from now on
   let playerName = '';
   try { playerName = localStorage.getItem('yatd-name') || ''; } catch (e) {}
+  // 1.24 (D, P0-5; two testers shared one device, two runs had no name): playerId, made the first time a name is used (or the
+  // name prompt is skipped) and kept on the device with that name ('yatd-player'); a different name on this device = a new id
+  let pidMem = null;
+  function playerIdNow() {
+    const nm = (playerName || '').trim().slice(0, 40);
+    let rec = pidMem;
+    try { rec = JSON.parse(localStorage.getItem('yatd-player') || 'null') || pidMem; } catch (e) {}
+    if (!rec || typeof rec.id !== 'string' || (rec.name || '') !== nm) {
+      rec = { name: nm, id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) };
+      try { localStorage.setItem('yatd-player', JSON.stringify(rec)); } catch (e) {}
+    }
+    pidMem = rec; return rec.id;
+  }
   function loadBest() { try { return parseInt(localStorage.getItem('yatd15-best') || '0', 10) || 0; } catch (e) { return 0; } }
   function saveBest(v) { try { localStorage.setItem('yatd15-best', String(Math.round(v))); } catch (e) {} }
 
@@ -25,6 +38,7 @@
   let floats = [], particles = [], shake = 0, realNow = 0;
   const cam = { s: 24, ox: 0, oy: 0, manualUntil: 0 };
   let cw = 0, ch = 0, DPR = 1, coachInset = 0;   // 1.04: coachInset = how much of the map's top the tutorial coach covers
+  let OX = 0, OY = 0, FW = 0, FH = 0;   // 1.24 (B): the canvas covers the whole screen (FW x FH); the camera's view (cw x ch, #stage) starts at OX, OY in it
 
   const $ = s => document.querySelector(s);
   const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');

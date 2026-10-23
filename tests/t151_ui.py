@@ -43,6 +43,7 @@ async def main():
         await page.screenshot(path=OUT+'23_item_upgraded.png')
         while await page.evaluate("__yatd.modalKind"): await page.evaluate("__yatd.closeModal()")
         await page.click('#btn-action'); await page.clock.run_for(300)
+        await page.evaluate("(() => { const b = document.querySelector('#unspent-go'); if (b) b.click(); })()")   # 1.24 D: past the question about unspent Esencja
         mk = await page.evaluate(RUNW)
         print('after wave modal', mk, 'save stage', await page.evaluate("(__yatd.loadSave() || {}).stage"))
         if mk == 'settle': await page.evaluate("__yatd.closeModal()"); await page.clock.run_for(300)   # 1.01: the reckoning first

@@ -72,3 +72,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.20](1.20.html) | 21.10 | ekwipunek: pochodzenie, rzeczy poległych, dzielenie się, waga, latarnia, łom |
 | [Prototype 1.21](1.21.html) | 21.10 | więzi: przyjaciele, rodzeństwo, rywale, mistrz i uczeń; żałoba, kłótnie o łup, zakłady |
 | [Prototype 1.22](1.22.html) | 23.10 | finał fali: eskorta niosącego, przekazanie kryształu, ostatni bastion, poświęcenie, ostrożność po drodze |
+| [Prototype 1.23](1.23.html) | 24.10 | Nemezis: powracający z tytułem, urazą i nagrodą za głowę; pamięć o poległych |

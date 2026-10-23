@@ -15,7 +15,9 @@
     essenceCap: 40, crystals: 3, comboWin: 3, comboQuiet: 0.25, essK: 1.1, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 37, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
     music: 0.5,   // 1.07: the music's volume (0 = off)
     haptics: 1, trayAuto: 1, series: 1, split: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley, split screen (1.03)
-    topPad: 0   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
+    topPad: 0,   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
+    calmWaves: 2, calmGap: 1.5,   // 1.24 (D, P1-3): in waves 1-calmWaves (and while the guide runs) one check, then calmGap s of game time before the next; what wants a check meanwhile fires by itself as a graze
+    okPulse: 1.6, okSwing: 1.65   // 1.24 (D, P1-6): the graze window of the pulse (closing ring) and the swing (pendulum) x this (crit unchanged)
   };
   const RUN_WAVES = 10;   // wave 5: a champion, wave 10: the hero of the prophecy. Survive it and the run is won (you may play on).
   const f1 = v => v.toFixed(1).replace('.', ','), x1 = v => '×' + f1(v), x2 = v => '×' + v.toFixed(2).replace('.', ',');
@@ -60,7 +62,7 @@
   const ITEMS = {
     spikes: { name: 'Kolce', cost: 3, slot: 'floor', tag: 'szybkie', cd: 1.5, desc: 'Kolce (podłoga, kłute): jedno pole, szybkie odnowienie. +50%, gdy bohater stoi: walczy, czeka, w sieci albo w klatce. Najlepsze tuż za drzwiami.' },
     web: { name: 'Sieć', cost: 3, slot: 'floor', tag: 'spowalnia', cd: 7, desc: 'Sieć (podłoga): spowalnia w kwadracie 3×3 na 3 s, a bohater w sieci dostaje +30% obrażeń. Mag potrafi ją rozproszyć.' },
-    trapdoor: { name: 'Zapadnia', cost: 4, slot: 'floor', tag: 'rozdziela', cd: 8, desc: 'Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony. Złodziej ją rozbroi.' },
+    trapdoor: { name: 'Zapadnia', cost: 6, slot: 'floor', tag: 'rozdziela', cd: 8, desc: 'Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony. Najwyżej 2 upadki bohatera na falę (elita i poz. 12+: 1), potem widzi zapadnie. Złodziej ją rozbroi.' },   // 1.24: the cap
     cage: { name: 'Klatka', cost: 4, slot: 'floor', tag: 'więzi', cd: 10, desc: 'Klatka (podłoga): więzi bohatera na 6 s, uwięziony dostaje +50% obrażeń. Jeśli drużyna go nie uwolni, umiera w klatce (boss wyłamie kraty).' },
     arrows: { name: 'Strzały', cost: 3, slot: 'wall', tag: 'linia', cd: 3, desc: 'Strzały (ściana, kłute): strzała leci przez cały pokój w linii prostej i trafia każdego. Mebel ją zatrzymuje.' },
     fire: { name: 'Ogień', cost: 4, slot: 'wall', tag: 'podpala', cd: 5, desc: 'Ogień (ściana, ogień): płomień 2×3 przed ścianą i podpalenie na 3 s. Podpalonego nie leczy odpoczynek, kapłan musi go ugasić.' },
@@ -167,14 +169,18 @@
       'Potwory, które straszą (z kart w sklepie): duch, cień i nietoperze.',
       'Wystraszony uciekinier daje Esencję, ale opowie następnej fali o pułapkach, które go zraniły albo przestraszyły. Nowe karty w sklepie grają strachem.'] },
     { name: 'Gildia i loch', news: [
-      'Gildia czyta raporty z fal. Od fali 3 przysyła specjalistę na Twój styl: kapłana z amuletem na strach, wojownika z talizmanem na zabijanie, złodzieja na masę pułapek, maga na potwory, barda na błądzenie, barbarzyńcę na zastawione przejścia. Kogo i po co przysyła, zobaczysz przed falą.',
+      'Gildia czyta raporty z fal i od teraz przysyła specjalistę na Twój styl: kapłana z amuletem na strach, wojownika z talizmanem na zabijanie, złodzieja na masę pułapek, maga na potwory, barda na błądzenie, barbarzyńcę na zastawione przejścia. Kogo i po co przysyła, zobaczysz przed falą.',
       'Zakładka Obiekty: skrzynia i budowle-kontry na specjalistów (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy, Zasłona, Bastion).',
       'Typy pokoi na końcu zakładki Loch: Mgła, Bagno, Grota, Krypta, Sezam, Sanktuarium, Zębatki, Głusza i Lodownia. Każdy zmienia zasady w jednym pokoju (przytrzymaj kafelek, żeby przeczytać).'] },
     { name: 'Pełna gra', news: [
       'Ciała i fobie: część bohaterów ma słabość albo odporność ciała i fobię, przez którą jedna rzecz straszy ich 2 razy mocniej. Karczma zdradza część z tego przed falą, resztę zobaczysz w lochu (stuknij bohatera).',
       'Powracający: uciekinier może wrócić po 2-3 falach, silniejszy, z blizną i z pamięcią Twojego lochu.',
       'Łowcy skarbów: przy dużej chciwości część drużyny to łowcy (sakiewka przy figurce), chciwsi od reszty.',
-      'Wyłom: od fali 6 gildia może przebić tunel do głębszego pokoju. Załatasz go za Esencję albo zostawisz.'] }];
+      'Wyłom: gildia może teraz przebić tunel do głębszego pokoju. Załatasz go za Esencję albo zostawisz.'] }];
+  // 1.24 (B, author: unlocking new features over a single run): the guided first run opens stage s at wave ONB_WAVE[s] (run.onbW);
+  // every later run is the full game. (A run saved before 1.24 in a stage keeps its stage.)
+  const ONB_WAVE = [0, 1, 3, 5, 7];
+  const onbWaveStage = w => w >= ONB_WAVE[4] ? 4 : w >= ONB_WAVE[3] ? 3 : w >= ONB_WAVE[2] ? 2 : 1;
   const TRAPS = { spikes: 1, web: 1, trapdoor: 1, cage: 1, arrows: 1, fire: 1, portrait: 1, gate: 1, powder: 1, mimic: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1 };
   const MONSTERS = { goblin: 1, archer: 1, spider: 1, ogre: 1, shaman: 1, ghost: 1, shade: 1, bats: 1 };
   // v15.1: traps that only scare (no wounds), the cursed ones a priest lifts (the thief and bombs leave them alone),
@@ -182,6 +188,9 @@
   const SCARE = { portrait: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1 };
   const CURSED = { portrait: 1, eyes: 1, bones: 1, mirror: 1 };
   const DRIFT = { ghost: 1, shade: 1, bats: 1 };
+  // 1.24 (B, P1-4: new players did not see that scaring pays): what an element does to a hero, as a word on its description
+  const SCARES = t => !!(SCARE[t] || DRIFT[t]);
+  const HURTS = t => !!DMG_OF[t] && !LOOT_KIND[t];
   const ROOMTYPES = { r_fog: 'fog', r_swamp: 'swamp', r_grotto: 'grotto', r_crypt: 'crypt', r_vault: 'vault', r_haven: 'haven', r_gears: 'gears', r_hush: 'hush', r_ice: 'ice' };
   const RT_INFO = { fog: { name: 'Mgła', item: 'r_fog', glyph: '≋', color: '#b9c4d8' }, swamp: { name: 'Bagno', item: 'r_swamp', glyph: '~', color: '#8fbf6a' }, grotto: { name: 'Grota', item: 'r_grotto', glyph: ')', color: '#9fb6ff' },
     crypt: { name: 'Krypta', item: 'r_crypt', glyph: '✝', color: '#c9b6e8' }, vault: { name: 'Sezam', item: 'r_vault', glyph: '◆', color: '#ffd27a' },
@@ -590,6 +599,23 @@
   const UPG = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
   const RAR_NAME = { c: 'zwykła', r: 'rzadka', l: 'legendarna' }, RAR_COLOR = { c: '#c9c2d8', r: '#6fb7ff', l: '#ff8a3c' }, RAR_SELL = { c: 2, r: 4, l: 6 };
   const DECK_SIZE = 7;
+  // 1.24 Połączone karty (author: duplicates of a card fuse into one stronger card, a better multiplier and some property): a second
+  // copy taken (shop, free pick, stash) fuses with the one you have into a golden ★ card: one slot, it works as 2,5 copies, and it
+  // gains a property by its group. named: a card for one trap or monster (its id or its req): that element works as one level
+  // higher; power: a general trap or monster power card: +10% more of that power (2,75 copies); fear: +15% to all the dungeon's
+  // fear; hero: the heroes' knowledge and behaviour: +25% to its chance or effect (3,125 copies); ess: Esencja and the heart: +2
+  // Esencji after every wave; greed: greed and loot: +0,1 greed at the start of a wave; shop: the shop and the stash: one free
+  // refresh a shop. A card in none of the lists is 'power' (or 'named' when it names an element). Unique cards never fuse.
+  const FUSE_POW = 2.5, FUSE_K = { power: 1.1, hero: 1.25 };   // 1.24
+  const FUSE_GROUP = {};   // 1.24
+  [['fear', 'haunt echo panic lonely maze dread screams isolation nightmares scars memories lastgasp heavyair monsterroar frames body lullsleep cocoons batscatter farecho deepsleep'],
+   ['hero', 'deaf survivors badnews lure onemore weakspot cursed disarm oddbodies tainted drawers wisps mire blackice strip curse'],
+   ['ess', 'essence income usurer harvest soul wager gluttony fasting heartbeat granary bank dig mole cheapwalls'],
+   ['greed', 'greed fever depth infamous collector miser glass gilded golddust coins'],
+   ['shop', 'broker luckydraw pawnshop deepstash patron hoard']].forEach(([g, ids]) => ids.split(' ').forEach(id => { FUSE_GROUP[id] = g; }));
+  const FUSE_INT = ['patron', 'mole', 'echoFire', 'freeReroll', 'stashPlus', 'gateUses'];   // 1.24: counts: a fused card rounds them down
+  const FUSE_TEXT = { named: n => n + ': moc jak o poziom wyżej', power: () => '+10% tej mocy', fear: () => 'cały strach w lochu +15%', hero: () => '+25% do szansy i efektu',
+    ess: () => '+2 Esencji po każdej fali', greed: () => '+0,1 chciwości na start fali', shop: () => 'jedno darmowe odświeżenie sklepu' };   // 1.24
   const ROOM_TINT = ['#424448', '#44464a', '#46464b', '#48464b', '#4a464a'];   // 1.15 (author: plain room floors greyer): grey stone all the way down, only a breath warmer deep down (1.0-1.14: '#3f4246' to '#5f3239', dried blood deep down)
   const OBJ_KINDS = ['barrel', 'crate', 'statue', 'shelf'];
   const HEART = { kind: 'heart' }, LOOTTRAP = { kind: 'loot' }, BURN = { kind: 'burn' };

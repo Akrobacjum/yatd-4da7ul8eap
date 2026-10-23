@@ -273,6 +273,7 @@
   // the goal of the second group's leader
   function g2Goal(h, heartGoal) {
     const G = fl.party.g2, Lm = leader();
+    if (!G) return Lm && Lm !== h ? tIdx(Lm) : -1;   // 1.24: the group ended while he was thinking (leader() can end it: a replay crashed here)
     if (G.plan === 'assault') return heartGoal();
     if (G.plan === 'regroup') return Lm && Lm !== h ? tIdx(Lm) : -1;
     return G.target;
@@ -282,11 +283,15 @@
   // challenger, the brave and the lower ranks with the leader); the winner leads. A proud loser may storm off on his own.
   function mutinyThink(L, grp, dt, avgHp, fearR) {
     const P = fl.party;
-    if (P.mutinyDone || P.council || P.g2 || goingOut() || fl.fearless || !L || grp.length < 3 || fl.time < 30 || P.morale > 0.55 || grp.some(talking) || fl.time - P.lastTalkAt < 6) return;
+    // 1.24 (one mutiny in 200 waves): low morale or a scared group (morale stays high in a dungeon that only scares), a death, wounds
+    // (80%) or fear (25%) bring it on; 25%/s; a challenger of the leader's rank may be any restless one, his rival, or one much
+    // healthier than a hurt leader
+    if (P.mutinyDone || P.council || P.g2 || goingOut() || fl.fearless || !L || grp.length < 3 || fl.time < 20 || (P.morale > 0.85 && fearR < 0.25 && avgHp > 0.8) || grp.some(talking) || fl.time - P.lastTalkAt < 6) return;
     const dead = (fl.deaths || []).some(d => d.knows.has(L.id));
-    if (!dead && avgHp > 0.55 && fearR < 0.45) return;
-    if (Math.random() > dt * 0.1) return;
-    const C = grp.filter(o => o !== L && !o.lost && !o.crystal && o.hp > 0.5 * o.max && o.fear < 0.5 * o.courage && (o.rank > L.rank || (o.trait === 'brave' && o.rank >= L.rank) || (L.rank === 0 && o.rank >= 1)))
+    if (!dead && avgHp > 0.8 && fearR < 0.25 && P.morale > 0.75) return;
+    if (Math.random() > dt * 0.25) return;
+    const restless = o => o.trait === 'brave' || o.trait === 'greedy' || o.hunter || o.type === 'barbarian' || (bondType(o, 'rival') && bondOf(o) === L);
+    const C = grp.filter(o => o !== L && !o.lost && !o.crystal && o.hp > 0.5 * o.max && o.fear < 0.5 * o.courage && (o.rank > L.rank || (restless(o) && o.rank >= L.rank) || (L.rank === 0 && o.rank >= 1) || (o.rank >= L.rank && o.hp / o.max > L.hp / L.max + 0.25) || (restless(o) && o.rank >= L.rank - 1 && (L.hp < 0.6 * L.max || L.fear > 0.4 * L.courage))))   // 1.24: a restless one one rank lower against a hurt or shaken leader
       .sort((a, b) => (b.rank - a.rank) || ((b.trait === 'brave') - (a.trait === 'brave')))[0];
     if (!C) return;
     P.mutinyDone = true; P.lastTalkAt = fl.time;
@@ -319,14 +324,14 @@
   // own way, now and then, when there is more than one way into the unknown; 1-2 like him go too
   function riftThink(L, grp, dt) {
     const P = fl.party;
-    if (P.g2 || P.council || P.plan !== 'explore' || fl.fearless || goingOut() || P.scoutId >= 0 || grp.length < 3 || fl.time < 20 || (fl.stats.rifts || 0) >= 2 || grp.some(talking) || fl.time - P.lastTalkAt < 8) return;
+    if (P.g2 || P.council || P.plan !== 'explore' || fl.fearless || goingOut() || P.scoutId >= 0 || grp.length < 3 || fl.time < 15 || (fl.stats.rifts || 0) >= 2 || grp.some(talking) || fl.time - P.lastTalkAt < 8) return;   // 1.24: from 15 s (was 20)
     const rv = bondType(L, 'rival') ? bondOf(L) : null;   // 1.21: the leader's rival is a likelier dissenter (x1,5), restless or not
     const restless = o => o.trait === 'greedy' || o.trait === 'brave' || o.hunter || o.type === 'barbarian' || o === rv;
-    const cands = grp.filter(o => o !== L && restless(o) && o.rank >= 1 && !o.crystal && !o.lost && o.hp > 0.5 * o.max && o.fear < 0.5 * o.courage);
-    if (Math.random() > dt * 0.025 * (P.morale < 0.6 ? 1.5 : 1) * (cands.includes(rv) ? 1.5 : 1)) return;
+    const cands = grp.filter(o => o !== L && restless(o) && (o.rank >= 1 || o.hunter || o.trait === 'greedy') && !o.crystal && !o.lost && o.hp > 0.5 * o.max && o.fear < 0.5 * o.courage);   // 1.24: a greedy rookie too
+    if (Math.random() > dt * 0.06 * (P.morale < 0.6 ? 1.5 : 1) * (cands.includes(rv) ? 1.5 : 1)) return;   // 1.24: 6%/s (was 2,5%/s: about one restless rift in 25 waves)
     const D = cands.includes(rv) ? rv : cands.sort(() => Math.random() - 0.5)[0];
     if (!D) return;
-    const t = g2Target(D, L); if (t < 0 || (P.target >= 0 && Math.hypot(t % WW - P.target % WW, ((t / WW) | 0) - ((P.target / WW) | 0)) < 6)) return;
+    const t = g2Target(D, L); if (t < 0 || (P.target >= 0 && Math.hypot(t % WW - P.target % WW, ((t / WW) | 0) - ((P.target / WW) | 0)) < 4)) return;   // 1.24: 4 tiles from the leader's goal (was 6: small dungeons had no such way)
     const like = o => restless(o) || o.rank === 0;
     const joiners = grp.filter(o => o !== L && o !== D && !o.crystal && !caged(o) && !o.lost && like(o)).sort(() => Math.random() - 0.5).slice(0, Math.min(2, grp.length - 3));
     P.lastTalkAt = fl.time;
@@ -794,14 +799,14 @@
   function griefOf(o, dead, base, d, q) {
     const P = fl.party, b = o.bond, st = fl.stats;
     const k = b.type === 'mentor' ? (b.role === 'apprentice' ? 'griefMentor' : 'griefFriend') : GRIEF_KEY[b.type];
-    st.griefs = (st.griefs || 0) + 1; tl('gf', o.id, dead.id);
+    st.griefs = (st.griefs || 0) + 1; tl('gf', o.id, dead.id); floatHero(o, b.type === 'rival' ? 'Szok' : 'Żałoba', '#c9b6e8', 14, -0.9);   // 1.24: a float
     const line = () => { const t = bondText(o, k, dead); if (q) P.queueSay.push({ id: o.id, text: t, at: fl.time + q, prio: 3, late: 4 }); else say(o, t, 4, 2.2); };
     const fear = m => { const f0 = o.fear; addFear(o, base * m * (o.trait === 'coward' ? 1.5 : 1), null, 'death'); st.deathFear += Math.max(0, o.fear - f0); };
     if (b.type === 'rival') { line(); fear(0.5); return; }
     if (b.role === 'apprentice') { line(); fear(1.5); o.growAt = fl.time + 20; return; }
     if (!o.fleeing && (o.trait === 'brave' || o.type === 'barbarian' || (o.type === 'warrior' && Math.random() < 0.5)) && startRage(o, 'vow', dead)) {
       o.vowUntil = fl.time + 30; o.vowOn = d && d.killer && MONSTERS[d.killer.type] && d.killer.hp > 0 ? d.killer : null; o.needPlan = true;
-      st.revengeVows = (st.revengeVows || 0) + 1; st.revenge = (st.revenge || 0) + 1; tl('vw', o.id, dead.id);
+      st.revengeVows = (st.revengeVows || 0) + 1; st.revenge = (st.revenge || 0) + 1; tl('vw', o.id, dead.id); floatHero(o, 'Zemsta!', '#ff7a6b', 15, -1.3);   // 1.24: a float
       fear(0.3); return;
     }
     line(); fear(1.5);
@@ -814,16 +819,30 @@
     const o = bondOf(h), P = fl.party;
     if (!o || (kind !== 'trap' && kind !== 'monster') || !calmFor(o) || !canSee(o, h)) return;
     if (h.bond.type === 'rival') {
-      if (kind !== 'trap' || real < 0.2 * h.max || fl.time < (o.mockT || 0) || Math.random() >= 0.3) return;
-      o.mockT = fl.time + 20;
-      P.convoNot = { key: 'rivalMock', ids: new Set([h.id]) };
-      if (!say(o, nameFill(pick(SAY.rivalMock), h), 2)) return;
-      fl.stats.rivalMock = (fl.stats.rivalMock || 0) + 1; tl('rm', o.id, h.id);
-      P.queueSay.push({ id: h.id, text: pick(SAY.rivalMockReply), at: fl.time + 0.2, prio: 2, late: 4 });
+      if (real < 0.08 * h.max) return;   // 1.24: a trap or a monster, 8%+ of his HP (a trap for 20%+ of a high level's HP, 30%, never came in 200 waves)
+      rivalJab(h, o, false);
     } else if (h.bond.role === 'apprentice') {
       if (h.hp < 0.3 * h.max) { if (!h.proudAt) h.proudAt = fl.time + 3; }
       else if (real >= 0.1 * h.max) mentorWatch(o, h);
     }
+  }
+  // 1.24: a rival's jab ({v} = the other): his wound (bondHurt) or, new, a scare that went through him (addFear: 8%+ of his courage
+  // from a trap or a monster, rivalScare); 80%, once in 12 s; busy: right after; a float over the one who mocks
+  function rivalJab(h, o, scare) {
+    const P = fl.party;
+    if (!o || fl.time < (o.mockT || 0) || Math.random() >= 0.8) return false;
+    o.mockT = fl.time + 12;
+    P.convoNot = { key: 'rivalMock', ids: new Set([h.id]) };
+    const t = nameFill(pick(scare ? SAY.rivalMock.filter(x => !/Ała|Boli|Uważaj/.test(x)) : SAY.rivalMock), h), now = say(o, t, 2);
+    if (!now) P.queueSay.push({ id: o.id, text: t, at: fl.time + 0.3, prio: 2, late: 3 });
+    fl.stats.rivalMock = (fl.stats.rivalMock || 0) + 1; tl('rm', o.id, h.id); floatHero(o, 'Drwina', '#e8b26a', 13, -0.9);
+    P.queueSay.push({ id: h.id, text: pick(scare ? SAY.rivalMockReply.filter(x => !/draśnięcie|zabiło|Nic mi nie jest/.test(x)) : SAY.rivalMockReply), at: fl.time + (now ? 0.2 : 0.7), prio: 2, late: 4 });
+    return true;
+  }
+  function rivalScare(h) {   // 1.24 (addFear)
+    const o = bondOf(h);
+    if (!o || h.bond.type !== 'rival' || fl.phase !== 'raid' || !calmFor(o) || !canSee(o, h) || h.dead || caged(h)) return false;
+    return rivalJab(h, o, true);
   }
   // the mentor's warning ({v} = the apprentice; once in 25 s) and the apprentice's answer
   function mentorWatch(m, a) {
@@ -859,7 +878,7 @@
   function quarrel(h, cl, it, k) {
     const P = fl.party, st = fl.stats, seen = P.quarrels || (P.quarrels = new Set()), pk = pairKey(h, cl);
     if (seen.has(pk) || !canSee(h, cl) || !calmFor(h) || !calmFor(cl) || exiting(h) || exiting(cl) || talking(h) || talking(cl)) return false;
-    seen.add(pk); st.quarrels = (st.quarrels || 0) + 1;
+    seen.add(pk); st.quarrels = (st.quarrels || 0) + 1; floatHero(h, 'Kłótnia!', '#e8b26a', 14, -0.9);   // 1.24: a float
     const n0 = P.convoN || 0;
     P.convoNot = { key: 'quarrelStart', ids: new Set([cl.id]) };   // the onlookers comment, not the other one
     say(h, nameFill(pick(SAY.quarrelStart), cl), 3);
@@ -942,20 +961,20 @@
   function betThink(crew, L) {
     const P = fl.party, st = fl.stats;
     crew.forEach(h => { if (h.bet && !h.bet.done && fl.time > h.bet.until + 4) betEnd(h, false); });
-    if (P.betDone || fl.fearless || goingOut() || !L || P.plan === 'retreat' || fl.time < 10 || P.convoT > fl.time + 3) return;
+    if (P.betDone || fl.fearless || goingOut() || !L || P.plan === 'retreat' || fl.time < 8 || P.convoT > fl.time + 3) return;
     for (const h of crew) {
-      if (h === L || h.rank < 1 || h.hp <= 0.6 * h.max || !calmFor(h) || exiting(h) || inG2(h) || onScout(h) || h.split || talking(h) || h.state !== 'walk' || h.room < 0 || h.crystal) continue;
-      const rv = bondType(h, 'rival') && calmFor(bondOf(h)) && canSee(bondOf(h), h) ? bondOf(h) : null;
-      if ((h.trait !== 'brave' && !rv) || fl.time < (h.betLookT || 0)) continue;
+      const rv = bondType(h, 'rival') && calmFor(bondOf(h)) && canSee(bondOf(h), h) ? bondOf(h) : null;   // 1.24: looked at first (a rival may bet as a rookie)
+      if (h === L || (h.rank < 1 && !rv && !h.hunter) || h.hp <= 0.5 * h.max || !calmFor(h) || exiting(h) || inG2(h) || onScout(h) || h.split || talking(h) || h.state !== 'walk' || h.room < 0 || h.crystal) continue;
+      if ((h.trait !== 'brave' && h.trait !== 'greedy' && !h.hunter && h.type !== 'barbarian' && !rv) || fl.time < (h.betLookT || 0)) continue;   // 1.24: also the greedy, a treasure hunter, a barbarian (was: brave or a rival; a bet came about once in 25 waves)
       h.betLookT = fl.time + 1;   // a look once a second (the party's way is a path search)
       const tried = P.betTried || (P.betTried = new Set());
       const ts = [...fl.items.values()].filter(x => TRAPS[x.type] && x.detected && !x.disabled && x.cd <= 0 && slotRoom(x.type, x.x, x.y) === h.room && !tried.has(h.id + ':' + key(x.x, x.y)));
       if (!ts.length) continue;
       const way = new Set(L.path.concat(h.path).map(p => p[1] * WW + p[0])); partyWay(h, bfs(h.x, h.y, { known: true }), 0).forEach(k => { const [x, y] = k.split(',').map(Number); way.add(y * WW + x); });   // the party's way too
-      const t = ts.find(x => areaOf(x).some(q => way.has(q[1] * WW + q[0])));
+      const t = ts.find(x => areaOf(x).some(q => way.has(q[1] * WW + q[0]))) || ts.find(x => areaOf(x).some(q => walkable(q[0], q[1])));   // 1.24: or any known one in the room he can walk across
       if (!t) continue;
       tried.add(h.id + ':' + key(t.x, t.y));   // one roll for each bettor and trap
-      if (Math.random() >= 0.7) continue;
+      if (Math.random() >= 0.85) continue;   // 1.24: 85% (was 70%)
       const tk2 = rv || crew.find(o => o !== h && calmFor(o) && canSee(o, h) && !talking(o));
       if (!tk2 || !betStart(h, tk2, t)) continue;
       return;
@@ -1067,7 +1086,7 @@
   function sacrificing(h) { return !!h.sac && !h.sac.done; }
   const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
   const FLOOR_TAP = { spikes: 1, trapdoor: 1, cage: 1, web: 1 };   // what a stick on the floor can find
-  const lsBrave = o => o.trait === 'brave' || ((o.type === 'warrior' || o.type === 'barbarian') && (o.lsRoll === undefined ? (o.lsRoll = Math.random() < 0.5) : o.lsRoll));   // rolled once a wave
+  const lsBrave = o => o.trait === 'brave' || o.rank >= 2 || ((o.type === 'warrior' || o.type === 'barbarian') && (o.lsRoll === undefined ? (o.lsRoll = Math.random() < 0.5) : o.lsRoll));   // rolled once a wave; 1.24: an elite too
   function finalThink(crew, L, dt) {
     const P = fl.party, F = finOf(P), c = carrierOf();
     if (c && P.plan === 'escape') {
@@ -1080,6 +1099,10 @@
         F.near = true; fl.stats.nearExit = (fl.stats.nearExit || 0) + 1; tl('ne', c.id);
         P.queueSay.push({ id: c.id, text: pick(SAY.nearExit), at: fl.time, prio: 3, late: 3 });
       }
+    }
+    else if (!F.stand && crew.length >= 2) {   // 1.24 (two last stands in 200 waves, only ever for the crystal): also for a friend badly hurt (under 30% HP) or panicking with a monster on him
+      const w = crew.find(o => !o.crystal && !caged(o) && !o.lost && (o.hp < 0.3 * o.max || panicking(o)) && threatNear(o));   // (not for one only scared: the stand took the ghosts off him and fear dungeons paid 10% less)
+      if (w) standStart(w, crew, F);
     }
     standThink(crew);
     if (F.sac) sacTick(F);
@@ -1144,16 +1167,20 @@
   // at most twice a wave, not twice within 6 s. The theft stats stay as they were.
   function handThink(c, crew, F) {
     const P = fl.party;
-    if (c.hp >= 0.35 * c.max || F.hand >= 2 || fl.time - F.handT < 6 || caged(c)) return;
-    const r = crew.filter(o => o !== c && o.hp >= 0.6 * o.max && calmFor(o) && !o.goHome && !standing(o) && !sacrificing(o) && hdist(o, c) <= 1.5 && canSee(o, c))
+    // 1.24 (one hand-over in 200 waves): under 50% HP (was 35%), or scared (60%+ of his courage), to one 20 points healthier with
+    // 50%+ HP (was 60%) within 2,5 tiles (was 1,5); a scared carrier only to a calm one
+    // (the first hand-over of a wave also from a mage, a priest or a bard to a warrior or a barbarian with 70%+ HP: "you carry it")
+    const scared = c.fear >= 0.6 * c.courage, hurt = c.hp < 0.5 * c.max, weak = !hurt && !scared && F.hand === 0 && (c.type === 'mage' || c.type === 'priest' || c.type === 'bard');
+    if ((!hurt && !scared && !weak) || F.hand >= 2 || fl.time - F.handT < 6 || caged(c)) return;
+    const r = crew.filter(o => o !== c && o.hp >= 0.5 * o.max && (weak ? (o.type === 'warrior' || o.type === 'barbarian') && o.hp >= 0.7 * o.max : o.hp / o.max >= c.hp / c.max + (scared ? 0 : 0.2)) && (!scared || o.fear < 0.4 * o.courage) && calmFor(o) && !o.goHome && !standing(o) && !sacrificing(o) && hdist(o, c) <= 2.5 && canSee(o, c))
       .sort((a, b) => b.hp / b.max - a.hp / a.max)[0];
     if (!r) return;
     F.hand++; F.handT = fl.time; F.handTo = r.id;
     c.crystal = false; c.escort = false; r.crystal = true; r.escort = false; r.fleeing = false; r.plan = 'escape'; P.carrierId = r.id;
     [c, r].forEach(o => { o.needPlan = true; if (o.state === 'fight' || o.state === 'wait' || o.state === 'talk' || o.state === 'rest') { o.state = 'walk'; o.foe = null; } });
     fl.stats.handOvers = (fl.stats.handOvers || 0) + 1; tl('ho', c.id, r.id);
-    floatHero(r, 'Niesie kryształ', '#ff9ab0', 14, -0.8);
-    const n0 = P.convoN || 0, text = pick(okLines(c, SAY.handOver.map(x => nameFill(x, r)))), take = pick(SAY.handTake);   // the bleeding line only if he knows he bleeds (every line names him: say() could not swap it)
+    floatHero(c, 'Przekazuje kryształ', '#ff9ab0', 14, -0.9); floatHero(r, 'Niesie kryształ', '#ff9ab0', 13, -0.4);   // 1.24: the giver's float
+    const n0 = P.convoN || 0, text = pick(okLines(c, SAY.handOver.filter(x => hurt || !/krucho|Ledwo|przewróc|Krwawię|nie mnie/.test(x)).map(x => nameFill(x, r)))), take = pick(SAY.handTake);   // the bleeding line only if he knows he bleeds (every line names him: say() could not swap it); 1.24: a carrier who is not hurt does not say he is
     if (say(c, text, 3, 2.2, 'q')) { if ((P.convoN || 0) === n0) P.queueSay.push({ id: r.id, text: take, at: fl.time + 0.3, prio: 3, late: 4 }); }   // a talk that starts from it is the answer
     else P.queueSay.push({ id: c.id, text, at: fl.time, prio: 3, late: 3 }, { id: r.id, text: take, at: fl.time + 0.2, prio: 3, late: 5 });
   }
@@ -1178,7 +1205,7 @@
     if (F.stand) return;
     const m = threatNear(c); if (!m) return;
     const mp = DRIFT[m.type] ? [m.gx, m.gy] : [m.x + 0.5, m.y + 0.5], cp = heroPos(c), dcm = Math.hypot(cp.x - mp[0], cp.y - mp[1]);
-    const s = crew.filter(o => o !== c && calmFor(o) && planOf(o) === 'escape' && !o.goHome && o.hp >= 0.4 * o.max && !sacrificing(o) && hdist(o, c) <= 6 && lsBrave(o))
+    const s = crew.filter(o => o !== c && calmFor(o) && (c.crystal ? planOf(o) === 'escape' : !o.crystal && !inG2(o) && !onScout(o)) && !o.goHome && o.hp >= 0.4 * o.max && !sacrificing(o) && hdist(o, c) <= 6 && lsBrave(o))   // 1.24: for a hurt or scared friend, any plan
       .sort((a, b) => Math.hypot(heroPos(a).x - mp[0], heroPos(a).y - mp[1]) - Math.hypot(heroPos(b).x - mp[0], heroPos(b).y - mp[1]))[0];
     if (!s) return;
     const b = bfs(s.x, s.y, { known: true, noDanger: true }), cpath = new Set(c.path.map(q => q[1] * WW + q[0]));
@@ -1192,10 +1219,10 @@
       });
     });
     F.stand = true;
-    s.stand = { m, goal, door, until: fl.time + 8, at: fl.time, done: false }; s.escort = false; s.needPlan = true;
+    s.stand = { m, goal, door, until: fl.time + 8, at: fl.time, done: false, cid: c.id, cr: !!c.crystal }; s.escort = false; s.needPlan = true;   // 1.24: for whom (cid), the crystal or a friend (cr)
     if (s.state === 'wait' || s.state === 'talk') s.state = 'walk';
     fl.stats.lastStands = (fl.stats.lastStands || 0) + 1; tl('lx', s.id, m.type, door ? 1 : 0);
-    floatHero(s, 'Zostaje!', '#ffd27a', 14, -0.8);
+    floatHero(s, 'Ostatni bastion!', '#ffd27a', 15, -0.9);   // 1.24 (was 'Zostaje!')
     // a line about the door only in a doorway; alone his own words (SOLO), which say() would pick at random
     const alone = aloneNow(s), pool = (alone ? SOLO.lastStand : SAY.lastStand).filter(x => door || !/drzwi|próg|Ciasne/.test(x));
     const n0 = P.convoN || 0;
@@ -1209,7 +1236,8 @@
     crew.forEach(s => {
       if (!standing(s)) return;
       const S = s.stand, m = S.m;
-      if (fl.time < S.until && s.hp >= 0.25 * s.max && calmFor(s) && m.hp > 0 && fl.items.get(key(m.x, m.y)) === m && carrierOf()) return;
+      const c = byId(S.cid);   // 1.24: a stand for a friend lasts while he is inside
+      if (fl.time < S.until && s.hp >= 0.25 * s.max && calmFor(s) && m.hp > 0 && fl.items.get(key(m.x, m.y)) === m && (S.cr === false ? !!c && !c.dead && !c.fled : carrierOf())) return;
       S.done = true; s.needPlan = true; if (s.state === 'fight' || s.state === 'wait') { s.state = 'walk'; s.foe = null; }
       fl.stats.lastStandT = Math.round(((fl.stats.lastStandT || 0) + fl.time - S.at) * 10) / 10; tl('le', s.id, Math.round(fl.time - S.at));
     });
@@ -1819,7 +1847,7 @@
         if (mods.wisps) { let bd = 1e9; fl.items.forEach(it => { if (!TRAPS[it.type] || it.detected || it.disabled || slotRoom(it.type, it.x, it.y) !== L.room) return; areaOf(it).forEach(t => { if (!walkable(t[0], t[1]) || roomOf(t[0], t[1]) !== L.room) return; const d = Math.hypot(t[0] - L.tx, t[1] - L.ty); if (d >= 1 && d < bd) { bd = d; wt = t; } }); }); }
         // 1.20: a lit lantern next to him: half the groping (the wisps' 2 s stay), and its bearer says so
         const lt = lanternNear(L) ? alive().find(o => litLantern(o) && o.room === L.room && hdist(o, L) <= 2) : null;
-        if (wt || spots.length) { const t = wt || pick(spots); P.detour = { goal: t[1] * WW + t[0], until: fl.time + (lt ? 0.5 : 1) * (3 + 0.25 * Math.max(0, 8 - L.lvl / 2)) + 2 * mods.wisps, wisp: !!wt }; fl.stats.fogGrope = (fl.stats.fogGrope || 0) + 1; if (wt) fl.stats.wisps = (fl.stats.wisps || 0) + 1; tl('fg', L.room); if (lt) { fl.stats.lanternGrope = (fl.stats.lanternGrope || 0) + 1; say(lt, pick(SAY.lanternLight), 3); } else say(L, pick(SAY.fogGrope), 3); }
+        if (wt || spots.length) { const t = wt || pick(spots); P.detour = { goal: t[1] * WW + t[0], until: fl.time + (lt ? 0.5 : 1) * (3 + 0.25 * Math.max(0, 8 - L.lvl / 2)) + 2 * mods.wisps, wisp: !!wt }; fl.stats.fogGrope = (fl.stats.fogGrope || 0) + 1; if (wt) fl.stats.wisps = (fl.stats.wisps || 0) + 1; tl('fg', L.room); if (lt) { fl.stats.lanternGrope = (fl.stats.lanternGrope || 0) + 1; say(lt, pick(SAY.lanternLight), 3); heroFx('light', lt); } else say(L, pick(SAY.fogGrope), 3); }
       }
     }
     crew.forEach(h => {
@@ -1904,6 +1932,7 @@
       g.inv.splice(g.inv.indexOf(pot), 1); g.giveCd = fl.time + 10;
       f.hp = Math.min(f.max, f.hp + f.max * potionHeal(pot) * itemPow(f) * taintedSip(f, pot));   // 1.18: Zepsute mikstury
       fl.stats.potionsGiven++; fl.stats.potions++; fl.stats.itemsUsed++; tl('pg', g.id, f.id);
+      { const a = heroPos(g), b = heroPos(f); afx('throw', a.x, a.y, { x2: b.x, y2: b.y, col: '#8be38f' }); heroFx('potion', f); }   // 1.24 (B): handed over
       say(g, pick(SAY.potionGive), 3); P.queueSay.push({ id: f.id, text: pick(SAY.potionThanks), at: fl.time + 1.1 });
       floatHero(f, 'Mikstura!', '#8be38f', 14, -0.7);
     });
@@ -2037,7 +2066,7 @@
           P.liftT = (P.liftT || 0) + dt * (th.type === 'thief' ? (th.lvl >= 6 ? 1.5 : 1) : 1) * (bar ? 1.5 : 1) * ((it.lvl || 1) >= 3 ? 0.5 : 1);
           if (P.liftT >= 3) {
             door.closedUntil = fl.time; it.disabled = true; it.detected = true; fl.threatDirty = true; P.liftT = 0;
-            if (bar) { fl.stats.crowbarGate = (fl.stats.crowbarGate || 0) + 1; tl('lm', th.id, 'gate'); }
+            if (bar) { fl.stats.crowbarGate = (fl.stats.crowbarGate || 0) + 1; tl('lm', th.id, 'gate'); } afx('pry', door.x + 0.5, door.y + 0.5);   // 1.24 (B): levered
             bt('gate').disarmed++; fl.stats.disarmed++; tl('lg', th.id, door.x, door.y);
             floatTile(door.x, door.y, 'Krata podważona', '#c9c2d8', 13, -0.6); replanAll();
           }
@@ -2179,7 +2208,7 @@
   function fogRoll(h, dt) {
     const p = dt * 0.22 * Math.max(0.35, 1 - 0.03 * h.lvl) * (h.type === 'thief' ? 0.6 : 1), x = Math.random();
     if (x >= p) return false;
-    if (x >= 0.3 * p && lanternNear(h)) { fl.stats.lanternSaves = (fl.stats.lanternSaves || 0) + 1; return false; }
+    if (x >= 0.3 * p && lanternNear(h)) { fl.stats.lanternSaves = (fl.stats.lanternSaves || 0) + 1; heroFx('light', alive().find(o => litLantern(o) && hdist(o, h) <= 2) || h); return false; }   // 1.24 (B): the light
     return true;
   }
   function getLost(h, why) {
@@ -2458,7 +2487,7 @@
     if (why === 'danger' && (h.rank < 1 || (h.rank < 2 && Math.random() < 0.5))) return false;
     usePower(h, it);
     h.wardUntil = fl.time + 3; h.wardK = Math.min(0.4, 0.25 + 0.05 * (it.r - 1)) * Math.min(1, itemPow(h));
-    fl.stats.charms++; tl('pw', h.id, 'charm'); say(h, pick(SAY.charmUse), 3); floatHero(h, 'Talizman', '#7fb8ff', 13, -0.7);
+    fl.stats.charms++; tl('pw', h.id, 'charm'); say(h, pick(SAY.charmUse), 3); floatHero(h, 'Talizman', '#7fb8ff', 13, -0.7); heroFx('charm', h, { col: '#7fb8ff' });   // 1.24 (B)
     return true;
   }
   // Amulet: when the nerves are about to go, it takes a chunk of fear away (12% of courage at the first level, +4% a level)
@@ -2470,7 +2499,7 @@
     const alt = inB('altar', h.room);   // a blasphemous altar smothers holy amulets too
     h.fear = Math.max(0, h.fear - (0.08 + 0.04 * Math.min(4, it.r)) * itemPow(h) * (alt ? 0.5 : 1) * h.courage); h.calmUntil = fl.time + (alt ? 2 : 4);
     if (alt) fl.stats.altarBlocks = (fl.stats.altarBlocks || 0) + 1;
-    fl.stats.amulets++; tl('pw', h.id, 'amulet'); say(h, pick(SAY.amuletUse), 3); floatHero(h, 'Amulet', '#c3b2ff', 13, -0.7);
+    fl.stats.amulets++; tl('pw', h.id, 'amulet'); say(h, pick(SAY.amuletUse), 3); floatHero(h, 'Amulet', '#c3b2ff', 13, -0.7); heroFx('charm', h, { col: '#c3b2ff' });   // 1.24 (B)
     const p = heroPos(h); particles.push({ ring: true, x: p.x, y: p.y, r: 0.2, maxR: 1.3, life: 0.45, color: '#c3b2ff' });
     return true;
   }
@@ -2480,7 +2509,7 @@
     const it = powerReady(h, 'boots'); if (!it) return false;
     usePower(h, it);
     h.sprintUntil = fl.time + 3; h.sprintK = 1 + (0.3 + 0.1 * Math.min(3, it.r)) * Math.min(1, itemPow(h));
-    fl.stats.boots++; tl('pw', h.id, 'boots'); if (why !== 'quiet') say(h, pick(SAY.bootsUse), 2);
+    fl.stats.boots++; tl('pw', h.id, 'boots'); if (why !== 'quiet') say(h, pick(SAY.bootsUse), 2); heroFx('boots', h);   // 1.24 (B)
     return true;
   }
   /* ----- a room they know is deadly: stop at the door, prepare, then rush through ----- */
@@ -2529,7 +2558,7 @@
     crew.forEach(h => {   // experienced heroes drink up before walking into it
       if (h.lvl < 4 || h.hp >= 0.7 * h.max) return;
       const pot = h.inv.filter(x => x.type === 'potion').sort((a, c) => c.r - a.r)[0];
-      if (pot) { h.inv.splice(h.inv.indexOf(pot), 1); h.hp = Math.min(h.max, h.hp + h.max * potionHeal(pot) * itemPow(h) * taintedSip(h, pot)); fl.stats.potions++; fl.stats.itemsUsed++; floatHero(h, 'Mikstura', '#8be38f', 14, -0.7); }   // 1.18: Zepsute mikstury
+      if (pot) { h.inv.splice(h.inv.indexOf(pot), 1); h.hp = Math.min(h.max, h.hp + h.max * potionHeal(pot) * itemPow(h) * taintedSip(h, pot)); fl.stats.potions++; fl.stats.itemsUsed++; floatHero(h, 'Mikstura', '#8be38f', 14, -0.7); heroFx('potion', h); }   // 1.18: Zepsute mikstury (1.24 B: the vial)
     });
     tl('pp', r, pr ? 1 : 0, mg ? 1 : 0, th ? 1 : 0, wr ? 1 : 0);
   }
@@ -2548,21 +2577,21 @@
       alive().forEach(o => { o.shield = Math.max(o.shield, o.max * frac); o.braveUntil = fl.time + 10; o.braveK = brave; });
       if (alt) { sayNow(['altar'], () => say(pr, pick(SAY.bAltar), 4)); fl.stats.altarBlocks = (fl.stats.altarBlocks || 0) + 1; }
       if (pr.lvl >= 6) {
-        fl.items.forEach(m => { if ((m.type === 'ghost' || m.type === 'shade') && m.hp > 0 && roomOf(m.x, m.y) === r) { hurtMonster(m, 40 * pr.R.pow * (alt ? 0.5 : 1)); burst(m.gx || m.x + 0.5, m.gy || m.y + 0.5, '#fff2c0', 12); } });   // exorcism (half as strong at the altar)
+        fl.items.forEach(m => { if ((m.type === 'ghost' || m.type === 'shade') && m.hp > 0 && roomOf(m.x, m.y) === r) { hurtMonster(m, 40 * pr.R.pow * (alt ? 0.5 : 1)); burst(m.gx || m.x + 0.5, m.gy || m.y + 0.5, '#fff2c0', 12); afx('exorcism', m.gx || m.x + 0.5, m.gy || m.y + 0.5); } });   // exorcism (half as strong at the altar; 1.24 B: a pillar of light)
         let nb = 2 + Math.floor((pr.lvl - 6) / 2);   // and a few known portraits there lose their curse for this wave (half as many at the altar)
         if (alt) nb = Math.max(1, Math.floor(nb / 2));
         fl.items.forEach(it => { if (nb <= 0 || !CURSED[it.type] || !it.detected || it.disabled || slotRoom(it.type, it.x, it.y) !== r) return; nb--; it.disabled = true; fl.stats.blessed++; bt(it.type).disarmed++; floatTile(it.x, it.y, 'Odczyniony', '#fff2c0', 13); });
         fl.threatDirty = true;
       }
-      fl.stats.wards++; const p = heroPos(pr); particles.push({ ring: true, x: p.x, y: p.y, r: 0.3, maxR: 3.5, life: 0.5, color: '#7fb8ff' }); floatHero(pr, 'Osłona!', '#7fb8ff', 14, -0.8);
+      fl.stats.wards++; const p = heroPos(pr); particles.push({ ring: true, x: p.x, y: p.y, r: 0.3, maxR: 3.5, life: 0.5, color: '#7fb8ff' }); floatHero(pr, 'Osłona!', '#7fb8ff', 14, -0.8); heroFx('ward', pr);   // 1.24 (B)
     }
     if (mg && inB('rune', r)) {   // the rune stone swallows the spell
       mg.jamCd = fl.time + 12; fl.stats.runeBlocks = (fl.stats.runeBlocks || 0) + 1;
       sayNow(['rune'], () => say(mg, pick(SAY.bRune), 4)); floatTile((R.x0 + R.x1) >> 1, (R.y0 + R.y1) >> 1, 'Runa tłumi czar', '#9fd0ff', 14, -0.6);
     } else if (mg) {   // every trap in that room goes quiet for a few seconds
       const dur = 2 + 0.25 * mg.lvl;
-      fl.items.forEach(it => { if (TRAPS[it.type] && slotRoom(it.type, it.x, it.y) === r) it.jamUntil = fl.time + dur; });
-      mg.jamCd = fl.time + 12; fl.stats.jams++; fl.threatDirty = true;
+      let nj = 0; fl.items.forEach(it => { if (TRAPS[it.type] && slotRoom(it.type, it.x, it.y) === r) { it.jamUntil = fl.time + dur; if (nj++ < 6) afx('jam', it.x + 0.5, it.y + 0.5); } });   // 1.24 (B): a violet pulse on each
+      mg.jamCd = fl.time + 12; fl.stats.jams++; fl.threatDirty = true; heroFx('charm', mg, { col: '#b48cff' });
       fxTiles(R.tiles, '170,120,255', Math.min(dur, 3)); floatTile((R.x0 + R.x1) >> 1, (R.y0 + R.y1) >> 1, 'Pułapki zakłócone!', '#c3b2ff', 15, -0.6);
     }
     if (th) {   // the thief takes apart what he can reach from the doorway
@@ -2578,7 +2607,7 @@
         fl.stats.disarmed++; bt(it.type).disarmed++; fl.threatDirty = true;
       });
     }
-    if (wr) { wr.shieldUpUntil = fl.time + 5; wr.shieldCd = fl.time + 5 + wr.R.shieldCd; fl.stats.shields++; }
+    if (wr) { wr.shieldUpUntil = fl.time + 5; wr.shieldCd = fl.time + 5 + wr.R.shieldCd; fl.stats.shields++; heroFx('shield', wr); }   // 1.24 (B)
     P.rushUntil = fl.time + 6;
     const L = leader(); if (L) say(L, pick(SAY.rush), 3);
     alive().forEach(h => { h.needPlan = true; if (h.state === 'talk') h.state = 'walk'; h.talkUntil = -1; });
@@ -2785,7 +2814,7 @@
         if (lj) job = lj;
       }
       if (job) { intent = job.intent; goal = job.goal; }
-      else if (G2 && h === L) { intent = 'lead'; goal = g2Goal(h, heartGoal); }   // 1.19: the second group's own way
+      else if (G2 && P.g2 && h === L) { intent = 'lead'; goal = g2Goal(h, heartGoal); }   // 1.19: the second group's own way; 1.24: P.g2 (it may have ended meanwhile)
       else if (h === L) {
         const dt = P.detour;
         if (dt && (fl.time > dt.until || tIdx(h) === dt.goal || B().dist[dt.goal] < 0)) { P.detour = null; if (tIdx(h) === dt.goal) say(h, pick(SAY.detourBack), 2); }
@@ -2947,7 +2976,7 @@
       if (!TRAPS[it.type] || !it.detected || it.disabled || it.type === 'gate' || CURSED[it.type]) continue;
       if (!areaOf(it).some(t => way.has(key(t[0], t[1])) || (it === keepT && wayK.has(key(t[0], t[1]))))) continue;
       if (Math.hypot(it.x - h.tx, it.y - h.ty) <= 3) {
-        h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++;
+        h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++; { const a = heroPos(h); afx('throw', a.x, a.y, { x2: it.x + 0.5, y2: it.y + 0.5, col: '#ffb35c' }); }   // 1.24 (B): thrown
         if (it.type === 'powder') fire(it, 0.5);
         else { it.disabled = true; fl.threatDirty = true; bt(it.type).disarmed++; mimicSpill(it, h); }   // 1.20: a mimic spits out its belly
         burst(it.x + 0.5, it.y + 0.5, '#ffb35c', 14); floatTile(it.x, it.y, 'Zniszczone bombą', '#ffb35c', 13, -0.5); say(h, pick(SAY.bomb), 3);
@@ -2976,7 +3005,7 @@
       if (inB('howl', h.room)) { sayNow(['howl'], () => say(h, pick(SAY.bHowl), 3)); fl.stats.howlBlocks = (fl.stats.howlBlocks || 0) + 1; return; }
       const b = bfs(h.x, h.y, {}); let n = 0;
       lost.forEach(o => { const d = b.dist[tIdx(o)]; if (d < 0 || d > 26 || inB('howl', o.room)) return; o.hearUntil = fl.time + 8; o.hearId = h.id; o.needPlan = true; n++; P.queueSay.push({ id: o.id, text: pick(SAY.lostHear), at: fl.time + 1.3 }); });
-      say(h, nameFill(pick(SAY.bardCall), lost[0]), 3); fl.stats.bardCalls = (fl.stats.bardCalls || 0) + 1; if (n) fl.stats.bardHeard = (fl.stats.bardHeard || 0) + n; tl('bc', h.id, n);
+      say(h, nameFill(pick(SAY.bardCall), lost[0]), 3); fl.stats.bardCalls = (fl.stats.bardCalls || 0) + 1; if (n) fl.stats.bardHeard = (fl.stats.bardHeard || 0) + n; tl('bc', h.id, n); heroFx('notes', h, { col: '#73d6c6' });   // 1.24 (B): notes
       const p = heroPos(h); particles.push({ ring: true, x: p.x, y: p.y, r: 0.3, maxR: 5, life: 0.7, color: '#73d6c6' });
       return;
     }
@@ -2991,7 +3020,7 @@
     near.forEach(o => { o.fear = Math.max(0, o.fear - k * o.courage); if (o.shakenUntil > fl.time) o.shakenUntil = fl.time + 1; });
     P.morale = Math.min(1, P.morale + 0.25);
     fl.stats.songs = (fl.stats.songs || 0) + 1; tl('sg', h.id, near.length);
-    say(h, pick(SAY.song), 3, 2.2); floatHero(h, 'Pieśń!', '#73d6c6', 14, -0.8);
+    say(h, pick(SAY.song), 3, 2.2); floatHero(h, 'Pieśń!', '#73d6c6', 14, -0.8); heroFx('notes', h, { col: '#73d6c6' });   // 1.24 (B)
     const o2 = near.find(o => o !== h && !panicking(o)); if (o2) P.queueSay.push({ id: o2.id, text: pick(SAY.songThanks), at: fl.time + 1.6 });
     const p = heroPos(h); particles.push({ ring: true, x: p.x, y: p.y, r: 0.3, maxR: 5, life: 0.6, color: '#73d6c6' });
   }
@@ -3025,7 +3054,7 @@
       // a curse on a friend (level 4+): 3 faith
       const cu = h.lvl >= 4 && h.faith >= 3 ? (near.find(o => o.cursed && o !== h) || near.find(o => o.cursed)) : null;   // 1.17: a friend first, then himself
       if (cu && spend(3)) {
-        cu.cursed = false; cu.inv.forEach(x => { x.cursed = false; }); fl.stats.curseLifts++; tl('cl', h.id, cu.id); h.cast = 3;   // 1.20: and his things
+        cu.cursed = false; cu.inv.forEach(x => { x.cursed = false; }); fl.stats.curseLifts++; tl('cl', h.id, cu.id); h.cast = 3; heroFx('heal', cu, { col: '#fff2c0' });   // 1.20: and his things (1.24 B: light rings)
         say(h, cu === h ? pick(SAY.curseSelf) : nameFill(pick(SAY.curseLift), cu), 3); floatHero(cu, 'Klątwa zdjęta', '#fff2c0', 13, -0.7);
         particles.push({ ring: true, x: p.x, y: p.y, r: 0.3, maxR: 2, life: 0.45, color: '#fff2c0' });
         return;
@@ -3036,16 +3065,16 @@
       if ((burning || worst < 0.75 || missing > 0.6 * h.max) && spend(1)) {
         h.cast = 3;
         near.forEach(o => {
-          if (fl.time < o.burnUntil) { cleansed = cleansed === 'fire' || o.burnBy !== 'spikes' ? 'fire' : 'blood'; o.burnUntil = fl.time; return; }   // putting out a fire (1.17.1: or stopping the bleeding) takes the heal
-          if (o.hp < o.max) { const a = Math.min(22 * h.R.pow * ak, o.max - o.hp); o.hp += a; healed += a; }
+          if (fl.time < o.burnUntil) { cleansed = cleansed === 'fire' || o.burnBy !== 'spikes' ? 'fire' : 'blood'; o.burnUntil = fl.time; heroFx('heal', o, { col: '#bfe8ff' }); return; }   // putting out a fire (1.17.1: or stopping the bleeding) takes the heal (1.24 B: cold light rings)
+          if (o.hp < o.max) { const a = Math.min(22 * h.R.pow * ak, o.max - o.hp); o.hp += a; healed += a; heroFx('heal', o, { col: '#ffe9a8' }); }   // 1.24 (B): golden rings
         });
       }
-      if (ghosts.length && (h.cast === 3 || h.faith > 0)) { h.cast = 3; ghosts.forEach(m => { hurtMonster(m, 25 * h.R.pow * ak); burst(m.gx, m.gy, '#fff2c0', 8); }); }
+      if (ghosts.length && (h.cast === 3 || h.faith > 0)) { h.cast = 3; ghosts.forEach(m => { hurtMonster(m, 25 * h.R.pow * ak); burst(m.gx, m.gy, '#fff2c0', 8); afx('exorcism', m.gx, m.gy); }); }   // 1.24 (B): a pillar of light
       if (alt && healed > 0) { fl.stats.altarHeals = (fl.stats.altarHeals || 0) + 1; if (Math.random() < 0.25) sayNow(['altar'], () => say(h, pick(SAY.bAltar), 2)); }
       if (cleansed) { fl.stats.cleanses++; sayNow(cleansed === 'fire' ? ['fire'] : ['spikes', 'blood'], () => say(h, pick(cleansed === 'fire' ? SAY.cleanse : SAY.staunch), 3)); }
       // a barrier for everyone around (ambush, or someone close to dying): 3 faith
       if (h.barrierCd <= 0 && near.length >= 2 && (fl.time - fl.party.ambushT < 2 || near.some(o => o.hp < 0.45 * o.max)) && h.faith >= 3 && spend(3)) {
-        near.forEach(o => { o.shield = Math.max(o.shield, 12 * h.R.pow * ak); }); h.barrierCd = 14; fl.stats.barriers++; say(h, pick(SAY.barrier), 3); h.cast = 3;
+        near.forEach(o => { o.shield = Math.max(o.shield, 12 * h.R.pow * ak); }); h.barrierCd = 14; fl.stats.barriers++; say(h, pick(SAY.barrier), 3); h.cast = 3; heroFx('ward', h);   // 1.24 (B)
         particles.push({ ring: true, x: p.x, y: p.y, r: 0.3, maxR: 3, life: 0.5, color: '#7fb8ff' });
       }
       if (healed > 0) {
@@ -3067,7 +3096,7 @@
     if (!target) { h.cast = 0.5; return; }
     h.cast = 4;
     const tx = DRIFT[target.type] ? target.gx : target.x + 0.5, ty = DRIFT[target.type] ? target.gy : target.y + 0.5;
-    fxLine(p.x, p.y, tx, ty, 0.3, '255,150,60');
+    fxLine(p.x, p.y, tx, ty, 0.3, '255,150,60'); afx('fireball', p.x, p.y, { x2: tx, y2: ty });   // 1.24 (B): the fireball flies
     const area = [];
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (tileAt(Math.floor(tx) + dx, Math.floor(ty) + dy) === FLOOR) area.push([Math.floor(tx) + dx, Math.floor(ty) + dy]);
     fxTiles(area, '255,140,50', 0.45);
@@ -3237,7 +3266,7 @@
     }
     if (h.hp < h.R.potion * h.max) {   // a potion when it gets bad (rookies wait far too long)
       const pot = h.inv.filter(x => x.type === 'potion').sort((a, c) => c.r - a.r)[0];
-      if (pot) { h.inv.splice(h.inv.indexOf(pot), 1); h.hp = Math.min(h.max, h.hp + h.max * potionHeal(pot) * itemPow(h) * taintedSip(h, pot)); fl.stats.potions++; fl.stats.itemsUsed++; say(h, pick(SAY.potion), 3);   /* 1.18: Zepsute mikstury */ floatHero(h, 'Mikstura', '#8be38f', 14, -0.7); tl('po', h.id); }
+      if (pot) { h.inv.splice(h.inv.indexOf(pot), 1); h.hp = Math.min(h.max, h.hp + h.max * potionHeal(pot) * itemPow(h) * taintedSip(h, pot)); fl.stats.potions++; fl.stats.itemsUsed++; say(h, pick(SAY.potion), 3);   /* 1.18: Zepsute mikstury */ floatHero(h, 'Mikstura', '#8be38f', 14, -0.7); tl('po', h.id); heroFx('potion', h); }   // 1.24 (B): the vial
     }
     heroAbilities(h, dt);
     if (inZone(h.tx, h.ty)) h.slowUntil = Math.max(h.slowUntil, fl.time + 0.15);
@@ -3250,7 +3279,7 @@
     h.thinkT -= dt;
     if (h.sliding && (h.state !== 'walk' || h.nx === null)) h.sliding = false;   // 1.10: a cage or a fall stops a slide
     if (caged(h)) {
-      if (hasCrowbar(h) && fl.time - (h.cagedAt || 0) >= 4) { freeCaged(h, false, 'pry'); sayNow(['cage'], () => say(h, pick(SAY.crowbarCage), 3)); fl.stats.crowbarCage = (fl.stats.crowbarCage || 0) + 1; tl('lm', h.id, 'cage'); }   // 1.20: he levers the bars himself
+      if (hasCrowbar(h) && fl.time - (h.cagedAt || 0) >= 4) { heroFx('pry', h); freeCaged(h, false, 'pry'); sayNow(['cage'], () => say(h, pick(SAY.crowbarCage), 3)); fl.stats.crowbarCage = (fl.stats.crowbarCage || 0) + 1; tl('lm', h.id, 'cage'); }   // 1.20: he levers the bars himself
       else if (fl.time >= h.cageUntil) cageEnds(h);
       return;
     }
@@ -3275,10 +3304,10 @@
             say(h, pick(SAY.disarmFail), 3); tl('df', h.id, it.type, it.x, it.y);
           } else if (h.type === 'thief' && !CURSED[it.type] && Math.random() < h.R.sapper) {   // a seasoned thief with a sapper's kit takes it apart for good
             fl.items.delete(key(it.x, it.y)); fl.threatDirty = true; fl.stats.disarmed++; fl.stats.sapped = (fl.stats.sapped || 0) + 1; bt(it.type).disarmed++; bt(it.type).sapped = (bt(it.type).sapped || 0) + 1;
-            burst(it.x + 0.5, it.y + 0.5, '#a69bbb', 10); floatTile(it.x, it.y, 'Rozmontowane!', '#ff9a9a', 15); say(h, pick(SAY.sapped), 3); tl('ds', h.id, it.type, it.x, it.y, 1);
+            burst(it.x + 0.5, it.y + 0.5, '#a69bbb', 10); floatTile(it.x, it.y, 'Rozmontowane!', '#ff9a9a', 15); say(h, pick(SAY.sapped), 3); tl('ds', h.id, it.type, it.x, it.y, 1); afx('sparks', it.x + 0.5, it.y + 0.5);   // 1.24 (B)
           } else {
             it.disabled = true; fl.threatDirty = true; fl.stats[CURSED[it.type] ? 'blessed' : 'disarmed']++; bt(it.type).disarmed++;
-            floatTile(it.x, it.y, CURSED[it.type] ? (it.type === 'portrait' ? 'Odczyniony' : 'Odczynione') : 'Rozbrojone', '#a69bbb', 14); say(h, pick(CURSED[it.type] ? SAY.blessDone : SAY.disarmDone), 2); tl('ds', h.id, it.type, it.x, it.y, 0);   // 1.17: the priest's own words
+            floatTile(it.x, it.y, CURSED[it.type] ? (it.type === 'portrait' ? 'Odczyniony' : 'Odczynione') : 'Rozbrojone', '#a69bbb', 14); say(h, pick(CURSED[it.type] ? SAY.blessDone : SAY.disarmDone), 2); tl('ds', h.id, it.type, it.x, it.y, 0); if (CURSED[it.type]) heroFx('heal', h, { col: '#fff2c0' }); else afx('sparks', it.x + 0.5, it.y + 0.5);   // 1.17: the priest's own words (1.24 B: sparks, or light for a blessing)
             mentorProud(h, 1.6);   // 1.21
           }
         }
@@ -3291,14 +3320,14 @@
       h.timer -= dt;
       const t = h.smashIt;
       if (!t || exiting(h) || panicking(h) || inB('shackles', h.room)) { h.state = 'walk'; h.smashIt = null; h.needPlan = true; return; }
-      if (h.timer <= 0) { smashDone(h, t); if (t.kind === 'b' && h.grudgeOn && t.ref === h.grudgeOn && t.ref.broken) nemGrudgeDone(h); h.state = 'walk'; h.smashIt = null; h.smashCd = fl.time + (raging(h) ? 2 : 5); h.needPlan = true; }   // 1.23: his grudge, smashed
+      if (h.timer <= 0) { heroFx('smash', h, { x2: t.x + 0.5, y2: t.y + 0.5 }); smashDone(h, t); if (t.kind === 'b' && h.grudgeOn && t.ref === h.grudgeOn && t.ref.broken) nemGrudgeDone(h); h.state = 'walk'; h.smashIt = null; h.smashCd = fl.time + (raging(h) ? 2 : 5); h.needPlan = true; }   // 1.23: his grudge, smashed
       return;
     }
     if (h.state === 'free') {
       const c = byId(h.freeT);
       if (!c || !caged(c) || exiting(h)) { h.state = 'walk'; h.needPlan = true; return; }
       h.timer -= dt;
-      if (h.timer <= 0) { freeCaged(c, true); if (hasCrowbar(h)) { fl.stats.crowbarCage = (fl.stats.crowbarCage || 0) + 1; tl('lm', h.id, 'cage'); } h.state = 'walk'; h.needPlan = true; }
+      if (h.timer <= 0) { freeCaged(c, true); if (hasCrowbar(h)) { fl.stats.crowbarCage = (fl.stats.crowbarCage || 0) + 1; tl('lm', h.id, 'cage'); heroFx('pry', c); } h.state = 'walk'; h.needPlan = true; }   // 1.24 (B): levered
       return;
     }
     // 1.20: kneeling by a body (pickup): a wound does not stop him (that is the price), running out or a panic does
@@ -3318,7 +3347,7 @@
           const near = alive().filter(o => o !== h && Math.max(Math.abs(o.tx - g.x), Math.abs(o.ty - g.y)) <= 1);
           if (near.length && h.rank >= 1 && !raging(h)) { if (h.bombHeldFor !== g) { h.bombHeldFor = g; fl.stats.bombHeld = (fl.stats.bombHeld || 0) + 1; } }
           else {
-            h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++; say(h, pick(SAY.bomb), 3); burst(g.x + 0.5, g.y + 0.5, '#ffb35c', 16); hurtMonster(g, 80 * Math.pow(Math.min(4, bomb.r), 1.3) * itemPow(h));
+            h.inv.splice(h.inv.indexOf(bomb), 1); fl.stats.bombs++; fl.stats.itemsUsed++; say(h, pick(SAY.bomb), 3); burst(g.x + 0.5, g.y + 0.5, '#ffb35c', 16); { const a = heroPos(h); afx('throw', a.x, a.y, { x2: g.x + 0.5, y2: g.y + 0.5, col: '#ffb35c' }); }   /* 1.24 (B): thrown */ hurtMonster(g, 80 * Math.pow(Math.min(4, bomb.r), 1.3) * itemPow(h));
             near.forEach(o => damage(o, 20 * S.dmg * Math.sqrt(Math.min(4, bomb.r)), BURN));
             if (near.length) { fl.stats.bombFriendly = (fl.stats.bombFriendly || 0) + near.length; tl('bf2', h.id, near.length); P.queueSay.push({ id: near[0].id, text: pick(SAY.bombFriendly), at: fl.time + 0.4, prio: 3 }); }
           }
@@ -3358,7 +3387,7 @@
       }
       // the warrior raises his shield stepping into a trap they know about
       const dng = fl.danger[n[1] * WW + n[0]];
-      if (h.type === 'warrior' && !fl.fearless && dng > 1 && fl.time > h.shieldCd) { h.shieldUpUntil = fl.time + 2.5; h.shieldCd = fl.time + h.R.shieldCd; fl.stats.shields++; say(h, pick(h.id === fl.party.leaderId && !exiting(h) && (h.intent === 'lead' || h.intent === 'heart' || h.intent === 'detour') ? SAY.shieldLead : SAY.shield), 2); }   // 1.17: 'follow me' only from a warrior who leads them forward
+      if (h.type === 'warrior' && !fl.fearless && dng > 1 && fl.time > h.shieldCd) { h.shieldUpUntil = fl.time + 2.5; h.shieldCd = fl.time + h.R.shieldCd; fl.stats.shields++; heroFx('shield', h); say(h, pick(h.id === fl.party.leaderId && !exiting(h) && (h.intent === 'lead' || h.intent === 'heart' || h.intent === 'detour') ? SAY.shieldLead : SAY.shield), 2); }   // 1.17: 'follow me' only from a warrior who leads them forward
       // powers: a talisman before a known trap (veterans), boots to run out, to dash past a trap, or to find the others
       if (h.inv.length) {
         if (dng > 1.5 && !fl.fearless && !exiting(h)) useCharm(h, 'danger');

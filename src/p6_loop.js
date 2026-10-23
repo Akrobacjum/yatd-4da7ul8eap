@@ -211,7 +211,7 @@
       if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
       if (actx.state === 'suspended') actx.resume();
       musicInit();
-      if (!MUS.timer) { MUS.next = actx.currentTime + 0.1; MUS.timer = setInterval(() => { try { musicTick(); } catch (e) {} }, 60); }
+      if (!MUS.timer) { MUS.next = actx.currentTime + 0.1; MUS.timer = setInterval(() => { if (document.hidden) return; try { musicTick(); } catch (e) {} }, 60); }   // 1.24 (C): nothing to do while the page is hidden
     } catch (e) {}
   }
   document.addEventListener('pointerdown', () => { if (S.music > 0) musicStart(); }, { capture: true });
@@ -238,20 +238,27 @@
     const m = { spikes: mods.spikeDmg, gate: mods.gateCrush, mimic: mods.mimicDmg, trapdoor: mods.fallDmg }[it.type] || 1;
     return BASE_DMG[it.type] * D * m * (MONSTERS[it.type] ? it.power : 1) * pw * trapBoost(it);
   }
+  // 1.24 (C): the tiles of an area as numbers in a Set, kept with the area's (remembered) list: checkTick asked this of every element
+  // twice a step, each time making a Set of text keys
+  const AREA_KEYS = new WeakMap();
+  function areaKeys(A) { let s = AREA_KEYS.get(A); if (s && s.ww === WW) return s; s = new Set(); A.forEach(t => s.add(t[1] * WW + t[0])); s.ww = WW; AREA_KEYS.set(A, s); return s; }
   function heroesInArea(it) {
     if (it.type === 'ghost') { const r = roomOf(it.x, it.y); return alive().filter(h => h.room === r); }
-    const keys = new Set(areaOf(it).map(t => key(t[0], t[1]))); return alive().filter(h => keys.has(key(h.tx, h.ty)));
+    const keys = areaKeys(areaOf(it)); return alive().filter(h => keys.has(h.ty * WW + h.tx) && (it.type !== 'trapdoor' || !tdSafe(h, it)));   // 1.24: not one it cannot take any more; 1.24 (C): numeric keys, kept with a remembered area
   }
   function checkWanted(it) {
     if (!ACTIVE[it.type] || it.disabled || it.cd > 0 || it.jamUntil > fl.time || (it.skipUntil || 0) > fl.time || (MONSTERS[it.type] && it.hp <= 0)) return false;
-    if (it.type === 'gate') return alive().some(h => (h.tx === it.x && h.ty === it.y) || h.path.slice(0, 2).some(p => p[0] === it.x && p[1] === it.y));
+    if (it.type === 'gate') return alive().some(h => (h.tx === it.x && h.ty === it.y) || (h.nx === it.x && h.ny === it.y) || (h.path.length && h.path[0][0] === it.x && h.path[0][1] === it.y && Math.abs(h.tx - it.x) + Math.abs(h.ty - it.y) <= 1));   // 1.24 (C, addendum 2: the author): only one at most 1 tile from the door (in it, stepping into it, or next to it and going in; was 1-2 steps)
     if (it.type === 'shaman') {
       const r = roomOf(it.x, it.y); let need = false;
       fl.items.forEach(m => { if (MONSTERS[m.type] && m !== it && m.hp > 0 && m.hp < 0.6 * m.max && roomOf(m.x, m.y) === r) need = true; });
       return need;
     }
     if (it.type === 'ghost') return alive().some(h => { const p = heroPos(h); return h.room === roomOf(it.x, it.y) && Math.hypot(p.x - it.gx, p.y - it.gy) <= 3; });
-    if (it.type === 'trapdoor') return heroesInArea(it).some(h => !(h.fellFrom && h.fellFrom.has(it)));
+    if (it.type === 'trapdoor') {   // 1.24: one past his falls who stands at an unknown trapdoor sees it (the party knows it from then on)
+      if (!it.detected) { const s = alive().find(h => (h.tdFalls || 0) >= tdCap(h) && areaOf(it).some(t => t[0] === h.tx && t[1] === h.ty)); if (s) { learnTrap(it, 'seen', s); fl.stats.tdSeen = (fl.stats.tdSeen || 0) + 1; } }
+      return heroesInArea(it).length > 0;
+    }
     if (it.type === 'cage') return heroesInArea(it).some(h => !caged(h));   // v14.1: the one inside does not trigger it again
     return heroesInArea(it).length > 0;
   }
@@ -271,6 +278,24 @@
   const CHECK_SHAPE = { spikes: 'bar', arrows: 'bar', gate: 'bar', mimic: 'bar', powder: 'fuse', fire: 'ring', portrait: 'double', ghost: 'double', web: 'spiral', spider: 'spiral',
     trapdoor: 'pulse', cage: 'pulse', goblin: 'swing', archer: 'swing', ogre: 'swing', shaman: 'swing',
     eyes: 'double', bones: 'pulse', mirror: 'ring', creak: 'bar', coffin: 'fuse', musicbox: 'spiral', shade: 'double', bats: 'swing' };   // v15.1
+  // 1.24 (D, P0-6): checks by shape in the wave's stats: checkByShape[shape] = { ok, crit, miss, skip } (+ auto: fired by itself in the
+  // calm gap of P1-3)
+  function shapeStat(shape, res) { const B = fl.stats.checkByShape || (fl.stats.checkByShape = {}), o = B[shape] || (B[shape] = { ok: 0, crit: 0, miss: 0, skip: 0 }); o[res] = (o[res] || 0) + 1; }
+  // 1.24 (D, P1-6; testers: 81% misses on the trapdoor's pulse, 32% on the monsters' swing against the bar's ~half): the graze window
+  // of these two x S.okPulse / S.okSwing (the crit strip as before). Measured at wave 4 (t124d_data widths, 16 checks each, a 390 px
+  // phone), how long the bead stays in the graze window and its size: bar 0,42 s (113 px); pulse 0,40 -> 0,64 s (a ring band of
+  // 18 -> 28 px); swing 0,26 -> 0,45 s a pass (it has two; the zones sit in the fast middle of the arc; 49 -> 81 px).
+  const OK_WIDE = { pulse: () => S.okPulse || 1, swing: () => S.okSwing || 1 };
+  // 1.24 (D, P1-3; a tester got 23 checks in 29 s of wave 1): in waves 1-S.calmWaves and while the guide runs, after a check the next
+  // one waits S.calmGap s (game time; the world runs at its normal speed then); what wants a check meanwhile fires by itself as a
+  // graze (not remembered: it still asks later), counted in stats.calmAuto and checkByShape[shape].auto. From wave 3 as before.
+  const calmChecks = () => S.calmGap > 0 && !!run && (run.wave <= S.calmWaves || run.tut >= 0);
+  function calmFire() {
+    for (const it of fl.items.values()) {
+      if (!checkWanted(it) || skullHolds(it) || !needsCheck(it)) continue;
+      if (fire(it, mods.okPw)) { fl.stats.calmAuto = (fl.stats.calmAuto || 0) + 1; bt(it.type).ok++; shapeStat(CHECK_SHAPE[it.type] || 'bar', 'auto'); }
+    }
+  }
   const SHAPE_NAME = { bar: 'pasek', ring: 'tarcza', fuse: 'lont', double: 'podwójna tarcza', spiral: 'spirala', pulse: 'krąg', swing: 'wahadło' };
   const SHAPE_DUR = { bar: 1, ring: 1.15, pulse: 0.95, swing: 1.55, fuse: 1.25, double: 1.2, spiral: 1.25 }, LVL_ZONE = [1, 1, 1.15, 1.3];
   // Swing: there and back (two passes). It speeds up towards the middle and slows near the ends (±35%), a pendulum.
@@ -316,14 +341,16 @@
       else if (pw && !lethalFor(it, pw) && fire(it, pw)) { fl.stats.memFires = (fl.stats.memFires || 0) + 1; bt(it.type).memFires = (bt(it.type).memFires || 0) + 1; }
     }
     if (ff || fl.time < fl.checkGap) return;
+    if (calmChecks() && fl.time < (fl.calmUntil || 0)) { calmFire(); return; }   // 1.24 (D, P1-3)
     for (const it of fl.items.values()) {
       if (!checkWanted(it) || skullHolds(it) || !needsCheck(it)) continue;
       const inA = heroesInArea(it), shape = CHECK_SHAPE[it.type] || 'bar';
       const maxL = inA.reduce((a, h) => Math.max(a, h.lvl), 1);
       const kz = S.checkDiff * (1 + 0.02 * Math.min(10, run.wave - 1)) / LVL_ZONE[it.lvl || 1], ks = S.checkDiff * (1 + CHECK_LV_SPEED * Math.min(20, maxL - 1));
-      const gw = 0.4 / kz, rw = 0.09 / kz;
+      const rw = 0.09 / kz, lo = shape === 'swing' ? 0.08 : 0.12;
+      const gw = Math.min(0.4 / kz * (OK_WIDE[shape] ? OK_WIDE[shape]() : 1), 0.96 - lo - rw);   // 1.24 (D, P1-6): wider for the pulse and the swing, never off the shape
       // where the zones sit: anywhere on the shape (the critical strip before or after the green one; in a pulse always inside)
-      const lo = shape === 'swing' ? 0.08 : 0.12, start = lo + Math.random() * Math.max(0, 0.96 - lo - gw - rw);
+      const start = lo + Math.random() * Math.max(0, 0.96 - lo - gw - rw);
       let g0, g1, r0, r1, z2 = null;
       if (shape === 'double') {   // two smaller windows, one in each half of the dial: two chances, less room
         const g = gw * 0.7, r = rw * 0.85, a = 0.08 + Math.random() * Math.max(0, 0.46 - 0.08 - g - r), b = 0.52 + Math.random() * Math.max(0, 0.94 - 0.52 - g - r);
@@ -365,7 +392,7 @@
     const z = c.z2;
     if ((p >= c.r0 && p <= c.r1) || (z && p >= z.r0 && p <= z.r1)) { res = 'crit'; pw = mods.critPw; }
     else if ((p >= c.g0 && p <= c.g1) || (z && p >= z.g0 && p <= z.g1)) { res = 'ok'; pw = mods.okPw; }
-    c.result = res; c.resT = realNow; c.p = p;
+    c.result = res; c.resT = realNow; c.p = p; shapeStat(c.shape, res);   // 1.24 (D, P0-6)
     const all = [c.it].concat(c.extra || []);
     // 1.05: the answer stays (1.09: from wave to wave); a skull check of a trap that already had one decides only this hit
     if (res !== 'miss') all.forEach(o => { if (!memOf(o)) { o.memRes = res; o.memLvl = o.lvl || 1; } o.skullOff = false; });
@@ -379,6 +406,7 @@
     if (res === 'miss') {
       all.forEach(o => { o.cd = cdOf(o.type) * 0.5 || 1; });
       floatTile(c.it.x, c.it.y, 'Pudło', '#a69bbb', 15, -0.8); fl.stats.checkMiss++;
+      tutSpikeSure(c);   // 1.24 (B, P1-5)
       return;
     }
     const victims = new Set();
@@ -404,13 +432,25 @@
   }
   function skipCheck() {
     const c = fl.check; if (!c || c.result) return;
-    c.result = 'skip'; c.resT = realNow; fl.stats.checkSkip++;
+    c.result = 'skip'; c.resT = realNow; fl.stats.checkSkip++; shapeStat(c.shape, 'skip');   // 1.24 (D, P0-6)
     // 1.05: let go at a skull, the trap stays quiet while its hit would kill; otherwise it asks again next time
     [c.it].concat(c.extra || []).forEach(o => { o.skipUntil = fl.time + 1.2; bt(o.type).skip++; if ((c.lethalOk || c.lethalCrit) && lethalFor(o, memPw(o) || mods.okPw)) { o.skullOff = true; fl.stats.skullOff = (fl.stats.skullOff || 0) + 1; } });
     tl('ch', c.it.type, c.it.x, c.it.y, 'skip', heroesInArea(c.it).length);
     if (c.lethalOk && c.lethalCrit) { fl.stats.skipLethal++; bt(c.it.type).skipLethal++; }
+    tutSpikeSure(c);   // 1.24 (B, P1-5)
   }
-  function clearCheck() { fl.check = null; fl.checkGap = fl.time + 0.25; }
+  // 1.24 (B, P1-5: a tester's spikes never went off in the guide): in the guide's first wave every spikes go off at least once. A miss
+  // or a let-go check of spikes that have not fired yet still springs them, at graze strength (once each).
+  function tutSpikeSure(c) {
+    const it = c && c.it;
+    if (!run || run.tut < 0 || run.wave !== 1 || !it || it.type !== 'spikes' || it.tutSure || (it.w && it.w.f > 0)) return false;
+    if (fl.items.get(key(it.x, it.y)) !== it || it.disabled) return false;
+    it.tutSure = true; it.cd = 0; it.skipUntil = 0; it.jamUntil = 0;
+    const ok = fire(it, mods.okPw, { lock: c.lock && c.lock.get(it) });
+    if (ok) { floatTile(it.x, it.y, 'Kolce i tak kłują', '#ffd27a', 13, -1.3); fl.stats.tutSpike = (fl.stats.tutSpike || 0) + 1; }
+    return ok;
+  }
+  function clearCheck() { fl.check = null; fl.checkGap = fl.time + 0.25; if (calmChecks()) fl.calmUntil = fl.time + S.calmGap; }   // 1.24 (D, P1-3): the calm gap
   function updateCheck() {
     const c = fl.check;
     if (!c) return;
@@ -520,9 +560,8 @@
     // 1.12.1: patience runs at half speed while the party talks it over or rests (longer scenes do not cut their search short)
     fl.patT = (fl.patT || 0) + dt * (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0) ? 0.5 : 1);
     if (!fl.fearless && fl.ending === null && fl.patT >= S.waveTime) becomeImpatient();
-    if (fl.ending === null && fl.patT >= S.waveTime + 60) {   // safety net: nobody stays forever
-      fl.heroes.forEach(h => { if (!h.dead && !h.fled) { h.gone = false; heroExit(h); } });
-    }
+    if (fl.ending === null && !fl.exhausted && fl.patT >= S.waveTime + 60) waveExhausted();   // 1.24: worn out, they walk out (up to 1.23 they were teleported out here)
+    if (fl.ending === null && fl.patT >= S.waveTime + 150) waveForceOut();   // 1.24: the true safety net: nobody stays forever
     if (fl.ending === null && fl.queue.length === 0 && fl.heroes.length && fl.heroes.every(h => h.dead || h.fled)) fl.ending = 1.2;
     fl.heroes.forEach(h => { if (h.bubble && h.bubble.until <= fl.time) h.bubble = null; });
   }
@@ -587,7 +626,54 @@
     return null;
   }
   let lastT = performance.now(), lastInputAt = 0, frameNo = 0;
-  ['pointerdown', 'pointermove', 'wheel', 'keydown'].forEach(ev => window.addEventListener(ev, () => { lastInputAt = realNow; }, { capture: true, passive: true }));
+  ['pointerdown', 'pointermove', 'wheel', 'keydown'].forEach(ev => window.addEventListener(ev, e => {
+    if (ev === 'pointermove' && e.clientX === FP.mx && e.clientY === FP.my) return;   // 1.24 (C): a browser's own move with the mouse standing still (sent after the page changes under it) is no input: it kept waking the loop
+    if (ev === 'pointermove') { FP.mx = e.clientX; FP.my = e.clientY; }
+    lastInputAt = realNow; FP.input = performance.now(); if (ev !== 'pointermove' || e.buttons) FP.touch = FP.input; kick();   // 1.24 (C): FP.input wakes the loop; FP.touch (a finger or a pressed button) runs it at 60
+  }, { capture: true, passive: true }));
+  ['pointerup', 'pointercancel'].forEach(ev => window.addEventListener(ev, () => { FP.input = FP.touch = performance.now(); kick(); }, { capture: true, passive: true }));   // 1.24 (C)
+  // 1.24 (C, the author: phones get hot): frame pacing. Up to 1.23 every display refresh ran the game and drew the whole map (a 90 or
+  // 120 Hz phone 90-120 times a second, building half of that when idle). Now: the raid as it runs at most 60 frames a second;
+  // building, a paused raid and the screens between waves 30 (60 while a finger is on the map or moves it, the tray folds or the
+  // camera tilts); with nothing moving and nothing touched for 2 s the picture stands still: a frame is drawn only when something on
+  // it changed (FP.sig), the clocks go on once a second. A tap, a key, a resize or a test hook (window.__yatd) wakes it at once.
+  const FP = { raf: false, poll: 0, due: 0, iv: 0, input: -1e9, touch: -1e9, mx: null, my: null, wake: false, sig: '', last: 0, still: 0, drawn: 0, skipped: 0, modes: { fast: 0, calm: 0, still: 0 } };
+  const IV_FAST = 1000 / 60, IV_CALM = 1000 / 30, IV_STILL = 1000;
+  const fpBusy = () => orbs.length > 0 || floats.length > 0 || particles.length > 0 || shake > 0 || (fl && fl.fx.length > 0) || (WA.moving && WA.moving.size > 0) || (run && run.tut >= 0) || (fl && fl.phase === 'raid' && fl.ending !== null && !paused && !modalOpen);
+  function frameIv(now) {
+    if (fl && fl.phase === 'raid' && !paused && !modalOpen) return IV_FAST;
+    const since = now - FP.input;
+    if (pointers.size > 0 || now - FP.touch < 250 || TRAY.t < 1 || VIEW.t < 1 || movingKey || holdInfo) return IV_FAST;
+    if (since < 2000 || FP.wake || fpBusy()) return IV_CALM;
+    return IV_STILL;
+  }
+  const frameSig = () => fl ? [fl.phase, modalOpen ? 1 : 0, paused ? 1 : 0, FW, FH, OX, OY, cw, ch, DPR, cam.s, cam.ox, cam.oy, VIEW.p, fl.items.size, fl.tiles && fl.tiles.length, selected || '', run ? run.wave : 0, SPLIT.k].join('|') : 'none|' + FW + '|' + FH;
+  // the next frame is asked for once (kick); standing still the loop asks no frames of the browser (a phone can then lower its refresh)
+  // and looks again every 100 ms, or at once on a tap
+  function kick() { if (FP.raf) return; FP.raf = true; clearTimeout(FP.poll); requestAnimationFrame(frameR); }
+  const frameR = now => { FP.raf = false; frame(now); };
+  function frame(now) {   // 1.24 (C): paced (see FP)
+    const iv = frameIv(now);
+    if (iv < FP.iv) FP.due = 0;   // faster now (a tap, the raid goes on): at once
+    if ((iv === IV_STILL) !== (FP.iv === IV_STILL)) document.documentElement.classList.toggle('still', iv === IV_STILL);   // the endless CSS decorations stand still too (p0: html.still)
+    FP.iv = iv;
+    if (iv === IV_STILL) {   // still: only a changed picture is drawn; the clocks go on once a second
+      const sig = frameSig();
+      if (sig === FP.sig && now - FP.last < IV_STILL) { FP.skipped++; clearTimeout(FP.poll); FP.poll = setTimeout(kick, 100); return; }
+      FP.still = sig === FP.sig ? 1 : 0;   // 1 = the clocks only, no drawing
+    } else {
+      if (now < FP.due - 2) { FP.skipped++; kick(); return; }
+      FP.due = Math.max(FP.due + iv, now + iv * 0.5); FP.still = 0;
+    }
+    FP.last = now; FP.wake = false; FP.modes[iv === IV_FAST ? 'fast' : iv === IV_CALM ? 'calm' : 'still']++;
+    const runs = !!(fl && fl.phase === 'raid' && !paused && !modalOpen);
+    if (runs && !FP.runs && now - lastT > IV_CALM + 5) { realNow += (now - lastT - IV_FAST) / 1000; lastT = now - IV_FAST; }   // the raid goes on after a still stretch: the clock gets the real gap, the world one frame (as when every frame ran)
+    FP.runs = runs;
+    const t0 = performance.now();
+    try { frameBody(now); } catch (e) { perfErr(e); try { e.seen = 1; } catch (_) { } setTimeout(() => { throw e; }); }   // thrown again outside the loop: the console (and the tests) still see it
+    perfNote(now, performance.now() - t0);
+    kick();
+  }
   // 1.04: how smoothly the wave runs on the player's device goes to the wave log (a lag was reported in wave 1 only and could not
   // be reproduced here): the gaps between frames and the time the game's own code takes, counted only while the wave is on screen
   // and running (no pause, no card open). An error in a frame no longer stops the game (the next frame is always asked for) and
@@ -618,14 +704,8 @@
     return { frames: n, fps: Math.round(n / sum * 10000) / 10, gapMed: q(g, 0.5), gapP90: q(g, 0.9), gapMax: g[n - 1], slow: Math.round(g.filter(x => x > 50).length / n * 1000) / 10,
       jsMed: q(j, 0.5), jsP90: q(j, 0.9), jsMax: j[n - 1], realSec: Math.round(PERF.ms / 100) / 10, frozen: PERF.ms > 0 ? Math.round(PERF.fz / PERF.ms * 1000) / 10 : 0, dpr: DPR, w: Math.round(cw), h: Math.round(ch), direct: Math.round(PERF.direct / n * 100), split: Math.round(PERF.split / n * 100), chunks: (TC.made || 0) - PERF.made0 };
   }
-  function frame(now) {
-    const t0 = performance.now();
-    try { frameBody(now); } catch (e) { perfErr(e); try { e.seen = 1; } catch (_) { } setTimeout(() => { throw e; }); }   // thrown again outside the loop: the console (and the tests) still see it
-    perfNote(now, performance.now() - t0);
-    requestAnimationFrame(frame);
-  }
   function frameBody(now) {
-    const rdt = Math.min(0.05, (now - lastT) / 1000); lastT = now; realNow += rdt;
+    const rdt = Math.min(fl && fl.phase === 'raid' && !paused && !modalOpen ? 0.05 : 1.2, (now - lastT) / 1000); lastT = now; realNow += rdt;   // 1.24 (C): out of the running raid a paced frame may come later (30 a second, or still): the real time goes on (the running raid keeps its 0,05 s cap)
     trayTick(rdt);   // 1.08: before the camera, which keeps the middle of the map while the stage changes
     if (run && fl) {
       if (fl.check) { if (modalOpen || paused) { fl.check.t0 += rdt; fl.check.prepT0 += rdt; fl.check.resT += rdt; } else updateCheck(); }
@@ -668,9 +748,9 @@
     });
     particles = particles.filter(p => p.life > 0);
     if (shake > 0) shake = Math.max(0, shake - rdt);
-    // 1.03: building with nothing touched for 2 s: every other frame is enough (torches and treasure still move)
-    const idle = fl && fl.phase === 'build' && realNow - lastInputAt > 2 && !movingKey && !holdInfo && TRAY.t >= 1 && VIEW.t >= 1;   // 1.08: not while the tray and the camera move
-    if (!idle || (frameNo++ & 1)) draw();
+    // 1.03: building with nothing touched for 2 s: every other frame was enough. 1.24 (C): the pacing (FP) does it now: building 30
+    // a second, still when idle (the clocks only, unless the picture changed)
+    if (!FP.still) { draw(); FP.drawn++; FP.sig = FP.iv === IV_FAST ? '' : frameSig(); }
   }
 
   /* ================= camera ================= */
@@ -758,8 +838,8 @@
   const SPLIT = { k: 0, want: false, ang: 0, c: null, gid: new Map(), polys: null, tg: [null, null], cams: [null, null] };
   const SPLIT_T = 19;   // 1.16.1 (author: split a bit sooner, at a smaller distance between the groups): was 16 px a tile
   const splitSide = (sx, sy) => ((sx - cw / 2) * Math.cos(SPLIT.ang) + (sy - ch / 2) * Math.sin(SPLIT.ang)) > 0 ? 1 : 0;
-  function splitPolys(ang) {   // the screen cut in two: [the side away from the direction, the side towards it]
-    const n = [Math.cos(ang), Math.sin(ang)], c = [cw / 2, ch / 2], R = [[0, 0], [cw, 0], [cw, ch], [0, ch]];
+  function splitPolys(ang, full) {   // the screen cut in two: [the side away from the direction, the side towards it]
+    const n = [Math.cos(ang), Math.sin(ang)], c = [cw / 2, ch / 2], R = full ? [[-OX, -OY], [FW - OX, -OY], [FW - OX, FH - OY], [-OX, FH - OY]] : [[0, 0], [cw, 0], [cw, ch], [0, ch]];   // 1.24 (B): full = the whole canvas (drawing), else the view (framing)
     const cut = sg => {
       const out = [];
       for (let i = 0; i < 4; i++) {
@@ -819,7 +899,7 @@
         const ta = Math.atan2(cb.y - ca.y, cb.x - ca.x);
         if (SPLIT.k <= 0) SPLIT.ang = ta;
         else { let d = ta - SPLIT.ang; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; SPLIT.ang += clamp(d, -2.4 * rdt, 2.4 * rdt); }
-        SPLIT.polys = splitPolys(SPLIT.ang);
+        SPLIT.polys = splitPolys(SPLIT.ang); SPLIT.fullPolys = splitPolys(SPLIT.ang, true);   // 1.24 (B): the halves go on under the HUD
         const m = 2.2, fit = [0, 1].map(i => {
           const B = box[i], P2 = SPLIT.polys[i], o = polyCentroid(P2);
           const ex = Math.min(rayOut(P2, o, [1, 0]), rayOut(P2, o, [-1, 0])), ey = Math.min(rayOut(P2, o, [0, 1]), rayOut(P2, o, [0, -1]));
@@ -844,7 +924,7 @@
     return [0, 1].map(i => {
       const c = SPLIT.cams[i], mx = (c.ax + cam.ox) / cam.s, my = (c.ay + cam.oy) / cam.s;   // where the main camera has this half's anchor
       const s = cam.s + (c.s - cam.s) * e, wx = mx + (c.wx - mx) * e, wy = my + (c.wy - my) * e;
-      return { poly: SPLIT.polys[i], s, ox: wx * s - c.ax, oy: wy * s - c.ay, e };
+      return { poly: (SPLIT.fullPolys || SPLIT.polys)[i], s, ox: wx * s - c.ax, oy: wy * s - c.ay, e };   // 1.24 (B): drawn over the whole canvas
     });
   }
   // a hero's place on the screen (in a split screen: in the half of his group)
@@ -857,11 +937,13 @@
     const rect = stage.getBoundingClientRect();
     const had = cw > 0, cx = had ? (cam.ox + cw / 2) / cam.s : 0, cy = had ? (cam.oy + ch / 2) / cam.s : 0;
     cw = Math.max(60, Math.floor(rect.width)); ch = Math.max(60, Math.floor(rect.height));
-    // 1.08: the canvas is as tall as the map is with the tray folded; an open or moving tray covers its lower part (the stage
-    // clips it). So folding and unfolding never makes the canvas anew (a new one is blank until drawn, and costs) and ch is
-    // only how much of it shows.
-    const full = Math.max(ch, Math.round(rect.height + trayCover())), W = Math.round(cw * DPR), H = Math.round(full * DPR);
-    if (cv.width !== W || cv.height < Math.round(ch * DPR) || Math.abs(cv.height - H) > 2) { cv.width = W; cv.height = H; cv.style.height = (H / DPR) + 'px'; }
+    // 1.08: folding and unfolding the tray never makes the canvas anew (a new one is blank until drawn, and costs); ch is only how
+    // much of the map shows. 1.24 (B, no frame): the canvas is the whole screen, the HUD and the tray stand on it; the camera
+    // frames the dungeon in the free part (#stage), which starts at OX, OY.
+    const de = document.documentElement;
+    FW = Math.max(cw, de.clientWidth || innerWidth); FH = Math.max(ch, de.clientHeight || innerHeight); OX = Math.round(rect.left); OY = Math.round(rect.top);
+    const W = Math.round(FW * DPR), H = Math.round(FH * DPR); FP.wake = true; kick();   // 1.24 (C): a new size is drawn at once
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; cv.style.width = FW + 'px'; cv.style.height = FH + 'px'; }
     if (had) { cam.s = clamp(cam.s, fitScale() * 0.95, MAX_S); centerOnView(cx, cy); }
   }
   function updateZoomBtn() {

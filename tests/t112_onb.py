@@ -2,6 +2,8 @@
 # the guide, wounds by traps and monsters; 2: scares; 3: the guild, the counter-buildings, room types; 4: bodies, phobias, returners, hunters,
 # the breach), each with a card of what is new; "Pomiń samouczek" opens everything. Plus the guide's card that stayed on
 # the screen in the next run (bug), and the hero HP that grows with the waves (comboHp).
+# 1.24 (B, author: unlocking over a single run): the stages now go by the waves of the first run (sections 4 and 5 changed on
+# purpose; the rest as before).
 import asyncio, json
 from playwright.async_api import async_playwright
 BASE = 'file:///tmp/claude-0/-home-claude/fb891867-3494-5a36-92d3-9beb0ec01e2f/scratchpad/test/page15.html'
@@ -65,32 +67,34 @@ async def main():
         ok(not s['coach'], 'a new run after leaving the guided one: no guide card (bug 1.11.1)')
         ok(s['stage'] == 4 and not s['guided'] and s['onb'] == 5, 'Pomiń samouczek: the full game, the first runs done (stage %s, onb %s)' % (s['stage'], s['onb']))
         ok(len(s['tabs']) == 6, 'the full game: all six tabs')
-        # 4. the progression: back to run 1, end it -> run 2 with its card, and so on to the full game
+        # 4. 1.24 (B, author: unlocking over a single run): the first run opens the game with its waves (1-2 / 3-4 / 5-6 / 7+), the
+        # tabs follow; ending it makes the next run the full game (t124b_ui plays it wave by wave with the cards)
         await page.evaluate('() => { __yatd.setOnb(1); localStorage.setItem("yatd-coach", "1"); }')
         prog = []
-        for stg in (1, 2, 3, 4):
-            btns = await start(page, 'start-tut')
+        btns = await start(page, 'start-tut')
+        s = await page.evaluate(STATE)
+        ok(s['stage'] == 1 and s['guided'] and s['tut'] == -1 and s['modal'] in (None, 'shop'), 'the first run again (guide done): stage 1, no guide, no card (%s)' % {k: s[k] for k in ('stage', 'guided', 'tut', 'modal')})
+        for w, stg in ((3, 2), (5, 3), (7, 4)):
+            await page.evaluate('w => { __yatd.onbAdvance(w); }', w)
             s = await page.evaluate(STATE)
-            prog.append({'btn': [t for t in btns if t.startswith('start-tut')][0], 'stage': s['stage'], 'tabs': s['tabs'], 'modal': s['modal'], 'tut': s['tut'], 'card': s['card'][:60]})
-            ok(s['stage'] == stg and s['guided'], 'run %d: stage %d (got %s)' % (stg, stg, s['stage']))
-            ok(s['tut'] == -1, 'run %d: no guide (the guide was done before)' % stg)
-            if stg > 1: ok(s['modal'] == 'onb' and 'Nowe:' in s['card'], 'run %d: a card with what is new' % stg)
-            else: ok(s['modal'] in (None, 'shop'), 'run 1 again: no card')
-            await page.evaluate('() => { const G = __yatd; while (G.modalKind) G.closeModal(); G.run.wave = 6; G.endRun("test", "end"); while (G.modalKind) G.closeModal(); }')
-            o = await page.evaluate('() => __yatd.onbStage()')
-            ok(o == stg + 1, 'run %d ended: the next one is %d (got %s)' % (stg, stg + 1, o))
+            prog.append({'wave': w, 'stage': s['stage'], 'tabs': s['tabs']})
+            ok(s['stage'] == stg, 'wave %d of the first run: stage %d (got %s)' % (w, stg, s['stage']))
         out['prog'] = prog
-        ok(prog[1]['tabs'] == ['traps', 'monster', 'loot', 'dungeon', 'deck'], 'run 2: the same tabs (%s)' % prog[1]['tabs'])
-        ok(prog[2]['tabs'] == ['traps', 'monster', 'loot', 'object', 'dungeon', 'deck'], 'run 3: + Obiekty (%s)' % prog[2]['tabs'])
-        ok(len(prog[3]['tabs']) == 6, 'run 4: everything')
+        ok(prog[0]['tabs'] == ['traps', 'monster', 'loot', 'dungeon', 'deck'], 'wave 3: the same tabs (%s)' % prog[0]['tabs'])
+        ok(prog[1]['tabs'] == ['traps', 'monster', 'loot', 'object', 'dungeon', 'deck'], 'wave 5: + Obiekty (%s)' % prog[1]['tabs'])
+        ok(len(prog[2]['tabs']) == 6, 'wave 7: everything')
+        ok(await page.evaluate('() => __yatd.onbStage()') == 5, 'the full game reached in the first run: learnt')
+        await page.evaluate('() => { const G = __yatd; while (G.modalKind) G.closeModal(); G.endRun("test", "end"); while (G.modalKind) G.closeModal(); }')
         btns = await start(page, 'start-play'); out['btns5'] = btns
         ok(any('start-play: Nowy run' in t for t in btns) and any('start-tut: Samouczek' in t for t in btns), 'learnt: Nowy run + Samouczek (%s)' % btns)
-        # 5. a run quit early does not move the stage on, one left after wave 5 does
-        q = await page.evaluate('''() => { const G = __yatd; G.setOnb(2); const r = [];
-          G.onbDone({ guided: true, stage: 2, wave: 3, result: 'quit' }); r.push(G.onbStage());
-          G.onbDone({ guided: true, stage: 2, wave: 6, result: 'quit' }); r.push(G.onbStage());
-          G.onbDone({ guided: false, stage: 3, wave: 9, result: 'end' }); r.push(G.onbStage()); return r; }''')
-        ok(q == [2, 3, 3], 'quit before wave 5: no step; after: a step; not guided: none (%s)' % q)
+        s = await page.evaluate(STATE)
+        ok(s['stage'] == 4 and not s['guided'], 'the next run is the full game (%s)' % s['stage'])
+        # 5. a first run quit early does not count as learnt, one left after wave 5 does (1.24 B: then the next run is full)
+        q = await page.evaluate('''() => { const G = __yatd; G.setOnb(1); const r = [];
+          G.onbDone({ guided: true, stage: 1, wave: 3, result: 'quit' }); r.push(G.onbStage());
+          G.onbDone({ guided: true, stage: 3, wave: 6, result: 'quit' }); r.push(G.onbStage());
+          G.setOnb(1); G.onbDone({ guided: false, stage: 4, wave: 9, result: 'end' }); r.push(G.onbStage()); return r; }''')
+        ok(q == [1, 5, 1], 'quit before wave 5: not learnt; after: learnt; not guided: nothing (%s)' % q)
         # 6. the first-time cards (the full game of the first runs): a phobia shows its card once
         pp = await page.evaluate('''() => { const G = __yatd; localStorage.removeItem('yatd-pops'); G.setOnb(4); G.setUser(true); G.startGuided(); while (G.modalKind) G.closeModal();
           G.startWave(); let g = 0; while (!G.fl.heroes.length && g++ < 400) G.step(0.05);

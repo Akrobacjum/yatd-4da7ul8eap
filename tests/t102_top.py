@@ -24,7 +24,7 @@ async def main():
         await page.wait_for_timeout(400)
         g = await page.evaluate(PAD); print('fullscreen +16', g)
         if f['full'] and g['app'] != '44px': fails.append('extra gap: ' + g['app'])
-        if g['cvH'] >= n['cvH']: fails.append('the map did not shrink with the gap')
+        # 1.24: the canvas covers the whole screen under the UI (no frame), so it does not shrink with the gap
         await page.screenshot(path=OUT + 'top_fullscreen.png', clip={'x': 0, 'y': 0, 'width': 390, 'height': 200})
         # the settings screen has the slider
         await page.evaluate("(() => { const G = __yatd; while (G.modalKind) G.closeModal(); G.openModal({ type: 'settings' }); })()"); await page.wait_for_timeout(300)

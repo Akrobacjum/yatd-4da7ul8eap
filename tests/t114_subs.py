@@ -49,7 +49,7 @@ async def main():
         ok('spikes' in one['vis'] and 'portrait' not in one['vis'], 'stage 1: Rany shows its tiles')
         await page.click('#sub-fear', force=True); await page.clock.run_for(100)   # aria-disabled: a finger still taps it
         one['tap'] = await page.evaluate("() => [document.querySelector('#sub-dmg').getAttribute('aria-pressed'), document.querySelector('#sub-fear').textContent]")
-        ok(one['tap'][0] == 'true' and 'od 2. runu' in one['tap'][1], 'a tap on the dimmed Strach says when it comes and switches nothing (%s)' % one['tap'])
+        ok(one['tap'][0] == 'true' and ('od 2. runu' in one['tap'][1] or 'od fali' in one['tap'][1]), 'a tap on the dimmed Strach says when it comes and switches nothing (%s)' % one['tap'])
         await page.click('#tab-dungeon'); await page.clock.run_for(300)
         one['loch'] = await page.evaluate("() => ['dig', 'kind', 'effect'].map(id => { const b = document.querySelector('#sub-' + id); return b ? (b.classList.contains('off') ? 'off' : 'on') : 'none'; })")
         ok(one['loch'] == ['on', 'off', 'off'], 'stage 1 Loch: Kopanie on, Komnaty and Efekty dimmed (%s)' % one['loch'])

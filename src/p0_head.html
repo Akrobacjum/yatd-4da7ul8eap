@@ -91,6 +91,8 @@ body {
 }
 #h-score.up { color: var(--ess-hi); text-shadow: 0 0 16px rgba(255, 60, 80, 0.95), 0 0 4px rgba(255, 200, 205, 0.9), 0 2px 0 #000; }
 #h-score.down { color: var(--muted); text-shadow: 0 2px 0 #000; }
+#h-score.afford { animation: afford 1.3s ease-in-out infinite; }   /* 1.24 (D, P1-2): Esencja that buys something */
+@keyframes afford { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); color: #ffd27a; text-shadow: 0 0 14px rgba(255, 210, 122, 0.9), 0 2px 0 #000; } }
 #h-score.pulse { animation: pop 0.32s ease-out; }
 @keyframes pop { 0% { transform: scale(1.22); } 100% { transform: scale(1); } }
 #h-score.hit { animation: hit 0.22s ease-out; }
@@ -131,6 +133,10 @@ body {
 #h-hlabel { font-size: 12.5px; color: var(--muted); font-family: var(--font-body); }
 .hungerrow.hungry #h-hlabel { color: #ff9aa6; }
 .hungerrow.fed #h-hlabel { color: var(--bile); }
+.hungerrow.warn #h-hlabel { color: #ff6b6b; font-weight: 700; }   /* 1.24 (D, P0-2): hunger may eat a crystal in the coming wave */
+.hungerrow.warn .heart { animation-duration: 0.45s; color: #ff3b4e; }
+.note.crywhy { color: #ff8a8a; font-weight: 600; }   /* 1.24 (D, P0-2): why a crystal went */
+label.askno { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); margin-top: 10px; }   /* 1.24 (D, P1-2) */
 .barrow { gap: 10px; }
 .barrow .bar { flex: 1; }
 .hud-row > * { white-space: nowrap; }
@@ -171,13 +177,13 @@ body {
 .eqrow > * { overflow: visible !important; }
 .eqrow .eq {
   display: inline-flex; flex-direction: column; align-items: center; padding: 2px 7px 3px; border-radius: var(--r);
-  background-color: var(--panel); border: 1px solid var(--line); line-height: 1.08; min-width: 48px;
+  background-color: rgba(14, 15, 18, 0.5); border: 1px solid rgba(70, 75, 83, 0.55); line-height: 1.08; min-width: 48px;   /* 1.24 (B): over the map */
   box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 rgba(0, 0, 0, 0.45);
 }
 .eqrow .eq i { font-style: normal; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .eqrow .eq b { font-size: 15px; font-variant-numeric: tabular-nums; transition: opacity 0.3s; display: inline-block; }
 .eqrow #eq-g b { color: var(--violet-hi); } .eqrow #eq-c b { color: var(--gold-hi); } .eqrow #eq-k b, .eqrow #eq-r b { color: var(--ice); }
-.eqrow .res { border-color: #6e1c27; background-color: #231215; } .eqrow .res b { color: var(--ess); text-shadow: 0 0 8px rgba(255, 60, 80, 0.6); }
+.eqrow .res { border-color: #6e1c27; background-color: rgba(35, 18, 21, 0.6); } .eqrow .res b { color: var(--ess); text-shadow: 0 0 8px rgba(255, 60, 80, 0.6); }
 .eqrow .op { color: var(--dim); font-size: 13px; }
 .eqrow.idle #eq-g b, .eqrow.idle #eq-e b { opacity: 0.45; }
 .eqrow .eq.pop b { animation: eqpop 0.3s ease-out; }
@@ -210,15 +216,26 @@ body {
 #btn-speed.on { border-color: var(--gold); color: var(--gold); }
 
 /* ---------- the map ---------- */
-#stage { flex: 1; min-height: 0; position: relative; overflow: hidden; border-radius: 4px; box-shadow: 0 0 0 1px #000, 0 0 0 3px #24272c, 0 0 0 4px #000, 0 6px 18px rgba(0, 0, 0, 0.6); }
-#cv { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; border-radius: 4px; touch-action: none; cursor: grab; }
+/* 1.24 (B): no frame. #stage is the free part of the screen (the camera frames the dungeon in it); the canvas lies under the whole
+   screen and the HUD, the tray and the buttons stand on the map */
+#stage { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+#cv { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 0; display: block; touch-action: none; cursor: grab; }
+.hud, .drawer, .actions { position: relative; z-index: 2; }
+.hud, .hud-row { pointer-events: none; }   /* a tap between the HUD's pieces reaches the map */
+#h-eq { justify-self: center; }   /* the equation (a button) only as wide as its boxes */
+#h-wave, #h-mid, #h-right, #h-time, #h-eq, #h-hrow .heart, #h-hlabel, #h-rank, #h-mult { pointer-events: auto; }
+.hud::before { content: ""; position: absolute; z-index: -1; left: -50vw; right: -50vw; top: calc(-1 * max(8px, var(--safe-top)) - 2px); bottom: -26px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(5, 6, 8, 0.8) 0%, rgba(5, 6, 8, 0.55) 62%, rgba(5, 6, 8, 0)); }
+.drawer::before { content: ""; position: absolute; z-index: -1; left: -50vw; right: -50vw; top: -30px; bottom: -160px; pointer-events: none;
+  background: linear-gradient(0deg, rgba(5, 6, 8, 0.9) 0%, rgba(5, 6, 8, 0.72) 70%, rgba(5, 6, 8, 0)); }
+#h-time, #h-best, #h-hlabel, #h-rank, #h-mult, .tab, #tray-label, .eqrow .eq i, .eqrow .op { text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, 0.9); }
 /* candlelight that breathes, and the dark that eats the corners */
 #stage::before {
-  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; border-radius: 4px;
+  content: ""; position: fixed; inset: 0; z-index: 1; pointer-events: none;   /* 1.24 (B): over the whole screen */
   background: radial-gradient(90% 70% at 50% 45%, rgba(255, 150, 70, 0.045), transparent 70%);
   animation: candle 3.2s steps(1, end) infinite;
 }
-#stage::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; border-radius: 4px; box-shadow: inset 0 0 50px 12px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(200, 215, 235, 0.06); }
+#stage::after { content: ""; position: fixed; inset: 0; z-index: 1; pointer-events: none; box-shadow: inset 0 0 70px 14px rgba(0, 0, 0, 0.6); }   /* 1.24 (B): the dark at the screen's edges, no frame line */
 @keyframes candle { 0% { opacity: 1; } 13% { opacity: 0.75; } 21% { opacity: 1; } 47% { opacity: 0.85; } 52% { opacity: 0.6; } 58% { opacity: 1; } 81% { opacity: 0.8; } 90% { opacity: 1; } }
 /* the wave banner over the map */
 #banner { position: absolute; left: 0; right: 0; top: 34%; z-index: 2; display: grid; justify-items: center; gap: 2px; pointer-events: none; text-align: center; }
@@ -231,7 +248,7 @@ body {
 @keyframes bannerb { 0% { transform: scale(1.5); letter-spacing: 0.3em; filter: blur(4px); } 18% { transform: scale(1); letter-spacing: 0.02em; filter: blur(0); } 100% { transform: scale(0.98); } }
 /* a red pulse at the edge of the map when a crystal goes missing */
 #stage.alarm::after { animation: alarm 0.9s ease-out; }
-@keyframes alarm { 0% { box-shadow: inset 0 0 60px 24px rgba(200, 20, 30, 0.75), inset 0 0 0 2px rgba(255, 80, 80, 0.8); } 100% { box-shadow: inset 0 0 50px 12px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(200, 215, 235, 0.06); } }
+@keyframes alarm { 0% { box-shadow: inset 0 0 70px 26px rgba(200, 20, 30, 0.75); } 100% { box-shadow: inset 0 0 70px 14px rgba(0, 0, 0, 0.6); } }
 /* the orbs fly over everything (but under the screens) */
 #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 6; }
 
@@ -258,6 +275,11 @@ body {
 #tip .tg { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 #tip p { margin: 0; font-size: 14px; line-height: 1.4; color: var(--ink); }
 #tip .tw { font-size: 12.5px; color: #ff9aa6; }
+#tip .tlb { display: flex; gap: 6px; }   /* 1.24 (B, P1-4): Rani / Straszy */
+#tip .tlb span { display: inline-flex; align-items: center; gap: 5px; font: 600 11.5px var(--font-body); letter-spacing: 0.03em; padding: 1px 7px 2px; border-radius: 2px; }
+#tip .tlb span::before { content: ""; width: 6px; height: 6px; transform: rotate(45deg); background: currentColor; }
+#tip .tlb .hurt { color: #ff9a9a; border: 1px solid #6e1c27; } #tip .tlb .scare { color: var(--violet-hi); border: 1px solid var(--violet-lo); }
+.note.fearline { text-align: center; color: var(--muted); } .note.fearline b { color: var(--ink); font-family: var(--font-num); font-weight: 400; font-size: 14px; } .note.fearline .sc, .note.fearline .sc b { color: var(--violet-hi); }   /* 1.24 (B, P1-4) */
 @keyframes tipin { from { opacity: 0; transform: translate(-50%, 6px) scale(0.98); } to { opacity: 1; transform: translate(-50%, 0); } }
 
 /* ---------- the drawer: tabs and the tray ---------- */
@@ -275,7 +297,7 @@ body {
 #tray-label { min-width: 132px; text-align: center; padding: 4px 18px 5px; border: 1px solid #5c4b28; border-radius: var(--r); background-color: #1b1914; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 #000; }
 #drawer-body { display: grid; gap: 6px; }
 #drawer-body > * { min-width: 0; }   /* eight tabs: the row never widens the page */
-.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); box-shadow: 0 1px 0 var(--edge); }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid rgba(70, 75, 83, 0.6); }
 .tab {
   position: relative; flex: 1 1 auto; min-width: 0; font: inherit; font-size: 12.5px; padding: 6px 2px 7px; border: 0; border-radius: 0;
   background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; overflow: hidden; transition: color 0.15s;
@@ -290,7 +312,7 @@ body {
 @media (max-width: 340px) { .tabs .tab { font-size: 9.5px; } }
 .tray { position: relative; display: flex; flex-wrap: nowrap; gap: 6px; height: 64px; padding-bottom: 2px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; -webkit-touch-callout: none; }   /* one row, scrolled sideways, every tab the same height */
 .tray::-webkit-scrollbar { display: none; }
-.tray > .item { flex: 0 0 74px; height: 60px; scroll-snap-align: start; }   /* a part of the next tile peeks out: there is more to scroll */
+.tray > .item { flex: 0 0 74px; height: 60px; scroll-snap-align: start; background-color: rgba(20, 21, 25, 0.84); }   /* 1.24 (B): over the map */   /* a part of the next tile peeks out: there is more to scroll */
 .tray > .item.dslot { flex-basis: 100px; }
 /* 1.14: sub-tabs (Rany / Strach) in a row under the tabs; the row keeps its height on tabs without subs (the map does not jump) */
 .subtabs { display: flex; gap: 6px; height: 24px; margin-top: -1px; }
@@ -609,6 +631,12 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .slot.st { border-style: dashed; background: transparent; }
 .slot.empty { border-style: dashed; border-top-width: 1px; color: var(--muted); opacity: 0.55; cursor: default; }
 .slot.sel { outline: 2px solid var(--gold); outline-offset: -2px; }
+/* 1.24: a fused ★ card (two copies in one): a golden frame and name */
+.slot.fused, .item.dslot.fused, .sheet.fused { border-color: #d9b14a; border-top-color: #f2c94c; box-shadow: inset 0 0 0 1px rgba(242, 201, 76, 0.45), 0 0 8px rgba(242, 201, 76, 0.25); color: #f2d98a; }
+.item.dslot.fused .dnm, .sheet.fused b { color: #f2c94c; }
+.offer.fuse, .cardpick.fuse { box-shadow: inset 0 0 0 1px rgba(242, 201, 76, 0.5); }
+.offer .fit.fz, .cardpick.fuse .cx { color: #f2c94c; }
+.fuseline { color: #f2c94c; font-weight: 700; }
 @media (max-height: 720px) {
   .card.screen { gap: 6px; padding: 10px 10px 8px; } .scr-body { gap: 6px; } .card .scr-head h2 { font-size: 24px; } .scr-big b { font-size: 24px; }
   .wchart { height: 48px; } .slot { height: 29px; } .scr-head { padding-bottom: 4px; }
@@ -700,9 +728,34 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .survey textarea { font: inherit; font-size: 14px; color: var(--ink); background: #0b0c0e; border: 1px solid var(--line); border-radius: var(--r); padding: 8px 10px; min-height: 64px; resize: vertical; -webkit-user-select: text; user-select: text; }
 .webrow .btn { text-align: center; }
 
+/* 1.24 (B): a phone held sideways: the controls in a column on the right, the map on the left (and under everything) */
+@media (orientation: landscape) and (max-height: 560px) {
+  #app { max-width: none; display: grid; grid-template-columns: minmax(0, 1fr) min(360px, 46vw); grid-template-rows: auto minmax(0, 1fr) auto auto; column-gap: 14px; row-gap: 6px; }
+  .hud { grid-column: 2; grid-row: 1; gap: 3px; }
+  #stage { grid-column: 1; grid-row: 1 / span 4; }
+  .drawer { grid-column: 2; grid-row: 3; }
+  .actions { grid-column: 2; grid-row: 4; }
+  #h-rankrow { display: none !important; }
+  .hud::before { left: -14px; right: -60px; top: calc(-1 * max(8px, var(--safe-top)) - 2px); bottom: -100vh; background: linear-gradient(90deg, rgba(5, 6, 8, 0), rgba(5, 6, 8, 0.72) 14px, rgba(5, 6, 8, 0.8)); }
+  .drawer::before { display: none; }
+  #h-wave { font-size: 19px; } #h-score { font-size: 22px; } .hud-row { gap: 6px; }
+  .eqrow .eq { padding: 1px 5px 2px; min-width: 44px; } .eqrow .eq b { font-size: 13.5px; } .eqrow .eq i { font-size: 8.5px; }
+  .tabs .tab { font-size: 11px; padding-inline: 1px; letter-spacing: -0.02em; }
+  .tray { height: 58px; } .tray > .item { height: 54px; flex-basis: 70px; }
+  #btn-action { font-size: 18px; min-height: 42px; padding: 5px 8px 6px; } .actions .iconbtn { min-height: 42px; width: 44px; }
+  .handle { height: 26px; }
+  #coach { left: 6px; right: 6px; }
+}
+/* 1.24 (C): when nothing moves and nothing was touched for 2 s the map stands still, and so do the endless decorations (each of them
+   made the phone draw the whole screen again 60 times a second): the candle light, the heart's beat, the hunger bar's sheen, the
+   next wave's pip, the ready button's ember and the gold pulse of Esencja that buys something (gold and still meanwhile, as with
+   reduced motion). A tap starts them again. Only these: an entrance or a fade never waits. */
+html.still #stage::before, html.still .hungerrow .heart, html.still .hbar i::after, html.still .pips i.cur, html.still #btn-action.ready { animation-play-state: paused; }
+html.still #h-score.afford { animation: none; color: #ffd27a; }
 /* motion is decoration here: people who asked for less get the still version */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: 0.001ms !important; }
   #stage::before { animation: none; }
+  #h-score.afford { color: #ffd27a; }   /* 1.24 (D): still, but gold */
 }
 </style>

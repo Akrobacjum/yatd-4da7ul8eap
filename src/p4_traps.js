@@ -4,6 +4,7 @@
   // the thief, elites and amulets spot traps before they fire. Known traps are avoided if they can be.
   function learnTrap(it, how, by) {
     if (it.detected) return;
+    if (how !== 'seen' && run && run.tut >= 0 && run.wave === 1 && it.type === 'spikes' && !(it.w && it.w.f > 0)) return;   // 1.24: the guide's first spikes are not spotted (and walked around) before they have fired once
     it.detected = true; fl.threatDirty = true;
     if (how === 'seen') { fl.stats.learned++; floatTile(it.x, it.y, 'Zapamiętali', '#ffe066', 12, -0.5); }
     if (by) { sawAdd(by, itemTags(it)); sayNow(itemTags(it), () => say(by, how === 'seen' ? pick(SAY.learn) : how === 'tap' ? pick(SAY.tapFound) : (gearR(by, 'amulet') && by.type !== 'thief' ? pick(SAY.amulet) : pick(SAY.detect)), 2)); }   // 1.17.1: he sees what he found (1.22: 'tap', found with a stick)
@@ -88,7 +89,8 @@
   const calmReady = it => mods.calmStorm > 0 && TRAPS[it.type] && (it.lastFire == null || fl.time - it.lastFire >= 20);
   const heartFed = () => { if (!mods.heartbeat) return false; const n = hungerNeed(run.wave); return n > 0 && fl.fed >= n; };   // Bijące serce (1.01: the heart is fed in this wave)   // Bijące serce (v15: you hold enough to feed the heart)
   const trapBoost = it => !TRAPS[it.type] ? 1 : (heartFed() ? 1 + mods.heartbeat : 1) * (calmReady(it) ? 1 + mods.calmStorm : 1) * (1 + mods.bloodRite * fl.stats.kills) * (1 + 0.01 * Math.floor((run.stacks.tempered || 0) / 4) * mods.tempered);
-  const lvlPow = it => TRAPS[it.type] ? LVL_POW[it.lvl || 1] : 1;   // monsters grow through HP and power instead
+  const lvlAt = (T, L) => L < T.length ? T[L] : T[T.length - 1] * Math.pow(T[T.length - 1] / T[T.length - 2], L - T.length + 1);   // 1.24: past level 3 the last step again
+  const lvlPow = it => { const f = (mods.fuseLv && mods.fuseLv[it.type]) || 0, L = it.lvl || 1; return TRAPS[it.type] ? lvlAt(LVL_POW, L + f) : f ? lvlAt(LVL_MON, L + f) / LVL_MON[L] : 1; };   // monsters grow through HP and power instead; 1.24: a fused ★ card for it: one level more
   // Setting a hero on fire; with Pożoga the flames jump to the heroes right next to him (one hop).
   function ignite(h, by, dur) {
     h.burnUntil = Math.max(h.burnUntil, fl.time + (dur || 3)); h.burnBy = by;
@@ -202,7 +204,7 @@
       }
       case 'trapdoor':
         it.cd = cdBase; it.anim = 0.6;
-        list.filter(h => !(h.fellFrom && h.fellFrom.has(it))).forEach(h => { damage(h, 20 * D * mods.fallDmg * pw, it, cpow); if (!h.dead) fall(h, pw, it); hit++; });
+        list.filter(h => !tdSafe(h, it)).forEach(h => { damage(h, 20 * D * mods.fallDmg * pw, it, cpow); if (!h.dead) fall(h, pw, it); hit++; });
         break;
       case 'cage':
         it.cd = cdBase; it.anim = 0.4;
@@ -342,7 +344,7 @@
       case 'shaman': {
         it.cd = cdBase;
         const r = roomOf(it.x, it.y);
-        fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && roomOf(m.x, m.y) === r) m.hp = Math.min(m.max, m.hp + 60 * pw); });
+        fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && roomOf(m.x, m.y) === r) shamanHeal(it, m, 60 * pw); });   // 1.24 (C, addendum 2): counted, shown, a trace of Groza
         fxTiles(area, '120,220,130', 0.4);
         floatTile(it.x, it.y, 'Leczenie potworów', '#8be38f', 13, -0.6);
         hit = -1;
@@ -382,6 +384,7 @@
       }
     }
     fl.surprise = false;
+    trapFx(it, area);   // 1.24 (B): the trap's own animation
     // 1.18 Sprzężone tryby: a trap going off in Zębatki winds the other traps of that room on by 1 s a copy (not an echo or a choir, no loops)
     if (mods.gearlink && TRAPS[it.type] && !opt.echo && !opt.choir) {
       const gr = slotRoom(it.type, it.x, it.y);
@@ -413,8 +416,12 @@
   }
   // Trapdoor: down into the dark, out somewhere else a few seconds later, alone and shaken.
   // A hero falls through a given trapdoor once per wave: after that he knows where the edge is and steps around it.
+  // 1.24 (author: trapdoors are too strong): at most 2 falls a hero a wave (any trapdoors), 1 for an elite (rank 2+) or a hero of
+  // level 12+; after that he sees every trapdoor (one he stands at is known to the party, checkWanted) and none fires on him
+  const tdCap = h => (h.rank >= 2 || h.lvl >= 12) ? 1 : 2;   // 1.24
+  const tdSafe = (h, it) => (!!h.fellFrom && h.fellFrom.has(it)) || (h.tdFalls || 0) >= tdCap(h);   // 1.24
   function fall(h, pw, it) {
-    if (it) { (h.fellFrom = h.fellFrom || new Set()).add(it); learnTrap(it, 'seen', null); if (t3(it)) h.deepFall = true; }
+    if (it) { (h.fellFrom = h.fellFrom || new Set()).add(it); h.tdFalls = (h.tdFalls || 0) + 1; learnTrap(it, 'seen', null); if (t3(it)) h.deepFall = true; }   // 1.24: tdFalls
     h.fallRoom = it ? slotRoom('trapdoor', it.x, it.y) : -1; h.fallRk = it ? rkOf(h.fallRoom) : null;   // 1.18: Cela pod zapadnią
     h.gone = true; h.state = 'fallen'; h.fallUntil = fl.time + mods.fallTime * Math.max(1, pw); h.outR = realNow; h.outKind = 'fall';   // 1.09: sinks into the floor
     h.path = []; h.nx = null; h.ny = null; h.prog = 0; h.foe = null; h.item = null;
@@ -564,13 +571,31 @@
       }
     });
   }
+  // 1.24 (C, addendum 2: the author): the shaman's heals show as a green "+N" over the healed monster, merged per second, and pay
+  // a trace of Groza (SHAMAN_GZ x healed HP / the monster's max HP) through addPts as a passive source of the shaman (its card and
+  // the summary show it). The HP healed is exactly what it was (the heal itself is unchanged).
+  const SHAMAN_GZ = 0.02;
+  function shamanHeal(sh, m, amt) {
+    const real = Math.min(m.max, m.hp + amt) - m.hp; if (!(real > 0)) return;
+    m.hp += real; m.healAcc = (m.healAcc || 0) + real; m.healBy = sh; if (m.healT0 == null) m.healT0 = fl.time;
+  }
+  function healFlush(m) {
+    const amt = m.healAcc || 0, sh = m.healBy; m.healAcc = 0; m.healT0 = null; if (!(amt > 0) || !sh) return;
+    const n = Math.round(amt);
+    if (n >= 1 && m.hp > 0) { if (m.gx !== undefined) addFloat(m.gx, m.gy, '+' + n, '#7fe08a', 13, -0.5); else floatTile(m.x, m.y, '+' + n, '#7fe08a', 13, -0.5); }
+    const e = addPts(SHAMAN_GZ * amt / m.max, null, null);
+    bt('shaman').passivePts += e; fl.stats.shamanHeal = (fl.stats.shamanHeal || 0) + amt;
+    const w = sh.w || (sh.w = { f: 0, h: 0, p: 0, k: 0 }); w.p += e; w.hl = (w.hl || 0) + amt;
+  }
   function monstersTick(dt) {
     fl.items.forEach(m => {
-      if (!MONSTERS[m.type] || m.hp <= 0) return;
+      if (!MONSTERS[m.type]) return;
+      if (m.healAcc > 0 && fl.time - m.healT0 >= 1) healFlush(m);   // 1.24 (C, addendum 2): once a second
+      if (m.hp <= 0) return;
       if (m.flash > 0) m.flash -= dt;
       const room = roomOf(m.x, m.y);
       if (m.type === 'shaman') fl.items.forEach(o => {
-        if (MONSTERS[o.type] && o.hp > 0 && o.hp < o.max && Math.max(Math.abs(o.x - m.x), Math.abs(o.y - m.y)) <= 2) o.hp = Math.min(o.max, o.hp + 8 * dt);
+        if (MONSTERS[o.type] && o.hp > 0 && o.hp < o.max && Math.max(Math.abs(o.x - m.x), Math.abs(o.y - m.y)) <= 2) shamanHeal(m, o, 8 * dt);   // 1.24 (C, addendum 2)
       });
       if (m.type === 'archer') {
         m.shot -= dt;
