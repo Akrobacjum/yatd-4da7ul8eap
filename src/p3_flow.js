@@ -807,7 +807,7 @@
     { const bossE = fl.queue.find(e => e.boss), n = fl.queue.length;   // Prototype 1.0: a banner over the map says who is coming
       showBanner('Fala ' + run.wave, (bossE ? 'prowadzi ich ' + (bossE.boss === 'final' ? 'bohater z przepowiedni' : 'czempion') : n === 1 ? '1 bohater' : n + ' bohaterów') +
         (fl.spawnAt === 'breach' ? ' · wchodzą przez wyłom!' : fl.breach ? ' · wchodzą drzwiami' : ''));
-      if (run.wave === 1 && run.tut < 0) setHint('Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.'); }
+      if (run.wave === 1 && run.tut < 0) setHint(PC() ? 'Kamera śledzi drużynę. Przytrzymaj F (albo przycisk myszy na mapie), żeby przyspieszyć. Skill check odpalasz kliknięciem w mapę albo spacją.' : 'Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.'); }
     fl.tl = { ev: [], smp: [], smpT: 0 };
     fl.essW0 = fl.essence; fl.itemsW0 = fl.items.size; fl.roomsW0 = run.layout.cells.size;   // 1.24 (D, P0-6): essenceAtWaveStart, itemsCount, roomsCount
     run.waveStart = snapshotLayout();

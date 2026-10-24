@@ -789,12 +789,14 @@
   const viewSettling = () => VIEW.t < 1;
   // Building: you move it. Raid: it follows the party and zooms out as they spread; a drag takes over for a few seconds.
   const fitScale = () => Math.min(cw / viewW(), ch / viewH());
-  const buildScale = () => clamp(cw / 10.5, fitScale(), 44);
-  const MAX_S = 56;
-  function clampCam() {
-    const mw = viewW() * cam.s, mh = viewH() * cam.s;
-    cam.ox = mw <= cw ? (mw - cw) / 2 : clamp(cam.ox, -cw * 0.3, mw - cw * 0.7);
-    cam.oy = mh <= ch ? (mh - ch) / 2 : clamp(cam.oy, -ch * 0.3, mh - ch * 0.7);
+  const buildScale = () => clamp(cw / 10.5, fitScale(), 44 * UIZ);   // 1.25: closer on a big screen (the dungeon was small in the middle of a monitor)
+  let MAX_S = 56;   // 1.25: x UIZ (applyLayout)
+  // free: a drag, the touchpad or the keys move it: a dungeon smaller than the view still moves a quarter of the view each way
+  // (1.25, author: on a computer dragging did nothing; with the whole dungeon in view the camera stood in the middle)
+  function clampCam(free) {
+    const mw = viewW() * cam.s, mh = viewH() * cam.s, fx = free ? cw * 0.25 : 0, fy = free ? ch * 0.25 : 0;
+    cam.ox = mw <= cw ? clamp(cam.ox, (mw - cw) / 2 - fx, (mw - cw) / 2 + fx) : clamp(cam.ox, -cw * 0.3, mw - cw * 0.7);
+    cam.oy = mh <= ch ? clamp(cam.oy, (mh - ch) / 2 - fy, (mh - ch) / 2 + fy) : clamp(cam.oy, -ch * 0.3, mh - ch * 0.7);
   }
   function centerOnView(u, v) { cam.ox = u * cam.s - cw / 2; cam.oy = v * cam.s - ch / 2; clampCam(); }
   function centerOn(tx, ty) { centerOnView(vX(tx, ty), vY(tx, ty, 0)); }
@@ -818,7 +820,7 @@
     const m = 3.2, bw = x1 - x0 + 2 * m, bh = y1 - y0 + 2 * m * 0.8;
     // 1.04: with the tutorial coach at the top of the map the party is framed in the space below it (the door is at the top)
     const ins = coachInset, hc = ins + (ch - ins) / 2;
-    const ts = clamp(Math.min(cw / bw, (ch - ins) / bh), fitScale(), 34);
+    const ts = clamp(Math.min(cw / bw, (ch - ins) / bh), fitScale(), Math.max(34, buildScale()));   // 1.25: on a big screen as close as the build (was 34 px a tile: a small dungeon in the middle of a monitor; a phone keeps 34)
     const k = 1 - Math.exp(-rdt * 2.6);
     const cx = (cam.ox + cw / 2) / cam.s, cy = (cam.oy + hc) / cam.s;
     const tx = (x0 + x1) / 2, ty = (y0 + y1) / 2;
@@ -932,7 +934,26 @@
     const p = heroPos(h), V = splitViews(), c = V ? V[SPLIT.gid.get(h.id) || 0] : cam;
     return { x: vX(p.x, p.y) * c.s - c.ox, y: vY(p.x, p.y, 0.6) * c.s - c.oy };
   }
+  // 1.25 (author: the prototype on a phone, a tablet and a computer): the screen decides the layout. --ui (the short side / 600,
+  // 1 to 1,3 in steps of 0,05) makes the interface bigger on a tablet or a monitor (CSS zoom on the HUD, the tray, the buttons and the
+  // cards; the canvas draws its panels that much bigger too). html.wide: wider than tall and taller than a phone held sideways (more
+  // than 560 px): the build in a panel on the right, the HUD in the top left corner over the map (a phone sideways keeps the 1.24
+  // column). html.mouse: a mouse is the pointer (a touch takes it away again): hover tips and the texts say click.
+  let ZOOM_OK = true; try { ZOOM_OK = !window.CSS || CSS.supports('zoom', '2'); } catch (e) {}   // a browser without CSS zoom (Firefox before 126) keeps the phone's size
+  function applyLayout() {
+    const w = innerWidth, h = innerHeight, de = document.documentElement;
+    const z = ZOOM_OK ? clamp(Math.round(Math.min(w, h) / 600 * 20) / 20, 1, 1.3) : 1, wide = w >= h * 1.1 && h > 560;
+    if (z !== UIZ || de.style.getPropertyValue('--ui') === '') { UIZ = z; MAX_S = 56 * z; de.style.setProperty('--ui', String(z)); }
+    de.classList.toggle('big', z > 1); de.classList.toggle('wide', wide);
+  }
+  try { if (matchMedia('(hover: hover) and (pointer: fine)').matches) document.documentElement.classList.add('mouse'); } catch (e) {}
+  ['pointerdown', 'pointermove'].forEach(ev => window.addEventListener(ev, e => {
+    const m = e.pointerType === 'mouse'; if (ev === 'pointermove' && !m) return;
+    if (m !== document.documentElement.classList.contains('mouse')) document.documentElement.classList.toggle('mouse', m);
+  }, { capture: true, passive: true }));
+  applyLayout();
   function resize() {
+    applyLayout();
     DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));   // 1.03: at most 2x (3x is 2,25 times the pixels for little to see)
     const rect = stage.getBoundingClientRect();
     const had = cw > 0, cx = had ? (cam.ox + cw / 2) / cam.s : 0, cy = had ? (cam.oy + ch / 2) / cam.s : 0;

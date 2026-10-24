@@ -38,6 +38,8 @@
   let floats = [], particles = [], shake = 0, realNow = 0;
   const cam = { s: 24, ox: 0, oy: 0, manualUntil: 0 };
   let cw = 0, ch = 0, DPR = 1, coachInset = 0;   // 1.04: coachInset = how much of the map's top the tutorial coach covers
+  let UIZ = 1;   // 1.25: how much bigger the interface is on a big screen (1 on a phone, up to 1,3 on a tablet or a computer; applyLayout)
+  const PC = () => document.documentElement.classList.contains('mouse');   // 1.25: played with a mouse (the texts say click and hover)
   let OX = 0, OY = 0, FW = 0, FH = 0;   // 1.24 (B): the canvas covers the whole screen (FW x FH); the camera's view (cw x ch, #stage) starts at OX, OY in it
 
   const $ = s => document.querySelector(s);

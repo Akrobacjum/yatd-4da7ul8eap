@@ -746,6 +746,44 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
   .handle { height: 26px; }
   #coach { left: 6px; right: 6px; }
 }
+/* 1.25 (author: a phone, a tablet and a computer): html.big (--ui > 1, a tablet or a monitor) makes the interface bigger with CSS zoom
+   (the canvas stays the size of the screen: it draws its own panels x --ui); html.wide (wider than tall, taller than 560 px) puts the
+   build in a panel on the right, the HUD in the top left corner over the map and the map in all the rest */
+html.big .hud, html.big .drawer, html.big .actions, html.big #coach, html.big #banner, html.big .overlay > .card, html.big #tip, html.big #toast, html.big #hov { zoom: var(--ui, 1); }
+html.big #app { max-width: none; }
+html.wide #app { max-width: none; display: grid; grid-template-columns: minmax(0, 1fr) min(calc(340px * var(--ui, 1)), 42vw); grid-template-rows: auto minmax(0, 1fr) auto; column-gap: calc(16px * var(--ui, 1)); row-gap: 8px; }
+html.wide .hud { grid-column: 1; grid-row: 1; width: min(100%, 540px); justify-self: start; }
+html.wide .hud::before { right: -90px; bottom: -36px; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 90px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 90px), transparent); }
+html.wide #stage { grid-column: 1; grid-row: 2 / span 2; }
+html.wide .drawer { grid-column: 2; grid-row: 1 / span 2; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+html.wide .handle { align-self: center; flex: none; }
+html.wide #drawer-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+html.wide .subtabs { flex: none; }
+html.wide .tray { flex: 1 1 auto; min-height: 0; height: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); grid-auto-rows: 62px; align-content: start; gap: 6px;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: none; padding: 2px 2px 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; -webkit-mask-image: none; mask-image: none; }
+html.wide .tray::-webkit-scrollbar { display: block; width: 6px; } html.wide .tray::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+html.wide .tray > .item { height: auto; min-height: 0; }
+html.wide .actions { grid-column: 2; grid-row: 3; }
+html.wide .drawer::before { left: -16px; right: -80px; top: -100vh; bottom: -100vh; background: linear-gradient(90deg, rgba(5, 6, 8, 0), rgba(5, 6, 8, 0.8) 16px, rgba(5, 6, 8, 0.88)); }
+/* folded (a wave, or folded by hand): the map takes the panel's column too; the fold button and the action bar stand on it */
+html.wide #app.trayclosed #stage { grid-column: 1 / span 2; }
+html.wide #app.trayclosed .drawer::before { display: none; }
+html.wide #app.trayclosed .actions::before { content: ""; position: absolute; z-index: -1; left: -40px; right: -30px; top: -40px; bottom: -30px; pointer-events: none; background: radial-gradient(closest-side, rgba(5, 6, 8, 0.8), rgba(5, 6, 8, 0)); }
+html.wide #coach:not(.top) { right: auto; width: min(460px, calc(100% - 16px)); }
+/* the tip of a tile in the panel: beside the panel, level with the tile (placed by showTip) */
+#tip.side { left: auto; transform: none; width: 360px; animation: tipside 0.16s ease-out; }
+@keyframes tipside { from { opacity: 0; transform: translateX(6px); } to { opacity: 1; transform: none; } }
+/* 1.25: with a mouse: a tip over what is under the pointer on the map, the tiles' number keys, the pointer's shape */
+#hov { position: fixed; z-index: 8; pointer-events: none; max-width: 270px; display: grid; gap: 2px; padding: 6px 10px 7px; border-radius: var(--r);
+  background-color: rgba(16, 17, 21, 0.96); border: 1px solid var(--line2); border-left: 3px solid #6b7079; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7), inset 0 1px 0 var(--edge);
+  font-size: 13px; line-height: 1.32; color: var(--ink); animation: fadein 0.12s ease-out; }
+#hov b { font: 700 17px/1.05 var(--font-display); } #hov .hs { color: var(--muted); font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; } #hov .hk { color: var(--muted); font-size: 12px; }
+#hov .tlb { display: flex; gap: 5px; } #hov .tlb span { font: 600 11px var(--font-body); padding: 0 6px 1px; border-radius: 2px; } #hov .tlb .hurt { color: #ff9a9a; border: 1px solid #6e1c27; } #hov .tlb .scare { color: var(--violet-hi); border: 1px solid var(--violet-lo); }
+html.mouse .tray > .item[data-k]::after { content: attr(data-k); position: absolute; left: 4px; top: 2px; font: 400 11px/1 var(--font-num); color: var(--dim); }
+html.mouse.hovpt #cv { cursor: pointer; }
+html.dragging #cv, html.mouse.dragging.hovpt #cv { cursor: grabbing; }
+.keys { width: 100%; border-collapse: collapse; font-size: 14px; } .keys td { padding: 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; } .keys td:first-child { white-space: nowrap; padding-right: 12px; color: var(--gold-hi); font-weight: 600; }
+kbd { font: 400 13px var(--font-num); padding: 0 5px 1px; border: 1px solid var(--line2); border-bottom-width: 2px; border-radius: 3px; background: #121317; color: var(--ink); }
 /* 1.24 (C): when nothing moves and nothing was touched for 2 s the map stands still, and so do the endless decorations (each of them
    made the phone draw the whole screen again 60 times a second): the candle light, the heart's beat, the hunger bar's sheen, the
    next wave's pip, the ready button's ember and the gold pulse of Esencja that buys something (gold and still meanwhile, as with

@@ -1,8 +1,14 @@
 # 08. Interfejs, sterowanie, kamera, grafika, dźwięk i samouczek
 
-Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 1.24 (`LOG_VERSION = 59`; niżej). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
+Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 1.25 (`LOG_VERSION = 60`; niżej). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
+
+## Zmiany w 1.25 (skrót)
+
+- **Telefon, tablet, komputer** (2.9): `--ui` (krótszy bok / 600, od 1 do 1,3) powiększa interfejs na tablecie i monitorze; ekran szerszy niż wysoki i wyższy niż 560 px ma budowę w panelu po prawej, HUD w lewym górnym rogu mapy, mapę w reszcie (złożony panel oddaje mapie swoją kolumnę). Telefon w pionie i w poziomie bez zmian.
+- **Mysz, touchpad, klawiatura** (4.1, 4.7): przeciągnięcie po włączeniu przyspieszenia kończy je i przesuwa mapę; mapę mniejszą niż ekran da się przesunąć o 1/4 widoku; środkowy przycisk przeciąga; prawy przycisk: opis kafelka albo zdjęcie elementu (drugie kliknięcie potwierdza); kółko przybliża, touchpad przesuwa dwoma palcami, szczypanie przybliża; najechanie pokazuje opis kafelka, elementu albo bohatera; skróty WASD, + -, 1-9, Q/E, Enter, B; okno Menu > Sterowanie.
+- Kamera: limity skali × `--ui`, kamera fali przybliża do skali budowy (5.3, 5.4). Panele rysowane na płótnie (podgląd fali, drużyna, check, dymki, pauza) × `--ui` (6.1). Log: `runs.screen` (`LOG_VERSION = 60`).
 
 ## Zmiany w 1.18-1.24 (skrót)
 
@@ -289,7 +295,7 @@ Przycisku pauzy nie ma od 1.07: pauzą jest otwarty pasek budowy.
 | wys. ≤ 720 px | ekrany: padding 10, nagłówek 24 px, wykres 46-48 px, sloty 29 px, mniejsze kafelki statystyk, ciekawostki w 1 linii |
 | wys. ≤ 680 px | wykres 32 px, bez opisów ciekawostek i małych dopisków |
 | wys. ≤ 600 px | wszystko o stopień ciaśniej, przycisk główny bez podpisu (19 px), sloty 26 px |
-| maks. szer. `#app` | 560 px (tablet: wyśrodkowany) |
+| maks. szer. `#app` | 560 px na telefonie; od 1.25 bez limitu, gdy `--ui` > 1 (2.9) |
 
 W Unity: Canvas Scaler z rozdzielczością referencyjną 390×844, dopasowanie do szerokości; te progi jako warianty układu.
 
@@ -300,6 +306,25 @@ W Unity: Canvas Scaler z rozdzielczością referencyjną 390×844, dopasowanie d
 - **Poziom** (decyzja: stary układ zostawiał mapie 4 px na ekranie 390 px wysokości): przy `orientation: landscape and max-height: 560px` HUD, szuflada i przyciski są kolumną po prawej (`min(360px, 46vw)`), mapa zajmuje lewą stronę i biegnie pod kolumną; zwarty HUD (bez rzędu rangi, mniejsze równanie i pasek).
 - Stuknięcie nad bohaterem przy górnej krawędzi mapy (poza widokiem) trafia w jego figurę i pasek strachu (sprawdzanie także poza mapą; budowa bez zmian).
 - Zrzuty (repo prototypu, `e124/shots/`): `b_port_build.png`, `b_port_raid.png`, `b_land_build.png`, `b_land_raid.png`, `b_frame_390x844.png`, `b_frame_844x390.png` (przed: `before_*`). W Unity: kamera renderuje na cały ekran, UI (Canvas Screen Space Overlay) na wierzchu z gradientami; obszar kadrowania kamery = prostokąt między HUD a szufladą (`Screen.safeArea` minus wysokości UI).
+
+### 2.9 Tablet i komputer (1.25; `p6_loop.js: applyLayout, ZOOM_OK`, `p0_head.html: html.big, html.wide`, `p7_draw.js: uiScaled, uiBack, uiIn`, `p8b_ui.js: showTip, placeToast, placeHov`)
+
+Prośba autora (24.10): prototyp ma działać na telefonie, tablecie i komputerze. Decyzje autora: panel boczny na szerokim ekranie, większy interfejs na dużym ekranie.
+
+| Ekran | Warunek | Układ |
+|---|---|---|
+| telefon w pionie | `--ui` = 1 | jak 1.24 (kolumna 560 px, HUD u góry, szuflada i przyciski na dole) |
+| telefon w poziomie | wys. ≤ 560 px | jak 1.24 (kolumna po prawej, 2.8) |
+| tablet w pionie, wąskie okno | `--ui` > 1, nie szeroki | układ telefonu × `--ui`, na całą szerokość (pasek pokazuje 9-10 kafelków bez przewijania) |
+| szeroki: tablet w poziomie, laptop, monitor | szer. ≥ 1,1 × wys. i wys. > 560 px | mapa po lewej, panel po prawej (`min(340 px × ui, 42vw)`): przycisk ▼ Budowa, zakładki, podzakładki, kafelki w siatce przewijanej w dół, pasek akcji na dole; HUD w lewym górnym rogu mapy (do 540 px × ui); `#stage` pod HUD. Złożony panel (fala albo ręcznie): mapa zajmuje też kolumnę panelu, przycisk i pasek akcji stoją na mapie |
+
+- `--ui` = krótszy bok / 600, zaokrąglone do 0,05, od 1 do 1,3 (np. 390×844: 1; 1000×700: 1,15; 820×1180, 1366×768, 1920×1080: 1,3). Liczone na starcie i przy każdej zmianie rozmiaru (`applyLayout`). Przeglądarka bez CSS `zoom` zostaje przy 1.
+- Powiększenie: CSS `zoom` na HUD, szufladzie, pasku akcji, samouczku, banerze, kartach okien, podpowiedziach (`#tip`, `#toast`, `#hov`); płótno ma rozmiar ekranu, a swoje panele rysuje × `--ui` (`uiScaled`: transformacja × UIZ, `cw`/`ch` w tych pikselach; prostokąty do stuknięć z powrotem w piksele widoku). Elementy ustawiane z JS dzielą pozycję przez UIZ.
+- Obrót: `manifest.webmanifest` ma od 1.25 `orientation: any` (było `portrait`); pion blokuje tylko telefon (krótszy bok ekranu < 600 px: `lockPhone` przy pełnym ekranie i w zainstalowanej aplikacji), tablet może leżeć poziomo.
+- Podpowiedź kafelka w panelu stoi na lewo od panelu, na wysokości kafelka (`#tip.side`); komunikat nad środkiem mapy.
+- Klasa `mouse`, gdy wskaźnikiem jest mysz (dotyk ją zdejmuje): podpowiedzi po najechaniu, numery kafelków, teksty samouczka "najedź / kliknij prawym / przytrzymaj F".
+- Zrzuty (repo prototypu, `e125/shots/`): `build_*.png`, `raid_*.png`, `tip_*.png`, `menu_*.png` dla 9 ekranów, `keys_card.png`, `mouse_*.png`.
+- W Unity: Canvas Scaler (referencja 390×844) plus mnożnik `ui` z krótszego boku w dp; dwa szablony układu (pion i szeroki) przełączane po proporcjach; panel budowy jako ScrollRect z GridLayoutGroup.
 
 ## 3. Ekrany i okna
 
@@ -473,7 +498,15 @@ Przycisk akcji w budowie: `askUnspent()` przed `startWave()`; gdy zwraca prawdę
 | przytrzymanie | 280 ms bez ruchu, brak pauzy | - | przyspieszenie ×`S.ffSpeed` (3) do puszczenia palca |
 | przeciągnięcie | ruch > 8 px | przesuwa kamerę | przesuwa kamerę, przejmuje ją na 4 s (5.5) |
 | dwa palce | | przybliżanie (pinch), kamera ręczna 5 s | to samo, kończy przyspieszenie |
-| kółko myszy (tylko prototyp) | ×1,15 na ząbek | przybliżanie | przybliżanie |
+| kółko myszy | ×1,15 na ząbek | przybliżanie | przybliżanie |
+| przeciągnięcie po przyspieszeniu (1.25) | ruch > 14 px (mysz), > 26 px (palec) | - | kończy przyspieszenie i przesuwa kamerę (wcześniej kamera stała) |
+| środkowy przycisk (1.25) | | tylko przesuwa | tylko przesuwa |
+| prawy przycisk (1.25) | | na elemencie albo meblu: pyta ("Zdjąć za +N? Prawy jeszcze raz"), drugi w ciągu 3 s zdejmuje (`rcMark`, `holdRemove`) | nic |
+| touchpad: dwa palce (1.25) | `deltaMode` 0 i `deltaX` ≠ 0, albo `|deltaY|` < 40, albo ułamek (i 0,35 s po takim) | przesuwa mapę | przesuwa mapę |
+| touchpad: szczypanie (1.25) | kółko z Ctrl (także Ctrl + kółko myszy); Safari: `gesturechange` | płynne przybliżanie `exp(-dy × 0,01)` | to samo |
+| najechanie myszą (1.25) | 0,3 s bez ruchu, bez przycisku | podpowiedź elementu albo mebla (`#hov`: nazwa, poziom, etykieta, Rani/Straszy, opis, skróty) | podpowiedź bohatera (imię, klasa, poziom, życie, strach %, kryształ) |
+
+Przesuwanie ręczne (przeciągnięcie, touchpad, klawisze) przesuwa też loch mniejszy niż ekran, o 1/4 widoku w każdą stronę (`clampCam(true)`; wcześniej taki loch stał na środku i przeciąganie nic nie robiło). Na kafelku w pasku: najechanie (0,42 s) albo prawy przycisk pokazuje opis; przytrzymanie działa jak dotąd.
 
 Stuknięcie w prostokąt listy drużyny (`uiRects.list`) zwija/rozwija ją; przy rozwiniętej stuknięcie wiersza otwiera kartę bohatera (w fali z pauzą).
 
@@ -542,9 +575,9 @@ W Unity: nie odtwarzać `setHint` ani toastu (rozdz. 10).
 
 Unity: `Handheld.Vibrate` jest za długie; użyj natywnego `Vibrator.vibrate(ms)`/`VibrationEffect` przez JNI (Android), z tymi czasami.
 
-### 4.7 Klawiatura (tylko prototyp)
+### 4.7 Klawiatura (od 1.25 pełna, lista w Menu > Sterowanie, `renderKeys`)
 
-Spacja: odpowiedź na check; P: zwiń/rozwiń pasek w fali (nie przy karcie samouczka); F trzymane: przyspieszenie; Esc: odłóż wybór i to, co w ręce; Ctrl/Cmd+Z: cofnij w budowie. Unity: opcjonalnie skróty w edytorze do testów.
+Spacja: odpowiedź na check; P: zwiń/rozwiń pasek w fali (nie przy karcie samouczka); F trzymane: przyspieszenie; Esc: odłóż wybór i to, co w ręce; Ctrl/Cmd+Z: cofnij w budowie. Od 1.25: W A S D i strzałki trzymane przesuwają mapę (650 px/s); + / - przybliżają ×1,15 wokół środka; 1-9 i 0 wybierają widoczne kafelki po kolei (numer w rogu kafelka przy myszy); Q / E poprzednia i następna zakładka; Enter wypuszcza falę (przez ten sam przycisk, więc pytanie o niewydaną Esencję zostaje); B zwija i rozwija budowę (w fali: pauza). Unity: Input System, te same akcje w wersji na komputer (jeśli powstanie).
 
 ### 4.8 Wyjście z aplikacji
 
@@ -585,8 +618,8 @@ viewW = (WW + WH) * R2;  viewH = (WW + WH) * R2 * SP + HM * CP
 | Wzór / stała | Wartość | Źródło |
 |---|---|---|
 | `fitScale` | `min(cw / viewW, ch / viewH)` (cały loch na mapie) | `fitScale` |
-| `buildScale` | `clamp(cw / 10,5, fitScale, 44)`: ok. 10,5 jednostki widoku na szerokość mapy | `buildScale` |
-| `MAX_S` | 56 px na jednostkę | `zoomAt` |
+| `buildScale` | `clamp(cw / 10,5, fitScale, 44 × ui)`: ok. 10,5 jednostki widoku na szerokość mapy (1.25: × ui) | `buildScale` |
+| `MAX_S` | 56 × ui px na jednostkę (1.25) | `zoomAt` |
 | zakres przybliżania | od `0,95 × fitScale` do 56 | `zoomAt` (przybliża wokół punktu pod palcami/kursorem) |
 | ograniczenie przesuwu | gdy mapa mniejsza niż ekran: wyśrodkowana; inaczej `ox ∈ [-0,3 cw, mw - 0,7 cw]`, `oy ∈ [-0,3 ch, mh - 0,7 ch]` | `clampCam` |
 
@@ -598,7 +631,7 @@ Działa tylko w fali, gdy nie ma pauzy, pasek jest zwinięty i nie ma ręcznego 
 
 1. Punkty: pozycje żywych bohaterów (w `vX`, `vY` z z = 0,5) + pułapka trwającego checku; bez bohaterów: wejście.
 2. Prostokąt z marginesem m = 3,2 (pion m × 0,8): `bw = szer + 2m`, `bh = wys + 1,6m`.
-3. Docelowa skala `ts = clamp(min(cw / bw, (ch - ins) / bh), fitScale, 34)`, gdzie `ins = coachInset` (wysokość coacha u góry mapy; drużyna jest kadrowana pod nim, środek pionowy `hc = ins + (ch - ins)/2`).
+3. Docelowa skala `ts = clamp(min(cw / bw, (ch - ins) / bh), fitScale, max(34, buildScale))` (1.25: na dużym ekranie tak blisko jak w budowie; telefon zostaje przy 34), gdzie `ins = coachInset` (wysokość coacha u góry mapy; drużyna jest kadrowana pod nim, środek pionowy `hc = ins + (ch - ins)/2`).
 4. Wygładzanie: `k = 1 - exp(-rdt × 2,6)` dla skali i środka.
 5. Po przeliczeniu kamera trzyma loch w kadrze z zapasem 0,6 jednostki zamiast pokazywać pustkę (`pad`).
 6. Podział ekranu (5.5).

@@ -16,9 +16,19 @@
     if (V) drawDivider(V);
     drawOrbs();
     drawCheck(cam.s);
-    drawPause();
-    drawFF();
+    uiScaled(drawPause);
+    uiScaled(drawFF);
   }
+  // 1.25: the panels drawn on the screen (the party, the next wave, the check, the bubbles, the pause) are UIZ times bigger on a big
+  // screen. fn draws in those bigger pixels: cw and ch are the view in them meanwhile; whatever it leaves in uiRects or the check's
+  // box is turned back into the view's pixels by the caller.
+  function uiScaled(fn) {
+    if (UIZ === 1) return fn();
+    const c0 = cw, h0 = ch; ctx.save(); ctx.setTransform(DPR * UIZ, 0, 0, DPR * UIZ, DPR * OX, DPR * OY); cw = c0 / UIZ; ch = h0 / UIZ;
+    try { return fn(); } finally { cw = c0; ch = h0; ctx.restore(); }
+  }
+  const uiBack = r => r && (UIZ === 1 ? r : { x: r.x * UIZ, y: r.y * UIZ, w: r.w * UIZ, h: r.h * UIZ });
+  const uiIn = r => r && (UIZ === 1 ? r : { x: r.x / UIZ, y: r.y / UIZ, w: r.w / UIZ, h: r.h / UIZ });
   function withViews(V, fn) {   // draw fn once, or once per half (clipped to it, with its camera)
     if (!V) { fn(cam.s); return; }
     const keep = { s: cam.s, ox: cam.ox, oy: cam.oy };
@@ -3681,8 +3691,9 @@
     // 1.12.1 (author: on a phone the thumb covered the check): the check sits at the TOP of the map, under the party chips
     // (and under the tutorial coach when it is up there). The map is tapped anywhere, so the thumb taps lower down and the
     // bead stays in sight. (It sat at the bottom of the map from 1.02 to 1.12.1.)
+    uiScaled(() => {   // 1.25: the slab x UIZ on a big screen (the rings above stay on the map)
     const legend = run.checkHints >= 0 && fl.stats.checks <= 3, coach = $('#coach');
-    const coachB = coach && !coach.hidden && coach.classList.contains('top') ? coach.offsetTop + coach.offsetHeight : 0;
+    const coachB = coach && !coach.hidden && coach.classList.contains('top') ? (coach.getBoundingClientRect().bottom - stage.getBoundingClientRect().top) / UIZ : 0;   // 1.25: the coach is zoomed too
     const CHIPS_B = 36;   // the party chips: 6 px from the top, 30 px tall (drawChips)
     const label = { crit: 'Krytyk!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
     const labelCol = { crit: CK.zone, ok: '#b9b3a6', miss: CK.ash, skip: CK.ash }[c.result];
@@ -3711,7 +3722,7 @@
     const top = Math.max(8, Math.min(Math.max(CHIPS_B + 6, coachB + 8), ch - 10 - boxH));   // never past the bottom on a short screen
     const bx = (cw - w) / 2, ox = cw / 2 - (x0 + x1) / 2, oy = top + headH + 6 + pad - y0;
     const P = q => { const a = path(q); return [a[0] + ox, a[1] + oy]; };
-    c.box = { x: bx - 10, y: top, w: w + 20, h: boxH };
+    c.box = uiBack({ x: bx - 10, y: top, w: w + 20, h: boxH });   // in the view's pixels (the bubbles keep out of it)
     ckSlab(bx - 10, top, w + 20, boxH);
     title(bx, top + 14, 'left', c.note ? w - 90 : w);
     if (c.note) { ctx.fillStyle = CK.violet; ctx.font = SF('600'); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(c.note.replace(/^ · /, ''), bx + w, top + 14); ctx.textAlign = 'left'; }
@@ -3772,6 +3783,7 @@
       ctx.fillStyle = CK.ash; ctx.font = SF('500'); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.fillText(LEG, bx, top + boxH - 11, w);
     }
+    });
   }
   // the groove of each check shape, q in 0..1 along it (local coordinates; drawCheck centres it)
   function ckPath(shape, rot, w, R, TW) {
@@ -3811,9 +3823,10 @@
   }
   function drawOffscreen(T) {
     uiRects.list = null;
-    if (fl && fl.phase === 'build') { drawNextWave(); return; }
+    const panel = f => { uiScaled(f); if (UIZ !== 1 && uiRects.list) { uiRects.list = uiBack(uiRects.list); if (uiRects.rows) uiRects.rows = uiRects.rows.map(q => Object.assign({}, q, { y0: q.y0 * UIZ, y1: q.y1 * UIZ })); } };   // 1.25
+    if (fl && fl.phase === 'build') { panel(drawNextWave); return; }
     if (!fl || fl.phase !== 'raid') return;
-    drawParty();
+    panel(drawParty);
     alive().forEach(h => {
       const p = heroPos(h), g = W2S(p.x, p.y, 0.6), sx = g[0], sy = g[1];
       if (sx >= 0 && sx <= cw && sy >= 0 && sy <= ch) return;
@@ -3835,19 +3848,23 @@
   }
   function drawBubbles(T) {
     if (!fl || fl.phase === 'build') return;
+    uiScaled(() => drawBubblesIn(T));   // 1.25: x UIZ on a big screen
+  }
+  function drawBubblesIn(T) {
+    const Z = UIZ;
     // 1.08 (author: the bubbles did not fit the rest): a dark slab with an iron edge like the coach and the messages, the
     // speaker's colour as the stripe on its left, bone text (brass, with a brass edge, for the lines that matter), a tail in
     // steps like the pixel figures, and a thin thread down to the head when the bubble had to move up out of the way.
     ctx.font = '500 12px "Alegreya Sans", system-ui, sans-serif'; ctx.textBaseline = 'middle';
     const boxes = [], seen = new Set(), o = 0.5, R = 3, TAIL = 6, ckBox = fl.check && fl.check.box;
-    if (ckBox) boxes.push(ckBox);
-    if (uiRects.list) boxes.push(uiRects.list);
+    if (ckBox) boxes.push(uiIn(ckBox));
+    if (uiRects.list) boxes.push(uiIn(uiRects.list));
     let shown = 0;
     alive().filter(h => h.bubble && h.bubble.until > fl.time).sort((a, b) => b.bubble.prio - a.bubble.prio).forEach(h => {
       if (shown >= 3 || seen.has(h.bubble.text)) return;
       seen.add(h.bubble.text); shown++;
-      const bb = h.bubble, p = heroPos(h), g = W2S(p.x, p.y, 0), sx = Math.round(g[0]);
-      const head = g[1] - figH(T, h.boss) - Math.max(2, T * 0.07) * 2 - 4;   // over the figure's head and bars
+      const bb = h.bubble, p = heroPos(h), g = W2S(p.x, p.y, 0), sx = Math.round(g[0] / Z);
+      const head = (g[1] - figH(T, h.boss) - Math.max(2, T * 0.07) * 2 - 4) / Z;   // over the figure's head and bars (1.25: in the bubbles' pixels)
       if (sx < -40 || sx > cw + 40 || head < -40 || head > ch + 60) return;
       const lines = wrapText(bb.text, 150), lw = Math.max(...lines.map(l => ctx.measureText(l).width));
       const w = Math.round(lw + 19), hh = lines.length * 15 + 9;

@@ -59,9 +59,11 @@
           hideTip(); tipEat = false; tipAt = [e.clientX, e.clientY];
           tipTimer = setTimeout(() => { tipTimer = 0; tipEat = true; showTip(t, b); }, 380);
         });
-        b.addEventListener('pointermove', e => { if (tipTimer && Math.hypot(e.clientX - tipAt[0], e.clientY - tipAt[1]) > 10) { clearTimeout(tipTimer); tipTimer = 0; } });
-        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, () => { if (tipTimer || tipFor) hideTip(); }));
-        b.addEventListener('contextmenu', e => e.preventDefault());
+        b.addEventListener('pointermove', e => { if (tipTimer && e.buttons && Math.hypot(e.clientX - tipAt[0], e.clientY - tipAt[1]) > 10) { clearTimeout(tipTimer); tipTimer = 0; } });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, e => { if (ev === 'pointerup' && e.button === 2) return; if (tipTimer || tipFor) hideTip(); }));
+        // 1.25: with a mouse the tip comes when the pointer rests on the tile, and a right click shows it at once
+        b.addEventListener('pointerenter', e => { if (e.pointerType !== 'mouse' || e.buttons) return; clearTimeout(tipTimer); tipAt = [e.clientX, e.clientY]; tipTimer = setTimeout(() => { tipTimer = 0; if (b.matches(':hover')) showTip(t, b, 'hover'); }, 420); });
+        b.addEventListener('contextmenu', e => { e.preventDefault(); clearTimeout(tipTimer); tipTimer = 0; showTip(t, b, 'hover'); });
         b.addEventListener('click', () => {
           if (tipEat) { tipEat = false; return; }   // the end of a hold is not a tap
           if (!fl || !run || (fl.phase !== 'build' && fl.phase !== 'raid')) return;
@@ -80,7 +82,7 @@
           if (selected === 'expand') {
             const ms = toolMarkers('expand'), lo = ms.length ? Math.min(...ms.map(m => toolCost('expand', m))) : null, dg = toolMarkers('dig').length ? toolCost('dig', null) : null;
             setHint('Rozbuduj: każda kolejna rozbudowa tego samego miejsca kosztuje 2 razy więcej (cena nad każdym miejscem' + (lo !== null ? ', najtaniej ' + lo : '') + ').' + (dg !== null ? ' Nowy pokój (zakładka Loch): ' + dg + '.' : ''));
-          } else if (selected && (UI.holdTips || 0) < 3) { UI.holdTips = (UI.holdTips || 0) + 1; saveUI(); setHint('Przytrzymaj kafelek w pasku, żeby przeczytać, co robi.'); }
+          } else if (selected && (UI.holdTips || 0) < 3) { UI.holdTips = (UI.holdTips || 0) + 1; saveUI(); setHint(PC() ? 'Najedź myszką na kafelek (albo kliknij go prawym), żeby przeczytać, co robi.' : 'Przytrzymaj kafelek w pasku, żeby przeczytać, co robi.'); }
         });
         tray.appendChild(b);
       });
@@ -125,13 +127,14 @@
       if (!locked && lk) lk.remove();
     });
     renderDeckTiles(cur.id === 'deck' && !!run);
+    { let n = 0; tray.querySelectorAll(':scope > .item').forEach(b => { if (!b.hidden && n < 10) b.dataset.k = String(++n % 10); else delete b.dataset.k; }); }   // 1.25: the number keys 1-9 and 0 take these tiles
     if (trayTab !== view) { trayTab = view; tray.scrollLeft = trayScroll[view] || 0; tray.classList.remove('deal'); void tray.offsetWidth; tray.classList.add('deal'); clearTimeout(updateTray.dealT); updateTray.dealT = setTimeout(() => tray.classList.remove('deal'), 700); }   // 1.09: a new tab deals its tiles in
     trayFade();
     if (fl && fl.phase === 'build') updateAction();
   }
   // Prototype 1.0: what a tile does shows while you hold it (the description no longer sits under the map for good)
   let tipTimer = 0, tipFor = null, tipEat = false, tipAt = [0, 0];
-  function showTip(t, b) {
+  function showTip(t, b, how) {
     const box = $('#tip'), I = ITEMS[t]; box.innerHTML = '';
     const h = el('div', 'th'); h.appendChild(el('b', null, I.name)); if (!MODES[t]) h.appendChild(el('span', null, costOf(t) + ' Esencji')); box.appendChild(h);
     if (I.tag) box.appendChild(el('div', 'tg', I.tag));
@@ -141,10 +144,14 @@
     if (run && KINDS[t] && run.unlocked.has(t) && !isOpenT(t)) box.appendChild(el('div', 'tw', 'Zablokowana: najpierw odblokuj ' + KIND_INFO[KINDS[t]].items.map(x => ITEMS[x].name).join(' albo ') + ' (kartą ze sklepu).'));
     else if (run && !MODES[t] && !run.unlocked.has(t)) box.appendChild(el('div', 'tw', 'Zablokowany: odblokujesz go kartą ze sklepu (na stałe, także w kolejnych runach).'));
     box.hidden = false; box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
-    box.style.bottom = Math.round(innerHeight - $('#drawer').getBoundingClientRect().top + 6) + 'px';
-    tipFor = t; b.classList.add('holding');
-    tutFlags.tipN = (tutFlags.tipN || 0) + 1;   // 1.24 (B): the guide's 'hold' step
-    buzz(12);
+    // 1.25: zoomed on a big screen, so its place is given in its own (unzoomed) pixels; in the side panel it stands left of the panel, level with the tile
+    const z = UIZ, side = document.documentElement.classList.contains('wide');
+    box.classList.toggle('side', side); box.style.top = ''; box.style.right = ''; box.style.bottom = '';
+    if (side) { const dr = $('#drawer').getBoundingClientRect(), br = b.getBoundingClientRect(); box.style.right = ((innerWidth - dr.left + 10) / z).toFixed(1) + 'px'; box.style.top = (Math.max(8, Math.min(br.top, innerHeight - box.offsetHeight * z - 8)) / z).toFixed(1) + 'px'; }
+    else box.style.bottom = ((innerHeight - $('#drawer').getBoundingClientRect().top + 6) / z).toFixed(1) + 'px';
+    tipFor = t; if (how !== 'hover') b.classList.add('holding');
+    tutFlags.tipN = (tutFlags.tipN || 0) + 1;   // 1.24 (B): the guide's 'hold' step (1.25: a hover or a right click counts)
+    if (how !== 'hover') buzz(12);
   }
   const effWords = t => (HURTS(t) ? ['Rani'] : []).concat(SCARES(t) ? ['Straszy'] : []);   // 1.24 (B, P1-4)
   function hideTip() {
@@ -203,7 +210,7 @@
     if (fl.phase === 'raid') {   // v14: no silence: the button only says how to speed up
       b.disabled = true;
       if (paused && trayIsOpen()) { actLabel(b, 'Pauza', 'zwiń ▼ Budowa: gramy'); return; }   // 1.08
-      actLabel(b, 'Fala trwa', 'przytrzymaj mapę: szybciej');
+      actLabel(b, 'Fala trwa', PC() ? 'przytrzymaj F albo mapę: szybciej' : 'przytrzymaj mapę: szybciej');
       return;
     }
     b.disabled = true; actLabel(b, 'Koniec fali');
@@ -355,12 +362,14 @@
   }
   function placeToast() {
     const box = $('#toast'), foot = modalOpen ? document.querySelector('#card .scr-foot') : null, fr = foot && foot.getBoundingClientRect();
-    box.style.top = ''; box.style.bottom = '';
-    if (fr && fr.height) box.style.bottom = Math.round(innerHeight - fr.top + 8) + 'px';
+    box.style.top = ''; box.style.bottom = ''; box.style.left = '';
+    const z = UIZ;   // 1.25: zoomed on a big screen: its place in its own pixels
+    if (fr && fr.height) box.style.bottom = ((innerHeight - fr.top + 8) / z).toFixed(1) + 'px';
     else if (modalOpen) box.style.top = 'max(12px, var(--safe-top))';
     else {   // 1.04: under the coach when it sits at the top of the map
-      const co = $('#coach'), cr = !co.hidden && co.classList.contains('top') ? co.getBoundingClientRect() : null;
-      box.style.top = Math.round(cr ? cr.bottom + 8 : stage.getBoundingClientRect().top + 8) + 'px';
+      const co = $('#coach'), cr = !co.hidden && co.classList.contains('top') ? co.getBoundingClientRect() : null, sr = stage.getBoundingClientRect();
+      box.style.top = ((cr ? cr.bottom + 8 : sr.top + 8) / z).toFixed(1) + 'px';
+      if (document.documentElement.classList.contains('wide')) box.style.left = ((sr.left + sr.width / 2) / z).toFixed(1) + 'px';   // 1.25: over the map, not over the panel
     }
   }
   $('#toast').addEventListener('click', hideToast);
@@ -392,7 +401,7 @@
     const want = trayIsOpen() ? 1 : 0;
     if (want !== TRAY.to) { TRAY.from = TRAY.k; TRAY.to = want; TRAY.t = 0; }
     if (TRAY.t >= 1) return;
-    TRAY.t = reduceMotion ? 1 : Math.min(1, TRAY.t + rdt / VIEW.dur);
+    TRAY.t = reduceMotion || document.documentElement.classList.contains('wide') ? 1 : Math.min(1, TRAY.t + rdt / VIEW.dur);   // 1.25: the side panel folds at once (it is not under the map)
     const e = TRAY.t * TRAY.t * (3 - 2 * TRAY.t);   // the camera's curve (viewTick)
     trayPaint(TRAY.from + (TRAY.to - TRAY.from) * e);
   }
@@ -457,7 +466,7 @@
     const card = $('#card'); card.innerHTML = ''; const scr = m.type === 'shop' || m.type === 'wave' || m.type === 'end', top = m.type === 'breach'; card.className = 'card enter' + (scr ? ' screen' : '') + (top ? ' topsheet' : '');
     card.scrollTop = 0; $('#overlay').classList.toggle('screenbg', scr); $('#overlay').classList.toggle('top', top);   // 1.01: the breach sheet sits at the top, the map stays in view
     clearTimeout(openModal.t); openModal.t = setTimeout(() => card.classList.remove('enter'), 900);   // the entrance plays once, not on every tap inside
-    ({ start: renderStart, menu: renderMenu, settings: renderSettings, tests: renderTests, upgrade: renderUpgrade, wave: renderWave, over: renderOver, name: renderName, unspent: renderUnspent, end: renderEnd, survey: renderSurvey, victory: renderVictory, card: renderCard, item: renderItem, breach: renderBreach, hungerTip: renderHungerTip, onb: renderOnb, news: renderNews, shop: renderShop, hero: renderHero, esencja: renderEsencja })[m.type](card, m);
+    ({ start: renderStart, menu: renderMenu, settings: renderSettings, tests: renderTests, upgrade: renderUpgrade, wave: renderWave, over: renderOver, name: renderName, unspent: renderUnspent, end: renderEnd, survey: renderSurvey, victory: renderVictory, card: renderCard, item: renderItem, breach: renderBreach, hungerTip: renderHungerTip, onb: renderOnb, news: renderNews, shop: renderShop, hero: renderHero, esencja: renderEsencja, keys: renderKeys })[m.type](card, m);
     $('#overlay').hidden = false;
   }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -522,8 +531,12 @@
   function goFullscreen() {
     if (!WEB || standalone() || isFull() || UI.noFull) return;
     const d = document.documentElement, f = d.requestFullscreen || d.webkitRequestFullscreen; if (!f) return;
-    try { const p = f.call(d, { navigationUI: 'hide' }); if (p && p.then) p.then(() => { try { screen.orientation.lock('portrait').catch(() => {}); } catch (e) {} }, () => {}); } catch (e) {}
+    try { const p = f.call(d, { navigationUI: 'hide' }); if (p && p.then) p.then(lockPhone, () => {}); } catch (e) {}
   }
+  // 1.25: only a phone is held upright (a tablet may lie sideways: the panel layout); the installed app's manifest says 'any' now
+  const phoneScreen = () => Math.min(screen.width || 0, screen.height || 0) < 600;
+  function lockPhone() { if (phoneScreen()) try { screen.orientation.lock('portrait').catch(() => {}); } catch (e) {} }
+  if (WEB && standalone()) lockPhone();
   function leaveFullscreen() { const f = document.exitFullscreen || document.webkitExitFullscreen; if (f && isFull()) try { f.call(document); } catch (e) {} }
   let installEvt = null;
   const restart = () => { if (modalKind === 'start') { const c = $('#card'); c.innerHTML = ''; renderStart(c); } };   // the start card again, in place
@@ -569,7 +582,7 @@
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.24 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.25 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -619,9 +632,12 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.24'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.25'));
     const ul2 = el('ul', 'conseq');
     [
+     '1.25: telefon, tablet i komputer. Na tablecie i dużym ekranie interfejs jest większy, a na ekranie szerszym niż wysokim budowa jest w panelu po prawej, HUD w lewym górnym rogu mapy, a mapa zajmuje resztę.',
+     '1.25: mysz i touchpad. Przeciąganie przesuwa mapę także po włączeniu przyspieszenia i gdy widać cały loch, kółko przybliża, touchpad przesuwa mapę dwoma palcami i przybliża szczypaniem. Prawy przycisk: na kafelku opis, na postawionym elemencie zdjęcie (drugie kliknięcie potwierdza). Najechanie myszką pokazuje opis kafelka, elementu i bohatera.',
+     '1.25: klawiatura. WASD i strzałki przesuwają mapę, + i - przybliżają, 1-9 wybierają kafelki (numer w rogu), Q i E zmieniają zakładkę, Enter wypuszcza falę, B zwija budowę. Pełna lista: Menu > Sterowanie.',
      '1.24: połączone karty. Druga kopia karty (ze sklepu, darmowego wyboru albo ze schowka) łączy się z pierwszą w złotą kartę ★: zajmuje jedno miejsce, działa jak 2,5 kopii i dostaje cechę swojej grupy (np. jej pułapka działa jak o poziom wyżej, +2 Esencji po fali, darmowe odświeżenie sklepu). Sprzedana daje cenę dwóch. Sklep pisze "Połączy się w ★".',
      '1.24: zapadnia kosztuje 6. Bohater spada najwyżej 2 razy na falę (elita i poziom 12+: raz), potem widzi zapadnie i już mu nie grożą ("Zapadnie: 2/2" na karcie bohatera).',
      '1.24: koniec fali. Minutę po końcu cierpliwości bohaterowie są wyczerpani ("Wyczerpany") i wychodzą z lochu na własnych nogach, zamiast znikać. Tylko ktoś, kto utknął, ucieka sam ("Ucieka") 2,5 minuty po końcu cierpliwości.',
@@ -811,6 +827,7 @@
     const box = el('div', 'choices');
     const g = btn('primary', 'Wróć do gry', null, back); g.id = 'menu-back'; box.appendChild(g);
     box.appendChild(btn('', 'Ustawienia', 'dźwięk, wibracje, pasek elementów, skill checki', () => { closeModal(); openModal({ type: 'settings', back: 'menu', unpause: m.unpause }); }));
+    if (PC()) box.appendChild(btn('', 'Sterowanie', 'mysz, touchpad i klawiatura', () => { closeModal(); openModal({ type: 'keys', unpause: m.unpause }); }));   // 1.25
     if (WEB && surveyState() !== 'done') box.appendChild(btn('', 'Ankieta', '5 krótkich pytań o grę', () => openModal({ type: 'survey', unpause: m.unpause })));
     if (WEB && !standalone() && (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) {   // the web version: full screen on and off
       const full = isFull(); box.appendChild(btn('', full ? 'Wyjdź z pełnego ekranu' : 'Pełny ekran', full ? 'wróci pasek przeglądarki' : 'bez paska przeglądarki', () => { UI.noFull = full; saveUI(); if (full) leaveFullscreen(); else goFullscreen(); back(); }));
@@ -826,6 +843,23 @@
       box.appendChild(q);
     }
     card.appendChild(box); card.appendChild(note);
+  }
+  // 1.25: the controls on a computer
+  function renderKeys(card, m) {
+    card.appendChild(el('div', 'sub', 'Menu')); card.appendChild(el('h2', null, 'Sterowanie'));
+    const t = el('table', 'keys');
+    [['Lewy przycisk', 'jak stuknięcie: wybór, stawianie, przenoszenie, skill check; dwa szybkie kliknięcia ulepszają'],
+     ['Przeciągnij', 'przesuwa mapę (lewym albo środkowym przyciskiem)'],
+     ['Prawy przycisk', 'na kafelku: opis; na postawionym elemencie: zdejmij (kliknij drugi raz, żeby potwierdzić)'],
+     ['Najechanie', 'opis kafelka, elementu na mapie albo bohatera'],
+     ['Kółko', 'przybliża i oddala'], ['Touchpad', 'dwa palce przesuwają mapę, szczypanie przybliża'],
+     ['W A S D, strzałki', 'przesuwają mapę'], ['+ / -', 'przybliża i oddala'],
+     ['1-9, 0', 'kafelki w pasku (numer w rogu kafelka)'], ['Q / E', 'poprzednia i następna zakładka'],
+     ['Enter', 'wypuść falę'], ['Spacja', 'skill check'], ['F (przytrzymaj)', 'przyspieszenie w fali'],
+     ['B, P', 'pasek budowy (w fali: pauza)'], ['Ctrl+Z', 'cofnij (między falami)'], ['Esc', 'odłóż to, co masz w ręce']].forEach(r => {
+      const tr = el('tr'); const a = el('td'); r[0].split(', ').forEach((x, i) => { if (i) a.appendChild(document.createTextNode(', ')); a.appendChild(el('kbd', null, x)); }); tr.appendChild(a); tr.appendChild(el('td', null, r[1])); t.appendChild(tr); });
+    card.appendChild(t);
+    const g = btn('primary', 'Wróć do gry', null, () => { closeModal(); if (m.unpause && fl && fl.phase === 'raid') setPaused(false); }); card.appendChild(g);
   }
   const settingsBack = m => () => { closeModal(); if (m.back === 'start') openModal({ type: 'start' }); else if (m.back === 'menu') openModal({ type: 'menu', unpause: m.unpause }); };
   function sliderRow(sd) {
@@ -1989,7 +2023,7 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 59;   // 1.24 Part B (the same 59): runs: tut.stepTimes (seconds on each step, by TUT order) and tut.stepIds; stage now follows the wave in the first run (runs.stage = the stage reached); waves: fearUi.bar (taps on a fear bar), stats.tutSpike (the guide's spikes sprung once). 1.24 Part D (59):runs: status one of win/end/quit/active (won => win), playerId, crystals0 + crystalEvents [{t, delta, cause, wave, why}] (cause stolen/hunger/saved/card/other), activeSec, sessions [{start, end}], endBonus (total = sum of waveMini.sc + endBonus); waves summary: crystalEvents, essenceAtStart, essenceAtWaveStart, itemsCount, roomsCount, previewOpened, fearUi {card, bar}, stats.checkByShape {shape: {ok, crit, miss, skip, auto}}, stats.calmAuto, unspentAsk, unspentGo; settings calmWaves, calmGap, okPulse, okSwing. 58, 1.24 Part A adds runs/waves fused (the fused ★ card ids), stats: exhausted, forcedOut, tdSeen; timeline xh (worn out: how many inside) fo (forced out: id, x, y, state). 1.23 adds heroes[].nem and stats: nemeses, nemesisNew, nemesisDropped, nemRooms, nemTraps, nemesisReply, nemesisWarn, nemesisBoast, nemesisRage, nemesisDown, nemesisOut, nemesisCrystal, grudgeHits, grudgeDone, bounties, essBounty, bountyTalk, fallenMemory; timeline nn nm ng nd nx nr nb no nw2 bn fm. 1.22 adds stats: escortForms, escortGuards, guardSoaks, guardSoakDmg, handOvers, lastStands, lastStandT, sacrifices, sacrificeFired, youFirst, taps, tapFound, notThisWay, notThisWayMoved, frontLines, woundedBack, nearExit; timeline ef gs ho lx le sf sd yf tp tf nw fm wb ne. 1.21 adds heroes[].bond (type[:role]:id) and stats: bonds, bondsBy, bondLines, griefs, revengeVows, revengeFights, grownUp, noLeave, noLeaveSaved, mentorWatch, mentorProud, rivalMock, quarrels, quarrelStops, quarrelWins, quarrelSulks, bets, betsWon, betsLost, betsOff; timeline bo bk gf vw gu rm mw mp qq nl ns ob bt be. 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  const LOG_VERSION = 60;   // 1.25: runs.screen (w, h, ui, wide, mouse, touch: which layout and pointer the run was played with). Before: 1.24 Part B (the same 59): runs: tut.stepTimes (seconds on each step, by TUT order) and tut.stepIds; stage now follows the wave in the first run (runs.stage = the stage reached); waves: fearUi.bar (taps on a fear bar), stats.tutSpike (the guide's spikes sprung once). 1.24 Part D (59):runs: status one of win/end/quit/active (won => win), playerId, crystals0 + crystalEvents [{t, delta, cause, wave, why}] (cause stolen/hunger/saved/card/other), activeSec, sessions [{start, end}], endBonus (total = sum of waveMini.sc + endBonus); waves summary: crystalEvents, essenceAtStart, essenceAtWaveStart, itemsCount, roomsCount, previewOpened, fearUi {card, bar}, stats.checkByShape {shape: {ok, crit, miss, skip, auto}}, stats.calmAuto, unspentAsk, unspentGo; settings calmWaves, calmGap, okPulse, okSwing. 58, 1.24 Part A adds runs/waves fused (the fused ★ card ids), stats: exhausted, forcedOut, tdSeen; timeline xh (worn out: how many inside) fo (forced out: id, x, y, state). 1.23 adds heroes[].nem and stats: nemeses, nemesisNew, nemesisDropped, nemRooms, nemTraps, nemesisReply, nemesisWarn, nemesisBoast, nemesisRage, nemesisDown, nemesisOut, nemesisCrystal, grudgeHits, grudgeDone, bounties, essBounty, bountyTalk, fallenMemory; timeline nn nm ng nd nx nr nb no nw2 bn fm. 1.22 adds stats: escortForms, escortGuards, guardSoaks, guardSoakDmg, handOvers, lastStands, lastStandT, sacrifices, sacrificeFired, youFirst, taps, tapFound, notThisWay, notThisWayMoved, frontLines, woundedBack, nearExit; timeline ef gs ho lx le sf sd yf tp tf nw fm wb ne. 1.21 adds heroes[].bond (type[:role]:id) and stats: bonds, bondsBy, bondLines, griefs, revengeVows, revengeFights, grownUp, noLeave, noLeaveSaved, mentorWatch, mentorProud, rivalMock, quarrels, quarrelStops, quarrelWins, quarrelSulks, bets, betsWon, betsLost, betsOff; timeline bo bk gf vw gu rm mw mp qq nl ns ob bt be. 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
@@ -2014,6 +2048,7 @@
       player: (playerName || '').slice(0, 40), playerId: playerIdNow(), device: deviceId, web: WEB ? 1 : 0, tutorial: run.tutorial, stage: run.stage || ONB_FULL, guided: !!run.guided, status: runStatus(), won: run.won, waves: run.waves.length,   // 1.24 (D): playerId, status
       total: Math.round(run.total), endBonus: Math.round(run.total) - scSum, best: loadBest(), resumed: run.resumed || 0, stacks: Object.assign({}, run.stacks), crystals: run.crystals, continueUsed: run.continueUsed,   // 1.24 (D, P0-4): endBonus
       crystals0: run.crystals0 != null ? run.crystals0 : null, crystalEvents: (run.crystalEv || []).slice(),   // 1.24 (D, P0-2)
+      screen: { w: innerWidth, h: innerHeight, ui: UIZ, wide: document.documentElement.classList.contains('wide') ? 1 : 0, mouse: PC() ? 1 : 0, touch: (navigator.maxTouchPoints || 0) > 0 ? 1 : 0 },   // 1.25
       activeSec: Math.min(dur, Math.round(run.activeSec || 0)), sessions: (run.sessions || []).map(s => ({ start: new Date(s[0]).toISOString(), end: new Date(s[1]).toISOString() })),   // 1.24 (D, P0-3)
       upgrades: run.upgrades.slice(), deck: run.deck.slice(), fused: (run.fused || []).slice(), deckSize: run.deckSize, found: (run.foundAtStart || []).slice(), sold: (run.sold || []).slice(), fires: run.fires, durationSec: Math.round((Date.now() - run.startedAt) / 1000), buildSec: Math.round(run.buildSec), raidSec: Math.round(run.raidSec),
       settings: Object.assign({}, S),
@@ -2380,14 +2415,98 @@
     else if (BUILDINGS[type]) { const d = T.desc.split(': ').slice(1).join(': '); setHint(T.name + ' stoi. ' + d.charAt(0).toUpperCase() + d.slice(1)); }
     return true;
   }
+  /* ================= 1.25: a mouse, a touchpad and the keys ================= */
+  // A right click on a placed element (or furniture) asks first: the element is marked and the hint says what it gives back; a second
+  // right click on it within 3 s takes it down (as a held finger does). In a wave a right click does nothing.
+  let rcMark = null;
+  function rightClick(p) {
+    if (!fl || fl.phase !== 'build') return;
+    const w = tapWorld(p.x, p.y), t = holdTarget(w.x, w.y);
+    if (!t) { rcMark = null; return; }
+    if (rcMark && rcMark.x === t.x && rcMark.y === t.y && realNow - rcMark.t < 3) { rcMark = null; holdRemove(t); return; }
+    rcMark = { x: t.x, y: t.y, t: realNow };
+    const back = t.it ? itemBack(t.it) : 0;
+    floatTile(t.x, t.y, 'Zdjąć' + (back ? ' za +' + back : '') + '? Prawy jeszcze raz', '#d8d2c4', 13, -0.6);   // (the hint line is gone since 1.17: the question floats over the element)
+  }
+  // the tip over what rests under the mouse on the map: a hero (in a wave), an element, a piece of furniture
+  let hovT = 0, hovKey = '';
+  function hideHov() { clearTimeout(hovT); hovT = 0; const h = $('#hov'); if (h && !h.hidden) h.hidden = true; hovKey = ''; document.documentElement.classList.remove('hovpt'); }
+  function hovWhat(p) {
+    if (fl.phase === 'raid') { const h = heroAtScreen(p.x, p.y); if (h) return { k: 'h' + h.id, h }; }
+    if (fl.phase !== 'build' && fl.phase !== 'raid') return null;
+    const w = tapWorld(p.x, p.y), it = fl.items.get(key(Math.floor(w.x), Math.floor(w.y))) || itemAt(w.x, w.y);
+    if (it && ITEMS[it.type]) return { k: 'i' + it.x + ',' + it.y, it };
+    const o = fl.phase === 'build' ? objOn(Math.floor(w.x), Math.floor(w.y)) : null;
+    return o ? { k: 'o' + o.x + ',' + o.y, o } : null;
+  }
+  function hoverAt(p, cx, cy) {
+    if (!fl || modalOpen || pointers.size) { hideHov(); return; }
+    const w = hovWhat(p), k = w ? w.k : '';
+    document.documentElement.classList.toggle('hovpt', !!w);
+    const box = $('#hov');
+    if (k && k === hovKey && !box.hidden) { placeHov(box, cx, cy); return; }
+    clearTimeout(hovT); if (!box.hidden) box.hidden = true; hovKey = k;
+    if (!w) return;
+    hovT = setTimeout(() => { hovT = 0; if (hovKey === k && fl && !modalOpen && !pointers.size) showHov(w, cx, cy); }, 300);
+  }
+  function placeHov(box, cx, cy) {
+    const z = UIZ, bw = box.offsetWidth * z, bh = box.offsetHeight * z;
+    const x = cx + 18 + bw > innerWidth - 8 ? cx - 14 - bw : cx + 18, y = Math.min(innerHeight - bh - 8, cy + 20);
+    box.style.left = (Math.max(8, x) / z).toFixed(1) + 'px'; box.style.top = (Math.max(8, y) / z).toFixed(1) + 'px';
+  }
+  function showHov(w, cx, cy) {
+    const box = $('#hov'); box.innerHTML = '';
+    if (w.h) {
+      const h = w.h; box.appendChild(el('b', null, h.nm[0] + (h.nemesis ? ' ' + h.nemesis.title : '')));
+      box.appendChild(el('div', 'hs', h.T.name[h.female ? 1 : 0] + ' · poz. ' + h.lvl + (h.boss ? ' · ' + BOSS_NAME[h.boss][h.female ? 1 : 0] : '')));
+      box.appendChild(el('div', null, 'Życie ' + Math.max(0, Math.ceil(h.hp)) + '/' + Math.round(h.max) + ' · strach ' + Math.round(100 * clamp(h.fear / h.courage, 0, 1)) + '%' + (h.crystal ? ' · niesie kryształ!' : '')));
+      box.appendChild(el('div', 'hk', 'Kliknij: karta bohatera'));
+    } else if (w.it) {
+      const it = w.it, I = ITEMS[it.type], lb = effWords(it.type);
+      box.appendChild(el('b', null, I.name + ((it.lvl || 1) > 1 ? ' · poz. ' + it.lvl : '')));
+      if (I.tag) box.appendChild(el('div', 'hs', I.tag));
+      if (lb.length) { const r = el('div', 'tlb'); lb.forEach(x => r.appendChild(el('span', x === 'Rani' ? 'hurt' : 'scare', x))); box.appendChild(r); }
+      const d = I.desc.split(': ').slice(1).join(': ') || I.desc; box.appendChild(el('div', null, d.charAt(0).toUpperCase() + d.slice(1)));
+      if (fl.phase === 'build') box.appendChild(el('div', 'hk', 'Kliknij: przenieś · dwa razy: ulepsz · prawy: zdejmij'));
+    } else if (w.o) {
+      box.appendChild(el('b', null, objName(w.o)));
+      box.appendChild(el('div', 'hk', 'Kliknij: przenieś · prawy: ' + (w.o.built ? 'zdejmij' : 'usuń')));
+    }
+    box.hidden = false; placeHov(box, cx, cy);
+  }
+  // a touchpad: two fingers move the map, a pinch zooms (the browser sends it as a wheel with Ctrl); a mouse wheel zooms
+  let padUntil = 0, gs0 = 0;
+  function wheelIsPad(e, dx, dy) { return e.deltaMode === 0 && (dx !== 0 || Math.abs(dy) < 40 || dy % 1 !== 0); }
+  // WASD and the arrows move the camera while they are held
+  const PANKEYS = { KeyW: [0, -1], ArrowUp: [0, -1], KeyS: [0, 1], ArrowDown: [0, 1], KeyA: [-1, 0], ArrowLeft: [-1, 0], KeyD: [1, 0], ArrowRight: [1, 0] };
+  const keyPan = new Set(); let keyPanRaf = 0, keyPanT = 0;
+  function keyPanGo() {
+    if (keyPanRaf) return; keyPanT = performance.now();
+    const step = now => {
+      const dt = Math.min(0.05, Math.max(0, (now - keyPanT) / 1000)); keyPanT = now;
+      if (!keyPan.size || !fl || modalOpen) { keyPanRaf = 0; keyPan.clear(); return; }
+      let vx = 0, vy = 0; keyPan.forEach(k => { vx += PANKEYS[k][0]; vy += PANKEYS[k][1]; });
+      const sp = 650 * dt; cam.ox += vx * sp; cam.oy += vy * sp; clampCam(true); cam.manualUntil = realNow + 4; FP.input = FP.touch = performance.now(); kick();
+      keyPanRaf = requestAnimationFrame(step);
+    };
+    keyPanRaf = requestAnimationFrame(step);
+  }
+  window.addEventListener('blur', () => keyPan.clear());
+  function keyZoom(k) { if (!fl) return; zoomAt(cam.s * (k > 0 ? 1.15 : 1 / 1.15), cw / 2, ch / 2); cam.manualUntil = realNow + 5; }
+  function keyTab(d) {
+    const tabs = [...document.querySelectorAll('#tabs .tab')].filter(b => !b.hidden), i = tabs.findIndex(b => b.getAttribute('aria-selected') === 'true');
+    if (tabs.length) tabs[(i + d + tabs.length) % tabs.length].click();
+  }
   const pointers = new Map();
   let gesture = null, holdTimer = null;
   const localXY = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left - OX, y: e.clientY - r.top - OY }; };   // 1.24 (B): in the view (the canvas is the whole screen)
   cv.addEventListener('pointerdown', e => {
     if (!fl || modalOpen) return;
-    e.preventDefault();
+    e.preventDefault(); hideHov();
+    if (e.button === 2) { if (!pointers.size) rightClick(localXY(e)); return; }   // 1.25: a right click = a held finger, after asking
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
     const p = localXY(e); pointers.set(e.pointerId, p);
+    if (pointers.size === 1 && e.button === 1) { gesture = { type: 'pan', sx: p.x, sy: p.y, ox: cam.ox, oy: cam.oy, moved: false, handled: true }; return; }   // 1.25: the middle button only drags
     if (pointers.size === 1) {
       // a skill check is answered by a tap on the MAP (and only there)
       if (fl.phase === 'raid' && fl.check && !fl.check.result && !paused) {
@@ -2415,7 +2534,7 @@
     }
   });
   cv.addEventListener('pointermove', e => {
-    if (!pointers.has(e.pointerId)) return;
+    if (!pointers.has(e.pointerId)) { if (e.pointerType === 'mouse' && !e.buttons) hoverAt(localXY(e), e.clientX, e.clientY); return; }   // 1.25: the hover tip
     const p = localXY(e); pointers.set(e.pointerId, p);
     if (!gesture) return;
     if (gesture.type === 'pinch' && pointers.size >= 2) {
@@ -2424,13 +2543,16 @@
       cam.manualUntil = realNow + 5;
     } else if (gesture.type === 'pan') {
       const dx = p.x - gesture.sx, dy = p.y - gesture.sy;
+      // 1.25 (author: dragging did not work on a computer): a mouse pressed still for 0,3 s turned on the fast-forward and the drag
+      // after it moved nothing. Now moving away (14 px with a mouse, 26 with a finger, which trembles) ends the fast-forward and drags.
+      if (ff && !gesture.moved && Math.hypot(dx, dy) > (e.pointerType === 'mouse' ? 14 : 26)) { ff = false; tl('ff', 0); gesture.moved = true; }
       if (!gesture.moved && Math.hypot(dx, dy) > 8 && !ff) { gesture.moved = true; clearTimeout(holdTimer); holdInfo = null; }
-      if (gesture.moved) { cam.ox = gesture.ox - dx; cam.oy = gesture.oy - dy; clampCam(); cam.manualUntil = realNow + 4; }
+      if (gesture.moved) { document.documentElement.classList.add('dragging'); cam.ox = gesture.ox - dx; cam.oy = gesture.oy - dy; clampCam(true); cam.manualUntil = realNow + 4; }
     }
   });
   function endPointer(e) {
     if (!pointers.has(e.pointerId)) return;
-    pointers.delete(e.pointerId);
+    pointers.delete(e.pointerId); if (!pointers.size) document.documentElement.classList.remove('dragging');
     clearTimeout(holdTimer); holdInfo = null;
     if (ff) { ff = false; gesture = null; tl('ff', 0); return; }
     if (!gesture) return;
@@ -2450,11 +2572,19 @@
   cv.addEventListener('pointercancel', endPointer);
   cv.addEventListener('wheel', e => {
     if (!fl) return;
-    e.preventDefault();
-    const p = localXY(e);
-    zoomAt(cam.s * (e.deltaY < 0 ? 1.15 : 1 / 1.15), p.x, p.y);
+    e.preventDefault(); hideHov();
+    const p = localXY(e), u = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? ch : 1, dx = e.deltaX * u, dy = e.deltaY * u;
+    if (e.ctrlKey) zoomAt(cam.s * Math.exp(-clamp(dy, -50, 50) * 0.01), p.x, p.y);   // 1.25: a touchpad pinch (and Ctrl + wheel)
+    else if (realNow < padUntil || wheelIsPad(e, dx, dy)) { padUntil = realNow + 0.35; cam.ox += dx; cam.oy += dy; clampCam(true); }   // 1.25: two fingers on a touchpad move the map (they zoomed)
+    else zoomAt(cam.s * (dy < 0 ? 1.15 : 1 / 1.15), p.x, p.y);   // a mouse wheel: a step of zoom
     cam.manualUntil = realNow + 5;
   }, { passive: false });
+  // 1.25: Safari sends a touchpad pinch as its own gesture (a touch pinch on an iPad comes as two pointers and is handled above)
+  cv.addEventListener('gesturestart', e => { e.preventDefault(); gs0 = cam.s; });
+  cv.addEventListener('gesturechange', e => { if (!fl || pointers.size > 1 || !gs0) return; e.preventDefault(); const p = localXY(e); zoomAt(gs0 * e.scale, p.x, p.y); cam.manualUntil = realNow + 5; });
+  cv.addEventListener('gestureend', () => { gs0 = 0; });
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  cv.addEventListener('pointerleave', hideHov);
   $('#btn-action').addEventListener('click', () => {
     if (!fl || modalOpen) return;
     if (fl.phase === 'build') { if (askUnspent()) return; startWave(); return; }   // 1.24 (D, P1-2): the question about unspent Esencja first
@@ -2468,8 +2598,19 @@
     if (e.code === 'KeyF' && fl.phase === 'raid' && (!paused || tutHoldOk()) && !ff) { if (paused) { tutPausedIt = false; setPaused(false, true); } if (!paused) { ff = true; tutFlags.ffUsed = true; tl('ff', 1); } }
     if (e.code === 'Escape' && (selected || movingKey || movingObj)) { selected = null; movingKey = null; movingObj = null; updateTray(); setHint('Wybierz element i stuknij pasujące miejsce.'); }
     if (e.code === 'KeyZ' && (e.ctrlKey || e.metaKey) && fl.phase === 'build') { e.preventDefault(); undo(); }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // 1.25: the keys (the list: Menu > Sterowanie)
+    const k = e.code, game = !e.target || e.target === document.body || !!(e.target.closest && e.target.closest('#app'));
+    if (PANKEYS[k] && game) { e.preventDefault(); keyPan.add(k); keyPanGo(); return; }
+    if (k === 'Equal' || k === 'NumpadAdd') { keyZoom(1); return; }
+    if (k === 'Minus' || k === 'NumpadSubtract') { keyZoom(-1); return; }
+    const dg = /^(?:Digit|Numpad)([0-9])$/.exec(k);
+    if (dg && game) { const b = document.querySelector('#tray > .item[data-k="' + dg[1] + '"]'); if (b && !b.hidden) { e.preventDefault(); b.click(); } return; }
+    if ((k === 'KeyQ' || k === 'KeyE') && game) { keyTab(k === 'KeyQ' ? -1 : 1); return; }
+    if ((k === 'Enter' || k === 'NumpadEnter') && game && fl.phase === 'build') { e.preventDefault(); $('#btn-action').click(); return; }
+    if (k === 'KeyB' && (fl.phase === 'build' || (fl.phase === 'raid' && !tutPopNow))) setTrayOpen(!trayIsOpen(), true);
   });
-  document.addEventListener('keyup', e => { if (e.code === 'KeyF' && ff) { ff = false; tl('ff', 0); } });
+  document.addEventListener('keyup', e => { keyPan.delete(e.code); if (e.code === 'KeyF' && ff) { ff = false; tl('ff', 0); } });
   function dungeonBounds() {
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     fl.rooms.forEach(R => R.tiles.forEach(t => { x0 = Math.min(x0, t[0]); y0 = Math.min(y0, t[1]); x1 = Math.max(x1, t[0]); y1 = Math.max(y1, t[1]); }));
@@ -2486,7 +2627,7 @@
     cam.manualUntil = realNow + 6;
   });
   $('#btn-settings').addEventListener('click', () => { if (!modalOpen) { const pause = !!(fl && fl.phase === 'raid' && !paused); if (pause) setPaused(true); openModal({ type: 'menu', unpause: pause }); } });
-  window.addEventListener('resize', () => { if (fl) resize(); coachSync(); });
+  window.addEventListener('resize', () => { applyLayout(); if (fl) resize(); coachSync(); hideHov(); });   // 1.25: the layout follows the screen (a tablet turned, a window resized)
   try { new ResizeObserver(() => { if (fl) resize(); }).observe(stage); } catch (e) {}   // the tray grows to two rows on the deck tab
 
   /* ================= interactive tutorial ================= */
@@ -2531,15 +2672,15 @@
     { id: 'intro', text: 'To Twój loch. Bohaterowie przyjdą falami po kryształy z serca (ostatni pokój). Loch postawił za Ciebie dwie pułapki blisko serca, ale same nie wystarczą: dostawisz więcej.', next: true },
     { id: 'spikes', text: 'Wybierz Kolce z paska na dole (zakładka Pułapki).', hl: ['#tab-traps', '#item-spikes'], prep: () => { movingKey = null; movingObj = null; pickTab('traps', 'spikes'); updateTray(); setTrayOpen(true); }, done: () => selected === 'spikes' || countType('spikes') > (tutFlags.sp0 || 0) },
     { id: 'place', text: 'Postaw je na trasie bohaterów: stuknij pole z pulsującym kółkiem (albo inne pole na ich drodze).', tile: () => tutPathTile(0.25, 'spikes'), done: () => countType('spikes') > (tutFlags.sp0 || 0) },
-    { id: 'hold', text: 'Przytrzymaj palec na kafelku Strzały na dole: rozwinie się opis, co robi i gdzie stoi. Tak sprawdzisz każdy element.', hl: ['#item-arrows'], prep: () => { selected = null; tutFlags.tip0 = tutFlags.tipN || 0; pickTab('traps', 'arrows'); setTrayOpen(true); }, done: () => (tutFlags.tipN || 0) > (tutFlags.tip0 || 0), skip: true },
-    { id: 'move', text: () => movingKey ? 'Masz ją w ręce: stuknij pole z przerywaną ramką, żeby ją tam postawić.' : 'Postawioną pułapkę przeniesiesz za darmo: stuknij tę w kółku (podniesiesz ją), potem pole z przerywaną ramką. Przytrzymanie palca na postawionej zdejmuje ją i oddaje Esencję.', tile: () => { const it = [...fl.items.values()].find(o => o.sys); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); }, done: () => !!tutFlags.moved, skip: true },
+    { id: 'hold', text: () => PC() ? 'Najedź myszką na kafelek Strzały (albo kliknij go prawym przyciskiem): rozwinie się opis, co robi i gdzie stoi. Tak sprawdzisz każdy element.' : 'Przytrzymaj palec na kafelku Strzały na dole: rozwinie się opis, co robi i gdzie stoi. Tak sprawdzisz każdy element.', hl: ['#item-arrows'], prep: () => { selected = null; tutFlags.tip0 = tutFlags.tipN || 0; pickTab('traps', 'arrows'); setTrayOpen(true); }, done: () => (tutFlags.tipN || 0) > (tutFlags.tip0 || 0), skip: true },
+    { id: 'move', text: () => movingKey ? 'Masz ją w ręce: stuknij pole z przerywaną ramką, żeby ją tam postawić.' : 'Postawioną pułapkę przeniesiesz za darmo: stuknij tę w kółku (podniesiesz ją), potem pole z przerywaną ramką.' + (PC() ? ' Prawy przycisk na postawionej (dwa razy) zdejmuje ją i oddaje Esencję.' : ' Przytrzymanie palca na postawionej zdejmuje ją i oddaje Esencję.'), tile: () => { const it = [...fl.items.values()].find(o => o.sys); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); }, done: () => !!tutFlags.moved, skip: true },
     { id: 'spend', text: () => 'Masz jeszcze ' + Math.floor(fl.essence) + ' Esencji. W pierwszej fali nie oszczędzaj: dostaw pułapki przy trasie, kolce na podłogę, strzały na ścianę (też na niską od frontu, strzałka pokazuje, w który pokój strzelą). Pokój mieści kilka (licznik w rogu).', hl: ['#tab-traps'], prep: () => { selected = null; tab = 'traps'; updateTray(); }, done: () => fl.phase !== 'build' || fl.essence < 3 || !tutAnySpot(), skip: true },
     { id: 'go', text: 'Gotowe. Wypuść falę przyciskiem w prawym dolnym rogu. Pasek budowy schowa się na czas fali, a w fali ▲ Budowa zatrzymuje grę, żebyś mógł spokojnie dostawić pułapki.', hl: ['#btn-action'], done: () => fl.phase === 'raid' },
     // the wave: one line at the top; the first check jumps to 'check' (after its card)
     { id: 'novice', text: 'Nadchodzą nowicjusze. Każda rana to Groza, a linia u góry zamienia ją w Esencję: Groza × Chciwość × Combo.', hl: ['#h-eq'], raid: true, ack: true },   // 1.15.1: the game stands until Rozumiem (was: gone after 9 s, the game going on)
     { id: 'check', text: 'Stuknij w mapę, gdy koralik będzie w obwódce (draśnięcie) albo w pełnym polu (krytyk). Trafiony wynik pułapka pamięta (znaczek w rogu pola), także w kolejnych falach.', raid: true, done: () => tutFlags.resolved || (!fl.check && tutT > 2) },
     { id: 'herocard', text: 'Stuknij bohatera (albo listę w rogu): zobaczysz jego kartę i klasę. Gra stoi, dopóki jej nie przeczytasz.', raid: true, skip: true, done: () => tutFlags.heroCard },
-    { id: 'ff', text: 'Teraz przytrzymaj palec na mapie: gra ruszy przyspieszona, a pułapki biją same (z zapamiętaną siłą albo jak draśnięcie). Gdy nic się nie dzieje, gra przyspiesza sama (▶▶ spokój).', raid: true, skip: true, hold: true, done: () => tutFlags.ffUsed },
+    { id: 'ff', text: () => (PC() ? 'Teraz przytrzymaj F (albo lewy przycisk myszy na mapie): ' : 'Teraz przytrzymaj palec na mapie: ') + 'gra ruszy przyspieszona, a pułapki biją same (z zapamiętaną siłą albo jak draśnięcie). Gdy nic się nie dzieje, gra przyspiesza sama (▶▶ spokój).', raid: true, skip: true, hold: true, done: () => tutFlags.ffUsed },
     // wave 2 (after the first card from the shop and the card about the heart)
     { id: 'loot', wave: 2, text: 'Serce chce Esencji, a Esencję mnoży chciwość. Łup (zakładka Łup) wabi bohaterów i podbija chciwość: złote orby w równaniu. Stawiaj go w pokojach, przez które przejdą.', build: true, hl: ['#tab-loot'], prep: () => { pickTab('loot'); setTrayOpen(true); }, next: true },
     { id: 'upgrade', wave: 2, text: () => { const it = tutUpTarget(); return 'Dwa szybkie stuknięcia w element to ulepszenie: mocniej bije i ma szersze strefy checku. Stuknij dwa razy ' + (it ? ITEMS[it.type].name.toLowerCase() : 'pułapkę') + ' w kółku (koszt: ' + (it ? upgCost(it) : 6) + ' Esencji).'; }, build: true, tile: () => { const it = tutUpTarget(); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); const it = tutUpTarget(); if (it && fl.essence < upgCost(it)) fl.essence = upgCost(it); }, done: () => !!tutFlags.upgraded, skip: true },
@@ -2560,7 +2701,7 @@
     returner: 'W drużynie jest powracający: uciekł Ci kiedyś, a teraz wraca silniejszy, z blizną i z pamięcią Twojego lochu (stuknij go na liście).'
   };
   let tutPopNow = null; const tutPopQ = [];
-  function coachSync() { const co = $('#coach'); coachInset = !co.hidden && co.classList.contains('top') ? co.offsetTop + co.offsetHeight : 0; }   // read once per change, not every frame
+  function coachSync() { const co = $('#coach'); coachInset = !co.hidden && co.classList.contains('top') ? Math.round(co.getBoundingClientRect().bottom - stage.getBoundingClientRect().top) : 0; }   // 1.25: on the screen (the coach is zoomed on a big screen)   // read once per change, not every frame
   // 1.12: the cards show in the first runs (with the guide or not), each once in this browser
   const POPS_KEY = 'yatd-pops';
   const popsSeen = () => { try { return JSON.parse(localStorage.getItem(POPS_KEY) || '{}') || {}; } catch (e) { return {}; } };
@@ -2720,7 +2861,7 @@
   kick();   // 1.24 (C): the paced loop (p6 FP)
 
   // Hook for automated checks; no effect on normal play.
-  const yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; },   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  const yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

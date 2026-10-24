@@ -33,7 +33,7 @@ STATUS = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) =>
   cases.forEach(c => ok(c[1] === c[2], 'status, ' + c[0] + ': ' + c[1]));
   let bad = 0; for (const won of [false, true]) for (const res of [null, 'end', 'quit', 'win']) for (const c of [0, 1, 3]) { const s = set(won, res, c); if (!['win', 'end', 'quit', 'active'].includes(s) || (won && s !== 'win')) bad++; }
   ok(!bad, 'no record with won true and another status, every status of the set: ' + bad);
-  ok(G.runSummary().version === 59, 'log version 59');
+  ok(G.runSummary().version >= 59, 'log version 59+');
   out.cases = cases.map(c => c[0] + ' -> ' + c[1]);
   return { fails, out }; }"""
 # ---------- 2. P0-2 the crystals: every change with its cause; hunger says so ----------
@@ -117,7 +117,7 @@ RECORDS = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) =
   ok(s.total === scs.reduce((a, b) => a + b, 0) + s.endBonus && s.endBonus === 0, 'total = the waves + endBonus (0): ' + JSON.stringify(out.total));
   ok(s.status === 'quit' && s.waveMini.length === 3 && s.waveMini[2].part === 1, 'the partial wave of a quit counts');
   const doc = R.waveDocs[R.waveDocs.length - 1];
-  ok(doc && doc.version === 59 && 'essenceAtWaveStart' in doc.summary && 'crystalEvents' in doc.summary && 'checkByShape' in doc.summary.stats, 'the wave document carries the fields');
+  ok(doc && doc.version >= 59 && 'essenceAtWaveStart' in doc.summary && 'crystalEvents' in doc.summary && 'checkByShape' in doc.summary.stats, 'the wave document carries the fields');
   ['playerId', 'crystals0', 'crystalEvents', 'activeSec', 'sessions', 'endBonus', 'status'].forEach(k => ok(k in s, 'runs record: ' + k));
   ok(typeof s.playerId === 'string' && s.playerId.length > 4 && s.playerId === G.playerIdNow(), 'playerId');
   ok(['calmWaves', 'calmGap', 'okPulse', 'okSwing'].every(k => k in s.settings), 'the new settings are logged');
