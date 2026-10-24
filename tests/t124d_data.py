@@ -133,7 +133,7 @@ UNSP2 = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => 
   const R = G.run, sc = document.querySelector('#h-score'), act = () => document.querySelector('#btn-action').click();
   ok(sc.classList.contains('afford'), 'the counter pulses while something is affordable');
   act(); out.ask1 = { kind: G.modalKind, phase: G.fl.phase, txt: (document.querySelector('#card') || {}).textContent.slice(0, 140) };
-  ok(G.modalKind === 'unspent' && G.fl.phase === 'build' && /Masz 24 Esencji/.test(out.ask1.txt) && /Rozpocząć falę mimo to\?/.test(out.ask1.txt), 'the question: ' + JSON.stringify(out.ask1));
+  ok(G.modalKind === 'unspent' && G.fl.phase === 'build' && /Masz 24 Esencji/.test(out.ask1.txt) && /Rozpocząć falę mimo to\?|Warto jeszcze postawić/.test(out.ask1.txt), 'the question: ' + JSON.stringify(out.ask1));
   document.querySelector('#unspent-back').click();
   ok(!G.modalKind && G.fl.phase === 'build', 'Buduj dalej: back to building');
   act(); ok(G.modalKind === 'unspent', 'asked again');

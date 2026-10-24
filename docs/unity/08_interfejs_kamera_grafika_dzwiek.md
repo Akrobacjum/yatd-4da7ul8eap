@@ -480,7 +480,7 @@ Stuknięcie w "Fala X/10" w budowie (`#h-wave`) otwiera kartę: podtytuł "Wieś
 
 ### 3.21 Pytanie o niewydaną Esencję
 
-Przycisk akcji w budowie: `askUnspent()` przed `startWave()`; gdy zwraca prawdę, otwiera okno 3.20a i fala nie startuje. Nie w przewodniku. Testy klikające "Wypuść falę" z Esencją muszą nacisnąć `#unspent-go` albo ustawić `yatd-noask-ess`.
+Przycisk akcji w budowie: `askUnspent()` przed `startWave()`; gdy zwraca prawdę, otwiera okno 3.20a i fala nie startuje. Od 1.25.1 okno podpowiada, co kupić (`suggestBuys`): 1-2 elementy dostępne teraz w pasku (otwarte, odblokowane, na które stać), z wolnym miejscem w lochu, każdy z ceną i powodem ("pasuje na trasę bohaterów", "mocne w ostatniej fali (N pkt)", "chciwość pomoże nakarmić serce"). Ocena: pułapka 3, potwór 2,6, łup 1,6, budowla 1; + do 1,5 za droższy z dostępnych; + 1-2 za punkty w ostatniej fali; + 2 dla łupu przy głodzie; + 0,6, gdy stoi na trasie albo ją obejmuje. Drugi jest innego rodzaju i mieści się w reszcie Esencji, jeśli się da. Stuknięcie podpowiedzi zamyka okno, rozwija pasek, przechodzi do zakładki, wybiera element (wolne miejsca świecą na mapie) i podświetla kafelek na 6 s (`flashSuggest`, klasa `.suggest`); Buduj dalej podświetla oba. Bez podpowiedzi zostaje stary tekst z najtańszym elementem. Log: `stats.unspentPicks`, `stats.unspentPick`. Nie w przewodniku. Testy klikające "Wypuść falę" z Esencją muszą nacisnąć `#unspent-go` albo ustawić `yatd-noask-ess`.
 
 ### 3.20 Martwe okna
 

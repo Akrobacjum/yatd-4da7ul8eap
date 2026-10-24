@@ -70,7 +70,7 @@ Rdzeń to skill check: gracz robi go setki razy w runie, więc ma bawić bez ule
 | Kryształy | 3 (`DEFAULTS.crystals`), nie odrastają, nie da się ich kupić (wyjątek: karta Żarłoczne serce) | 03 |
 | Esencja na start | 30, z czego loch od razu stawia kolce i strzały (6), zostaje 24 | 03 |
 | Przychód po fali | +8 (`DEFAULTS.waveIncome`) plus karty | 03 |
-| Drużyna | 3 bohaterów w falach 1-3 (w pierwszym runie z przewodnikiem fala 1: 2 nowicjuszy), 4 w falach 4-10, czempion i legenda jako piąty, 5 od fali 11, 6 od fali 15; od 1.24 fale 1-4 grają jak dawne 3; 3,75; 4,3; 4,6 (poziom bazowy 4,77 / 5,86 / 6,54 / 6,86) | 04 |
+| Drużyna | 3 bohaterów w falach 1-3 (w pierwszym runie z przewodnikiem fala 1: 2 nowicjuszy), 4 w falach 4-10, czempion i legenda jako piąty, 5 od fali 11, 6 od fali 15; od 1.25.1 fale 1-4 grają jak dawne 2; 2,75; 3,5; 4,25 (w 1.24 jak 3; 3,75; 4,3; 4,6), a pierwszy run z przewodnikiem jak w v58 | 04 |
 | Więzi (1.21, 1.24) | pierwsza para 75%, druga 45%: przyjaciele, rodzeństwo 15%, mistrz i uczeń 20%, rywale 45% | 04, 06 |
 | Nemezis (1.23) | powracający drugi raz albo z kryształem; +2 poziomy, odwaga ×1,4, uraza, zna swoje pokoje; najwyżej 2; nagroda za głowę 10 + 5 × powroty | 04, 06 |
 | Głód serca | od fali 2: 37 × 1,25^(fala - 2) (37, 46, 58, 72, 90, 113, 141, 176, 221); serce zjada pierwsze porcje (od 1.16.1 na bieżąco, przy każdym zdarzeniu), fala poniżej progu oddaje wszystko i kryształ | 03 |

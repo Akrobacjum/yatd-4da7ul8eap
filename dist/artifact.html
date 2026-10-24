@@ -361,6 +361,8 @@ label.askno { display: flex; gap: 6px; align-items: center; font-size: 13px; col
 .item.dslot.shoptile { border-top-color: var(--gold); } .item.dslot.shoptile .dtag { color: var(--gold); }
 .item.dslot.shoptile.gift { background-color: rgba(196, 160, 82, 0.14); animation: tutpulse 1.4s ease-in-out infinite; outline: 2px solid rgba(196, 160, 82, 0.7); }
 .item.dslot.stash { border-style: dashed; opacity: 0.8; }
+.tray > .item.suggest { outline: 2px solid var(--gold); outline-offset: 1px; animation: tutpulse 1s ease-in-out infinite; }   /* 1.25.1: suggested by the unspent-Esencja question */
+.choices.sugg .btn b { font-size: 15px; } .choices.sugg .btn span { font-size: 12.5px; }
 
 /* ---------- the action bar ---------- */
 .actions { display: flex; gap: 8px; align-items: stretch; }
@@ -5182,7 +5184,7 @@ html.still #h-score.afford { animation: none; color: #ffd27a; }
       if (run.layout.breach && !fl.breach) delete run.layout.breach;   // its wall is gone (dug over, demolished): nothing left to come through
     }
     fl.cardMult = cardMultNow();
-    if (run.essAtStartW !== run.wave) { run.essAtStartW = run.wave; run.essAtStart = fl.essence; run.previewN = 0; }   // 1.24 (D, P0-6): essenceAtStart, previewOpened (a resumed build keeps them)
+    if (run.essAtStartW !== run.wave) { run.essAtStartW = run.wave; run.essAtStart = fl.essence; run.previewN = 0; run.pv = null; }   // 1.24 (D, P0-6): essenceAtStart, previewOpened (a resumed build keeps them)
     floats = []; particles = []; orbs = [];
     selected = null; movingKey = null; movingObj = null; holdInfo = null; paused = false; ff = false;
     clearUndo(); setTrayOpen(UI.trayBuild || run.tut >= 0);
@@ -5391,8 +5393,12 @@ html.still #h-score.afford { animation: none; color: #ffd27a; }
   // and the level cap follow (the old cap of 4 levels in waves 1-2 is gone); the party size (3 in waves 1-3), the four classic
   // classes in waves 1-3, patience, the hunger (from wave 2) and the heart that will not give the crystal up in wave 1 stay.
   // The tutorial's first wave (tutW1: run.tutorial and wave 1) stays as it was: 2 rookies.
-  const EARLY_W = [0, 3, 3.75, 4.3, 4.6];
-  const earlyW = n => tutW1(n) || !(n < EARLY_W.length) ? n : EARLY_W[n];   // 1.24: the old wave a wave plays like
+  // 1.25.1 (playtests of 1.24-1.25, 5 runs against 23 of v58: crystals lost in wave 2 11% -> 40%, wave 3 7% -> 75%, wave 4
+  // 21% -> 33%; a new player lost his first run, the guided one, in wave 3; the build lags: wave 2-3 meets wave 4-5 levels with
+  // a wave 2-3 dungeon): halfway back. Wave 1 like the old wave 2, then 2,75 / 3,5 / 4,25, from wave 5 as before. The guided
+  // first run (run.tutorial) plays the v58 curve again, the cap of 4 levels in waves 1-2 included (EARLY_W_TUT).
+  const EARLY_W = [0, 2, 2.75, 3.5, 4.25], EARLY_W_TUT = [0, 1, 2, 3, 4];
+  const earlyW = n => { if (tutW1(n) || !(n < EARLY_W.length)) return n; return (run && run.tutorial ? EARLY_W_TUT : EARLY_W)[n]; };   // 1.24: the old wave a wave plays like
   const atW = (f, w) => { const a = Math.floor(w), k = w - a; return k > 1e-9 ? f(a) * (1 - k) + f(a + 1) * k : f(a); };   // 1.24: f between two waves
   const hpK0 = m => (1 + (EARLY_HP[m] || 0) * S.earlyHp) * comboHp(m);   // 1.24: the HP bonus up to 1.23
   const earlyHpK = n => Math.max(hpK0(n), atW(hpK0, earlyW(n)));   // 1.24: never below its own (wave 4: the old wave 5 has less bonus)
@@ -5416,6 +5422,7 @@ html.still #h-score.afford { animation: none; color: #ffd27a; }
       const bonus = i === 0 ? 1 + hl : isRecruit ? -3 : hl / 2;
       let L = Math.max(1, Math.round(base + bonus + Math.random() * 1.7 - 1.2));
       if (tutW1(n)) L = Math.min(L, 2);   // 1.24: only the tutorial's first wave keeps a cap (waves 1-2 had 4)
+      else if (n <= 2 && run.tutorial) L = Math.min(L, 4);   // 1.25.1: the guided run keeps v58's cap of 4 in waves 1-2
       const e = makeHero(t, L, n, used);
       if (isHunter) { e.trait = 'greedy'; e.hunter = true; }   // 1.05: a treasure hunter is a mark on any class (the bag), not a thief
       if (isRecruit) e.recruit = true;
@@ -5873,7 +5880,7 @@ html.still #h-score.afford { animation: none; color: #ffd27a; }
       essence: Math.round(fl.essence), stats: roundStats(fl.stats), items, partial: !!partial, perf: ps, errors: PERF.errs.length ? PERF.errs.splice(0) : undefined,
       checks: nChk, cpm: realMin > 0 ? Math.round(nChk / realMin * 10) / 10 : 0, frozen: ps ? ps.frozen : null, memFires: s0.memFires || 0, skullOff: s0.skullOff || 0, classes: fl.heroes.map(h => h.type), trayPauses: s0.trayPauses || 0,
       crystalEvents: crystalEvTake(), essenceAtStart: run.essAtStart != null ? Math.round(run.essAtStart) : null, essenceAtWaveStart: fl.essW0 != null ? Math.round(fl.essW0) : null,   // 1.24 (D, P0-2, P0-6)
-      itemsCount: fl.itemsW0 != null ? fl.itemsW0 : fl.items.size, roomsCount: fl.roomsW0 != null ? fl.roomsW0 : run.layout.cells.size, previewOpened: run.previewN || 0, fearUi: Object.assign({ card: 0, bar: 0 }, fl.fearUi || {}) });   // 1.24 (D, P0-6)
+      itemsCount: fl.itemsW0 != null ? fl.itemsW0 : fl.items.size, roomsCount: fl.roomsW0 != null ? fl.roomsW0 : run.layout.cells.size, previewOpened: run.previewN || 0, previewVis: pvTake(), fearUi: Object.assign({ card: 0, bar: 0 }, fl.fearUi || {}) });   // 1.24 (D, P0-6)
   }
   // after the wave summary: game over, or upgrades and the next build phase
   function afterSummary() {
@@ -16284,7 +16291,7 @@ html.still #h-score.afford { animation: none; color: #ffd27a; }
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.25 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.25.1 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -16334,9 +16341,11 @@ html.still #h-score.afford { animation: none; color: #ffd27a; }
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.25'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.25.1'));
     const ul2 = el('ul', 'conseq');
     [
+     '1.25.1: łagodniejszy początek runu. Fale 1-4 w połowie drogi między 1.24 a wcześniejszymi wersjami (fala 1 jak dawna druga), od fali 5 bez zmian. Pierwszy run z przewodnikiem ma znowu dawną, łagodną krzywą.',
+     '1.25.1: pytanie o niewydaną Esencję podpowiada, co kupić: jeden albo dwa elementy z powodem (np. pasuje na trasę bohaterów). Stuknięcie wybiera element, a Buduj dalej podświetla podpowiedzi w pasku.',
      '1.25: telefon, tablet i komputer. Na tablecie i dużym ekranie interfejs jest większy, a na ekranie szerszym niż wysokim budowa jest w panelu po prawej, HUD w lewym górnym rogu mapy, a mapa zajmuje resztę.',
      '1.25: mysz i touchpad. Przeciąganie przesuwa mapę także po włączeniu przyspieszenia i gdy widać cały loch, kółko przybliża, touchpad przesuwa mapę dwoma palcami i przybliża szczypaniem. Prawy przycisk: na kafelku opis, na postawionym elemencie zdjęcie (drugie kliknięcie potwierdza). Najechanie myszką pokazuje opis kafelka, elementu i bohatera.',
      '1.25: klawiatura. WASD i strzałki przesuwają mapę, + i - przybliżają, 1-9 wybierają kafelki (numer w rogu), Q i E zmieniają zakładkę, Enter wypuszcza falę, B zwija budowę. Pełna lista: Menu > Sterowanie.',
@@ -17186,15 +17195,67 @@ html.still #h-score.afford { animation: none; color: #ffd27a; }
     openModal({ type: 'unspent', e, ch });
     return true;
   }
+  // 1.25.1 (playtest brief: say what to buy, not only "you have X"): one or two things worth the Esencja left, each with why.
+  // Candidates: what the tray offers now (open, unlocked, affordable) with a free spot in the dungeon. Score: a trap 3, a monster
+  // 2,6, loot 1,6, a building 1; + up to 1,5 for the dearer (stronger) of what is affordable; + 1-2 for what scored in the last wave;
+  // + 2 for loot when the heart is hungry (greed multiplies Esencja); + 0,6 when it fits on (or covers) the heroes' way. The second
+  // is of another kind and fits in what the first leaves, when there is one.
+  function suggestBuys(e) {
+    if (!run || !fl) return [];
+    const onWay = new Set(shortestPath().map(p => key(p[0], p[1]))), last = run.waves.length ? run.waves[run.waves.length - 1] : null;
+    const lastPts = t => { const r = last && last.items && last.items[t]; return r ? (r.pts || 0) + (r.fearPts || 0) : 0; };
+    const hr = hungerRisk(), C = [];
+    ITEM_ORDER.forEach(t => {
+      const I = ITEMS[t]; if (!I || TOOLS[t] || MODES[t] || ROOMTYPES[t] || KINDS[t] || !onbOk(t) || !isOpenT(t)) return;
+      const c = costOf(t); if (!(c > 0) || c > e) return;
+      let spots = 0, way = false;
+      for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
+        if (!canPlace(t, x, y)) continue;
+        spots++;
+        if (!way && (onWay.has(key(x, y)) || (ACTIVE[t] && areaOf({ type: t, x, y }).some(a => onWay.has(key(a[0], a[1])))))) way = true;
+      }
+      if (!spots) return;
+      const kind = TRAPS[t] ? 'trap' : MONSTERS[t] ? 'monster' : isLoot(t) ? 'loot' : BUILDINGS[t] ? 'building' : 'other';
+      let sc = { trap: 3, monster: 2.6, loot: 1.6, building: 1, other: 0.5 }[kind] + Math.min(1.5, 1.5 * c / Math.max(3, e));
+      const lp = lastPts(t), why = [];
+      if (lp > 0) { sc += 1 + Math.min(1, lp / 200); why.push('mocne w ostatniej fali (' + Math.round(lp) + ' pkt)'); }
+      if (kind === 'loot' && hr) { sc += 2; why.push('chciwość pomoże nakarmić serce'); }
+      if (way) { sc += 0.6; if (kind !== 'loot') why.push('pasuje na trasę bohaterów'); }
+      if (!why.length) why.push(I.tag || '');
+      C.push({ t, c, kind, sc, why: why[0] });
+    });
+    C.sort((a, b) => b.sc - a.sc);
+    if (!C.length) return [];
+    const a = C[0], rest = C.slice(1);
+    const b = rest.find(q => q.kind !== a.kind && q.c <= e - a.c) || rest.find(q => q.c <= e - a.c) || rest.find(q => q.kind !== a.kind);
+    return b ? [a, b] : [a];
+  }
+  function flashSuggest(ts) {   // the suggested tiles pulse in the tray for 6 s
+    document.querySelectorAll('#tray .item.suggest').forEach(b => b.classList.remove('suggest'));
+    ts.forEach(t => { const b = $('#item-' + t); if (b) b.classList.add('suggest'); });
+    clearTimeout(flashSuggest.t); flashSuggest.t = setTimeout(() => document.querySelectorAll('#tray .item.suggest').forEach(b => b.classList.remove('suggest')), 6000);
+  }
   function renderUnspent(card, m) {
     card.appendChild(el('div', 'sub', 'Przed falą ' + run.wave));
     card.appendChild(el('h2', null, 'Masz ' + m.e + ' Esencji'));
-    const hr = hungerRisk();
-    card.appendChild(el('p', null, 'Rozpocząć falę mimo to? Niewydana Esencja nie broni lochu. Najtańszy element: ' + ITEMS[m.ch.t].name + ' (' + m.ch.cost + ').' + (hr ? ' Uwaga na głód: serce chce ' + hr + ' Esencji z tej fali.' : '')));
+    const hr = hungerRisk(), sg = suggestBuys(m.e);
+    fl.stats.unspentPicks = sg.map(q => q.t);
+    card.appendChild(el('p', null, (sg.length ? 'Niewydana Esencja nie broni lochu. Warto jeszcze postawić:' : 'Rozpocząć falę mimo to? Niewydana Esencja nie broni lochu. Najtańszy element: ' + ITEMS[m.ch.t].name + ' (' + m.ch.cost + ').') + (hr ? ' Uwaga na głód: serce chce ' + hr + ' Esencji z tej fali.' : '')));
     const lab = el('label', 'askno'), cb = el('input'); cb.type = 'checkbox'; cb.id = 'unspent-noask'; lab.appendChild(cb); lab.appendChild(document.createTextNode(' Nie pytaj więcej'));
     const keep = () => { if (cb.checked) try { localStorage.setItem(NOASK_KEY, '1'); } catch (e) {} };
+    // a suggestion: to its tab, the tile picked (its free spots light up on the map), the tile pulses
+    const take = t => {
+      keep(); fl.stats.unspentPick = t; closeModal();
+      const tb = TABS.find(x => x.items.includes(t)); if (!trayIsOpen()) setTrayOpen(true, true); if (tb) pickTab(tb.id, t);
+      selected = t; movingKey = null; movingObj = null; updateTray(); flashSuggest([t]);
+    };
+    if (sg.length) {
+      const box = el('div', 'choices sugg');
+      sg.forEach(q => { const b = btn('gold', ITEMS[q.t].name + ' · ' + q.c + ' Esencji', q.why, () => take(q.t)); b.id = 'unspent-sug-' + q.t; b.dataset.t = q.t; box.appendChild(b); });
+      card.appendChild(box);
+    }
     const row = el('div', 'row');
-    const back = btn('primary', 'Buduj dalej', null, () => { keep(); closeModal(); }); back.id = 'unspent-back';
+    const back = btn(sg.length ? '' : 'primary', 'Buduj dalej', null, () => { keep(); closeModal(); if (sg.length) { const tb = TABS.find(x => x.items.includes(sg[0].t)); if (!trayIsOpen()) setTrayOpen(true, true); if (tb) pickTab(tb.id, sg[0].t); flashSuggest(sg.map(q => q.t)); } }); back.id = 'unspent-back';
     const go = btn('', 'Wypuść falę', 'mimo to', () => { keep(); fl.stats.unspentGo = (fl.stats.unspentGo || 0) + 1; closeModal(); startWave(); }); go.id = 'unspent-go';
     row.appendChild(back); row.appendChild(go); card.appendChild(row); card.appendChild(lab);
   }
@@ -17725,7 +17786,7 @@ html.still #h-score.afford { animation: none; color: #ffd27a; }
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 60;   // 1.25: runs.screen (w, h, ui, wide, mouse, touch: which layout and pointer the run was played with). Before: 1.24 Part B (the same 59): runs: tut.stepTimes (seconds on each step, by TUT order) and tut.stepIds; stage now follows the wave in the first run (runs.stage = the stage reached); waves: fearUi.bar (taps on a fear bar), stats.tutSpike (the guide's spikes sprung once). 1.24 Part D (59):runs: status one of win/end/quit/active (won => win), playerId, crystals0 + crystalEvents [{t, delta, cause, wave, why}] (cause stolen/hunger/saved/card/other), activeSec, sessions [{start, end}], endBonus (total = sum of waveMini.sc + endBonus); waves summary: crystalEvents, essenceAtStart, essenceAtWaveStart, itemsCount, roomsCount, previewOpened, fearUi {card, bar}, stats.checkByShape {shape: {ok, crit, miss, skip, auto}}, stats.calmAuto, unspentAsk, unspentGo; settings calmWaves, calmGap, okPulse, okSwing. 58, 1.24 Part A adds runs/waves fused (the fused ★ card ids), stats: exhausted, forcedOut, tdSeen; timeline xh (worn out: how many inside) fo (forced out: id, x, y, state). 1.23 adds heroes[].nem and stats: nemeses, nemesisNew, nemesisDropped, nemRooms, nemTraps, nemesisReply, nemesisWarn, nemesisBoast, nemesisRage, nemesisDown, nemesisOut, nemesisCrystal, grudgeHits, grudgeDone, bounties, essBounty, bountyTalk, fallenMemory; timeline nn nm ng nd nx nr nb no nw2 bn fm. 1.22 adds stats: escortForms, escortGuards, guardSoaks, guardSoakDmg, handOvers, lastStands, lastStandT, sacrifices, sacrificeFired, youFirst, taps, tapFound, notThisWay, notThisWayMoved, frontLines, woundedBack, nearExit; timeline ef gs ho lx le sf sd yf tp tf nw fm wb ne. 1.21 adds heroes[].bond (type[:role]:id) and stats: bonds, bondsBy, bondLines, griefs, revengeVows, revengeFights, grownUp, noLeave, noLeaveSaved, mentorWatch, mentorProud, rivalMock, quarrels, quarrelStops, quarrelWins, quarrelSulks, bets, betsWon, betsLost, betsOff; timeline bo bk gf vw gu rm mw mp qq nl ns ob bt be. 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  const LOG_VERSION = 61;   // 1.25.1: waves.summary.previewVis {buildSec, sec, openSec, coveredSec, firstAt} (how long the next wave's preview was on screen in the build), stats.unspentPick / unspentPicks (the buy hint in the unspent-Esencja question). 1.25 (60): runs.screen (w, h, ui, wide, mouse, touch: which layout and pointer the run was played with). Before: 1.24 Part B (the same 59): runs: tut.stepTimes (seconds on each step, by TUT order) and tut.stepIds; stage now follows the wave in the first run (runs.stage = the stage reached); waves: fearUi.bar (taps on a fear bar), stats.tutSpike (the guide's spikes sprung once). 1.24 Part D (59):runs: status one of win/end/quit/active (won => win), playerId, crystals0 + crystalEvents [{t, delta, cause, wave, why}] (cause stolen/hunger/saved/card/other), activeSec, sessions [{start, end}], endBonus (total = sum of waveMini.sc + endBonus); waves summary: crystalEvents, essenceAtStart, essenceAtWaveStart, itemsCount, roomsCount, previewOpened, fearUi {card, bar}, stats.checkByShape {shape: {ok, crit, miss, skip, auto}}, stats.calmAuto, unspentAsk, unspentGo; settings calmWaves, calmGap, okPulse, okSwing. 58, 1.24 Part A adds runs/waves fused (the fused ★ card ids), stats: exhausted, forcedOut, tdSeen; timeline xh (worn out: how many inside) fo (forced out: id, x, y, state). 1.23 adds heroes[].nem and stats: nemeses, nemesisNew, nemesisDropped, nemRooms, nemTraps, nemesisReply, nemesisWarn, nemesisBoast, nemesisRage, nemesisDown, nemesisOut, nemesisCrystal, grudgeHits, grudgeDone, bounties, essBounty, bountyTalk, fallenMemory; timeline nn nm ng nd nx nr nb no nw2 bn fm. 1.22 adds stats: escortForms, escortGuards, guardSoaks, guardSoakDmg, handOvers, lastStands, lastStandT, sacrifices, sacrificeFired, youFirst, taps, tapFound, notThisWay, notThisWayMoved, frontLines, woundedBack, nearExit; timeline ef gs ho lx le sf sd yf tp tf nw fm wb ne. 1.21 adds heroes[].bond (type[:role]:id) and stats: bonds, bondsBy, bondLines, griefs, revengeVows, revengeFights, grownUp, noLeave, noLeaveSaved, mentorWatch, mentorProud, rivalMock, quarrels, quarrelStops, quarrelWins, quarrelSulks, bets, betsWon, betsLost, betsOff; timeline bo bk gf vw gu rm mw mp qq nl ns ob bt be. 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
@@ -17775,11 +17836,34 @@ html.still #h-score.afford { animation: none; color: #ffd27a; }
     const playing = !!(fl && fl.phase === 'raid' && !paused && !modalOpen);
     if (!playing && now - actInput > ACT_IDLE * 1000) return;
     run.activeSec = (run.activeSec || 0) + dt;
+    pvTick(dt);   // 1.25.1
     const ss = run.sessions || (run.sessions = []), cur = ss[ss.length - 1];
     if (!cur || run.sessNew || now - cur[1] > SESSION_GAP * 1000) { ss.push([Math.round(now - dt * 1000), now]); run.sessNew = false; } else cur[1] = now;
     if (ss.length > 80) ss.splice(0, ss.length - 80);
   }
   setInterval(() => { try { activeTick(); } catch (e) {} }, 1000);
+  // 1.25.1: how long the next wave's preview was on the screen in the build, not only how often it was unfolded (previewOpened).
+  // Every second of the build the player is there for (the same gate as activeSec): buildSec; with the panel drawn and most of it
+  // the topmost thing on the screen (2 of 3 points along it: no card, coach, tip or HUD over it): sec (openSec of them with the full
+  // list); drawn but covered: coveredSec; firstAt = the build second it was first seen. One record per build (run.pv), in the wave's
+  // summary as previewVis.
+  function previewState() {
+    const r = uiRects.list; if (!r || !fl || fl.phase !== 'build') return 'none';
+    if (modalOpen) return 'covered';
+    const cr = cv.getBoundingClientRect(), x0 = cr.left + OX + r.x, y0 = cr.top + OY + r.y, ym = y0 + r.h / 2;
+    let on = 0;
+    [0.12, 0.5, 0.88].forEach(f => { const x = x0 + r.w * f; if (x < 0 || ym < 0 || x > innerWidth || ym > innerHeight) return; const t = document.elementFromPoint(x, ym); if (t === cv) on++; });
+    return on >= 2 ? 'vis' : 'covered';
+  }
+  function pvTick(dt) {
+    if (!run || !fl || fl.phase !== 'build') return;
+    const P = run.pv || (run.pv = { buildSec: 0, sec: 0, openSec: 0, coveredSec: 0, firstAt: null });
+    P.buildSec += dt;
+    const s = previewState();
+    if (s === 'vis') { P.sec += dt; if (UI.listOpen) P.openSec += dt; if (P.firstAt == null) P.firstAt = P.buildSec; }
+    else if (s === 'covered') P.coveredSec += dt;
+  }
+  function pvTake() { const P = run && run.pv; if (!P) return null; const r1 = x => x == null ? null : Math.round(x * 10) / 10; return { buildSec: r1(P.buildSec), sec: r1(P.sec), openSec: r1(P.openSec), coveredSec: r1(P.coveredSec), firstAt: r1(P.firstAt) }; }
   // 1.24 (D, P0-2): the summary says in one red line why a crystal went (the testers lost crystals to hunger without noticing)
   function crystalWhy(body, H, heart) {
     const lines = [];
@@ -18563,7 +18647,7 @@ html.still #h-score.afford { animation: none; color: #ffd27a; }
   kick();   // 1.24 (C): the paced loop (p6 FP)
 
   // Hook for automated checks; no effect on normal play.
-  const yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  const yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

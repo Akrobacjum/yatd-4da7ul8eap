@@ -187,7 +187,8 @@ Jak w A.7: siedzą w kodzie, `tools/dump.js` ich nie eksportuje. Mechanika: sekc
 
 | Stała | Plik | Wartość | Do czego |
 |---|---|---|---|
-| `EARLY_W` | `p3_flow.js` | `[0, 3, 3.75, 4.3, 4.6]` | trudniejsze fale 1-4 (sekcja 04, 3.9) |
+| `EARLY_W` | `p3_flow.js` | `[0, 2, 2.75, 3.5, 4.25]` (1.25.1; w 1.24 `[0, 3, 3.75, 4.3, 4.6]`) | trudniejsze fale 1-4 (sekcja 04, 3.9) |
+| `EARLY_W_TUT` | `p3_flow.js` | `[0, 1, 2, 3, 4]` | 1.25.1: pierwszy run z przewodnikiem po staremu (v58), limit poziomu 4 w falach 1-2 |
 | `NEM_TITLE` | `p5_ai.js` | `thief` Złodziej/Złodziejka Kryształu, `avenger` Mściciel/Mścicielka, `scar` Blizna, `survivor` Ocalały/Ocalała, `steady` Niezłomny/Niezłomna | tytuły Nemezis (sekcja 04, 6.9) |
 | `BOND_NOUN` | `p3_flow.js` | `friend` Przyjaciel/Przyjaciółka, `sibling` Brat/Siostra, `rival` Rywal/Rywalka, `mentor` Mistrz/Mistrzyni, `apprentice` Uczeń/Uczennica | etykieta więzi |
 | `BOND_KEY`, `GRIEF_KEY` | `p5_ai.js` | więź -> `bondFriend`/`bondSibling`/`bondRival`/`bondMentor`; `griefFriend`/`griefSibling`/`griefRival` | kwestie więzi |

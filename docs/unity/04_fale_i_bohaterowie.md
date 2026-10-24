@@ -385,10 +385,20 @@ Bossowie (te same założenia, `hl = 0`):
 | 15 | czempion | 26 | 28 | 5072 | 4418 / 2577 / 2945 / 2393 / 2761 / 4970 |
 | 20 | przepowiednia | 39 | 41 | 55033 | 38184 / 22274 / 25456 / 20683 / 23865 / 42957 |
 
-### 3.9 Trudniejszy początek runu (1.24, `p3_flow.js: EARLY_W, earlyW, atW, waveBase0, waveBase, hpK0, earlyHpK, tutW1`)
+### 3.9 Trudniejszy początek runu (1.24, w 1.25.1 w połowie cofnięty; `p3_flow.js: EARLY_W, EARLY_W_TUT, earlyW, atW, waveBase0, waveBase, hpK0, earlyHpK, tutW1`)
+
+**1.25.1 (dane z playtestów 1.24-1.25):** 5 runów na 1.24/1.25 wobec 23 na v58: utracony kryształ w fali 2 11% -> 40%, w fali 3 7% -> 75%, w fali 4 21% -> 33%, w fali 5 62% -> 0% (próbka bardzo mała: 3 graczy). Nowy gracz przegrał pierwszy run z przewodnikiem w fali 3 (fala 2 przyszła z poziomami 5-7 zaraz po 2 nowicjuszach). Loch w fali 2-3 jest jeszcze mały, a poziomy były jak dawniej w fali 4-5. Zmiana:
 
 ```
-EARLY_W = [0, 3, 3.75, 4.3, 4.6]                  // fala 1 gra jak dawna fala 3, 2 jak 3,75, 3 jak 4,3, 4 jak 4,6
+EARLY_W     = [0, 2, 2.75, 3.5, 4.25]   // od 1.25.1: fala 1 jak dawna 2, potem 2,75 / 3,5 / 4,25; od fali 5 bez zmian
+EARLY_W_TUT = [0, 1, 2, 3, 4]           // pierwszy run z przewodnikiem (run.tutorial): krzywa v58, z limitem poziomu 4 w falach 1-2
+earlyW(n)   = tutW1(n) || n >= 5 ? n : (run.tutorial ? EARLY_W_TUT : EARLY_W)[n]
+```
+Średni poziom (test `t124a_play`, 150 drużyn): fala 1 2,9 (v58 1,5; 1.24 4,8), fala 2 4,3 (3,0; 5,9), fala 3 5,5 (4,8; 7,0), fala 4 5,7 (5,8; 6,9). Poniżej opis i wartości 1.24.
+
+
+```
+EARLY_W = [0, 3, 3.75, 4.3, 4.6]                  // 1.24 (od 1.25.1 inne, wyżej): fala 1 gra jak dawna fala 3, 2 jak 3,75, 3 jak 4,3, 4 jak 4,6
 earlyW(n) = tutW1(n) || n >= EARLY_W.length ? n : EARLY_W[n]
 atW(f, w) = f(floor(w)) * (1 - k) + f(floor(w) + 1) * k,   k = w - floor(w)      // liniowo między dwiema falami
 ```

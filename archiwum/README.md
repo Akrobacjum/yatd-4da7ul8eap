@@ -74,3 +74,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.22](1.22.html) | 23.10 | finał fali: eskorta niosącego, przekazanie kryształu, ostatni bastion, poświęcenie, ostrożność po drodze |
 | [Prototype 1.23](1.23.html) | 24.10 | Nemezis: powracający z tytułem, urazą i nagrodą za głowę; pamięć o poległych |
 | [Prototype 1.24](1.24.html) | 24.10 | złote karty z duplikatów, zapadnie, trudniejszy start, wyjście wyczerpanych, częstsze wydarzenia, dane z playtestów, UI bez ramki, samouczek w jednym runie, animacje, wydajność |
+| [Prototype 1.25](1.25.html) | 24.10 | telefon, tablet i komputer: większy interfejs, panel budowy po prawej, mysz, touchpad i klawiatura |

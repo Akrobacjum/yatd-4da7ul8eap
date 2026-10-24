@@ -469,7 +469,7 @@
       if (run.layout.breach && !fl.breach) delete run.layout.breach;   // its wall is gone (dug over, demolished): nothing left to come through
     }
     fl.cardMult = cardMultNow();
-    if (run.essAtStartW !== run.wave) { run.essAtStartW = run.wave; run.essAtStart = fl.essence; run.previewN = 0; }   // 1.24 (D, P0-6): essenceAtStart, previewOpened (a resumed build keeps them)
+    if (run.essAtStartW !== run.wave) { run.essAtStartW = run.wave; run.essAtStart = fl.essence; run.previewN = 0; run.pv = null; }   // 1.24 (D, P0-6): essenceAtStart, previewOpened (a resumed build keeps them)
     floats = []; particles = []; orbs = [];
     selected = null; movingKey = null; movingObj = null; holdInfo = null; paused = false; ff = false;
     clearUndo(); setTrayOpen(UI.trayBuild || run.tut >= 0);
@@ -678,8 +678,12 @@
   // and the level cap follow (the old cap of 4 levels in waves 1-2 is gone); the party size (3 in waves 1-3), the four classic
   // classes in waves 1-3, patience, the hunger (from wave 2) and the heart that will not give the crystal up in wave 1 stay.
   // The tutorial's first wave (tutW1: run.tutorial and wave 1) stays as it was: 2 rookies.
-  const EARLY_W = [0, 3, 3.75, 4.3, 4.6];
-  const earlyW = n => tutW1(n) || !(n < EARLY_W.length) ? n : EARLY_W[n];   // 1.24: the old wave a wave plays like
+  // 1.25.1 (playtests of 1.24-1.25, 5 runs against 23 of v58: crystals lost in wave 2 11% -> 40%, wave 3 7% -> 75%, wave 4
+  // 21% -> 33%; a new player lost his first run, the guided one, in wave 3; the build lags: wave 2-3 meets wave 4-5 levels with
+  // a wave 2-3 dungeon): halfway back. Wave 1 like the old wave 2, then 2,75 / 3,5 / 4,25, from wave 5 as before. The guided
+  // first run (run.tutorial) plays the v58 curve again, the cap of 4 levels in waves 1-2 included (EARLY_W_TUT).
+  const EARLY_W = [0, 2, 2.75, 3.5, 4.25], EARLY_W_TUT = [0, 1, 2, 3, 4];
+  const earlyW = n => { if (tutW1(n) || !(n < EARLY_W.length)) return n; return (run && run.tutorial ? EARLY_W_TUT : EARLY_W)[n]; };   // 1.24: the old wave a wave plays like
   const atW = (f, w) => { const a = Math.floor(w), k = w - a; return k > 1e-9 ? f(a) * (1 - k) + f(a + 1) * k : f(a); };   // 1.24: f between two waves
   const hpK0 = m => (1 + (EARLY_HP[m] || 0) * S.earlyHp) * comboHp(m);   // 1.24: the HP bonus up to 1.23
   const earlyHpK = n => Math.max(hpK0(n), atW(hpK0, earlyW(n)));   // 1.24: never below its own (wave 4: the old wave 5 has less bonus)
@@ -703,6 +707,7 @@
       const bonus = i === 0 ? 1 + hl : isRecruit ? -3 : hl / 2;
       let L = Math.max(1, Math.round(base + bonus + Math.random() * 1.7 - 1.2));
       if (tutW1(n)) L = Math.min(L, 2);   // 1.24: only the tutorial's first wave keeps a cap (waves 1-2 had 4)
+      else if (n <= 2 && run.tutorial) L = Math.min(L, 4);   // 1.25.1: the guided run keeps v58's cap of 4 in waves 1-2
       const e = makeHero(t, L, n, used);
       if (isHunter) { e.trait = 'greedy'; e.hunter = true; }   // 1.05: a treasure hunter is a mark on any class (the bag), not a thief
       if (isRecruit) e.recruit = true;
@@ -1160,7 +1165,7 @@
       essence: Math.round(fl.essence), stats: roundStats(fl.stats), items, partial: !!partial, perf: ps, errors: PERF.errs.length ? PERF.errs.splice(0) : undefined,
       checks: nChk, cpm: realMin > 0 ? Math.round(nChk / realMin * 10) / 10 : 0, frozen: ps ? ps.frozen : null, memFires: s0.memFires || 0, skullOff: s0.skullOff || 0, classes: fl.heroes.map(h => h.type), trayPauses: s0.trayPauses || 0,
       crystalEvents: crystalEvTake(), essenceAtStart: run.essAtStart != null ? Math.round(run.essAtStart) : null, essenceAtWaveStart: fl.essW0 != null ? Math.round(fl.essW0) : null,   // 1.24 (D, P0-2, P0-6)
-      itemsCount: fl.itemsW0 != null ? fl.itemsW0 : fl.items.size, roomsCount: fl.roomsW0 != null ? fl.roomsW0 : run.layout.cells.size, previewOpened: run.previewN || 0, fearUi: Object.assign({ card: 0, bar: 0 }, fl.fearUi || {}) });   // 1.24 (D, P0-6)
+      itemsCount: fl.itemsW0 != null ? fl.itemsW0 : fl.items.size, roomsCount: fl.roomsW0 != null ? fl.roomsW0 : run.layout.cells.size, previewOpened: run.previewN || 0, previewVis: pvTake(), fearUi: Object.assign({ card: 0, bar: 0 }, fl.fearUi || {}) });   // 1.24 (D, P0-6)
   }
   // after the wave summary: game over, or upgrades and the next build phase
   function afterSummary() {

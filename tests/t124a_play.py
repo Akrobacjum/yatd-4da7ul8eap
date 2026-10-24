@@ -94,15 +94,17 @@ TRAPDOOR = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) 
 WAVES = r"""() => { const { G } = T, fails = [], out = { table: [] }; const ok = (c, m) => { if (!c) fails.push(m); };
   while (G.modalKind) G.closeModal(); G.setUser(false); G.newRun(false); while (G.modalKind) G.closeModal();
   const near = (a, b) => Math.abs(a - b) < 1e-6;
-  ok(near(G.waveBase(1), G.waveBase0(3)), 'wave 1 = the old wave 3');
-  ok(near(G.waveBase(2), G.waveBase0(3) * 0.25 + G.waveBase0(4) * 0.75), 'wave 2 = the old 3,75');
-  ok(G.waveBase(3) > G.waveBase0(4) - 1e-9 && G.waveBase(4) > G.waveBase0(4), 'waves 3-4 harder');
+  // 1.25.1: halfway back (wave 1 like the old 2, then 2,75 / 3,5 / 4,25)
+  ok(near(G.waveBase(1), G.waveBase0(2)), 'wave 1 = the old wave 2');
+  ok(near(G.waveBase(2), G.waveBase0(2) * 0.25 + G.waveBase0(3) * 0.75), 'wave 2 = the old 2,75');
+  ok(near(G.waveBase(3), (G.waveBase0(3) + G.waveBase0(4)) / 2), 'wave 3 = the old 3,5');
+  ok(near(G.waveBase(4), G.waveBase0(4) * 0.75 + G.waveBase0(5) * 0.25), 'wave 4 = the old 4,25');
   for (let n = 5; n <= 10; n++) { ok(near(G.waveBase(n), G.waveBase0(n)), 'wave ' + n + ' unchanged'); ok(near(G.earlyHpK(n), G.hpK0(n)), 'wave ' + n + ' HP unchanged'); }
-  ok(near(G.earlyHpK(1), G.hpK0(3)), 'wave 1 HP bonus = the old wave 3');
+  ok(near(G.earlyHpK(1), Math.max(G.hpK0(1), G.hpK0(2))), 'wave 1 HP bonus = the old wave 2 (or its own)');
   const stat = n => { let lv = 0, hp = 0, k = 0, size = 0; for (let i = 0; i < 150; i++) { const L = G.makeWave(n); size += L.length; L.forEach(e => { lv += e.lvl; hp += e.max; k++; }); } return { n, base: Math.round(G.waveBase(n) * 100) / 100, old: Math.round(G.waveBase0(n) * 100) / 100, lvl: Math.round(lv / k * 100) / 100, hp: Math.round(hp / k), size: size / 150 }; };
   for (let n = 1; n <= 7; n++) out.table.push(stat(n));
   const T1 = out.table[0];
-  ok(T1.lvl >= 4.3 && T1.lvl <= 5.4 && T1.size === 3, 'wave 1: 3 heroes about level 4,8 (the old wave 3): ' + JSON.stringify(T1));
+  ok(T1.lvl >= 2.4 && T1.lvl <= 4.0 && T1.size === 3, 'wave 1: 3 heroes about level 3 (the old wave 2): ' + JSON.stringify(T1));
   ok(out.table[1].lvl > T1.lvl && out.table[2].lvl > out.table[1].lvl, 'waves 1-3 climb');
   ok(G.makeWave(1).every(e => ['warrior', 'thief', 'mage', 'priest'].includes(e.type)), 'the classic classes in wave 1');
   // the tutorial's first wave as before: 2 rookies, levels at most 2
@@ -110,6 +112,10 @@ WAVES = r"""() => { const { G } = T, fails = [], out = { table: [] }; const ok =
   const tw = []; for (let i = 0; i < 60; i++) G.makeWave(1).forEach(e => tw.push(e));
   out.tut = { size: G.makeWave(1).length, maxLvl: Math.max(...tw.map(e => e.lvl)), base: G.waveBase(1), old: G.waveBase0(1) };
   ok(out.tut.size === 2 && out.tut.maxLvl <= 2 && near(out.tut.base, out.tut.old), 'the tutorial wave 1 unchanged: ' + JSON.stringify(out.tut));
+  // 1.25.1: the guided run plays the v58 curve in waves 2-4 (and its cap of 4 in wave 2)
+  for (let n = 2; n <= 4; n++) ok(near(G.waveBase(n), G.waveBase0(n)) && near(G.earlyHpK(n), G.hpK0(n)), 'the guided run: wave ' + n + ' as in v58');
+  const t2 = []; for (let i = 0; i < 80; i++) G.makeWave(2).forEach(e => t2.push(e.lvl)); out.tut2max = Math.max(...t2);
+  ok(out.tut2max <= 4, 'the guided run: wave 2 at most level 4: ' + out.tut2max);
   G.run.tutorial = false;
   return { fails, out }; }"""
 # ---------- 4. the hero events in organic waves (a whole run in the author's dungeons, as e124/evcount.py) ----------
