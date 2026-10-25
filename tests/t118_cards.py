@@ -113,7 +113,7 @@ REQ = r"""() => { const { G } = T, fails = [], out = { hits: {} }; const ok = (c
   ok(f3 && !f3.ok && f3.text === ' Brak w lochu: Graciarnia.', 'drawers: ' + out.fit[2]);
   // the shop renders it (an offer rolled before the komnata came down)
   G.run.shop.ids = ['restock', 'drawers', 'lure', 'rhythm']; G.openModal({ type: 'shop' });
-  const o0 = document.querySelector('#offer-0 .fit'); out.shopFit = o0 && o0.textContent; ok(o0 && /Brak w lochu: Kuźnia/.test(o0.textContent), 'the shop says Brak w lochu: Kuźnia');
+  const o0 = document.querySelector('#shop-detail .fit'); out.shopFit = o0 && o0.textContent; ok(o0 && /Brak w lochu: Kuźnia/.test(o0.textContent), 'the shop says Brak w lochu: Kuźnia');
   while (G.modalKind) G.closeModal();
   // all of them (Nawiedzona galeria: a ghost and a portrait), any of them (Głodne ściany: eyes alone)
   const R2 = T.rooms()[1], fs = T.floorSpots(R2, 'ghost'); T.place('ghost', fs[0]);

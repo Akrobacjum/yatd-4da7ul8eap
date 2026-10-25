@@ -95,7 +95,8 @@ step(dt):
   kradzież kryształu przy sercu (6.3.9); 1.17: nikt przy sercu -> P.steal maleje o 0.5/s
   if !fl.fearless && fl.ending === null && fl.patT >= S.waveTime: becomeImpatient()   // 6.3.10; od 1.17 otwiera naradę (6.3.10a)
   if fl.ending === null && !fl.exhausted && fl.patT >= S.waveTime + 60: waveExhausted()     // 1.24 (6.15); do 1.23: każdy żywy -> heroExit
-  if fl.ending === null && fl.patT >= S.waveTime + 150: waveForceOut()                     // 1.24: prawdziwa siatka bezpieczeństwa
+  if fl.ending === null && (fl.exhausted || fl.patT >= S.waveTime): homeRunTick(dt)           // 1.27.3: droga do domu (6.15.3)
+  if fl.ending === null && fl.patT >= S.waveTime + 150: waveForceOut()                     // 1.24: prawdziwa siatka bezpieczeństwa (1.27.3: oszczędza idących do domu)
   if kolejka pusta i wszyscy dead/fled: fl.ending = 1.2
   dymki: bubble.until <= time -> bubble = null
 ```
@@ -864,7 +865,7 @@ markOuch(h, it): przy ranie (damage) albo strachu (addFear) od elementu, który 
                  i straszących): h.ouch = { until: time + 30, tiles: areaOf(it) + pole elementu }   // pamięta to sam, nawet gdy drużyna nic nie wie
 unsafeAt(h, x, y) = fl.danger[y*WW+x] > 0 || (h.ouch && time < h.ouch.until && h.ouch.tiles.has(y*WW+x))
 standOk(h, x, y)  = walkable && !unsafeAt && brak elementu na polu (pułapka, łup, potwór) && nie serce
-toSafety(h): stojący (h.nx == null), nie na polu wyjścia, !standOk(h, h.x, h.y):
+toSafety(h): stojący (h.nx == null), nie na polu wyjścia, !standOk(h, h.x, h.y), od 1.27.3 nie wychodzący, nie panikujący, nie idący do domu (6.15.3):
    BFS do 3 kroków po passable bez bohaterów (heroBlock) i żywych potworów; kandydaci = pola standOk, wolne;
    odpoczywający: tylko w swoim pokoju; stojący z liderem (samePlace): tylko w miejscu lidera;
    cel = kandydat najbliżej lidera (+ 0,5 × kroki); h.path = droga, h.toSafe = true (planHero i rozmowa jej nie przerywają),
@@ -3045,6 +3046,36 @@ waveForceOut() (każdy krok od fl.patT >= S.waveTime + 150):
    h.gone = false; napis "Ucieka"; stats.forcedOut, tl('fo', id, x, y, stan); heroExit(h)
 ```
 Inne miejsca znikania sprawdzone w 1.24: `h.gone` ustawia tylko `fall()` (zapadnia) i bohater zawsze wraca (`landFallen` albo `cellLand`; fala nie kończy się, gdy ktoś spada); `heroExit` tylko na polu wyjścia (`updateHero`, dwa razy) i w siatce; wyłom to pole wyjścia z tym samym zanikaniem; mgła tylko przyciemnia (alfa 0,55). W 200 falach testowych stara siatka zadziałałaby 0 razy, wyczerpanie 1-2 razy, wymuszone wyjście 0.
+
+### 6.15.3 Droga do domu zamiast znikania (1.27.3; `p5_ai.js: homeRunTick, homeRunPlan, homeRunStep`)
+
+Autor: bohaterowie dalej "znikali" na końcu fali (siatka `waveForceOut`), co przeczy idei "zatrzymaj ich jak najdłużej"; mają zginąć albo wyjść sami, bez zacięć i bez teleportu. Pomiar botem (mid + karty + omeny, 3 × 12 runów) w 1.27.2: na ok. 100 fal 27 wymuszonych wyjść i 13 wyczerpań, 14 fal ponad 180 s. Przyczyna w zapisach: wychodzący bohater dreptał w kółko między dwoma polami przez minuty:
+
+- **Złoty sen** (karta): wejście na łup przy sercu zatrzymywało bohatera na 3 s (`wait`) przy **każdym** wejściu, także w drodze do wyjścia; stojąc na łupie (`standOk` fałsz: przedmiot) dostawał `toSafety`, schodził pole w bok, plan prowadził go z powrotem na łup, i tak w kółko.
+- `toSafety` w ogóle cofało wychodzących z pól z przedmiotem albo znanym niebezpieczeństwem.
+
+Poprawki:
+```
+pickup: Złoty sen nie zatrzymuje wychodzącego, panikującego ani idącego do domu, a każdego najwyżej raz na stos (lootMemo)
+toSafety: nic dla exiting(h) / panicking(h) / h.homeRun
+onEnter: idący do domu nie podnosi łupu
+
+homeRunTick(dt) (step, gdy fl.exhausted albo fl.patT >= S.waveTime):
+   fl.exitMap = odległości od wyjścia (bfs z fl.ent, noDanger; z wyłomem minimum z obu), co 5 s od nowa (fl.exitMap = null na starcie fali)
+   każdy żywy, nie w klatce, nie spadający, i (fl.exhausted albo exiting(h)):
+      najlepsza odległość do wyjścia h.homeBest; poprawa o > 0,5 pola -> h.homeBestT = teraz (klatka / spadanie też odświeża)
+      bez poprawy przez 8 s (przed wyczerpaniem; 6 s po nim) albo fl.patT >= S.waveTime + 100 po wyczerpaniu:
+         h.homeRun = true, needPlan; stats.homeRun++, tl('hr', id, x, y, stan)
+homeRunPlan(h): bfs(h, noDanger, bez known) do najbliższego wyjścia; intent exit / carry; myśli co 1,5 s
+homeRunStep(h, dt) (updateHero, zaraz po klatce):
+   walka: trwa, póki potwór na jego drodze żyje (gałąź fight nie przerywa jej z powodu wychodzenia)
+   inny stan niż walk -> walk (rozmowa, odpoczynek, czekanie, rozbrajanie, łup, uwalnianie, rąbanie kasowane)
+   na polu wyjścia -> heroExit; unieruchomiony -> stoi
+   następne pole zamknięte (krata) -> czeka (h.homeStuckT += dt); potwór (nie unoszący się) na polu -> walka z nim
+   przyjaciel na polu -> mija go (h.passing, jak przy wymijaniu); krok jak zwykły (prędkość, spowolnienia, pułapki działają)
+waveForceOut: pomija idącego do domu, póki ma drogę (homeStuckT < 10 s) i fl.patT < S.waveTime + 240
+```
+Wynik (ten sam bot): 0 wymuszonych wyjść, 1 wyczerpanie, `homeRun` 2 razy na ok. 230 fal, najdłuższa fala 202 s (wcześniej do 314 s). Teleport `waveForceOut` zostaje tylko jako ostateczność (droga zamknięta na stałe), w testach nie zadziałał.
 
 ### 6.15.2 Czy zdarzenia 1.19-1.23 działają (pomiar 1.24, `e124/evcount.py`)
 

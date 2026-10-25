@@ -4,6 +4,11 @@ Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
+## Zmiany w 1.27.3
+
+- **Sklep jak w karciance** (autor: pięć kart w siatce 2×2, np. z Dziesięciną, były ściśnięte i nieczytelne; wzór: Balatro i pasek budowy). Opis w 3.9, "Sklep w 1.27.3".
+- Wersja na ekranie startowym "Prototype 1.27.3", w "Co nowego" dwie nowe linie (bohaterowie nie znikają, sklep z kart).
+
 ## Zmiany w 1.27.2
 
 - Zakładka bez niczego z danego etapu nauki (w pierwszym runie Obiekty do fali 5) nie znika już z paska: zostaje na swoim miejscu, przygaszona (`.tab.off`, kłódka), a stuknięcie mówi, od której fali (`subWhen`). Wcześniej znikała i pojawiała się później, przesuwając zakładki.
@@ -547,6 +552,15 @@ Komunikaty po akcji (`m.msg`: "W talii: X.", "Za mało Esencji…", "Nowa oferta
 - Panel talii: prawy dopisek "schowek s/pojemność · karty tu nie działają" (było "(nie działa)"); arkusz karty ze schowka "w schowku, nie działa · rzadkość".
 - Rząd Dar serca: nagłówek "♥ Dar serca · poziom L" i "Serce urosło. Weź jedną kartę za darmo." (+ "Czeka jeszcze N.", + "Odrost oddaje utracony kryształ.").
 - Stopka: "Do budowy fali N" z podpisem "darmowe karty: k · Dar serca: N poczekają" albo "sklep otworzysz w zakładce Talia".
+
+**Sklep w 1.27.3** (`renderShop`; CSS `.shopstage`, `.offers.cards`, `.ccard`, `.cdetail`): oferty są **kartami**, a pełny opis jest w jednym panelu pod nimi.
+
+- Scena sklepu (`.shopstage`, kolumna, wypełnia miejsce nad akcjami): [nagłówek Daru serca] → rząd kart (`.offers.cards`) → panel wybranej karty (`#shop-detail`, `.cdetail`). Arkusz karty z talii (`.sheet`) przykrywa całą scenę.
+- **Karta** (`.offer.ccard`, id jak dawniej: `#offer-i`, `#heart-offer-i`, `#shop-rune`): ilustracja (`ART.cardImg`, szerokość karty, proporcja 3:2, piksele), nazwa 12,5 px pogrubiona (najwyżej 2 linie, `line-clamp`), cena pod spodem (Jersey 13 px, złota, z kroplą Esencji jak koszt kafelka; "za darmo" bez kropli; za droga szara, ilustracja przygaszona). Ramka 2 px w kolorze rzadkości: zwykła `#5d6168`, rzadka `#6f9bcc`, legendarna `--ember` (ciemnoczerwone tło), odblokowanie `--violet`, Dar serca `#c9932b` na bordowym tle, **Runa rodu** podwójna 3 px w kolorze rodziny (`--fam`) na tle z poświatą tego koloru, z ikoną runy zamiast ilustracji. Znaczek w prawym górnym rogu: "★" (połączy się) albo "!" (`cardFit` mówi, że nie pasuje). Kupiona: przerywana, 40% krycia, "Kupione" (przy runie też "<glif> rodzina · poz. L").
+- Układ: 3 karty w rzędzie (`grid`, 8 px odstępu); przy dokładnie 4 kartach (Dar serca z Dziesięciną, albo 3 oferty i runa) jeden rząd 4 (`.n4`, nazwa 11,5 px). Zwykły sklep to 4 oferty + runa (3 + 2), z dodatkową ofertą 5 + runa (3 + 3).
+- **Wybór**: stuknięcie karty (także koniec przytrzymania, Enter/spacja) wybiera ją (`m.pick = { k: 'o' | 'h' | 'r', i }`; złota obwódka, karta unosi się o 3 px). Domyślnie wybrana pierwsza dostępna; po kupnie wybór przechodzi na następną.
+- **Panel** (`.cdetail`, górna ramka 4 px w kolorze karty): linia rodzaju (`kindShort`, przy runie "Runa rodu · poziom L → L+1 (max 5)"), nazwa Grenze 20 px (runa: glif i rodzina w jej kolorze), opis 14 px (`fitText` jak arkusz, 14 → 11 px) z "Połączy się w ★: …" i podpowiedzią dopasowania; przy runie skutek ("Elementy rodziny: +8% mocy, -4% odnowienia." / Skarby "Łup podbija chciwość o 8% mocniej.") i drobnym drukiem wszystkie elementy rodziny + "Działa od razu, bez miejsca w talii.". Na dole przycisk 34 px (czerwony gradient): `#offer-buy-i` "Kup za p Esencji" / "Weź za darmo" / "Za mało (p)", `#heart-take-i` "Weź za darmo" obok "Później" (`#heart-later`), `#rune-buy` "Kup za N Esencji". Gdy wszystko kupione: "Wszystko kupione. Odśwież ofertę albo wróć do budowy.".
+- Niskie okno (do 760 px wysokości): karty bez ilustracji (nazwa i cena), żeby panel opisu zachował miejsce. Zastępuje to dawny wiersz Runy rodu (`.runerow`, 1.26-1.27.2) i siatkę 2×2 z pełnym tekstem w każdej ofercie.
 
 **Połączone karty ★ (1.24)**: oferta karty, którą już masz, ma w linii rodzaju "połączy się w ★" i pod opisem "Połączy się w ★: <cecha>" (klasa `.fuse`, `.fz`); zakup daje komunikat "...: połączona w ★ (jedno miejsce)."; slot talii i schowka połączonej karty ma złotą ramkę (`.fused`) i nazwę z "★ " (`cardName`); arkusz karty złoty, "Sprzedaj +s" z ceną dwóch kart (`sellFor`). Nazwy kart w Unity: ten sam przedrostek "★ ". Linia rodzaju odblokowania od 1.24 ma też słowa "rani" / "straszy" (`kindShort`, `effWords`).
 

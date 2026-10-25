@@ -539,6 +539,9 @@ Plik części po `p1_config.js` (sekcja 02, 2.10; załącznik A, A.12.4).
 | `onEnter` | 1.17: the leader in a new room without a detour: P.lookAsk (lookRoll 0.9 s later) 1.17.1: sawRoom(h, r) on a room change; the first one into a komnata room says SAY.rkEnter[k_rk] (fl.rkSaid, stats.rkEnter). |
 | `inZone` |  |
 | `scanTraps` |  |
+| `homeRunTick` | (1.27.3) droga do domu: odległości od wyjścia co 5 s; wychodzący bez postępu 8 s (po wyczerpaniu 6 s, wszyscy od `S.waveTime + 100`) dostaje `h.homeRun` (06 6.15.3) |
+| `homeRunPlan` | (1.27.3) najkrótsza droga do wyjścia (bfs `noDanger`, bez `known`) |
+| `homeRunStep` | (1.27.3) krok idącego do domu: bez postojów, mija swoich, walczy z potworem na drodze, czeka na kratę |
 | `updateHero` | 1.17: a lifted curse says blessDone; the warrior leading raises his shield with shieldLead; 1.26: `statusTick`, potem `heroAI126` i `newClassTick`; 1.26.1: przesądny czeka przed pokojem z portretem albo lustrem (`superRoom`, do 8 s) |
 | `shoutRange` | (1.18) 1.18: Grube mury: a shout carries 8 steps instead of 14; Niosące się echo: a shout from a Grota carries 2 times as far (3 times with a second copy), with Grube mury 16 |
 | `inG2` | (1.19) 1.19 Rozłam (author: "plan rozbudowy bohaterów: rozłam"): the party can break in two. A second group (P.g2: its leader, its members, its own plan and goal) explores on its own and joins the rest again when they meet;... |
@@ -1056,7 +1059,7 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `waveDetails` | Szczegóły: where the Esencja came from, then four views in one box (what comes next, the heroes, the elements, the numbers) |
 | `cardFit` |  |
 | `kindShort` |  |
-| `renderShop` | 1.26: rząd Dar serca (`heartOffer`, `heartTake`), Runa rodu (`runeBuy`), ilustracje kart; 1.27: "1 darmowa karta" / "darmowe karty: N" w nagłówku, schowek "karty tu nie działają" |
+| `renderShop` | 1.26: rząd Dar serca (`heartOffer`, `heartTake`), Runa rodu (`runeBuy`), ilustracje kart; 1.27: "1 darmowa karta" / "darmowe karty: N" w nagłówku, schowek "karty tu nie działają"; 1.27.3: oferty jako karty (`.ccard`: obrazek, nazwa, ramka, cena; Runa rodu i Dar serca też), wybór `m.pick`, opis i przycisk w panelu `#shop-detail` |
 | `fitSlot` | Prototype 1.0: the whole text has to fit its box, nothing is cut. The letters shrink step by step down to a readable minimum; a long name shrinks too. The tile says data-fit="no" if even that is not enough (the tests... |
 | `fitText` |  |
 | `renderEnd` |  |

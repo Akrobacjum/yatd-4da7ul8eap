@@ -80,3 +80,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.26.1](1.26.1.html) | 25.10 | Ukryte przejście, brakujące zachowania 1.26, Dar serca tylko rzadkie i legendarne karty |
 | [Prototype 1.27](1.27.html) | 25.10 | angielski domyślnie z polskim w Ustawieniach, przegląd UI/UX, nowy polski tekst, karta czempiona |
 | [Prototype 1.27.1](1.27.1.html) | 25.10 | poprawki UI (równanie z animacją, kafelki w kolorach rodzin, kafelek Rodziny), Danina na bieżąco |
+| [Prototype 1.27.2](1.27.2.html) | 25.10 | poprawki (zakładka Obiekty w samouczku, białe potwory po odrodzeniu, podwójny dymek kafelka) |

@@ -7,7 +7,7 @@ SETUP = r'''() => { const G = __yatd; while (G.modalKind) G.closeModal(); G.setU
   G.run.deck = ids.slice(0, 7); G.run.stash = ids.slice(7, 10); G.recomputeMods(); return ids; }'''
 SHOW = r'''(four) => { const G = __yatd; G.run.shop.ids = four; G.run.freePicks = 0; G.fl.essence = 30; G.closeModal(); G.openModal({ type: 'shop' }); }'''
 CHECK = r'''() => { const c = document.querySelector('#card');
-  const tiles = [...c.querySelectorAll('.offer:not(.bought), .sheet')].map(o => ({ id: o.id, fit: o.dataset.fit, fs: o.querySelector('.tx').style.fontSize, nm: o.querySelector('b').style.fontSize, name: o.querySelector('b').textContent }));
+  const tiles = [...c.querySelectorAll('.cdetail, .sheet')].map(o => ({ id: o.id, fit: o.dataset.fit, fs: o.querySelector('.tx').style.fontSize, nm: o.querySelector('b').style.fontSize, name: o.querySelector('b').textContent }));
   return { tiles, card: [c.scrollHeight, c.clientHeight], body: [c.querySelector('.scr-body').scrollHeight, c.querySelector('.scr-body').clientHeight] }; }'''
 async def main():
     async with async_playwright() as p:
@@ -22,7 +22,11 @@ async def main():
                 four = ids[k:k+4]
                 if len(four) < 4: four = (four + ids)[:4]
                 await page.evaluate(SHOW, four); await page.clock.run_for(1000)
-                r = await page.evaluate(CHECK)
+                rs = []
+                for j in range(4):   # 1.27.3: every card's whole text shows in the panel under the cards
+                    if j: await page.click('#offer-%d' % j); await page.clock.run_for(300)
+                    rs.append(await page.evaluate(CHECK))
+                r = {'tiles': [t for x in rs for t in x['tiles']], 'card': max((x['card'] for x in rs), key=lambda v: v[0] - v[1]), 'body': max((x['body'] for x in rs), key=lambda v: v[0] - v[1])}
                 for t in r['tiles']:
                     n += 1; fs = float(t['fs'][:-2]) if t['fs'] else 99; minfs = min(minfs, fs)
                     if t['fit'] != 'ok': bad.append((t['name'], t['fs'], t['nm']))

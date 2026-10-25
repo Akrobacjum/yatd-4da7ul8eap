@@ -665,6 +665,46 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .offer.sel { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold), inset 0 0 18px rgba(196, 160, 82, 0.18), 0 0 12px rgba(196, 160, 82, 0.3); }
 .offer.bought { opacity: 0.35; border-style: dashed; border-top-width: 1px; align-items: center; justify-content: center; cursor: default; }
 .offer.bought b { font-family: var(--font-display); font-size: 20px; }
+/* 1.27.3: the shop as cards (author: Balatro, the build tray): a picture, the name, a rarity frame and the price, three to a row;
+   the picked card's whole text and its button in the panel under them. The Family Rune and the Heart's Gift: cards in their own frame. */
+.scr-body > .shopstage { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.shopstage > .offers.cards { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: auto; gap: 8px; }
+.offer.ccard { align-items: center; text-align: center; padding: 5px 5px 4px; gap: 3px; border: 2px solid #5d6168; border-radius: 6px; background: linear-gradient(180deg, #23252b, #191a1f);
+  box-shadow: inset 0 1px 0 var(--edge), 0 3px 0 #000; transition: transform 0.12s ease-out, box-shadow 0.12s; }
+.offer.ccard.rar-r { border-color: #6f9bcc; } .offer.ccard.rar-l { border-color: var(--ember); background: linear-gradient(180deg, #2d1a1d, #1d1215); }
+.offer.ccard.unlock { border-color: var(--violet); } .offer.ccard.heart { border-color: #c9932b !important; background: linear-gradient(180deg, #3a1a20, #1d1215); }
+.offer.ccard.rune { border-color: var(--fam, #8e939a); border-style: double; border-width: 3px; background: #1b1c21; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--fam, #8e939a) 22%, #1d1e23), #17181c 75%); }
+.offer.ccard .cardart { width: 100%; height: auto; aspect-ratio: 3 / 2; margin: 0; border-radius: 3px; image-rendering: pixelated; object-fit: cover; }
+.offer.ccard .cardart.blank { background: #111216; border: 1px solid #000; }
+.offer.ccard .runeart { object-fit: contain; background: rgba(0, 0, 0, 0.35); padding: 4px; box-sizing: border-box; }
+.offer.ccard b { font-size: 12.5px; line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.3em; overflow-wrap: anywhere; padding: 0 9px; align-self: stretch; }
+.offer.ccard .pr { font: 600 13px/18px var(--font-num); color: var(--gold); height: 18px; display: inline-flex; align-items: center; gap: 5px; }
+.offer.ccard .pr.ess::before { content: ""; width: 6px; height: 6px; background: var(--ess); transform: rotate(-45deg); border-radius: 50% 0 50% 50%; box-shadow: 0 0 4px rgba(255, 60, 80, 0.8); }
+.offer.ccard .cbadge { position: absolute; top: 2px; right: 4px; font-style: normal; font-weight: 700; font-size: 14px; color: #f2c94c; text-shadow: 0 1px 0 #000, 0 0 4px #000; }
+.offer.ccard.poor .pr { color: var(--muted); } .offer.ccard.poor .cardart { filter: saturate(0.5) brightness(0.8); }
+.offer.ccard.sel { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--gold), 0 0 14px rgba(196, 160, 82, 0.45), 0 5px 0 #000; }
+.offer.ccard.bought { min-height: 100%; border-width: 1px; border-color: var(--line); background: none; box-shadow: none; opacity: 0.4; }
+.offer.ccard.bought b { -webkit-line-clamp: unset; min-height: 0; font-size: 16px; } .offer.ccard .rdone { font-size: 11px; color: var(--muted); }
+.shopstage .hearthead { flex: none; display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border: 1px solid #a8781f; border-radius: 4px; background: linear-gradient(180deg, rgba(120, 30, 40, 0.55), rgba(60, 20, 24, 0.5)); }
+.shopstage .hearthead b { color: #ffd27a; font-size: 14px; } .shopstage .hearthead span { font-size: 12px; color: var(--ink); }
+.cdetail { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: 3px; padding: 8px 10px 8px; background-color: #1a1c21; border: 1px solid var(--line2); border-top: 4px solid #8e939a; border-radius: var(--r); box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 #000; }
+.cdetail.rar-r { border-top-color: #7aa6d6; } .cdetail.rar-l { border-top-color: var(--ember); } .cdetail.unlock { border-top-color: var(--violet); } .cdetail.heart { border-top-color: #c9932b; } .cdetail.rune { border-top-color: var(--fam, #8e939a); }
+.cdetail .ok { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.cdetail.rar-r .ok { color: #7aa6d6; } .cdetail.rar-l .ok { color: var(--ember); } .cdetail.unlock .ok { color: #c2b0ff; }
+.cdetail b { font: 700 20px/1.1 var(--font-display); }
+.cdetail .tx { font-size: 14px; color: var(--ink); line-height: 1.38; flex: 1 1 auto; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; }   /* the longest texts: smaller letters first (fitText), then a scroll, never cut */
+.cdetail .tx.empty { color: var(--muted); display: grid; place-items: center; text-align: center; }
+.cdetail .tx .fine { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); line-height: 1.3; }
+.cdetail .fit { font-style: normal; font-weight: 700; } .cdetail .fit.good { color: #9fd7a0; } .cdetail .fit.bad { color: #e0a0a6; } .cdetail .fit.fz { color: #f2c94c; }
+.cdetail .drow { display: flex; gap: 6px; flex: none; }
+.cdetail .buy { flex: 1; height: 34px; font: 700 14px/1 var(--font-body); border-radius: 3px; border: 1px solid #3e0a10; cursor: pointer; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  background: linear-gradient(180deg, #ff7480, #d8313f 45%, #8e1622); color: #fff6f6; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 0 #000; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdetail .buy:disabled { background: var(--panel); color: var(--muted); border-color: var(--line); box-shadow: none; cursor: default; }
+.cdetail .heartlater { flex: none; }
+.card.screen.enter .offer.ccard:nth-child(5) { animation-delay: 0.24s; } .card.screen.enter .offer.ccard:nth-child(6) { animation-delay: 0.3s; }
+.shopstage > .offers.cards.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; } .offers.cards.n4 .offer.ccard b { font-size: 11.5px; }
+@media (max-height: 900px) { .offer.ccard .cardart { aspect-ratio: 2 / 1; } }
+@media (max-height: 760px) { .offer.ccard .cardart { display: none; } .offer.ccard { padding-top: 7px; justify-content: center; } .cdetail b { font-size: 18px; } }   /* a short phone: name and price only, the text stays roomy */
 /* a card from the deck or the stash, opened over the offers (the rest of the screen stays put) */
 .sheet {
   position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 10px;
@@ -6084,7 +6124,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     { const fams = new Set(); let n = 0; fl.items.forEach(it => { if (it.temp || !(TRAPS[it.type] || MONSTERS[it.type])) return; n++; if (FAMILY_OF[it.type]) fams.add(FAMILY_OF[it.type]); }); fl.famN = fams.size; fl.elemN = n; fl.bathK = 1; fl.armyN = 0; fl.heartEchoW = 0; }
     fl.secretFound = new Set(); run.layout.edges.forEach((e, k) => { if (e.secret && e.secretKnown) fl.secretFound.add(k); }); fl.threatDirty = true;   // 1.26.1: a rumoured one is known from the start
     { const o = OMENS[run.omens && run.omens[run.wave]]; if (o) { floatTile(fl.ent.x, fl.ent.y, 'Omen: ' + o.name, '#d9b8ff', 16, -1.6); setHint('Omen: ' + o.name + '. ' + o.text); } }   // 1.26 (15)   // 1.26 Pełna paleta, Minimalista, Krwawa łaźnia
-    fl.phase = 'raid'; fl.time = 0; fl.patT = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
+    fl.phase = 'raid'; fl.time = 0; fl.patT = 0; fl.exitMap = null; fl.exitMapT = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
     { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał (1.26: 4 of the 5 types)
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && mods.warden && roomOf(m.x, m.y) === fl.heart.room) m.hp = Math.round(m.hp * (1 + mods.warden)); });   // 1.26 Strażnik
@@ -6273,6 +6313,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const P = fl.party;
     fl.heroes.forEach(h => {
       if (h.dead || h.fled) return;
+      if (h.homeRun && (h.homeStuckT || 0) < 10 && fl.patT < S.waveTime + 240) return;   // 1.27.3: walking home (homeRun): no vanishing while he still has a way out
       if (h.crystal) { h.crystal = false; if (P.carrierId === h.id) P.carrierId = -1; fl.stats.crystalSaved++; floatTile(fl.heart.x, fl.heart.y, L('Kryształ wraca!', 'Crystal back!'), '#ff7a86', 15, -1); crystalEv(0, 'saved', 'forcedOut'); }   // 1.24 (D): logged
       h.gone = false; floatHero(h, L('Ucieka', 'Flees'), '#c9c2d8', 13, -0.9);
       fl.stats.forcedOut = (fl.stats.forcedOut || 0) + 1; tl('fo', h.id, h.tx, h.ty, h.state);   // 1.24
@@ -7177,6 +7218,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, k = key(it.x, it.y);
     if (lootBanned(h, it)) return false;   // 1.21: the loser of a quarrel over it (or everyone, when the leader stopped it) for 10 s
     if (it.type === 'bait') { noticeLoot(it, h); baitBite(h, it); return false; }   // 1.26 Przynęta: it bites, it stays
+    if (dreamLoot(it) && (exiting(h) || panicking(h) || h.homeRun || (h.lootMemo.get(k) && !h.lootMemo.get(k).go && h.lootMemo.get(k).t > fl.time))) return false;   // 1.27.3: once a pile, and never on the way out (a hero shuffled on and off it for minutes)
     if (dreamLoot(it)) { noticeLoot(it, h); h.lootMemo.set(k, { go: false, t: fl.time + 120 }); h.state = 'wait'; h.timer = 3; h.path = []; floatTile(it.x, it.y, L('Złoty sen: nie do ruszenia', 'Golden Dream: stuck'), '#f2b94b', 12, -0.6); fl.stats.dreamTries = (fl.stats.dreamTries || 0) + 1; return false; }   // 1.26 Złoty sen
     // 1.20: a body's things: he kneels and goes through them (updateHero: the 'loot' state, then bodyLoot), not while running or
     // in a panic, and not again over a body he found nothing on
@@ -8787,7 +8829,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   // a hero who stands still somewhere unsafe walks to a good tile (at most 3 steps, the one nearest the leader; one who rests
   // stays in his room, so the rest does not walk out of it; none: he stays)
   function toSafety(h) {
-    if (h.nx !== null || isExitTile(h.x, h.y) || standOk(h, h.x, h.y)) return false;
+    if (h.nx !== null || isExitTile(h.x, h.y) || standOk(h, h.x, h.y) || exiting(h) || panicking(h) || h.homeRun) return false;   // 1.27.3: one on his way out walks on (he used to step off a pile and back for minutes)
     const s0 = h.y * WW + h.x, prev = new Map([[s0, -1]]), q = [s0], dep = new Map([[s0, 0]]), r0 = h.state === 'rest' ? roomOf(h.x, h.y) : -1;
     // the good tiles within 3 steps; of those the one nearest the leader, so stepping off a trap never splits the party
     const L = leader(), near = [], withL = L && L !== h && samePlace(h, L), rL = L ? roomOf(L.tx, L.ty) : -1;
@@ -11638,7 +11680,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (h.bet) betStep(h);   // 1.21
     if (isExitTile(h.x, h.y) && exiting(h)) { heroExit(h); return; }
     const it = fl.items.get(key(h.x, h.y));
-    if (it && isLoot(it.type) && !h.crystal && !h.fleeing) { pickup(h, it); if (h.state === 'loot') return; }   // 1.20: he kneels by a body
+    if (it && isLoot(it.type) && !h.crystal && !h.fleeing && !h.homeRun) { pickup(h, it); if (h.state === 'loot') return; }   // 1.20: he kneels by a body
     // 1.10: Lodownia: a step may run on, one tile straight ahead, into whatever is there (not twice in a row)
     if (r >= 0 && isRt(r, 'ice') && !h.slid && (h.ldx || h.ldy) && h.state === 'walk' && Math.random() < slipChance(h) * (1 + 0.5 * mods.blackice) * (1 + Math.max(0, loadOf(h) / carryOf(h) - 0.5))) {   // 1.18: Gołoledź, half as many slips more; 1.20: a heavy pack slips more
       const sx = h.x + h.ldx, sy = h.y + h.ldy, g = fl.items.get(key(sx, sy));
@@ -11737,6 +11779,45 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       floatTile(it.x, it.y, L('Wykryta!', 'Spotted!'), '#ffe066', 13, -0.6);
     });
   }
+  // 1.27.3 (author: heroes must die or walk out by themselves, with no standing in place and no vanishing at the door): once the
+  // party goes home (patience gone) a hero on his way out who has not come one step closer to the exit in 8 s, and after the
+  // exhaustion anyone who has not in 6 s (everyone 40 s after it), walks home: the shortest way out, known or not, through
+  // danger, past his friends, with no stops (no talk, rest, loot or stepping aside). A monster in his way he fights. A closed
+  // gate he waits out. waveForceOut leaves him be while he still has a way (homeStuckT < 10 s, up to 240 s past patience).
+  function homeRunTick(dt) {
+    if (!fl.exitMap || fl.time >= fl.exitMapT) { const b = bfs(fl.ent.x, fl.ent.y, { noDanger: true }); fl.exitMap = b.dist; fl.exitMapT = fl.time + 5;
+      if (fl.breach) { const b2 = bfs(fl.breach.x, fl.breach.y, { noDanger: true }).dist; fl.exitMap = fl.exitMap.map((d, i) => d < 0 ? b2[i] : b2[i] < 0 ? d : Math.min(d, b2[i])); } }
+    alive().forEach(h => {
+      if (h.homeRun || caged(h) || h.gone || (!fl.exhausted && !exiting(h))) { if (caged(h) || h.gone) h.homeBestT = fl.time; return; }
+      const d = fl.exitMap[tIdx(h)];
+      if (h.homeBest == null || h.homeBestT == null || (d >= 0 && d < h.homeBest - 0.5)) { h.homeBest = d >= 0 ? d : 1e9; h.homeBestT = fl.time; }
+      if (fl.time - h.homeBestT > (fl.exhausted ? 6 : 8) || (fl.exhausted && fl.patT >= S.waveTime + 100)) {
+        h.homeRun = true; h.needPlan = true; h.homeStuckT = 0; fl.stats.homeRun = (fl.stats.homeRun || 0) + 1; tl('hr', h.id, h.tx, h.ty, h.state);
+      }
+    });
+  }
+  function homeRunPlan(h) {
+    h.thinkT = 1.5; h.needPlan = false; h.lootKey = null; h.intent = h.crystal ? 'carry' : 'exit';
+    const b = bfs(h.x, h.y, { noDanger: true }), g = nearestOf(b, exitGoals());
+    h.path = g >= 0 ? pathFrom(b, g) : [];
+  }
+  function homeRunStep(h, dt) {
+    if (h.state === 'fight') {   // the monster in his way: the fight below goes on until it falls or the way is free
+      const g = h.foe; if (g && g.hp > 0 && fl.items.get(key(g.x, g.y)) === g) return false;
+      h.state = 'walk'; h.foe = null;
+    } else if (h.state !== 'walk') { h.state = 'walk'; h.item = null; h.disarmT = null; h.lootIt = null; h.smashIt = null; h.freeT = null; h.huddle = false; h.toSafe = false; h.napUntil = -1; h.restAt = -1; h.dream = false; }
+    if (h.nx !== null) return false;   // a step under way: the walk below finishes it
+    if (isExitTile(h.x, h.y)) { heroExit(h); return true; }
+    if (rooted(h)) return true;
+    if (h.needPlan || h.thinkT <= 0 || !h.path.length || !passable(h.path[0][0], h.path[0][1])) homeRunPlan(h);
+    const n = h.path[0];
+    if (!n || !passable(n[0], n[1])) { h.homeStuckT = (h.homeStuckT || 0) + dt; return true; }   // a closed gate: he waits for it
+    const g = fl.items.get(key(n[0], n[1]));
+    if (g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) { h.state = 'fight'; h.foe = g; return true; }
+    const o = heroBlock(h, n[0], n[1]); if (o) h.passing = o.id;   // past his friends (a step to the side, drawn)
+    h.path.shift(); h.nx = n[0]; h.ny = n[1]; h.prog = 0; h.homeStuckT = 0;
+    return false;
+  }
   function updateHero(h, dt) {
     const P = fl.party;
     if (h.gone) { if (fl.time >= h.fallUntil) landFallen(h); return; }
@@ -11775,6 +11856,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       else if (fl.time >= h.cageUntil) cageEnds(h);
       return;
     }
+    if (h.homeRun && homeRunStep(h, dt)) return;   // 1.27.3
     if (h.state === 'rest') {
       const haven = h.room >= 0 && isRt(h.room, 'haven'), dream = !!h.dream && fl.time < (h.napUntil || -1); if (!(h.restAt > 0)) h.restAt = fl.time;   // 1.18: dream = asleep to the lullaby (Usypianka)
       if (fl.time >= h.burnUntil) h.hp = Math.min(h.max, h.hp + 4 * dt * (haven || dream ? 0.5 : 1));
@@ -11831,7 +11913,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     }
     if (h.state === 'fight') {
       const g = h.foe;
-      if (!g || g.hp <= 0 || fl.items.get(key(g.x, g.y)) !== g || (exiting(h) && !standing(h))) { h.state = 'walk'; h.foe = null; h.needPlan = true; }   // 1.22: a last stand fights on the way out
+      if (!g || g.hp <= 0 || fl.items.get(key(g.x, g.y)) !== g || (exiting(h) && !standing(h) && !h.homeRun)) { h.state = 'walk'; h.foe = null; h.needPlan = true; }   // 1.22: a last stand fights on the way out
       else {
         const bomb = h.inv.find(x => x.type === 'bomb');
         if (bomb && g.hp > 60) {
@@ -12514,6 +12596,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     fl.patT = (fl.patT || 0) + dt * (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0) ? 0.5 : 1);
     if (!fl.fearless && fl.ending === null && fl.patT >= (omenK(run.wave, 'patience') || S.waveTime) + (mods.patience || 0)) becomeImpatient();   // 1.26 Pośpiech: 60 s
     if (fl.ending === null && !fl.exhausted && fl.patT >= S.waveTime + 60) waveExhausted();   // 1.24: worn out, they walk out (up to 1.23 they were teleported out here)
+    if (fl.ending === null && (fl.exhausted || fl.patT >= S.waveTime)) homeRunTick(dt);   // 1.27.3: the way home (stuck ones walk out by themselves)
     if (fl.ending === null && fl.patT >= S.waveTime + 150) waveForceOut();   // 1.24: the true safety net: nobody stays forever
     if (fl.ending === null && fl.queue.length === 0 && fl.heroes.length && fl.heroes.every(h => h.dead || h.fled)) fl.ending = 1.2;
     fl.heroes.forEach(h => { if (h.bubble && h.bubble.until <= fl.time) h.bubble = null; });
@@ -19195,7 +19278,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.27.2 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.27.3 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -19251,9 +19334,11 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.2', "What's new in Prototype 1.27.2")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.3', "What's new in Prototype 1.27.3")));
     const ul0 = el('ul', 'conseq');
-    [L('1.27.2: poprawki. Zakładka Obiekty nie znika w samouczku (do fali 5 jest wyszarzona z kłódką), potwory po odrodzeniu nie są już białe, a opis kafelka po przytrzymaniu palca pojawia się raz.', '1.27.2: fixes. The Objects tab no longer vanishes in the tutorial (until wave 5 it is dimmed with a lock), revived monsters are no longer white, and a tile description shows once when you hold a finger.'),
+    [L('1.27.3: bohaterowie już nie znikają przy końcu fali. Kto utknie albo kręci się w miejscu, sam idzie do wyjścia najkrótszą drogą, mija przyjaciół i walczy tylko z potworem, który zastąpi mu drogę.', '1.27.3: heroes no longer vanish at the end of a wave. One who gets stuck or shuffles in place walks out on his own by the shortest way, past his friends, fighting only a monster that blocks his way.'),
+     L('1.27.3: sklep jak w karciance. Oferty to karty z obrazkiem, nazwą, ramką rzadkości i ceną. Stuknij kartę, a jej opis i przycisk pojawią się pod spodem. Runa rodu i Dar serca też są kartami, w swojej ramce.', '1.27.3: a card-game shop. Offers are cards with a picture, a name, a rarity frame and a price. Tap a card and its text and button show below. The Family Rune and the Heart\'s Gift are cards too, in their own frame.'),
+     L('1.27.2: poprawki. Zakładka Obiekty nie znika w samouczku (do fali 5 jest wyszarzona z kłódką), potwory po odrodzeniu nie są już białe, a opis kafelka po przytrzymaniu palca pojawia się raz.', '1.27.2: fixes. The Objects tab no longer vanishes in the tutorial (until wave 5 it is dimmed with a lock), revived monsters are no longer white, and a tile description shows once when you hold a finger.'),
      L('1.27.1: kafelki w pasku budowy mają tło w kolorze rodziny (Mechanizmy niebieskie, Ogień pomarańczowy, Nawiedzenie fioletowe...), więc łatwiej je rozróżnić.', '1.27.1: tiles in the build bar have a backdrop in their family colour (Mechanisms blue, Fire orange, Haunting violet...), so they are easier to tell apart.'),
      L('1.27.1: w zakładce Talia kafelek Rodziny pokazuje poziom każdej rodziny i to, co dają Runy rodów.', '1.27.1: in the Deck tab the Families tile shows each family level and what the Family Runes give.'),
      L('1.27.1: Danina napełnia złoty pasek od razu, jak głód serca, bez czekania na koniec combo.', '1.27.1: the Tithe fills the gold bar right away, like the hunger bar, without waiting for the combo to end.'),
@@ -20072,53 +20157,98 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     }
     const body = el('div', 'scr-body'); card.appendChild(body);
     const sel = m.sel && (m.sel.k === 'd' || m.sel.k === 's') ? m.sel : null;
-    // Prototype 1.0: four offers, always in the same four places. Each shows its whole text (the letters shrink a little for a long one)
-    // and has its own buy button: there is nothing to unfold.
-    const og = el('div', 'offers');
-    // 1.26 Dar serca: a heart level waits: its row takes the offers' place until a card is taken (or Później)
+    // 1.27.3 (author: five offers squeezed into the old 2 x 2 grid were unreadable): the offers are cards, as in the build tray:
+    // a picture, the name, a rarity frame and the price. Tap a card (a held finger ends in a tap too) and its whole text and its
+    // button show in the panel under the cards. Three to a row, so five offers and the Family Rune fit with room to spare; the
+    // Family Rune and the Heart's Gift are cards too, in a frame of their own. (Up to 1.27.2: every offer showed its whole text
+    // and its buy button in its own box.)
+    const stage = el('div', 'shopstage'); body.appendChild(stage);
+    const og = el('div', 'offers cards');
+    // 1.26 Dar serca: a heart level waits: its cards take the offers' place until one is taken (or Później)
     const hk = heartOffer(), heartView = !!hk && !m.heartLater && !sel;
+    const same = (a, c) => !!a && !!c && a.k === c.k && a.i === c.i;
+    const runeOn = !heartView && run.shop.rune && FAMILIES[run.shop.rune];
+    const picks = heartView ? hk.ids.map((_, i) => ({ k: 'h', i })) : run.shop.ids.map((id, i) => UPG[id] ? { k: 'o', i } : null).filter(Boolean).concat(runeOn ? [{ k: 'r', i: 0 }] : []);
+    if (!picks.some(q => same(q, m.pick))) m.pick = picks[0] || null;
+    const cardTile = o => {
+      const b = el('div', 'offer ccard ' + o.cls); b.id = o.id; b.tabIndex = 0; b.setAttribute('role', 'button'); b.setAttribute('aria-label', o.name + (o.price ? ', ' + o.price : ''));
+      b.appendChild(o.art || el('div', 'cardart blank'));
+      b.appendChild(el('b', null, o.name));
+      b.appendChild(el('span', 'pr' + (o.ess ? ' ess' : ''), o.price));
+      if (o.badge) b.appendChild(el('i', 'cbadge', o.badge));
+      if (same(o.pick, m.pick)) { b.classList.add('sel'); b.setAttribute('aria-pressed', 'true'); }
+      const go = () => { if (same(o.pick, m.pick) && !m.sel) return; m.pick = o.pick; m.sel = null; rerender(); };
+      b.addEventListener('click', go); b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+      og.appendChild(b); return b;
+    };
+    const boughtTile = (id, extra) => { const b = el('div', 'offer ccard bought'); b.id = id; b.appendChild(el('b', null, L('Kupione', 'Bought'))); if (extra) b.appendChild(el('span', 'rdone', extra)); og.appendChild(b); return b; };
     if (heartView) {
-      og.classList.add('heartrow');
+      stage.classList.add('heartview');
       const hd = el('div', 'hearthead'); hd.id = 'heart-head';
       hd.appendChild(el('b', null, L('♥ Dar serca · poziom ', "♥ Heart's Gift · level ") + hk.lv));
-      hd.appendChild(el('span', null, L('Serce urosło. Weź jedną kartę za darmo.', 'Your heart grew. Take one card for free.') + (run.heartPicks.length > 1 ? L(' Czeka jeszcze ' + (run.heartPicks.length - 1) + '.', ' ' + (run.heartPicks.length - 1) + ' more waiting.') : '') + (hk.ids.includes('regrow') ? L(' Odrost oddaje utracony kryształ.', ' Regrowth gives back a lost crystal.') : '')));
-      og.appendChild(hd);
-      hk.ids.forEach((id, i) => {
-        const u = UPG[id], b = el('div', 'offer heart rar-' + u.rar); b.id = 'heart-offer-' + i;
-        { const ca = ART.cardImg(u.id); if (ca) b.appendChild(ca); }   // 1.26: the card's picture
-        b.appendChild(el('span', 'ok', id === 'regrow' ? L('kryształ · od razu', 'crystal · instant') : kindShort(u))); b.appendChild(el('b', null, u.name));
-        const tx = el('span', 'tx', u.text), fit = cardFit(u);
-        if (fuses(u)) tx.appendChild(el('i', 'fit good fz', L(' Połączy się w ★: ', ' Fuses into ★: ') + fuseText(u).replace(/^★ [^:]+: /, '')));
-        if (fit) tx.appendChild(el('i', 'fit ' + (fit.ok ? 'good' : 'bad'), fit.text));
-        b.appendChild(tx);
-        const by = el('button', 'buy', L('Weź za darmo', 'Take for free')); by.type = 'button'; by.id = 'heart-take-' + i;
-        by.addEventListener('click', () => { const r = heartTake(i); m.msg = r === 'full' ? L('Talia i schowek są pełne: najpierw sprzedaj kartę.', 'Deck and stash are full: sell a card first.') : r === 'stash' ? u.name + L(': do schowka (talia pełna).', ': to stash (deck full).') : r === 'fused' ? u.name + L(': połączona w ★.', ': fused into ★.') : r === 'no' ? '' : id === 'regrow' ? L('Odrost: kryształ wraca do serca.', 'Regrowth: a crystal returns to your heart.') : L('Dar serca: ' + u.name + ' w talii.', "Heart's Gift: " + u.name + ' added to deck.'); rerender(); });
-        b.appendChild(by); og.appendChild(b);
+      hd.appendChild(el('span', null, L('Serce urosło. Weź jedną kartę za darmo.', 'Your heart grew. Take one card for free.') + (run.heartPicks.length > 1 ? L(' Czeka jeszcze ' + (run.heartPicks.length - 1) + '.', ' ' + (run.heartPicks.length - 1) + ' more waiting.') : '')));
+      stage.appendChild(hd);
+      hk.ids.forEach((id, i) => { const u = UPG[id]; cardTile({ id: 'heart-offer-' + i, cls: 'heart rar-' + u.rar, art: ART.cardImg(u.id), name: u.name, price: L('za darmo', 'free'), badge: fuses(u) ? '★' : '', pick: { k: 'h', i } }); });
+    } else {
+      run.shop.ids.forEach((id, i) => {
+        const u = UPG[id]; if (!u) { boughtTile('offer-' + i); return; }
+        const price = priceOf(u), poor = !free && fl.essence < price, fit = cardFit(u);
+        cardTile({ id: 'offer-' + i, cls: 'rar-' + u.rar + (u.kind === 'unlock' ? ' unlock' : '') + (poor ? ' poor' : '') + (fuses(u) ? ' fuse' : ''), art: ART.cardImg(u.id), name: u.name,
+          price: free ? L('za darmo', 'free') : String(price), ess: !free, badge: fuses(u) ? '★' : fit && !fit.ok ? '!' : '', pick: { k: 'o', i } });
       });
-      const later = el('button', 'mini heartlater', L('Później', 'Later')); later.type = 'button'; later.id = 'heart-later'; later.addEventListener('click', () => { m.heartLater = true; rerender(); }); og.appendChild(later);
+      // 1.26 Runa rodu: one rune a shop, a card in its family's colour (1.27.1: once bought its place stays, empty)
+      if (runeOn) {
+        const f = run.shop.rune, F = FAMILIES[f], lv = run.famLv[f] || 0, c = runePrice(lv);
+        let art = null; { const ru = ART.rune && ART.rune(f); if (ru) { art = el('img', 'cardart runeart'); art.src = ru; art.alt = ''; art.draggable = false; } }
+        const b = cardTile({ id: 'shop-rune', cls: 'rune' + (fl.essence < c ? ' poor' : ''), art, name: L('Runa rodu: ', 'Family Rune: ') + F.name, price: String(c), ess: true, pick: { k: 'r', i: 0 } });
+        b.style.setProperty('--fam', F.color);
+      } else if (!heartView && run.shop.runeDone && FAMILIES[run.shop.runeDone]) {
+        const F = FAMILIES[run.shop.runeDone], b = boughtTile('shop-rune', F.glyph + ' ' + F.name + ' · ' + L('poz. ', 'lvl ') + (run.famLv[run.shop.runeDone] || 0));
+        b.classList.add('rune'); b.style.setProperty('--fam', F.color);
+      }
     }
-    (heartView ? [] : run.shop.ids).forEach((id, i) => {
-      const u = UPG[id], b = el('div', 'offer'); b.id = 'offer-' + i;
-      if (!u) { b.classList.add('bought'); b.appendChild(el('b', null, L('Kupione', 'Bought'))); og.appendChild(b); return; }
-      const price = priceOf(u), poor = !free && fl.essence < price;
-      b.classList.add('rar-' + u.rar); if (u.kind === 'unlock') b.classList.add('unlock'); if (poor) b.classList.add('poor');
-      { const ca = ART.cardImg(u.id); if (ca) b.appendChild(ca); }   // 1.26: the card's picture over its name
-      b.appendChild(el('span', 'ok', kindShort(u))); b.appendChild(el('b', null, u.name));
-      const tx = el('span', 'tx', u.text), fit = cardFit(u);
-      if (fuses(u)) { b.classList.add('fuse'); tx.appendChild(el('i', 'fit good fz', L(' Połączy się w ★: ', ' Fuses into ★: ') + fuseText(u).replace(/^★ [^:]+: /, ''))); }   // 1.24
+    og.classList.add('n' + og.children.length);   // four (the Heart's Gift with Dziesięcina): one row of four; five or six: two rows of three
+    stage.appendChild(og);
+    // the picked card: its whole text and its button
+    const dt = el('div', 'cdetail'); dt.id = 'shop-detail'; const P = m.pick;
+    const dtText = (u, txt) => {
+      const tx = el('span', 'tx', txt || u.text), fit = cardFit(u);
+      if (fuses(u)) tx.appendChild(el('i', 'fit good fz', L(' Połączy się w ★: ', ' Fuses into ★: ') + fuseText(u).replace(/^★ [^:]+: /, '')));   // 1.24
       if (fit) tx.appendChild(el('i', 'fit ' + (fit.ok ? 'good' : 'bad'), fit.text));
-      b.appendChild(tx);
-      const by = el('button', 'buy', free ? L('Weź za darmo', 'Take for free') : poor ? L('Za mało (', 'Not enough (') + price + ')' : L('Kup za ' + price + ' Esencji', 'Buy for ' + price + ' Essence')); by.type = 'button'; by.id = 'offer-buy-' + i; by.disabled = poor;
-      by.setAttribute('aria-label', (free ? L('Weź za darmo: ', 'Take for free: ') : L('Kup za ' + price + ' Esencji: ', 'Buy for ' + price + ' Essence: ')) + u.name);
-      by.addEventListener('click', () => {
-        const r = shopBuy(i);
-        if (r === 'ess') m.msg = L('Za mało Esencji (', 'Not enough Essence (') + price + ').';
-        else if (r === 'full') m.msg = L('Talia i schowek są pełne: najpierw sprzedaj kartę.', 'Deck and stash are full: sell a card first.');
-        else { m.sel = null; run.shopTipDone = true; m.msg = r === 'fused' ? u.name + L(': połączona w ★ (jedno miejsce).', ': fused into ★ (one slot).') : r === 'stash' ? u.name + L(': do schowka (talia pełna).', ': to stash (deck full).') : u.kind === 'unlock' ? u.name + L(': odblokowane na stałe.', ': unlocked for good.') : u.kind === 'instant' ? u.name + '.' : L('W talii: ', 'Added to deck: ') + u.name + '.'; }
-        rerender();
-      });
-      b.appendChild(by); og.appendChild(b);
-    });
+      dt.appendChild(tx);
+    };
+    const drow = el('div', 'drow');
+    const dbuy = (id, txt, off, label, fn) => { const by = el('button', 'buy', txt); by.type = 'button'; by.id = id; by.disabled = !!off; if (label) by.setAttribute('aria-label', label); by.addEventListener('click', fn); drow.appendChild(by); return by; };
+    if (P && P.k === 'h') {
+      const i = P.i, id = hk.ids[i], u = UPG[id];
+      dt.classList.add('heart', 'rar-' + u.rar);
+      dt.appendChild(el('span', 'ok', id === 'regrow' ? L('kryształ · od razu', 'crystal · instant') : kindShort(u))); dt.appendChild(el('b', null, u.name)); dtText(u);
+      dbuy('heart-take-' + i, L('Weź za darmo', 'Take for free'), false, L('Weź za darmo: ', 'Take for free: ') + u.name, () => { const r = heartTake(i); m.pick = null; m.msg = r === 'full' ? L('Talia i schowek są pełne: najpierw sprzedaj kartę.', 'Deck and stash are full: sell a card first.') : r === 'stash' ? u.name + L(': do schowka (talia pełna).', ': to stash (deck full).') : r === 'fused' ? u.name + L(': połączona w ★.', ': fused into ★.') : r === 'no' ? '' : id === 'regrow' ? L('Odrost: kryształ wraca do serca.', 'Regrowth: a crystal returns to your heart.') : L('Dar serca: ' + u.name + ' w talii.', "Heart's Gift: " + u.name + ' added to deck.'); rerender(); });
+      const later = el('button', 'mini heartlater', L('Później', 'Later')); later.type = 'button'; later.id = 'heart-later'; later.addEventListener('click', () => { m.heartLater = true; m.pick = null; rerender(); }); drow.appendChild(later);
+    } else if (P && P.k === 'o') {
+      const i = P.i, u = UPG[run.shop.ids[i]], price = priceOf(u), poor = !free && fl.essence < price;
+      dt.classList.add('rar-' + u.rar); if (u.kind === 'unlock') dt.classList.add('unlock');
+      dt.appendChild(el('span', 'ok', kindShort(u))); dt.appendChild(el('b', null, u.name)); dtText(u);
+      dbuy('offer-buy-' + i, free ? L('Weź za darmo', 'Take for free') : poor ? L('Za mało (', 'Not enough (') + price + ')' : L('Kup za ' + price + ' Esencji', 'Buy for ' + price + ' Essence'), poor,
+        (free ? L('Weź za darmo: ', 'Take for free: ') : L('Kup za ' + price + ' Esencji: ', 'Buy for ' + price + ' Essence: ')) + u.name, () => {
+          const r = shopBuy(i);
+          if (r === 'ess') m.msg = L('Za mało Esencji (', 'Not enough Essence (') + price + ').';
+          else if (r === 'full') m.msg = L('Talia i schowek są pełne: najpierw sprzedaj kartę.', 'Deck and stash are full: sell a card first.');
+          else { m.sel = null; m.pick = null; run.shopTipDone = true; m.msg = r === 'fused' ? u.name + L(': połączona w ★ (jedno miejsce).', ': fused into ★ (one slot).') : r === 'stash' ? u.name + L(': do schowka (talia pełna).', ': to stash (deck full).') : u.kind === 'unlock' ? u.name + L(': odblokowane na stałe.', ': unlocked for good.') : u.kind === 'instant' ? u.name + '.' : L('W talii: ', 'Added to deck: ') + u.name + '.'; }
+          rerender();
+        });
+    } else if (P && P.k === 'r') {
+      const f = run.shop.rune, F = FAMILIES[f], lv = run.famLv[f] || 0, c = runePrice(lv);
+      dt.classList.add('rune'); dt.style.setProperty('--fam', F.color);
+      dt.appendChild(el('span', 'ok', L('Runa rodu · poziom ', 'Family Rune · level ') + lv + ' → ' + (lv + 1) + ' (max ' + RUNE_MAX + ')'));
+      const nm = el('b', null, F.glyph + ' ' + F.name); nm.style.color = F.color; dt.appendChild(nm);
+      const tx = el('span', 'tx', f === 'treasure' ? L('Łup podbija chciwość o 8% mocniej.', 'Loot raises greed 8% more.') : L('Elementy rodziny: +8% mocy, -4% odnowienia.', 'Family elements: +8% power, -4% cooldown.'));
+      tx.appendChild(el('small', 'fine', F.items.filter(t => ITEMS[t]).map(t => ITEMS[t].name).join(', ') + L('. Działa od razu, bez miejsca w talii.', '. Works at once, takes no deck slot.')));
+      dt.appendChild(tx);
+      dbuy('rune-buy', fl.essence < c ? L('Za mało (', 'Not enough (') + c + ')' : L('Kup za ' + c + ' Esencji', 'Buy for ' + c + ' Essence'), fl.essence < c, null, () => { const r = runeBuy(); m.pick = null; m.msg = r === 'ok' ? L('Runa rodu: ' + F.name + ', poziom ' + (lv + 1) + '.', 'Family Rune: ' + F.name + ', level ' + (lv + 1) + '.') : L('Za mało Esencji.', 'Not enough Essence.'); rerender(); });
+    } else dt.appendChild(el('span', 'tx empty', L('Wszystko kupione. Odśwież ofertę albo wróć do budowy.', 'All bought. Refresh the offer or go back to building.')));
+    if (drow.children.length) dt.appendChild(drow);
+    stage.appendChild(dt);
     // a card from the deck or the stash opens over the offers: the rest of the screen does not move
     if (sel) {
       const arr = sel.k === 'd' ? run.deck : run.stash, u = UPG[arr[sel.i]];
@@ -20136,25 +20266,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         });
         sh.appendChild(da);
         const x = el('button', 'x', '×'); x.type = 'button'; x.id = 'sheet-close'; x.setAttribute('aria-label', L('Zamknij kartę', 'Close card')); x.addEventListener('click', () => { m.sel = null; rerender(); }); sh.appendChild(x);
-        og.appendChild(sh);
+        stage.appendChild(sh);
       }
-    }
-    body.appendChild(og);
-    // 1.26 Runa rodu: one rune a shop, under the offers
-    if (!heartView && run.shop.rune) {
-      const f = run.shop.rune, F = FAMILIES[f], lv = run.famLv[f] || 0, c = runePrice(lv), rb = el('div', 'runerow'); rb.id = 'shop-rune';
-      const nm = el('span', 'rn'); { const ru = ART.rune && ART.rune(f); if (ru) { const im = el('img', 'runeimg'); im.src = ru; im.alt = ''; nm.appendChild(im); } }
-      nm.insertAdjacentHTML('beforeend', '<b style="color:' + F.color + '">' + F.glyph + L(' Runa rodu: ', ' Family Rune: ') + F.name + '</b> <small>' + L('poz. ', 'lvl ') + lv + ' → ' + (lv + 1) + ' (max ' + RUNE_MAX + ')</small>');
-      rb.appendChild(nm);
-      rb.appendChild(el('span', 'rt', (f === 'treasure' ? L('łup podbija chciwość o 8% mocniej', 'loot raises greed 8% more') : L('elementy rodziny: +8% mocy, -4% odnowienia', 'family elements: +8% power, -4% cooldown')) + ' (' + F.items.filter(t => ITEMS[t]).map(t => ITEMS[t].name).slice(0, 4).join(', ') + (F.items.length > 4 ? '...' : '') + L('). Działa od razu, bez miejsca w talii.', '). Works at once, takes no deck slot.')));
-      const b = el('button', 'buy', fl.essence < c ? L('Za mało (', 'Not enough (') + c + ')' : L('Kup za ', 'Buy for ') + c); b.type = 'button'; b.id = 'rune-buy'; b.disabled = fl.essence < c;
-      b.addEventListener('click', () => { m.runeH = rb.offsetHeight; const r = runeBuy(); m.msg = r === 'ok' ? L('Runa rodu: ' + F.name + ', poziom ' + (lv + 1) + '.', 'Family Rune: ' + F.name + ', level ' + (lv + 1) + '.') : L('Za mało Esencji.', 'Not enough Essence.'); rerender(); });
-      rb.appendChild(b); body.appendChild(rb);
-    } else if (!heartView && run.shop.runeDone && FAMILIES[run.shop.runeDone]) {   // 1.27.1 (author): after the buy the slot stays, empty, so nothing else moves
-      const F = FAMILIES[run.shop.runeDone], rb = el('div', 'runerow done'); rb.id = 'shop-rune'; if (m.runeH) rb.style.height = m.runeH + 'px';
-      rb.appendChild(el('span', 'rn', L('Kupione: ', 'Bought: ') + F.glyph + ' ' + F.name + L(', poziom ', ', level ') + (run.famLv[run.shop.runeDone] || 0)));
-      rb.appendChild(el('span', 'rt', L('Następna Runa rodu w kolejnym sklepie.', 'The next Family Rune comes with the next shop.')));
-      body.appendChild(rb);
     }
     // refresh, refresh for an ad: two buttons that are always there (1.05, author: crystals are no longer bought back for Esencja)
     const acts = el('div', 'acts');
@@ -20180,7 +20293,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (!heartView && hk) { const hb = el('button', 'mini heartback', L('♥ Dar serca czeka (', "♥ Heart's Gift (") + hp + ')'); hb.type = 'button'; hb.id = 'heart-back'; hb.addEventListener('click', () => { m.heartLater = false; m.sel = null; rerender(); }); foot.appendChild(hb); }
     foot.appendChild(done);
     if (m.msg) { foot.appendChild(el('div', 'shopmsg', m.msg)); m.msg = ''; }   // what just happened: a message over the big button (1.12.1: in the shop itself, the top hint is gone)
-    requestAnimationFrame(() => { card.querySelectorAll('.offer:not(.bought), .sheet').forEach(fitText); card.querySelectorAll('.slot:not(.empty)').forEach(fitSlot); });
+    requestAnimationFrame(() => { card.querySelectorAll('.sheet, .cdetail').forEach(fitText); card.querySelectorAll('.slot:not(.empty)').forEach(fitSlot); });
   }
   // Prototype 1.0: the whole text has to fit its box, nothing is cut. The letters shrink step by step down to a readable minimum;
   // a long name shrinks too. The tile says data-fit="no" if even that is not enough (the tests look for it).
@@ -20190,7 +20303,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   }
   function fitText(box) {
     const tx = box.querySelector('.tx'), nm = box.querySelector('b'); if (!tx) return;
-    const sheet = box.classList.contains('sheet'), max = sheet ? 14 : 13, min = sheet ? 11 : 10;
+    const sheet = box.classList.contains('sheet') || box.classList.contains('cdetail'), max = sheet ? 14 : 13, min = sheet ? 11 : 10;
     const over = () => tx.scrollHeight > tx.clientHeight + 1;
     tx.style.fontSize = max + 'px'; tx.style.lineHeight = ''; if (nm) nm.style.fontSize = '';
     for (let f = max; over() && f > min; ) { f = Math.round((f - 0.5) * 10) / 10; tx.style.fontSize = f + 'px'; }

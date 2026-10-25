@@ -202,7 +202,7 @@ FUSE = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => {
   ok(p2 === 2 * p1 && got === p2 && G.fl.essence === e0 + p2 && !G.isFused('spikes') && G.run.deck.join() === 'walls', 'selling ★ gives two: ' + [p1, p2, got]);
   // the texts: the shop offer, the deck tile, the card
   G.run.deck = ['spikes']; G.run.fused = []; G.recomputeMods(); G.run.shop.ids[0] = 'spikes';
-  G.openModal({ type: 'shop' }); let tx = (document.querySelector('#offer-0') || {}).textContent || ''; while (G.modalKind) G.closeModal();
+  G.openModal({ type: 'shop' }); let tx = (document.querySelector('#shop-detail') || {}).textContent || ''; while (G.modalKind) G.closeModal();
   out.offer = tx; ok(/połączy się w ★/i.test(tx) && /Połączy się w ★: /.test(tx), 'the shop says it fuses: ' + tx.slice(0, 160));
   G.run.fused = ['spikes']; G.recomputeMods(); G.renderDeckTiles(true);
   const tile = [...document.querySelectorAll('#tray .dslot.fused')]; ok(tile.length === 1 && /★ /.test(tile[0].textContent), 'the deck tile: gold, ★');

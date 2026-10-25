@@ -950,7 +950,7 @@
     { const fams = new Set(); let n = 0; fl.items.forEach(it => { if (it.temp || !(TRAPS[it.type] || MONSTERS[it.type])) return; n++; if (FAMILY_OF[it.type]) fams.add(FAMILY_OF[it.type]); }); fl.famN = fams.size; fl.elemN = n; fl.bathK = 1; fl.armyN = 0; fl.heartEchoW = 0; }
     fl.secretFound = new Set(); run.layout.edges.forEach((e, k) => { if (e.secret && e.secretKnown) fl.secretFound.add(k); }); fl.threatDirty = true;   // 1.26.1: a rumoured one is known from the start
     { const o = OMENS[run.omens && run.omens[run.wave]]; if (o) { floatTile(fl.ent.x, fl.ent.y, 'Omen: ' + o.name, '#d9b8ff', 16, -1.6); setHint('Omen: ' + o.name + '. ' + o.text); } }   // 1.26 (15)   // 1.26 Pełna paleta, Minimalista, Krwawa łaźnia
-    fl.phase = 'raid'; fl.time = 0; fl.patT = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
+    fl.phase = 'raid'; fl.time = 0; fl.patT = 0; fl.exitMap = null; fl.exitMapT = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
     { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał (1.26: 4 of the 5 types)
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && mods.warden && roomOf(m.x, m.y) === fl.heart.room) m.hp = Math.round(m.hp * (1 + mods.warden)); });   // 1.26 Strażnik
@@ -1139,6 +1139,7 @@
     const P = fl.party;
     fl.heroes.forEach(h => {
       if (h.dead || h.fled) return;
+      if (h.homeRun && (h.homeStuckT || 0) < 10 && fl.patT < S.waveTime + 240) return;   // 1.27.3: walking home (homeRun): no vanishing while he still has a way out
       if (h.crystal) { h.crystal = false; if (P.carrierId === h.id) P.carrierId = -1; fl.stats.crystalSaved++; floatTile(fl.heart.x, fl.heart.y, L('Kryształ wraca!', 'Crystal back!'), '#ff7a86', 15, -1); crystalEv(0, 'saved', 'forcedOut'); }   // 1.24 (D): logged
       h.gone = false; floatHero(h, L('Ucieka', 'Flees'), '#c9c2d8', 13, -0.9);
       fl.stats.forcedOut = (fl.stats.forcedOut || 0) + 1; tl('fo', h.id, h.tx, h.ty, h.state);   // 1.24
@@ -2043,6 +2044,7 @@
     const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, k = key(it.x, it.y);
     if (lootBanned(h, it)) return false;   // 1.21: the loser of a quarrel over it (or everyone, when the leader stopped it) for 10 s
     if (it.type === 'bait') { noticeLoot(it, h); baitBite(h, it); return false; }   // 1.26 Przynęta: it bites, it stays
+    if (dreamLoot(it) && (exiting(h) || panicking(h) || h.homeRun || (h.lootMemo.get(k) && !h.lootMemo.get(k).go && h.lootMemo.get(k).t > fl.time))) return false;   // 1.27.3: once a pile, and never on the way out (a hero shuffled on and off it for minutes)
     if (dreamLoot(it)) { noticeLoot(it, h); h.lootMemo.set(k, { go: false, t: fl.time + 120 }); h.state = 'wait'; h.timer = 3; h.path = []; floatTile(it.x, it.y, L('Złoty sen: nie do ruszenia', 'Golden Dream: stuck'), '#f2b94b', 12, -0.6); fl.stats.dreamTries = (fl.stats.dreamTries || 0) + 1; return false; }   // 1.26 Złoty sen
     // 1.20: a body's things: he kneels and goes through them (updateHero: the 'loot' state, then bodyLoot), not while running or
     // in a panic, and not again over a body he found nothing on

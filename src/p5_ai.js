@@ -387,7 +387,7 @@
   // a hero who stands still somewhere unsafe walks to a good tile (at most 3 steps, the one nearest the leader; one who rests
   // stays in his room, so the rest does not walk out of it; none: he stays)
   function toSafety(h) {
-    if (h.nx !== null || isExitTile(h.x, h.y) || standOk(h, h.x, h.y)) return false;
+    if (h.nx !== null || isExitTile(h.x, h.y) || standOk(h, h.x, h.y) || exiting(h) || panicking(h) || h.homeRun) return false;   // 1.27.3: one on his way out walks on (he used to step off a pile and back for minutes)
     const s0 = h.y * WW + h.x, prev = new Map([[s0, -1]]), q = [s0], dep = new Map([[s0, 0]]), r0 = h.state === 'rest' ? roomOf(h.x, h.y) : -1;
     // the good tiles within 3 steps; of those the one nearest the leader, so stepping off a trap never splits the party
     const L = leader(), near = [], withL = L && L !== h && samePlace(h, L), rL = L ? roomOf(L.tx, L.ty) : -1;
@@ -3238,7 +3238,7 @@
     if (h.bet) betStep(h);   // 1.21
     if (isExitTile(h.x, h.y) && exiting(h)) { heroExit(h); return; }
     const it = fl.items.get(key(h.x, h.y));
-    if (it && isLoot(it.type) && !h.crystal && !h.fleeing) { pickup(h, it); if (h.state === 'loot') return; }   // 1.20: he kneels by a body
+    if (it && isLoot(it.type) && !h.crystal && !h.fleeing && !h.homeRun) { pickup(h, it); if (h.state === 'loot') return; }   // 1.20: he kneels by a body
     // 1.10: Lodownia: a step may run on, one tile straight ahead, into whatever is there (not twice in a row)
     if (r >= 0 && isRt(r, 'ice') && !h.slid && (h.ldx || h.ldy) && h.state === 'walk' && Math.random() < slipChance(h) * (1 + 0.5 * mods.blackice) * (1 + Math.max(0, loadOf(h) / carryOf(h) - 0.5))) {   // 1.18: Gołoledź, half as many slips more; 1.20: a heavy pack slips more
       const sx = h.x + h.ldx, sy = h.y + h.ldy, g = fl.items.get(key(sx, sy));
@@ -3337,6 +3337,45 @@
       floatTile(it.x, it.y, L('Wykryta!', 'Spotted!'), '#ffe066', 13, -0.6);
     });
   }
+  // 1.27.3 (author: heroes must die or walk out by themselves, with no standing in place and no vanishing at the door): once the
+  // party goes home (patience gone) a hero on his way out who has not come one step closer to the exit in 8 s, and after the
+  // exhaustion anyone who has not in 6 s (everyone 40 s after it), walks home: the shortest way out, known or not, through
+  // danger, past his friends, with no stops (no talk, rest, loot or stepping aside). A monster in his way he fights. A closed
+  // gate he waits out. waveForceOut leaves him be while he still has a way (homeStuckT < 10 s, up to 240 s past patience).
+  function homeRunTick(dt) {
+    if (!fl.exitMap || fl.time >= fl.exitMapT) { const b = bfs(fl.ent.x, fl.ent.y, { noDanger: true }); fl.exitMap = b.dist; fl.exitMapT = fl.time + 5;
+      if (fl.breach) { const b2 = bfs(fl.breach.x, fl.breach.y, { noDanger: true }).dist; fl.exitMap = fl.exitMap.map((d, i) => d < 0 ? b2[i] : b2[i] < 0 ? d : Math.min(d, b2[i])); } }
+    alive().forEach(h => {
+      if (h.homeRun || caged(h) || h.gone || (!fl.exhausted && !exiting(h))) { if (caged(h) || h.gone) h.homeBestT = fl.time; return; }
+      const d = fl.exitMap[tIdx(h)];
+      if (h.homeBest == null || h.homeBestT == null || (d >= 0 && d < h.homeBest - 0.5)) { h.homeBest = d >= 0 ? d : 1e9; h.homeBestT = fl.time; }
+      if (fl.time - h.homeBestT > (fl.exhausted ? 6 : 8) || (fl.exhausted && fl.patT >= S.waveTime + 100)) {
+        h.homeRun = true; h.needPlan = true; h.homeStuckT = 0; fl.stats.homeRun = (fl.stats.homeRun || 0) + 1; tl('hr', h.id, h.tx, h.ty, h.state);
+      }
+    });
+  }
+  function homeRunPlan(h) {
+    h.thinkT = 1.5; h.needPlan = false; h.lootKey = null; h.intent = h.crystal ? 'carry' : 'exit';
+    const b = bfs(h.x, h.y, { noDanger: true }), g = nearestOf(b, exitGoals());
+    h.path = g >= 0 ? pathFrom(b, g) : [];
+  }
+  function homeRunStep(h, dt) {
+    if (h.state === 'fight') {   // the monster in his way: the fight below goes on until it falls or the way is free
+      const g = h.foe; if (g && g.hp > 0 && fl.items.get(key(g.x, g.y)) === g) return false;
+      h.state = 'walk'; h.foe = null;
+    } else if (h.state !== 'walk') { h.state = 'walk'; h.item = null; h.disarmT = null; h.lootIt = null; h.smashIt = null; h.freeT = null; h.huddle = false; h.toSafe = false; h.napUntil = -1; h.restAt = -1; h.dream = false; }
+    if (h.nx !== null) return false;   // a step under way: the walk below finishes it
+    if (isExitTile(h.x, h.y)) { heroExit(h); return true; }
+    if (rooted(h)) return true;
+    if (h.needPlan || h.thinkT <= 0 || !h.path.length || !passable(h.path[0][0], h.path[0][1])) homeRunPlan(h);
+    const n = h.path[0];
+    if (!n || !passable(n[0], n[1])) { h.homeStuckT = (h.homeStuckT || 0) + dt; return true; }   // a closed gate: he waits for it
+    const g = fl.items.get(key(n[0], n[1]));
+    if (g && MONSTERS[g.type] && !DRIFT[g.type] && g.hp > 0) { h.state = 'fight'; h.foe = g; return true; }
+    const o = heroBlock(h, n[0], n[1]); if (o) h.passing = o.id;   // past his friends (a step to the side, drawn)
+    h.path.shift(); h.nx = n[0]; h.ny = n[1]; h.prog = 0; h.homeStuckT = 0;
+    return false;
+  }
   function updateHero(h, dt) {
     const P = fl.party;
     if (h.gone) { if (fl.time >= h.fallUntil) landFallen(h); return; }
@@ -3375,6 +3414,7 @@
       else if (fl.time >= h.cageUntil) cageEnds(h);
       return;
     }
+    if (h.homeRun && homeRunStep(h, dt)) return;   // 1.27.3
     if (h.state === 'rest') {
       const haven = h.room >= 0 && isRt(h.room, 'haven'), dream = !!h.dream && fl.time < (h.napUntil || -1); if (!(h.restAt > 0)) h.restAt = fl.time;   // 1.18: dream = asleep to the lullaby (Usypianka)
       if (fl.time >= h.burnUntil) h.hp = Math.min(h.max, h.hp + 4 * dt * (haven || dream ? 0.5 : 1));
@@ -3431,7 +3471,7 @@
     }
     if (h.state === 'fight') {
       const g = h.foe;
-      if (!g || g.hp <= 0 || fl.items.get(key(g.x, g.y)) !== g || (exiting(h) && !standing(h))) { h.state = 'walk'; h.foe = null; h.needPlan = true; }   // 1.22: a last stand fights on the way out
+      if (!g || g.hp <= 0 || fl.items.get(key(g.x, g.y)) !== g || (exiting(h) && !standing(h) && !h.homeRun)) { h.state = 'walk'; h.foe = null; h.needPlan = true; }   // 1.22: a last stand fights on the way out
       else {
         const bomb = h.inv.find(x => x.type === 'bomb');
         if (bomb && g.hp > 60) {
