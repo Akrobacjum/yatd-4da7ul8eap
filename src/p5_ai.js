@@ -1924,6 +1924,12 @@
           const pts = addPts(GZ.lost * dt * depthMult(h.room) * mods.lostMult, 'lostPts', h); fl.stats.lostTime += dt; h.acc += pts;
         }
         if (fl.time > h.lostCallT && !panicking(h)) { h.lostCallT = fl.time + 6 + 3 * Math.random(); say(h, pick(SAY.lostCall), 2); answerLost(h); }
+        // 1.27.4 (author: a lost hero stood in a Głusza for minutes; nobody could hear him, so nobody ever came): 8 s lost in a
+        // Głusza and he finds his own way (back to the party's plan, the way he knows)
+        if (isRt(h.room, 'hush')) {
+          h.hushLostT = (h.hushLostT || 0) + dt;
+          if (h.hushLostT >= 8) { h.lost = false; h.hushLostT = 0; h.hearUntil = -1; h.noPathT = 0; h.sepT = 0; h.sepRolled = false; h.needPlan = true; if (!h.gone) reveal(h); fl.stats.hushFound = (fl.stats.hushFound || 0) + 1; tl('hf', h.id); floatHero(h, LL(h.female ? 'Sama znajduje drogę' : 'Sam znajduje drogę', 'Finds the way'), '#c9c2d8', 12, -0.9); }
+        } else h.hushLostT = 0;
       }
     });
     // a spare potion for a friend who is about to die
@@ -3346,7 +3352,8 @@
     if (!fl.exitMap || fl.time >= fl.exitMapT) { const b = bfs(fl.ent.x, fl.ent.y, { noDanger: true }); fl.exitMap = b.dist; fl.exitMapT = fl.time + 5;
       if (fl.breach) { const b2 = bfs(fl.breach.x, fl.breach.y, { noDanger: true }).dist; fl.exitMap = fl.exitMap.map((d, i) => d < 0 ? b2[i] : b2[i] < 0 ? d : Math.min(d, b2[i])); } }
     alive().forEach(h => {
-      if (h.homeRun || caged(h) || h.gone || (!fl.exhausted && !exiting(h))) { if (caged(h) || h.gone) h.homeBestT = fl.time; return; }
+      if (h.homeRun || caged(h) || h.gone || (!fl.exhausted && !exiting(h) && !h.lost)) {   // 1.27.4: a lost one too (he may never hear that the party goes home)
+      if (caged(h) || h.gone) h.homeBestT = fl.time; return; }
       const d = fl.exitMap[tIdx(h)];
       if (h.homeBest == null || h.homeBestT == null || (d >= 0 && d < h.homeBest - 0.5)) { h.homeBest = d >= 0 ? d : 1e9; h.homeBestT = fl.time; }
       if (fl.time - h.homeBestT > (fl.exhausted ? 6 : 8) || (fl.exhausted && fl.patT >= S.waveTime + 100)) {

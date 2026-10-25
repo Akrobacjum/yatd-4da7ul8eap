@@ -1136,12 +1136,12 @@
   "tool": true,
   "rt": "hush",
   "desc": "Nic tu nie słychać, więc bohaterowie nie mogą się porozumieć.",
-  "more": "Nie ostrzegą się nawzajem (pułapki odpalone tu nie trafią do ich wiedzy), nie zawołają kapłana, nie dodadzą sobie otuchy, a zgubiony nie usłyszy odpowiedzi. Strach +20%. Stuknij znacznik pokoju.",
+  "more": "Nie ostrzegą się nawzajem (pułapki odpalone tu nie trafią do ich wiedzy), nie zawołają kapłana, nie dodadzą sobie otuchy, a zgubiony nie usłyszy odpowiedzi (po 8 s sam znajdzie drogę). Strach +10%. Stuknij znacznik pokoju.",
   "en": {
    "name": "Hush",
    "tag": "silence",
    "desc": "Nothing can be heard here, so heroes cannot talk to each other.",
-   "more": "They cannot warn each other (traps fired here do not become known), call a priest or cheer each other up, and a lost hero hears no reply. Fear +20%. Tap the room marker."
+   "more": "They cannot warn each other (traps fired here do not become known), call a priest or cheer each other up, and a lost hero hears no reply (after 8 s he finds his own way). Fear +10%. Tap the room marker."
   }
  },
  "r_ice": {

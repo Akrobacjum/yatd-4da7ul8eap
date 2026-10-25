@@ -4,6 +4,14 @@ Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
+## Zmiany w 1.27.4
+
+- **Karty sklepu pionowe** (autor: karty były kwadratowe, a ilustracja dalej kwadratowa przy za dużym napisie): karta ma proporcje 5:7, ilustracja wypełnia całą kartę (`ART.cardTall(id)`: ta sama karta malowana w 50 × 70, linia ściany niżej o `DY` = 20, motyw wyżej i 1,2 raza większy, znaczek w prawym górnym rogu; `ART.cardImg(id, big, tall)`), a nazwa (11 px, najwyżej 2 linie) i cena leżą na ciemnym pasie u dołu (gradient do `rgba(8,8,10,0.86)`). Runa rodu: ikona runy na poświacie koloru rodziny. Znaczek ★ / ! w lewym górnym rogu. 4 karty: jeden rząd (nazwa 10,5 px).
+- Niskie okno (do 760 px): karty w jednym rzędzie przewijanym w bok jak pasek budowy (szer. 86 px, przyciąganie do karty), z ilustracją; przewinięcie zostaje przy odświeżeniu widoku (`m.cardsX`). Wyżej: 3 karty w rzędzie, 2 rzędy przy 5-6 kartach.
+- **Odśwież w Darze serca** losuje nowe karty Daru (ten sam koszt odświeżenia; oferty sklepu zostają; `shopReroll(ad, heart)`, `stats.heartRerolls`). Wcześniej odświeżało niewidoczne oferty pod spodem.
+- Opis karty w panelu (`.cdetail .tx`) przewija się, gdy nie mieści się nawet w 11 px (bez ucinania).
+- Wersja "Prototype 1.27.4", "Co nowego" z czterema liniami.
+
 ## Zmiany w 1.27.3
 
 - **Sklep jak w karciance** (autor: pięć kart w siatce 2×2, np. z Dziesięciną, były ściśnięte i nieczytelne; wzór: Balatro i pasek budowy). Opis w 3.9, "Sklep w 1.27.3".
@@ -560,7 +568,7 @@ Komunikaty po akcji (`m.msg`: "W talii: X.", "Za mało Esencji…", "Nowa oferta
 - Układ: 3 karty w rzędzie (`grid`, 8 px odstępu); przy dokładnie 4 kartach (Dar serca z Dziesięciną, albo 3 oferty i runa) jeden rząd 4 (`.n4`, nazwa 11,5 px). Zwykły sklep to 4 oferty + runa (3 + 2), z dodatkową ofertą 5 + runa (3 + 3).
 - **Wybór**: stuknięcie karty (także koniec przytrzymania, Enter/spacja) wybiera ją (`m.pick = { k: 'o' | 'h' | 'r', i }`; złota obwódka, karta unosi się o 3 px). Domyślnie wybrana pierwsza dostępna; po kupnie wybór przechodzi na następną.
 - **Panel** (`.cdetail`, górna ramka 4 px w kolorze karty): linia rodzaju (`kindShort`, przy runie "Runa rodu · poziom L → L+1 (max 5)"), nazwa Grenze 20 px (runa: glif i rodzina w jej kolorze), opis 14 px (`fitText` jak arkusz, 14 → 11 px) z "Połączy się w ★: …" i podpowiedzią dopasowania; przy runie skutek ("Elementy rodziny: +8% mocy, -4% odnowienia." / Skarby "Łup podbija chciwość o 8% mocniej.") i drobnym drukiem wszystkie elementy rodziny + "Działa od razu, bez miejsca w talii.". Na dole przycisk 34 px (czerwony gradient): `#offer-buy-i` "Kup za p Esencji" / "Weź za darmo" / "Za mało (p)", `#heart-take-i` "Weź za darmo" obok "Później" (`#heart-later`), `#rune-buy` "Kup za N Esencji". Gdy wszystko kupione: "Wszystko kupione. Odśwież ofertę albo wróć do budowy.".
-- Niskie okno (do 760 px wysokości): karty bez ilustracji (nazwa i cena), żeby panel opisu zachował miejsce. Zastępuje to dawny wiersz Runy rodu (`.runerow`, 1.26-1.27.2) i siatkę 2×2 z pełnym tekstem w każdej ofercie.
+- Niskie okno (do 760 px wysokości): karty bez ilustracji (nazwa i cena), żeby panel opisu zachował miejsce (od 1.27.4: pionowe karty z ilustracją w rzędzie przewijanym w bok, wyżej "Zmiany w 1.27.4"). Zastępuje to dawny wiersz Runy rodu (`.runerow`, 1.26-1.27.2) i siatkę 2×2 z pełnym tekstem w każdej ofercie.
 
 **Połączone karty ★ (1.24)**: oferta karty, którą już masz, ma w linii rodzaju "połączy się w ★" i pod opisem "Połączy się w ★: <cecha>" (klasa `.fuse`, `.fz`); zakup daje komunikat "...: połączona w ★ (jedno miejsce)."; slot talii i schowka połączonej karty ma złotą ramkę (`.fused`) i nazwę z "★ " (`cardName`); arkusz karty złoty, "Sprzedaj +s" z ceną dwóch kart (`sellFor`). Nazwy kart w Unity: ten sam przedrostek "★ ". Linia rodzaju odblokowania od 1.24 ma też słowa "rani" / "straszy" (`kindShort`, `effWords`).
 

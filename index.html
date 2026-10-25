@@ -668,23 +668,25 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 /* 1.27.3: the shop as cards (author: Balatro, the build tray): a picture, the name, a rarity frame and the price, three to a row;
    the picked card's whole text and its button in the panel under them. The Family Rune and the Heart's Gift: cards in their own frame. */
 .scr-body > .shopstage { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
-.shopstage > .offers.cards { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: auto; gap: 8px; }
-.offer.ccard { align-items: center; text-align: center; padding: 5px 5px 4px; gap: 3px; border: 2px solid #5d6168; border-radius: 6px; background: linear-gradient(180deg, #23252b, #191a1f);
+.shopstage > .offers.cards { flex: none; padding-top: 3px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: auto; gap: 8px; }
+.offer.ccard { aspect-ratio: 5 / 7; justify-content: flex-end; align-items: stretch; text-align: center; padding: 0; gap: 0; border: 2px solid #5d6168; border-radius: 6px; background: #17181c; overflow: hidden;
   box-shadow: inset 0 1px 0 var(--edge), 0 3px 0 #000; transition: transform 0.12s ease-out, box-shadow 0.12s; }
-.offer.ccard.rar-r { border-color: #6f9bcc; } .offer.ccard.rar-l { border-color: var(--ember); background: linear-gradient(180deg, #2d1a1d, #1d1215); }
-.offer.ccard.unlock { border-color: var(--violet); } .offer.ccard.heart { border-color: #c9932b !important; background: linear-gradient(180deg, #3a1a20, #1d1215); }
-.offer.ccard.rune { border-color: var(--fam, #8e939a); border-style: double; border-width: 3px; background: #1b1c21; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--fam, #8e939a) 22%, #1d1e23), #17181c 75%); }
-.offer.ccard .cardart { width: 100%; height: auto; aspect-ratio: 3 / 2; margin: 0; border-radius: 3px; image-rendering: pixelated; object-fit: cover; }
-.offer.ccard .cardart.blank { background: #111216; border: 1px solid #000; }
-.offer.ccard .runeart { object-fit: contain; background: rgba(0, 0, 0, 0.35); padding: 4px; box-sizing: border-box; }
-.offer.ccard b { font-size: 12.5px; line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.3em; overflow-wrap: anywhere; padding: 0 9px; align-self: stretch; }
-.offer.ccard .pr { font: 600 13px/18px var(--font-num); color: var(--gold); height: 18px; display: inline-flex; align-items: center; gap: 5px; }
+.offer.ccard.rar-r { border-color: #6f9bcc; } .offer.ccard.rar-l { border-color: var(--ember); }
+.offer.ccard.unlock { border-color: var(--violet); } .offer.ccard.heart { border-color: #c9932b !important; }
+.offer.ccard.rune { border-color: var(--fam, #8e939a); border-style: double; border-width: 3px; }
+/* 1.27.4 (author: an upright card, the picture upright too): the picture (50 x 70, ART.cardTall) fills the card; the name and the price sit on a dark band at its foot */
+.offer.ccard .cardart { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; margin: 0; border: 0; border-radius: 0; image-rendering: pixelated; object-fit: cover; }
+.offer.ccard .cardart.blank { background: #111216; }
+.offer.ccard .runeart { object-fit: contain; padding: 16% 14% 42%; box-sizing: border-box; background: #1b1c21; background: radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--fam, #8e939a) 30%, #1d1e23), #121317 72%); }
+.offer.ccard b { position: relative; z-index: 1; font-size: 11px; line-height: 1.12; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: break-word; hyphens: auto;
+  padding: 16px 4px 1px; background: linear-gradient(180deg, rgba(8, 8, 10, 0), rgba(8, 8, 10, 0.86) 42%); text-shadow: 0 1px 0 #000; }
+.offer.ccard .pr { position: relative; z-index: 1; font: 600 12px/16px var(--font-num); color: var(--gold); height: 17px; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(8, 8, 10, 0.86); }
 .offer.ccard .pr.ess::before { content: ""; width: 6px; height: 6px; background: var(--ess); transform: rotate(-45deg); border-radius: 50% 0 50% 50%; box-shadow: 0 0 4px rgba(255, 60, 80, 0.8); }
-.offer.ccard .cbadge { position: absolute; top: 2px; right: 4px; font-style: normal; font-weight: 700; font-size: 14px; color: #f2c94c; text-shadow: 0 1px 0 #000, 0 0 4px #000; }
-.offer.ccard.poor .pr { color: var(--muted); } .offer.ccard.poor .cardart { filter: saturate(0.5) brightness(0.8); }
+.offer.ccard .cbadge { position: absolute; z-index: 1; top: 2px; left: 4px; font-style: normal; font-weight: 700; font-size: 14px; color: #f2c94c; text-shadow: 0 1px 0 #000, 0 0 4px #000; }
+.offer.ccard.poor .pr { color: var(--muted); } .offer.ccard.poor .cardart { filter: saturate(0.5) brightness(0.75); }
 .offer.ccard.sel { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--gold), 0 0 14px rgba(196, 160, 82, 0.45), 0 5px 0 #000; }
-.offer.ccard.bought { min-height: 100%; border-width: 1px; border-color: var(--line); background: none; box-shadow: none; opacity: 0.4; }
-.offer.ccard.bought b { -webkit-line-clamp: unset; min-height: 0; font-size: 16px; } .offer.ccard .rdone { font-size: 11px; color: var(--muted); }
+.offer.ccard.bought { justify-content: center; align-items: center; gap: 2px; border-width: 1px; border-color: var(--line); background: none; box-shadow: none; opacity: 0.4; }
+.offer.ccard.bought b { -webkit-line-clamp: unset; font-size: 16px; padding: 0; background: none; } .offer.ccard .rdone { font-size: 11px; color: var(--muted); }
 .shopstage .hearthead { flex: none; display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border: 1px solid #a8781f; border-radius: 4px; background: linear-gradient(180deg, rgba(120, 30, 40, 0.55), rgba(60, 20, 24, 0.5)); }
 .shopstage .hearthead b { color: #ffd27a; font-size: 14px; } .shopstage .hearthead span { font-size: 12px; color: var(--ink); }
 .cdetail { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: 3px; padding: 8px 10px 8px; background-color: #1a1c21; border: 1px solid var(--line2); border-top: 4px solid #8e939a; border-radius: var(--r); box-shadow: inset 0 1px 0 var(--edge), 0 2px 0 #000; }
@@ -702,9 +704,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .cdetail .buy:disabled { background: var(--panel); color: var(--muted); border-color: var(--line); box-shadow: none; cursor: default; }
 .cdetail .heartlater { flex: none; }
 .card.screen.enter .offer.ccard:nth-child(5) { animation-delay: 0.24s; } .card.screen.enter .offer.ccard:nth-child(6) { animation-delay: 0.3s; }
-.shopstage > .offers.cards.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; } .offers.cards.n4 .offer.ccard b { font-size: 11.5px; }
-@media (max-height: 900px) { .offer.ccard .cardart { aspect-ratio: 2 / 1; } }
-@media (max-height: 760px) { .offer.ccard .cardart { display: none; } .offer.ccard { padding-top: 7px; justify-content: center; } .cdetail b { font-size: 18px; } }   /* a short phone: name and price only, the text stays roomy */
+.shopstage > .offers.cards.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; } .offers.cards.n4 .offer.ccard b { font-size: 10.5px; }
+/* a short phone: all the cards in one row, smaller (still upright cards), so the text under them keeps its room */
+@media (max-height: 760px) { .shopstage > .offers.cards { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; padding: 4px 2px 6px; margin: -4px -2px -6px; }
+  .shopstage > .offers.cards::-webkit-scrollbar { display: none; } .offer.ccard { flex: 0 0 86px; scroll-snap-align: start; } .offer.ccard .cardart { display: block; } .cdetail b { font-size: 18px; } }   /* a short phone: one row of upright cards that scrolls sideways, like the build tray */   /* a short phone: name and price only, the text stays roomy */
 /* a card from the deck or the stash, opened over the offers (the rest of the screen stays put) */
 .sheet {
   position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 10px;
@@ -1123,7 +1126,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     // 1.10 (author: more room types, each playing with the other mechanics)
     r_haven: { name: 'Sanktuarium', cost: 8, slot: 'roomtype', tag: 'fałszywy azyl', tool: true, rt: 'haven', desc: 'Wygląda na bezpieczne miejsce, ale odpoczynek przynosi tu koszmary.', more: 'Ranni chętnie tu odpoczywają, ale rany goją się 2 razy wolniej, a śpiących dręczą koszmary. Stuknij znacznik pokoju.', en: { name: 'Sanctuary', tag: 'false refuge', desc: 'Looks like a safe place, but resting here brings nightmares.', more: 'The wounded like to rest here, but wounds heal twice as slowly and sleepers have nightmares. Tap the room marker.' } },
     r_gears: { name: 'Zębatki', cost: 8, slot: 'roomtype', tag: 'combo solo', tool: true, rt: 'gears', desc: 'Pułapki przeładowują się szybciej i same podbijają combo.', more: 'Przeładowanie o 25% szybsze, a ta sama pułapka odpalona drugi raz z rzędu też podbija combo. Stuknij znacznik pokoju.', en: { name: 'Gears', tag: 'solo combo', desc: 'Traps reload faster and can build Combo on their own.', more: 'Reload 25% faster, and the same trap firing twice in a row also raises the Combo. Tap the room marker.' } },
-    r_hush: { name: 'Głusza', cost: 8, slot: 'roomtype', tag: 'bez słów', tool: true, rt: 'hush', desc: 'Nic tu nie słychać, więc bohaterowie nie mogą się porozumieć.', more: 'Nie ostrzegą się nawzajem (pułapki odpalone tu nie trafią do ich wiedzy), nie zawołają kapłana, nie dodadzą sobie otuchy, a zgubiony nie usłyszy odpowiedzi. Strach +20%. Stuknij znacznik pokoju.', en: { name: 'Hush', tag: 'silence', desc: 'Nothing can be heard here, so heroes cannot talk to each other.', more: 'They cannot warn each other (traps fired here do not become known), call a priest or cheer each other up, and a lost hero hears no reply. Fear +20%. Tap the room marker.' } },
+    r_hush: { name: 'Głusza', cost: 8, slot: 'roomtype', tag: 'bez słów', tool: true, rt: 'hush', desc: 'Nic tu nie słychać, więc bohaterowie nie mogą się porozumieć.', more: 'Nie ostrzegą się nawzajem (pułapki odpalone tu nie trafią do ich wiedzy), nie zawołają kapłana, nie dodadzą sobie otuchy, a zgubiony nie usłyszy odpowiedzi (po 8 s sam znajdzie drogę). Strach +10%. Stuknij znacznik pokoju.', en: { name: 'Hush', tag: 'silence', desc: 'Nothing can be heard here, so heroes cannot talk to each other.', more: 'They cannot warn each other (traps fired here do not become known), call a priest or cheer each other up, and a lost hero hears no reply (after 8 s he finds his own way). Fear +10%. Tap the room marker.' } },
     r_ice: { name: 'Lodownia', cost: 8, slot: 'roomtype', tag: 'poślizg', tool: true, rt: 'ice', desc: 'Na lodzie bohaterowie ślizgają się prosto w to, co leży dalej.', more: 'Co trzeci krok bohater jedzie jedno pole dalej (doświadczeni i złodziej rzadziej). Nikt tu nie odpoczywa. Stuknij znacznik pokoju.', en: { name: 'Icehouse', tag: 'slippery', desc: 'On the ice heroes slide straight into whatever lies ahead.', more: 'Every third step a hero slides one tile further (veterans and thieves less often). Nobody rests here. Tap the room marker.' } }
   };
   const TABS = [
@@ -6877,7 +6880,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (h.dead || h.fled || amt <= 0) return;
     if (fl.firing && (TRAPS[fl.firing.type] || SCARE[fl.firing.type])) markOuch(h, fl.firing);   // 1.13: a scare that went off here too
     const raw = amt;
-    amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : isRt(h.room, 'hush') ? 1.2 : 1);   // Mgła: +15%, 1.10 Głusza: +20%
+    amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : isRt(h.room, 'hush') ? 1.1 : 1);   // Mgła: +15%, 1.10 Głusza: +20% (1.27.4: +10%); Głusza: +20%
     if (inB('altar', h.room)) amt *= 1.1; if (inB('howl', h.room)) amt *= 1.1;   // 1.26 (6.4): Ołtarz and Kamień wyjec: +10% fear in their room
     if (raging(h)) amt *= 0.5;   // 1.05: fury dulls fear
     if (fl.time < (h.markUntil || -1)) amt *= 1.3;   // 1.26 Naznaczony
@@ -10366,6 +10369,12 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
           const pts = addPts(GZ.lost * dt * depthMult(h.room) * mods.lostMult, 'lostPts', h); fl.stats.lostTime += dt; h.acc += pts;
         }
         if (fl.time > h.lostCallT && !panicking(h)) { h.lostCallT = fl.time + 6 + 3 * Math.random(); say(h, pick(SAY.lostCall), 2); answerLost(h); }
+        // 1.27.4 (author: a lost hero stood in a Głusza for minutes; nobody could hear him, so nobody ever came): 8 s lost in a
+        // Głusza and he finds his own way (back to the party's plan, the way he knows)
+        if (isRt(h.room, 'hush')) {
+          h.hushLostT = (h.hushLostT || 0) + dt;
+          if (h.hushLostT >= 8) { h.lost = false; h.hushLostT = 0; h.hearUntil = -1; h.noPathT = 0; h.sepT = 0; h.sepRolled = false; h.needPlan = true; if (!h.gone) reveal(h); fl.stats.hushFound = (fl.stats.hushFound || 0) + 1; tl('hf', h.id); floatHero(h, LL(h.female ? 'Sama znajduje drogę' : 'Sam znajduje drogę', 'Finds the way'), '#c9c2d8', 12, -0.9); }
+        } else h.hushLostT = 0;
       }
     });
     // a spare potion for a friend who is about to die
@@ -11788,7 +11797,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (!fl.exitMap || fl.time >= fl.exitMapT) { const b = bfs(fl.ent.x, fl.ent.y, { noDanger: true }); fl.exitMap = b.dist; fl.exitMapT = fl.time + 5;
       if (fl.breach) { const b2 = bfs(fl.breach.x, fl.breach.y, { noDanger: true }).dist; fl.exitMap = fl.exitMap.map((d, i) => d < 0 ? b2[i] : b2[i] < 0 ? d : Math.min(d, b2[i])); } }
     alive().forEach(h => {
-      if (h.homeRun || caged(h) || h.gone || (!fl.exhausted && !exiting(h))) { if (caged(h) || h.gone) h.homeBestT = fl.time; return; }
+      if (h.homeRun || caged(h) || h.gone || (!fl.exhausted && !exiting(h) && !h.lost)) {   // 1.27.4: a lost one too (he may never hear that the party goes home)
+      if (caged(h) || h.gone) h.homeBestT = fl.time; return; }
       const d = fl.exitMap[tIdx(h)];
       if (h.homeBest == null || h.homeBestT == null || (d >= 0 && d < h.homeBest - 0.5)) { h.homeBest = d >= 0 ? d : 1e9; h.homeBestT = fl.time; }
       if (fl.time - h.homeBestT > (fl.exhausted ? 6 : 8) || (fl.exhausted && fl.patT >= S.waveTime + 100)) {
@@ -12597,7 +12607,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (!fl.fearless && fl.ending === null && fl.patT >= (omenK(run.wave, 'patience') || S.waveTime) + (mods.patience || 0)) becomeImpatient();   // 1.26 Pośpiech: 60 s
     if (fl.ending === null && !fl.exhausted && fl.patT >= S.waveTime + 60) waveExhausted();   // 1.24: worn out, they walk out (up to 1.23 they were teleported out here)
     if (fl.ending === null && (fl.exhausted || fl.patT >= S.waveTime)) homeRunTick(dt);   // 1.27.3: the way home (stuck ones walk out by themselves)
-    if (fl.ending === null && fl.patT >= S.waveTime + 150) waveForceOut();   // 1.24: the true safety net: nobody stays forever
+    if (fl.ending === null && fl.patT >= S.waveTime + 150) waveForceOut();
+    if (fl.ending === null && fl.time >= (fl.longAt || 240)) { fl.longAt = fl.time + 120; try { logLong(); } catch (e) { perfErr(e); } }   // 1.27.4: a long wave reports itself   // 1.24: the true safety net: nobody stays forever
     if (fl.ending === null && fl.queue.length === 0 && fl.heroes.length && fl.heroes.every(h => h.dead || h.fled)) fl.ending = 1.2;
     fl.heroes.forEach(h => { if (h.bubble && h.bubble.until <= fl.time) h.bubble = null; });
   }
@@ -17548,9 +17559,9 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   ART.ITEM_ORDER = ITEM_ORDER;
   ART.has = t => !!(ART.EL[t] || ART.ROOMS[t]);
   // an <img> of a card's picture (big: the card's own window, twice the size); null when there is none
-  ART.cardImg = (id, big) => {
-    const u = ART.card ? ART.card(id) : ''; if (!u) return null;
-    const im = document.createElement('img'); im.className = 'cardart' + (big ? ' cardbig' : '') + (ART.isHeart && ART.isHeart(id) ? ' heart' : ''); im.alt = ''; im.draggable = false; im.src = u; return im;
+  ART.cardImg = (id, big, tall) => {
+    const u = tall && ART.cardTall ? ART.cardTall(id) : ART.card ? ART.card(id) : ''; if (!u) return null;
+    const im = document.createElement('img'); im.className = 'cardart' + (big ? ' cardbig' : '') + (tall ? ' tall' : '') + (ART.isHeart && ART.isHeart(id) ? ' heart' : ''); im.alt = ''; im.draggable = false; im.src = u; return im;
   };
   // ---------- 1.26: the new monsters as pixel figures (20 x 28, feet on the bottom row, facing right), painted like the old
   // ones (paintFigure calls FIG_ART[type] for a type it does not know) ----------
@@ -17955,19 +17966,21 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   // with what the card does to it (up, x2, minus, loop...) ----------
   (() => {
     const { C, EL, pic, quantize, hash, bricks, flags, skull, bone, coin, flameAt, badge } = ART;
-    const CW = 72, CH = 48;
+    // 1.27.4 (author: the shop cards are upright, the picture has to be too): an upright version, 50 x 70, painted by the same
+    // code with the wall line DY lower and everything centred on CW / 2 (ART.cardTall)
+    let CW = 72, CH = 48, DY = 0;
     // backgrounds
     const BG = {
-      power(P) { bricks(P, 0, 0, CW, 22); flagsH(P, 22); },
-      named(P) { bricks(P, 0, 0, CW, 22); flagsH(P, 22); },
-      fear(P) { P.vgrad(0, 0, CW, CH, '#2c2048', '#0c0912'); P.oval(12, 9, 6, 6, 'rgba(230,225,214,0.55)').oval(14, 8, 5, 5, '#1a1428'); for (let k = 0; k < 5; k++) P.oval(10 + k * 14, 38 + (k % 2) * 4, 16, 2.6, 'rgba(160,140,232,0.18)'); flagsH(P, 34, [C.vi0, C.st0, C.vi0, C.void]); },
-      hero(P) { bricks(P, 0, 0, CW, 24, { cols: [C.cold0, C.cold1, C.cold0, C.st0] }); flagsH(P, 24, [C.cold0, C.st0, C.cold0, C.ink]); },
-      ess(P) { P.vgrad(0, 0, CW, CH, '#2a0810', '#09090b'); for (let k = 0; k < 6; k++) P.path([k * 13, 0, k * 13 + 5, 12, k * 13 - 2, 26, k * 13 + 4, 48], 'rgba(140,26,36,0.55)', 1.2); P.glow(36, 26, 26, '#cc3640', 0.35); },
-      greed(P) { P.vgrad(0, 0, CW, CH, '#2a2010', '#0b0a08'); P.glow(36, 30, 28, '#f0d890', 0.25); for (let k = 0; k < 7; k++) coin(P, 6 + k * 11, 43 + (k % 2) * 2, C.wd2); },
-      shop(P) { P.rect(0, 0, CW, CH, C.wd0); for (let y = 0; y < 30; y += 6) P.rect(0, y, CW, 1, C.void); for (let k = 0; k < 6; k++) P.rect(4 + k * 12, 6, 6, 7, [C.bl1, C.cold1, C.gr0, C.vi1, C.wd2, C.gold][k]).rect(4 + k * 12, 5, 6, 1, C.st3); P.rect(0, 30, CW, 18, C.wd1).rect(0, 30, CW, 2, C.wd2); P.glow(60, 4, 16, '#ffb060', 0.35); },
-      heart(P) { P.vgrad(0, 0, CW, CH, '#460a10', '#140508'); for (let k = 0; k < 5; k++) P.path([k * 17 + 4, 0, k * 17 + 9, 14, k * 17 + 2, 30, k * 17 + 8, 48], 'rgba(196,160,82,0.45)', 1); P.glow(36, 24, 26, '#ff4f5e', 0.35); },
-      unlock(P) { P.rect(0, 0, CW, CH, C.ink); P.rect(16, 4, 40, 40, C.st1).oval(36, 4, 20, 12, C.st1); P.rect(19, 7, 34, 37, C.vi0).oval(36, 7, 17, 10, C.vi0); P.glow(36, 26, 22, '#a08ce8', 0.45); for (let k = 0; k < 10; k++) P.px(20 + ((k * 13) % 32), 8 + ((k * 7) % 30), C.vi2); flagsH(P, 42); },
-      instant(P) { P.vgrad(0, 0, CW, CH, '#1d2633', '#09090b'); for (let k = 0; k < 14; k++) P.px((k * 29) % CW, (k * 17) % 40, k % 2 ? C.goldHi : C.ice); }
+      power(P) { bricks(P, 0, 0, CW, 22 + DY); flagsH(P, 22 + DY); },
+      named(P) { bricks(P, 0, 0, CW, 22 + DY); flagsH(P, 22 + DY); },
+      fear(P) { P.vgrad(0, 0, CW, CH, '#2c2048', '#0c0912'); P.oval(12, 9, 6, 6, 'rgba(230,225,214,0.55)').oval(14, 8, 5, 5, '#1a1428'); for (let k = 0; k < 5; k++) P.oval(10 + k * 14, 38 + DY + (k % 2) * 4, 16, 2.6, 'rgba(160,140,232,0.18)'); flagsH(P, 34 + DY, [C.vi0, C.st0, C.vi0, C.void]); },
+      hero(P) { bricks(P, 0, 0, CW, 24 + DY, { cols: [C.cold0, C.cold1, C.cold0, C.st0] }); flagsH(P, 24 + DY, [C.cold0, C.st0, C.cold0, C.ink]); },
+      ess(P) { P.vgrad(0, 0, CW, CH, '#2a0810', '#09090b'); for (let k = 0; k < 6; k++) P.path([k * 13, 0, k * 13 + 5, CH * 0.25, k * 13 - 2, CH * 0.54, k * 13 + 4, CH], 'rgba(140,26,36,0.55)', 1.2); P.glow(CW / 2, 26 + DY, 26, '#cc3640', 0.35); },
+      greed(P) { P.vgrad(0, 0, CW, CH, '#2a2010', '#0b0a08'); P.glow(CW / 2, 30 + DY, 28, '#f0d890', 0.25); for (let k = 0; k < 7; k++) coin(P, 6 + k * 11, 43 + DY + (k % 2) * 2, C.wd2); },
+      shop(P) { P.rect(0, 0, CW, CH, C.wd0); for (let y = 0; y < 30 + DY; y += 6) P.rect(0, y, CW, 1, C.void); for (let r = 0; r <= (DY ? 1 : 0); r++) for (let k = 0; k < 6; k++) P.rect(4 + k * 12, 6 + r * 14, 6, 7, [C.bl1, C.cold1, C.gr0, C.vi1, C.wd2, C.gold][(k + r * 3) % 6]).rect(4 + k * 12, 5 + r * 14, 6, 1, C.st3); P.rect(0, 30 + DY, CW, CH - 30 - DY, C.wd1).rect(0, 30 + DY, CW, 2, C.wd2); P.glow(CW - 12, 4, 16, '#ffb060', 0.35); },
+      heart(P) { P.vgrad(0, 0, CW, CH, '#460a10', '#140508'); for (let k = 0; k < 5; k++) P.path([k * 17 + 4, 0, k * 17 + 9, CH * 0.3, k * 17 + 2, CH * 0.62, k * 17 + 8, CH], 'rgba(196,160,82,0.45)', 1); P.glow(CW / 2, 24 + DY, 26, '#ff4f5e', 0.35); },
+      unlock(P) { const x0 = CW / 2 - 20; P.rect(0, 0, CW, CH, C.ink); P.rect(x0, 4 + DY, 40, 40, C.st1).oval(x0 + 20, 4 + DY, 20, 12, C.st1); P.rect(x0 + 3, 7 + DY, 34, 37, C.vi0).oval(x0 + 20, 7 + DY, 17, 10, C.vi0); P.glow(x0 + 20, 26 + DY, 22, '#a08ce8', 0.45); for (let k = 0; k < 10; k++) P.px(x0 + 4 + ((k * 13) % 32), 8 + DY + ((k * 7) % 30), C.vi2); flagsH(P, 42 + DY); },
+      instant(P) { P.vgrad(0, 0, CW, CH, '#1d2633', '#09090b'); for (let k = 0; k < 14 + (DY ? 6 : 0); k++) P.px((k * 29) % CW, (k * 17) % (40 + DY), k % 2 ? C.goldHi : C.ice); }
     };
     function flagsH(P, y0, cols) {   // flagstones for the card's height
       cols = cols || [C.st0, C.st1, C.st0, C.cold0];
@@ -18076,29 +18089,35 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       if (u) return { m: ['@star'], b: u.kind === 'instant' ? 'plus' : 'up', g: ART.isHeart(id) ? 'heart' : u.kind === 'instant' ? 'instant' : FUSE_GROUP[id] || 'power' };
       return null;
     }
-    function paintCard(id) {
+    function paintCard(id, tall) {
       const s = spec(id); if (!s) return null;
-      const P = pic(CW, CH, hash('card' + id)), posts = [];
-      P.after = fn => { const m = P.g.getTransform(); posts.push(() => { P.g.save(); P.g.setTransform(m); fn(); P.g.restore(); }); return P; };
-      (BG[s.g] || BG.power)(P);
-      const draw = (m, x, y, k) => {
-        const em = m[0] === '@', f = em ? E[m.slice(1)] : EL[m], st = !em && STAGE[m];
-        if (!f) return;
-        const ay = st === 'wall' ? y - 18 : st === 'door' ? y - 2 : y;
-        if (k !== 1) { P.g.save(); P.g.translate(x, ay); P.g.scale(k, k); P.g.translate(-x, -ay); }
-        if (!em && ART.ROOMS[m]) ART.ROOMS[m](P); else f(P, x, ay);
-        if (k !== 1) P.g.restore();
-      };
-      if (s.m.length > 1) { draw(s.m[0], 24, 42, 0.95); draw(s.m[1], 50, 43, 0.95); }
-      else draw(s.m[0], 34, 43, (ART.CARD_K && ART.CARD_K[s.m[0]]) || 1.15);
-      P.light(20, 8, 70, s.g === 'fear' || s.g === 'hero' ? 0.05 : 0.12);
-      posts.forEach(f => f());
-      quantize(P.c);
-      if (s.b) badge(P, s.b, 63, 8);
-      return P.c;
+      const keep = [CW, CH, DY]; if (tall) { CW = 50; CH = 70; DY = 20; }
+      try {
+        const P = pic(CW, CH, hash('card' + id + (tall ? 'T' : ''))), posts = [], cx = CW / 2 - 2;
+        P.after = fn => { const m = P.g.getTransform(); posts.push(() => { P.g.save(); P.g.setTransform(m); fn(); P.g.restore(); }); return P; };
+        (BG[s.g] || BG.power)(P);
+        const draw = (m, x, y, k) => {
+          const em = m[0] === '@', f = em ? E[m.slice(1)] : EL[m], st = !em && STAGE[m];
+          if (!f) return;
+          const ay = st === 'wall' ? y - 18 : st === 'door' ? y - 2 : y;
+          if (tall && !em && ART.ROOMS[m]) { P.g.save(); P.g.translate(CW / 2 - 36, DY); ART.ROOMS[m](P); P.g.restore(); return; }   // a room scene is drawn for 72 x 48: centred
+          if (k !== 1) { P.g.save(); P.g.translate(x, ay); P.g.scale(k, k); P.g.translate(-x, -ay); }
+          if (!em && ART.ROOMS[m]) ART.ROOMS[m](P); else f(P, x, ay);
+          if (k !== 1) P.g.restore();
+        };
+        // upright: the motif stands higher and bigger (the name band covers the card's foot)
+        if (s.m.length > 1) { if (tall) { draw(s.m[0], 15, 44, 0.85); draw(s.m[1], 35, 47, 0.85); } else { draw(s.m[0], 24, 42, 0.95); draw(s.m[1], 50, 43, 0.95); } }
+        else draw(s.m[0], cx, tall ? 47 : 43, ((ART.CARD_K && ART.CARD_K[s.m[0]]) || 1.15) * (tall ? 1.2 : 1));
+        P.light(20, 8, 70, s.g === 'fear' || s.g === 'hero' ? 0.05 : 0.12);
+        posts.forEach(f => f());
+        quantize(P.c);
+        if (s.b) badge(P, s.b, CW - 9, 8);
+        return P.c;
+      } finally { [CW, CH, DY] = keep; }
     }
     ART.CARD_K = { spikes: 1.5, trapdoor: 1.35, coffin: 1.3, bones: 1.4, loot: 1.6, lpotion: 1.4, loot2: 1.45, loot3: 1.35, lcursed: 1.45, web: 1.35, snare: 1.4, bait: 1.5, oilslick: 1.3, '@coins': 1.5, '@chest': 1.4, mimic: 1.25, powder: 1.2, cage: 1.3, eyes: 1.4 };
     ART.card = id => ART.url('card:' + id, () => paintCard(id));
+    ART.cardTall = id => ART.url('cardT:' + id, () => paintCard(id, true));   // 1.27.4: the upright card of the shop
     ART.cardCanvas = id => ART.keep('card:' + id, () => paintCard(id));
     ART.EMB = E;
   })();
@@ -19278,7 +19297,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.27.3 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.27.4 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -19334,9 +19353,12 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.3', "What's new in Prototype 1.27.3")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.4', "What's new in Prototype 1.27.4")));
     const ul0 = el('ul', 'conseq');
-    [L('1.27.3: bohaterowie już nie znikają przy końcu fali. Kto utknie albo kręci się w miejscu, sam idzie do wyjścia najkrótszą drogą, mija przyjaciół i walczy tylko z potworem, który zastąpi mu drogę.', '1.27.3: heroes no longer vanish at the end of a wave. One who gets stuck or shuffles in place walks out on his own by the shortest way, past his friends, fighting only a monster that blocks his way.'),
+    [L('1.27.4: Głusza słabsza. Zgubiony w niej bohater po 8 s sam znajduje drogę, a strach rośnie tam o 10% (było 20%). Po końcu cierpliwości zgubieni też sami wracają do wyjścia.', '1.27.4: a weaker Hush. A hero lost in it finds his own way after 8 s, and fear there grows by 10% (was 20%). Once patience runs out, lost heroes also walk out on their own.'),
+     L('1.27.4: karty w sklepie są pionowe jak prawdziwe karty: obrazek na całą kartę, nazwa i cena na dole. Na niskim telefonie przewijasz je w bok jak pasek budowy. Odśwież działa też w Darze serca.', '1.27.4: shop cards stand upright like real cards: the picture fills the card, the name and price sit at the bottom. On a short phone you scroll them sideways like the build bar. Refresh works in the Heart\'s Gift too.'),
+     L('1.27.4: fala trwająca ponad 4 minuty sama wysyła do analizy, co robią bohaterowie, a plik runu z Menu zawiera też trwającą falę.', '1.27.4: a wave that lasts over 4 minutes reports what the heroes are doing, and the run file from the Menu includes the wave in progress.'),
+     L('1.27.3: bohaterowie już nie znikają przy końcu fali. Kto utknie albo kręci się w miejscu, sam idzie do wyjścia najkrótszą drogą, mija przyjaciół i walczy tylko z potworem, który zastąpi mu drogę.', '1.27.3: heroes no longer vanish at the end of a wave. One who gets stuck or shuffles in place walks out on his own by the shortest way, past his friends, fighting only a monster that blocks his way.'),
      L('1.27.3: sklep jak w karciance. Oferty to karty z obrazkiem, nazwą, ramką rzadkości i ceną. Stuknij kartę, a jej opis i przycisk pojawią się pod spodem. Runa rodu i Dar serca też są kartami, w swojej ramce.', '1.27.3: a card-game shop. Offers are cards with a picture, a name, a rarity frame and a price. Tap a card and its text and button show below. The Family Rune and the Heart\'s Gift are cards too, in their own frame.'),
      L('1.27.2: poprawki. Zakładka Obiekty nie znika w samouczku (do fali 5 jest wyszarzona z kłódką), potwory po odrodzeniu nie są już białe, a opis kafelka po przytrzymaniu palca pojawia się raz.', '1.27.2: fixes. The Objects tab no longer vanishes in the tutorial (until wave 5 it is dimmed with a lock), revived monsters are no longer white, and a tile description shows once when you hold a finger.'),
      L('1.27.1: kafelki w pasku budowy mają tło w kolorze rodziny (Mechanizmy niebieskie, Ogień pomarańczowy, Nawiedzenie fioletowe...), więc łatwiej je rozróżnić.', '1.27.1: tiles in the build bar have a backdrop in their family colour (Mechanisms blue, Fire orange, Haunting violet...), so they are easier to tell apart.'),
@@ -19745,10 +19767,13 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     run.essence = fl.essence; recomputeMods(); updateTray(); saveRunSoon();
     return toS ? 'stash' : fz ? 'fused' : 'ok';
   }
-  function shopReroll(ad) {
+  function shopReroll(ad, heart) {
     if (!fl || fl.phase !== 'build') return false;
     if (ad) { if (run.shop.ad) return false; run.shop.ad = true; }
     else { const c = rerollCost(); if (fl.essence < c) return false; fl.essence -= c; run.shop.rerolls++; }
+    // 1.27.4 (author: Refresh did nothing over the Heart's Gift): with the Heart's Gift open it draws new heart cards (the offers stay)
+    const pk = heart && run.heartPicks && run.heartPicks[0];
+    if (pk) { delete pk.ids; delete pk.regrow; heartOffer(); fl.stats.heartRerolls = (fl.stats.heartRerolls || 0) + 1; run.essence = fl.essence; updateTray(); saveRunSoon(); return true; }
     run.shop.ids = shopRoll(); run.shop.rune = runeRoll(); run.shop.runeDone = null; run.essence = fl.essence; updateTray(); saveRunSoon(); return true;
   }
   function toStash(i) {
@@ -20188,12 +20213,12 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       hd.appendChild(el('b', null, L('♥ Dar serca · poziom ', "♥ Heart's Gift · level ") + hk.lv));
       hd.appendChild(el('span', null, L('Serce urosło. Weź jedną kartę za darmo.', 'Your heart grew. Take one card for free.') + (run.heartPicks.length > 1 ? L(' Czeka jeszcze ' + (run.heartPicks.length - 1) + '.', ' ' + (run.heartPicks.length - 1) + ' more waiting.') : '')));
       stage.appendChild(hd);
-      hk.ids.forEach((id, i) => { const u = UPG[id]; cardTile({ id: 'heart-offer-' + i, cls: 'heart rar-' + u.rar, art: ART.cardImg(u.id), name: u.name, price: L('za darmo', 'free'), badge: fuses(u) ? '★' : '', pick: { k: 'h', i } }); });
+      hk.ids.forEach((id, i) => { const u = UPG[id]; cardTile({ id: 'heart-offer-' + i, cls: 'heart rar-' + u.rar, art: ART.cardImg(u.id, false, true), name: u.name, price: L('za darmo', 'free'), badge: fuses(u) ? '★' : '', pick: { k: 'h', i } }); });
     } else {
       run.shop.ids.forEach((id, i) => {
         const u = UPG[id]; if (!u) { boughtTile('offer-' + i); return; }
         const price = priceOf(u), poor = !free && fl.essence < price, fit = cardFit(u);
-        cardTile({ id: 'offer-' + i, cls: 'rar-' + u.rar + (u.kind === 'unlock' ? ' unlock' : '') + (poor ? ' poor' : '') + (fuses(u) ? ' fuse' : ''), art: ART.cardImg(u.id), name: u.name,
+        cardTile({ id: 'offer-' + i, cls: 'rar-' + u.rar + (u.kind === 'unlock' ? ' unlock' : '') + (poor ? ' poor' : '') + (fuses(u) ? ' fuse' : ''), art: ART.cardImg(u.id, false, true), name: u.name,
           price: free ? L('za darmo', 'free') : String(price), ess: !free, badge: fuses(u) ? '★' : fit && !fit.ok ? '!' : '', pick: { k: 'o', i } });
       });
       // 1.26 Runa rodu: one rune a shop, a card in its family's colour (1.27.1: once bought its place stays, empty)
@@ -20207,7 +20232,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         b.classList.add('rune'); b.style.setProperty('--fam', F.color);
       }
     }
-    og.classList.add('n' + og.children.length);   // four (the Heart's Gift with Dziesięcina): one row of four; five or six: two rows of three
+    og.classList.add('n' + og.children.length); og.addEventListener('scroll', () => { m.cardsX = og.scrollLeft; }, { passive: true });   // a short phone scrolls the row: it keeps its place over a re-render   // four (the Heart's Gift with Dziesięcina): one row of four; five or six: two rows of three
     stage.appendChild(og);
     // the picked card: its whole text and its button
     const dt = el('div', 'cdetail'); dt.id = 'shop-detail'; const P = m.pick;
@@ -20273,8 +20298,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const acts = el('div', 'acts');
     const act = (id, title, sub, off, fn) => { const b = el('button'); b.type = 'button'; b.id = id; b.appendChild(el('b', null, title)); b.appendChild(el('span', / (Esencji|Essence)$/.test(sub) ? 'ess' : null, sub)); b.disabled = !!off; b.addEventListener('click', fn); acts.appendChild(b); return b; };
     const rc = rerollCost();
-    act('shop-reroll', L('Odśwież', 'Refresh'), rc ? rc + L(' Esencji', ' Essence') : L('gratis', 'free'), fl.essence < rc, () => { if (shopReroll(false)) { m.sel = null; m.msg = L('Nowa oferta.', 'New offer.'); } else m.msg = L('Za mało Esencji na odświeżenie.', 'Not enough Essence to refresh.'); rerender(); });
-    act('shop-ad', L('Za reklamę', 'Watch ad'), run.shop.ad ? L('już użyte', 'used') : L('odśwież raz', 'one refresh'), run.shop.ad, () => { shopReroll(true); m.sel = null; m.msg = L('Nowa oferta (reklama, symulacja).', 'New offer (ad, simulated).'); rerender(); });
+    act('shop-reroll', L('Odśwież', 'Refresh'), rc ? rc + L(' Esencji', ' Essence') : L('gratis', 'free'), fl.essence < rc, () => { if (shopReroll(false, heartView)) { m.pick = null; m.sel = null; m.msg = L('Nowa oferta.', 'New offer.'); } else m.msg = L('Za mało Esencji na odświeżenie.', 'Not enough Essence to refresh.'); rerender(); });
+    act('shop-ad', L('Za reklamę', 'Watch ad'), run.shop.ad ? L('już użyte', 'used') : L('odśwież raz', 'one refresh'), run.shop.ad, () => { shopReroll(true, heartView); m.pick = null; m.sel = null; m.msg = L('Nowa oferta (reklama, symulacja).', 'New offer (ad, simulated).'); rerender(); });
     body.appendChild(acts);
     // the deck and the stash: every slot has its place, empty ones too
     const dk = panel(body, L('Talia ', 'Deck ') + run.deck.length + '/' + run.deckSize, L('schowek ', 'stash ') + run.stash.length + '/' + stashCap() + L(' · karty tu nie działają', ' · cards here are inactive'), 'deckp');
@@ -20293,6 +20318,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (!heartView && hk) { const hb = el('button', 'mini heartback', L('♥ Dar serca czeka (', "♥ Heart's Gift (") + hp + ')'); hb.type = 'button'; hb.id = 'heart-back'; hb.addEventListener('click', () => { m.heartLater = false; m.sel = null; rerender(); }); foot.appendChild(hb); }
     foot.appendChild(done);
     if (m.msg) { foot.appendChild(el('div', 'shopmsg', m.msg)); m.msg = ''; }   // what just happened: a message over the big button (1.12.1: in the shop itself, the top hint is gone)
+    { const row = card.querySelector('.offers.cards'); if (row && m.cardsX) row.scrollLeft = m.cardsX; }
     requestAnimationFrame(() => { card.querySelectorAll('.sheet, .cdetail').forEach(fitText); card.querySelectorAll('.slot:not(.empty)').forEach(fitSlot); });
   }
   // Prototype 1.0: the whole text has to fit its box, nothing is cut. The letters shrink step by step down to a readable minimum;
@@ -21178,6 +21204,34 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     run.waveDocs.push(doc);
     run.lastLog = pushLog(doc);
   }
+  // 1.27.4 (author: a hero stood still for minutes; the run file holds only finished waves, so that wave was never saved): a
+  // wave that drags on (4 min, then every 2 min) sends what everyone is doing right now to the log
+  // (waves/<run>_<wave>_long<n>, kind 'long'); the run file (Menu) adds the same snapshot of a wave still going on.
+  const LONG_DOCS = [];
+  function longDoc() {
+    const P = fl.party, r2 = v => Math.round(v * 10) / 10, near = new Map();
+    const heroes = fl.heroes.map(h => {
+      if (!h.dead && !h.fled) fl.items.forEach(it => { if (Math.abs(it.x - h.tx) <= 3 && Math.abs(it.y - h.ty) <= 3) near.set(key(it.x, it.y), [it.type, it.x, it.y, r2(it.cd || 0), it.disabled ? 1 : 0, Math.round(it.hp || 0), it.down ? 1 : 0]); });
+      return { id: h.id, type: h.type, lvl: h.lvl, out: h.dead ? 'dead' : h.fled ? 'left' : h.gone ? 'gone' : 'in', x: h.tx, y: h.ty, nx: h.nx, ny: h.ny, prog: r2(h.prog || 0),
+        state: h.state, intent: h.intent, plan: h.plan || null, planOf: planOf(h), room: h.room, rt: h.room >= 0 && fl.rooms[h.room] ? fl.rooms[h.room].rt || null : null,
+        path: (h.path || []).slice(0, 8), timer: r2(h.timer || 0), thinkT: r2(h.thinkT || 0), needPlan: !!h.needPlan, hp: Math.round(h.hp), max: Math.round(h.max), fear: Math.round(h.fear), courage: Math.round(h.courage),
+        panic: r2(Math.max(0, (h.panicUntil || 0) - fl.time)), fleeing: !!h.fleeing, crystal: !!h.crystal, lost: !!h.lost, alone: !!h.alone, homeRun: !!h.homeRun, homeStuckT: r2(h.homeStuckT || 0),
+        homeBest: h.homeBest == null ? null : Math.round(h.homeBest), homeBestAgo: h.homeBestT == null ? null : r2(fl.time - h.homeBestT), noPathT: r2(h.noPathT || 0), blockT: r2(h.blockT || 0),
+        foe: h.foe ? [h.foe.type, h.foe.x, h.foe.y, Math.round(h.foe.hp || 0)] : null, rooted: !!rooted(h), slow: fl.time < h.slowUntil, cageLeft: caged(h) ? r2((h.cageUntil || 0) - fl.time) : null,
+        stand: !!(h.stand && !h.stand.done), sac: !!(h.sac && !h.sac.done), split: !!h.split, wander: r2(Math.max(0, (h.wanderUntil || 0) - fl.time)), talk: r2(Math.max(0, (h.talkUntil || 0) - fl.time)), passing: h.passing == null ? null : h.passing };
+    });
+    const doors = []; fl.doors.forEach((d, k) => { if (doorClosed(d) || secretShut(d)) doors.push([k, doorClosed(d) ? r2(d.closedUntil - fl.time) : 'secret']); });
+    const tlx = fl.tl ? { ev: fl.tl.ev.slice(-400), smp: fl.tl.smp.slice(-90) } : null;
+    return { version: LOG_VERSION, runId: run.id, wave: run.wave, kind: 'long', at: new Date().toISOString(), t: r2(fl.time), patT: r2(fl.patT || 0), waveTime: S.waveTime, exhausted: !!fl.exhausted, fearless: !!fl.fearless,
+      ending: fl.ending, queue: fl.queue.length, score: Math.round(fl.score || 0), essence: Math.round(fl.essence), party: { plan: P.plan, leaderId: P.leaderId, council: !!P.council, councilMore: !!P.councilMore, waitUntil: r2((P.waitUntil || 0) - fl.time), talkUntil: r2((P.talkUntil || 0) - fl.time), g2: !!P.g2, steal: r2(P.steal || 0) },
+      heroes, near: [...near.values()], doors, stats: roundStats(fl.stats), timeline: tlx, layout: run.waveStart, deck: run.deck.slice(), fused: (run.fused || []).slice(), upgrades: run.upgrades.slice() };
+  }
+  function logLong() {
+    const doc = longDoc(); doc.n = LONG_DOCS.filter(d => d.runId === run.id && d.wave === run.wave).length + 1;
+    LONG_DOCS.push(doc); if (LONG_DOCS.length > 6) LONG_DOCS.shift();
+    if (run.logState === 'denied' || run.logState === 'off') return;
+    getDb().then(db => db && db.collection('waves').doc(run.id + '_' + String(run.wave).padStart(2, '0') + '_long' + doc.n).set(doc)).catch(() => {});
+  }
   function pushLog(waveDoc) {
     if (run.logState === 'denied' || run.logState === 'off') return Promise.resolve(run.logState);
     return getDb().then(db => {
@@ -21195,8 +21249,9 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     return dlPromise;
   }
   function downloadRun(note) {
-    if (!run || !run.waveDocs.length) { note.textContent = L('Ten run nie ma jeszcze zapisanej fali.', 'No wave saved in this run yet.'); return; }
-    const data = JSON.stringify({ format: 'yatd-run', run: runSummary(), waves: run.waveDocs }), name = 'yatd-run-' + run.id + '.json';
+    if (!run || (!run.waveDocs.length && !(fl && fl.phase === 'raid'))) { note.textContent = L('Ten run nie ma jeszcze zapisanej fali.', 'No wave saved in this run yet.'); return; }
+    const live = fl && fl.phase === 'raid' ? [longDoc()] : [];   // 1.27.4: the wave still going on, as it is now
+    const data = JSON.stringify({ format: 'yatd-run', run: runSummary(), waves: run.waveDocs, long: LONG_DOCS.filter(d => d.runId === run.id).concat(live) }), name = 'yatd-run-' + run.id + '.json';
     note.textContent = L('Przygotowuję plik...', 'Preparing the file...');
     getDownloads().then(dl => {
       if (!dl && WEB) { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); note.textContent = L('Pobrano plik ', 'Downloaded ') + name + '.'; return; } catch (e) {} }
@@ -21967,7 +22022,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   kick();   // 1.24 (C): the paced loop (p6 FP)
 
   // Hook for automated checks; no effect on normal play.
-  const yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  const yatd = { longDoc: () => longDoc(), logLong: () => logLong(), get LONG_DOCS() { return LONG_DOCS; }, homeRunTick: dt => homeRunTick(dt), tapUpgrade: it => tapUpgrade(it),   /* 1.27.4 */ get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

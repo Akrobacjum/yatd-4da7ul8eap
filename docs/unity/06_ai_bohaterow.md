@@ -3077,6 +3077,20 @@ waveForceOut: pomija idącego do domu, póki ma drogę (homeStuckT < 10 s) i fl.
 ```
 Wynik (ten sam bot): 0 wymuszonych wyjść, 1 wyczerpanie, `homeRun` 2 razy na ok. 230 fal, najdłuższa fala 202 s (wcześniej do 314 s). Teleport `waveForceOut` zostaje tylko jako ostateczność (droga zamknięta na stałe), w testach nie zadziałał.
 
+### 6.15.4 Głusza słabsza i zgubieni w drodze do domu (1.27.4)
+
+Autor: w pokoju z Głuszą, Kratą, Klatką i Cieniem bohater stał w nieskończoność. Zgubiony w Głuszy nie słyszy odpowiedzi (`answerLost` kończy się na Głuszy), więc nikt po niego nie przychodził, a planu drużyny ("wracamy") też nie słyszy, więc nie wychodził (`exiting` fałsz).
+```
+partyThink, zgubiony w pokoju z Głuszą: h.hushLostT += dt; po 8 s: lost = false, reveal, needPlan, napis "Sam znajduje drogę",
+   stats.hushFound, tl('hf', id); poza Głuszą licznik zeruje się
+homeRunTick: po końcu cierpliwości (fl.patT >= S.waveTime) obejmuje też zgubionych (nie tylko wychodzących)
+addFear w Głuszy: ×1,1 (było ×1,2)
+```
+
+### 6.15.5 Raport długiej fali (1.27.4; `p8b_ui.js: longDoc, logLong`; `p6_loop.js: step`)
+
+Plik runu zawierał tylko skończone fale, więc fala, która się nie kończyła, nie trafiała nigdzie. Teraz przy `fl.time >= 240` s i potem co 120 s (`fl.longAt`) gra zapisuje stan fali: `kind: 'long'`, czas, `patT`, wyczerpanie, plan drużyny, dla każdego bohatera pozycja, krok, stan, intencja, plan, ścieżka (8 pól), zgubienie, `homeRun`, `homeStuckT`, najlepsza odległość do wyjścia i jak dawno, wróg, unieruchomienie, klatka, strach i panika; elementy w promieniu 3 pól od bohaterów, zamknięte drzwi, statystyki, ostatnie 400 zdarzeń i 90 próbek osi czasu, układ lochu, talia. Wysyłka jak fale: `waves/<run>_<fala>_long<n>` (na Dysku `waves_<run>_<fala>_long<n>.json`); ostatnie 6 raportów w pamięci (`LONG_DOCS`) i w pliku runu z Menu (`long`), który od 1.27.4 dokłada też stan trwającej fali.
+
 ### 6.15.2 Czy zdarzenia 1.19-1.23 działają (pomiar 1.24, `e124/evcount.py`)
 
 Cały run (fale 1-10 grane dalej: powracający, Nemezis, polegli, więzi przechodzą), każda fala to loch autora z tej fali (układ, elementy, talia), pełna gra, checki losowo (40% krytyk, 42% draśnięcie, 18% pudło); 10 runów każdego z dwóch runów autora = 200 fal. Średnia liczba na falę / udział fal ze zdarzeniem:

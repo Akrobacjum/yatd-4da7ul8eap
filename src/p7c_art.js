@@ -497,9 +497,9 @@
   ART.ITEM_ORDER = ITEM_ORDER;
   ART.has = t => !!(ART.EL[t] || ART.ROOMS[t]);
   // an <img> of a card's picture (big: the card's own window, twice the size); null when there is none
-  ART.cardImg = (id, big) => {
-    const u = ART.card ? ART.card(id) : ''; if (!u) return null;
-    const im = document.createElement('img'); im.className = 'cardart' + (big ? ' cardbig' : '') + (ART.isHeart && ART.isHeart(id) ? ' heart' : ''); im.alt = ''; im.draggable = false; im.src = u; return im;
+  ART.cardImg = (id, big, tall) => {
+    const u = tall && ART.cardTall ? ART.cardTall(id) : ART.card ? ART.card(id) : ''; if (!u) return null;
+    const im = document.createElement('img'); im.className = 'cardart' + (big ? ' cardbig' : '') + (tall ? ' tall' : '') + (ART.isHeart && ART.isHeart(id) ? ' heart' : ''); im.alt = ''; im.draggable = false; im.src = u; return im;
   };
   // ---------- 1.26: the new monsters as pixel figures (20 x 28, feet on the bottom row, facing right), painted like the old
   // ones (paintFigure calls FIG_ART[type] for a type it does not know) ----------
@@ -904,19 +904,21 @@
   // with what the card does to it (up, x2, minus, loop...) ----------
   (() => {
     const { C, EL, pic, quantize, hash, bricks, flags, skull, bone, coin, flameAt, badge } = ART;
-    const CW = 72, CH = 48;
+    // 1.27.4 (author: the shop cards are upright, the picture has to be too): an upright version, 50 x 70, painted by the same
+    // code with the wall line DY lower and everything centred on CW / 2 (ART.cardTall)
+    let CW = 72, CH = 48, DY = 0;
     // backgrounds
     const BG = {
-      power(P) { bricks(P, 0, 0, CW, 22); flagsH(P, 22); },
-      named(P) { bricks(P, 0, 0, CW, 22); flagsH(P, 22); },
-      fear(P) { P.vgrad(0, 0, CW, CH, '#2c2048', '#0c0912'); P.oval(12, 9, 6, 6, 'rgba(230,225,214,0.55)').oval(14, 8, 5, 5, '#1a1428'); for (let k = 0; k < 5; k++) P.oval(10 + k * 14, 38 + (k % 2) * 4, 16, 2.6, 'rgba(160,140,232,0.18)'); flagsH(P, 34, [C.vi0, C.st0, C.vi0, C.void]); },
-      hero(P) { bricks(P, 0, 0, CW, 24, { cols: [C.cold0, C.cold1, C.cold0, C.st0] }); flagsH(P, 24, [C.cold0, C.st0, C.cold0, C.ink]); },
-      ess(P) { P.vgrad(0, 0, CW, CH, '#2a0810', '#09090b'); for (let k = 0; k < 6; k++) P.path([k * 13, 0, k * 13 + 5, 12, k * 13 - 2, 26, k * 13 + 4, 48], 'rgba(140,26,36,0.55)', 1.2); P.glow(36, 26, 26, '#cc3640', 0.35); },
-      greed(P) { P.vgrad(0, 0, CW, CH, '#2a2010', '#0b0a08'); P.glow(36, 30, 28, '#f0d890', 0.25); for (let k = 0; k < 7; k++) coin(P, 6 + k * 11, 43 + (k % 2) * 2, C.wd2); },
-      shop(P) { P.rect(0, 0, CW, CH, C.wd0); for (let y = 0; y < 30; y += 6) P.rect(0, y, CW, 1, C.void); for (let k = 0; k < 6; k++) P.rect(4 + k * 12, 6, 6, 7, [C.bl1, C.cold1, C.gr0, C.vi1, C.wd2, C.gold][k]).rect(4 + k * 12, 5, 6, 1, C.st3); P.rect(0, 30, CW, 18, C.wd1).rect(0, 30, CW, 2, C.wd2); P.glow(60, 4, 16, '#ffb060', 0.35); },
-      heart(P) { P.vgrad(0, 0, CW, CH, '#460a10', '#140508'); for (let k = 0; k < 5; k++) P.path([k * 17 + 4, 0, k * 17 + 9, 14, k * 17 + 2, 30, k * 17 + 8, 48], 'rgba(196,160,82,0.45)', 1); P.glow(36, 24, 26, '#ff4f5e', 0.35); },
-      unlock(P) { P.rect(0, 0, CW, CH, C.ink); P.rect(16, 4, 40, 40, C.st1).oval(36, 4, 20, 12, C.st1); P.rect(19, 7, 34, 37, C.vi0).oval(36, 7, 17, 10, C.vi0); P.glow(36, 26, 22, '#a08ce8', 0.45); for (let k = 0; k < 10; k++) P.px(20 + ((k * 13) % 32), 8 + ((k * 7) % 30), C.vi2); flagsH(P, 42); },
-      instant(P) { P.vgrad(0, 0, CW, CH, '#1d2633', '#09090b'); for (let k = 0; k < 14; k++) P.px((k * 29) % CW, (k * 17) % 40, k % 2 ? C.goldHi : C.ice); }
+      power(P) { bricks(P, 0, 0, CW, 22 + DY); flagsH(P, 22 + DY); },
+      named(P) { bricks(P, 0, 0, CW, 22 + DY); flagsH(P, 22 + DY); },
+      fear(P) { P.vgrad(0, 0, CW, CH, '#2c2048', '#0c0912'); P.oval(12, 9, 6, 6, 'rgba(230,225,214,0.55)').oval(14, 8, 5, 5, '#1a1428'); for (let k = 0; k < 5; k++) P.oval(10 + k * 14, 38 + DY + (k % 2) * 4, 16, 2.6, 'rgba(160,140,232,0.18)'); flagsH(P, 34 + DY, [C.vi0, C.st0, C.vi0, C.void]); },
+      hero(P) { bricks(P, 0, 0, CW, 24 + DY, { cols: [C.cold0, C.cold1, C.cold0, C.st0] }); flagsH(P, 24 + DY, [C.cold0, C.st0, C.cold0, C.ink]); },
+      ess(P) { P.vgrad(0, 0, CW, CH, '#2a0810', '#09090b'); for (let k = 0; k < 6; k++) P.path([k * 13, 0, k * 13 + 5, CH * 0.25, k * 13 - 2, CH * 0.54, k * 13 + 4, CH], 'rgba(140,26,36,0.55)', 1.2); P.glow(CW / 2, 26 + DY, 26, '#cc3640', 0.35); },
+      greed(P) { P.vgrad(0, 0, CW, CH, '#2a2010', '#0b0a08'); P.glow(CW / 2, 30 + DY, 28, '#f0d890', 0.25); for (let k = 0; k < 7; k++) coin(P, 6 + k * 11, 43 + DY + (k % 2) * 2, C.wd2); },
+      shop(P) { P.rect(0, 0, CW, CH, C.wd0); for (let y = 0; y < 30 + DY; y += 6) P.rect(0, y, CW, 1, C.void); for (let r = 0; r <= (DY ? 1 : 0); r++) for (let k = 0; k < 6; k++) P.rect(4 + k * 12, 6 + r * 14, 6, 7, [C.bl1, C.cold1, C.gr0, C.vi1, C.wd2, C.gold][(k + r * 3) % 6]).rect(4 + k * 12, 5 + r * 14, 6, 1, C.st3); P.rect(0, 30 + DY, CW, CH - 30 - DY, C.wd1).rect(0, 30 + DY, CW, 2, C.wd2); P.glow(CW - 12, 4, 16, '#ffb060', 0.35); },
+      heart(P) { P.vgrad(0, 0, CW, CH, '#460a10', '#140508'); for (let k = 0; k < 5; k++) P.path([k * 17 + 4, 0, k * 17 + 9, CH * 0.3, k * 17 + 2, CH * 0.62, k * 17 + 8, CH], 'rgba(196,160,82,0.45)', 1); P.glow(CW / 2, 24 + DY, 26, '#ff4f5e', 0.35); },
+      unlock(P) { const x0 = CW / 2 - 20; P.rect(0, 0, CW, CH, C.ink); P.rect(x0, 4 + DY, 40, 40, C.st1).oval(x0 + 20, 4 + DY, 20, 12, C.st1); P.rect(x0 + 3, 7 + DY, 34, 37, C.vi0).oval(x0 + 20, 7 + DY, 17, 10, C.vi0); P.glow(x0 + 20, 26 + DY, 22, '#a08ce8', 0.45); for (let k = 0; k < 10; k++) P.px(x0 + 4 + ((k * 13) % 32), 8 + DY + ((k * 7) % 30), C.vi2); flagsH(P, 42 + DY); },
+      instant(P) { P.vgrad(0, 0, CW, CH, '#1d2633', '#09090b'); for (let k = 0; k < 14 + (DY ? 6 : 0); k++) P.px((k * 29) % CW, (k * 17) % (40 + DY), k % 2 ? C.goldHi : C.ice); }
     };
     function flagsH(P, y0, cols) {   // flagstones for the card's height
       cols = cols || [C.st0, C.st1, C.st0, C.cold0];
@@ -1025,29 +1027,35 @@
       if (u) return { m: ['@star'], b: u.kind === 'instant' ? 'plus' : 'up', g: ART.isHeart(id) ? 'heart' : u.kind === 'instant' ? 'instant' : FUSE_GROUP[id] || 'power' };
       return null;
     }
-    function paintCard(id) {
+    function paintCard(id, tall) {
       const s = spec(id); if (!s) return null;
-      const P = pic(CW, CH, hash('card' + id)), posts = [];
-      P.after = fn => { const m = P.g.getTransform(); posts.push(() => { P.g.save(); P.g.setTransform(m); fn(); P.g.restore(); }); return P; };
-      (BG[s.g] || BG.power)(P);
-      const draw = (m, x, y, k) => {
-        const em = m[0] === '@', f = em ? E[m.slice(1)] : EL[m], st = !em && STAGE[m];
-        if (!f) return;
-        const ay = st === 'wall' ? y - 18 : st === 'door' ? y - 2 : y;
-        if (k !== 1) { P.g.save(); P.g.translate(x, ay); P.g.scale(k, k); P.g.translate(-x, -ay); }
-        if (!em && ART.ROOMS[m]) ART.ROOMS[m](P); else f(P, x, ay);
-        if (k !== 1) P.g.restore();
-      };
-      if (s.m.length > 1) { draw(s.m[0], 24, 42, 0.95); draw(s.m[1], 50, 43, 0.95); }
-      else draw(s.m[0], 34, 43, (ART.CARD_K && ART.CARD_K[s.m[0]]) || 1.15);
-      P.light(20, 8, 70, s.g === 'fear' || s.g === 'hero' ? 0.05 : 0.12);
-      posts.forEach(f => f());
-      quantize(P.c);
-      if (s.b) badge(P, s.b, 63, 8);
-      return P.c;
+      const keep = [CW, CH, DY]; if (tall) { CW = 50; CH = 70; DY = 20; }
+      try {
+        const P = pic(CW, CH, hash('card' + id + (tall ? 'T' : ''))), posts = [], cx = CW / 2 - 2;
+        P.after = fn => { const m = P.g.getTransform(); posts.push(() => { P.g.save(); P.g.setTransform(m); fn(); P.g.restore(); }); return P; };
+        (BG[s.g] || BG.power)(P);
+        const draw = (m, x, y, k) => {
+          const em = m[0] === '@', f = em ? E[m.slice(1)] : EL[m], st = !em && STAGE[m];
+          if (!f) return;
+          const ay = st === 'wall' ? y - 18 : st === 'door' ? y - 2 : y;
+          if (tall && !em && ART.ROOMS[m]) { P.g.save(); P.g.translate(CW / 2 - 36, DY); ART.ROOMS[m](P); P.g.restore(); return; }   // a room scene is drawn for 72 x 48: centred
+          if (k !== 1) { P.g.save(); P.g.translate(x, ay); P.g.scale(k, k); P.g.translate(-x, -ay); }
+          if (!em && ART.ROOMS[m]) ART.ROOMS[m](P); else f(P, x, ay);
+          if (k !== 1) P.g.restore();
+        };
+        // upright: the motif stands higher and bigger (the name band covers the card's foot)
+        if (s.m.length > 1) { if (tall) { draw(s.m[0], 15, 44, 0.85); draw(s.m[1], 35, 47, 0.85); } else { draw(s.m[0], 24, 42, 0.95); draw(s.m[1], 50, 43, 0.95); } }
+        else draw(s.m[0], cx, tall ? 47 : 43, ((ART.CARD_K && ART.CARD_K[s.m[0]]) || 1.15) * (tall ? 1.2 : 1));
+        P.light(20, 8, 70, s.g === 'fear' || s.g === 'hero' ? 0.05 : 0.12);
+        posts.forEach(f => f());
+        quantize(P.c);
+        if (s.b) badge(P, s.b, CW - 9, 8);
+        return P.c;
+      } finally { [CW, CH, DY] = keep; }
     }
     ART.CARD_K = { spikes: 1.5, trapdoor: 1.35, coffin: 1.3, bones: 1.4, loot: 1.6, lpotion: 1.4, loot2: 1.45, loot3: 1.35, lcursed: 1.45, web: 1.35, snare: 1.4, bait: 1.5, oilslick: 1.3, '@coins': 1.5, '@chest': 1.4, mimic: 1.25, powder: 1.2, cage: 1.3, eyes: 1.4 };
     ART.card = id => ART.url('card:' + id, () => paintCard(id));
+    ART.cardTall = id => ART.url('cardT:' + id, () => paintCard(id, true));   // 1.27.4: the upright card of the shop
     ART.cardCanvas = id => ART.keep('card:' + id, () => paintCard(id));
     ART.EMB = E;
   })();

@@ -610,7 +610,7 @@
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.27.3 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.27.4 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -666,9 +666,12 @@
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.3', "What's new in Prototype 1.27.3")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.4', "What's new in Prototype 1.27.4")));
     const ul0 = el('ul', 'conseq');
-    [L('1.27.3: bohaterowie już nie znikają przy końcu fali. Kto utknie albo kręci się w miejscu, sam idzie do wyjścia najkrótszą drogą, mija przyjaciół i walczy tylko z potworem, który zastąpi mu drogę.', '1.27.3: heroes no longer vanish at the end of a wave. One who gets stuck or shuffles in place walks out on his own by the shortest way, past his friends, fighting only a monster that blocks his way.'),
+    [L('1.27.4: Głusza słabsza. Zgubiony w niej bohater po 8 s sam znajduje drogę, a strach rośnie tam o 10% (było 20%). Po końcu cierpliwości zgubieni też sami wracają do wyjścia.', '1.27.4: a weaker Hush. A hero lost in it finds his own way after 8 s, and fear there grows by 10% (was 20%). Once patience runs out, lost heroes also walk out on their own.'),
+     L('1.27.4: karty w sklepie są pionowe jak prawdziwe karty: obrazek na całą kartę, nazwa i cena na dole. Na niskim telefonie przewijasz je w bok jak pasek budowy. Odśwież działa też w Darze serca.', '1.27.4: shop cards stand upright like real cards: the picture fills the card, the name and price sit at the bottom. On a short phone you scroll them sideways like the build bar. Refresh works in the Heart\'s Gift too.'),
+     L('1.27.4: fala trwająca ponad 4 minuty sama wysyła do analizy, co robią bohaterowie, a plik runu z Menu zawiera też trwającą falę.', '1.27.4: a wave that lasts over 4 minutes reports what the heroes are doing, and the run file from the Menu includes the wave in progress.'),
+     L('1.27.3: bohaterowie już nie znikają przy końcu fali. Kto utknie albo kręci się w miejscu, sam idzie do wyjścia najkrótszą drogą, mija przyjaciół i walczy tylko z potworem, który zastąpi mu drogę.', '1.27.3: heroes no longer vanish at the end of a wave. One who gets stuck or shuffles in place walks out on his own by the shortest way, past his friends, fighting only a monster that blocks his way.'),
      L('1.27.3: sklep jak w karciance. Oferty to karty z obrazkiem, nazwą, ramką rzadkości i ceną. Stuknij kartę, a jej opis i przycisk pojawią się pod spodem. Runa rodu i Dar serca też są kartami, w swojej ramce.', '1.27.3: a card-game shop. Offers are cards with a picture, a name, a rarity frame and a price. Tap a card and its text and button show below. The Family Rune and the Heart\'s Gift are cards too, in their own frame.'),
      L('1.27.2: poprawki. Zakładka Obiekty nie znika w samouczku (do fali 5 jest wyszarzona z kłódką), potwory po odrodzeniu nie są już białe, a opis kafelka po przytrzymaniu palca pojawia się raz.', '1.27.2: fixes. The Objects tab no longer vanishes in the tutorial (until wave 5 it is dimmed with a lock), revived monsters are no longer white, and a tile description shows once when you hold a finger.'),
      L('1.27.1: kafelki w pasku budowy mają tło w kolorze rodziny (Mechanizmy niebieskie, Ogień pomarańczowy, Nawiedzenie fioletowe...), więc łatwiej je rozróżnić.', '1.27.1: tiles in the build bar have a backdrop in their family colour (Mechanisms blue, Fire orange, Haunting violet...), so they are easier to tell apart.'),
@@ -1077,10 +1080,13 @@
     run.essence = fl.essence; recomputeMods(); updateTray(); saveRunSoon();
     return toS ? 'stash' : fz ? 'fused' : 'ok';
   }
-  function shopReroll(ad) {
+  function shopReroll(ad, heart) {
     if (!fl || fl.phase !== 'build') return false;
     if (ad) { if (run.shop.ad) return false; run.shop.ad = true; }
     else { const c = rerollCost(); if (fl.essence < c) return false; fl.essence -= c; run.shop.rerolls++; }
+    // 1.27.4 (author: Refresh did nothing over the Heart's Gift): with the Heart's Gift open it draws new heart cards (the offers stay)
+    const pk = heart && run.heartPicks && run.heartPicks[0];
+    if (pk) { delete pk.ids; delete pk.regrow; heartOffer(); fl.stats.heartRerolls = (fl.stats.heartRerolls || 0) + 1; run.essence = fl.essence; updateTray(); saveRunSoon(); return true; }
     run.shop.ids = shopRoll(); run.shop.rune = runeRoll(); run.shop.runeDone = null; run.essence = fl.essence; updateTray(); saveRunSoon(); return true;
   }
   function toStash(i) {
@@ -1520,12 +1526,12 @@
       hd.appendChild(el('b', null, L('♥ Dar serca · poziom ', "♥ Heart's Gift · level ") + hk.lv));
       hd.appendChild(el('span', null, L('Serce urosło. Weź jedną kartę za darmo.', 'Your heart grew. Take one card for free.') + (run.heartPicks.length > 1 ? L(' Czeka jeszcze ' + (run.heartPicks.length - 1) + '.', ' ' + (run.heartPicks.length - 1) + ' more waiting.') : '')));
       stage.appendChild(hd);
-      hk.ids.forEach((id, i) => { const u = UPG[id]; cardTile({ id: 'heart-offer-' + i, cls: 'heart rar-' + u.rar, art: ART.cardImg(u.id), name: u.name, price: L('za darmo', 'free'), badge: fuses(u) ? '★' : '', pick: { k: 'h', i } }); });
+      hk.ids.forEach((id, i) => { const u = UPG[id]; cardTile({ id: 'heart-offer-' + i, cls: 'heart rar-' + u.rar, art: ART.cardImg(u.id, false, true), name: u.name, price: L('za darmo', 'free'), badge: fuses(u) ? '★' : '', pick: { k: 'h', i } }); });
     } else {
       run.shop.ids.forEach((id, i) => {
         const u = UPG[id]; if (!u) { boughtTile('offer-' + i); return; }
         const price = priceOf(u), poor = !free && fl.essence < price, fit = cardFit(u);
-        cardTile({ id: 'offer-' + i, cls: 'rar-' + u.rar + (u.kind === 'unlock' ? ' unlock' : '') + (poor ? ' poor' : '') + (fuses(u) ? ' fuse' : ''), art: ART.cardImg(u.id), name: u.name,
+        cardTile({ id: 'offer-' + i, cls: 'rar-' + u.rar + (u.kind === 'unlock' ? ' unlock' : '') + (poor ? ' poor' : '') + (fuses(u) ? ' fuse' : ''), art: ART.cardImg(u.id, false, true), name: u.name,
           price: free ? L('za darmo', 'free') : String(price), ess: !free, badge: fuses(u) ? '★' : fit && !fit.ok ? '!' : '', pick: { k: 'o', i } });
       });
       // 1.26 Runa rodu: one rune a shop, a card in its family's colour (1.27.1: once bought its place stays, empty)
@@ -1539,7 +1545,7 @@
         b.classList.add('rune'); b.style.setProperty('--fam', F.color);
       }
     }
-    og.classList.add('n' + og.children.length);   // four (the Heart's Gift with Dziesięcina): one row of four; five or six: two rows of three
+    og.classList.add('n' + og.children.length); og.addEventListener('scroll', () => { m.cardsX = og.scrollLeft; }, { passive: true });   // a short phone scrolls the row: it keeps its place over a re-render   // four (the Heart's Gift with Dziesięcina): one row of four; five or six: two rows of three
     stage.appendChild(og);
     // the picked card: its whole text and its button
     const dt = el('div', 'cdetail'); dt.id = 'shop-detail'; const P = m.pick;
@@ -1605,8 +1611,8 @@
     const acts = el('div', 'acts');
     const act = (id, title, sub, off, fn) => { const b = el('button'); b.type = 'button'; b.id = id; b.appendChild(el('b', null, title)); b.appendChild(el('span', / (Esencji|Essence)$/.test(sub) ? 'ess' : null, sub)); b.disabled = !!off; b.addEventListener('click', fn); acts.appendChild(b); return b; };
     const rc = rerollCost();
-    act('shop-reroll', L('Odśwież', 'Refresh'), rc ? rc + L(' Esencji', ' Essence') : L('gratis', 'free'), fl.essence < rc, () => { if (shopReroll(false)) { m.sel = null; m.msg = L('Nowa oferta.', 'New offer.'); } else m.msg = L('Za mało Esencji na odświeżenie.', 'Not enough Essence to refresh.'); rerender(); });
-    act('shop-ad', L('Za reklamę', 'Watch ad'), run.shop.ad ? L('już użyte', 'used') : L('odśwież raz', 'one refresh'), run.shop.ad, () => { shopReroll(true); m.sel = null; m.msg = L('Nowa oferta (reklama, symulacja).', 'New offer (ad, simulated).'); rerender(); });
+    act('shop-reroll', L('Odśwież', 'Refresh'), rc ? rc + L(' Esencji', ' Essence') : L('gratis', 'free'), fl.essence < rc, () => { if (shopReroll(false, heartView)) { m.pick = null; m.sel = null; m.msg = L('Nowa oferta.', 'New offer.'); } else m.msg = L('Za mało Esencji na odświeżenie.', 'Not enough Essence to refresh.'); rerender(); });
+    act('shop-ad', L('Za reklamę', 'Watch ad'), run.shop.ad ? L('już użyte', 'used') : L('odśwież raz', 'one refresh'), run.shop.ad, () => { shopReroll(true, heartView); m.pick = null; m.sel = null; m.msg = L('Nowa oferta (reklama, symulacja).', 'New offer (ad, simulated).'); rerender(); });
     body.appendChild(acts);
     // the deck and the stash: every slot has its place, empty ones too
     const dk = panel(body, L('Talia ', 'Deck ') + run.deck.length + '/' + run.deckSize, L('schowek ', 'stash ') + run.stash.length + '/' + stashCap() + L(' · karty tu nie działają', ' · cards here are inactive'), 'deckp');
@@ -1625,6 +1631,7 @@
     if (!heartView && hk) { const hb = el('button', 'mini heartback', L('♥ Dar serca czeka (', "♥ Heart's Gift (") + hp + ')'); hb.type = 'button'; hb.id = 'heart-back'; hb.addEventListener('click', () => { m.heartLater = false; m.sel = null; rerender(); }); foot.appendChild(hb); }
     foot.appendChild(done);
     if (m.msg) { foot.appendChild(el('div', 'shopmsg', m.msg)); m.msg = ''; }   // what just happened: a message over the big button (1.12.1: in the shop itself, the top hint is gone)
+    { const row = card.querySelector('.offers.cards'); if (row && m.cardsX) row.scrollLeft = m.cardsX; }
     requestAnimationFrame(() => { card.querySelectorAll('.sheet, .cdetail').forEach(fitText); card.querySelectorAll('.slot:not(.empty)').forEach(fitSlot); });
   }
   // Prototype 1.0: the whole text has to fit its box, nothing is cut. The letters shrink step by step down to a readable minimum;
@@ -2510,6 +2517,34 @@
     run.waveDocs.push(doc);
     run.lastLog = pushLog(doc);
   }
+  // 1.27.4 (author: a hero stood still for minutes; the run file holds only finished waves, so that wave was never saved): a
+  // wave that drags on (4 min, then every 2 min) sends what everyone is doing right now to the log
+  // (waves/<run>_<wave>_long<n>, kind 'long'); the run file (Menu) adds the same snapshot of a wave still going on.
+  const LONG_DOCS = [];
+  function longDoc() {
+    const P = fl.party, r2 = v => Math.round(v * 10) / 10, near = new Map();
+    const heroes = fl.heroes.map(h => {
+      if (!h.dead && !h.fled) fl.items.forEach(it => { if (Math.abs(it.x - h.tx) <= 3 && Math.abs(it.y - h.ty) <= 3) near.set(key(it.x, it.y), [it.type, it.x, it.y, r2(it.cd || 0), it.disabled ? 1 : 0, Math.round(it.hp || 0), it.down ? 1 : 0]); });
+      return { id: h.id, type: h.type, lvl: h.lvl, out: h.dead ? 'dead' : h.fled ? 'left' : h.gone ? 'gone' : 'in', x: h.tx, y: h.ty, nx: h.nx, ny: h.ny, prog: r2(h.prog || 0),
+        state: h.state, intent: h.intent, plan: h.plan || null, planOf: planOf(h), room: h.room, rt: h.room >= 0 && fl.rooms[h.room] ? fl.rooms[h.room].rt || null : null,
+        path: (h.path || []).slice(0, 8), timer: r2(h.timer || 0), thinkT: r2(h.thinkT || 0), needPlan: !!h.needPlan, hp: Math.round(h.hp), max: Math.round(h.max), fear: Math.round(h.fear), courage: Math.round(h.courage),
+        panic: r2(Math.max(0, (h.panicUntil || 0) - fl.time)), fleeing: !!h.fleeing, crystal: !!h.crystal, lost: !!h.lost, alone: !!h.alone, homeRun: !!h.homeRun, homeStuckT: r2(h.homeStuckT || 0),
+        homeBest: h.homeBest == null ? null : Math.round(h.homeBest), homeBestAgo: h.homeBestT == null ? null : r2(fl.time - h.homeBestT), noPathT: r2(h.noPathT || 0), blockT: r2(h.blockT || 0),
+        foe: h.foe ? [h.foe.type, h.foe.x, h.foe.y, Math.round(h.foe.hp || 0)] : null, rooted: !!rooted(h), slow: fl.time < h.slowUntil, cageLeft: caged(h) ? r2((h.cageUntil || 0) - fl.time) : null,
+        stand: !!(h.stand && !h.stand.done), sac: !!(h.sac && !h.sac.done), split: !!h.split, wander: r2(Math.max(0, (h.wanderUntil || 0) - fl.time)), talk: r2(Math.max(0, (h.talkUntil || 0) - fl.time)), passing: h.passing == null ? null : h.passing };
+    });
+    const doors = []; fl.doors.forEach((d, k) => { if (doorClosed(d) || secretShut(d)) doors.push([k, doorClosed(d) ? r2(d.closedUntil - fl.time) : 'secret']); });
+    const tlx = fl.tl ? { ev: fl.tl.ev.slice(-400), smp: fl.tl.smp.slice(-90) } : null;
+    return { version: LOG_VERSION, runId: run.id, wave: run.wave, kind: 'long', at: new Date().toISOString(), t: r2(fl.time), patT: r2(fl.patT || 0), waveTime: S.waveTime, exhausted: !!fl.exhausted, fearless: !!fl.fearless,
+      ending: fl.ending, queue: fl.queue.length, score: Math.round(fl.score || 0), essence: Math.round(fl.essence), party: { plan: P.plan, leaderId: P.leaderId, council: !!P.council, councilMore: !!P.councilMore, waitUntil: r2((P.waitUntil || 0) - fl.time), talkUntil: r2((P.talkUntil || 0) - fl.time), g2: !!P.g2, steal: r2(P.steal || 0) },
+      heroes, near: [...near.values()], doors, stats: roundStats(fl.stats), timeline: tlx, layout: run.waveStart, deck: run.deck.slice(), fused: (run.fused || []).slice(), upgrades: run.upgrades.slice() };
+  }
+  function logLong() {
+    const doc = longDoc(); doc.n = LONG_DOCS.filter(d => d.runId === run.id && d.wave === run.wave).length + 1;
+    LONG_DOCS.push(doc); if (LONG_DOCS.length > 6) LONG_DOCS.shift();
+    if (run.logState === 'denied' || run.logState === 'off') return;
+    getDb().then(db => db && db.collection('waves').doc(run.id + '_' + String(run.wave).padStart(2, '0') + '_long' + doc.n).set(doc)).catch(() => {});
+  }
   function pushLog(waveDoc) {
     if (run.logState === 'denied' || run.logState === 'off') return Promise.resolve(run.logState);
     return getDb().then(db => {
@@ -2527,8 +2562,9 @@
     return dlPromise;
   }
   function downloadRun(note) {
-    if (!run || !run.waveDocs.length) { note.textContent = L('Ten run nie ma jeszcze zapisanej fali.', 'No wave saved in this run yet.'); return; }
-    const data = JSON.stringify({ format: 'yatd-run', run: runSummary(), waves: run.waveDocs }), name = 'yatd-run-' + run.id + '.json';
+    if (!run || (!run.waveDocs.length && !(fl && fl.phase === 'raid'))) { note.textContent = L('Ten run nie ma jeszcze zapisanej fali.', 'No wave saved in this run yet.'); return; }
+    const live = fl && fl.phase === 'raid' ? [longDoc()] : [];   // 1.27.4: the wave still going on, as it is now
+    const data = JSON.stringify({ format: 'yatd-run', run: runSummary(), waves: run.waveDocs, long: LONG_DOCS.filter(d => d.runId === run.id).concat(live) }), name = 'yatd-run-' + run.id + '.json';
     note.textContent = L('Przygotowuję plik...', 'Preparing the file...');
     getDownloads().then(dl => {
       if (!dl && WEB) { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); note.textContent = L('Pobrano plik ', 'Downloaded ') + name + '.'; return; } catch (e) {} }
@@ -3299,7 +3335,7 @@
   kick();   // 1.24 (C): the paced loop (p6 FP)
 
   // Hook for automated checks; no effect on normal play.
-  const yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  const yatd = { longDoc: () => longDoc(), logLong: () => logLong(), get LONG_DOCS() { return LONG_DOCS; }, homeRunTick: dt => homeRunTick(dt), tapUpgrade: it => tapUpgrade(it),   /* 1.27.4 */ get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

@@ -60,7 +60,7 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
     G.fl.time += 5; G.fl.heroes.forEach(o => { o.saidUntil = -9; o.hurtAt = -99; o.panicUntil = -1; });
     const said = G.say ? null : null;
     out.hushFear = [Math.round(fh * 100) / 100, Math.round(fo * 100) / 100];
-    ok(Math.abs(fh / fo - 1.2) < 0.02, 'fear +20% in Głusza (' + fh + ' vs ' + fo + ')'); }
+    ok(Math.abs(fh / fo - 1.1) < 0.02, 'fear +10% in Głusza (1.27.4; was +20%) (' + fh + ' vs ' + fo + ')'); }
   // 4. Sanktuarium: the safest room by far; a wounded hero naps there, heals at half speed and has nightmares
   fresh(); typeAll(undefined);
   const rooms = G.fl.rooms.filter(r => r.kind === 'room' && r.id !== G.fl.heart.room && r.key !== G.run.layout.entrance);

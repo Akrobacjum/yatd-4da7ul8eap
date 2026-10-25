@@ -1703,7 +1703,7 @@
     if (h.dead || h.fled || amt <= 0) return;
     if (fl.firing && (TRAPS[fl.firing.type] || SCARE[fl.firing.type])) markOuch(h, fl.firing);   // 1.13: a scare that went off here too
     const raw = amt;
-    amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : isRt(h.room, 'hush') ? 1.2 : 1);   // Mgła: +15%, 1.10 Głusza: +20%
+    amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : isRt(h.room, 'hush') ? 1.1 : 1);   // Mgła: +15%, 1.10 Głusza: +20% (1.27.4: +10%); Głusza: +20%
     if (inB('altar', h.room)) amt *= 1.1; if (inB('howl', h.room)) amt *= 1.1;   // 1.26 (6.4): Ołtarz and Kamień wyjec: +10% fear in their room
     if (raging(h)) amt *= 0.5;   // 1.05: fury dulls fear
     if (fl.time < (h.markUntil || -1)) amt *= 1.3;   // 1.26 Naznaczony
