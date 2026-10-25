@@ -256,7 +256,7 @@ Kolumny jak w tabeli głównej, plus "grupa / uwagi": `heart` = grupa Serce (w 1
 | `tithe` | Dziesięcina | Danina rośnie z 30% do 45% (szybsze poziomy serca), a w rzędzie Dar serca wybierasz z 4 kart zamiast z 3. | card | rzadka |  |  | 1 | ess | `heart` | `m => { m.titheAdd += 0.15; m.titheChoice += 1; }` |
 | `stoneheart` | Kamienne serce | Po fali serce potrzebuje z sakiewki tylko 75% braku: jeśli tyle masz, jest syte. Nasycenie rośnie za to o 25% wolniej. | card | rzadka |  |  | 1 | ess | `heart` | `m => { m.stoneHeart = true; m.satietyK *= 0.75; }` |
 | `bloodcredit` | Kredyt krwi | Raz na run: gdy po fali sakiewka nie pokryje głodu, zamiast pęknięcia kryształu brakująca reszta ×2 dopisze się do głodu następnej fali (sakiewka zostaje). | card | rzadka | tak |  | 1 | - | `heart` | `m => { m.bloodCredit = true; }` |
-| `glutton` | Głodomór | Serce chce o 20% więcej, ale Danina daje 2 razy więcej Nasycenia (Ofiara bez zmian). | card | legendarna |  |  | 1 | ess | `heart` | `m => { m.hungerK *= 1.2; m.satietyK *= 2; }` |
+| `glutton` | Głodomór | Serce chce o 20% więcej, ale Danina daje 2 razy więcej Nasycenia (Ofiara bez zmian). | card | legendarna | tak (od 1.27.5) |  | 1 | ess | do 1.27.4 `heart`; od 1.27.5 zwykła karta sklepu | `m => { m.hungerK *= 1.2; m.satietyK *= 2; }` |
 | `bloodflow` | Krwiobieg | Każda wypłata combo ×2 lub więcej (5 różnych pułapek z rzędu) daje sercu +3 Nasycenia ponad Daninę. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.bloodflow += 3; }` |
 | `kingsfeast` | Uczta królów | Uczta (bohater zabity przez potwora karmi serce) daje o 50% więcej. | card | rzadka |  |  | 1 | ess | `heart` | `m => { m.feastK *= 1.5; }` |
 | `lastbreath` | Ostatni oddech | Gdy po rozliczeniu głodu sakiewka jest pusta, w następnej fali pułapki i potwory działają o 25% mocniej. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.lastBreath += 0.25; }` |
@@ -309,7 +309,7 @@ Wartości w tabeli głównej są już z 1.26; poprzednie (1.25.1) tutaj.
 
 ## B.6 Karty dodane w 1.26.1
 
-Wszystkie z grupy Serce (`group: 'heart'`), bez `req` i bez wpisu w `ONB_CARD` (etap 1); wypadają tylko w rzędzie Dar serca (sekcja 03, 3.15). Decyzja autora (25.10): karty Dar serca mają być rzadkie albo legendarne i przydatne w większości buildów. Kolumny jak w B.4.
+Wszystkie z grupy Serce (`group: 'heart'`; od 1.27.5 poza `heartcore` i `resonance`, które z `glutton` są zwykłymi, unikalnymi legendami sklepu, brief "Serce hamuje" C), bez `req` i bez wpisu w `ONB_CARD` (etap 1); wypadają tylko w rzędzie Dar serca (sekcja 03, 3.15). Decyzja autora (25.10): karty Dar serca mają być rzadkie albo legendarne i przydatne w większości buildów. Kolumny jak w B.4.
 
 | id | nazwa | opis w grze | rodzaj | rzadkość | unikalna | wymaga | etap | ★ | grupa / uwagi | efekt w kodzie |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -318,11 +318,11 @@ Wszystkie z grupy Serce (`group: 'heart'`), bez `req` i bez wpisu w `ONB_CARD` (
 | `heartgreed` | Złote tętno | Każda fala zaczyna się z chciwością większą o 0,3. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.greedStart += 0.3; }` |
 | `heartpatience` | Cierpliwość serca | Bohaterowie zostają w lochu o 20 s dłużej, zanim skończy się im cierpliwość (więcej czasu na Esencję). | card | rzadka |  |  | 1 | power | `heart`; `mods.patience` dodawane do limitu cierpliwości w `p6_loop.js: step` | `m => { m.patience += 20; }` |
 | `heartgrowth` | Rozrost serca | Od razu: talia ma na stałe o 1 miejsce więcej. | instant | rzadka |  |  | 1 |  | `heart` | `() => { run.deckSize += 1; }` |
-| `heartcore` | Serce lochu | Cała Esencja ×1,2. | card | legendarna |  |  | 1 | power | `heart`; mnożnik w `essMultNow` | `m => { m.heartCore *= 1.2; }` |
+| `heartcore` | Serce lochu | Cała Esencja ×1,2. | card | legendarna | tak (od 1.27.5) |  | 1 | power | do 1.27.4 `heart`; od 1.27.5 zwykła karta sklepu; mnożnik w `essMultNow` | `m => { m.heartCore *= 1.2; }` |
 | `secondheart` | Drugie serce | Raz na run: kryształ wyniesiony z lochu przez złodzieja wraca do serca. | card | legendarna | tak |  | 1 | - | `heart`; `heroExit`, `run.secondHeartUsed`, `stats.secondHeart` (działa na każdego, kto wynosi kryształ, nie tylko złodzieja) | `m => { m.secondHeart = true; }` |
-| `resonance` | Rezonans | Esencja +3% za każdą inną kartę w talii (najwyżej +30%). | card | legendarna | tak |  | 1 | - | `heart`; `essMultNow`: `1 + min(0,3; 0,03 × liczba różnych id w run.deck)` (schowek się nie liczy) | `m => { m.resonance = true; }` |
+| `resonance` | Rezonans | Esencja +3% za każdą inną zwykłą kartę w talii (karty Daru serca się nie liczą, najwyżej +30%). | card | legendarna | tak |  | 1 | - | do 1.27.4 `heart`; od 1.27.5 zwykła karta sklepu; `essMultNow`: `1 + min(0,3; 0,03 × liczba różnych id zwykłych kart w run.deck)` (schowek i karty Daru się nie liczą; do 1.27.4 liczyły się wszystkie karty talii) | `m => { m.resonance = true; }` |
 
-Ilustracje kart (`p7c_art.js`): heartguide `@pulse|up|heart`, heartdread `@skull|up|heart`, heartgreed `@crown|coin|heart`, heartpatience `@hourglass|time|heart`, heartgrowth `@heartAltar|plus|heart`, heartcore `@heartEcho|x2|heart`, secondheart `@crystal|loop|heart`, resonance `@book|chain|heart`; wszystkie w `HEART_IDS` (złota ramka).
+Ilustracje kart (`p7c_art.js`): heartguide `@pulse|up|heart`, heartdread `@skull|up|heart`, heartgreed `@crown|coin|heart`, heartpatience `@hourglass|time|heart`, heartgrowth `@heartAltar|plus|heart`, heartcore `@heartEcho|x2|heart`, secondheart `@crystal|loop|heart`, resonance `@book|chain|heart`; wszystkie w `HEART_IDS` (złota ramka), od 1.27.5 bez heartcore, resonance i glutton (zwykłe karty, ramka legendarnej).
 
 ## B.7 Karty zmienione w 1.26.1
 

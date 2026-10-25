@@ -825,7 +825,7 @@ Niezmiennik: `crystals0 + suma(delta) = crystals` (dla runu i dla każdej fali).
 
 ---
 
-### 2.14 Serce zabiera: Nasycenie, poziomy serca, Ofiara, Uczta, Odrodzenie, mnożniki Esencji (1.26; `p3_flow.js: satietyAdd, heartLevelUp, heartLvAt, heartRegrowLv, heartSlotLv, titheNow, ofiara, ofiaraLeft, feastIn, essMultNow, greedE, kataK`; `p4_traps.js: hurtMonster, monsterDown`)
+### 2.14 Serce zabiera: Nasycenie, poziomy serca, Ofiara, Uczta, Odrodzenie, mnożniki Esencji (1.26; `p3_flow.js: satietyAdd, heartLevelUp, heartLvAt, heartRegrowLv, heartLevelCheck, heartUpBlocked, titheNow, ofiara, ofiaraLeft, feastIn, essMultNow, greedE, kataK`; `p4_traps.js: hurtMonster, monsterDown`)
 
 Plan autora: dokument projektu `claude/rebalans-1.26-serce-zabiera.md` (sekcje 4-17; Zwoje i Wróżby wycięte, Dary serca połączone z kartami). Gdy plan i kod się różnią, opisuję kod.
 
@@ -833,19 +833,24 @@ Plan autora: dokument projektu `claude/rebalans-1.26-serce-zabiera.md` (sekcje 4
 ```
 HEART_LV = [0, 30, 75, 135, 210, 300, 410, 540]          // Nasycenie łącznie potrzebne na poziom k
 heartLvAt(k) = k < 8 ? HEART_LV[k] : 540 + 150 × (k - 7)  // poziom 8: 690, 9: 840...
-heartSlotLv(L)   = L ∈ {2, 4, 6}                          // +1 miejsce w talii (run.deckSize++), do końca runu
 heartRegrowLv(L) = L >= 3 && L nieparzyste                // 3, 5, 7, 9...: Odrost w rzędzie Dar serca, gdy brakuje kryształu
+heartUpBlocked() = run.satiety >= heartLvAt(run.heartLv + 1) && run.heartUpWave === run.wave   // 1.27.5: próg przekroczony, ale w tym cyklu był już awans
+heartLevelCheck(src):                                     // 1.27.5 (brief "Serce hamuje", A): najwyżej 1 poziom na cykl fali
+    if run.heartUpWave === run.wave || run.satiety < heartLvAt(run.heartLv + 1): return 0
+    run.heartUpWave = run.wave; heartLevelUp(src); return 1
 satietyAdd(v, src):                                       // src: 'tithe' | 'ofiara' | 'bloodflow' | 'omen'
     run.satiety += v; stats.satietyGain += v; stats['sat_' + src] += v
-    while run.satiety >= heartLvAt(run.heartLv + 1): heartLevelUp(src)
+    up = heartLevelCheck(src)                             // do 1.27.4: while (próg) heartLevelUp(src), czyli kilka poziomów naraz
+    if !up && heartUpBlocked(): stats.heartUpBlocked = 1
+startBuild, raz na falę (run.builtFor !== run.wave): heartLevelCheck('build')   // zaległy poziom wchodzi na początku budowy
 heartLevelUp(src):
     L = ++run.heartLv; run.heartLvMax = max(run.heartLvMax, L); run.heartPicks.push({ lv: L })
-    if heartSlotLv(L): run.deckSize++
-    stats.heartUp++
+    stats.heartUp++                                       // 1.27.5: bez miejsca w talii (do 1.27.4 heartSlotLv: poziomy 2, 4, 6 dawały run.deckSize++)
     w fali: napis "Serce rośnie! Poziom L", błysk serca, karta "heartLv" (raz w przeglądarce)
-    w budowie (Ofiara): od razu okno sklepu z rzędem Dar serca (queueModal shop heartNow)
+    w budowie, gdy src !== 'build' (Ofiara): od razu okno sklepu z rzędem Dar serca (queueModal shop heartNow);
+    przy src === 'build' bez okna, bo proceedToBuild i tak kolejkuje sklep między falami, a rząd Dar serca pokazuje się w nim sam
 ```
-Nasycenie nie przepada między falami. Każdy poziom to jeden darmowy wybór z rzędu "Dar serca" w sklepie (3.15), osobny od darmowej karty za falę. Kilka poziomów naraz to kilka wyborów po kolei.
+Cykl fali N = budowa N + fala N (w obu `run.wave === N`); `run.heartUpWave` to numer fali ostatniego awansu (brak w starych zapisach = wolno awansować). Nasycenie nie przepada między falami i zbiera się dalej bez zmian (Danina, Ofiara, Krwiobieg, omeny); nadwyżka ponad próg czeka w pasku i daje poziom na początku następnej budowy. Brak maksymalnego poziomu. Ofiara w budowie po awansie w tym cyklu podnosi Nasycenie, ale poziom wejdzie dopiero w następnej budowie. Każdy poziom to jeden darmowy wybór z rzędu "Dar serca" w sklepie (3.15), osobny od darmowej karty za falę. Przykład (run Dawida 1.27.3, Nasycenie po falach 2-5: 33, 66, 243, 865): do 1.27.4 poziomy 1, 1, 4, 9; od 1.27.5 fala 2 -> 1, fala 4 -> 2, budowa 5 -> 3, budowa 6 -> 4.
 
 **Ofiara** (`ofiara(n)`, przycisk w karcie serca w budowie, sekcja 08): `n = floor(min(n, ofiaraLeft()))`, `ofiaraLeft() = min(floor(fl.essence), 40 - (run.ofiaraW === run.wave ? run.ofiaraN : 0))` tylko w budowie (`OFIARA_MAX = 40` na przerwę między falami); Esencja schodzi z sakiewki, `satietyAdd(n, 'ofiara')`, `stats.ofiara`, napis "Ofiara +N Nasycenia". Przyciski ofiarują po 10 albo cały pozostały limit. Ofiara nie liczy się do Spiżarni (licznik `sat_tithe`) i nie mnoży się przez `satietyK` (Głodomór dotyczy tylko Daniny).
 
@@ -856,7 +861,7 @@ Nasycenie nie przepada między falami. Każdy poziom to jeden darmowy wybór z r
 **Mnożniki Esencji** (`essMultNow()`, mnożą się ze sobą, bez limitu, jak "×Mult" w Balatro):
 ```
 k = mods.cursedCrown × mods.heartCore                          // Przeklęta korona ×1,35 (bohaterowie +1 poziom, mods.crownLv); 1.26.1 Serce lochu ×1,2
-if mods.resonance: k ×= 1 + min(0.3, 0.03 × new Set(run.deck).size)                          // 1.26.1 Rezonans: +3% za każdą inną kartę w talii (bez schowka), najwyżej +30%
+if mods.resonance: k ×= 1 + min(0.3, 0.03 × new Set(run.deck.filter(id => !isGift(id))).size)   // 1.26.1 Rezonans: +3% za każdą inną kartę w talii (bez schowka), najwyżej +30%; od 1.27.5 tylko zwykłe karty (bez kart Daru)
 if mods.lonewolf > 1 && fl.heroes.length > 1 && alive().length === 1: k ×= mods.lonewolf      // Samotny wilk ×1,3
 if mods.palette > 1 && fl.famN >= 5: k ×= mods.palette                                       // Pełna paleta ×1,25 (rodziny na starcie fali)
 if mods.minimalist > 1 && fl.elemN <= 12: k ×= mods.minimalist                               // Minimalista ×1,4 (pułapki i potwory na starcie fali)
@@ -877,7 +882,7 @@ Seria zapamiętuje najwyższy mnożnik (`C.mx`), a Koronacja strachu (×1,5) mno
 - `id`: klucz (`UPG[id]`, `p1_config.js`).
 - `kind`: `'card'` (żyje w talii, zajmuje miejsce, kopie się sumują), `'unlock'` (na stałe odblokowuje element `u.unlock`, bez miejsca), `'instant'` (jednorazowy efekt `u.apply()`, bez miejsca).
 - `rar`: `'c'` zwykła, `'r'` rzadka, `'l'` legendarna. Liczności (1.24): card c 63, r 52, l 7; unlock c 14; instant c 1, r 2, l 1. 1.26: card c 76, r 72, l 15; unlock c 34; instant c 1, r 2, l 2 (Żarłoczne serce jest legendarne, Odrost rzadki). 1.26.1: card c 69, r 83, l 18; unlock c 34; instant c 1, r 3, l 2 (7 dawnych zwykłych kart Serca jest rzadkich, doszły 4 rzadkie i 3 legendarne karty Serca oraz rzadki Rozrost serca).
-- `group` (1.26): `'heart'` dla grupy Serce (ramka złoto-czerwona; rząd Dar serca, 3.15): w 1.26 15 kart do talii i 2 jednorazowe (`crystal`, `regrow`), od 1.26.1 22 karty do talii i 3 jednorazowe (+`heartgrowth`), razem 25 wpisów. Od 1.26.1 cała grupa wypada tylko w rzędzie Dar serca (`upgradePicks` pomija `group === 'heart'`). `heartOnly` (1.26, tylko `regrow`): karta nie jest losowana nawet w rzędzie Dar serca, tylko wstawiana do niego, gdy brakuje kryształu (3.15).
+- `group` (1.26): `'heart'` dla grupy Serce (ramka złoto-czerwona; rząd Dar serca, 3.15): w 1.26 15 kart do talii i 2 jednorazowe (`crystal`, `regrow`), od 1.26.1 22 karty do talii i 3 jednorazowe (+`heartgrowth`), razem 25 wpisów. Od 1.26.1 cała grupa wypada tylko w rzędzie Dar serca (`upgradePicks` pomija `group === 'heart'`). Od 1.27.5 Serce lochu (`heartcore`), Rezonans (`resonance`) i Głodomór (`glutton`) nie są w grupie: to zwykłe legendarne karty sklepu (`rar: 'l'`, `unique`), więc grupa ma 19 kart do talii i 3 jednorazowe. Karta do talii z `group === 'heart'` to "karta Daru" (`isGift(id)`): nie zajmuje miejsca w talii (3.15). `heartOnly` (1.26, tylko `regrow`): karta nie jest losowana nawet w rzędzie Dar serca, tylko wstawiana do niego, gdy brakuje kryształu (3.15).
 - `unique`: najwyżej jedna kopia w talii + schowku i nigdy nie łączy się w ★ (`arrows, spider, ghost, trails, well, nopick, anatomy, reliquary, quickarm`, od 1.18 `thickwalls, risen, cell, vaultsnap, falsecall, restock, ambush`).
 - `req`: wymaganie: string = `run.unlocked.has(req)`; funkcja (w JSON jako źródło `"fn: ..."`) = wywołanie. Karty z `req`: `web, fire, mimic, cage, portrait, spider, ghost, hgallery(ghost), sticky (web albo spider), wildfire(fire), choir(portrait), cageghost(cage)`; od 1.18 21 kart komnat i efektów z `req: () => hasRk(k)` albo `hasRt(t)` ("ten element jest w lochu": `fl.rooms.some(R => R.rk === k)`, analogicznie efekt): `drawers(junk), cell(prison), falsecall(haunt), frames(gallery), restock(forge), lullsleep(nursery), ambush(goblin), cocoons(spider), cauldron(ogre), batscatter(bats), skullwall(ossuary), strip(armory)` (komnaty) i `risen(crypt), vaultsnap(vault), wisps(fog), body(hush), mire(swamp), farecho(grotto), deepsleep(haven), gearlink(gears), blackice(ice)` (efekty). Taka karta nigdy nie wypada bez swojego elementu (`reqOk` przy losowaniu). Od 1.26 z `req` także `doubleedge (spikes)`, `conduct (bolt)`, `hellpack (hound)`, `bonesunbroken (skeleton)` i funkcje: `tarsulfur` (olej albo smoła), `toxicfume` (wyziewy, zombie, szczury albo przeklęty łup), `plague` (zombie albo szczury), `undyingarmy` (szkielet, zombie albo licz), `abysspact` (któryś z demonów).
 - `grows`: karta rosnąca z licznikiem `run.stacks[id]` (`hunger, chronicle, granary, bank, tempered`, od 1.18 `skullwall`, od 1.26 `skulls`, `risinglegend`, `pantry`).
@@ -1165,9 +1170,9 @@ Domyślne wartości z `p3_flow.js: freshMods`. Kolumna "Karty" podaje id karty i
 | `tarSulfur`, `conduct`, `toxicCap`, `toxicDet`, `plagueAir`, `hellPack`, `bonesUp`, `undyingArmy`, `abyssPact` (1.26) | 0, false, 0, 1, false, false, 0, false, 0 | tarsulfur +0,3; conduct true; toxicfume `toxicCap` +4 i `toxicDet` ×1,25; plague true; hellpack true; bonesunbroken +2; undyingarmy true; abysspact +1 | `p3_flow.js: damage`, `hungerParts`, `killHooks`; `p4_traps.js` (sekcja 05, 5.14) |
 | `goldenDream`, `croesus` (1.26) | false | goldendream true; croesus true | `p3_flow.js: noticeLoot`, `pickup`, `greedE`, `makeWave` |
 | `patience` (1.26.1) | 0 | heartpatience: +20 (sekundy dodane do limitu cierpliwości: `S.waveTime` albo omenu) | `p6_loop.js: step` (`becomeImpatient`) |
-| `heartCore` (1.26.1) | 1 | heartcore: ×1,2 | `p3_flow.js: essMultNow` |
+| `heartCore` (1.26.1) | 1 | heartcore: ×1,2 (od 1.27.5 zwykła legendarna karta sklepu, unikalna) | `p3_flow.js: essMultNow` |
 | `secondHeart` (1.26.1) | false | secondheart: true (raz na run kryształ wyniesiony z lochu wraca, `run.secondHeartUsed`) | `p3_flow.js: heroExit` |
-| `resonance` (1.26.1) | false | resonance: true (+3% Esencji za każdą inną kartę w talii, najwyżej +30%) | `p3_flow.js: essMultNow` |
+| `resonance` (1.26.1) | false | resonance: true (+3% Esencji za każdą inną zwykłą kartę w talii, najwyżej +30%; od 1.27.5 karty Daru się nie liczą, karta jest w sklepie) | `p3_flow.js: essMultNow` |
 | `reactGz` (1.26) | 0 | brak karty (zawsze 0) | `p4_traps.js: reaction` (martwe) |
 
 Mechanika efektów bojowych (kolce, ogień, strach, fobie, skill checki): sekcja 05. Tu ważne są pola ekonomiczne: `regen, greedMult, pickGreed, goldDust, reliquary, greedStart, greedFlat, collector, miser, crystalPts, gilded, stashGreed, returnGreed, glass, depthBonus, soulMult, scareMult, loneMult, lostMult, fearHarvest, income, usurer, bank, granary, hungerK, storeK, shopDisc, freeReroll, sellK, stashPlus, patron, digDiscount, expandCost, buildingCost, mole`.
@@ -1247,18 +1252,36 @@ heartOffer():
     pk = run.heartPicks[0]; if !pk: null
     regrow = heartRegrowLv(pk.lv) && run.crystals < run.maxCrystals
     if pk.ids && pk.regrow === regrow: return pk                       // raz wylosowana oferta zostaje (chyba że zmienił się brak kryształu)
-    pool = UPGRADES.filter(u => u.group === 'heart' && !u.heartOnly && u.kind !== 'unlock' && reqOk(u) && !(u.unique && masz) && !isFused(u.id))
+    pool = UPGRADES.filter(u => u.group === 'heart' && !u.heartOnly && u.kind !== 'unlock' && reqOk(u) && !(u.unique && masz) && !isFused(u.id)
+                           && !(u.id === 'crystal' && run.heartCards.includes('crystal')))   // 1.27.5: Żarłoczne serce najwyżej raz na run
     n = 3 + mods.titheChoice                                           // Dziesięcina: 4
     n razy: rzadkość r 70% / l 30% (1.26.1; w 1.26: c 55% / r 35% / l 10%); losowa karta tej rzadkości spoza już wybranych (brak takiej: dowolna z puli)
     if regrow: pierwsza karta zamieniona na 'regrow' (Odrost)
-heartTake(i): tylko w budowie; karta 'card' bez łączenia przy pełnej talii idzie do schowka (pełny schowek: 'full', nic się nie dzieje);
-    run.heartPicks.shift(); applyUpgrade albo schowek; run.heartCards.push(id); fl.heartPick = { lv, took, offer } (telemetria); stats.heartPicks++
+heartTake(i): tylko w budowie; karta Daru (group 'heart') zawsze do talii (od 1.27.5 nie zajmuje miejsca); inna karta 'card' bez łączenia
+    przy pełnej talii (deckFull) idzie do schowka (pełny schowek: 'full', nic się nie dzieje);
+    run.heartPicks.shift(); applyUpgrade albo schowek; run.heartCards.push(id); fl.heartPick = { lv, took, offer }; stats.heartPicks++;
+    fl.heartPicksLog.push({ lv, took, offer, phase })                  // 1.27.5: każdy wybór (log fali: heartPicks)
 ```
 - Widok: rząd "♥ Dar serca · poziom L" zajmuje miejsce zwykłych ofert, aż karta zostanie wzięta albo gracz wybierze "Później (sklep)"; wtedy w stopce przycisk "♥ Dar serca czeka (N)". Przycisk "Weź za darmo"; Odrost z podpisem "kryształ · od razu". Kafelek sklepu w talii ma napis "♥ Dar serca" i złotą ramkę (`heartgift`), przycisk "Do budowy" mówi, ile Darów poczeka.
-- Od 1.26.1 karty grupy Serce są **tylko** w rzędzie Dar serca: zwykła oferta sklepu i darmowe karty za falę (`upgradePicks`) ich nie losują. W 1.26 wypadały też w zwykłej ofercie (poza Odrostem, `heartOnly`). Wzięta karta serca jest zwykłą kartą: zajmuje miejsce, łączy się w ★ (drugą kopię da się dostać tylko z kolejnego Daru serca), można ją sprzedać. Pula rzędu obejmuje też jednorazowe Żarłoczne serce (l) i Rozrost serca (r); wyklucza karty unikalne, które już masz, i karty już połączone w ★.
+- Od 1.26.1 karty grupy Serce są **tylko** w rzędzie Dar serca: zwykła oferta sklepu i darmowe karty za falę (`upgradePicks`) ich nie losują. W 1.26 wypadały też w zwykłej ofercie (poza Odrostem, `heartOnly`). Wzięta karta serca działa jak zwykła karta (jest w `run.deck`, liczy się do modów), ale od 1.27.5 **nie zajmuje miejsca w talii** (niżej); łączy się w ★ (drugą kopię da się dostać tylko z kolejnego Daru serca), można ją sprzedać. Pula rzędu obejmuje też jednorazowe Żarłoczne serce (l) i Rozrost serca (r); wyklucza karty unikalne, które już masz, i karty już połączone w ★.
 - Dlaczego (decyzja autora 25.10, wariant 1): w 1.26 Danina zabierała Esencję na Nasycenie, a nagrodą za poziom była darmowa karta z grupy Serce, którą w zwykłej ofercie można było kupić taniej (zwykła 5, rzadka 9), niż kosztowała Esencja oddana w Daninie. Dlatego karty Serca wyszły ze sklepu, a rząd nie ma kart zwykłych: losuje rzadkie (70%) i legendarne (30%), a 7 dawnych zwykłych kart Serca (heartcry, heavycrystal, darkforge, heartmem, stoneheart, kingsfeast, heartpulse) jest od 1.26.1 rzadkich.
 - 8 nowych, uniwersalnych kart Serca (1.26.1, efekty w załączniku B): Wola serca (r, pułapki i potwory +10%, `pactPower` ×1,1), Groza serca (r, strach +15%, `fearMult` ×1,15), Złote tętno (r, chciwość na start fali +0,3), Cierpliwość serca (r, cierpliwość +20 s, `mods.patience`), Rozrost serca (r, jednorazowa: +1 miejsce w talii), Serce lochu (l, Esencja ×1,2, `mods.heartCore`), Drugie serce (l, unikalna: raz na run wyniesiony kryształ wraca, 2.9), Rezonans (l, unikalna: Esencja +3% za każdą inną kartę w talii, najwyżej +30%).
 - Plan przewidywał 16 Darów serca; 8 dublujących istniejące karty wypadło, 8 zostało kartami (`regrow` Odrost jako jednorazowa i 7 kart do talii: heartcry, heavycrystal, heartroom, warden, darkforge, darklore, heartmem), do tego 8 nowych kart serca (tithe, stoneheart, bloodcredit, glutton, bloodflow, kingsfeast, lastbreath, heartpulse) i Żarłoczne serce przeniesione do grupy. Lista z efektami: załącznik B.
+
+**Karty Daru poza limitem talii (1.27.5, brief "Serce hamuje", B; `p3_flow.js: isGift, deckUsed, deckFull, deckAdd, copyOk, essMultNow`):**
+```
+isGift(id) = UPG[id].kind === 'card' && UPG[id].group === 'heart'
+deckUsed() = run.deck.filter(id => !isGift(id)).length               // licznik "Talia X/Y" i każdy limit talii
+deckFull() = deckUsed() >= run.deckSize                               // zastąpiło run.deck.length >= run.deckSize (sklep, Dar, schowek, zamiana)
+deckAdd(id): karta Daru na koniec run.deck; zwykła przed pierwszą kartą Daru (applyUpgrade, ze schowka, zamiana karty)
+startBuild (raz na falę): karty Daru przestawione na koniec run.deck (stare zapisy miały je wymieszane)
+copyOk(v): ... && v.group !== 'heart'                                 // Kopista i Lustro duszy nie kopiują kart Daru
+```
+- Karty Daru nie trafiają do schowka (`toStash` odmawia, przycisk wyłączony); sprzedaż jak dotąd. Przesuwanie kart w opisie karty działa tylko w obrębie zwykłych kart.
+- Talia w sklepie i w pasku: `deckSize` miejsc ze zwykłymi kartami, pod nimi karty Daru w ramce serca (`.giftslot`, w pasku `.giftcard` z napisem "♥ Serce"), bez licznika miejsc; nagłówek "Talia X/Y · ♥ Serce N". Akcje trafiają w prawdziwy indeks w `run.deck`.
+- Rozrost serca (`heartgrowth`, +1 miejsce) i Pakt bez zmian. Stare zapisy bez migracji: run w toku zachowuje miejsca dostane z poziomów serca.
+- Dlaczego (brief autora 25.10, dane z 1.26-1.27.3): u eksperta Danina zamieniała nadwyżkę w Nasycenie, Nasycenie dawało kilka poziomów w jednej fali, każdy poziom darmową kartę do talii, a najmocniejsze z nich mnożyły Esencję (w danych: poziom 4 -> 9 w jednej fali, 4 z 8 kart talii z Daru). Zwykły gracz tej pętli nie uruchamia i łatki ma nie odczuć.
+- Pula Daru po wyjęciu trzech legend: zostają dwie legendy, Drugie serce (unikalna) i Żarłoczne serce (`crystal`, nieunikalna). Przy 30% na legendę w każdym z 3 miejsc Żarłoczne serce byłoby w ok. 44% ofert, dlatego najwyżej raz na run (proporcje 70/30 bez zmian).
 
 ### 3.16 Runa rodu (1.26, `p8b_ui.js: runeRoll, runeBuy, renderShop`; `p1_config.js: FAMILIES, FAMILY_OF, RUNE_MAX, runePrice`; `p4_traps.js: famLv, famK, cdOf`)
 

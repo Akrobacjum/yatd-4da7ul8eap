@@ -323,9 +323,14 @@ Plik części po `p1_config.js` (sekcja 02, 2.10; załącznik A, A.12.4).
 | `titheNow` | (1.26) Danina: `min(0,6, S.tithe + mods.titheAdd + omen)` |
 | `heartLvAt` | (1.26) próg Nasycenia poziomu k (`HEART_LV`, dalej +150) |
 | `heartRegrowLv` | (1.26) poziom z możliwym Odrostem (nieparzysty od 3) |
-| `heartSlotLv` | (1.26) poziom z miejscem w talii (2, 4, 6) |
-| `satietyAdd` | (1.26) Esencja w Nasycenie (`run.satiety`), sprawdza nowy poziom |
-| `heartLevelUp` | (1.26) nowy poziom serca: `run.heartPicks` (Dar serca), `deckSize + 1` na 2/4/6; w fali napis i karta `heartLv`, w budowie (Ofiara) od razu sklep z rzędem Dar serca |
+| `heartUpBlocked` | (1.27.5) próg następnego poziomu przekroczony, ale w tym cyklu fali był już awans (`run.heartUpWave === run.wave`); HUD `waiting` (do 1.27.4 w tym miejscu `heartSlotLv`: poziomy 2, 4, 6 z miejscem w talii, usunięte) |
+| `heartLevelCheck` | (1.27.5) najwyżej 1 poziom na cykl fali: awans, gdy Nasycenie sięga progu i `run.heartUpWave !== run.wave`; woła je `satietyAdd` i `startBuild` |
+| `satietyAdd` | (1.26) Esencja w Nasycenie (`run.satiety`), sprawdza nowy poziom (1.27.5: `heartLevelCheck`, najwyżej jeden; blokada w `stats.heartUpBlocked`) |
+| `isGift` | (1.27.5) karta Daru: `kind 'card'` z `group 'heart'` (nie zajmuje miejsca w talii) |
+| `deckUsed` | (1.27.5) liczba zwykłych kart w talii (bez kart Daru) |
+| `deckFull` | (1.27.5) `deckUsed() >= run.deckSize` |
+| `deckAdd` | (1.27.5) dopisuje kartę do `run.deck`: karta Daru na koniec, zwykła przed pierwszą kartą Daru |
+| `heartLevelUp` | (1.26) nowy poziom serca: `run.heartPicks` (Dar serca), `deckSize + 1` na 2/4/6; w fali napis i karta `heartLv`, w budowie (Ofiara) od razu sklep z rzędem Dar serca; 1.27.5: bez miejsca w talii, w budowie okno sklepu tylko gdy `src !== 'build'` |
 | `greedE` | (1.26) Krezus: chciwość w Esencji do kwadratu |
 | `essMultNow` | (1.26) mnożnik Esencji z kart 1.26 w tej chwili (Koronacja strachu, Krwawa łaźnia, Samotny wilk, Pełna paleta, Minimalista, Przeklęta korona, Kolekcja czaszek); 1.26.1: Serce lochu (`mods.heartCore`) i Rezonans |
 | `kataK` | (1.26) Pamiętnik kata: moc rodzaju z `run.kata` |
@@ -923,7 +928,15 @@ Plik części po `p1_config.js` (sekcja 02, 2.10; załącznik A, A.12.4).
 | `fitTxt` | (1.24) tekst ucięty z wielokropkiem do szerokości |
 | `drawPreview` | (1.24) następna drużyna u góry mapy w budowie (chipy i dwie linie); 1.26: plakietka omenu pod podglądem, przy Mgle wojny ramka "w mgle" zamiast podglądu |
 | `drawSecret` | (1.26.1) Ukryte przejście: blok kamienia nad drzwiami z fioletowym konturem i "?", póki nikt go nie odkrył; potem gruz |
-
+| `rtGrad` | (1.27.5) gradient ściany efektu z pamięci (`RTG`) |
+| `wallKit` | (1.27.5) pomocnik brył na licu ściany (S/E): pudełka, wnęki, ramy w głąb ściany |
+| `lipKit` | (1.27.5) ten sam interfejs co `wallKit` dla pułapki leżącej na obniżonej ścianie (niska bryła, najwyżej ok. 0,2 pola) |
+| `cage3D`, `cageFront` | (1.27.5) zamknięta klatka z prętami; przednia połowa po złapanym bohaterze (rodzaj 7 w kolejce rysowania) |
+| `pBox`, `pRod`, `pCap`, `pCurve`, `pKnob`, `pOval`, `pDome`, `pRing`, `pBlade`, `pBone`, `pSkull`, `pSlab`, `pTuft`, `pFloorEll`, `kSh` | (1.27.5) bryły rekwizytów komnat w układzie świata (kSh: cieniowanie koloru z pamięci) |
+| `kwKit` | (1.27.5) bryły ozdób ścian komnat w układzie lica (pudełka, warstwy, wnęki, cienie na ścianie) |
+| `kindSolid` | (1.27.5) bryły dawniej wmalowane w tekstury ścian komnat (`WALL_STYLE.solid`/`solidV`) |
+| `sparkSet`, `sparkAdd`, `sparkRun`, `sparkBurst` | (1.27.5) cząsteczki pułapki (`TRAP_SPARKS`, najwyżej 16 na pułapkę, tylko przy wystrzale, bez `reduceMotion`) |
+| `WALL_3D` | (1.27.5) rysunki 3D ściennych pułapek (portret, lustro, oczy, strzały, ogień; wahadło i runa w `p7c_art.js`) |
 
 ## p7c_art.js (1.26: grafika malowana w kodzie)
 
@@ -955,6 +968,17 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `KIND_LIFE2`, `KIND_WALL3D` (lab, graveyard, abyssgate), `PROP_SCATTER`, `WALL_STYLE` | trzy nowe komnaty w systemach starych |
 | animacje w `trapFx`/`afx` (`swing`...) | odpalenia nowych pułapek i zdolności nowych potworów |
 | `MON_H2` | wysokości figur nowych potworów |
+| `trapOnFloor` | (1.27.5) rysowanie podłogowej pułapki 3D w przestrzeni ekranu z przebiegu podłogi (wnyki, przynęta) |
+| `jaw3D` | (1.27.5) szczęki wnyków / przynęty, otwarte albo zatrzaśnięte |
+| `grateRim` | (1.27.5) niska obręcz wokół kraty (zalanie, wyziewy, kolce, wabik) |
+| `rod3D`, `bone3D`, `skull3D`, `lathe3D`, `ring3D`, `slab3D`, `crystal3D`, `rubble3D` | (1.27.5) bryły elementów mapy: pręty, kości, czaszki, toczone (kielich), pierścienie (ogniwa), płyty (drzwi), kryształy serca, gruz |
+| `rxSolid`, `rxLathe`, `rxRod`, `rxBox`, `rxHCyl`, `rxXW`, `rxCrystal`, `rxHang`, `rxDrape` i inne `rx*` | (1.27.5) bryły rekwizytów i ozdób ścian efektów pokojów; `rxKeep` maluje nieruchome raz do małego canvasu (najwyżej 160) |
+| `rfxFloorCache` | (1.27.5) podłoga efektu pokoju malowana raz na pokój i krok przybliżenia (`RFX_FLOOR`), przycięta do pól (`rfxTilePath`) |
+| `rfxPlan` | (1.27.5) stały plan rekwizytów efektu w pokoju (`RFX_PLAN`, `rfxPropOk`: nie na pułapce, potworze, meblu, sercu) |
+| `rfxPropsSO` | (1.27.5) rekwizyty efektu do kolejki rysowania razem z rekwizytami komnaty |
+| `rfxLive` | (1.27.5) ruchoma warstwa podłogi efektu (`RFX_LIVE`, od T 14) |
+| `rfxAir` | (1.27.5) cząsteczki w powietrzu efektu (`RFX_AIR`, faza zegara, limit na pokój, od T 14) |
+| `rfxWall3D` | (1.27.5) ozdoby ścian efektu (`RFX_WALL3D`, od T 20) |
 
 ## p8a_icons.js (ikony)
 
@@ -1137,7 +1161,7 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `withTapCam` |  |
 | `tapWorld` |  |
 | `heroAtScreen` | the hero whose figure is under the finger (or close to it), on the screen |
-| `handleTap` |  |
+| `handleTap` | 1.27.5: w budowie dwa stuknięcia w wolne pole w `DOUBLE_TAP_MS` bez wybranego elementu stawiają jeszcze raz `lastPlaced` (`stats.repeatPlace`) |
 | `tryPlace` |  |
 | `localXY` |  |
 | `endPointer` |  |
@@ -1202,7 +1226,10 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `runeRoll` | (1.26) Runa rodu w sklepie: rodzina z wagą 3, gdy jej element stoi w lochu (inaczej 1), nigdy na poziomie 5 |
 | `runeBuy` | (1.26) kupno runy: `run.famLv[f] += 1` |
 | `heartOffer` | (1.26) rząd Dar serca: najstarszy czekający poziom z `run.heartPicks` (3 karty, z Dziesięciną 4; Odrost na poziomach nieparzystych, gdy brakuje kryształu); 1.26.1: rzadkość r 70% / l 30% (komentarz nad funkcją dalej podaje 55/35/10) |
-| `heartTake` | (1.26) weź kartę z rzędu Dar serca (talia, schowek, ★ albo Odrost) |
+| `heartTake` | (1.26) weź kartę z rzędu Dar serca (talia, schowek, ★ albo Odrost); 1.27.5: karta Daru zawsze do talii, każdy wybór w `fl.heartPicksLog` |
+| `reserveLow` | (1.27.5) czerwony napis na przycisku Wypuść falę: `hungerRisk() > 0` i zapas < 20% głodu (od fali 2, bez samouczka) |
+| `sameInRoom` | (1.27.5) elementy tego samego typu i poziomu w tym samym pokoju co `it` |
+| `upgradeAll` | (1.27.5) ulepsza wszystkie z `sameInRoom` (jedno cofnięcie, łączny koszt `upgradeAllCost`, przy poziomie 3 ta sama gałąź A/B) |
 | `heartLines` | (1.26) część serca w podsumowaniu fali; 1.27: "o włos: złodziej był X s od kryształu" tylko poniżej 3 s |
 | `genIcon` | (1.26) ikona dla kafelka bez rysunku: kolor i znak rodziny albo pierwsza litera |
 | `branchTrait` | (1.26) cecha poziomu 3 elementu (A albo B) |
