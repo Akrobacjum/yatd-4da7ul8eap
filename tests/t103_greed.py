@@ -22,9 +22,9 @@ async def main():
           return { relic, gold, refund, next, count: G.lootCount('loot3'), lv };
         })()""")
         print(r)
-        ok(r['relic'] == [10, 13, 16, 20, 25, 31], 'relics 10, 13, 16, 20, 25, 31')
-        ok(r['gold'] == [3, 4, 5, 6], 'coins 3, 4, 5, 6')
-        ok(r['refund'] == 31 and r['next'] == 31, 'taking the last one off gives back what it cost, and the next costs that again')
+        ok(r['relic'] == [8, 10, 11, 13, 14, 17], 'relics 8, 10, 11, 13, 14, 17 (1.26: x1,15)')
+        ok(r['gold'] == [3, 4, 4, 5], 'coins 3, 4, 4, 5 (1.26)')
+        ok(r['refund'] == 17 and r['next'] == 17, 'taking the last one off gives back what it cost, and the next costs that again')
         lv = r['lv']
         ok(lv['4'][0] > lv['1'][0] + 2 and lv['23'][0] > lv['4'][0] + 2 and lv['23'][0] < lv['4'][0] + 5.5, 'leader levels: +3 at greed 4, a few more at 23, no jump')
         ok(lv['1'][1] == 0 and lv['3'][1] == 1 and lv['4.5'][1] == 2 and lv['9'][1] == 3, 'hunters 0/1/2/3 at greed 1/3/4,5/9')

@@ -1,6 +1,6 @@
 # 04. Fale i bohaterowie (kto przychodzi, jak silny, co niesie)
 
-Sekcja specyfikacji portu prototypu "You are the dungeon" (Prototype 1.12.1, HTML/JS, uzupełniana do 1.24) do Unity 6 LTS (C#, Android, pion). Zmiany 1.18-1.24: więzi w drużynie (2.9), narzędzia gildii (2.6a), trudniejsze fale 1-4 (3.9), pochodzenie, ciężar i narzędzia przedmiotów (5.6), powracający z łupem (6.3), wyczerpanie zamiast teleportu na końcu fali (6.7), Nemezis (6.9), pamięć poległych (6.10), nauka w jednym runie (7). Opisuje skład każdej fali, siłę bohaterów, ich tożsamość (klasa, imię, charakter, ciało, fobia, blizna), ekwipunek, gildię, łowców skarbów, powracających, wyłom, plotki z karczmy i cierpliwość fali. Wszystkie liczby są skopiowane z kodu w `/home/claude/yatd-4da7ul8eap/src/`. Źródło każdej reguły podaję jako `plik.js: funkcja`.
+Sekcja specyfikacji portu prototypu "You are the dungeon" (Prototype 1.12.1, HTML/JS, uzupełniana do 1.26) do Unity 6 LTS (C#, Android, pion). Zmiany 1.18-1.24: więzi w drużynie (2.9), narzędzia gildii (2.6a), trudniejsze fale 1-4 (3.9), pochodzenie, ciężar i narzędzia przedmiotów (5.6), powracający z łupem (6.3), wyczerpanie zamiast teleportu na końcu fali (6.7), Nemezis (6.9), pamięć poległych (6.10), nauka w jednym runie (7). Zmiany 1.26 "Serce zabiera": cztery nowe klasy i pula klas według fali (2.2, 4.3a), omeny fal (6.11), słabszy czempion (2.5), łagodniejsze fale 1-4 (3.9), 4 nowe cechy (4.2), 4 nowe fobie (4.5), ciała z porażeniem (4.4), nowe style gildii (6.1). Opisuje skład każdej fali, siłę bohaterów, ich tożsamość (klasa, imię, charakter, ciało, fobia, blizna), ekwipunek, gildię, łowców skarbów, powracających, wyłom, plotki z karczmy i cierpliwość fali. Wszystkie liczby są skopiowane z kodu w `/home/claude/yatd-4da7ul8eap/src/`. Źródło każdej reguły podaję jako `plik.js: funkcja`.
 
 Inne sekcje (nie powtarzam ich treści): **03** przebieg runu, ekonomia (Groza × Chciwość × Combo = Esencja), sklep, karty; **05** pułapki, obrażenia, strach, skill checki; **06** AI bohaterów (ruch, decyzje, drużyna, mowa); **07** mapa, stawianie, pętla, zapis; **08** UI, kamera, grafika, audio, samouczek.
 
@@ -64,15 +64,21 @@ RUN_WAVES    = 10
 ### 2.2 Klasy: CLASSIC kontra PARTY, bez powtórzeń
 
 ```
-classes = shuffle(copy(n <= 3 ? CLASSIC : PARTY)).slice(0, size)
+om = OMENS[omenOf(n)] || {}                                     // 1.26: omen fali (rozdz. 6.11)
+size = max(1, waveSize(n) + (om.extra || 0))                    // Oblężenie +2, Elita -1
+classes = shuffle(copy(partyPool(n))).slice(0, size)            // 1.26; do 1.25.1: n <= 3 ? CLASSIC : PARTY
+if classes.length < size: dopełnij klasami z partyPool(max(n, 6)) spoza składu (a gdy zabraknie, losowymi z PARTY)   // Oblężenie: więcej ludzi niż klas
 g = run.guild = guildAdapt(n)                                   // rozdz. 6.1
 if (g && !classes.includes(GUILD_WANT[g.kind]))
     classes[size > 1 ? 1 : 0] = GUILD_WANT[g.kind]              // specjalista gildii na indeksie 1
+if om.force: wymuś klasy omenu (Inkwizycja: kapłan i paladyn; Saperzy: złodziej i tropiciel, przed falą 6 dwóch złodziei)
+    // po gildii (poprawka po przeglądzie 1.26): klasa już w składzie zostaje, brakującą wpisuje od końca listy na miejsce jeszcze niezajęte przez omen
+partyPool(n) = n <= 3 ? CLASSIC : n <= 5 ? PARTY + [paladin, ranger] : PARTY + [paladin, ranger, alchemist]   // p1_config.js
 ```
-Źródło: `p3_flow.js: makeWave`.
+Źródło: `p3_flow.js: makeWave`; `p1_config.js: partyPool`.
 
-- `CLASSIC` = 4 klasy klasyczne (wojownik, złodziej, kapłan, mag), `PARTY` = 6 klas (plus bard i barbarzyńca). Dane: `data/CLASSIC.json`, `data/PARTY.json`.
-- Losowanie bez zwracania, więc **nigdy dwie postacie tej samej klasy** w fali (6 klas, maks. 6 bohaterów).
+- `CLASSIC` = 4 klasy klasyczne (wojownik, złodziej, kapłan, mag), `PARTY` = 6 klas (plus bard i barbarzyńca). Od 1.26 pula od fali 4 ma 8 klas (plus paladyn i tropiciel), od fali 6 9 klas (plus alchemik). Kultysta nie jest w puli: przychodzi tylko z omenem Pielgrzymka (rozdz. 6.11). Dane: `data/CLASSIC.json`, `data/PARTY.json` (bez nowych klas, załącznik A).
+- Losowanie bez zwracania, więc **nigdy dwie postacie tej samej klasy** w fali. Wyjątki 1.26: Saperzy przed falą 6 wstawiają dwóch złodziei, a Oblężenie przy braku klas w puli bierze losową z `PARTY` (może się powtórzyć).
 - Fale 1-3: tylko klasy klasyczne. Wyjątek: w fali 3 gildia może wstawić barda (`lost`) albo barbarzyńcę (`block`), bo podmiana działa niezależnie od puli.
 - Podmiana gildii trafia zawsze w indeks 1 (nigdy przywódca, nigdy łowca, nigdy rekrut: patrz 2.3), chyba że klasa specjalisty już jest w składzie (wtedy nic się nie zmienia, nawet jeśli specjalista jest łowcą albo rekrutem).
 
@@ -82,18 +88,22 @@ Kolejność na liście ma znaczenie: indeks 0 to "przywódca" (dostaje premię p
 
 ```
 size    = waveSize(n)
-hunters = (n >= 3 && stageOf() >= 4) ? min(size - 2, huntersN(greedRaw(run.greedRep || 1))) : 0
+hunters = (n >= 3 && stageOf() >= 4) ? max(0, min(size - 2, huntersN(greedRaw(run.greedRep || 1)) + (om.hunters || 0))) : 0   // 1.26: Złoty szał +1
 recruit = n >= 4 && partySize(n) > partySize(n - 1) && !bossOf(n)
 base    = waveBase(n)                       // rozdz. 3.1
-hl      = huntersLv()                       // rozdz. 3.2 (premia z chciwości)
+hl      = huntersLv() × (mods.croesus ? 1.5 : 1)   // rozdz. 3.2 (premia z chciwości); 1.26: Krezus ×1,5
 for i in 0 .. size-1:
     isHunter  = i >= size - hunters
     isRecruit = recruit && !isHunter && i == size - hunters - 1 && i >= 2
     bonus     = i == 0 ? 1 + hl : isRecruit ? -3 : hl / 2
-    L = max(1, round(base + bonus + rnd() * 1.7 - 1.2))
+    L = max(1, round(base + bonus + rnd() * 1.7 - 1.2) + mods.crownLv + (om.lvAdd || 0))   // 1.26: Przeklęta korona +1, omen (Oblężenie -2, Elita +3, Inkwizycja +1)
     if (tutW1(n)) L = min(L, 2)                 // 1.24; do 1.23: if (n <= 2) L = min(L, tutW1(n) ? 2 : 4)
+    else if (n <= 2 && run.tutorial) L = min(L, 4)   // 1.25.1: run z przewodnikiem jak v58
     e = makeHero(classes[i], L, n, used)
     if isHunter:  e.trait = 'greedy'; e.hunter = true
+    if om.greedAll && !e.boss: e.trait = 'greedy'                   // 1.26 Złoty szał
+    if om.gear: e.inv += rollItem(2, GEAR_POOL)                     // 1.26 Elita: +1 przedmiot
+    if om.fog: e.fog = true                                         // 1.26 Mgła wojny: podgląd ukrywa bohatera
     if isRecruit: e.recruit = true
 ```
 Źródło: `p3_flow.js: makeWave`.
@@ -102,7 +112,7 @@ for i in 0 .. size-1:
 - **Przywódca** (indeks 0): +1 poziom + pełna premia chciwości `hl`. Pozostali (także łowcy): `hl / 2`.
 - **Rekrut** ("najnowszy członek jest nowicjuszem przez jedną falę"): tylko w falach, w których drużyna rośnie (`partySize(n) > partySize(n-1)`), od fali 4 i nie w falach bossa. W praktyce: fala 4 (3 -> 4) i fala 11 (4 -> 5); fala 15 (5 -> 6) jest falą bossa, więc bez rekruta. Rekrut to ostatni nie-łowca, o ile ma indeks >= 2; poziom bazowy -3 zamiast `hl/2`. Przy 2 łowcach w fali 4 rekruta nie ma (wypadłby na indeks 1).
 - **Limit poziomu**: od 1.24 tylko w pierwszej fali samouczka (maks. 2); do 1.23 także maks. 4 w falach 1-2. Nie dotyczy bossów ani powracających.
-- Na końcu `makeWave` (od 1.20) gildia dokłada narzędzia (2.6a), a od 1.21 `makeBonds(list, n)` łączy część bohaterów w pary (2.9).
+- Na końcu `makeWave` (od 1.20) gildia dokłada narzędzia (2.6a), od 1.26 Pielgrzymka zamienia 2 ostatnich zwykłych bohaterów (nie bossa, nie łowcę, nie powracającego) na kultystów tego samego poziomu (rozdz. 6.11), a od 1.21 `makeBonds(list, n)` łączy część bohaterów w pary (2.9).
 - `used` = zbiór imion (mianownik) już nadanych w tej fali (rozdz. 4.1).
 
 ### 2.4 Powracający wstawiani do fali
@@ -142,12 +152,12 @@ for r in run.returners (od 1.23 posortowani: Nemezis pierwszy)
 
 ```
 boss = bossOf(n)
-if boss: list[0] = makeHero(list[0].type, round(base + hl) + (boss == 'final' ? 5 : 2), n, used, boss)
+if boss: list[0] = makeHero(list[0].type, round(base + hl) + (boss == 'final' ? 5 : 0), n, used, boss)   // 1.26: czempion +0 (było +2)
 ```
 Źródło: `p3_flow.js: makeWave`, `makeHero`.
 
-- Boss zastępuje indeks 0 (przywódcę), ma klasę wylosowaną dla tego miejsca, nowe imię, poziom bez szumu: `round(base + hl) + 2` (czempion) albo `+ 5` (przepowiednia).
-- Mnożniki bossa w `makeHero`: HP ×1.7 (czempion) / ×3 (przepowiednia); odwaga ×1.5 / ×2; ekwipunek z poziomu `lvl + 2`.
+- Boss zastępuje indeks 0 (przywódcę), ma klasę wylosowaną dla tego miejsca, nowe imię, poziom bez szumu: od 1.26 `round(base + hl)` (czempion, czyli ok. 1 poziom poniżej zwykłego przywódcy; do 1.25.1 `+ 2`) albo `+ 5` (przepowiednia). Poziom bossa nie dostaje dodatku omenu ani Przeklętej korony (liczony od nowa).
+- Mnożniki bossa w `makeHero`: HP ×1.3 (czempion, od 1.26; było ×1.7) / ×3 (przepowiednia); odwaga ×1.3 (od 1.26; było ×1.5) / ×2; ekwipunek z poziomu `lvl + 2`. Okrzyk czempiona co 25 s (było 15 s, rozdz. 6.8). Plan: w danych testowych fala 5 kosztowała kryształ w 53% fal, a głód fali 5 rośnie w 1.26 z 72 do 104.
 - Boss **nie ma charakteru** (`trait` losowany tylko gdy `!boss`) i **nie ma fobii**, ale może mieć ciało (`phys`). Nie zostaje powracającym (`collectReturners` pomija `h.boss`).
 - Zasady bossa w trakcie fali są w rozdz. 6.8.
 
@@ -207,11 +217,11 @@ makeBonds(list, n):                                // na końcu makeWave, po pow
 
 ### 2.7 Przywódca w trakcie fali (`LEADER_ORDER`)
 
-Indeks 0 na liście to tylko "przywódca" przy liczeniu poziomów. W trakcie fali przywódcę wybiera `p5_ai.js: leader()`: jeśli obecny przywódca nie żyje, wyszedł, zniknął (`gone`), zgubił się, panikuje, siedzi w klatce albo ucieka (gdy drużyna nie ucieka), to spośród żywych, niezgubionych, niepanikujących, niezamkniętych i nieuciekających wybiera najwyższy `rank` (tier, rozdz. 3.5), a przy remisie wcześniejszą klasę w `LEADER_ORDER` = wojownik, barbarzyńca, kapłan, bard, mag, złodziej (`data/LEADER_ORDER.json`). Brak kandydatów: pierwszy żywy. Szczegóły zachowania przywódcy: sekcja 06.
+Indeks 0 na liście to tylko "przywódca" przy liczeniu poziomów. W trakcie fali przywódcę wybiera `p5_ai.js: leader()`: jeśli obecny przywódca nie żyje, wyszedł, zniknął (`gone`), zgubił się, panikuje, siedzi w klatce albo ucieka (gdy drużyna nie ucieka), to spośród żywych, niezgubionych, niepanikujących, niezamkniętych i nieuciekających wybiera najwyższy `rank` (tier, rozdz. 3.5), a przy remisie wcześniejszą klasę w `LEADER_ORDER` = od 1.26 wojownik, paladyn, barbarzyńca, kapłan, bard, tropiciel, mag, alchemik, złodziej (do 1.25.1: wojownik, barbarzyńca, kapłan, bard, mag, złodziej, `data/LEADER_ORDER.json`). Kultysty nie ma w `LEADER_ORDER`; od poprawki po przeglądzie 1.26 `leader()` wymienia przywódcę-kultystę, gdy żyje ktoś inny, kto nie jest kultystą, nie zgubił się i nie siedzi w klatce, więc kultysta prowadzi tylko wtedy, gdy nikt inny nie może. Brak kandydatów: pierwszy żywy. Szczegóły zachowania przywódcy: sekcja 06.
 
 ### 2.8 Fale bez końca (po 10)
 
-Nic specjalnego poza wzorami: `partySize` rośnie do 5 (fale 11-14) i 6 (od 15), `grozaTyp` rośnie liniowo, `SIZE_LV` daje +1.0 w falach 10-14 i 0 od 15, `endlessLv` dodaje 1.5 poziomu co 5 fal od 15 (rozdz. 3.1). Bossowie co 5 fal. Tablice `EARLY_LV`, `EARLY_HP`, `START_LV` mają wartości tylko do fali 10 (dalej 0). `comboHp` = 1.2 na stałe.
+Poza wzorami od 1.26 omen w każdej fali bez bossa (rozdz. 6.11). `partySize` rośnie do 5 (fale 11-14) i 6 (od 15), `grozaTyp` rośnie liniowo, `SIZE_LV` daje +1.0 w falach 10-14 i 0 od 15, `endlessLv` dodaje 1.5 poziomu co 5 fal od 15 (rozdz. 3.1). Bossowie co 5 fal. Tablice `EARLY_LV`, `EARLY_HP`, `START_LV` mają wartości tylko do fali 10 (dalej 0). `comboHp` = 1.2 na stałe.
 
 ---
 
@@ -317,8 +327,8 @@ tierOf(L) = L <= 2 ? 0 : L <= 5 ? 1 : L <= 9 ? 2 : 3
 
 ```
 comboHp(n) = 1 + COMBO_HP * min(1, max(0, n - 1) / 4)          // COMBO_HP = 0.2 (p1_config.js)
-bm         = boss == 'final' ? 3 : boss ? 1.7 : 1
-max        = round(HEROES[type].hp * levelStats(lvl).hp * bm * S.heroHp / 100 * earlyHpK(n))
+bm         = boss == 'final' ? 3 : boss ? 1.3 : 1                            // 1.26: czempion 1.3 (było 1.7)
+max        = round(HEROES[type].hp * levelStats(lvl).hp * bm * S.heroHp / 100 * earlyHpK(n) * (omenK(n, 'hpK') || 1))   // 1.26: Krwawy księżyc ×1.2
 hpK0(m)    = (1 + (EARLY_HP[m] || 0) * S.earlyHp) * comboHp(m)               // 1.24: dodatek HP do 1.23
 earlyHpK(n) = max(hpK0(n), atW(hpK0, earlyW(n)))                             // 1.24: HP fali, jak którą gra (nigdy poniżej własnego)
 h.hpK      = atW(comboHp, earlyW(n))                                         // Groza i strach z ran liczone względem max / hpK
@@ -326,7 +336,7 @@ hp         = max                                                // pełne HP na 
 ```
 Źródło: `p3_flow.js: makeHero`; `p1_config.js: comboHp, COMBO_HP`.
 
-- `HEROES[type].hp`: bazowe HP klasy (`data/HEROES.json`: wojownik 120, złodziej 70, kapłan 80, mag 65, bard 75, barbarzyńca 135).
+- `HEROES[type].hp`: bazowe HP klasy (`data/HEROES.json`: wojownik 120, złodziej 70, kapłan 80, mag 65, bard 75, barbarzyńca 135; od 1.26 paladyn 110, tropiciel 80, alchemik 70, kultysta 75).
 - `EARLY_HP[n]`: dodatkowe HP w falach 1-6 (+25%, +25%, +40%, +40%, +15%, +25%), skalowane suwakiem `S.earlyHp` (0 = bez, 2 = podwójnie). Uwaga: etykieta suwaka mówi "fale 2-6", ale fala 1 też dostaje +25%.
 - `comboHp(n)` (nowe w 1.12): rekompensata za mocniejsze combo pułapek (sekcja 05): fala 1 ×1.00, 2 ×1.05, 3 ×1.10, 4 ×1.15, od 5 ×1.20. Od 1.12.1 bohater pamięta ten mnożnik (`hpK: comboHp(n)` w `makeHero`, przepisywany w `spawnHero`), a Groza i strach z ran liczą się względem `h.max / h.hpK` (sekcja 05, `damage`): dodatek wydłuża najazd, ale nie obniża przychodu.
 - `n` w `makeHero` to numer fali, dla której powstaje wpis (także u powracających).
@@ -334,18 +344,19 @@ hp         = max                                                // pełne HP na 
 ### 3.7 Odwaga, szybkość, obrażenia
 
 ```
-ck      = trait == 'coward' ? 0.8 : trait == 'brave' ? 1.2 : 1
-courage = round(levelStats(lvl).courage * (boss == 'final' ? 2 : boss ? 1.5 : 1) * ck)
+ck      = (trait == 'coward' ? 0.8 : trait == 'brave' ? 1.2 : 1)
+          * (type == 'paladin' ? 1.4 : type == 'ranger' ? 0.9 : 1) * (omenK(n, 'courage') || 1)   // 1.26: przysięga paladyna, nerwy tropiciela, Noc strachu ×0.8
+courage = round(levelStats(lvl).courage * (boss == 'final' ? 2 : boss ? 1.3 : 1) * ck * (pre.nemesis ? 1.4 : 1))   // 1.26: czempion ×1.3 (było ×1.5); 1.23: Nemezis ×1.4
 ```
 Źródło: `p3_flow.js: makeHero`. W `spawnHero`: `h.courage = e.courage || R.courage`, `h.fear = 0`.
 
-- Szybkość (pola na sekundę): `T.speed * R.speed * S.heroSpeed/100 * (modyfikatory stanu)`; modyfikatory (sieć, panika, ucieczka, furia, buty, sakiewka, bagno, szarża...) są w sekcji 06 (`p5_ai.js: updateHero`). Bazowe `HEROES.speed`: wojownik 1.5, złodziej 1.9, kapłan 1.3, mag 1.3, bard 1.4, barbarzyńca 1.45.
-- Obrażenia w walce z potworem na sekundę: `T.dps * R.dps * (wojownik ? 1.4 : 1) * (furia ? 1.5 : 1) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h))` (`p4_traps.js: monstersTick`). Bazowe `HEROES.dps`: 18, 10, 6, 8, 7, 20 (w kolejności jak wyżej). Bohaterowie nie ranią pułapek.
-- `HEROES.greed` (0.6, 1.5, 0.9, 1.0, 1.2, 0.7) mnoży wartość łupu w `p5_ai.js: lootDecision` (sekcja 06).
+- Szybkość (pola na sekundę): `T.speed * R.speed * S.heroSpeed/100 * (modyfikatory stanu)`; modyfikatory (sieć, panika, ucieczka, furia, buty, sakiewka, bagno, szarża...) są w sekcji 06 (`p5_ai.js: updateHero`). Bazowe `HEROES.speed`: wojownik 1.5, złodziej 1.9, kapłan 1.3, mag 1.3, bard 1.4, barbarzyńca 1.45; od 1.26 paladyn 1.35, tropiciel 1.6, alchemik 1.35, kultysta 1.4. Od 1.26 dochodzą mnożniki: Mokry ×0.8, Unieruchomiony stoi, Pośpiech ×1.2, uciekający przy Piekielnej sforze ×0.8 (sekcja 06, 6.16).
+- Obrażenia w walce z potworem na sekundę: `T.dps * R.dps * (wojownik ? 1.4 : 1) * (paladyn i potwór z rodziny nieumarłych albo demonów ? 1.5 : 1) * (furia ? 1.5 : 1) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h))` (`p4_traps.js: monstersTick`). Bazowe `HEROES.dps`: 18, 10, 6, 8, 7, 20 (w kolejności jak wyżej); od 1.26 paladyn 14, tropiciel 12, alchemik 7, kultysta 6. Bohaterowie nie ranią pułapek.
+- `HEROES.greed` (0.6, 1.5, 0.9, 1.0, 1.2, 0.7; od 1.26 paladyn 0.7, tropiciel 1.1, alchemik 1.0, kultysta 0, a kultysta i tak nie bierze łupu) mnoży wartość łupu w `p5_ai.js: lootDecision` (sekcja 06).
 
 ### 3.8 Tabela przykładowa: fale 1-15
 
-Stan 1.23: od 1.24 fale 1-4 są mocniejsze (3.9); wiersze fal 5-15 i bossów obowiązują dalej. Policzone node'em z kodu (`waveBase`, `levelStats`, `comboHp`, `EARLY_HP`) dla: zwykły run (nie samouczek), `S` domyślne, chciwość z poprzedniej fali 1 (`hl = 0`), bez kart. "E[L]" = wartość oczekiwana poziomu z szumem i limitem fal 1-2, w nawiasie zakres. "Typowy L" = `round(waveBase)` (z limitem 4 w falach 1-2). HP i odwaga dla typowego L, bez bossa i bez charakteru.
+Stan 1.23: od 1.24 fale 1-4 są inne (3.9); wiersze fal 5-15 obowiązują dalej, ale od 1.26 czempion ma poziom `round(base + hl)` (fala 5: 7 zamiast 9), HP ×1.3 i odwagę ×1.3 (tabela bossów niżej jest ze stanu 1.23), a omeny fal 3, 6 i 8 zmieniają liczebność i poziomy (6.11). Policzone node'em z kodu (`waveBase`, `levelStats`, `comboHp`, `EARLY_HP`) dla: zwykły run (nie samouczek), `S` domyślne, chciwość z poprzedniej fali 1 (`hl = 0`), bez kart. "E[L]" = wartość oczekiwana poziomu z szumem i limitem fal 1-2, w nawiasie zakres. "Typowy L" = `round(waveBase)` (z limitem 4 w falach 1-2). HP i odwaga dla typowego L, bez bossa i bez charakteru.
 
 | Fala | party / fala | Boss | waveBase | Przywódca E[L] | Reszta E[L] | Typowy L | Ranga | R.hp | ×EARLY_HP | ×comboHp | HP razem (R.hp×E×C) | HP wojownika | HP maga | Odwaga |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -387,10 +398,17 @@ Bossowie (te same założenia, `hl = 0`):
 
 ### 3.9 Trudniejszy początek runu (1.24, w 1.25.1 w połowie cofnięty; `p3_flow.js: EARLY_W, EARLY_W_TUT, earlyW, atW, waveBase0, waveBase, hpK0, earlyHpK, tutW1`)
 
+**1.26 (plan "Serce zabiera", 5.1):** w nowej ekonomii loch w falach 2-4 jest mniejszy (mniej Esencji), więc krzywa znowu łagodnieje:
+```
+EARLY_W     = [0, 1.5, 2.25, 3, 4]      // od 1.26: fala 1 jak dawna 1,5, potem 2,25 / 3 / 4; od fali 5 bez zmian
+EARLY_W_TUT = [0, 1, 2, 3, 4]           // bez zmian
+```
+W modelu autora stary `EARLY_W` przy nowej ekonomii dawał straty kryształu 0,37-0,44 w falach 2-3; łagodniejszy obniża je o ok. 0,09, resztę robi niższy głód fal 3-4 (50 i 72). Test `t124a_play` sprawdza krzywą 1,5 / 2,25 / 3 / 4.
+
 **1.25.1 (dane z playtestów 1.24-1.25):** 5 runów na 1.24/1.25 wobec 23 na v58: utracony kryształ w fali 2 11% -> 40%, w fali 3 7% -> 75%, w fali 4 21% -> 33%, w fali 5 62% -> 0% (próbka bardzo mała: 3 graczy). Nowy gracz przegrał pierwszy run z przewodnikiem w fali 3 (fala 2 przyszła z poziomami 5-7 zaraz po 2 nowicjuszach). Loch w fali 2-3 jest jeszcze mały, a poziomy były jak dawniej w fali 4-5. Zmiana:
 
 ```
-EARLY_W     = [0, 2, 2.75, 3.5, 4.25]   // od 1.25.1: fala 1 jak dawna 2, potem 2,75 / 3,5 / 4,25; od fali 5 bez zmian
+EARLY_W     = [0, 2, 2.75, 3.5, 4.25]   // 1.25.1 (od 1.26 inne, niżej): fala 1 jak dawna 2, potem 2,75 / 3,5 / 4,25; od fali 5 bez zmian
 EARLY_W_TUT = [0, 1, 2, 3, 4]           // pierwszy run z przewodnikiem (run.tutorial): krzywa v58, z limitem poziomu 4 w falach 1-2
 earlyW(n)   = tutW1(n) || n >= 5 ? n : (run.tutorial ? EARLY_W_TUT : EARLY_W)[n]
 ```
@@ -436,7 +454,7 @@ used.add(nm[0])
 
 ### 4.2 Charakter (`HERO_TRAITS`)
 
-Losowanie: `if (!boss && rnd() < 0.5) trait = pick(keys(HERO_TRAITS))`; `pre.trait` (powracający) nadpisuje, także wartością `null`. Łowca skarbów dostaje `'greedy'` na stałe. Pole `w` w `HERO_TRAITS` (wagi = 1) **nie jest używane** (losowanie równomierne). Źródło: `p3_flow.js: makeHero, makeWave`.
+Losowanie: `if (!boss && type !== 'cultist' && rnd() < 0.6) trait = pick(keys(HERO_TRAITS))` (od 1.26 60% i 8 charakterów; do 1.25.1 50% i 4); `pre.trait` (powracający) nadpisuje, także wartością `null`. Łowca skarbów i każdy w Złotym szale dostaje `'greedy'` na stałe. Pole `w` w `HERO_TRAITS` (wagi = 1) **nie jest używane** (losowanie równomierne). Źródło: `p3_flow.js: makeHero, makeWave`.
 
 Opis dla gracza: `TRAIT_TEXT` (`p8b_ui.js`, przepisane w całości):
 ```
@@ -444,6 +462,10 @@ greedy:  'idzie po łup mimo ryzyka'
 coward:  'panikuje wcześniej, śmierć towarzysza straszy go mocniej'
 brave:   'śmierć towarzysza zamienia w furię'
 careful: 'sprawdza podłogę, rzadziej wpada w pułapki'
+superstitious: 'rekwizyty strachu i Nawiedzenie straszą go 1,4 raza mocniej, nie tknie przeklętego łupu'    // 1.26
+curious: 'widzi łup z daleka (+4 pola), chętnie zagląda wszędzie'
+loyal:   'zawsze ratuje uwięzionych, biegnie na wołanie o pomoc nawet przez pułapki'
+hothead: 'idzie przez znane pułapki, raz na falę zamiast paniki wpada w furię, wytrzyma 10% więcej strachu'
 ```
 
 Wszystkie skutki w kodzie:
@@ -471,14 +493,30 @@ Wszystkie skutki w kodzie:
 | | wartość łupu ×0.6, kwestia `lootCareful` przy rezygnacji | `p5_ai.js: lootDecision` |
 | | na naradzie mówi `argueCareful`; przy wejściu 40% na kwestię `cautious`; odpowiada na "chciwe" kwestie | `p5_ai.js: chooseTarget`, `p3_flow.js: spawnHero` |
 | | 1.17: jako przywódca wybiera bliższe cele (odległość ×1,15, mało przypadku), omija pułapkę usłyszaną zza ściany, chętnie pozwala zwiedzać (0,5); na naradzie dom +0,4 | `p5_ai.js: chooseTarget, lookRoll, councilVote` |
+| superstitious (przesądny/a, 1.26) | strach od rekwizytów strachu (`SCARE`) i elementów rodziny Nawiedzenie ×1.4 | `p3_flow.js: fearResist` |
+| | nie bierze przeklętego łupu (ani przeklętego przedmiotu) | `p5_ai.js: lootDecision` |
+| | kwestie `chat_superstitious` | `p5_ai.js` |
+| curious (ciekawski/a, 1.26) | zasięg widzenia łupu +4 pola | `p5_ai.js: lootSeen` |
+| | jako przywódca chętniej zwiedza pokój: bazowa szansa rozglądania 0,7 (po przeglądzie 1.26; inni 0,15-0,55, bez charakteru 0,4) | `p5_ai.js: lookRoll` |
+| | kwestie `chat_curious` | `p5_ai.js` |
+| loyal (lojalny/a, 1.26) | drużyna z lojalnym zawsze ratuje uwięzionego (decyzja ratunku = tak) | `p5_ai.js: rescueThink` (wywołanie w drużynie) |
+| | biegnie na wołanie o pomoc (Wezwanie po krzyk, do 10 pól), z `avoid` ×0.3, i uwalnia unieruchomionego albo uwiedzionego | `p5_ai.js: heroAI126, planHero` |
+| | po śmierci przyjaciela, rodzeństwa albo mistrza (więź, nie rywal, nie uczeń w roli ucznia) zawsze próbuje ślubować zemstę (`startRage(o, 'vow')`, jak odważny i barbarzyńca; po przeglądzie 1.26) | `p5_ai.js: griefOf` |
+| | kwestie `chat_loyal` | `p5_ai.js` |
+| hothead (zapaleniec, 1.26) | `avoid` ×0.7 przy planowaniu ścieżki | `p5_ai.js: planHero` |
+| | limit strachu ×1.1 | `p3_flow.js: addFear` |
+| | raz na falę zamiast paniki wpada w furię (`startRage(h, 'panic')`, strach -25% limitu, `stats.rageNoPanic`) | `p3_flow.js: addFear` |
+| | kwestie `chat_hothead` | `p5_ai.js` |
 
-Uwaga: tekst "sprawdza podłogę" nie ma pokrycia w kodzie dla charakteru (spowolnienie na nieznanych polach daje `R.caution`, zależne tylko od poziomu >= 6).
+Uwaga: tekst "sprawdza podłogę" nie ma pokrycia w kodzie dla charakteru (spowolnienie na nieznanych polach daje `R.caution`, zależne tylko od poziomu >= 6). Plan 1.26 dawał nowym cechom więcej zachowań, których kod nie ma (otwarte, sekcja 11): przesądny nie wchodzi pierwszy do pokoju z portretem albo lustrem (czeka); ciekawski sprawdza każdą usłyszaną pułapkę i dwa razy częściej przeszukuje meble; zapaleniec szarżuje na każdego potwora i w 30% idzie przez znaną pułapkę (kod: tylko `avoid` ×0.7). Częstsze rozglądanie ciekawskiego i zemsta lojalnego są w kodzie od poprawki po przeglądzie. `TRAIT_TEXT` zapaleńca ("idzie przez znane pułapki") opisuje więcej, niż kod robi.
 
 ### 4.3 Klasa: dane, odporności, umiejętności
 
 `HEROES[type]` (`data/HEROES.json`): `name` [m, f], `hp`, `speed`, `dps`, `color` (kolor postaci/listy), `letter` (litera klasy; w 1.12 nigdzie nieużywana, martwe dane), `greed` (mnożnik wartości łupu).
 
-**Odporności klasy** `CLASS_RES` (`data/CLASS_RES.json`, opis dla gracza `CLASS_RES_TEXT`): mnożnik obrażeń danego typu; brak wpisu = 1. Typ obrażeń wynika z `DMG_OF` (`data/DMG_OF.json`): kłute (spikes, arrows, archer, goblin, mimic, bats), obuchowe (gate, ogre, trapdoor), ogień (fire, powder, a także podpalenie `BURN`; od 1.17.1 bez krwawienia z kolców, `burnBy 'spikes'`, które jest kłute, sekcja 05, 5.3.2), trucizna (spider, shaman, loot = karta Zatruty łup). Pułapki bez typu (np. web, cage, straszące) nie mają mnożnika typu. Pełny mnożnik:
+**Odporności klasy** `CLASS_RES` (`data/CLASS_RES.json`, opis dla gracza `CLASS_RES_TEXT`): mnożnik obrażeń danego typu; brak wpisu = 1. Typ obrażeń wynika z `DMG_OF` (`data/DMG_OF.json`): kłute (spikes, arrows, archer, goblin, mimic, bats; od 1.26 też pendulum, snare, bait, skeleton, sapper, rats), obuchowe (gate, ogre, trapdoor; od 1.26 lich, warlord), ogień (fire, powder, a także podpalenie `BURN`; od 1.17.1 bez krwawienia z kolców, `burnBy 'spikes'`, które jest kłute, sekcja 05, 5.3.2; od 1.26 tar, hound, demon), trucizna (spider, shaman, loot = karta Zatruty łup; od 1.26 miasma, zombie, tyknięcia trucizny i zarazy), od 1.26 porażenie `shock` (bolt). Pułapki bez typu (np. web, cage, straszące) nie mają mnożnika typu.
+
+1.26: `CLASS_RES` wojownik `{ pierce 0.75, blunt 1.25, shock 1.2 }`, mag `{ pierce 1.25, blunt 1.1, fire 0.7, shock 0.8 }`, paladyn `{ fire 0.9, blunt 0.9, shock 1.2 }`, tropiciel `{ pierce 0.9, shock 0.9 }`, alchemik `{ poison 0.5, fire 0.85 }`, kultysta `{}`; pozostałe klasy bez zmian. Zbroja z łupu zwiększa porażenie ×(1 + 0.05 × r) (sekcja 05, 5.14). Pełny mnożnik:
 
 ```
 typeMult(h, dtp):
@@ -503,6 +541,24 @@ typeMult(h, dtp):
 
 Dodatkowo każdy bohater z bombą rzuca ją w znane pułapki (rozdz. 5.3), a każdy może wpaść w furię z innych powodów (sekcja 06).
 
+### 4.3a Nowe klasy (1.26, `p1_config.js: HEROES, CLASS_RES, CLASS_SKILL, CLASS_ICON, KIT, CARRY, LEADER_ORDER, partyPool`; `p5_ai.js: newClassTick, heroAI126, planHero, updateHero`; `p3_flow.js: makeHero, makeWave, fearResist, kill`)
+
+| Klasa | HP | Prędkość | dps | `greed` | Udźwig | Litera, kolor | Kiedy przychodzi |
+|---|---|---|---|---|---|---|---|
+| paladyn / paladynka | 110 | 1.35 | 14 | 0.7 | 15 | P, `#f0e2a8` | od fali 4 w puli; Inkwizycja; gildia przy nieumarłych i demonach |
+| tropiciel / tropicielka | 80 | 1.6 | 12 | 1.1 | 10 | T, `#c8904e` | od fali 4 w puli; Saperzy od fali 6; gildia przy latających |
+| alchemik / alchemiczka | 70 | 1.35 | 7 | 1.0 | 12 | A, `#e070b0` | od fali 6 w puli; gildia przy reakcjach |
+| kultysta / kultystka | 75 | 1.4 | 6 | 0 | 8 | C, `#b8323e` | tylko z omenem Pielgrzymka (od fali 6), 2 zamiast 2 ostatnich zwykłych |
+
+| Klasa | Co umie (liczby z kodu) | Źródło |
+|---|---|---|
+| paladyn | Przysięga: sojusznicy w promieniu 3 mają strach ×0.8 (przy Ołtarzu ×0.9); nie sumuje się z aurą kapłana, liczy się mocniejsza. Odwaga ×1.4. Drużyna z paladynem zawsze ratuje uwięzionego; biegnie na wołanie o pomoc (jak lojalny). W walce ×1.5 obrażeń nieumarłym i demonom. Święta aura: unoszące się potwory w promieniu 1.5 pola tracą `10 × R.pow` HP/s. Odporny na Zew kusicielki (`setStatus` odrzuca uwiedzenie), a w pokoju z nim (jak z kapłanem albo śpiewającym bardem) Zew się przerywa. Szkieletu, którego dobił, nie da się złożyć. Kwestie `oath`. Wyposażenie `KIT`: mikstura 3, talizman 2, amulet 2. | `p3_flow.js: fearResist, makeHero`; `p4_traps.js: monstersTick, setStatus, fireRaw (siren), monsterDown`; `p5_ai.js: newClassTick, heroAI126` |
+| tropiciel | Wykrywa pułapki podłogowe w promieniu 2 (jak złodziej; bez innych źródeł wykrywania tylko podłogowe). Tropienie co 1 s: potwory w jego pokoju i sąsiednich stają się znane drużynie (`m.trackedW`, zagrożenie na mapie, ścieżka je omija). Strzał: gdy nie walczy i nie wychodzi, rani najbliższego potwora w swoim pokoju do 4 pól `12 × R.dps` na sekundę, pierwszy strzał w unoszącego się ×2. Odwaga ×0.9. Nie rozbraja. Kwestie `rangerIdle`. Wyposażenie: mikstura 3, buty 2, bomba 1. | `p5_ai.js: newClassTick, scanTraps`; `p4_traps.js: rebuildThreat`; `p3_flow.js: makeHero` |
+| alchemik | Antidotum co 10 s (gdy ktoś w promieniu 3 ma podpalenie, krwawienie, truciznę, olej, wodę albo spowolnienie): zdejmuje te statusy i leczy 8% maks. HP, kwestia `antidote`, `stats.antidotes`. Flaszka co 12 s: najpierw kończy na dobre chmurę albo strefę z polem w promieniu 3 (plan: na 6 s) (Wyziewy, sieć, Topiel), inaczej rani najbliższego potwora w pokoju do 4 pól `60 × R.pow`; `stats.flasks`. Kwestie `alchIdle`. Wyposażenie: mikstura 4, bomba 2, amulet 1. | `p5_ai.js: newClassTick` |
+| kultysta | Cel: serce, nie kryształ. Idzie najkrótszą znaną drogą do serca (`intent 'cult'`, bez łupu). Przy sercu stan `'drink'`: Spijanie `6 × (1 + 0.05 L)` Esencji/s z `fl.fed` (sekcja 03, 2.9). Nie kradnie, nie działa na niego Serce krzyczy, nie ma charakteru, prowadzi tylko, gdy nikt inny nie może (`leader()`), nigdy nie zostaje powracającym (`collectReturners`). Zabity: Groza za śmierć ×1.5 i połowa wypitego wraca do serca. Kwestie `cultIdle`, `cultDrink`. Wyposażenie: mikstura 1. | `p5_ai.js: planHero, updateHero, lootDecision`; `p6_loop.js: step`; `p3_flow.js: kill` |
+
+Ikony klas (`CLASS_ICON`, 24×24): tarcza z krzyżem (paladyn), łuk ze strzałą (tropiciel), kolba (alchemik), kaptur (kultysta). Figury na mapie: sekcja 08 (`p7c_art.js`). Plan przewidywał też paladynowi słabość "główny cel Serca krzyczącego" (wynika z jego odwagi) i alchemikowi neutralizację Plamy oleju i Zalewni; Plama oleju i Zalewnia nie tworzą chmur ani stref (poza Topielą), więc flaszka ich nie neutralizuje.
+
 ### 4.4 Ciało (`PHYS`)
 
 ```
@@ -513,7 +569,7 @@ phys   = pre.phys !== undefined ? pre.phys
 Źródło: `p3_flow.js: makeHero`.
 
 - 35% bohaterów (od etapu 4) ma cechę ciała; karta Przeklęta karczma +10% na kopię. Boss też może ją mieć.
-- `PHYS` (`data/PHYS.json`): 8 cech, po dwie na typ obrażeń (odporność / słabość): `res` = mnożnik typu (np. `thickskin` kłute 0.7, `brittle` obuchowe 1.4), `name` [m, f], `text` (opis procentowy).
+- `PHYS` (`data/PHYS.json`): 8 cech, po dwie na typ obrażeń (odporność / słabość): `res` = mnożnik typu (np. `thickskin` kłute 0.7, `brittle` obuchowe 1.4), `name` [m, f], `text` (opis procentowy). Od 1.26 10 cech: `conductive` (przewodzący/a, porażenie 1.4) i `grounded` (uziemiony/a, porażenie 0.7); szansa 35% bez zmian, więc każda cecha wypada rzadziej. Kwestie `weakHit.shock`, `resistHit.shock`, `trauma.shock`.
 - Słabość (`res > 1`) wzmacnia karta Słabe punkty: `1 + (res - 1) * (1 + weakK)`.
 - **Ujawnienie** (`p3_flow.js: revealPhys`): przy pierwszym trafieniu typem, którego dotyczy cecha (i gdy łączny `typeMult != 1`), jeśli nie jest znana: `known.add('phys')`, kopiowane do `h.entry.known`, kwestia `SAY.weakHit[dtp]` albo `SAY.resistHit[dtp]`, napis "Słabość: <typ>" / "Odporność: <typ>", karta samouczka `body`.
 
@@ -533,7 +589,18 @@ Pola `PHOBIAS` (`data/PHOBIAS.json`; odwrotna mapa `PHOBIA_OF_ATTR` z `attrs`):
 - `sees`: elementy, których pierwszy widok straszy.
 - `dark`: fobia ciemności: działa także na każdy strach, gdy bohater jest we Mgle, sam albo zgubiony.
 
-Fobie: `fire` (ogień, proch), `spiders` (pająk, sieć), `closed` (klatka, zapadnia, krata, zawiasy, trumna), `ghosts` (duch, portret, oczy, lustro), `blood` (kości + śmierć), `dark` (cień, nietoperze + Mgła/samotność/zgubienie). Pozytywka (`musicbox`) nie należy do żadnej fobii.
+Fobie: `fire` (ogień, proch), `spiders` (pająk, sieć), `closed` (klatka, zapadnia, krata, zawiasy, trumna), `ghosts` (duch, portret, oczy, lustro), `blood` (kości + śmierć), `dark` (cień, nietoperze + Mgła/samotność/zgubienie). Do 1.25.1 pozytywka (`musicbox`) nie należała do żadnej fobii.
+
+Od 1.26 10 fobii (szansa 30% bez zmian), cztery nowe:
+
+| Fobia | `name` | `attrs` (strach ×2) | `srcs` | `sees` (pierwszy widok) |
+|---|---|---|---|---|
+| `dead` | umarli | skeleton, zombie, lich, bones, coffin, bell | bell, death | skeleton, zombie, lich, bones, coffin, bell |
+| `abyss` | otchłań | trapdoor, falsedoor, pendulum | - | trapdoor, falsedoor, pendulum |
+| `noise` | hałas | creak, musicbox, bell, gate, rattle (Kości z cechą B Grzechot), howl | screams, bell | creak, musicbox, bell |
+| `swarm` | roje | bats, rats, imp, miasma | - | bats, rats, imp, miasma |
+
+`PHOBIA_OF_ATTR` od 1.26 zostawia pierwszą fobię dla atrybutu, który już ją miał (`PHOBIA_OF_ATTR[a] = PHOBIA_OF_ATTR[a] || k`), więc blizna powracającego od kości, trumny, zapadni, zawiasów, krat, nietoperzy dalej daje starą fobię. `phobiaOn` sprawdza tablice każdej fobii osobno, więc np. trumna straszy podwójnie i bohatera z `closed`, i z `dead`. Kwestie `SAY.phobia.dead/abyss/noise/swarm`. Plan wymieniał też widok ciała towarzysza (umarli) i poślizg w Lodowni (otchłań); w kodzie ciało liczy się przez źródło `death`, a Lodowni w `abyss` nie ma.
 
 ```
 phobiaOn(h, attr, src, dtp) = F = PHOBIAS[h.phobia];
@@ -572,7 +639,7 @@ Każdy bohater zbiera w trakcie fali:
 - `h.fearBy[klucz]` = suma strachu wg elementu (`attr`, np. `'archer'`) albo, gdy brak elementu, wg źródła (`src`, np. `'death'`, `'dmg'`, `'alone'`, `'phobia'`, `'heart'`) (`addFear`),
 - `h.felt` = co go najbardziej zraniło/przestraszyło (do plotek, rozdz. 6.5).
 
-Z nich `collectReturners` robi bliznę powracającego (rozdz. 6.3). `SCAR_RES` (`data/SCAR_RES.json`) mapuje typ obrażeń na cechę-odporność (kłute -> `thickskin`, obuchowe -> `sturdy`, ogień -> `fireproof`, trucizna -> `venomproof`).
+Z nich `collectReturners` robi bliznę powracającego (rozdz. 6.3). `SCAR_RES` (`data/SCAR_RES.json`) mapuje typ obrażeń na cechę-odporność (kłute -> `thickskin`, obuchowe -> `sturdy`, ogień -> `fireproof`, trucizna -> `venomproof`, od 1.26 porażenie -> `grounded`).
 
 ### 4.8 Co gracz wie przed falą (karczma)
 
@@ -590,9 +657,10 @@ Gdzie gracz widzi skład:
    - ikony ekwipunku (liczba użyć, gdy > 1), albo "bez sprzętu",
    - druga linia: `CLASS_SKILL`, " · słaby: " do 2 typów z mnożnikiem >= 1.1 (klasa, a gdy ciało znane, także ciało; `weakOf`), " · boi się: <fobia>" (gdy znana), " · ? ciało/fobia" (czego nie wiadomo),
    - stuknięcie otwiera kartę bohatera.
+   - od 1.26 nad listą ramka omenu następnej fali (`omenBox`: obrazek, nazwa, zasada, nagroda albo cena); przy Mgle wojny (`e.fog`, bez Anatomii ofiar) panel mówi "N bohaterów w mgle", a każdy wiersz to "???" "ktoś w mgle" z dopiskiem "Omen Mgła wojny: klasa, poziom i sprzęt nieznane do startu fali."
    Zakładka "Następna" podsumowania (`p8b_ui.js: renderWave`): "Fala N+1: poziom ok. round(waveBase(N+1))" + boss, tekst gildii, głód serca, plotki, opowieści o skarbach, "Gildia słyszy o chciwości ×g: przywódca +hl poziomu, przyjdą łowcy skarbów (k)".
-2. **Faza budowy**: zwijana lista na mapie (`p7_draw.js: drawNextWave`): zwinięta = żetony klas; rozwinięta = "Fala N (· FINAŁ / · boss):", wiersze "imię · poz. L ranga (· wraca / · łowca / · rekrut) (· boi się: X)", plus informacja o wyłomie. Podpowiedź `waveHint` (`p3_flow.js: waveHint`): "Fala N/10: X bohaterów, poziom lo-hi, prowadzi <boss> (poz. L). GŁÓD... WYŁOM... GILDIA: <tekst>. Plotki: znają R pokoi i T pułapek / Nic o Tobie nie wiedzą." Przycisk akcji "Wypuść falę N · X bohaterów".
-3. **Karta bohatera** (`p8b_ui.js: renderHero`): klasa, poziom, ranga/boss, "powracający / łowca skarbów / rekrut"; HP, strach/odwaga, wiara (kapłan w fali) albo liczba przedmiotów; "Charakter: ... (TRAIT_TEXT)" albo "zwyczajny"; "Umie: CLASS_SKILL"; "Klasa: CLASS_RES_TEXT"; łowca; "Ciało: ..." / "nie wiadomo"; "Fobia: ... (straszy 2 razy mocniej)" / "nie wiadomo"; "Blizna: ... (wraca już N. raz)"; trauma w fali; ekwipunek ("<przymiotnik rzadkości> <nazwa> (moc r, użycia: c, odnowienie s)"), sakwa; rany i strach w tej fali.
+2. **Faza budowy**: zwijana lista na mapie (`p7_draw.js: drawNextWave`): zwinięta = żetony klas; rozwinięta = "Fala N (· FINAŁ / · boss):", wiersze "imię · poz. L ranga (· wraca / · łowca / · rekrut) (· boi się: X)", plus informacja o wyłomie; od 1.26 znaczek "Omen: <nazwa>" pod listą i "· omen: <nazwa>" w nagłówku, a przy Mgle wojny zamiast listy ramka "Fala N: X bohaterów w mgle / Omen: Mgła wojny (klasy i poziomy ukryte)". Podpowiedź `waveHint` (od 1.26 z akapitem "OMEN <NAZWA>: zasada. Nagroda: ... / Za to ..."; przy Mgle wojny bez poziomów i klas) (`p3_flow.js: waveHint`): "Fala N/10: X bohaterów, poziom lo-hi, prowadzi <boss> (poz. L). GŁÓD... WYŁOM... GILDIA: <tekst>. Plotki: znają R pokoi i T pułapek / Nic o Tobie nie wiedzą." Przycisk akcji "Wypuść falę N · X bohaterów".
+3. **Karta bohatera** (`p8b_ui.js: renderHero`): klasa, poziom, ranga/boss, "powracający / łowca skarbów / rekrut"; HP, strach/odwaga, wiara (kapłan w fali) albo liczba przedmiotów; "Charakter: ... (TRAIT_TEXT)" albo "zwyczajny"; od 1.26 w fali "Statusy: <nazwa> (<opis>); ..." (`statusList`, sekcja 05, 5.14) i u kultysty "Wypił z serca X Esencji (zabity odda połowę)."; "Umie: CLASS_SKILL"; "Klasa: CLASS_RES_TEXT"; łowca; "Ciało: ..." / "nie wiadomo"; "Fobia: ... (straszy 2 razy mocniej)" / "nie wiadomo"; "Blizna: ... (wraca już N. raz)"; trauma w fali; ekwipunek ("<przymiotnik rzadkości> <nazwa> (moc r, użycia: c, odnowienie s)"), sakwa; rany i strach w tej fali.
 
 ---
 
@@ -626,7 +694,7 @@ powerCharges(t, r) = t == 'boots' ? 2 + floor(r/3) : t in (charm, amulet) ? 1 + 
 ```
 Źródło: `p1_config.js: makeKit, powerCharges`. Boss: `makeKit(type, lvl + 2)`.
 
-- `KIT` (`data/KIT.json`): wagi typów dla klasy (np. wojownik: potion 3, charm 3, bomb 2, amulet 1). Barbarzyńca nie dostaje amuletu ani butów, kapłan bomb ani butów, bard bomb ani talizmanu.
+- `KIT` (`data/KIT.json`): wagi typów dla klasy (np. wojownik: potion 3, charm 3, bomb 2, amulet 1). Barbarzyńca nie dostaje amuletu ani butów, kapłan bomb ani butów, bard bomb ani talizmanu. Od 1.26: paladyn potion 3, charm 2, amulet 2; tropiciel potion 3, boots 2, bomb 1; alchemik potion 4, bomb 2, amulet 1; kultysta potion 1. `CARRY` (udźwig): paladyn 15, tropiciel 10, alchemik 12, kultysta 8.
 - Mikstury i bomby mogą się powtarzać (osobne sztuki).
 - Liczba losowań i moc wg poziomu:
 
@@ -733,7 +801,8 @@ Ponad 60% udźwigu bohater zwalnia (najwyżej do ×0,84), za pierwszym razem mó
 Gildia czyta raport z poprzedniej fali i przysyła specjalistę na styl gracza.
 
 ```
-GUILD_WANT = { fear: 'priest', kill: 'warrior', traps: 'thief', monsters: 'mage', lost: 'bard', block: 'barbarian' }
+GUILD_WANT = { fear: 'priest', kill: 'warrior', traps: 'thief', monsters: 'mage', lost: 'bard', block: 'barbarian',
+               reactions: 'alchemist', holy: 'paladin', flyers: 'ranger' }      // 1.26
 
 guildAdapt(n):
     w = run.waves[ostatni]                  // zapis recordWave; liczby ZAOKRĄGLONE do całkowitych (roundStats)
@@ -753,6 +822,10 @@ guildAdapt(n):
       lost:     sc = (st.gotLost >= 2 || lostShare >= 0.15) ? 0.5 + min(0.3, lostShare) : 0
       block:    sc = (blocks >= 5 || st.reroutes >= 2)
                      ? 0.5 + 0.3 * min(1, max(blocks - 5, 2 * (st.reroutes - 2)) / 6) : 0
+      // 1.26: holyN = elementy rodzin nieumarli i demony, flyN = unoszące się (DRIFT: duch, cień, nietoperze, chochlik, kusicielka)
+      reactions: sc = n >= 6 && st.reactPts >= 0.4 * max(1, fearPts + scarePts + dmgPts + killPts) ? 0.85 : 0
+      holy:      sc = n >= 4 && holyN >= 4 ? 0.6 + 0.2 * min(1, (holyN - 4) / 6) : 0
+      flyers:    sc = n >= 4 && flyN >= 3 ? 0.6 + 0.2 * min(1, (flyN - 3) / 5) : 0
     return opcja z największym sc > 0 (sortowanie stabilne: remis wygrywa wcześniejsza na liście) albo null
 ```
 Źródło: `p3_flow.js: guildAdapt, GUILD_WANT`.
@@ -767,6 +840,10 @@ guildAdapt(n):
   - monsters: "słyszała o potworach: przysyła maga. Kontra: Runa (zakładka Obiekty)."
   - lost: "słyszała, że w Twoim lochu ludzie błądzą i giną samotnie: przysyła barda. Kontra: Kamień wyjec (zakładka Obiekty)."
   - block: "słyszała o zastawionych przejściach: przysyła barbarzyńcę. Kontra: Okowy (zakładka Obiekty)."
+  - reactions (1.26): "słyszała o płonących i zatrutych: przysyła alchemika z antidotum. Kontra: Laboratorium, Zalewnia."
+  - holy (1.26): "słyszała o nieumarłych i demonach: przysyła paladyna. Kontra: Ołtarz (osłabia przysięgę), Kusicielka."
+  - flyers (1.26): "słyszała o latających potworach: przysyła tropiciela. Kontra: Zasłona, Mgła."
+- 1.26: specjalista nowego stylu przychodzi tylko od fali, od której jego klasa jest w puli (alchemik od 6, paladyn i tropiciel od 4). Plan mówił o 40% Grozy "z reakcji i statusów"; kod liczy tylko `reactPts`. Kwestie pierwszego bohatera: `SAY.guildReactions`, `guildHoly`, `guildFlyers`. Karta etapu "Gildia i loch" wymienia nowych specjalistów.
 - Wpływ: (1) skład: klasa specjalisty wstawiona na indeks 1, jeśli jej brak (rozdz. 2.2); (2) ekwipunek: przy `fear`/`kill` amulet/talizman (rozdz. 2.6); (3) powracający nie zastępuje specjalisty innej klasy (rozdz. 2.4); (4) tekst w `waveHint` ("GILDIA: " + text), w zakładce "Następna" podsumowania ("Gildia " + text), podtytuł panelu następnej drużyny ("gildia: " + nazwa klasy małymi literami); (5) pierwszy bohater fali mówi kwestię `SAY.guildFear/guildKill/guildTraps/guildMonsters/guildLost/guildBlock` (`spawnHero`); (6) `recordWave` zapisuje `guild: kind`.
 
 ### 6.2 Łowcy skarbów
@@ -783,7 +860,7 @@ Wołane w `finishWave` (rozdz. 1).
 collectReturners():
     if stageOf() < 4: return
     for h in fl.heroes:
-        if !h.fled || h.dead || h.boss || (run.returners.length >= 8 && !h.nemesis): continue    // 1.23: Nemezis zawsze wraca
+        if !h.fled || h.dead || h.boss || h.type == 'cultist' || (run.returners.length >= 8 && !h.nemesis): continue    // 1.23: Nemezis zawsze wraca; 1.26: kultysta nie wraca
         if !h.nemesis && rnd() >= (h.fleeing ? 0.55 : 0.4) * (1 + mods.moreReturn): continue
         phys = h.phys; phobia = h.phobia; scar = null
         topFear = wpis h.fearBy o największej wartości; topDmg = wpis h.dmgBy o największej wartości
@@ -922,7 +999,8 @@ becomeImpatient():
 - Wyczerpanie (od 1.24, `p3_flow.js: waveExhausted`): przy `fl.patT >= S.waveTime + 60` (180 s czasu cierpliwości; po "jeszcze chwila" później w czasie fali) bohaterowie są wyczerpani: druga grupa i zakłady się kończą, wszyscy dostają plan `leave` (niosący kryształ zostaje przy ucieczce), zgubieni odnajdują drogę, czekający przy drzwiach nie wchodzą, napis "Wyczerpany/Wyczerpana", i wychodzą na własnych nogach (sekcja 03, 1.7). Do 1.23 w tym miejscu wszyscy żywi wychodzili natychmiast (`heroExit`), a niosący kryształ go wynosił.
 - Siatka bezpieczeństwa (od 1.24, `waveForceOut`): przy `fl.patT >= S.waveTime + 150` każdy jeszcze w środku wychodzi tam, gdzie stoi ("Ucieka"), a jego kryształ wraca do serca (nie liczy się jako kradzież).
 - Fala kończy się 1.2 s po tym, gdy kolejka jest pusta, a wszyscy nie żyją albo wyszli (`fl.ending = 1.2`).
-- W fali 1 serce odpycha drużynę (nie da się wyrwać kryształu; strach 0.3 odwagi/s przy sercu, przy 85% postępu ucieczka), `p6_loop.js: step` (sekcja 05/06).
+- W fali 1 serce odpycha drużynę (nie da się wyrwać kryształu; strach 0.3 odwagi/s przy sercu, przy 85% postępu ucieczka), `p6_loop.js: step` (sekcja 05/06). Od 1.26 od fali 2 serce krzyczy (6% odwagi/s strachu każdemu wyrywającemu poza bossem i kultystą), kradzież trwa 5 s (było 4) i ma Ostatni zryw (sekcja 03, 2.9).
+- Omen Pośpiech (1.26, rozdz. 6.11): narada zaczyna się po 60 s (`omenK(fala, 'patience')` zamiast `S.waveTime`), drużyna nie robi odwrotu na odpoczynek (`noRest`); wyczerpanie i siatka bezpieczeństwa liczą się dalej od `S.waveTime` (180 s i 270 s).
 
 ### 6.8 Bossowie w trakcie fali
 
@@ -932,8 +1010,9 @@ becomeImpatient():
 | Strach ×0.85 dla tych, którzy są z bossem (od 1.17: widzą go albo słyszą, boss nie w klatce i nie w zapadni; sam boss też); do 1.16 dla wszystkich, póki żył jakikolwiek boss | `p3_flow.js: fearResist` |
 | Bohater z przepowiedni w promieniu 3 pól: strach pozostałych ×0.75 | `p3_flow.js: fearResist` |
 | Przepowiednia, raz na falę, gdy HP spadnie < 50%: +20% maks. HP leczenia, tarcza 20% maks. HP, strach pozostałych, którzy słyszą jego krzyk (od 1.17; wcześniej wszystkich), -20% odwagi, kwestia `finalRage`, napis "Gniew!" | `p3_flow.js: damage` |
-| Czempion: gdy ktoś inny zaczyna uciekać, a czempion to widzi albo słyszy (od 1.17), okrzyk (odnowienie 15 s): strach nieuciekających, którzy słyszą okrzyk (od 1.17; wcześniej wszystkich), -25% odwagi, kwestia `champShout`; przy ucieczce całej drużyny czempion wychodzi z nią, ale nie jest oznaczany jako uciekający (1.17) | `p3_flow.js: startFlee, partyFlee` |
+| Czempion: gdy ktoś inny zaczyna uciekać, a czempion to widzi albo słyszy (od 1.17), okrzyk (odnowienie 25 s od 1.26, było 15 s): strach nieuciekających, którzy słyszą okrzyk (od 1.17; wcześniej wszystkich), -25% odwagi, kwestia `champShout`; przy ucieczce całej drużyny czempion wychodzi z nią, ale nie jest oznaczany jako uciekający (1.17) | `p3_flow.js: startFlee, partyFlee` |
 | Boss w klatce nie ginie po czasie klatki: wyłamuje kraty | `p4_traps.js: cageEnds` |
+| 1.26: Serce krzyczy nie działa na bossa; bohatera z przepowiedni nie da się Unieruchomić ani uwieść; boss nie wpada w Fałszywe przejście, ogr z cechą B go nie rzuca, kusicielka go nie wybiera | `p6_loop.js: step`; `p4_traps.js: setStatus, fireRaw, ogreThrow` |
 | Po cierpliwości przepowiednia szturmuje serce bez narady (6.7) | `p3_flow.js: becomeImpatient` |
 | Czempion i łowca skarbów głosują na naradzie chętniej za szturmem (+0,8) | `p5_ai.js: councilVote` |
 | Nagroda za falę bossa ma poziom `r = 3` zamiast 1 (`run.pendingUpgrades`, sklep w sekcji 03) | `p3_flow.js: finishWave` |
@@ -970,6 +1049,39 @@ Decyzja: `dmgBy` jest kluczowane typem obrażeń (kłute, ogień...), nie elemen
 
 `run.fallen`: `{ nm, female, type, roomKey, wave, nemesis (tytuł albo null) }` dla każdego bohatera, który zginie w pokoju albo korytarzu (tylko pełna gra, `stageOf() >= 4`, jak powracający); najwyżej 12, najstarszy wypada. Bohater późniejszej fali, który wejdzie do takiego miejsca, może to powiedzieć (sekcja 06, 6.14.5). `resumeRun` daje `run.fallen = []` runowi sprzed 1.23.
 
+### 6.11 Omeny fal (1.26, `p1_config.js: OMENS, OMEN_WAVES`; `p3_flow.js: omenOf, omenName, omenK, makeWave, makeHero, hungerParts, startBuild, startWave, finishWave, fearResist, kill`; `p5_ai.js: partyThink, updateHero`; `p6_loop.js: step`; `p4_traps.js: omenPow`; `p8b_ui.js: omenBox, renderNews, nextRow`; `p7_draw.js: drawNextWave`)
+
+Omen to zasada jednej fali, jak "boss blind" w Balatro. Widać go w podglądzie fali przed jej startem, więc gracz buduje pod niego.
+```
+OMEN_WAVES = [3, 6, 8]
+omenOf(n):                                         // wołane z makeWave, raz na falę; wynik w run.omens[n] (zapisywany)
+    if run.omens[n] !== undefined: return run.omens[n]
+    o = null
+    if !run.tutorial && (run zaczęty przez gracza || run.omenAlways) && (n ∈ OMEN_WAVES || (n > 10 && !bossOf(n))):
+        pool = OMENS z (minW || 0) <= n; fresh = pool bez omenów już użytych w runie
+        o = pick(fresh.length ? fresh : pool)
+    run.omens[n] = o
+omenK(n, key) = OMENS[run.omens[n]]?.[key] || 0    // liczba omenu fali n (0 = brak; kod mnoży przez "omenK(...) || 1")
+```
+W fali 3 nie ma Elity, Saperów ani Pielgrzymki (`minW: 6`). W fali bez końca omen co falę bez bossa; gdy pula się wyczerpie, omeny się powtarzają. W runie z przewodnikiem (`run.tutorial`) i w runach skryptowych (testy, boty) omenów nie ma, chyba że test ustawi `run.omenAlways`.
+
+| id | Nazwa | Działanie (pola `OMENS`) | Nagroda albo cena |
+|---|---|---|---|
+| `siege` | Oblężenie | +2 bohaterów (`extra`), wszyscy -2 poziomy (`lvAdd`) | głód ×1.15 |
+| `elite` | Elita | od fali 6; 1 bohater mniej, +3 poziomy, +1 przedmiot (`rollItem(2, GEAR_POOL)`) | +1 darmowa karta |
+| `inquisition` | Inkwizycja | na pewno kapłan i paladyn (`force`), +1 poziom, strach ×0.7 (`fearK` w `fearResist`) | brak |
+| `sappers` | Saperzy | od fali 6; złodziej i tropiciel (przed falą 6 byłoby 2 złodziei, ale `minW` tego nie dopuszcza) | +1 darmowa karta |
+| `haste` | Pośpiech | cierpliwość 60 s, prędkość ×1.2, bez odpoczynku (`noRest`) | głód ×0.85 |
+| `bloodmoon` | Krwawy księżyc | HP bohaterów ×1.2 (`hpK`), obrażenia Twoich potworów ×1.3 (`monDmg`, `omenPow`), Groza za zabicie ×1.5 (`killK`) | brak |
+| `goldrush` | Złoty szał | wszyscy chciwi (bez bossa), chciwość na start +0.5, +1 łowca skarbów | głód ×1.15 |
+| `warfog` | Mgła wojny | podgląd nie pokazuje klas ani poziomów (`e.fog`), w każdym pokoju łatwiej o zgubienie (`lostAdd` 0.2) | +10 Nasycenia po fali |
+| `pilgrimage` | Pielgrzymka | od fali 6; 2 kultystów zamiast 2 ostatnich zwykłych bohaterów | +1 darmowa karta |
+| `fearnight` | Noc strachu | odwaga ×0.8 (`courage`), strach opada ×1.5 szybciej (`calm`) | brak ("zmienia, co działa") |
+
+- Nagroda w `finishWave` (przed przychodem): `run.freePicks += free`, `satietyAdd(satiety, 'omen')`. Cena (`hunger`) mnoży głód fali omenu w `hungerParts` (sekcja 03, 2.7).
+- Pokazanie: w budowie fali z omenem raz otwiera się karta wieści z karczmy z ramką omenu (`omenBox`: obrazek 96×48 z `ART.omen`, "Omen: <nazwa>", zasada, "Nagroda: ..." albo "Za to ..." albo "Bez nagrody: zmienia, co działa."), a za pierwszym razem w przeglądarce notka, czym jest omen; znaczek pod podglądem fali, akapit w `waveHint`, ramka w panelu następnej fali w podsumowaniu, napis "Omen: <nazwa>" przy wejściu i podpowiedź na starcie fali (sekcja 08). Rekord fali ma pole `omen` (sekcja 07).
+- Plan: Pośpiech miał też "szybciej do serca", a każdy omen ma mieścić się w ±0,05 straty kryształu z inną najlepszą odpowiedzią; wartości są projektem autora sprawdzonym tylko w modelu (sekcja 11). Klucze `tithe`, `feast`, `heartCry` są czytane przez kod (`omenK`), ale żaden omen ich nie ma.
+
 ---
 
 ## 7. Onboarding 1.12: co dotyczy bohaterów
@@ -990,6 +1102,9 @@ Decyzja: `dmgBy` jest kluczowane typem obrażeń (kłute, ogień...), nie elemen
 | Pamięć poległych (`run.fallen`) | 4 | `stageOf() < 4: return` | `p5_ai.js: rememberFallen, fallenRoom` |
 | Wyłom | 4 | `stageOf() >= 4`, `run.tut < 0`, fala >= 6 | `p3_flow.js: planBreach, startBuild` |
 | Karty o ciałach, fobiach, traumie, powracających (weakspot, anatomy, nightmares, oddbodies, scars, memories, survivors) | 4 | `ONB_CARD` | `p1_config.js: ONB_CARD` |
+| 1.26: paladyn i tropiciel (fala 4+), alchemik (fala 6+) | każdy etap, według fali | `partyPool(n)` | `p1_config.js: partyPool` |
+| 1.26: omeny fal 3, 6, 8 | każdy etap poza runem z samouczkiem | `!run.tutorial` | `p3_flow.js: omenOf` |
+| 1.26: nowe style gildii | 3 (jak gildia) | `guildAdapt` | `p3_flow.js: guildAdapt` |
 
 ---
 
@@ -998,7 +1113,8 @@ Decyzja: `dmgBy` jest kluczowane typem obrażeń (kłute, ogień...), nie elemen
 ### 8.1 Model danych (propozycja)
 
 - **ScriptableObjects (dane)**: `HeroClassDef` (HEROES + CLASS_RES + CLASS_RES_TEXT + CLASS_SKILL + KIT + ikona), `HeroTraitDef`, `PhysDef`, `PhobiaDef` (attrs, types, srcs, sees, dark), `HeroItemDef` (HITEMS), `TierDef` (TIERS), `NameList` (NAMES_M, NAMES_F jako trójki), `WaveTuning` (GROZA_TYP, EARLY_LV, EARLY_HP, START_LV, SIZE_LV, COMBO_HP, BREACH_P, BREACH_PATCH, RUMOR_LIFE, RUMOR_PER, GUILD_WANT, progi gildii, stałe spawnu).
-- **`[Serializable] class HeroEntry`** (wpis, zapisywany w save): `string type; int lvl; int rank; string boss /* null|champion|final */; bool female; string[] nm /* 3 formy */; int hp, max; List<HeroItem> inv; string trait; int courage; string phys, phobia; List<string> known; bool returning; string scar; int times; bool hunter, recruit`.
+- **`[Serializable] class HeroEntry`** (wpis, zapisywany w save): `string type; int lvl; int rank; string boss /* null|champion|final */; bool female; string[] nm /* 3 formy */; int hp, max; List<HeroItem> inv; string trait; int courage; string phys, phobia; List<string> known; bool returning; string scar; int times; bool hunter, recruit`; od 1.26 `bool fog` (Mgła wojny).
+- **`OmenDef`** (1.26): `id, name, text, reward, cost, extra, lvAdd, gear, free, minW, force[], fearK, patience, speed, noRest, hunger, hpK, monDmg, killK, greedAll, greedStart, hunters, fog, lostAdd, satiety, cultists, courage, calm` (brak pola = 0); `run.omens` jako słownik fala -> id.
 - **`[Serializable] class HeroItem`**: `string type; int r; int? charges /* null = bez limitu */; bool kit; float cdUntil`.
 - **`[Serializable] class Returner`**: `nm, female, type, lvl, back, phys, phobia, trait, scar, times, crystal, used`.
 - **`GuildDecision`**: `kind, sc, text`.
@@ -1038,7 +1154,10 @@ Decyzja: `dmgBy` jest kluczowane typem obrażeń (kłute, ogień...), nie elemen
 15. **Pasywny bonus amuletu do wykrywania** (`scanTraps`, `gearR`) działa także przy 0 użyć.
 16. **Przedmiot gildii** ma zawsze 1 użycie niezależnie od mocy; dołożony do istniejącej mocy daje +1 użycie i ewentualnie wyższą moc (bez sprawdzenia, czy to "ten sam" przedmiot).
 17. **`fearResist`**: mnożnik 0.85 bossa działa także na samego bossa (do 1.16 brak warunku `o !== h`; od 1.17 jest to zapisane wprost: `o === h || canSee(h, o) || canHear(h, o)`, a dla reszty działa tylko, gdy są z nim).
-18. **`phobiaSight`** nie sprawdza `hp` potwora, więc martwy pająk/duch w pokoju (element zostaje w `fl.items` z `hp <= 0`) też wywoła szok fobii. Prawdopodobnie błąd; w Unity pomijać martwe potwory.
+18. **`phobiaSight`** nie sprawdza `hp` potwora, więc martwy pająk/duch w pokoju (element zostaje w `fl.items` z `hp <= 0`) też wywoła szok fobii. Od 1.26 dotyczy to każdego powalonego potwora (Odrodzenie zostawia go w `fl.items` do końca fali). Prawdopodobnie błąd; w Unity pomijać powalone potwory.
+25. **Nowe cechy 1.26 mają mniej zachowań, niż mówi plan** (4.2) i niż sugeruje `TRAIT_TEXT` zapaleńca; braki przesądnego i ciekawskiego są na liście otwartych w sekcji 11.
+26. **Omeny w runie bez samouczka, ale w etapie nauki (1.26)**: `omenOf` sprawdza tylko `run.tutorial`, więc pierwszy run bez przewodnika (przewodnik już ukończony, etapy z falami) dostaje omen w fali 3, choć plan mówił "pierwszy run z przewodnikiem: bez omenów".
+27. **Klasy przy omenach (1.26)**: w Oblężeniu, gdy klas w puli brakuje, `makeWave` dobiera losową z `PARTY` i może powtórzyć klasę. Po poprawce wymuszenie klas omenu idzie po gildii, więc omen ma pierwszeństwo: w małej drużynie (np. 3 osoby i Saperzy przed falą 6) wymuszona klasa może zająć miejsce specjalisty gildii.
 19. **Fale >= 15**: limit `waveSize <= 6` sprawia, że boss nie dochodzi jako dodatkowy bohater (zastępuje zwykłego).
 20. Komentarz w `makeWave` mówi, że pierwsze trzy fale to tylko klasy klasyczne, ale gildia w fali 3 może wstawić barda albo barbarzyńcę (zgodne z tekstem onboardingu "od fali 3").
 21. Linia "Fala N+1: poziom ok. X" w podsumowaniu pokazuje `round(waveBase)`, bez premii chciwości i szumu (informacyjne; realne poziomy są na liście drużyny).
@@ -1051,10 +1170,12 @@ Decyzja: `dmgBy` jest kluczowane typem obrażeń (kłute, ogień...), nie elemen
 ## 10. Testy akceptacyjne (minimum)
 
 1. `waveSize` dla fal 1-20 (zwykły run i samouczek) zgodny z tabelą w 2.1.
-2. `waveBase(n)` dla `S.scale = 1`, `pactLevels = 0`: od 1.24 4.77, 5.86, 6.54, 6.86 (fale 1-4, 3.9), potem jak w tabeli 3.8 (7.29, 9.38, 11.77, 13.08, 15.11, 16.35); `waveBase0` (krzywa do 1.23): 1.50, 3.03, 4.77, 6.22; samouczek fala 1: 1.00.
+2. `waveBase(n)` dla `S.scale = 1`, `pactLevels = 0`: od 1.26 (fale 1-4, `EARLY_W = [0, 1.5, 2.25, 3, 4]`, 3.9) ok. 2.27, 3.47, 4.77, 6.22 (liczone z zaokrąglonych `waveBase0`; w 1.24 4.77, 5.86, 6.54, 6.86), potem jak w tabeli 3.8 (7.29, 9.38, 11.77, 13.08, 15.11, 16.35); `waveBase0` (krzywa do 1.23): 1.50, 3.03, 4.77, 6.22; samouczek fala 1: 1.00.
 3. `levelStats(L)` dla L = 1-30 równe `data/levelStats_1_30.json` (tolerancja 1e-4).
-4. `makeHero('warrior', 9, 5, used, 'champion')` przy `S` domyślnych: `max = 636`, `courage = 327`, brak charakteru i fobii, ekwipunek z poziomu 11.
-5. W żadnej fali nie ma dwóch bohaterów tej samej klasy; w falach 1-3 bez gildii tylko klasy z `CLASSIC`.
+4. `makeHero('warrior', 7, 5, used, 'champion')` przy `S` domyślnych (1.26: HP ×1.3, odwaga ×1.3): `max = 381`, `courage = 205`, brak charakteru i fobii, ekwipunek z poziomu 9. (1.25.1: `makeHero('warrior', 9, 5, ...)`: 636 i 327.)
+5. W żadnej fali nie ma dwóch bohaterów tej samej klasy (poza Saperami przed falą 6 i Oblężeniem przy braku klas); w falach 1-3 bez gildii tylko klasy z `CLASSIC`; od fali 4 mogą być paladyn i tropiciel, od fali 6 alchemik; kultysta tylko z Pielgrzymką.
+13. (1.26) `omenOf`: tylko fale 3, 6, 8 i fale bez końca bez bossa; bez powtórzeń w runie, dopóki pula się nie wyczerpie; w fali 3 bez Elity, Saperów i Pielgrzymki; w runie z samouczkiem zawsze null. Oblężenie w fali 6: 6 bohaterów, poziomy -2; Pielgrzymka: dokładnie 2 kultystów, nie na miejscu bossa, łowcy ani powracającego.
+14. (1.26) charakter u ok. 60% nie-bossów (bez kultystów), 8 charakterów; 10 fobii; 10 cech ciała.
 6. Samouczek fala 1: żaden poziom > 2 (od 1.24 limit 4 w falach 1-2 zniesiony).
 11. `makeBonds`: 0-2 więzi, najwyżej jedna na bohatera, żadna dla powracającego ani w fali samouczka; mistrz ma rangę >= 1, uczeń nowicjusza, rekruta albo rangę niżej.
 12. `nemesisEntry`: `times >= 2` albo kryształ daje tytuł z `NEM_TITLE`; najwyżej dwóch Nemezis; nagroda `10 + 5 × times`; Nemezis wraca zawsze, z +2 poziomami, rangą >= 1 i odwagą ×1,4.

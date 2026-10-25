@@ -92,7 +92,8 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
     ok(Math.abs(G.greedCurve(5.38) - 3.12) < 0.01 && Math.abs(G.greedRaw(G.greedCurve(4)) - 4) < 1e-9, 'greed = sqrt(2 raw - 1)');
     ok(d3 < d1 / 2.5, 'at x3 the same treasure adds about a third of what it adds at x1'); }
   // 8. four heroes a wave from wave 4, the bosses as a fifth, more again past the finale
-  { const n = [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 15].map(w => G.makeWave(w).length); out.sizes = n;
+  { [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 15].forEach(w => { G.run.omens[w] = null; });   // 1.26: no omen (Oblężenie, Elita change the size)
+    const n = [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 15].map(w => G.makeWave(w).length); out.sizes = n;
     ok(n.join(',') === '3,3,3,4,5,4,4,4,5,5,6', 'party sizes ' + n.join(',')); }
   return { out, fails }; }'''
 async def main():

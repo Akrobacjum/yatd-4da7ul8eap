@@ -865,7 +865,7 @@
   // what lies on the floor is painted on it; what hangs on a wall goes on the wall; the rest stands up
   const WALL_ITEM = { portrait: 1, eyes: 1, mirror: 1, arrows: 1, fire: 1 };
   const ON_OBJECT = { powder: 1, mimic: 1, musicbox: 1 };
-  const flatItem = it => it.type === 'web' || it.type === 'trapdoor' || (it.type === 'cage' && !cageShut(it)) || (it.broken && BUILDINGS[it.type]);
+  const flatItem = it => it.type === 'web' || it.type === 'trapdoor' || (it.type === 'cage' && !cageShut(it)) || (it.broken && BUILDINGS[it.type]) || !!FLAT_ART[it.type];   // 1.26: FLAT_ART (p7c_art.js)
   const cageShut = it => it.anim > 0 || fl.heroes.some(h => h.cageIt === it && h.state === 'caged');
   // in a wave, what the heroes have not seen is dimmed (the fog), standing things too
   const fogged = (x, y) => (fl.phase === 'raid' || fl.phase === 'summary' || fl.phase === 'over') && fl.tiles[y * WW + x] !== WALL && !fl.known[y * WW + x];
@@ -1064,7 +1064,8 @@
   function tileHash(x, y) { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return (h ^ (h >>> 16)) >>> 0; }
   // Torches on some walls that face a floor (not where a trap or a picture hangs); their light flickers on the floor below.
   function drawZones(T) {
-    fl.zones.forEach(z => z.tiles.forEach(t => { ctx.fillStyle = 'rgba(160,190,255,0.18)'; ctx.fillRect(t[0] * T, t[1] * T, T, T); }));
+    fl.zones.forEach(z => { if (z.src && z.src.type === 'flood') return; z.tiles.forEach(t => { ctx.fillStyle = 'rgba(160,190,255,0.18)'; ctx.fillRect(t[0] * T, t[1] * T, T, T); }); });
+    drawHazards(T);   // 1.26: Topiel water, Wyziewy clouds, Kolczatki (p7c_art.js)
   }
   function drawDanger(x0, y0, x1, y1, T) {
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
@@ -1113,6 +1114,7 @@
       return;
     }
     if (BUILDINGS[it.type]) { ctx.fillStyle = 'rgba(0,0,0,0.42)'; ctx.beginPath(); ctx.ellipse(cx, py + s * 0.86, s * 0.38, s * 0.11, 0, 0, Math.PI * 2); ctx.fill(); }   // it stands: a shadow like the furniture
+    if (TOP_ART[it.type]) { TOP_ART[it.type](it, T, px, py, s); return; }   // 1.26: the new flat traps (p7c_art.js)
     switch (it.type) {
       case 'trapdoor': {
         const open = it.anim > 0;
@@ -1431,6 +1433,7 @@
   // wall traps in a unit square (x along the wall, y down), lit by k (the east face is a little darker)
   function wallArt(it, k) {
     const t = it.type, hot = it.anim > 0;
+    if (WALL_ART[t]) { WALL_ART[t](it, k, hot); return; }   // 1.26: the new wall traps (p7c_art.js)
     const lw = 0.045;
     if (t === 'portrait') {
       ctx.fillStyle = k < 1 ? '#5a3e1c' : '#6a4a22'; ctx.fillRect(0.2, 0.12, 0.6, 0.62);
@@ -1476,6 +1479,7 @@
       [0.18, 0.46].forEach(z => { const q = W2S(cx, cy, z); ctx.beginPath(); ctx.ellipse(q[0], q[1], rx, ry, 0, 0, Math.PI); ctx.stroke(); });
       ctx.fillStyle = '#86592e'; ctx.beginPath(); ctx.ellipse(t[0], t[1], rx, ry, 0, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#3a2614'; ctx.lineWidth = Math.max(1, T * 0.03); ctx.stroke();
+      artBarrelDetail(b, t, rx, ry, T);   // 1.26: staves, a lit hoop, the lid's boards (p7c_art.js)
     } else if (o.kind === 'crate') {
       isoBox(cx, cy, 0.7, 0.7, 0.6, '#7d5c36', '#6a4c2c', '#523a22');
       ctx.strokeStyle = 'rgba(30,18,8,0.7)'; ctx.lineWidth = Math.max(1, T * 0.035); ctx.beginPath();
@@ -1483,10 +1487,9 @@
       L(W2S(cx - 0.35, cy + 0.35, 0), W2S(cx + 0.35, cy + 0.35, 0.6)); L(W2S(cx + 0.35, cy - 0.35, 0), W2S(cx + 0.35, cy + 0.35, 0.6));   // braces
       L(W2S(cx - 0.35, cy - 0.35, 0.6), W2S(cx + 0.35, cy + 0.35, 0.6));
       ctx.stroke();
+      artCrateDetail(cx, cy, T);   // 1.26: planks and nails (p7c_art.js)
     } else if (o.kind === 'statue') {
-      isoBox(cx, cy, 0.62, 0.62, 0.22, '#5e5968', '#4b4755', '#3c3944');
-      const b = W2S(cx, cy, 0.22);   // a stone warrior: a figure like the heroes, in grey
-      drawPixelFigure('statue', b[0], b[1], Math.max(FIG_MIN, T * 1.1) * 1.1, (o.x + o.y) % 2 ? 1 : -1, {});
+      drawStatue3D(o, cx, cy, T);   // 1.26: a solid stone knight on a plinth (p7c_art.js); it was a flat stone sprite
     } else {   // a bookcase against the light: a tall box with shelves of coloured spines on its south face
       isoBox(cx, cy, 0.8, 0.42, 1.0, '#4a3020', '#3a2516', '#2a1a10');
       const cols = ['#7a3434', '#34507a', '#5e7a34', '#9a7a34'];
@@ -1540,6 +1543,7 @@
   // 1.09: something just placed, moved or upgraded pops (a little too big, then its size)
   const popK = it => { const t = (realNow - (it.popR || -9)) / 0.34; return t >= 1 || t < 0 || reduceMotion ? 1 : 0.55 + 0.45 * easeOutBack(t); };
   function drawItemUp(it, T) {
+    if (MONSTERS[it.type] && it.down) { drawDowned(it, T); return; }   // 1.26 Odrodzenie: knocked down until the next build
     const gh = DRIFT[it.type] && it.gx !== undefined, bx = gh ? it.gx : it.x + 0.5, by = gh ? it.gy : it.y + 0.5;
     const a = fogged(clamp(Math.floor(bx), 0, WW - 1), clamp(Math.floor(by), 0, WH - 1)) ? 0.55 : 1;
     ctx.save(); ctx.globalAlpha = a;
@@ -1555,7 +1559,12 @@
     ctx.restore();
     if (MONSTERS[it.type]) { const p = W2S(bx, by, 0), H = monH(it, T); if (it.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - H * 0.5, H * 0.3, H * 0.5, 0, 0, Math.PI * 2); ctx.fill(); } hpBar(p[0], p[1] - H - (gh ? T * 0.55 * CP : 0) - 6, T * 0.6, it.hp / it.max, '#9be37a', T); }
   }
-  const monH = (it, T) => T * ({ ogre: 1.25, goblin: 0.8, archer: 0.95, shaman: 0.9, spider: 0.6, ghost: 0.9, shade: 0.95, bats: 0.6 }[it.type] || 0.9);
+  // 1.26: a knocked-down monster lies on its tile, dim, with a small "+1" of hunger over it (after its fall, drawCorpse); a floating one is gone till the next build
+  function drawDowned(it, T) {   // 1.26 (art, round 2): knocked out: a grey figure lying on its side, stars circling over it, "+1 ♥" (p7c_art.js)
+    if (DRIFT[it.type] || (it.downR != null && realNow - it.downR < 0.75)) return;
+    drawDownedArt(it, T);
+  }
+  const monH = (it, T) => T * ({ ogre: 1.25, goblin: 0.8, archer: 0.95, shaman: 0.9, spider: 0.6, ghost: 0.9, shade: 0.95, bats: 0.6 }[it.type] || MON_H2[it.type] || 0.9);   // 1.26: MON_H2 (p7c_art.js)
   const ISO_ART = {};
   // upright signs: a text with a dark rim at a point of the screen
   function signText(t, x, y, font, color, align, base) {
@@ -2382,6 +2391,7 @@
         case 'nursery': for (let k = 0; k < 3; k++) { const p = P(k, 0.12), q = W2S(mx + Math.sin(p * 6 + k) * 0.4 + (k - 1) * 0.3, my, 0.3 + p * 1.3);
           ctx.globalAlpha = Math.sin(p * Math.PI) * 0.85; ctx.fillStyle = ['#f2bcd4', '#bfe8d2', '#f6e2a6'][k]; ctx.font = Math.round(T * 0.38) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k % 2 ? '♫' : '♪', q[0], q[1]); ctx.globalAlpha = 1; } break;
         case 'armory': break;   // its life is the glints on its plates (the floor)
+        default: if (KIND_LIFE2[R.rk]) KIND_LIFE2[R.rk](R, T, t, P, dot, glow, mx, my, w, h, seed);   // 1.26: the new komnaty (p7c_art.js)
       }
       void col;
     });
@@ -2509,7 +2519,7 @@
     if (s === 'door') { const dd = fl.doors.get(key(x, y)); return dd ? (dd.b >= 0 ? dd.b : dd.a) : -1; }
     return roomOf(x, y);
   }
-  const roomCap = R => (R.kind === 'hall' ? 1 : 2 + (R.tiles.length >= 20 ? 1 : 0)) + (R.lvl || 0);
+  const roomCap = R => (R.kind === 'hall' ? 1 : 2 + (R.tiles.length >= 20 ? 1 : 0)) + (R.lvl || 0) + (mods && mods.heartRoom && fl && R.id === fl.heart.room ? mods.heartRoom : 0);   // 1.26 Komora serca
   // A crate: only on a room floor, never next to a door or the heart, and the room must stay one connected space.
   function crateOk(x, y) {
     if (fl.phase !== 'build' || slotOf(x, y) !== 'floor' || fl.items.has(key(x, y))) return false;
@@ -2776,7 +2786,7 @@
       r(9, 12, 3, 3, '#3a2f4a'); r(9, 12, 1, 1, '#c84a3a'); r(11, 12, 1, 1, '#c84a3a');
       if (up) { r(6, 10, 3, 2, '#2c2438'); r(12, 10, 3, 2, '#2c2438'); r(5, 9, 1, 1, '#2c2438'); r(15, 9, 1, 1, '#2c2438'); }
       else { r(6, 14, 3, 2, '#2c2438'); r(12, 14, 3, 2, '#2c2438'); r(5, 15, 1, 1, '#2c2438'); r(15, 15, 1, 1, '#2c2438'); }
-    }
+    } else if (FIG_ART[t]) FIG_ART[t]({ r, P, b, frame, step, legs, head, arm, robe });   // 1.26: the new monsters (p7c_art.js)
     return c;
   }
   // a 1-pixel outline around the sprite (soft, in the dark of the dungeon, not black line art)
@@ -2795,6 +2805,7 @@
     let c = SPR.get(k);
     if (!c) {
       c = paintFigure(type === 'statue' ? 'warrior' : type, frame, flash);
+      if (!flash) figShade(c, type, frame);   // 1.26: a light edge, a cool shade, a few touches (p7c_art.js)
       if (type === 'statue') stoneSprite(c);
       c = outlineSprite(c, flash ? 'rgba(255,255,255,0.6)' : 'rgba(12,9,14,0.72)'); if (type === 'spider') spiderLegs(c, frame, flash); SPR.set(k, c);
     }
@@ -3222,14 +3233,17 @@
     // 1.07 (author: the 1.06 figurines did not fit dark fantasy): a pixel figure; a treasure hunter has a bag, a boss a crown
     const walking = h.nx !== null && fl.phase === 'raid' && !paused, PH = H * 1.15;
     if (h.hunter) { ctx.fillStyle = '#8a6a2c'; ctx.beginPath(); ctx.ellipse(x - face * W * 0.55, feet - H * 0.4, Math.max(2.5, H * 0.09), Math.max(3, H * 0.11), 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x - face * W * 0.55 - 1, feet - H * 0.5, 2, H * 0.06); }
-    const fo = { flash: h.flash > 0, walk: walking && !h.sliding, seed: h.id }, ki = (realNow - (h.inR || -9)) / 0.36, q = h.flash > 0 ? clamp(h.flash / 0.12, 0, 1) : 0;
+    const dotOn = heroDot(h), fl0 = h.flash > 0 && !(dotOn && (realNow * 2.5 + h.id * 0.3) % 1 > 0.18);   // 1.26: a hero under bleeding/poison/plague/fire ticks blinks now and then, not white all the time (p7c_art.js)
+    const fo = { flash: fl0, walk: walking && !h.sliding, seed: h.id }, ki = (realNow - (h.inR || -9)) / 0.36, q = fl0 ? clamp(h.flash / 0.12, 0, 1) : 0;
     if (ki < 1 && !reduceMotion) { const s = 0.35 + 0.65 * easeOutBack(clamp(ki, 0, 1)); fo.kx = s; fo.ky = s; fo.alpha = clamp(ki * 2.5, 0, 1); }   // 1.09: pops in where it enters
     else if (q) { fo.kx = 1 + 0.12 * q; fo.ky = 1 - 0.1 * q; }   // 1.09: a hit squashes it for a moment
     if (h.sliding && !reduceMotion) {   // 1.10: on the ice: leaning back, arms out, a spray of ice behind
       fo.rot = -face * 0.2; ctx.fillStyle = 'rgba(225,245,255,0.7)';
       for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(x - face * W * (0.9 + 0.35 * k), feet - H * (0.02 + 0.05 * ((k + Math.floor(realNow * 12)) % 2)), Math.max(1, H * 0.035), 0, Math.PI * 2); ctx.fill(); }
     }
+    heroStatusUnder(h, x, feet, W, T);   // 1.26: puddles under the feet (wet, oiled), the siren's thread (p7c_art.js)
     const ph = drawPixelFigure(h.type, x, feet, PH, face, fo);
+    heroStatusOver(h, x, feet, H, W, face, T);   // 1.26: shackles, drips, sheen (p7c_art.js)
     if (h.boss) { const cy = feet - ph * (h.type === 'mage' ? 0.98 : 0.86), cs = Math.max(3, H * 0.12); ctx.fillStyle = '#d9b44a'; ctx.beginPath(); ctx.moveTo(x - cs, cy); ctx.lineTo(x - cs, cy - cs * 0.9); ctx.lineTo(x - cs * 0.4, cy - cs * 0.45); ctx.lineTo(x, cy - cs * 1.1); ctx.lineTo(x + cs * 0.4, cy - cs * 0.45); ctx.lineTo(x + cs, cy - cs * 0.9); ctx.lineTo(x + cs, cy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = 'rgba(30,20,10,0.7)'; ctx.lineWidth = 1; ctx.stroke(); }
     if (fl.time < h.burnUntil) { ctx.fillStyle = h.burnBy === 'spikes' ? (Math.sin(realNow * 12) > 0 ? '#d8434f' : '#ff6b6b') : Math.sin(realNow * 20) > 0 ? '#ff9a3c' : '#ffd27a';   // 1.17.1: bleeding is red, not a flame
       ctx.beginPath(); ctx.arc(x + face * W * 0.5, mid - H * 0.12, Math.max(2.5, H * 0.07), 0, Math.PI * 2); ctx.fill(); }
@@ -3272,7 +3286,8 @@
       if (burden(h) < 1) { ctx.fillStyle = '#c9c2b8'; ctx.font = numFont(Math.max(8, q * 1.6), true); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText('▼', x0 + n * (q + 2) + 1, feet + W * 0.4 + q / 2); }   // 1.20: too heavy, he slows down
     }
     // a sign above the bars: panic, lost, talking, resting
-    const sign = (t, color, size, wob) => { ctx.fillStyle = color; ctx.font = numFont(Math.max(10, size), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, x, b0 - 8 - (h.shield > 0 ? bh + 1 : 0) + wob); };
+    const sUp = heroStatusIcons(h, x, b0 - (h.shield > 0 ? bh + 1 : 0), H);   // 1.26: the statuses in a row over the bars (p7c_art.js); the sign goes over them
+    const sign = (t, color, size, wob) => { ctx.fillStyle = color; ctx.font = numFont(Math.max(10, size), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, x, b0 - 8 - sUp - (h.shield > 0 ? bh + 1 : 0) + wob); };
     if (fl.time < h.panicUntil) sign('!!', '#ff6b6b', H * 0.4, Math.sin(realNow * 14) * 1.5);
     else if (h.lost) sign('?', '#ffe066', H * 0.42, Math.sin(realNow * 5) * 1.5);
     else if (h.state === 'talk') sign('...', '#e8dfc8', H * 0.32, 0);
@@ -3798,8 +3813,20 @@
   function drawNextWave() {
     const list = run.next || [];
     if (!list.length) { uiRects.list = null; return; }
+    // 1.26 (15): the omen of this wave: Mgła wojny hides the party, any other shows as a badge under the preview
+    const omId = run.omens && run.omens[run.wave], om = omId && OMENS[omId];
+    const omBadge = y => { if (!om) return; const t = 'Omen: ' + om.name; ctx.font = '700 10px "Alegreya Sans", system-ui, sans-serif'; const bw = Math.ceil(ctx.measureText(t).width) + 16; ctx.fillStyle = 'rgba(70,36,96,0.88)'; rr(6, y, bw, 18, 6); ctx.fill(); ctx.strokeStyle = '#a97ad6'; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = '#e6d2ff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, 6 + bw / 2, y + 9.5); };
+    if (list.some(e => e.fog) && !mods.revealAll) {
+      uiRects.list = null; const w = 196, h = 36;
+      ctx.fillStyle = 'rgba(10,11,13,0.8)'; rr(6, 6, w, h, 4); ctx.fill(); ctx.strokeStyle = '#a97ad6'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#c9c2d8'; ctx.font = '600 11px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(waveName() + ': ' + list.length + ' bohaterów w mgle', 12, 17);
+      ctx.fillStyle = '#e6d2ff'; ctx.font = '600 10px "Alegreya Sans", system-ui, sans-serif'; ctx.fillText('Omen: Mgła wojny (klasy i poziomy ukryte)', 12, 32, w - 12);
+      return;
+    }
     if (!UI.listOpen) {
       const hh = drawPreview(list);   // 1.24 (B, P1-1): who comes, without a tap
+      omBadge(6 + hh + 4 + (fl.breach ? 22 : 0));
       if (fl.breach) { const fresh = run.layout.breach && run.layout.breach.fresh, bw = fresh ? 62 : 76; ctx.fillStyle = 'rgba(120,20,30,0.85)'; rr(6, 6 + hh + 4, bw, 18, 6); ctx.fill(); ctx.fillStyle = '#ffd0d0'; ctx.font = numFont(10, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(fresh ? 'WYŁOM!' : 'WYŁOM otwarty', 6 + bw / 2, 6 + hh + 13); }
       return;
     }
@@ -3808,7 +3835,7 @@
     uiRects.rows = list.map((e, k) => ({ y0: 26 + k * rowH - 7, y1: 26 + (k + 1) * rowH - 7, ref: { entry: e } }));
     ctx.fillStyle = 'rgba(10,11,13,0.78)'; rr(6, 6, w, h, 3); ctx.fill();
     ctx.fillStyle = '#8e939a'; ctx.font = '600 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(waveName() + (bossOf(run.wave) ? (bossOf(run.wave) === 'final' ? ' · FINAŁ' : ' · boss') : '') + ':', 12, 15);
+    ctx.fillText(waveName() + (bossOf(run.wave) ? (bossOf(run.wave) === 'final' ? ' · FINAŁ' : ' · boss') : '') + (om ? ' · omen: ' + om.name.toLowerCase() : '') + ':', 12, 15);
     ctx.textAlign = 'right'; ctx.fillText('▴', 6 + w - 6, 15); ctx.textAlign = 'left';
     list.forEach((e, k) => {
       const y = 26 + k * rowH, T0 = HEROES[e.type], R0 = levelStats(e.lvl);

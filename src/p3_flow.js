@@ -17,8 +17,63 @@
   // 37 x 1,25^(wave - 2): 37, 72 in wave 5, 141 in wave 8, 221 in wave 10 (1.10: 20 to 119, about a quarter of a wave).
   // A wave under half of the usual feeds nothing and costs a crystal; the heart's half keeps the purse from piling up.
   // 1.12: the first run (with the guide) is a real run, so its heart is hungry from wave 2 too
-  const hungerNeed = n => n < 2 || !(S.hungerBase > 0) ? 0 :
-    Math.max(1, Math.round(S.hungerBase * Math.pow(S.hungerGrowth, n - 2) * ((mods && mods.hungerK) || 1) - (run.stacks.granary || 0) * ((mods && mods.granary) || 0)));   // Spichlerz dusz: every kill feeds it for good
+  // 1.26 "Serce zabiera" (plan 4.2): the hunger is a table (waves 2-10, then x1,2 a wave) times the cards (hungerK, Głodomór) and
+  // the omen, plus what the dungeon adds: +1 for every monster knocked down in the wave before (Odrodzenie), +2 for every Demon
+  // otchłani in the dungeon, a Kredyt krwi owed; minus Spichlerz dusz (at most 40 a run) and a demon's Głód krwi. The guided first
+  // run: waves 2-4 x0,85. In a wave the need is frozen at its start (fl.needNow), so the bar never moves under the player.
+  const HUNGER_T = [0, 0, 38, 50, 72, 104, 150, 190, 230, 272, 350];
+  const hungerTab = n => n < HUNGER_T.length ? HUNGER_T[n] : HUNGER_T[HUNGER_T.length - 1] * Math.pow(1.2, n - HUNGER_T.length + 1);
+  const demonCount = () => { let n = 0; if (fl && fl.items) fl.items.forEach(it => { if (it.type === 'demon' && !it.temp) n++; }); return n; };
+  // 1.26 (15): the omen of wave n, rolled once when its party is made (waves 3, 6, 8; endless: every wave without a boss)
+  function omenOf(n) {
+    if (!run) return null; run.omens = run.omens || {};   // a run saved before 1.26
+    if (run.omens[n] !== undefined) return run.omens[n];
+    let o = null;
+    if (!run.tutorial && ((userStarted && stageOf() >= 4) || run.omenAlways) && (OMEN_WAVES.includes(n) || (n > RUN_WAVES && !bossOf(n)))) {   // (scripted runs: tests and bots, only when they ask)
+      const used = new Set(Object.values(run.omens)), pool = Object.keys(OMENS).filter(k => (OMENS[k].minW || 0) <= n);
+      const fresh = pool.filter(k => !used.has(k)); o = pick(fresh.length ? fresh : pool);
+    }
+    run.omens[n] = o; return o;
+  }
+  const omenName = n => { const o = run && run.omens && run.omens[n]; return o && OMENS[o] ? OMENS[o].name : null; };
+  const omenK = (n, k) => { const o = run && run.omens && run.omens[n], O = o && OMENS[o]; return O && O[k] || 0; };   // 1.26 (F6): an omen's number for wave n
+  function hungerParts(n) {
+    if (n < 2 || !run || !(S.hungerK > 0)) return null;
+    let mul = S.hungerK * ((mods && mods.hungerK) || 1);
+    if (run.tutorial && n <= 4) mul *= 0.85;
+    if (omenK(n, 'hunger')) mul *= omenK(n, 'hunger');
+    const at = o => o && o.w === n ? o.n : 0;
+    const p = { table: hungerTab(n), base: Math.round(hungerTab(n) * mul), revive: at(run.revive), demon: (2 - Math.min(1, mods.abyssPact || 0)) * (n >= run.wave ? demonCount() : 0), credit: at(run.credit),
+      granary: Math.min(40, Math.round((run.stacks.granary || 0) * ((mods && mods.granary) || 0))), blood: at(run.bloodHunger) };
+    p.need = Math.max(1, Math.round(hungerTab(n) * mul + p.revive + p.demon + p.credit - p.granary - p.blood));
+    return p;
+  }
+  const hungerNeed = n => { if (fl && fl.needFor === n && fl.phase !== 'build') return fl.needNow; const p = hungerParts(n); return p ? p.need : 0; };
+  // 1.26 Danina (4.3): a fed heart keeps taking 30% of every payout into Nasycenie (cards add, 60% at most); Nasycenie raises the
+  // heart's level (4.5): every level a free card from the "Dar serca" row in the shop, levels 2, 4 and 6 a slot in the deck, levels
+  // 3, 5, 7 (and every second after) an Odrost card in that row when a crystal is missing
+  const titheNow = () => Math.min(0.6, Math.max(0, (S.tithe != null ? S.tithe : 0.3) + (mods.titheAdd || 0) + (omenK(run.wave, 'tithe') || 0)));
+  const HEART_LV = [0, 30, 75, 135, 210, 300, 410, 540];
+  const heartLvAt = k => k < HEART_LV.length ? HEART_LV[k] : HEART_LV[HEART_LV.length - 1] + 150 * (k - HEART_LV.length + 1);
+  const heartRegrowLv = L => L >= 3 && L % 2 === 1;
+  const heartSlotLv = L => L === 2 || L === 4 || L === 6;
+  function satietyAdd(v, src) {
+    if (!(v > 0) || !run) return 0;
+    run.satiety = (run.satiety || 0) + v;
+    if (fl && fl.stats) { fl.stats.satietyGain = (fl.stats.satietyGain || 0) + v; if (src) fl.stats['sat_' + src] = (fl.stats['sat_' + src] || 0) + v; }
+    let up = 0; while (run.satiety >= heartLvAt((run.heartLv || 0) + 1) - 1e-6) { heartLevelUp(src); up++; }
+    return up;
+  }
+  function heartLevelUp(src) {
+    const L = run.heartLv = (run.heartLv || 0) + 1;
+    run.heartLvMax = Math.max(run.heartLvMax || 0, L);
+    (run.heartPicks || (run.heartPicks = [])).push({ lv: L });
+    if (heartSlotLv(L)) run.deckSize++;
+    if (fl && fl.stats) fl.stats.heartUp = (fl.stats.heartUp || 0) + 1;
+    if (fl && fl.phase === 'raid') { tl('hl', L); floatTile(fl.heart.x, fl.heart.y, 'Serce rośnie! Poziom ' + L, '#ffd27a', 17, -1.9); burst(fl.heart.x + 0.5, fl.heart.y + 0.5, '#ffd27a', 18); heartHit(); tutPop('heartLv'); }
+    else if (fl && fl.phase === 'build') queueModal({ type: 'shop', heartNow: true });   // Ofiara crossed a level: pick at once
+    updateTray();
+  }
   // extra levels of the leader from greed. Up to 1.02 at most 3, so greed 23 was as safe as greed 4 (the author's run: 42 798
   // Esencja). 1.03: no ceiling, but past 4 it creeps up slowly (6: +3,7, 8: +4,2, 12: +5,0, 23: +6,1).
   const greedLv = g => g <= 4 ? Math.max(0, g - 1) : 3 + 1.8 * Math.log(g / 4);
@@ -34,11 +89,12 @@
   const comboLive = () => !!fl && fl.cclock - fl.lastTrapC < (fl.comboWinNow || S.comboWin);
   function addPts(g, stat, h) {
     if (!(g > 0) || !fl) return 0;
-    const cm = 1 + 0.25 * (comboNow() - 1);
-    const e = g * fl.greed * cm * mods.regen * S.essK;   // 1.12.1: S.essK (1,1) brings the Esencja back to what 1.11.1 paid (replays of the author's two runs)
+    const cm = 1 + 0.25 * (comboNow() - 1), mx = essMultNow();
+    const e = g * greedE(fl.greed) * cm * mods.regen * S.essK * mx;   // 1.26: the multipliers (essMultNow), Krezus (greedE)   // 1.12.1: S.essK (1,1) brings the Esencja back to what 1.11.1 paid (replays of the author's two runs)
     fl.base += g;
     let C = fl.chain;
-    if (!C) C = fl.chain = { g: 0, prov: 0, cm: 1, greed: fl.greed, t0: fl.time, last: fl.time, trap: false, who: new Map(), n: 0 };
+    if (!C) C = fl.chain = { g: 0, prov: 0, cm: 1, greed: fl.greed, t0: fl.time, last: fl.time, trap: false, who: new Map(), n: 0, mx: 1 };
+    C.mx = Math.max(C.mx || 1, mx); if (stat === 'scarePts') C.fled = true;
     C.g += g; C.prov += e; C.last = fl.time; C.n++; C.cm = Math.max(C.cm, cm); C.greed = Math.max(C.greed, fl.greed);
     if (comboLive()) C.trap = true;
     if (h && h.id != null) { C.who.set(h.id, (C.who.get(h.id) || 0) + g); h.accG = (h.accG || 0) + g; grozaOrbs(h, g); }   // the numbers over the heroes show Groza now (violet); 1.02: violet orbs fly to the equation
@@ -61,6 +117,19 @@
     if (fl.heartOrb >= 0.6 || full) { gainEssence('eq', 0, 'essWave', fl.heartOrb); fl.heartOrb = 0; }   // red orbs from the equation to the heart, a few, not one per event
     if (full) heartFull(need);
   }
+  // 1.26 (13.2): the Esencja multipliers of this moment (they multiply each other; nothing caps them, like Balatro's xMult)
+  const greedE = g => mods.croesus && g > 1 ? g * g : g;   // Krezus: greed squared in the Esencja
+  function essMultNow() {
+    if (!fl) return 1;
+    let k = mods.cursedCrown;
+    if (mods.lonewolf > 1 && fl.heroes.length > 1 && alive().length === 1) k *= mods.lonewolf;
+    if (mods.palette > 1 && (fl.famN || 0) >= 5) k *= mods.palette;
+    if (mods.minimalist > 1 && fl.elemN != null && fl.elemN <= 12) k *= mods.minimalist;
+    if (mods.bloodbath && fl.bathK > 1) k *= fl.bathK;
+    if (mods.skulls) k *= 1 + Math.min(0.6, 0.03 * (run.stacks.skulls || 0)) * mods.skulls;
+    return k;
+  }
+  const kataK = t => mods.execDiary && run.kata && run.kata[t] ? 1 + run.kata[t] : 1;   // Pamiętnik kata
   function heartFull(need) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Serce syte!', '#ff9aa4', 16, -1.4); }
   // the chain ends: a trap chain when the combo clock runs out, a chain without a trap after 1,2 s without Groza (at most 4 s)
   function chainTick() {
@@ -71,29 +140,47 @@
   function payChain() {
     const C = fl && fl.chain; if (!C) return 0;
     fl.chain = null;
-    const e = C.g * C.greed * C.cm * mods.regen * S.essK;
+    const crown = C.fled && mods.fearCrown > 1 ? mods.fearCrown : 1;
+    const e = C.g * greedE(C.greed) * C.cm * mods.regen * S.essK * (C.mx || 1) * crown;   // 1.26: the multipliers, Koronacja strachu
+    if (crown > 1) { fl.stats.crownPays = (fl.stats.crownPays || 0) + 1; floatTile(fl.heart.x, fl.heart.y, 'Koronacja strachu ×' + fmt2(crown), '#ffd27a', 13, -1.6); }
     fl.stats.comboPts = (fl.stats.comboPts || 0) + Math.max(0, e - C.prov);
     const pre = Math.min(e, C.fedLive || 0);   // 1.16.1: the heart's share it already ate as the chain went
     fl.score += e - pre;
     fl.lastPay = { g: C.g, greed: C.greed, cm: C.cm, e, t: fl.time, n: ++payN };
     if (C.cm > 1 || e >= 1) tl('cp', Math.round(C.g * 100) / 100, Math.round(C.cm * 100) / 100, Math.round(e * 10) / 10);
     essIn(e - pre, C.who);
+    if (mods.bloodflow && C.cm >= 2 - 1e-9 && hungerNeed(run.wave) > 0 && fl.fed >= hungerNeed(run.wave) - 1e-6) satietyAdd(mods.bloodflow, 'bloodflow');   // 1.26 Krwiobieg
     if (e >= 1) tutPop('pay');
     return e;
   }
   // Esencja comes in: the hungry heart takes its share first, the rest goes to the purse (Obżarstwo: x1,25 once it is fed)
+  // 1.26: the fed heart takes its Danina first (it goes to Nasycenie), Obżarstwo only grows what goes to the purse
   function essIn(e, who) {
     if (!(e > 0)) return;
     const need = hungerNeed(run.wave);
-    let heart = 0;
+    let heart = 0, tithe = 0;
     if (need > 0 && fl.fed < need) {
       heart = Math.min(e, need - fl.fed); fl.fed += heart;
       if (fl.fed >= need - 1e-6) heartFull(need);
     }
     let rest = e - heart;
-    if (rest > 0 && need > 0 && fl.fed >= need && mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
+    if (rest > 0 && need > 0 && fl.fed >= need - 1e-6) {
+      tithe = rest * titheNow(); rest -= tithe;
+      if (tithe > 0) { fl.stats.essTithe = (fl.stats.essTithe || 0) + tithe; satietyAdd(tithe * (mods.satietyK || 1), 'tithe'); if (fl.time - (fl.titheFloatT || -9) > 2.5) { fl.titheFloatT = fl.time; floatTile(fl.heart.x, fl.heart.y, 'Danina +' + fmtE(tithe), '#ffd27a', 13, -1.3); } }
+      if (mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
+    }
     fl.stats.essHeart = (fl.stats.essHeart || 0) + heart;
-    gainEssence('eq', rest, 'essWave', heart);   // 1.02: the Esencja leaves the equation's result box
+    gainEssence('eq', rest, 'essWave', heart + tithe);   // 1.02: the Esencja leaves the equation's result box
+  }
+  // 1.26 Uczta (4.8): a hero killed by a monster feeds the heart 0,8 x his level, no multipliers; it is paid like any payout
+  // (the hunger first, then the Danina and the purse) and counts in the wave's score
+  function feastIn(h) {
+    const e = 0.8 * h.lvl * (mods.feastK || 1) * (omenK(run.wave, 'feast') || 1);
+    if (!(e > 0) || !fl || fl.phase !== 'raid') return 0;
+    fl.score += e; fl.stats.feastPts = (fl.stats.feastPts || 0) + e;
+    essIn(e, null);
+    const p = heroPos(h); addFloat(p.x, p.y - 0.3, 'Uczta +' + fmtE(e), '#ff9aa4', 14, -0.9);
+    return e;
   }
   function setGreed(v) { fl.greed = v; }
   // 1.10 (author: the more greed, the slower it grows): every rise is divided by the greed there is: at x2 a treasure pulls
@@ -118,11 +205,12 @@
   const alive = () => fl.heroes.filter(h => !h.dead && !h.fled && !h.gone);
   const webbed = h => fl.time < h.slowUntil;
   const caged = h => h.state === 'caged';
-  const held = h => h.state === 'fight' || h.state === 'wait' || h.state === 'talk' || h.state === 'rest' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || h.state === 'loot' || caged(h) || webbed(h);   // 1.20: loot = kneeling by a body
+  const held = h => rooted(h) || h.state === 'fight' || h.state === 'wait' || h.state === 'talk' || h.state === 'rest' || h.state === 'disarm' || h.state === 'boss' || h.state === 'free' || h.state === 'loot' || caged(h) || webbed(h);   // 1.20: loot = kneeling by a body
   function trapMult(h, type, src) {
     const pierce = type === 'arrows' && src && t3(src);   // level 3 arrows go through shields
     const sh = k => inB('acid', h.room) ? (1 + k) / 2 : k;   // acid: shields protect half as well
-    return (type === 'spikes' && held(h) ? 1.5 : 1) * (caged(h) ? (h.cageIt && t3(h.cageIt) ? 2 : 1.5) : 1) * (webbed(h) ? (fl.time < (h.acidWebUntil || -1) ? 1.6 : 1.3) : 1)
+    const holdK = rooted(h) ? ((type === 'spikes' || type === 'pendulum') ? 1 : 1.15) : 1, slowK = webbed(h) ? (fl.time < (h.acidWebUntil || -1) ? 1.6 : 1.3) : 1;   // 1.26: Unieruchomiony x1,15, not stacking with Spowolniony (the higher counts)
+    return ((type === 'spikes' || type === 'pendulum') && held(h) ? 1.5 : 1) * (caged(h) ? (h.cageIt && t3(h.cageIt) ? 2 : 1.5) : 1) * Math.max(holdK, slowK)
       * (type === 'spikes' && mods.stickySpikes && webbed(h) ? 1 + mods.stickySpikes : 1)
       * (pierce ? 1 : (h.type === 'warrior' && fl.time < h.shieldUpUntil ? sh(h.R.shield) : 1) * sh(shieldCover(h)));
   }
@@ -267,6 +355,12 @@
       drawers: 0, lure: 0, onemore: 0, thickwalls: false, risen: false, cell: false, vaultsnap: false, wisps: 0, body: 0, falsecall: false, frames: 0,
       restock: false, lullsleep: 0, ambush: false, cocoons: 0, cauldron: 0, batscatter: 0, skullwall: 0, strip: 0, mire: 0, farecho: 0, deepsleep: 0,
       gearlink: 0, blackice: 0, badnews: 0, coins: 0, tainted: 0, rhythm: 0,
+      // 1.26: the heart (4.6, 13.2) and the rest of the new cards (13.2)
+      heartCry: 0, heavyCrystal: 0, heartRoom: 0, warden: 0, upgDisc: 0, shopPlus: 0, heartMem: false, titheAdd: 0, titheChoice: 0, stoneHeart: false, satietyK: 1, bloodCredit: false,
+      bloodflow: 0, feastK: 1, lastBreath: 0, heartPulse: 0,
+      fearCrown: 1, bloodbath: 0, lonewolf: 1, palette: 1, minimalist: 1, cursedCrown: 1, crownLv: 0, skulls: 0, execDiary: 0, risingLegend: 0, pantry: 0,
+      doubleEdge: 0, sharedMech: false, chainReact: 0, heartEcho: false, tarSulfur: 0, conduct: false, toxicCap: 0, toxicDet: 1, plagueAir: false, hellPack: false,
+      bonesUp: 0, undyingArmy: false, abyssPact: 0, goldenDream: false, croesus: false, reactGz: 0,
       fuseLv: {} };   // 1.24: element type -> extra levels from a fused card (lvlPow)
   }
   // The deck decides the mods: start from scratch and lay every card on top (two copies = applied twice). Selling a card really removes it.
@@ -281,8 +375,12 @@
   function buildMods() {
     const m = freshMods(), fz = new Set(run.fused || []);
     run.deck.forEach(id => { const u = UPG[id]; if (!u || !u.apply) return; if (fz.has(id) && !u.unique) fuseApply(u, m); else u.apply(m); });
+    // 1.26 Kopista (the card to its right) and Lustro duszy (the first card): a copy of a plain card, not a unique or a copying one
+    run.deck.forEach((id, i) => { const t = id === 'copyist' ? run.deck[i + 1] : id === 'soulmirror' ? run.deck[0] : null, v = t && UPG[t]; if (v && copyOk(v)) v.apply(m); });
     return m;
   }
+  const copyOk = v => !!v && v.kind === 'card' && !v.unique && v.id !== 'copyist' && v.id !== 'soulmirror';   // 1.26
+  const copyTarget = id => { const i = run.deck.indexOf(id); const t = id === 'copyist' ? run.deck[i + 1] : id === 'soulmirror' ? run.deck[0] : null; return t && copyOk(UPG[t]) ? t : null; };
   const fuseElems = u => [u.id, typeof u.req === 'string' ? u.req : null].filter(t => t && ITEMS[t] && (TRAPS[t] || MONSTERS[t]));   // 1.24: the element(s) a card names
   const fuseGroup = u => fuseElems(u).length ? 'named' : FUSE_GROUP[u.id] || 'power';   // 1.24
   const fusePow = u => FUSE_POW * (FUSE_K[fuseGroup(u)] || 1);   // 1.24: 2,5, 2,75 (power) or 3,125 (hero)
@@ -371,7 +469,8 @@
       pendingUpgrades: [], continueUsed: false, startedAt: Date.now(), result: null, reason: '', checkHints: 3, tut: tutorial ? 0 : -1, tutorial: !!tutorial,
       mode: 'check', fires: 0, buildSec: 0, raidSec: 0, best: loadBest(), next: null, lastIncome: 0, afterModals: null, over: false,
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), thrIdx: 0, greedKeep: 0, greedNext: 0, waveDocs: [], won: false, logState: '', waveStart: null, deck: [], deckSize: S.deckSize || DECK_SIZE, freeDigs: 0, lastInterest: 0,
-      crystals0: S.crystals, crystalEv: [], crystalEvW: 0, crystalsSeen: S.crystals, activeSec: 0, sessions: [], playerId: playerIdNow() };   // 1.24 (D): the crystal log (P0-2), the time played (P0-3), who plays (P0-5)
+      crystals0: S.crystals, crystalEv: [], crystalEvW: 0, crystalsSeen: S.crystals, activeSec: 0, sessions: [], playerId: playerIdNow(),
+      satiety: 0, heartLv: 0, heartLvMax: 0, heartPicks: [], famLv: {}, heartCards: [], regrowCount: 0, ofiaraW: 0, ofiaraN: 0, revive: null, credit: null, bloodHunger: null, omens: {} };   // 1.26 (4.5, 4.7, 15)   // 1.24 (D): the crystal log (P0-2), the time played (P0-3), who plays (P0-5)
     mods = freshMods();
     floats = []; particles = []; paused = false; ff = false;
     run.layout = genStartLayout();
@@ -417,14 +516,13 @@
     const P = shortestPath(); if (!P.length) return;
     let n = 0;
     START_TRAPS.forEach(([type, f0, f1]) => {
-      const cost = ITEMS[type].cost; if (fl.essence < cost) return;
-      const t = startTrapSpot(type, P, f0, f1);
+      const t = startTrapSpot(type, P, f0, f1);   // 1.26 (4.9): the two start traps are free (25 Esencji to spend instead of 30 - 6); taken down they give nothing back
       if (!t) return;
-      fl.items.set(key(t[0], t[1]), { type, x: t[0], y: t[1], cd: 0, anim: 0, disabled: false, hp: 0, max: 0, power: mods.monster, shot: 0.5, flash: 0, preview: 0, gx: t[0] + 0.5, gy: t[1] + 0.5, lvl: 1, spent: cost, sys: true });
-      fl.essence -= cost; bt(type).placed++; bt(type).spent += cost; n++;
+      fl.items.set(key(t[0], t[1]), { type, x: t[0], y: t[1], cd: 0, anim: 0, disabled: false, hp: 0, max: 0, power: mods.monster, shot: 0.5, flash: 0, preview: 0, gx: t[0] + 0.5, gy: t[1] + 0.5, lvl: 1, spent: 0, sys: true });
+      bt(type).placed++; n++;
     });
     run.essence = fl.essence; updateTray(); updateAction();
-    if (n && run.tut < 0) setHint(waveHint() + ' Loch postawił ' + (n === 1 ? 'pułapkę' : n + ' pułapki') + ' blisko serca (z Twojej Esencji): dostaw więcej. Stuknij element, żeby go przenieść; przytrzymaj, żeby zdjąć.');
+    if (n && run.tut < 0) setHint(waveHint() + ' Loch postawił ' + (n === 1 ? 'pułapkę' : n + ' pułapki') + ' blisko serca (za darmo): dostaw więcej. Stuknij element, żeby go przenieść; przytrzymaj, żeby zdjąć.');
     saveRun('build');
   }
   function freshParty() {
@@ -449,8 +547,8 @@
     fl.items.forEach(it => {   // between waves everything is repaired and re-armed; monsters lick their wounds
       if (it.memRes && !it.worn && (it.disabled || it.broken)) it.memRes = null;   // 1.09: put out of use by the heroes: it asks again
       it.worn = false; it.cd = 0; it.disabled = false; it.bent = false; it.anim = 0; it.sleep = false; it.detected = false; it.rumored = false; it.uses = 0; it.seenWave = 0; it.preview = 0; it.noGreed = false; it.cursedKnown = false;
-      it.jamUntil = 0; it.skipUntil = 0; it.lastFire = null; it.broken = false; it.shown = false; it.ambushUntil = 0; it.quick = false;   // wave clocks restart at 0: stale timers from last wave would jam or mute a trap; smashed buildings stand again; 1.18: Zasadzka w norze hides again, Szybki montaż's first shot is spent
-      if (MONSTERS[it.type]) { it.hp = it.max; it.gx = it.x + 0.5; it.gy = it.y + 0.5; it.foeT = 0; }
+      it.jamUntil = 0; it.skipUntil = 0; it.lastFire = null; it.broken = false; it.shown = false; it.ambushUntil = 0; it.quick = false; it.alarmed = false;   // 1.26 (14.5): the decoy alarms once a wave   // wave clocks restart at 0: stale timers from last wave would jam or mute a trap; smashed buildings stand again; 1.18: Zasadzka w norze hides again, Szybki montaż's first shot is spent
+      if (MONSTERS[it.type]) { it.hp = it.max; it.gx = it.x + 0.5; it.gy = it.y + 0.5; it.foeT = 0; it.down = false; it.downR = null; it.healGot = 0; it.raised = 0; it.reN = 0; it.reAt = 0; it.rangerHit = false; it.rewound = false; }   // 1.26: per-wave counters   // 1.26 Odrodzenie: knocked down, it stands again
     });
     fl.bRooms = computeBRooms();
   }
@@ -467,6 +565,7 @@
       // a breach stays until you patch it; from wave 6 the guild may dig a new one (one at a time)
       if (!run.layout.breach && run.wave >= 6 && run.tut < 0 && Math.random() < BREACH_P && planBreach()) { rebuildDungeon(true); run.breachNew = run.wave; }
       if (run.layout.breach && !fl.breach) delete run.layout.breach;   // its wall is gone (dug over, demolished): nothing left to come through
+      if (run.omens && OMENS[run.omens[run.wave]] && !resume) queueModal({ type: 'news', omen: true });   // 1.26 (15): a wave with an omen shows the tavern's news (the omen box) once
     }
     fl.cardMult = cardMultNow();
     if (run.essAtStartW !== run.wave) { run.essAtStartW = run.wave; run.essAtStart = fl.essence; run.previewN = 0; run.pv = null; }   // 1.24 (D, P0-6): essenceAtStart, previewOpened (a resumed build keeps them)
@@ -495,9 +594,11 @@
   function waveHint() {
     const list = run.next, lv = list.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), boss = list.find(e => e.boss);
     const rt = rumorView();
+    if (list.some(e => e.fog)) return waveName() + ': ' + list.length + ' bohaterów w MGLE WOJNY: nie wiadomo, kto przyjdzie ani jak silny. ' + (hungerNeed(run.wave) ? 'GŁÓD: serce weźmie pierwsze ' + hungerNeed(run.wave) + ' Esencji z tej fali. ' : '') + 'OMEN MGŁA WOJNY: ' + OMENS.warfog.text + ' Nagroda: ' + OMENS.warfog.reward + '.';   // 1.26
     return waveName() + ': ' + list.length + ' bohaterów, poziom ' + (lo === hi ? lo : lo + '-' + hi) + (boss ? ', prowadzi ' + BOSS_NAME[boss.boss][boss.female ? 1 : 0] + ' (poz. ' + boss.lvl + ')' : '') + '. ' +
       (hungerNeed(run.wave) ? 'GŁÓD: serce weźmie pierwsze ' + hungerNeed(run.wave) + ' Esencji z tej fali; fala da mniej, to zje kryształ. Trzymaj bohaterów w lochu. ' : '') +
       (fl.breach ? (run.layout.breach && run.layout.breach.fresh ? 'WYŁOM: gildia przebiła tunel do Twojego pokoju (czerwony znacznik) i tę falę wpuści tamtędy. ' : 'WYŁOM wciąż otwarty: bohaterowie wybiorą, czy wejść nim, czy drzwiami. ') + 'Stuknij wyłom, żeby go załatać (' + BREACH_PATCH + ' Esencji). ' : '') +
+      (run.omens && OMENS[run.omens[run.wave]] ? 'OMEN ' + OMENS[run.omens[run.wave]].name.toUpperCase() + ': ' + OMENS[run.omens[run.wave]].text + (OMENS[run.omens[run.wave]].reward ? ' Nagroda: ' + OMENS[run.omens[run.wave]].reward + '.' : '') + (OMENS[run.omens[run.wave]].cost ? ' Za to ' + OMENS[run.omens[run.wave]].cost + '.' : '') + ' ' : '') +
       (run.guild ? 'GILDIA: ' + run.guild.text + ' ' : '') +
       (rt.traps || rt.rooms ? 'Plotki: znają ' + rt.rooms + ' pokoi i ' + rt.traps + ' pułapek (oko na mapie).' : 'Nic o Tobie nie wiedzą.') +
       (run.wave === 1 ? ' Stawiaj elementy z paska; każdy pokój mieści kilka (licznik w rogu), w zakładce Loch kopiesz nowe.' : '');
@@ -531,7 +632,7 @@
   // Breaches: from wave 6, on random waves (35%), the guild tunnels into a deep room, preferring rooms close to the heart that the
   // tavern says are quiet. Announced in the build phase. The first wave comes through it; the breach then STAYS until you patch it
   // (a tap on it between waves), and every later wave picks: the breach or the front door, whichever looks safer.
-  const BREACH_P = 0.35, BREACH_PATCH = 20;   // Prototype 1.01: 5 was pocket change
+  const BREACH_P = 0.35, BREACH_PATCH = 15;   // Prototype 1.01: 5 was pocket change; 1.26: 20 -> 15
   function planBreach() {
     const L = run.layout; delete L.breach;
     if (run.tut >= 0 || stageOf() < 4) return false;   // 1.12: the breach comes with the full game
@@ -594,12 +695,12 @@
     pre = pre || {};
     const female = pre.nm ? pre.female : Math.random() < 0.4, pool = (female ? NAMES_F : NAMES_M).filter(nm => !used.has(nm[0]));
     const nm = pre.nm || pick(pool.length ? pool : (female ? NAMES_F : NAMES_M)); used.add(nm[0]);
-    const R = levelStats(lvl), T = HEROES[type], bm = boss === 'final' ? 3 : boss ? 1.7 : 1;
-    const max = Math.round(T.hp * R.hp * bm * S.heroHp / 100 * earlyHpK(n));   // 1.12: comboHp; 1.24: earlyHpK (the HP of the wave it plays like)
+    const R = levelStats(lvl), T = HEROES[type], bm = boss === 'final' ? 3 : boss ? 1.3 : 1;   // 1.26 (5.2): the champion x1,3 (was x1,7)
+    const max = Math.round(T.hp * R.hp * bm * S.heroHp / 100 * earlyHpK(n) * (omenK(n, 'hpK') || 1));   // 1.26: Krwawy księżyc   // 1.12: comboHp; 1.24: earlyHpK (the HP of the wave it plays like)
     let trait = null;
-    if (!boss && Math.random() < 0.5) trait = pick(Object.keys(HERO_TRAITS));   // about half of them have a personality
+    if (!boss && type !== 'cultist' && Math.random() < 0.6) trait = pick(Object.keys(HERO_TRAITS));   // about half of them have a personality (1.26: 60%, 8 traits)
     if (pre.trait !== undefined) trait = pre.trait;
-    const ck = trait === 'coward' ? 0.8 : trait === 'brave' ? 1.2 : 1;
+    const ck = (trait === 'coward' ? 0.8 : trait === 'brave' ? 1.2 : 1) * (type === 'paladin' ? 1.4 : type === 'ranger' ? 0.9 : 1) * (omenK(n, 'courage') || 1);   // 1.26: Noc strachu   // 1.26: the paladin's oath, the ranger's nerves
     // v14: a body (a weakness or a toughness) and a phobia; the tavern knows some of it (shown before the wave), the rest shows in the dungeon
     const deep = stageOf() >= 4;   // 1.12: bodies and phobias come with the full game
     const phys = pre.phys !== undefined ? pre.phys : (deep && Math.random() < 0.35 + 0.1 * (mods.oddBodies || 0) ? pick(Object.keys(PHYS)) : null);
@@ -619,18 +720,18 @@
       if (!inv.some(x => x.type === t)) inv.push({ type: t, r, kit: true, src: 'kit', charges: powerCharges(t, r) });
     }
     return { type, lvl, rank: pre.nemesis ? Math.max(1, tierOf(lvl)) : tierOf(lvl), boss: boss || null, female, nm, hp: max, max, hpK: atW(comboHp, earlyW(n)), inv, trait,   // 1.23: a Nemezis is never a rookie; 1.24: atW
-      courage: Math.round(R.courage * (boss === 'final' ? 2 : boss ? 1.5 : 1) * ck * (pre.nemesis ? 1.4 : 1)), phys, phobia, known, returning: !!pre.returning, scar: pre.scar || null, times: pre.times || 0,   // 1.23: x1,4 for a Nemezis
+      courage: Math.round(R.courage * (boss === 'final' ? 2 : boss ? 1.3 : 1) * ck * (pre.nemesis ? 1.4 : 1)), phys, phobia, known, returning: !!pre.returning, scar: pre.scar || null, times: pre.times || 0,   // 1.23: x1,4 for a Nemezis
       nemesis: pre.nemesis || null };
   }
   // The guild reads the last wave's report and sends the right people (from wave 3): priests and amulets against fear,
   // warriors and talismans against a slaughterhouse, thieves against a minefield, a mage against monsters.
-  const GUILD_WANT = { fear: 'priest', kill: 'warrior', traps: 'thief', monsters: 'mage', lost: 'bard', block: 'barbarian' };
+  const GUILD_WANT = { fear: 'priest', kill: 'warrior', traps: 'thief', monsters: 'mage', lost: 'bard', block: 'barbarian', reactions: 'alchemist', holy: 'paladin', flyers: 'ranger' };   // 1.26
   function guildAdapt(n) {
     const w = run.waves[run.waves.length - 1];
     if (n < 3 || !w || stageOf() < 3) return null;   // 1.12: the guild's specialists come with run 3 (with the counter-buildings)
     const st = w.stats, fearShare = (st.fearPts + st.scarePts) / Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts);
     const killShare = st.kills / Math.max(1, w.heroes.length);
-    let traps = 0, mons = 0, blocks = 0; run.items.forEach(it => { if (it.temp) return; if (TRAPS[it.type]) traps++; else if (MONSTERS[it.type]) mons++; if (BUILDINGS[it.type]) blocks++; });
+    let traps = 0, mons = 0, blocks = 0, holyN = 0, flyN = 0; run.items.forEach(it => { if (it.temp) return; if (TRAPS[it.type]) traps++; else if (MONSTERS[it.type]) mons++; if (BUILDINGS[it.type]) blocks++; if (FAMILY_OF[it.type] === 'undead' || FAMILY_OF[it.type] === 'demons') holyN++; if (DRIFT[it.type]) flyN++; });
     run.layout.cells.forEach(c => (c.objs || []).forEach(o => { if (o[2] === 'crate' && o[3]) blocks++; }));   // crates you built
     const lostShare = (st.lostPts + st.lonePts) / Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts + st.lostPts + st.lonePts);
     const opts = [
@@ -641,7 +742,11 @@
       { kind: 'monsters', sc: mons >= 4 ? 0.5 + 0.3 * Math.min(1, (mons - 4) / 6) : 0, text: 'słyszała o potworach: przysyła maga. Kontra: Runa (zakładka Obiekty).' },
       // 1.05: a dungeon where people get lost and wander alone gets a bard; one walled with crates and buildings gets a barbarian
       { kind: 'lost', sc: (st.gotLost >= 2 || lostShare >= 0.15) ? 0.5 + Math.min(0.3, lostShare) : 0, text: 'słyszała, że w Twoim lochu ludzie błądzą i giną samotnie: przysyła barda. Kontra: Kamień wyjec (zakładka Obiekty).' },
-      { kind: 'block', sc: blocks >= 5 || (st.reroutes || 0) >= 2 ? 0.5 + 0.3 * Math.min(1, Math.max(blocks - 5, 2 * ((st.reroutes || 0) - 2)) / 6) : 0, text: 'słyszała o zastawionych przejściach: przysyła barbarzyńcę. Kontra: Okowy (zakładka Obiekty).' }
+      { kind: 'block', sc: blocks >= 5 || (st.reroutes || 0) >= 2 ? 0.5 + 0.3 * Math.min(1, Math.max(blocks - 5, 2 * ((st.reroutes || 0) - 2)) / 6) : 0, text: 'słyszała o zastawionych przejściach: przysyła barbarzyńcę. Kontra: Okowy (zakładka Obiekty).' },
+      // 1.26 (5.6): the new styles (their specialist only from the waves his class comes in)
+      { kind: 'reactions', sc: n >= 6 && (st.reactPts || 0) >= 0.4 * Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts) ? 0.85 : 0, text: 'słyszała o płonących i zatrutych: przysyła alchemika z antidotum. Kontra: Laboratorium, Zalewnia.' },
+      { kind: 'holy', sc: n >= 4 && holyN >= 4 ? 0.6 + 0.2 * Math.min(1, (holyN - 4) / 6) : 0, text: 'słyszała o nieumarłych i demonach: przysyła paladyna. Kontra: Ołtarz (osłabia przysięgę), Kusicielka.' },
+      { kind: 'flyers', sc: n >= 4 && flyN >= 3 ? 0.6 + 0.2 * Math.min(1, (flyN - 3) / 5) : 0, text: 'słyszała o latających potworach: przysyła tropiciela. Kontra: Zasłona, Mgła.' }
     ].filter(o => o.sc > 0).sort((a, b) => b.sc - a.sc);
     return opts[0] || null;
   }
@@ -682,7 +787,7 @@
   // 21% -> 33%; a new player lost his first run, the guided one, in wave 3; the build lags: wave 2-3 meets wave 4-5 levels with
   // a wave 2-3 dungeon): halfway back. Wave 1 like the old wave 2, then 2,75 / 3,5 / 4,25, from wave 5 as before. The guided
   // first run (run.tutorial) plays the v58 curve again, the cap of 4 levels in waves 1-2 included (EARLY_W_TUT).
-  const EARLY_W = [0, 2, 2.75, 3.5, 4.25], EARLY_W_TUT = [0, 1, 2, 3, 4];
+  const EARLY_W = [0, 1.5, 2.25, 3, 4], EARLY_W_TUT = [0, 1, 2, 3, 4];   // 1.26 (5.1): a smaller dungeon in waves 2-4 (less Esencja)
   const earlyW = n => { if (tutW1(n) || !(n < EARLY_W.length)) return n; return (run && run.tutorial ? EARLY_W_TUT : EARLY_W)[n]; };   // 1.24: the old wave a wave plays like
   const atW = (f, w) => { const a = Math.floor(w), k = w - a; return k > 1e-9 ? f(a) * (1 - k) + f(a + 1) * k : f(a); };   // 1.24: f between two waves
   const hpK0 = m => (1 + (EARLY_HP[m] || 0) * S.earlyHp) * comboHp(m);   // 1.24: the HP bonus up to 1.23
@@ -692,24 +797,33 @@
   const waveName = () => 'Fala ' + run.wave + (run.wave <= RUN_WAVES ? '/' + RUN_WAVES : '');
   // Each wave is new people: the first ones are rookies, then they keep getting better. Every 5th wave a boss leads them.
   function makeWave(n) {
-    const size = waveSize(n);
+    const om = OMENS[omenOf(n)] || {};   // 1.26 (15)
+    const size = Math.max(1, waveSize(n) + (om.extra || 0));
     // v12.1: treasure hunters TAKE THE PLACE of ordinary heroes (greed brings stronger and greedier people, not more of them)
-    const hunters = n >= 3 && stageOf() >= 4 ? Math.min(size - 2, huntersN(greedRaw(run.greedRep || 1))) : 0;
+    const hunters = n >= 3 && stageOf() >= 4 ? Math.max(0, Math.min(size - 2, huntersN(greedRaw(run.greedRep || 1)) + (om.hunters || 0))) : 0;
     const recruit = n >= 4 && partySize(n) > partySize(n - 1) && !bossOf(n);   // the newest member is a rookie for one wave: the step in numbers is softer (not in boss waves)
     // 1.05: never two of a class (6 classes, at most 6 heroes); the first three waves bring only the four classic ones
-    const classes = shuffle((n <= 3 ? CLASSIC : PARTY).slice()).slice(0, size);
+    const classes = shuffle(partyPool(n).slice()).slice(0, size);   // 1.26: paladin and ranger from wave 4, alchemist from wave 6
+    if (classes.length < size) { const more = shuffle(partyPool(Math.max(n, 6)).filter(t => !classes.includes(t))); while (classes.length < size) classes.push(more.length ? more.shift() : pick(PARTY)); }   // Oblężenie: more people than classes
     const g = run.guild = guildAdapt(n);
     if (g && !classes.includes(GUILD_WANT[g.kind])) classes[size > 1 ? 1 : 0] = GUILD_WANT[g.kind];   // the guild makes sure its specialist comes (one: no class twice)
+    if (om.force) {   // Inkwizycja, Saperzy: these classes for sure (Saperzy before wave 6: two thieves)
+      const want = om.force.map(t => t === 'ranger' && n < 6 ? 'thief' : t), keep = new Array(classes.length).fill(false);
+      want.forEach(t => { let j = classes.findIndex((c, q) => c === t && !keep[q]); if (j < 0) { j = classes.length - 1; while (j > 0 && keep[j]) j--; classes[j] = t; } keep[j] = true; });
+    }
     const base = waveBase(n), used = new Set();
-    const hl = huntersLv();   // greed: the leader is a seasoned treasure hunter (+hl), everybody else half that
+    const hl = huntersLv() * (mods.croesus ? 1.5 : 1);   // 1.26 Krezus; greed: the leader is a seasoned treasure hunter (+hl), everybody else half that
     const list = classes.slice(0, size).map((t, i) => {
       const isHunter = i >= size - hunters, isRecruit = recruit && !isHunter && i === size - hunters - 1 && i >= 2;
       const bonus = i === 0 ? 1 + hl : isRecruit ? -3 : hl / 2;
-      let L = Math.max(1, Math.round(base + bonus + Math.random() * 1.7 - 1.2));
+      let L = Math.max(1, Math.round(base + bonus + Math.random() * 1.7 - 1.2) + (mods.crownLv || 0) + (om.lvAdd || 0));   // 1.26 Przeklęta korona, omen
       if (tutW1(n)) L = Math.min(L, 2);   // 1.24: only the tutorial's first wave keeps a cap (waves 1-2 had 4)
       else if (n <= 2 && run.tutorial) L = Math.min(L, 4);   // 1.25.1: the guided run keeps v58's cap of 4 in waves 1-2
       const e = makeHero(t, L, n, used);
       if (isHunter) { e.trait = 'greedy'; e.hunter = true; }   // 1.05: a treasure hunter is a mark on any class (the bag), not a thief
+      if (om.greedAll && !e.boss) e.trait = 'greedy';   // Złoty szał
+      if (om.gear) e.inv = (e.inv || []).concat([rollItem(2, GEAR_POOL)].filter(Boolean));   // Elita
+      if (om.fog) e.fog = true;   // Mgła wojny: the preview hides who he is
       if (isRecruit) e.recruit = true;
       return e;
     });
@@ -730,7 +844,7 @@
       r.used = n;
     });
     const boss = bossOf(n);
-    if (boss) list[0] = makeHero(list[0].type, Math.round(base + hl) + (boss === 'final' ? 5 : 2), n, used, boss);
+    if (boss) list[0] = makeHero(list[0].type, Math.round(base + hl) + (boss === 'final' ? 5 : 0), n, used, boss);   // 1.26 (5.2): the champion +0 levels (was +2)
     // amulets / charms: only the specialists carry them at first, everybody from wave 6
     if (g && (g.kind === 'fear' || g.kind === 'kill')) list.forEach(e => {
       if (!(n >= 6 || e.type === { fear: 'priest', kill: 'warrior' }[g.kind]) || e.inv.length >= 3 + Math.floor(e.lvl / 3)) return;
@@ -752,6 +866,8 @@
         else if ([...run.items.values()].some(it => it.type === 'gate') && Math.random() < 0.3) { const c = list.filter(room); give(c.find(e => e.type === 'warrior' || e.type === 'barbarian') || (c.length ? pick(c) : null), 'crowbar'); }
       }
     }
+    // 1.26 (14.1.4, author: only with the omen): Pielgrzymka: 2 cultists take the place of the last two ordinary heroes (not the boss, not a hunter)
+    if (omenK(n, 'cultists')) { let k = 0; for (let i = list.length - 1; i >= 1 && k < omenK(n, 'cultists'); i--) { const e = list[i]; if (e.boss || e.hunter || e.returning) continue; list[i] = makeHero('cultist', e.lvl, n, used); k++; } }
     makeBonds(list, n);   // 1.21
     return list;
   }
@@ -791,16 +907,20 @@
     return L.includes(e) ? L[e.bond.with] || null : null;
   }
   const TALE_PER = 0.04, TALE_LOOT = 4, TALE_CAP = 0.3;   // v15.1: +0,04 greed per treasure seen (up to 4) for every hero scared away, at most +0,3 a wave
-  const greedStartNow = () => greedCurve(1 + mods.greedStart + run.rumor.gold + run.greedKeep + greedBonusNow());
+  const greedStartNow = () => greedCurve(1 + mods.greedStart + (omenK(run.wave, 'greedStart') || 0) + 0.1 * (run.stacks.risinglegend || 0) * mods.risingLegend + run.rumor.gold + run.greedKeep + greedBonusNow());
   function startWave() {
     if (!fl || fl.phase !== 'build') return;
     run.buildSec += Math.max(0, realNow - fl.buildStart); fl.buildSec = Math.round(realNow - fl.buildStart);
     saveRun('build');   // a tab closed during the wave comes back to this build
     perfReset();
     fl.items.forEach(it => { it.skullOff = false; it.firstBy = null; it.knocked = null; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap); 1.20: so do who saw a pile first and whose gear a crit knocked out
+    { const hp = hungerParts(run.wave); fl.needParts = hp; fl.needNow = hp ? hp.need : 0; fl.needFor = run.wave; fl.ofiara = 0; }   // 1.26: the need of this wave, frozen
+    { const fams = new Set(); let n = 0; fl.items.forEach(it => { if (it.temp || !(TRAPS[it.type] || MONSTERS[it.type])) return; n++; if (FAMILY_OF[it.type]) fams.add(FAMILY_OF[it.type]); }); fl.famN = fams.size; fl.elemN = n; fl.bathK = 1; fl.armyN = 0; fl.heartEchoW = 0; }
+    { const o = OMENS[run.omens && run.omens[run.wave]]; if (o) { floatTile(fl.ent.x, fl.ent.y, 'Omen: ' + o.name, '#d9b8ff', 16, -1.6); setHint('Omen: ' + o.name + '. ' + o.text); } }   // 1.26 (15)   // 1.26 Pełna paleta, Minimalista, Krwawa łaźnia
     fl.phase = 'raid'; fl.time = 0; fl.patT = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
-    { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał
+    { const ty = new Set(); fl.items.forEach(it => { if (ACTIVE[it.type] && DMG_OF[it.type]) ty.add(DMG_OF[it.type]); }); fl.arsenal4 = ty.size >= 4; }   // Pełen arsenał (1.26: 4 of the 5 types)
+    fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && mods.warden && roomOf(m.x, m.y) === fl.heart.room) m.hp = Math.round(m.hp * (1 + mods.warden)); });   // 1.26 Strażnik
     if (run.returners) run.returners = run.returners.filter(r => r.used !== run.wave);   // the returners of this wave are in
     fl.base = 0; setGreed(greedStartNow());   // tales of gold, and gold already carried off, make them greedier
     run.greedNext = 0;   // the tales of treasure from the last wave are used up
@@ -1062,14 +1182,20 @@
     if (run.layout.breach) run.layout.breach.fresh = false;   // the guild's tunnel stays open: from now on each wave chooses its way in
     if (!fl.crystalLost && mods.bank) run.stacks.bank = (run.stacks.bank || 0) + 1;   // Skarbiec
     fl.stats.wavePts = 0;   // v15: no bonus for the wave itself; a small flat income comes after it
+    fl.items.forEach(m => { if (m.type === 'rats' && !m.temp) { m.baseMax = m.baseMax || m.max; if (m.down) m.grow = 0; else m.grow = Math.min(3, (m.grow || 0) + 1); m.max = Math.round(m.baseMax * (1 + 0.8 * m.grow)); } });   // 1.26 Rój szczurów: grows a wave it was not knocked down
+    { let dn = 0; fl.items.forEach(m => { if (MONSTERS[m.type] && m.down && !m.temp && !(m.type === 'lich' && t3b(m, 'A'))) dn++; }); run.revive = dn ? { w: run.wave + 1, n: dn } : null; fl.stats.revived = dn; }   // 1.26 Odrodzenie: +1 hunger next wave a monster knocked down
     feedHeart();
+    if (mods.pantry && fl.hunger && (fl.stats.sat_tithe || 0) >= 0.5 * fl.hunger.need) { run.stacks.pantry = Math.min(5 * mods.pantry, (run.stacks.pantry || 0) + 1); fl.stats.pantryUp = 1; }   // 1.26 Spiżarnia: +2 income for good (at most +10)
+    run.lastBreathW = mods.lastBreath && fl.hunger && fl.essence <= 0.5 ? run.wave + 1 : 0;   // 1.26 Ostatni oddech
+    if (mods.risingLegend) run.stacks.risinglegend = fl.crystalLost || (fl.hunger && fl.hunger.ate) ? 0 : (run.stacks.risinglegend || 0) + 1;   // 1.26 Rosnąca legenda
     if (run.wave === RUN_WAVES && run.crystals > 0 && !run.won) { run.won = true; fl.victory = true; }   // the prophecy hero is beaten (and the heart fed): the run is won
     run.grozaTotal = (run.grozaTotal || 0) + fl.base; run.greedRep = fl.greed;   // what the guild hears: how deadly, how rich
     checkThresholds(run.total + fl.score);
     run.pendingUpgrades.push({ r: bossOf(run.wave) ? 3 : 1, src: bossOf(run.wave) ? 'boss' : 'wave', wave: run.wave });   // every wave held back earns a buff
-    run.lastInterest = Math.min(Math.floor(fl.essence * mods.usurer), 12 * Math.round(mods.usurer / 0.15));   // Lichwiarz: interest on what you did not spend (at most 12 a copy)
-    const income = S.waveIncome + mods.income + run.lastInterest + 2 * (run.stacks.bank || 0) * mods.bank;   // a small flat income, the rest comes from Groza
+    run.lastInterest = Math.min(Math.floor(fl.essence * mods.usurer), 10 * Math.round(mods.usurer / 0.15));   // Lichwiarz: interest on what you did not spend (at most 10 a copy; 1.26: 12 -> 10, after the heart took its share)
+    const income = S.waveIncome + mods.income + run.lastInterest + 2 * (run.stacks.bank || 0) * mods.bank + 2 * (run.stacks.pantry || 0);   // 1.26: Spiżarnia   // a small flat income, the rest comes from Groza
     run.lastIncome = income;
+    { const o = OMENS[run.omens && run.omens[run.wave]]; if (o && o.free) { run.freePicks = (run.freePicks || 0) + o.free; fl.stats.omenFree = o.free; } if (o && o.satiety) { satietyAdd(o.satiety, 'omen'); fl.stats.omenSat = o.satiety; } }   // 1.26 (15): the omen's reward
     run.essence = fl.essence + income;   // Prototype 1.01: no purse limit
     fl.essence = run.essence;
     collectReturners();
@@ -1090,7 +1216,7 @@
     if (stageOf() < 4) return;   // 1.12: the returners come with the full game
     run.returners = run.returners || [];
     fl.heroes.forEach(h => {
-      if (!h.fled || h.dead || h.boss || (run.returners.length >= 8 && !h.nemesis)) return;   // 1.23: a Nemezis who got away always comes back (also past the 8)
+      if (!h.fled || h.dead || h.boss || h.type === 'cultist' || (run.returners.length >= 8 && !h.nemesis)) return;   // 1.26: a cultist comes only with Pielgrzymka   // 1.23: a Nemezis who got away always comes back (also past the 8)
       if (!h.nemesis && Math.random() >= (h.fleeing ? 0.55 : 0.4) * (1 + (mods.moreReturn || 0))) return;
       let phys = h.phys, phobia = h.phobia, scar = null;
       const topFear = Object.entries(h.fearBy || {}).sort((a, b) => b[1] - a[1])[0], topDmg = Object.entries(h.dmgBy || {}).sort((a, b) => b[1] - a[1])[0];
@@ -1111,18 +1237,46 @@
   }
   // Prototype 1.01: the heart has been eating its share of this wave's Esencja all along (essIn). When the wave ends it is
   // either fed, or it eats what it got and a crystal. Crystals do not grow back by themselves (1.05: and cannot be bought; a card may give one).
+  // 1.26 "Serce zabiera" (4.4): a wave that did not feed the heart: it takes what is missing from your purse (what is left from
+  // earlier waves). Only when the purse cannot cover it does a crystal crack, and the heart eats the rest of the purse. Kamienne serce:
+  // 75% of what is missing is enough; Kredyt krwi (once a run): the rest x2 goes onto the next wave's hunger instead of a crystal.
   function feedHeart() {
     const need = hungerNeed(run.wave);
     fl.hunger = null;
     if (!need || run.crystals <= 0) return;
-    const h = fl.hunger = { need, got: Math.round(fl.score * 10) / 10, fedAmt: Math.round(fl.fed * 10) / 10, fedAt: fl.fedAt >= 0 ? Math.round(fl.fedAt) : null };
-    h.fed = fl.fed >= need - 0.001;
-    if (h.fed) tl('hg', 'fed', need);
-    else {
-      const c0 = run.crystals; run.crystals = Math.max(0, run.crystals - 1); h.ate = true; fl.stats.hungerAte = 1; tl('hg', 'ate', Math.round(need - fl.fed));
-      crystalEv(run.crystals - c0, 'hunger', Math.round(fl.fed) + '/' + need);   // 1.24 (D, P0-2): the hidden loss the testers' data showed (hunger.ate, never crystalLost)
-      floatTile(fl.heart.x, fl.heart.y, 'Głód pochłonął kryształ!', '#ff6b6b', 18, -1.2); shake = Math.max(shake, 0.25); buzz([90, 60, 90]);
+    const P = fl.needParts || {}, h = fl.hunger = { need, got: Math.round(fl.score * 10) / 10, fedAmt: Math.round(fl.fed * 10) / 10, fedAt: fl.fedAt >= 0 ? Math.round(fl.fedAt) : null,
+      needBase: P.base, needRevive: P.revive || 0, needDemon: P.demon || 0, needCredit: P.credit || 0, needGranary: P.granary || 0, needBlood: P.blood || 0, tookPurse: 0, bankrupt: false, fed: false, fedWave: false,
+      purse0: Math.round(fl.essence), tithe: Math.round(fl.stats.essTithe || 0), satiety: Math.round(run.satiety || 0), heartLv: run.heartLv || 0 };
+    h.fedWave = fl.fed >= need - 0.001;
+    if (h.fedWave) { h.fed = true; tl('hg', 'fed', need); return; }
+    const short = need - fl.fed, want = short * (mods.stoneHeart ? 0.75 : 1), pay = Math.min(Math.max(0, fl.essence), want);
+    fl.essence -= pay; h.tookPurse = Math.round(pay * 10) / 10; fl.stats.heartTook = pay;
+    if (pay >= want - 1e-6) {
+      h.fed = true; tl('hg', 'took', Math.round(pay));
+      floatTile(fl.heart.x, fl.heart.y, 'Serce zabrało ' + fmtE(pay) + ' z zapasów', '#ff9aa4', 16, -1.2);
+      return;
     }
+    if (mods.bloodCredit && !run.creditUsed) {   // Kredyt krwi
+      run.creditUsed = true; run.credit = { w: run.wave + 1, n: Math.round((want - pay) * 2) }; h.fed = true; h.credit = run.credit.n; tl('hg', 'credit', run.credit.n);
+      floatTile(fl.heart.x, fl.heart.y, 'Kredyt krwi: +' + run.credit.n + ' głodu w następnej fali', '#ff9aa4', 15, -1.2);
+      return;
+    }
+    const c0 = run.crystals; run.crystals = Math.max(0, run.crystals - 1); h.ate = true; h.bankrupt = true; h.lostPurse = Math.round(fl.essence); fl.essence = 0;
+    fl.stats.hungerAte = 1; tl('hg', 'ate', Math.round(want - pay));
+    crystalEv(run.crystals - c0, 'hunger', Math.round(fl.fed) + '+' + Math.round(pay) + '/' + need);   // 1.24 (D, P0-2)
+    floatTile(fl.heart.x, fl.heart.y, 'Głód pękł kryształ!', '#ff6b6b', 18, -1.2); shake = Math.max(shake, 0.25); buzz([90, 60, 90]);
+  }
+  // 1.26 Ofiara (4.10): in the build, Esencja from the purse straight into Nasycenie, 1:1, at most 40 a break between waves
+  const OFIARA_MAX = 40;
+  const ofiaraLeft = () => !run || !fl || fl.phase !== 'build' ? 0 : Math.max(0, Math.min(Math.floor(fl.essence), OFIARA_MAX - (run.ofiaraW === run.wave ? run.ofiaraN : 0)));
+  function ofiara(n) {
+    n = Math.floor(Math.min(n, ofiaraLeft())); if (!(n > 0)) return 0;
+    if (run.ofiaraW !== run.wave) { run.ofiaraW = run.wave; run.ofiaraN = 0; }
+    run.ofiaraN += n; fl.essence -= n; run.essence = fl.essence; fl.stats.ofiara = (fl.stats.ofiara || 0) + n;
+    floatTile(fl.heart.x, fl.heart.y, 'Ofiara +' + n + ' Nasycenia', '#ffd27a', 15, -1.3); burst(fl.heart.x + 0.5, fl.heart.y + 0.5, '#ffd27a', 10);
+    satietyAdd(n, 'ofiara');
+    updateTray(); saveRunSoon();
+    return n;
   }
   // 1.24 (D, P0-2): every change of run.crystals with its cause (stolen | hunger | saved | card | other): run.crystalEv for the whole run
   // (the runs record) and each wave record's crystalEvents (what came since the last wave record, the build phase before it
@@ -1165,7 +1319,8 @@
       essence: Math.round(fl.essence), stats: roundStats(fl.stats), items, partial: !!partial, perf: ps, errors: PERF.errs.length ? PERF.errs.splice(0) : undefined,
       checks: nChk, cpm: realMin > 0 ? Math.round(nChk / realMin * 10) / 10 : 0, frozen: ps ? ps.frozen : null, memFires: s0.memFires || 0, skullOff: s0.skullOff || 0, classes: fl.heroes.map(h => h.type), trayPauses: s0.trayPauses || 0,
       crystalEvents: crystalEvTake(), essenceAtStart: run.essAtStart != null ? Math.round(run.essAtStart) : null, essenceAtWaveStart: fl.essW0 != null ? Math.round(fl.essW0) : null,   // 1.24 (D, P0-2, P0-6)
-      itemsCount: fl.itemsW0 != null ? fl.itemsW0 : fl.items.size, roomsCount: fl.roomsW0 != null ? fl.roomsW0 : run.layout.cells.size, previewOpened: run.previewN || 0, previewVis: pvTake(), fearUi: Object.assign({ card: 0, bar: 0 }, fl.fearUi || {}) });   // 1.24 (D, P0-6)
+      itemsCount: fl.itemsW0 != null ? fl.itemsW0 : fl.items.size, roomsCount: fl.roomsW0 != null ? fl.roomsW0 : run.layout.cells.size, previewOpened: run.previewN || 0, previewVis: pvTake(), fearUi: Object.assign({ card: 0, bar: 0 }, fl.fearUi || {}),   // 1.24 (D, P0-6)
+      satiety: Math.round(run.satiety || 0), satietyGain: Math.round(fl.stats.satietyGain || 0), heartLv: run.heartLv || 0, heartPick: fl.heartPick || null, regrow: fl.stats.regrow || 0, feastPts: Math.round(fl.stats.feastPts || 0), tithePts: Math.round(fl.stats.essTithe || 0), ofiara: fl.stats.ofiara || 0, revived: fl.stats.revived || 0, stealMax: Math.round((fl.stats.stealMax || 0) * 10) / 10, omen: (run.omens || {})[run.wave] || null });   // 1.26 (4.11)
   }
   // after the wave summary: game over, or upgrades and the next build phase
   function afterSummary() {
@@ -1364,7 +1519,7 @@
   // has felt it (bleeding from spikes is not fire: before 1.17.1 it counted as fire damage, hence a hero dreaming of flames
   // where there were none)
   const BURN_TAGS = { spikes: ['spikes', 'blood'], arrows: ['arrows', 'fire'], powder: ['blast', 'fire'], fire: ['fire'], archer: ['archer', 'monster', 'fire'], trapdoor: ['trapdoor', 'fire'] };
-  const hurtTags = (h, src) => { const k = srcKind(src); return k === 'burn' ? BURN_TAGS[h.burnBy] || ['fire'] : k === 'trap' || k === 'monster' ? itemTags(src, true) : null; };
+  const hurtTags = (h, src) => { const k = srcKind(src); return k === 'burn' ? BURN_TAGS[h.burnBy] || ['fire'] : k === 'bleed' ? ['spikes', 'blood'] : k === 'trap' || k === 'monster' ? itemTags(src, true) : null; };
   function damage(h, amt, src, comboMult) {
     if (h.dead || h.fled || amt <= 0 || fl.ending !== null) return;
     const now = hurtTags(h, src);
@@ -1391,15 +1546,21 @@
       if (ar) amt *= 1 - (1 - Math.pow(0.92, ar * itemPow(h))) * (inB('acid', h.room) ? 0.5 : 1);
     } else if (caged(h)) amt *= 1.5;
     if (h.cursed && kind !== 'heart') amt *= 1.3;   // a cursed treasure: everything hurts more
+    if ((kind === 'trap' || kind === 'monster') && inB('acid', h.room)) amt *= 1.1;   // 1.26 (6.4): Kwas +10%
+    if (kind === 'trap' && h.oilA && fl.time < (h.oilUntil || -1) && Math.random() < 0.15 && setStatus(h, 'burn', 3, 'oilslick')) floatHero(h, 'Zapłon!', '#ff9a3c', 12, -0.7);   // 1.26 Plama oleju A: Łatwopalna
+    if (fl.time < (h.hexUntil || -1) && kind !== 'heart') amt *= 1.2;   // 1.26 Szaman B: Klątwa
     if (mods.deepsleep && (kind === 'trap' || kind === 'monster') && h.state === 'rest' && isRt(h.room, 'haven')) amt *= 1 + mods.deepsleep;   // 1.18 Sen bez przebudzenia
     // v14: the damage type against the hero's class, body and scars (a weakness shows the first time it bites)
-    const dtp = kind === 'burn' ? (h.burnBy === 'spikes' ? 'pierce' : 'fire') : kind === 'heart' ? null : DMG_OF[tkey || (src && src.type) || (kind === 'loot' ? 'loot' : '')] || null;
+    const dtp = kind === 'burn' ? (h.burnBy === 'spikes' ? 'pierce' : 'fire') : kind === 'bleed' ? 'pierce' : kind === 'poison' ? 'poison' : kind === 'react' ? src.dtp : kind === 'heart' ? null : DMG_OF[tkey || (src && src.type) || (kind === 'loot' ? 'loot' : '')] || null;
     if (dtp) { const tk = typeMult(h, dtp); amt *= tk; if (tk !== 1) revealPhys(h, dtp, tk); }
+    if (dtp === 'pierce' && mods.tarSulfur && fl.time < (h.oilUntil || -1)) amt *= 1 + mods.tarSulfur;   // 1.26 Smoła i siarka
+    if (dtp === 'shock') { const ar = gearR(h, 'armor'); if (ar) amt *= 1 + 0.05 * ar; }   // 1.26 (7.3): armour draws the lightning
+    if (dtp === 'fire' || dtp === 'shock') { amt = reactHit(h, amt, dtp, kind, src); if (h.dead) return; }   // 1.26: Pożar, Detonacja, Porażenie
     const attr = tkey || (kind === 'monster' ? src.type : kind === 'burn' ? (h.burnBy || 'fire') : kind === 'loot' ? 'loot' : null);
     const real = Math.min(h.hp + h.shield, amt);
     let rest = amt;
     if (h.shield > 0) { const ab = Math.min(h.shield, rest * (inB('acid', h.room) ? 0.5 : 1)); h.shield -= ab; rest -= ab; }   // acid eats through half of a ward
-    h.hp -= rest; h.flash = 0.12; h.hurtAt = fl.time;
+    h.hp -= rest; if (kind !== 'burn' && kind !== 'bleed' && kind !== 'poison') h.flash = 0.12; h.hurtAt = fl.time;   // 1.26: a tick of a status does not blink the hero white
     if (h.hp < 0.4 * h.max && kind !== 'heart') sawNear(h, ['blood']);   // 1.17.1: badly hurt: the others see the blood
     fl.heroes.forEach(o => { if (o !== h && !o.dead && !o.fled && !o.gone && Math.abs(o.tx - h.tx) + Math.abs(o.ty - h.ty) <= 5) lookAt(o, h.x, h.y); });   // 1.10: the others turn to him
     if (kind !== 'heart') h.playerDmg += real * (kind === 'monster' ? MON_FACTOR : 1);
@@ -1408,7 +1569,7 @@
     if (attr) { const b = bt(attr); if (kind === 'monster') b.passiveDmg += real; else b.dmg += real; }
     if (kind === 'trap') fl.party.morale = Math.max(0.15, fl.party.morale - 0.03);
     if (kind === 'trap' && real > 0 && src && src.x !== undefined) { const hm = fl.party.hurt || (fl.party.hurt = new Map()); (hm.get(src) || hm.set(src, new Set()).get(src)).add(h.id); }   // 1.22: who a trap hurt this wave (notThisWay)
-    if (h.hp <= 0) { h.hp = 0; h.dead = true; h.killer = kind === 'monster' ? src : null; kill(h, kind, attr); return; }   // 1.21: killer
+    if (h.hp <= 0) { h.hp = 0; h.dead = true; h.killer = kind === 'monster' ? src : (src && MONSTERS[src.type] && fl.firing && fl.firing.type === src.type ? fl.firing : null); kill(h, kind, attr); return; }   // 1.26: a monster's ability (a check) is its kill too   // 1.21: killer
     bondHurt(h, real, kind, src);   // 1.21
     if (h.nemesis && !h.nemRaged && h.hp < 0.3 * h.max) nemesisRage(h);   // 1.23: badly hurt, he will not run this time
     if (kind === 'trap' && real >= 0.25 * h.max && fl.time - (fl.party.lastSay.friendHit || -99) > 5) {   // 1.05: a friend sees it and reacts
@@ -1453,7 +1614,10 @@
   function fearResist(h, attr) {
     let k = 1;
     if (attr && fl.knownTypes && fl.knownTypes.has(attr)) k *= 0.6;   // they knew about it: less of a shock
-    if (fl.heroes.some(o => o !== h && o.type === 'priest' && o.rank >= 1 && !o.dead && !o.fled && !o.gone && hdist(o, h) <= 3)) k *= inB('altar', h.room) ? 0.875 : 0.75;   // a priest calms those around him (half as well at the altar)
+    { const alt = inB('altar', h.room), pr = fl.heroes.some(o => o !== h && o.type === 'priest' && o.rank >= 1 && !o.dead && !o.fled && !o.gone && hdist(o, h) <= 3), pa = fl.heroes.some(o => o !== h && o.type === 'paladin' && !o.dead && !o.fled && !o.gone && hdist(o, h) <= 3);
+      k *= Math.min(pr ? (alt ? 0.875 : 0.75) : 1, pa ? (alt ? 0.9 : 0.8) : 1); }   // a priest calms those around him (half as well at the altar); 1.26: a paladin's oath, the stronger counts
+    if (h.trait === 'superstitious' && attr && (SCARE[attr] || FAMILY_OF[attr] === 'haunt')) k *= 1.4;   // 1.26 Przesądny
+    if (omenK(run.wave, 'fearK')) k *= omenK(run.wave, 'fearK');   // 1.26 Inkwizycja
     if (fl.heroes.some(o => o !== h && o.boss === 'final' && !o.dead && !o.fled && !o.gone && hdist(o, h) <= 3)) k *= 0.75;   // the prophecy walks with them
     if (fl.heroes.some(o => o.boss && !o.dead && !o.fled && !o.gone && !caged(o) && (o === h || canSee(h, o) || canHear(h, o)))) k *= 0.85;   // 1.17: a boss he is with
     if (fl.time < (h.braveUntil || 0)) k *= h.braveK;   // a priest's blessing before a deadly room
@@ -1480,7 +1644,10 @@
     if (fl.firing && (TRAPS[fl.firing.type] || SCARE[fl.firing.type])) markOuch(h, fl.firing);   // 1.13: a scare that went off here too
     const raw = amt;
     amt *= mods.fearMult * fearResist(h, attr) * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) * (isRt(h.room, 'fog') ? 1.15 : isRt(h.room, 'hush') ? 1.2 : 1);   // Mgła: +15%, 1.10 Głusza: +20%
+    if (inB('altar', h.room)) amt *= 1.1; if (inB('howl', h.room)) amt *= 1.1;   // 1.26 (6.4): Ołtarz and Kamień wyjec: +10% fear in their room
     if (raging(h)) amt *= 0.5;   // 1.05: fury dulls fear
+    if (fl.time < (h.markUntil || -1)) amt *= 1.3;   // 1.26 Naznaczony
+    if (fl.time < (h.reflectUntil || -1) && attr !== 'mirror') { amt *= 1.2; h.reflectUntil = -1; }   // 1.26 Lustro B: Odbicie (once)
     if (mods.deepsleep && attr && ACTIVE[attr] && h.state === 'rest' && isRt(h.room, 'haven')) amt *= 1 + mods.deepsleep;   // 1.18 Sen bez przebudzenia: from your traps and monsters, not his own nightmares
     amt *= phobiaMult(h, attr, src, dtp);   // v14: phobias (x2) and this wave's traumas (x1,5)
     if (attr) h.fearBy[attr] = (h.fearBy[attr] || 0) + amt; else if (src) h.fearBy[src] = (h.fearBy[src] || 0) + amt;
@@ -1493,10 +1660,11 @@
     if (attr) { const b = bt(attr); b.fear += amt; b.fearPts += pts; }
     // Grota: the scream echoes into the rooms and corridors next door (40%, and the echo does not echo again)
     if (src !== 'echo' && isRt(h.room, 'grotto')) { const nb = nbrRooms(h.room); alive().forEach(o => { if (o !== h && nb.includes(o.room)) addFear(o, raw * 0.4, attr, 'echo'); }); }
-    const lim = h.courage * (fl.fearless ? 1.3 : 1);
+    const lim = h.courage * (fl.fearless ? 1.3 : 1) * (h.trait === 'hothead' ? 1.1 : 1);   // 1.26 Zapaleniec
     if (!h.fleeing && !h.crystal && h.fear >= [0.85, 0.7, 0.6, 0.6][h.rank] * lim) useAmulet(h);   // the amulet, before the nerves go (rookies late)
     const pk = h.trait === 'coward' ? 0.55 : 0.7;   // cowards panic early
     // 1.05: a barbarian on the edge of panic gets angry instead (once in a while; not in Okowy)
+    if (h.trait === 'hothead' && h.hotW !== run.wave && before < pk * lim && h.fear >= pk * lim && !h.fleeing && !h.crystal && startRage(h, 'panic')) { h.hotW = run.wave; h.fear = Math.max(0, h.fear - 0.25 * lim); fl.stats.rageNoPanic = (fl.stats.rageNoPanic || 0) + 1; return; }   // 1.26 Zapaleniec: once a wave fury instead of panic
     if (h.type === 'barbarian' && before < pk * lim && h.fear >= pk * lim && !h.fleeing && !h.crystal && fl.time > h.rageCd && startRage(h, 'panic')) { h.fear = Math.max(0, h.fear - 0.25 * lim); fl.stats.rageNoPanic = (fl.stats.rageNoPanic || 0) + 1; return; }
     if (before < pk * lim && h.fear >= pk * lim && !h.fleeing && !h.crystal && fl.time > h.panicUntil && !nemHold(h)) {   // 1.23: not a Nemezis above 15% HP
       h.panicUntil = fl.time + 2 + Math.random() * 2; h.needPlan = true; fl.stats.panics++; say(h, pick(SAY.panic), 3, 1.8, 'loud');
@@ -1523,7 +1691,7 @@
     // 1.17: only when he sees or hears the one who bolts; his cry steadies those who hear it
     const ch = fl.heroes.find(o => o.boss === 'champion' && o !== h && !o.dead && !o.fled && !o.gone && !o.fleeing && !caged(o) && perceives(o, h, true));
     if (ch && fl.time > (ch.shoutCd || 0)) {
-      ch.shoutCd = fl.time + 15; fl.stats.shouts = (fl.stats.shouts || 0) + 1;
+      ch.shoutCd = fl.time + 25; fl.stats.shouts = (fl.stats.shouts || 0) + 1;
       say(ch, pick(SAY.champShout), 4, 2.2); floatHero(ch, 'Okrzyk!', '#ffd27a', 15, -0.9);
       alive().forEach(o => { if (o !== h && !o.fleeing && canHearShout(o, ch)) o.fear = Math.max(0, o.fear - 0.25 * o.courage); });
     }
@@ -1574,9 +1742,15 @@
     if (attr) bt(attr).kills++;
     burst(p.x, p.y, '#d8434f', 16);
     const crypt = isRt(h.room, 'crypt');
-    const pts = addPts(GZ.kill * (h.boss ? 2 : 1) * mods.soulMult * (crypt ? 1.5 : 1), 'killPts', h); tl('k', h.id, attr || kind);   // v15: a death is Groza like everything else (Żniwiarz x2, Krypta x1,5)
+    const pts = addPts(GZ.kill * (h.boss ? 2 : 1) * (h.type === 'cultist' ? 1.5 : 1) * (omenK(run.wave, 'killK') || 1) * mods.soulMult * (crypt ? 1.5 : 1), 'killPts', h); tl('k', h.id, attr || kind);   // v15: a death is Groza like everything else (Żniwiarz x2, Krypta x1,5)
+    if (h.type === 'cultist' && h.drank > 0) { const back = 0.5 * h.drank, need = hungerNeed(run.wave); fl.fed = Math.min(need, fl.fed + back); fl.stats.drainBack = (fl.stats.drainBack || 0) + back; floatTile(fl.heart.x, fl.heart.y, 'Serce odzyskuje ' + fmtE(back), '#ff9aa4', 14, -1.2); if (fl.fed >= need - 1e-6) heartFull(need); }   // 1.26: half of what he drank comes back tl('k', h.id, attr || kind);   // v15: a death is Groza like everything else (Żniwiarz x2, Krypta x1,5)
     fl.stats.souls++;
-    if (mods.granary) run.stacks.granary = (run.stacks.granary || 0) + 1;   // Spichlerz dusz: the heart wants 1 less for good (1.01)
+    if (mods.bloodbath && h.room === fl.heart.room) { fl.bathK = Math.min(2, (fl.bathK || 1) * Math.pow(1.1, mods.bloodbath)); floatTile(fl.heart.x, fl.heart.y, 'Krwawa łaźnia ×' + fmt2(fl.bathK), '#ff7a86', 13, -1.7); }   // 1.26
+    if (mods.skulls) run.stacks.skulls = Math.min(20, (run.stacks.skulls || 0) + 1);   // 1.26 Kolekcja czaszek
+    { const kt = h.killer ? h.killer.type : attr; if (mods.execDiary && kt && ITEMS[kt]) { run.kata = run.kata || {}; run.kata[kt] = Math.min(0.3, (run.kata[kt] || 0) + 0.02 * mods.execDiary); } }   // 1.26 Pamiętnik kata
+    if (mods.granary) run.stacks.granary = Math.min(40, (run.stacks.granary || 0) + 1);   // Spichlerz dusz: the heart wants 1 less for good (1.01; 1.26: at most 40 a run)
+    if (kind === 'monster' || (h.killer && MONSTERS[h.killer.type])) feastIn(h);   // 1.26 Uczta (a blow, an ability)
+    killHooks(h, kind);   // 1.26: the bell, Powstanie, the hound's hunt, Głód krwi, Grabież
     if (attr === 'spikes' && mods.hunger) run.stacks.hunger = (run.stacks.hunger || 0) + 1;   // Głodne kolce
     if (mods.skullwall && rkOf(h.room) === 'ossuary') run.stacks.skullwall = (run.stacks.skullwall || 0) + 1;   // 1.18 Mur z czaszek
     addFloat(p.x, p.y - 0.1, 'Śmierć +' + fmtE(pts) + ' Esencji', '#ff7a86', 15, -0.4);
@@ -1592,6 +1766,7 @@
     }
     // his gear and his purse spill out as loot around the body: the exact items, free for the next one who dares (no Esencja back for these)
     // 1.20: the piles know whose body they are (it.body, fromNm): the others see the dead one's things, not a relic (dropItem)
+    if (h.killer && h.killer.type === 'goblin' && t3B(h.killer)) dropItem(h, null, 2, false, { body: true });   // 1.26 Goblin B: Łupieżca (a goblin's B in its room counts too: warlord B, below)
     h.inv.forEach(it => dropItem(h, it, 0, false, { body: true }));
     if (h.gold > 0) dropItem(h, null, h.gold, false, { body: true });
     h.inv = []; h.gold = 0;
@@ -1638,6 +1813,33 @@
   // 1.18 Wstający umarli: a hero killed in a Krypta gets up as a ghost on your side, a real monster for the rest of the wave on the free
   // floor tile nearest the body. It is temp: no cost, no slot, no part of the dungeon's greed or the guild's count, and setupFl takes it
   // away before the next build (nothing back). At most 2 a wave.
+  // 1.26: what a death sets off among the new elements
+  function killHooks(h, kind) {
+    const nb = Math.min(2, [...fl.items.values()].filter(b => b.type === 'bell' && !b.disabled).length);
+    if (nb) {   // Dzwon żałobny: everyone alive hears the death (fobia hałasu); A Requiem: +0,5 Groza a hearer
+      const req = [...fl.items.values()].some(b => b.type === 'bell' && !b.disabled && t3(b));
+      alive().forEach(o => { addFear(o, 24 * nb * famK('bell'), 'bell'); if (req) addPts(0.5, 'fearPts', o); });
+      const b = [...fl.items.values()].find(q => q.type === 'bell' && !q.disabled); if (b) { b.anim = 0.8; floatTile(b.x, b.y, 'Dzwon żałobny!', '#c9d4b0', 14, -1); }
+      fl.stats.bellTolls = (fl.stats.bellTolls || 0) + 1;
+    }
+    if ((h.plague || 0) > 0 && (fl.risenZ || 0) < 2) riseZombie(h);   // Powstanie
+    const k = h.killer;
+    if (k && k.type === 'hound' && (h.fleeing || panicking(h))) { addPts(GZ.scare * mods.scareMult, 'scarePts', h); fl.stats.houndHunt = (fl.stats.houndHunt || 0) + 1; }   // Polowanie: a kill and an escape
+    if (mods.undyingArmy && k && FAMILY_OF[k.type] === 'undead' && (fl.armyN || 0) < 3 && riseZombie(h, 'skeleton')) { fl.armyN = (fl.armyN || 0) + 1; fl.stats.armyRisen = (fl.armyN); }   // 1.26 Nieśmiertelna armia
+    if (k && k.type === 'demon' && t3B(k)) run.bloodHunger = { w: run.wave + 1, n: ((run.bloodHunger && run.bloodHunger.w === run.wave + 1) ? run.bloodHunger.n : 0) + 3 };   // Głód krwi
+    if (fl.items && [...fl.items.values()].some(w => w.type === 'warlord' && w.hp > 0 && t3B(w) && roomOf(w.x, w.y) === h.room)) dropItem(h, null, 2, false, { body: true });   // Grabież
+  }
+  // Powstanie: a Zarażony who dies gets up as your zombie for the rest of the wave (no slot, no cost; at most 2 a wave)
+  function riseZombie(h, tp) {
+    const R = fl.rooms[h.room], p = heroPos(h); if (!R || !R.tiles) return null;
+    const free = R.tiles.filter(q => slotOf(q[0], q[1]) === 'floor' && walkable(q[0], q[1]) && !fl.items.has(key(q[0], q[1])));
+    if (!free.length) return null;
+    const t = free.reduce((a, q) => Math.hypot(q[0] + 0.5 - p.x, q[1] + 0.5 - p.y) < Math.hypot(a[0] + 0.5 - p.x, a[1] + 0.5 - p.y) ? q : a, free[0]);
+    const z = { type: tp || 'zombie', x: t[0], y: t[1], cd: 1, anim: 0, disabled: false, hp: tp ? 90 : 120, max: tp ? 90 : 120, power: 1, shot: 0.5, flash: 0, preview: 0, gx: t[0] + 0.5, gy: t[1] + 0.5, lvl: 1, spent: 0, temp: true };
+    fl.items.set(key(t[0], t[1]), z); if (!tp) fl.risenZ = (fl.risenZ || 0) + 1; fl.threatDirty = true;
+    reaction(h, 'rise'); floatTile(t[0], t[1], 'Wstaje jako zombie!', '#a8c86a', 15, -0.9);
+    return z;
+  }
   function riseGhost(h) {
     if (!mods.risen || fl.phase !== 'raid' || !isRt(h.room, 'crypt') || (fl.risen || 0) >= 2) return null;
     const R = fl.rooms[h.room], p = heroPos(h); if (!R || !R.tiles) return null;
@@ -1757,7 +1959,7 @@
     const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, body = it.body != null;
     const g = body ? LOOT_GREED.body[0] * mods.greedMult / (1 + 0.15 * fl.stats.lootSeen) :
       LOOT_GREED[kind][0] * mods.greedMult * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
-    const dg = addGreed(g); greedOrbs(it.x, it.y, dg); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);
+    const dg = addGreed(g * famK(it.type) * (dreamLoot(it) ? 1.5 : 1)); greedOrbs(it.x, it.y, dg); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);   // 1.26: Runa rodu (Skarby)
     if (body) fl.stats.greedBody = (fl.stats.greedBody || 0) + dg;
     floatTile(it.x, it.y, 'Chciwość ×' + fmt2(fl.greed), '#f2b94b', 14, -0.6, 'greed');
     if (!by) return;
@@ -1776,9 +1978,13 @@
     });
   }
   // Picking it up: coins go to the purse, the rest is a real item (or the exact one that was dropped). No use or no room: it stays.
+  // 1.26 Złoty sen: loot in the heart's room or a room next to it (not a body)
+  const dreamLoot = it => !!mods.goldenDream && it.body == null && fl.heart && (roomOf(it.x, it.y) === fl.heart.room || nbrRooms(fl.heart.room).includes(roomOf(it.x, it.y)));
   function pickup(h, it) {
     const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, k = key(it.x, it.y);
     if (lootBanned(h, it)) return false;   // 1.21: the loser of a quarrel over it (or everyone, when the leader stopped it) for 10 s
+    if (it.type === 'bait') { noticeLoot(it, h); baitBite(h, it); return false; }   // 1.26 Przynęta: it bites, it stays
+    if (dreamLoot(it)) { noticeLoot(it, h); h.lootMemo.set(k, { go: false, t: fl.time + 120 }); h.state = 'wait'; h.timer = 3; h.path = []; floatTile(it.x, it.y, 'Złoty sen: nie da się podnieść', '#f2b94b', 12, -0.6); fl.stats.dreamTries = (fl.stats.dreamTries || 0) + 1; return false; }   // 1.26 Złoty sen
     // 1.20: a body's things: he kneels and goes through them (updateHero: the 'loot' state, then bodyLoot), not while running or
     // in a panic, and not again over a body he found nothing on
     if (it.body != null) {
@@ -1822,6 +2028,7 @@
     if (kind === 'cursed') curse(h, item);
     else if (item && item.cursed) { curse(h, null); fl.stats.cursePassed = (fl.stats.cursePassed || 0) + 1; }   // 1.20: a cursed item curses the next one who takes it
     if (mods.lootTrap > 0) damage(h, mods.lootTrap * r, LOOTTRAP);
+    fl.items.forEach(mm => { if (mm.type === 'mimic' && t3B(mm) && !mm.disabled && mm.cd <= 0 && Math.max(Math.abs(mm.x - it.x), Math.abs(mm.y - it.y)) <= 1 && !h.dead) { floatTile(mm.x, mm.y, 'Zachłanny!', '#d8434f', 14, -1); fire(mm, 2, { lock: [h] }); } });   // 1.26 Mimik B: Zachłanny
     if (kind === 'relic' && !it.dropped) gainEssence(null, 4, 'essDrop');
     vaultSnap(it, h);   // 1.18 Zatrzask sezamu
     updateTray();   // 1.03: the price of that loot drops again

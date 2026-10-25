@@ -53,7 +53,7 @@ async def main():
         ok(not r1['bad'], 'run 1: the shop offers nothing of a later run (%s)' % r1['bad'])
         ok(r1['phys'] == 0 and r1['phob'] == 0 and r1['hunt'] == 0, 'run 1: no bodies, phobias or treasure hunters')
         ok(r1['guild'] is None and r1['breach'] is False, 'run 1: no guild specialist, no breach')
-        ok(r1['hunger'] == 37, 'run 1: the heart is hungry from wave 2 (need 37, got %s)' % r1['hunger'])
+        ok(r1['hunger'] == 32, 'run 1: the heart is hungry from wave 2 (1.26: 38 x 0,85 in the guided run = 32, got %s)' % r1['hunger'])
         # 2. the guide's steps: wave 2 jumps to loot, wave 3 to dig
         st = await page.evaluate('''() => { const G = __yatd, ids = G.TUT.map(s => s.id), w = {}; G.TUT.forEach(s => { if (s.wave) w[s.id] = s.wave; });
           return { n: ids.length, ids, w }; }''')

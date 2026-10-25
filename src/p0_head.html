@@ -127,7 +127,12 @@ body {
 .hbar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 2px; background: linear-gradient(180deg, #e0505c, #8a1a28 70%, #5c0e16); transition: width 0.25s; overflow: hidden; }
 .hbar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255, 210, 210, 0.3) 50%, transparent 70%); background-size: 220% 100%; animation: sheen 2.8s linear infinite; }
 @keyframes sheen { from { background-position: 120% 0; } to { background-position: -120% 0; } }
-.hungerrow.fed .hbar i { background: linear-gradient(180deg, #b4dc84, #557a33 70%, #34501f); }
+.hungerrow.fed .hbar i { background: linear-gradient(180deg, #ffe39a, #c9932b 70%, #7a5214); }   /* 1.26: fed, the bar is the Nasycenie (gold) */
+.hbar em { position: absolute; left: 0; bottom: -4px; height: 2px; width: 0; border-radius: 1px; background: linear-gradient(90deg, #a8781f, #ffd27a); box-shadow: 0 0 4px rgba(255, 210, 122, 0.55); transition: width 0.3s; }
+.hungerrow.fed .hbar em, .hungerrow.off .hbar em.none { display: none; }
+#h-heart sub { font: 700 9px var(--font-num, monospace); color: #ffd27a; margin-left: 1px; vertical-align: -1px; text-shadow: 0 1px 2px #000; }
+#h-hrow { cursor: pointer; }
+.hungerrow.take .heart { animation: heartHit 0.32s ease-out 3; color: #ff3b4e; }
 .hbar b { display: none; position: absolute; top: -3px; bottom: -3px; width: 2px; left: 80%; background: var(--ink); border-radius: 1px; box-shadow: 0 0 4px rgba(255, 240, 210, 0.7); }
 .hungerrow.off .hbar b { display: none; }
 #h-hlabel { font-size: 12.5px; color: var(--muted); font-family: var(--font-body); }
@@ -135,7 +140,32 @@ body {
 .hungerrow.fed #h-hlabel { color: var(--bile); }
 .hungerrow.warn #h-hlabel { color: #ff6b6b; font-weight: 700; }   /* 1.24 (D, P0-2): hunger may eat a crystal in the coming wave */
 .hungerrow.warn .heart { animation-duration: 0.45s; color: #ff3b4e; }
-.note.crywhy { color: #ff8a8a; font-weight: 600; }   /* 1.24 (D, P0-2): why a crystal went */
+.note.crywhy { color: #ff8a8a; font-weight: 600; }
+.heartsum { display: flex; flex-direction: column; gap: 4px; }   /* 1.26: the heart in the wave summary */
+.purse-take { display: flex; flex-direction: column; gap: 3px; padding: 6px 8px; border: 1px solid rgba(255, 90, 106, 0.5); border-radius: 4px; background: rgba(90, 14, 24, 0.45); font-size: 13px; color: #ffc2c8; }
+.purse-take.ate { border-color: #ff3b4e; color: #ff8a8a; font-weight: 600; }
+.purse-take .pbar { height: 7px; background: #07080a; border-radius: 2px; overflow: hidden; box-shadow: inset 0 1px 2px #000; }
+.purse-take .pbar i { display: block; height: 100%; width: 100%; background: linear-gradient(180deg, #f2b94b, #a8781f); transition: width 1.1s cubic-bezier(.5,0,.3,1); }
+.reck .t b { color: #ffd27a; }
+.stat.warn b { color: #ffb35c; }
+.satbar { position: relative; height: 18px; margin: 8px 0; background: #07080a; border-radius: 3px; box-shadow: inset 0 1px 2px #000, 0 1px 0 var(--edge); overflow: hidden; }   /* 1.26 */
+.satbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(180deg, #ffe39a, #c9932b 70%, #7a5214); }
+.satbar span { position: relative; display: block; text-align: center; font-size: 12px; line-height: 18px; color: var(--ink); text-shadow: 0 1px 2px #000; }
+.offers.heartrow .hearthead { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border: 1px solid #a8781f; border-radius: 4px; background: linear-gradient(180deg, rgba(120, 30, 40, 0.55), rgba(60, 20, 24, 0.5)); }
+.offers.heartrow .hearthead b { color: #ffd27a; font-size: 14px; } .offers.heartrow .hearthead span { font-size: 12px; color: var(--ink); }
+.offer.heart { border-color: #c9932b !important; box-shadow: 0 0 0 1px rgba(255, 210, 122, 0.35), inset 0 0 18px rgba(200, 40, 60, 0.25); }
+.offers .heartlater { grid-column: 1 / -1; justify-self: center; }
+.scr-body > .offers.heartrow { grid-template-rows: auto 1fr 1fr auto; }   /* 1.26: the header and Później take only what they need */
+.runerow { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; padding: 6px 8px; margin-top: 6px; border: 1px solid var(--line); border-radius: 4px; background: rgba(20, 21, 25, 0.7); }   /* 1.26 Runa rodu */
+.omenbox { display: flex; gap: 8px; align-items: center; margin: 6px 0; padding: 6px; border: 1px solid #6c4a8a; border-radius: 4px; background: linear-gradient(180deg, rgba(60, 30, 80, 0.45), rgba(20, 16, 28, 0.6)); }   /* 1.26 omen */
+.omenbox .omenimg { width: 96px; height: 48px; image-rendering: pixelated; flex: none; border-radius: 3px; }
+.omenbox .omentx { display: flex; flex-direction: column; gap: 2px; font-size: 12px; min-width: 0; } .omenbox .omentx b { color: #d9b8ff; font-size: 13px; }
+.omenbox .good { color: #b6e07a; } .omenbox .bad { color: #ff9a9a; } .omenbox .unk { color: #9a93a8; }
+.runerow .runeimg { width: 24px; height: 24px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px; }
+.np.fog { opacity: 0.8; } .np.fog .npi { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: #9a93a8; }
+.runerow .rn { font-size: 13px; } .runerow .rn small { color: var(--muted); } .runerow .rt { grid-column: 1; font-size: 11.5px; color: var(--muted); line-height: 1.25; } .runerow .buy { grid-column: 2; grid-row: 1 / span 2; }
+.scr-foot .heartback { margin-bottom: 6px; color: #ffd27a; border-color: #a8781f; }
+.item.shoptile.heartgift .dtag { color: #ffd27a; }   /* 1.24 (D, P0-2): why a crystal went */
 label.askno { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); margin-top: 10px; }   /* 1.24 (D, P1-2) */
 .barrow { gap: 10px; }
 .barrow .bar { flex: 1; }
@@ -223,7 +253,7 @@ label.askno { display: flex; gap: 6px; align-items: center; font-size: 13px; col
 .hud, .drawer, .actions { position: relative; z-index: 2; }
 .hud, .hud-row { pointer-events: none; }   /* a tap between the HUD's pieces reaches the map */
 #h-eq { justify-self: center; }   /* the equation (a button) only as wide as its boxes */
-#h-wave, #h-mid, #h-right, #h-time, #h-eq, #h-hrow .heart, #h-hlabel, #h-rank, #h-mult { pointer-events: auto; }
+#h-wave, #h-mid, #h-right, #h-time, #h-eq, #h-hrow, #h-hrow .heart, #h-hlabel, #h-rank, #h-mult { pointer-events: auto; }
 .hud::before { content: ""; position: absolute; z-index: -1; left: -50vw; right: -50vw; top: calc(-1 * max(8px, var(--safe-top)) - 2px); bottom: -26px; pointer-events: none;
   background: linear-gradient(180deg, rgba(5, 6, 8, 0.8) 0%, rgba(5, 6, 8, 0.55) 62%, rgba(5, 6, 8, 0)); }
 .drawer::before { content: ""; position: absolute; z-index: -1; left: -50vw; right: -50vw; top: -30px; bottom: -160px; pointer-events: none;
@@ -594,12 +624,13 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .offer b { font-size: 14.5px; line-height: 1.12; }
 .offer .tx { font-size: 12px; color: #c4c2bc; line-height: 1.28; flex: 1 1 auto; flex-shrink: 1; min-height: 0; overflow: hidden; }
 .offer .pr { font: 500 13px/22px var(--font-num); color: var(--gold); height: 22px; }
-.offer .buy {
+.offer .buy, .runerow .buy {
   height: 24px; margin: 0 -2px -1px; font: 700 13px/1 var(--font-body); border-radius: 2px; border: 1px solid #3e0a10; cursor: pointer; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
   background: linear-gradient(180deg, #ff7480, #d8313f 45%, #8e1622); color: #fff6f6; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 0 #000; padding: 0 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.offer .buy:disabled { background: var(--panel); color: var(--muted); border-color: var(--line); box-shadow: none; cursor: default; }
+.runerow .buy { height: 30px; padding: 0 12px; margin: 0; }
+.offer .buy:disabled, .runerow .buy:disabled { background: var(--panel); color: var(--muted); border-color: var(--line); box-shadow: none; cursor: default; }
 .offer.rar-r { border-top-color: #7aa6d6; } .offer.rar-r .ok { color: #7aa6d6; }
 .offer.rar-l { border-top-color: var(--ember); background-color: #231619; } .offer.rar-l .ok { color: var(--ember); }
 .offer.unlock { border-top-color: var(--violet); } .offer.unlock .ok { color: #c2b0ff; }
@@ -792,6 +823,27 @@ kbd { font: 400 13px var(--font-num); padding: 0 5px 1px; border: 1px solid var(
    reduced motion). A tap starts them again. Only these: an entrance or a fade never waits. */
 html.still #stage::before, html.still .hungerrow .heart, html.still .hbar i::after, html.still .pips i.cur, html.still #btn-action.ready { animation-play-state: paused; }
 html.still #h-score.afford { animation: none; color: #ffd27a; }
+/* ===== 1.26 art (p7c_art.js): the build tiles as little painted scenes, card pictures ===== */
+.item.art { padding: 0 0 3px; gap: 2px; align-content: start; overflow: hidden; }
+.item.art .scene { position: relative; display: block; width: 100%; height: 36px; background: #0b0b0e; border-bottom: 1px solid #000; border-radius: 2px 2px 0 0; overflow: hidden; }
+.item.art .scene img { display: block; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.item.art .cost { position: absolute; top: 2px; right: 2px; padding: 0 3px 0 2px; background: rgba(9, 9, 11, 0.84); border-radius: 2px; line-height: 13px; font-size: 12px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5); }
+.item.art .cost.nocost { display: none; }
+.item.art .nm { padding: 0 2px; }
+.item.art .sl { position: absolute; left: 0; right: 0; top: 23px; height: 13px; display: none; background: rgba(70, 10, 16, 0.92); text-align: center; font-size: 10px; line-height: 13px; color: #ffd0d0 !important; max-width: none; }
+.item.art.nope .sl { display: block; }
+.item.art .lock { top: 21px; right: auto; left: 3px; width: 12px; height: 12px; color: var(--ink); filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 1px #000); }
+html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 2px 0; background: rgba(9, 9, 11, 0.82); border-radius: 2px; color: var(--muted); }
+.item.art[aria-pressed="true"] .scene { box-shadow: inset 0 0 0 1px var(--gold); }
+@media (orientation: landscape) and (max-height: 560px) { .item.art .scene { height: 33px; } .item.art .sl { top: 20px; } .item.art .lock { top: 18px; } }
+.cardart { display: block; image-rendering: pixelated; flex-shrink: 0; }
+.offer .cardart { width: 72px; height: 48px; margin: 0 auto 3px; border: 1px solid #000; border-radius: 2px; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05); }
+@media (max-height: 760px) { .offer .cardart { display: none; } }
+.item.dslot.hasart { padding-top: 0; }
+.item.dslot .cardart { width: calc(100% + 9px); height: 26px; margin: 0 -4px 1px -5px; object-fit: cover; object-position: 50% 72%; border-bottom: 1px solid #000; }
+.cardbig { width: 144px; height: 96px; margin: 2px auto 4px; border: 1px solid var(--line2); border-radius: 2px; box-shadow: 0 2px 0 #000, 0 0 18px rgba(0, 0, 0, 0.6); }
+.cardart.heart, .cardbig.heart { outline: 1px solid #d9a440; outline-offset: -1px; box-shadow: inset 0 0 0 2px #8c1a24; }
+/* ===== end 1.26 art ===== */
 /* motion is decoration here: people who asked for less get the still version */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: 0.001ms !important; }

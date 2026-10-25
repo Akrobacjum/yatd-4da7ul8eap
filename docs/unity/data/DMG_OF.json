@@ -12,5 +12,19 @@
  "spider": "poison",
  "shaman": "poison",
  "loot": "poison",
- "bats": "pierce"
+ "bats": "pierce",
+ "pendulum": "pierce",
+ "snare": "pierce",
+ "miasma": "poison",
+ "tar": "fire",
+ "bolt": "shock",
+ "bait": "pierce",
+ "skeleton": "pierce",
+ "zombie": "poison",
+ "lich": "blunt",
+ "hound": "fire",
+ "demon": "fire",
+ "sapper": "pierce",
+ "warlord": "blunt",
+ "rats": "pierce"
 }

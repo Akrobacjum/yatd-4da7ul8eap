@@ -9,13 +9,14 @@
   "news": [
    "Pułapki, które straszą (w zakładce Pułapki, za raniącymi): portret, oczy i kości od razu, a z kart lustro, zawiasy, trumna i pozytywka. Nie ranią, ale strach to też Groza, a pełny fioletowy pasek wygania bohatera z lochu.",
    "Potwory, które straszą (z kart w sklepie): duch, cień i nietoperze.",
-   "Wystraszony uciekinier daje Esencję, ale opowie następnej fali o pułapkach, które go zraniły albo przestraszyły. Nowe karty w sklepie grają strachem."
+   "Wystraszony uciekinier daje Esencję, ale opowie następnej fali o pułapkach, które go zraniły albo przestraszyły. Nowe karty w sklepie grają strachem.",
+   "Od fali 4 przychodzą też paladyn (uspokaja drużynę, nie zostawia nikogo) i tropiciel (wykrywa pułapki podłogowe i potwory w sąsiednich pokojach), od fali 6 alchemik (zdejmuje statusy). Stuknij bohatera, żeby zobaczyć, co umie."
   ]
  },
  {
   "name": "Gildia i loch",
   "news": [
-   "Gildia czyta raporty z fal i od teraz przysyła specjalistę na Twój styl: kapłana z amuletem na strach, wojownika z talizmanem na zabijanie, złodzieja na masę pułapek, maga na potwory, barda na błądzenie, barbarzyńcę na zastawione przejścia. Kogo i po co przysyła, zobaczysz przed falą.",
+   "Gildia czyta raporty z fal i od teraz przysyła specjalistę na Twój styl: kapłana z amuletem na strach, wojownika z talizmanem na zabijanie, złodzieja na masę pułapek, maga na potwory, barda na błądzenie, barbarzyńcę na zastawione przejścia, alchemika na reakcje, paladyna na nieumarłych i demony, tropiciela na latające potwory. Kogo i po co przysyła, zobaczysz przed falą.",
    "Zakładka Obiekty: skrzynia i budowle-kontry na specjalistów (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy, Zasłona, Bastion).",
    "Typy pokoi na końcu zakładki Loch: Mgła, Bagno, Grota, Krypta, Sezam, Sanktuarium, Zębatki, Głusza i Lodownia. Każdy zmienia zasady w jednym pokoju (przytrzymaj kafelek, żeby przeczytać)."
   ]

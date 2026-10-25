@@ -2,7 +2,10 @@
  "trap": 1,
  "loot": 1,
  "burn": 1,
- "monster": 0.4,
+ "monster": 0.8,
  "heart": 0,
- "other": 0
+ "other": 0,
+ "bleed": 1,
+ "poison": 1,
+ "react": 1
 }

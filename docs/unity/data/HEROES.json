@@ -70,5 +70,53 @@
   "color": "#ff7a33",
   "letter": "R",
   "greed": 0.7
+ },
+ "paladin": {
+  "name": [
+   "Paladyn",
+   "Paladynka"
+  ],
+  "hp": 110,
+  "speed": 1.35,
+  "dps": 14,
+  "color": "#f0e2a8",
+  "letter": "P",
+  "greed": 0.7
+ },
+ "ranger": {
+  "name": [
+   "Tropiciel",
+   "Tropicielka"
+  ],
+  "hp": 80,
+  "speed": 1.6,
+  "dps": 12,
+  "color": "#c8904e",
+  "letter": "T",
+  "greed": 1.1
+ },
+ "alchemist": {
+  "name": [
+   "Alchemik",
+   "Alchemiczka"
+  ],
+  "hp": 70,
+  "speed": 1.35,
+  "dps": 7,
+  "color": "#e070b0",
+  "letter": "A",
+  "greed": 1
+ },
+ "cultist": {
+  "name": [
+   "Kultysta",
+   "Kultystka"
+  ],
+  "hp": 75,
+  "speed": 1.4,
+  "dps": 6,
+  "color": "#b8323e",
+  "letter": "C",
+  "greed": 0
  }
 }

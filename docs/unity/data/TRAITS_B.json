@@ -1,0 +1,174 @@
+{
+ "spikes": [
+  "Zadziory",
+  "trafiony jest Unieruchomiony na 1 s"
+ ],
+ "arrows": [
+  "Zatrute groty",
+  "każde trafienie dodaje stos trucizny"
+ ],
+ "fire": [
+  "Ściana ognia",
+  "płomień zamyka najbliższe drzwi pokoju na 3 s, przejście płonie (+10 strachu)"
+ ],
+ "web": [
+  "Kokon",
+  "złapany przez 4 s nie użyje żadnego przedmiotu"
+ ],
+ "trapdoor": [
+  "Kolce na dnie",
+  "upadek rani 3 razy mocniej i zostawia krwawienie"
+ ],
+ "cage": [
+  "Pułapka na ratownika",
+  "kto otworzy klatkę, jest Unieruchomiony na 3 s"
+ ],
+ "portrait": [
+  "Oczy śledzą",
+  "przestraszony jest Naznaczony na 8 s (każdy strach ×1,3)"
+ ],
+ "gate": [
+  "Gilotyna",
+  "miażdży 2 razy mocniej, odcięci są samotni przez 8 s"
+ ],
+ "powder": [
+  "Odłamki",
+  "wszyscy w wybuchu krwawią przez 3 s"
+ ],
+ "mimic": [
+  "Zachłanny",
+  "gryzie 2 razy mocniej bohatera, który podnosi łup obok"
+ ],
+ "eyes": [
+  "Wzrok bazyliszka",
+  "przestraszony jest Spowolniony na 2 s"
+ ],
+ "bones": [
+  "Grzechot",
+  "budzi fobię hałasu, nowicjusze boją się 2 razy bardziej"
+ ],
+ "mirror": [
+  "Odbicie",
+  "następny strach przestraszonego jest o 20% większy (8 s)"
+ ],
+ "creak": [
+  "Skrzyp nocy",
+  "połowę strachu słychać w sąsiednich pokojach"
+ ],
+ "coffin": [
+  "Wieko",
+  "najbliższy jest Unieruchomiony na 2 s"
+ ],
+ "musicbox": [
+  "Usypianka",
+  "ranny (poniżej 60% HP) zasypia na 3 s, w każdym pokoju"
+ ],
+ "goblin": [
+  "Łupieżca",
+  "zabity przez niego bohater zostawia dodatkowy stos łupu"
+ ],
+ "archer": [
+  "Zatrute strzały",
+  "każdy strzał dodaje stos trucizny"
+ ],
+ "spider": [
+  "Jad paraliżujący",
+  "ukąszony jest Unieruchomiony na 1,5 s"
+ ],
+ "ogre": [
+  "Rzut",
+  "wyrzuca bohatera do sąsiedniego pokoju: samotność, często zgubienie"
+ ],
+ "shaman": [
+  "Klątwa",
+  "skill check przeklina bohatera na 8 s: uspokaja się 2 razy wolniej, dostaje +20% obrażeń"
+ ],
+ "ghost": [
+  "Nawiedzenie",
+  "idzie za celem także do następnego pokoju"
+ ],
+ "shade": [
+  "Szept",
+  "odwaga celu -15% do końca fali"
+ ],
+ "bats": [
+  "Wampiry",
+  "ukąszenia leczą potwory w pokoju o zadane obrażenia"
+ ],
+ "pendulum": [
+  "Ścięcie",
+  "krytyk zostawia krwawienie na 4 s"
+ ],
+ "snare": [
+  "Łańcuch",
+  "najbliższy sojusznik też jest Unieruchomiony na 2 s"
+ ],
+ "miasma": [
+  "Łzawiące",
+  "w chmurze nikt nie wykrywa ani nie zapamiętuje pułapek"
+ ],
+ "oilslick": [
+  "Śliska",
+  "poślizg w połowie kroków"
+ ],
+ "bolt": [
+  "Przeciążenie",
+  "co 3. odpalenie ogłusza na 2 s"
+ ],
+ "flood": [
+  "Lodowata woda",
+  "Mokrzy uspokajają się 2 razy wolniej"
+ ],
+ "bell": [
+  "Namaszczenie",
+  "skill check leczy wszystkie potwory w lochu o 20%"
+ ],
+ "falsedoor": [
+  "Pętla",
+  "przejście wyprowadza z powrotem do poprzedniego pokoju"
+ ],
+ "tar": [
+  "Smoła",
+  "spowolnienie na 6 s"
+ ],
+ "skeleton": [
+  "Kościany pancerz",
+  "kłute rani go o 40% słabiej"
+ ],
+ "zombie": [
+  "Gnijące mięso",
+  "powalony wybucha: 3 stosy trucizny walczącym"
+ ],
+ "lich": [
+  "Armia",
+  "wskrzesza 2 razy na falę"
+ ],
+ "imp": [
+  "Podpalacz",
+  "skradziony przedmiot wybucha ogniem"
+ ],
+ "hound": [
+  "Piekielny ogień",
+  "ugryzienie podpala na 3 s"
+ ],
+ "siren": [
+  "Zazdrość",
+  "uwiedzenie wywołuje kłótnię (morale -0,1)"
+ ],
+ "demon": [
+  "Głód krwi",
+  "każde jego zabójstwo -3 do głodu następnej fali"
+ ],
+ "sapper": [
+  "Zwijacz",
+  "raz na falę uzbraja z powrotem rozbrojoną pułapkę w pokoju"
+ ],
+ "warlord": [
+  "Grabież",
+  "zabity w jego pokoju zostawia stos łupu"
+ ],
+ "rats": [
+  "Nora",
+  "powalony dzieli się na 2 małe roje do końca fali"
+ ]
+}

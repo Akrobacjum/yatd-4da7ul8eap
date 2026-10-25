@@ -334,6 +334,7 @@
     return null;
   }
   const blockerAt = (x, y) => { const it = fl.items.get(key(x, y)); return !!(it && BUILDINGS[it.type] && !it.broken); };   // 1.05: a building smashed by a barbarian is rubble you can walk over   // Prototype 1.0: a building stands in the way like a crate
+  const doorAlong = (x, y) => tileAt(x - 1, y) === WALL || tileAt(x + 1, y) === WALL;   // 1.26: a door in a wall that runs along x (heroes cross it along y)
   const walkable = (x, y) => tileAt(x, y) === FLOOR && !isHeart(x, y) && !fl.objects.has(key(x, y)) && !blockerAt(x, y);
   // room types (Pokoje tab): fog, swamp, grotto, crypt, vault
   const rtOf = r => (fl && r >= 0 && fl.rooms[r] && fl.rooms[r].rt) || null;
@@ -345,7 +346,10 @@
   const rkOf = r => (fl && r >= 0 && fl.rooms[r] && fl.rooms[r].rk) || null;
   function servedRooms(type, x, y) { if (ITEMS[type].slot !== 'door') return [slotRoom(type, x, y)]; const dd = fl.doors.get(key(x, y)); return dd ? [dd.a, dd.b] : []; }
   const inKind = it => { const k = it && KIND_OF[it.type]; return !!k && !!fl && servedRooms(it.type, it.x, it.y).some(r => rkOf(r) === k); };
-  const t3 = it => !!it && ((it.lvl || 1) >= 3 || inKind(it));
+  // 1.26 (6.6): level 3 is a choice: trait A (the old one; a komnata gives it free) or trait B (bought with the upgrade). t3 = trait A
+  const t3 = it => !!it && (((it.lvl || 1) >= 3 && it.branch !== 'B') || inKind(it));
+  const t3B = it => !!it && (it.lvl || 1) >= 3 && it.branch === 'B';
+  const t3b = (it, b) => b === 'B' ? t3B(it) : t3(it);
   const kindPow = it => (it.lvl || 1) >= 3 && inKind(it) ? KIND_POW : 1;
   // rooms and corridors right next to a room (through its doors), for the grotto's echo
   function nbrRooms(r) {
@@ -429,6 +433,15 @@
       case 'goblin': case 'ogre': case 'spider': for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) addIf(x + dx, y + dy, true); break;
       case 'archer': roomTilesNear(x, y, 4, roomOf(x, y)).forEach(t => out.push(t)); break;
       case 'shaman': case 'ghost': roomTilesNear(x, y, 99, roomOf(x, y)).forEach(t => out.push(t)); break;
+      // 1.26: the new traps and monsters
+      case 'snare': case 'falsedoor': case 'tar': out.push([x, y]); if (it.type !== 'snare') { const dd = fl.doors.get(key(x, y)); if (dd) DIRS.forEach(d => { if (walkable(x + d[0], y + d[1])) out.push([x + d[0], y + d[1]]); }); } break;
+      case 'pendulum': wallDirs(x, y).forEach(d => { const px = d[1], py = d[0]; for (let k = 1; k <= 4; k++) for (let p = -1; p <= 1; p++) { const tx = x + d[0] * k + px * p, ty = y + d[1] * k + py * p; if (walkable(tx, ty)) out.push([tx, ty]); } }); break;
+      case 'miasma': case 'oilslick': case 'bell': for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) addIf(x + dx, y + dy, true); break;
+      case 'bolt': { const d = wallDirs(x, y)[0]; if (!d) break; roomTilesNear(x, y, 3, roomOf(x + d[0], y + d[1])).forEach(t => out.push(t)); break; }
+      case 'flood': roomTilesNear(x, y, 99, roomOf(x, y)).forEach(t => out.push(t)); break;
+      case 'skeleton': case 'zombie': case 'hound': case 'sapper': case 'warlord': case 'rats': case 'demon': for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) addIf(x + dx, y + dy, true); break;
+      case 'lich': roomTilesNear(x, y, 2, roomOf(x, y)).forEach(t => out.push(t)); break;
+      case 'imp': case 'siren': { const gx = it.gx !== undefined ? it.gx : x + 0.5, gy = it.gy !== undefined ? it.gy : y + 0.5; roomTilesNear(Math.floor(gx), Math.floor(gy), it.type === 'siren' ? 4 : 2, roomOf(x, y)).forEach(t => out.push(t)); break; }
     }
     return out;
   }

@@ -1,6 +1,6 @@
 # 05. Pułapki, potwory, walka, strach i skill checki
 
-Ta sekcja opisuje wszystko, co dzieje się między elementem lochu (pułapka, potwór, budowla, łup, skrzynia) a bohaterem: kiedy element może odpalić, co robi na każdym poziomie, jak liczone są obrażenia i strach, jak działają typy pokojów i jak gracz steruje tym przez skill checki. Ekonomia (Groza, Chciwość, wypłata serii combo, głód serca) jest w sekcji 03, skład fal, przedmioty bohaterów i łup w sekcji 04, decyzje AI bohaterów i ich kwestie w sekcji 06, mapa, stawianie elementów, pętla `step` i zapis w sekcji 07, a wygląd checku, kamera, dźwięk i przewodnik w sekcji 08. Pełna lista kart: załącznik B. Stan: Prototype 1.24 (zmiany 1.18-1.24 w 5.1.4, 5.3.4, 5.3.9, 5.4.10, 5.9.3, 5.9.4, 5.9.10-5.9.13, 5.10 i 5.13).
+Ta sekcja opisuje wszystko, co dzieje się między elementem lochu (pułapka, potwór, budowla, łup, skrzynia) a bohaterem: kiedy element może odpalić, co robi na każdym poziomie, jak liczone są obrażenia i strach, jak działają typy pokojów i jak gracz steruje tym przez skill checki. Ekonomia (Groza, Chciwość, wypłata serii combo, głód serca) jest w sekcji 03, skład fal, przedmioty bohaterów i łup w sekcji 04, decyzje AI bohaterów i ich kwestie w sekcji 06, mapa, stawianie elementów, pętla `step` i zapis w sekcji 07, a wygląd checku, kamera, dźwięk i przewodnik w sekcji 08. Pełna lista kart: załącznik B. Stan: Prototype 1.26 (zmiany 1.18-1.24 w 5.1.4, 5.3.4, 5.3.9, 5.4.10, 5.9.3, 5.9.4, 5.9.10-5.9.13, 5.10 i 5.13; zmiany 1.26 "Serce zabiera" w 5.14: statusy i reakcje, porażenie, 10 nowych pułapek i 10 potworów, 3. poziom A albo B, Odrodzenie potworów, rodziny i Runy rodów, nowe komnaty, nowe liczby istniejących elementów; w starszych punktach dopisane krótkie odwołania).
 
 Konwencje:
 - Źródło każdej reguły: `plik.js: funkcja`. Wszystkie pliki są w `src/` i po sklejeniu tworzą jeden zasięg (IIFE), więc stałe z jednego pliku są widoczne w innych.
@@ -27,6 +27,8 @@ Konwencje:
 | `BUILDINGS` | `data/BUILDINGS.json` | budowle-kontry (rune, altar, decoy, acid, veil, fortify, howl, shackles) |
 | `LOOKS_TRAP(t)` | funkcja | `TRAPS[t] \|\| t === 'decoy'`: co bohaterowie biorą za pułapkę (wykrywanie, plotki) |
 | `LOOT_KIND` | `data/LOOT_KIND.json` | łupy (loot, lpotion, loot2, loot3, lcursed); nie są `ACTIVE`, nigdy nie odpalają |
+
+Od 1.26 (5.14): `TRAPS` 25 (+ pendulum, snare, miasma, oilslick, bolt, flood, bell, falsedoor, tar), `MONSTERS` 18 (+ skeleton, zombie, lich, imp, hound, siren, demon, sapper, warlord, rats), `SCARE` + bell, falsedoor, `CURSED` + bell, `DRIFT` + imp, siren, `DISARMABLE` + pendulum, snare, miasma, oilslick, bolt, flood, falsedoor, tar, `LOOT_KIND` + bait (`'gold'`: Przynęta wygląda jak monety i gryzie przy podnoszeniu, ale nie jest `ACTIVE`), nowy zbiór `FAMILIES` (9 rodzin, `FAMILY_OF[typ]`). Pliki w `data/` są jeszcze z 1.17.1 (załącznik A).
 
 Pola `data/ITEMS.json` używane w tej sekcji:
 - `cost`: cena w Esencji (od niej liczy się koszt ulepszenia, punkt 5.1.3).
@@ -79,13 +81,14 @@ it.worn = false; it.cd = 0; it.disabled = false; it.bent = false; it.anim = 0; i
 it.detected = false; it.rumored = false; it.uses = 0; it.seenWave = 0; it.preview = 0;
 it.noGreed = false; it.cursedKnown = false;
 it.jamUntil = 0; it.skipUntil = 0; it.lastFire = null; it.broken = false;
-if (MONSTERS[it.type]) { it.hp = it.max; it.gx = it.x + 0.5; it.gy = it.y + 0.5; it.foeT = 0; }
+if (MONSTERS[it.type]) { it.hp = it.max; it.gx = it.x + 0.5; it.gy = it.y + 0.5; it.foeT = 0; it.down = false; it.downR = null; it.healGot = 0; }   // 1.26: powalony wstaje
+it.alarmed = false; it.ambushUntil = 0; it.quick = false; it.shown = false   // 1.26: alarmed (wabik raz na falę); reszta od 1.18
 ```
 
-Na starcie fali (`p3_flow.js: startWave`): `it.skullOff = false` dla wszystkich, a potwory w Krypcie dostają `hp = round(max * 1,25)` (punkt 5.8). Uwaga: `alarmed` nie jest kasowane (5.11).
+Na starcie fali (`p3_flow.js: startWave`): `it.skullOff = false` dla wszystkich, a potwory w Krypcie dostają `hp = round(max * 1,25)` (punkt 5.8); od 1.26 potwory w pokoju serca przy Strażniku `hp × (1 + mods.warden)`. Do 1.25.1 `alarmed` nie było kasowane (5.11, poprawione w 1.26).
 
 Co ginie na zawsze (usunięte z `fl.items`, które jest tą samą mapą co `run.items`):
-- potwór zabity w fali (`p4_traps.js: hurtMonster`),
+- do 1.25.1 potwór zabity w fali (`p4_traps.js: hurtMonster`); od 1.26 tylko potwór tymczasowy (`temp`), a każdy inny jest powalony i wstaje w następnej budowie (5.14.6),
 - proch po wybuchu (`fireRaw`, przypadek `powder`), razem z meblem pod nim,
 - pułapka rozmontowana przez złodzieja-sapera (`p5_ai.js: updateHero`, `finishPrep`).
 Esencja wydana na nie przepada.
@@ -96,14 +99,14 @@ Esencja wydana na nie przepada.
 UPG_COST = [0, 0, 2, 4]    // mnożnik ceny: poziom 2 kosztuje cost*2, poziom 3 kolejne cost*4
 LVL_POW  = [1, 1, 1.6, 2.4]  // moc pułapki (mnoży pw)
 LVL_MON  = [1, 1, 1.5, 2.2]  // HP i siła potwora
-upgCost(it) = ceil(ITEMS[it.type].cost * UPG_COST[lvl + 1])
+upgCost(it) = ceil(ITEMS[it.type].cost * UPG_COST[lvl + 1] * (1 - mods.upgDisc))   // 1.26: Kuźnia ciemności
 ```
 
 - Ulepszać można tylko w budowaniu, tylko `ACTIVE`, do poziomu 3.
-- Pułapka: `lvlPow(it) = LVL_POW[lvl]` mnoży `pw` w każdym odpaleniu (`p4_traps.js: lvlPow`). Potwór: `lvlPow = 1`; zamiast tego `max`, `hp` i `power` mnożone przez `LVL_MON[nowy] / LVL_MON[stary]` (max zaokrąglony).
-- Poziom 3 dodaje cechę (`TRAITS`, tekst w `p1_config.js`; co robi w kodzie: przy każdym elemencie w 5.3 i 5.4).
+- Pułapka: `lvlPow(it) = LVL_POW[lvl]` mnoży `pw` w każdym odpaleniu (`p4_traps.js: lvlPow`). Potwór: `lvlPow = 1`; zamiast tego `max`, `hp` i `power` mnożone przez `LVL_MON[nowy] / LVL_MON[stary]` (max zaokrąglony; od 1.26 też `baseMax` roju szczurów).
+- Poziom 3 dodaje cechę (`TRAITS`, tekst w `p1_config.js`; co robi w kodzie: przy każdym elemencie w 5.3 i 5.4). Od 1.26 to wybór: cecha A (dawna, `TRAITS`, `it.branch = 'A'`) albo B (`TRAITS_B`, `it.branch = 'B'`), okno wyboru przy ulepszaniu z poziomu 2 (5.14.3). `t3(it)` = cecha A, `t3B(it)` = cecha B.
 - Poziom poszerza strefy checku: `LVL_ZONE = [1, 1, 1,15, 1,3]` (punkt 5.9.4).
-- Ulepszenie kasuje pamięć checku (pamięć należy do poziomu, punkt 5.9.7).
+- Ulepszenie kasuje pamięć checku (pamięć należy do poziomu, punkt 5.9.7); od 1.26 karta Pamięć serca przenosi zapamiętany wynik na nowy poziom.
 
 ---
 
@@ -126,7 +129,7 @@ Pułapka poziomu 1 z połączoną kartą ma moc 1,6, poziomu 2: 2,4, poziomu 3: 
 - `door`: `dd.b >= 0 ? dd.b : dd.a` z `fl.doors`. Drzwi korytarza mają `a` = pokój, `b` = korytarz (`p2_state_map.js: buildMap`), więc **krata i zawiasy należą do korytarza**, nie do pokoju (typy pokojów ich nie dotyczą),
 - `floor`, `object`: `roomOf(x, y)`.
 
-`WALL_TRAP = { arrows, fire, portrait, eyes, mirror }` (`p4_traps.js`): pułapki ścienne (karta Głodne ściany, miejsca rozbrajania).
+`WALL_TRAP = { arrows, fire, portrait, eyes, mirror }` (`p4_traps.js`; od 1.26 też pendulum, bolt): pułapki ścienne (karta Głodne ściany, miejsca rozbrajania).
 
 ### 5.2.2 Obszary (`p2_state_map.js: areaOf`, `areaOfRaw`)
 
@@ -228,7 +231,8 @@ Bez gracza (bez tapnięcia, bez pamięci, bez `ff`) pułapka **nie odpala** (poz
 
 1. Warunek z 5.2.4. Zapamiętaj `basePw = pw`, `boost = trapBoost(it)`.
 2. Napis "Cisza przed burzą ×N", gdy `calmReady(it)` i to nie echo.
-3. `pw *= boost * lvlPow(it) * mods.pactPower`. Dla `TRAPS`: `it.lastFire = fl.time`.
+3. `pw *= boost * lvlPow(it) * kindPow(it) * mods.pactPower * skullK(it) * famK(it.type) * omenPow(it)` (od 1.26 Runa rodu `famK` = 1 + 0,08 × poziom rodziny i Krwawy księżyc dla potworów; `kindPow` od 1.15, `skullK` od 1.18). Dla `TRAPS`: `it.lastFire = fl.time`, od 1.26 `fl.fireN++`.
+3a. 1.26 Echo serca: pierwsza pułapka (nie proch, nie echo, nie chór) odpalona po nasyceniu serca w tej fali trafia drugi raz do `fl.echoQ` (po 0,4 s, `basePw`), napis "Echo serca!".
 4. Echo mechanizmów: dla `TRAPS`, gdy `mods.echoFire` i nie echo ani chór: `fl.trapFires++`; gdy `fl.trapFires % max(2, 6 - mods.echoFire) === 0` i typ nie `powder`, do kolejki `fl.echoQ` trafia `{ it, at: fl.time + 0,4, pw: basePw }`.
 5. Combo (5.2.7), zapis `lastTrapAt`, `lastTrapC`, `lastTrapType`, od 1.17 `lastTrapRoom` (`slotRoom` elementu; przerywa rozglądanie się w tym pokoju, sekcja 06), okno `comboWinNow`.
 6. `comboMult = 1 + 0,25 * (combo - 1)` (tylko napis nad pułapką), `cpow = 1 + COMBO_POW * (combo - 1)`, `D = S.dmg`. `run.fires++`.
@@ -237,7 +241,7 @@ Bez gracza (bez tapnięcia, bez pamięci, bez `ff`) pułapka **nie odpala** (poz
 9. `fl.surprise = TRAPS[type] && !it.detected` (rana z niewykrytej pułapki straszy ×1,3).
 9a. 1.17: dla `TRAPS` (każde odpalenie, przed świadkami) `hearFar(it, list)` (`p5_ai.js`, sekcja 06, 6.3.3a): gdy minęła przerwa `P.soundCd` (10 s), drużyna nie wychodzi, a pokój pułapki nie jest Głuszą, najbliższy spokojny bohater (nie zgubiony, nie panikuje, nie w klatce, nie wychodzi) w odległości <= 12 pól, nie w tym pokoju, nie w Głuszy i nie trafiony tą pułapką, słyszy ją: kwestia `hearScream` z imieniem trafionego albo (szansa 0,65) `hearSound`, on i każdy w jego zasięgu słuchu odwracają się w tę stronę; gdy to przywódca albo przywódca go słyszy, `P.sound` (przez 25 s przyciąga odważnego, chciwego albo zielonego przywódcę i odpycha ostrożnego i tchórza). `stats.heard`, `tl('hs')`.
 10. Dla `TRAPS`, jeśli ktoś jest w pokojach obszaru (świadkowie): okrzyk, gdy niewykryta (`pickS(SAY.trap[typ] || SAY.trapGeneric)`, od 1.17 lista kwestii); uczenie się (`p = max(R.learn)` świadków; w Głuszy nikt się nie uczy, `stats.hushUnlearned`; inaczej z szansą `p` `learnTrap(it, 'seen')`, a wtedy od 1.17 z szansą 0,5 ktoś w pokoju mówi `SAY.learn`); licznik zasadzki: gdy wśród trafionych jest przywódca albo ktoś, kto go widzi lub słyszy (od 1.17: grupa przywódcy; wcześniej każdy trafiony, także pokoje dalej), `ambushN++` jeśli od `ambushT` minęło < 3 s, inaczej `ambushN = 1` (co robi zasadzka: 5.7.5). Szczegóły uczenia i kwestie: sekcja 06.
-11. `cdBase = cdOf(type) * (Zębatki ? 0,75 : 1)`, gdzie `cdOf(type) = ITEMS[type].cd * mods.cooldown * (WALL_TRAP[type] ? mods.wallCd : 1)` (też dla potworów).
+11. `cdBase = cdOf(type) * (Zębatki ? 0,75 : 1)`, gdzie `cdOf(type) = ITEMS[type].cd * mods.cooldown * (WALL_TRAP[type] ? mods.wallCd : 1) * (1 - 0,04 * famLv(type))` (też dla potworów; od 1.26 Runa rodu -4% na poziom). Opis Runy (budowli) mówi o pułapkach odnawiających się 10% szybciej, ale `cdOf` tego nie liczy (5.14.10).
 12. Efekt typu (`switch`, punkty 5.3 i 5.4); `hit` = liczba trafionych (szaman: `-1`).
 13. Zaprawione mechanizmy: `TRAPS && hit > 0 && mods.tempered` daje `run.stacks.tempered += hit`.
 14. Przeciążenie (5.2.4).
@@ -248,7 +252,8 @@ Bez gracza (bez tapnięcia, bez pamięci, bez `ff`) pułapka **nie odpala** (poz
 `trapBoost(it)` (tylko `TRAPS`, potwory = 1):
 
 ```
-trapBoost = (heartFed() ? 1 + mods.heartbeat : 1)                  // Bijące serce: serce syte w tej fali
+trapBoost = kataK(it.type) * heartK(it)                            // 1.26: Pamiętnik kata; Puls serca (syte serce, pokój serca) i Ostatni oddech
+          * (heartFed() ? 1 + mods.heartbeat : 1)                  // Bijące serce: serce syte w tej fali
           * (calmReady(it) ? 1 + mods.calmStorm : 1)               // Cisza przed burzą: nie odpalała od 20 s albo wcale w tej fali
           * (1 + mods.bloodRite * fl.stats.kills)                  // Krwawy rytuał: +10% za zabójstwo w tej fali
           * (1 + 0.01 * floor(run.stacks.tempered / 4) * mods.tempered)   // Zaprawione mechanizmy
@@ -262,7 +267,7 @@ Moc `pw` mnoży nie tylko obrażenia i strach, ale też czasy: sieć (`3 * webDu
 
 ```
 if (fl.cclock - fl.lastTrapC < (fl.comboWinNow || S.comboWin)) {          // w oknie
-  if ((fl.lastTrapType !== it.type || isRt(slotRoom(it), 'gears')) && fl.combo < 7) { fl.combo++; comboOrbs(it.x, it.y); }
+  if ((fl.lastTrapType !== it.type || isRt(slotRoom(it), 'gears') || mods.sharedMech) && fl.combo < 7) { fl.combo++; comboOrbs(it.x, it.y); }   // 1.26 Wspólny mechanizm
 } else {                                                                   // okno minęło
   if (fl.chain && fl.chain.trap) payChain();   // stara seria wypłacona, zanim zacznie się nowa (sekcja 03)
   fl.combo = 1; comboReset();
@@ -273,7 +278,7 @@ fl.comboWinNow = S.comboWin * (isRt(slotRoom(it), 'grotto') ? 1.5 : 1);
 
 - `S.comboWin = 3 s` (od 1.12.1, suwak balansu). `fl.cclock` rośnie w każdym `step` o `dt`, a w ciszy (`fl.quiet`) o `dt × S.comboQuiet` (0,25) (czas gry, także spowolniony podczas checku: realnie okno trwa wtedy 4 razy dłużej). Szczegóły i historia: sekcja 03, 2.5.
 - Liczy się każde `fire` elementu `ACTIVE`, także zdolność potwora i leczenie szamana. Pasywne obrażenia potworów i podpalenie nie ruszają combo.
-- Ta sama pułapka (ten sam typ) w oknie nie podbija combo, ale odświeża okno. W Zębatkach podbija.
+- Ta sama pułapka (ten sam typ) w oknie nie podbija combo, ale odświeża okno. W Zębatkach podbija (od 1.26 także wszędzie z kartą Wspólny mechanizm). Od 1.26 reakcja dokłada krok combo także dla tej samej pułapki (5.14.2).
 - Maksimum 7. `comboNow()` (`p3_flow.js`) zwraca `fl.combo` tylko, gdy okno trwa, inaczej 1.
 - **`cpow = 1 + COMBO_POW * (combo - 1)`**, `COMBO_POW = 0,12`: mnoży rany (4. argument `damage`) i większość strachu z pułapek (gdzie dokładnie: tabela w 5.3). Przy combo 7: ×1,72.
 - **Mnożnik Esencji**: `addPts` liczy `cm = 1 + 0,25 * (comboNow() - 1)` (do 2,5 przy combo 7), seria bierze największe `cm` i mnoży nim całą swoją Grozę przy wypłacie (sekcja 03). Napis nad pułapką pokazuje ten mnożnik.
@@ -289,7 +294,7 @@ Wspólne dla wszystkich: po odpaleniu `it.cd = cdBase` (krata: inaczej), `it.ani
 
 ### 5.3.1 Tabela zbiorcza
 
-Kwota = wartość przy `pw = 1` (przed checkiem, poziomem i kartami). "×cpow" = combo działa na tę wartość.
+Kwota = wartość przy `pw = 1` (przed checkiem, poziomem i kartami). "×cpow" = combo działa na tę wartość. Stan 1.25.1 dla kolumny "Poziom 3" (to cecha A); od 1.26 każdy element ma też cechę B (5.14.3), a liczby zmienione w 1.26 (krata, lustro, zawiasy, trumna, pozytywka, koszty) są w 5.14.9. Nowe pułapki: 5.14.4.
 
 | Typ | Slot | Typ obrażeń (`DMG_OF`) | Rana | Strach | cd (s) | Obszar | Poziom 3 (cecha) | Kształt checku |
 |---|---|---|---|---|---|---|---|---|
@@ -316,8 +321,11 @@ Kolumna cd: `ITEMS.cd`, w kodzie mnożone przez `mods.cooldown`, `mods.wallCd` (
 
 ```
 damage(h, 35 * D * mods.spikeDmg * (1 + 0.04 * (run.stacks.hunger || 0) * mods.hunger) * pw, it, cpow)
-lvl >= 3 && !h.dead: h.burnUntil = max(h.burnUntil, fl.time + 3); h.burnBy = 'spikes'   // "Krwawi"
+lvl >= 3 && !h.dead: h.burnUntil = max(h.burnUntil, fl.time + 3); h.burnBy = 'spikes'   // "Krwawi" (do 1.25.1)
+1.26: t3(it) (cecha A): setStatus(h, 'bleed', 3, 'spikes'); t3B(it) (cecha B Zadziory): setStatus(h, 'root', 1, 'spikes')
+      Podwójne ostrze (mods.doubleEdge): Unieruchomiony albo Spowolniony dostaje drugi cios 35 * D * spikeDmg * pw * 0,5
 ```
+Od 1.26 krwawienie jest osobnym statusem (`h.bleedUntil`, tyknięcie `6 * S.dmg` = 4,2/s kłute przez `BLEED = { kind: 'bleed' }`, 5.14.1), a nie podpaleniem z `burnBy 'spikes'`; opis niżej dotyczy wersji do 1.25.1.
 
 - Trafia każdego na polu. `trapMult`: ×1,5, gdy bohater stoi (`held`: walka, czekanie, rozmowa, odpoczynek, rozbrajanie, przy sercu, uwalnianie, w klatce, w sieci); Lepkie kolce: ×(1 + `stickySpikes`) w sieci (5.6.2).
 - Krwawienie korzysta z mechaniki podpalenia (`burnUntil`, 6·D/s, `BURN`), ale ustawione jest bezpośrednio, bez `ignite`, więc Pożoga go nie przenosi. Od 1.17.1 to rana **kłuta**, nie ogień: `damageRaw` daje `dtp = h.burnBy === 'spikes' ? 'pierce' : 'fire'` (5.6.1, krok 6). Działa więc na nie `CLASS_RES.pierce` (wojownik ×0,75, mag ×1,25, kapłan ×1,1, złodziej ×1), ciało (`PHYS`, np. gruboskóry ×0,7), karta Hartowane ostrza (`dmgType.pierce`), trauma `pierce` i rany w `dmgBy.pierce`; do 1.17 liczyło się jako ogień (złodziej ×1,25, mag ×0,7, barbarzyńca ×1,2, kapłan ×0,85, Olej w szczelinach, trauma i fobia ognia), stąd bohater, któremu "śniły się płomienie" w lochu bez ognia. Kolce z cechą 3. poziomu to też kolce w pokoju Zbrojowni (`t3` przez `inKind`, 5.8a).
@@ -352,7 +360,7 @@ list.filter(h => !tdSafe(h, it)).forEach(h => {          // 1.24; do 1.23: !h.fe
 tdCap(h)      = (h.rank >= 2 || h.lvl >= 12) ? 1 : 2           // elita albo poziom 12+: raz na falę
 tdSafe(h, it) = h.fellFrom?.has(it) || (h.tdFalls || 0) >= tdCap(h)
 ```
-`h.tdFalls` liczy upadki bohatera przez dowolne zapadnie w tej fali (w `fall`). Bohater "bezpieczny" nie jest celem zapadni (`fireRaw`), nie liczy się do `heroesInArea` zapadni (więc nie wywoła checku ani czaszki, `p6_loop.js: heroesInArea`) ani do `checkWanted`. Kto przekroczył limit i stanie w obszarze nieznanej, gotowej zapadni, widzi ją: `learnTrap(it, 'seen', h)` (od tej chwili drużyna ją zna i omija jak każdą znaną pułapkę), `stats.tdSeen`. Koszt zapadni od 1.24: 6 Esencji (było 4), więc ulepszenie 12 i 24 (`upgCost`), zwrot przy zdjęciu według `spent`. Opis elementu podaje limit. Karta bohatera: "Zapadnie: n/cap" (gdy spadł albo w lochu jest zapadnia), "(już mu/jej nie grożą)" przy limicie, "(elita albo poz. 12+: spada raz)" przy limicie 1 (sekcja 08).
+`h.tdFalls` liczy upadki bohatera przez dowolne zapadnie w tej fali (w `fall`). Bohater "bezpieczny" nie jest celem zapadni (`fireRaw`), nie liczy się do `heroesInArea` zapadni (więc nie wywoła checku ani czaszki, `p6_loop.js: heroesInArea`) ani do `checkWanted`. Kto przekroczył limit i stanie w obszarze nieznanej, gotowej zapadni, widzi ją: `learnTrap(it, 'seen', h)` (od tej chwili drużyna ją zna i omija jak każdą znaną pułapkę), `stats.tdSeen`. Koszt zapadni od 1.24: 6 Esencji (było 4), więc ulepszenie 12 i 24 (`upgCost`), zwrot przy zdjęciu według `spent`; od 1.26 znowu 4 (ulepszenie 8 i 16), a lądowanie zostawia bohatera Oszołomionego (`setStatus(h, 'dazed', 3)` = Spowolniony 3 s; plan: "Oszołomienie"). Cecha B (Kolce na dnie): rana upadku ×3 i krwawienie 4 s. Opis elementu podaje limit. Karta bohatera: "Zapadnie: n/cap" (gdy spadł albo w lochu jest zapadnia), "(już mu/jej nie grożą)" przy limicie, "(elita albo poz. 12+: spada raz)" przy limicie 1 (sekcja 08).
 
 `fall(h, pw, it)` (`p4_traps.js`):
 1. `h.fellFrom.add(it)` (przez tę zapadnię spada raz na falę), od 1.24 `h.tdFalls++`, `learnTrap(it, 'seen')` (zapadnia staje się znana), poziom 3: `h.deepFall = true`; od 1.18 `h.fallRoom`, `h.fallRk` (komnata zapadni, karta Cela pod zapadnią: 5.13).
@@ -412,16 +420,18 @@ Każdy w obszarze: `addFear(h, 22 * pw * mods.portraitFear * cpow, 'portrait')`.
 ### 5.3.9 Krata (`gate`)
 
 ```
-shut = 4 * mods.gateDur                     // gateDur zawsze 1 (żadna karta go nie zmienia)
+shut = 6 * mods.gateDur                     // gateDur zawsze 1 (żadna karta go nie zmienia); od 1.26 6 s (było 4)
 it.cd = shut + cdBase                       // odnowienie liczy się od otwarcia
 d = fl.doors.get(key(x, y)); d.closedUntil = fl.time + shut; d.wasClosed = true
 it.uses++; if (it.uses >= mods.gateUses + (lvl >= 3 ? 2 : 0)) { disabled = true; worn = true }   // gateUses 3, Ciężka krata +2
 bohater idący na kratę z prog < 0,5: cofa się (nx = null, prog = 0)
-list (tylko pole kraty): damage(h, 60 * D * mods.gateCrush * pw, it, cpow)
+list (tylko pole kraty): damage(h, 60 * D * mods.gateCrush * pw * (t3B ? 2 : 1), it, cpow)   // 1.26 cecha B Gilotyna ×2
+gateSplit(it, shut)                         // 1.26 Rozdzielenie: odcięci od przywódcy są samotni 6 s (Gilotyna 8 s)
 najbliższy żywy w odległości Manhattan <= 2: kwestia i addFear(near, 5, 'gate')
 replanAll(); wstrząs ekranu
 ```
 
+- 1.26 `gateSplit(it, shut)`: każdy żywy (nie przywódca, nie w zapadni, nie w klatce) w odległości Manhattan ≤ 6 od kraty, który stoi po drugiej stronie drzwi niż przywódca (strona liczona wzdłuż osi przejścia, `doorAlong`), dostaje `h.cutUntil = fl.time + 6` (cecha B: 8), napis "Odcięty!"/"Odcięta!", `stats.gateSplits`, oś czasu `gs`. Do `cutUntil` liczy się jako samotny (`h.alone`, sekcja 06): Groza samotności 0,09/s i 2,5 strachu/s z atrybutem `gate` (fobia ciasnoty).
 - Zamknięte drzwi są nieprzechodnie (`passable`). Gdy się otworzą, `step` każe wszystkim przeplanować.
 - Brak napisu "pudło" (krata zawsze "trafia" w drogę).
 - Złodziej przy zamkniętej kracie, gdy drużyna czeka, podważa ją w 3 s (×1,5 szybciej od poziomu 6): drzwi otwarte, krata `disabled` i wykryta (`p5_ai.js: partyThink`).
@@ -451,26 +461,28 @@ Jednorazowy (element i mebel znikają, w miejscu mebla jest przejście). Nie ma 
 
 ### 5.3.14 Lustro (`mirror`)
 
-`k = 1 + 1,5 * clamp(h.fear / h.courage, 0, 1)` (od 1 do 2,5, liczone przed tym strachem), `addFear(h, 12 * k * pw * cpow, 'mirror')`.
+`k = 1 + 1,5 * clamp(h.fear / h.courage, 0, 1)` (od 1 do 2,5, liczone przed tym strachem), `addFear(h, 12 * k * pw * cpow, 'mirror')`; od 1.26 `16 * k`, a cecha B (Odbicie) daje `h.reflectUntil = fl.time + 8`: następny strach z innego źródła niż lustro ×1,2 (raz).
 
 ### 5.3.15 Zawiasy (`creak`)
 
-`close = |h.tx - x| + |h.ty - y| <= 1`; `addFear(h, (close ? 24 : 12) * pw * cpow, 'creak')`; poziom 3 i `close`: `slowUntil = max(slowUntil, fl.time + 2)`.
+`close = |h.tx - x| + |h.ty - y| <= 1`; `addFear(h, (close ? 24 : 12) * pw * cpow, 'creak')` (od 1.26 30 / 15); poziom 3 i `close`: `slowUntil = max(slowUntil, fl.time + 2)`. Cecha B (1.26, Skrzyp nocy): żywi w pokojach sąsiadujących z pokojem zawiasów, poza trafionymi, dostają `7,5 * pw` strachu (bez cpow).
 
 ### 5.3.16 Trumna (`coffin`)
 
 ```
 crypt = isRt(roomOf(x, y), 'crypt') ? 1.5 : 1
 near = najbliższy z list (hypot od pola trumny)
-każdy: addFear(h, (h === near ? 36 * (lvl >= 3 ? 1.5 : 1) : 14) * crypt * pw * cpow, 'coffin')
+każdy: addFear(h, (h === near ? 36 * (lvl >= 3 ? 1.5 : 1) : 14) * crypt * pw * cpow, 'coffin')   // od 1.26 50 / 20, cd 7 (było 9), koszt 4 (było 5)
 lvl >= 3 i h === near: slowUntil = max(slowUntil, fl.time + 3)
+1.26 cecha B (Wieko): setStatus(near, 'root', 2, 'coffin')
 ```
 
 ### 5.3.17 Pozytywka (`musicbox`)
 
 ```
 dur = lvl >= 3 ? 8 : 4; r = roomOf(x, y); it.playUntil = fl.time + dur
-każdy w pokoju: addFear(h, 6 * pw * cpow, 'musicbox'); h.lullUntil = fl.time + dur; h.lullK = 5 * pw; h.lullRoom = r
+każdy w pokoju: addFear(h, 6 * pw * cpow, 'musicbox'); h.lullUntil = fl.time + dur; h.lullK = 5 * pw; h.lullRoom = r   // od 1.26 12 i 7 * pw, cd 8 (było 9)
+1.26 cecha B (Usypianka): każdy trafiony < 60% HP (nie drzemał w tej fali, nie w klatce, nie wychodzi, nie panikuje, nie płonie) zasypia na 3 s (stan 'rest', drzemka ze snem), stats.lullNaps
 ```
 
 Kołysanka (`p5_ai.js: partyThink`): dopóki `fl.time < lullUntil` i bohater jest w `lullRoom`, `addFear(h, lullK * dt, 'musicbox', 'lull')` (bez cpow). Topór rozbijający mebel wyłącza pozytywkę. Od 1.17 nakręca ją bohater przeszukujący mebel przy rozglądaniu się (szansa 0,45, `pw = 1`, 5.2.5).
@@ -491,15 +503,17 @@ Kołysanka (`p5_ai.js: partyThink`): dopóki `fl.time < lullUntil` i bohater jes
 
 - HP przy postawieniu: `ITEMS.hp * mods.monster` (Weterani ×1,4 tylko dla nowo stawianych), `power = mods.monster`. Ulepszenie: `LVL_MON`.
 - Między falami HP wraca do `max`, pozycja unoszących się do pola domowego (`setupFl`). W Krypcie na starcie fali `hp = round(max * 1,25)` (więcej niż `max`; leczenie szamana i tak tnie do `max`).
-- **Śmierć jest ostateczna** (`hurtMonster`): `hp <= 0` usuwa element z `fl.items` (= `run.items`), ciało (dla nie-`DRIFT`) jako efekt, walczący z nim wracają do marszu, `threatDirty`.
+- Do 1.25.1 **śmierć była ostateczna** (`hurtMonster`): `hp <= 0` usuwało element z `fl.items` (= `run.items`), ciało (dla nie-`DRIFT`) jako efekt, walczący z nim wracali do marszu, `threatDirty`. Od 1.26 **Odrodzenie** (5.14.6): potwór jest powalony (`down = true`, zostaje na polu), a znika tylko tymczasowy (`temp`).
 - Potwór nie jest przeszkodą dla `passable`; bohater, którego następny krok to pole żywego potwora nie-`DRIFT`, wchodzi w stan `fight` z `foe = potwór` (`p5_ai.js: updateHero`). Unoszące się nigdy nie blokują.
 - Dwa tryby działania:
   1. **Zdolność** przez `fire` (skill check, pamięć, `ff`): obszar i `cd` jak u pułapek, źródło `actSrc(type) = { kind: 'trap', type }`, więc liczy się jak pułapka (Groza ×1, `trapMult`, talizman, zbroja, strach z rany 25%). Moc: `pw` z checku × `mods.pactPower` (bez `trapBoost`, bez `LVL_POW`), siła przez `it.power`.
-  2. **Działanie pasywne** w `monstersTick(dt)` (co krok): walka wręcz, strzały łucznika, leczenie szamana, aury unoszących się. Źródło `src = m` (element), czyli rodzaj `monster`: Groza ×0,4 (`MON_FACTOR`), strach z rany 18% odwagi (zamiast 25%).
+  2. **Działanie pasywne** w `monstersTick(dt)` (co krok): walka wręcz, strzały łucznika, leczenie szamana, aury unoszących się. Źródło `src = m` (element), czyli rodzaj `monster`: Groza ×0,4 (`MON_FACTOR`; od 1.26 ×0,8), strach z rany 18% odwagi (zamiast 25%). Od 1.26 tylko ten rodzaj zabójstwa daje Ucztę (sekcja 03, 2.14).
 
 ```
 monDmg(m) = S.monDmg * m.power * mods.pactPower * (heartFed() ? 1 + mods.heartbeat : 1)
           * (mods.pack && inny żywy potwór w tym samym pokoju ? 1 + mods.pack : 1)      // Stado
+1.26: × kataK(typ) × kindPow(m) × skullK(m) × famK(typ) × omenPow(m) × warlordK(m) × heartK(m)
+      × (szkielet złożony i Kości niezłomne ? 1,2 : 1) × (demon z Paktem z otchłanią ? 1,2 : 1) × (Strażnik i pokój serca ? 1 + warden : 1)
 ```
 
 `S.monDmg = 1` (suwak balansu).
@@ -508,15 +522,16 @@ monDmg(m) = S.monDmg * m.power * mods.pactPower * (heartFed() ? 1 + mods.heartbe
 
 ```
 fighters = bohaterowie nie martwi, nie fled, nie gone, state === 'fight', foe === m
-ogr: bije wszystkich walczących; inni: tylko fighters[0]
-damage(h, ITEMS[m.type].melee * monDmg(m) * dt, m)
+ogr: bije wszystkich walczących; inni: tylko fighters[0]          // 1.26: demon i rój szczurów też biją wszystkich
+damage(h, ITEMS[m.type].melee * monDmg(m) * dt * houndK(m, h) * ratsK(m) * (demon ? demonK(m) : 1), m)   // 1.26: Polowanie, urośnięty rój, Pan otchłani
 ogr poziom 3: addFear(h, 4 * dt, 'ogre')
+1.26: ogar z cechą B podpala walczącego (szansa dt/2 na krok), rój z cechą A zaraża (dt/2)
 obrażenia zadane potworowi:
-dmgIn = Σ h.T.dps * h.R.dps * (wojownik ? 1.4 : 1) * (raging(h) ? 1.5 : 1) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt
-hurtMonster(m, dmgIn)
+dmgIn = Σ h.T.dps * h.R.dps * (wojownik ? 1.4 : 1) * (paladyn i nieumarły/demon ? 1.5 : 1) * (raging(h) ? 1.5 : 1) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt
+hurtMonster(m, dmgIn, fighters[0])                                 // 1.26: trzeci argument "kto" (szkielet, chochlik)
 ```
 
-`hurtMonster(m, dmg)`: gdy w pokoju jest żywy szaman poziomu 3 (Tarcza ducha, także on sam), `dmg *= 0,7`. Bomba w walce: gdy `g.hp > 60`, walczący z bombą rzuca ją: `hurtMonster(g, 80 * min(4, r)^1,3 * itemPow(h))` (`updateHero`).
+`hurtMonster(m, dmg, by)`: od 1.26 chochlik w 50% (odnowienie 2 s) unika trafienia teleportem w swoim pokoju; szkielet z cechą B dostaje ×0,6 od wszystkiego poza magiem; gdy w pokoju jest żywy szaman poziomu 3 (Tarcza ducha, także on sam), `dmg *= 0,7`. Bomba w walce: gdy `g.hp > 60`, walczący z bombą rzuca ją: `hurtMonster(g, 80 * min(4, r)^1,3 * itemPow(h))` (`updateHero`).
 
 Kto rani który potwór:
 
@@ -527,11 +542,11 @@ Kto rani który potwór:
 | shade | nie | nie | nie | tak | tak |
 | bats | nie | nie | tak | tak | nie |
 
-Szczegóły zaklęć: 5.4.9.
+Od 1.26: nowe potwory chodzące (szkielet, zombie, licz, ogar, demon, saper, herszt, szczury) jak goblin; chochlik i kusicielka jak nietoperze (unoszą się; chochlik w 50% unika trafienia). Do tego święta aura paladyna (unoszące się w promieniu 1,5: `10 × R.pow`/s), strzał tropiciela (każdy potwór w jego pokoju do 4 pól, unoszący się pierwszy raz ×2) i flaszka alchemika (`60 × R.pow`, sekcja 04, 4.3a). Szczegóły zaklęć: 5.4.9.
 
 ### 5.4.3 Goblin (`goblin`)
 
-- Pasywnie: blokuje i bije walczącego: `melee 14 * monDmg` na sekundę.
+- Pasywnie: blokuje i bije walczącego: `melee 14 * monDmg` na sekundę (od 1.26 HP 140 zamiast 110 i `melee 16`). Cecha B (Łupieżca): bohater zabity przez niego (w walce albo zdolnością) zostawia dodatkowy stos łupu (2 monety).
 - Zdolność (cd 3, kształt swing): `near` = żywi w odległości Czebyszewa ≤ 1; cel = ten, który z nim walczy, albo pierwszy z `near`. `damage(tgt, 35 * D * it.power * pw, actSrc, cpow)` (24,5). Poziom 3 (Podcięcie): żywy cel `slowUntil = max(..., +1,5 s)`.
 
 ### 5.4.4 Łucznik (`archer`)
@@ -547,6 +562,8 @@ Szczegóły zaklęć: 5.4.9.
 **Ogr (`ogre`)**: pasywnie `melee 18` każdemu walczącemu; poziom 3 (Grzmot): +4 strachu/s każdemu walczącemu. Zdolność (cd 6, swing): każdy w 3×3 `damage(h, 45 * D * it.power * pw, actSrc, cpow)` (31,5), poziom 3: `addFear(h, 15 * pw, 'ogre')` (bez cpow). Wstrząs ekranu.
 
 **Szaman (`shaman`)**: pasywnie co krok leczy każdego żywego potwora z `hp < max` w odległości Czebyszewa ≤ 2 (także siebie) o `8 * dt`. `melee 3`. Zdolność (cd 8, swing; check pyta, gdy inny potwór w pokoju ma < 60% HP): każdy żywy potwór w pokoju `hp = min(max, hp + 60 * pw)`; `hit = -1` (bez "pudło"), ale combo rośnie. Poziom 3 (Tarcza ducha): potwory w jego pokoju dostają 30% mniej obrażeń.
+
+Od 1.26 (plan 6.2): koszt 4; leczenie pasywne **się nie sumuje**: potwór bierze je tylko od najsilniejszego szamana w zasięgu (`bestHealer`: najwyższy poziom, przy remisie pierwszy); **limit**: wszystkie szamany razem (pasywnie i zdolnością) leczą potwora najwyżej o jego `max` HP na falę (`m.healGot`, zerowane w `setupFl`); Groza z leczenia `SHAMAN_GZ` 0,02 -> 0,1 za pełne HP. Cecha B (Klątwa): zdolność przeklina każdego bohatera w pokoju szamana na 8 s (`h.hexUntil`): +20% otrzymanych obrażeń, strach opada 2 razy wolniej. Bohaterowie celują najpierw w szamana i licza (sekcja 06, 6.16).
 
 ### 5.4.6 Unoszące się (`DRIFT`): duch, cień, nietoperze
 
@@ -567,13 +584,15 @@ Aury (co krok, dla każdego żywego w odległości `dd` od `gx, gy`; obrażenia 
 
 | Potwór | Strach | Rana |
 |---|---|---|
-| ghost | `dd <= (lvl3 ? 2,6 : 1,6)`: `10 * dt * mods.ghostAura * galleryK` | `dd <= 0,8`: `5 * monDmg * dt` |
+| ghost | `dd <= (lvl3 ? 2,6 : 1,6)`: `10 * dt * mods.ghostAura * galleryK` (od 1.26 `12 * dt`) | `dd <= 0,8`: `5 * monDmg * dt` |
 | shade | `dd <= 1,4`: `7 * dt * (alone/lost ? 2 : 1)` | - |
 | bats | `dd <= (lvl3 ? 1,6 : 1,0)`: `4 * dt` | `3 * monDmg * dt` (kłute) |
 
 `galleryK(g) = (mods.hauntedGallery && fl.portraitRooms.has(roomOf(g.x, g.y))) ? 1 + mods.hauntedGallery : 1` (Nawiedzona galeria; `fl.portraitRooms` = pokoje z niewyłączonym portretem, przeliczane co krok, gdy karta jest w talii).
 
-Zdolności:
+Od 1.26: `DRIFT_SPEED` + `imp: 1.8, siren: 0.8`; aury chochlika (`dd <= 1,6`: 4 strachu/s) i kusicielki (`dd <= 2`: 5/s); każdy unoszący się wybiera najpierw Naznaczonego w swoim pokoju; duch z cechą B (Nawiedzenie) bierze cele do 7 pól także spoza pokoju i nie jest przycinany do granic pokoju.
+
+Zdolności (liczby 1.25.1; zmiany 1.26: duch 40 -> 50, cień 30 -> 40, nietoperze 16 -> 20 i koszt 3, cechy B w 5.14.3):
 - **Duch** (cd 7, double; check pyta, gdy ktoś w pokoju jest ≤ 3 od ducha; obszar = cały pokój): każdy w pokoju `addFear(h, 40 * pw * ghostAura * galleryK * cpow, 'ghost')` i `damage(h, 5 * D * pw, actSrc, cpow)` (bez `it.power`). Zimny dotyk: `ghostAura ×1,5`. Poziom 3 (Wycie): większy zasięg aury.
 - **Cień** (cd 8, double): `tgt` = najwyższy wynik `(alone||lost ? 100 : 0) - hypot(do gx, gy)`; każdy w obszarze `addFear(h, (h === tgt ? 30 : 10) * (alone||lost ? 2 : 1) * pw * cpow, 'shade')`. Poziom 3 (Pożeracz światła): gdy `tgt.alone && !tgt.lost` i nie jest przywódcą, `getLost(tgt, 'shade')`. Rani go tylko kapłan.
 - **Nietoperze** (cd 6, swing): każdy w obszarze `addFear(h, 16 * pw * cpow, 'bats')`, `damage(h, 6 * D * pw, actSrc, cpow)` (bez `it.power`); jeśli żywy, nie ucieka, nie niesie kryształu, nie w klatce, nie przywódca, z szansą `(rank 0 ? 0,6 : 0,35) * (lvl3 ? 1,3 : 1)`: `panicUntil = fl.time + 2,5` (spłoszony, biegnie na oślep, sekcja 06).
@@ -584,7 +603,7 @@ Dane bazowe: `data/ITEMS.json` (`hp`, `melee`, `cd`, `cost`).
 
 | Typ | HP | Wręcz /s | Zdolność (pw = 1) | Obszar zdolności | Pasywnie | Poziom 3 | Kształt |
 |---|---|---|---|---|---|---|---|
-| goblin | 110 | 14 | `35*D*power` jednemu | Czebyszew 1 | blokuje, bije | spowolnienie 1,5 s | swing |
+| goblin | 110 (1.26: 140) | 14 (1.26: 16) | `35*D*power` jednemu | Czebyszew 1 | blokuje, bije | spowolnienie 1,5 s | swing |
 | archer | 50 | 4 | `22*D*power` każdemu | R 4 | strzał `12*monDmg` co 1,2 s, R < 4,01 | podpala | swing |
 | spider | 90 | 12 | `30*D*power` + sieć `4*pw` s | 3×3 | co 3 s walki spowalnia walczącego 2,5 s | sieć 3×3 przy ugryzieniu | spiral |
 | ogre | 240 | 18 (wszystkim) | `45*D*power` | 3×3 | bije wszystkich walczących | +15·pw strachu i +4/s w walce | swing |
@@ -593,7 +612,7 @@ Dane bazowe: `data/ITEMS.json` (`hp`, `melee`, `cd`, `cost`).
 | shade | 50 | 0 | strach 30 / 10, samotni ×2 | R 3 wokół | szept 7/s | gubi samotnego | double |
 | bats | 40 | 0 | strach 16 + rana `6*D` + spłoszenie | R 2 (3) wokół | gryzą 4 strachu/s i `3*monDmg`/s | R 3, spłoszenie ×1,3, aura R 1,6 | swing |
 
-`melee` ducha (5) nie jest używane: nikt nie walczy z unoszącymi się wręcz.
+`melee` ducha (5) nie jest używane: nikt nie walczy z unoszącymi się wręcz. Kolumna "Poziom 3" to cecha A; nowe potwory 1.26 i cechy B: 5.14.5 i 5.14.3.
 
 ### 5.4.8 Inne interakcje potworów
 
@@ -623,16 +642,18 @@ Budowla stoi tylko między falami, jedna danego typu na pokój, na podłodze pok
 
 | Budowla | Efekt w kodzie |
 |---|---|
-| rune Runa | mag nie zakłóci pułapek w tym pokoju (czar przepada, `jamCd` 12 s) i nie wyczuje ich przy wejściu |
-| altar Ołtarz | kapłan o połowę słabszy: leczenie, bariera, święte światło, egzorcyzm, osłona przed pokojem (tarcza i odwaga), uspokajanie obok (`fearResist` ×0,875 zamiast ×0,75), odczynianie trwa 2 razy dłużej, amulet zdejmuje połowę strachu i tłumi go 2 s zamiast 4 |
+| rune Runa | mag nie zakłóci pułapek w tym pokoju (czar przepada, `jamCd` 12 s) i nie wyczuje ich przy wejściu; od 1.26 pułapki w pokoju odnawiają się 10% szybciej (`cdBase × 0,9`) |
+| altar Ołtarz | kapłan o połowę słabszy: leczenie, bariera, święte światło, egzorcyzm, osłona przed pokojem (tarcza i odwaga), uspokajanie obok (`fearResist` ×0,875 zamiast ×0,75), odczynianie trwa 2 razy dłużej, amulet zdejmuje połowę strachu i tłumi go 2 s zamiast 4; od 1.26 strach w pokoju ×1,1 |
 | decoy Wabik | wygląda jak pułapka (`LOOKS_TRAP`, obszar = pole), złodziej woli go rozbroić (koszt ścieżki -4); rozbrojenie albo topór: `decoyAlarm` |
-| acid Kwas | tarcza wojownika i osłona tarczą działają jak `(1 + k) / 2`, talizman `wardK * 0,5`, zbroja połowa redukcji, tarcza kapłana (`h.shield`) pochłania połowę rany |
-| veil Zasłona | uciekinierzy nie zapamiętują pokoju, pułapek ani łupu w nim (plotki, sekcja 03); doświadczony mag nie wyczuwa pułapek tego pokoju przy wejściu |
+| acid Kwas | tarcza wojownika i osłona tarczą działają jak `(1 + k) / 2`, talizman `wardK * 0,5`, zbroja połowa redukcji, tarcza kapłana (`h.shield`) pochłania połowę rany; od 1.26 obrażenia od pułapek i potworów w pokoju ×1,1 |
+| veil Zasłona | uciekinierzy nie zapamiętują pokoju, pułapek ani łupu w nim (plotki, sekcja 03); doświadczony mag nie wyczuwa pułapek tego pokoju przy wejściu; od 1.26 +0,15 do szansy zgubienia w pokoju, a jego pułapek nie słychać zza ściany |
 | fortify Bastion | gildia nie przebije tu wyłomu (sekcja 03) |
-| howl Kamień wyjec | pieśń i wołanie barda nie działają; zgubiony nie trafi tu do drużyny po głosie; od 1.17 połyka krzyki z daleka (`canHearShout`: kto stoi w tym pokoju, nie słyszy krzyku spoza zasięgu zwykłego głosu i nikt nie słyszy z daleka jego krzyku; sekcja 06, 6.3.13) |
-| shackles Okowy | nikt nie wpada w furię (`startRage` zwraca false, `raging` false); nikt nie rozbija mebli ani budowli |
+| howl Kamień wyjec | pieśń i wołanie barda nie działają; zgubiony nie trafi tu do drużyny po głosie; od 1.17 połyka krzyki z daleka (`canHearShout`: kto stoi w tym pokoju, nie słyszy krzyku spoza zasięgu zwykłego głosu i nikt nie słyszy z daleka jego krzyku; sekcja 06, 6.3.13); od 1.26 strach w pokoju ×1,1 |
+| shackles Okowy | nikt nie wpada w furię (`startRage` zwraca false, `raging` false); nikt nie rozbija mebli ani budowli; od 1.26 spowolnienie i unieruchomienie nałożone w pokoju +1 s |
 
-`decoyAlarm(it, by)`: raz (`alarmed`), wabik `disabled`; każda `TRAPS` z tym samym `slotRoom`, nie wyłączona, `cd <= 0`, odpala `fire(o, 1)` (bez checku, pełna moc 1, nawet gdy nikogo nie ma w obszarze); wstrząs, kwestia.
+Od 1.26 budowle kosztują mniej (runa i ołtarz 10, wabik i zasłona 6, kwas, wyjec, okowy, bastion 8), a opisy obiecują dodatki z planu (runa: pułapki w pokoju odnawiają się 10% szybciej; ołtarz: strach w pokoju +10%; kwas: obrażenia w pokoju +10%; zasłona: łatwiej się zgubić i pułapek nie słychać zza ścian; wyjec: strach +10%; okowy: unieruchomienie i spowolnienie +1 s; wabik: alarm raz na falę). Wszystkie są w kodzie (`inB(typ, pokój)`, po przeglądzie 1.26): Runa: `cdBase × 0,9` dla pułapek, których pokój (`slotRoom`) ma Runę; Ołtarz i Kamień wyjec: w `addFear` `amt × 1,1` za każdy z nich w pokoju bohatera; Kwas: w `damage` `amt × 1,1` dla źródeł `trap` i `monster` w pokoju bohatera; Zasłona: +0,15 do szansy zgubienia w jej pokoju (`p5_ai.js`, obok Mgły) i pułapek z jej pokoju nie słychać zza ściany (jak w Głuszy); Okowy: `setStatus` dodaje 1 s do spowolnienia i unieruchomienia nałożonych w pokoju z Okowami; Wabik: `alarmed` kasowane w `setupFl`, więc alarm raz na falę.
+
+`decoyAlarm(it, by)`: raz (`alarmed`; od 1.26 raz na falę), wabik `disabled`; każda `TRAPS` z tym samym `slotRoom`, nie wyłączona, `cd <= 0`, odpala `fire(o, 1)` (bez checku, pełna moc 1, nawet gdy nikogo nie ma w obszarze); wstrząs, kwestia.
 
 ### 5.5.3 Skrzynia (`crate`)
 
@@ -662,13 +683,18 @@ Od 1.17.1 `damage` to opakowanie: `now = hurtTags(h, src)` (podpalenie: `BURN_TA
      d) ZBROJA: ar = gearR(h, 'armor'); if (ar) amt *= 1 - (1 - 0.92^(ar * itemPow(h))) * (Kwas ? 0.5 : 1)
    } else if (caged(h)) amt *= 1.5
 5. if (h.cursed && kind !== 'heart') amt *= 1.3
+   1.26: if (fl.time < h.hexUntil && kind !== 'heart') amt *= 1.2             // Klątwa szamana (cecha B)
 6. dtp = kind === 'burn' ? (h.burnBy === 'spikes' ? 'pierce' : 'fire')      // 1.17.1: krwawienie z kolców to rana kłuta
+       : kind === 'bleed' ? 'pierce' : kind === 'poison' ? 'poison' : kind === 'react' ? src.dtp   // 1.26: tyknięcia statusów, reakcje
        : kind === 'heart' ? null : DMG_OF[tkey || src.type || (kind === 'loot' ? 'loot' : '')]
    if (dtp) { tk = typeMult(h, dtp); amt *= tk; if (tk !== 1) revealPhys(h, dtp) }
+   1.26: dtp === 'pierce' && mods.tarSulfur && Oblany: amt *= 1 + tarSulfur      // Smoła i siarka
+         dtp === 'shock': ar = gearR(h, 'armor'); if (ar) amt *= 1 + 0.05 * ar   // zbroja przyciąga piorun
+         dtp in {fire, shock}: amt = reactHit(h, amt, dtp, kind, src); if (h.dead) return   // Pożar, Detonacja, Porażenie, woda gasi ogień (5.14.2)
 7. attr = tkey || (monster ? src.type : burn ? (h.burnBy || 'fire') : loot ? 'loot' : null)
 8. real = min(h.hp + h.shield, amt)
    rest = amt; if (h.shield > 0) { ab = min(h.shield, rest * (Kwas ? 0.5 : 1)); h.shield -= ab; rest -= ab }
-   h.hp -= rest
+   h.hp -= rest; błysk h.flash = 0.12 (od 1.26 nie przy tyknięciach burn, bleed, poison)
 9. 1.17.1: h.hp < 0.4 max i nie serce -> sawNear(h, ['blood']) (on i ci, którzy go widzą, 6.7.10);
    inni w odległości Manhattan <= 5 odwracają się; h.playerDmg += real * (monster ? MON_FACTOR : 1) (bez serca);
    feltBy(h, real / h.max); statystyki bt(attr); kind === 'trap': morale = max(0.15, morale - 0.03)
@@ -689,19 +715,21 @@ Od 1.17.1 `damage` to opakowanie: `now = hurtTags(h, src)` (podpalenie: `BURN_TA
 16. kwestia bólu (trap, real >= 8, szansa 0,35); trap i żywy z hp < 0.6 max: useCharm(h, 'hit')
 ```
 
-Stałe: `GZ.dmg = 1,5` (Groza za całe HP), `DMG_FACTOR = { trap: 1, loot: 1, burn: 1, monster: 0,4, heart: 0, other: 0 }`, `lootMult(h) = 1 + 0,25 * min(4, h.inv.length)` (`p6_loop.js`), `depthMult` w sekcji 03. Strach z rany: utrata całego HP = 25% odwagi (potwory 18%, Ryk potworów ×(1 + 1,5 za kopię)).
+Stałe: `GZ.dmg = 1,5` (Groza za całe HP), `DMG_FACTOR = { trap: 1, loot: 1, burn: 1, monster: 0,4, heart: 0, other: 0 }` (od 1.26 `monster: 0,8` i nowe `bleed: 1, poison: 1, react: 1`), `lootMult(h) = 1 + 0,25 * min(4, h.inv.length)` (`p6_loop.js`), `depthMult` w sekcji 03. Strach z rany: utrata całego HP = 25% odwagi (potwory 18%, Ryk potworów ×(1 + 1,5 za kopię)).
 
 ### 5.6.2 `trapMult(h, type, src)` (`p3_flow.js`)
 
 ```
 pierce = type === 'arrows' && src && src.lvl >= 3
 sh(k)  = Kwas w pokoju ? (1 + k) / 2 : k
-trapMult = (type === 'spikes' && held(h) ? 1.5 : 1)
+holdK = rooted(h) ? (type in {spikes, pendulum} ? 1 : 1.15) : 1                // 1.26 Unieruchomiony
+slowK = webbed(h) ? (fl.time < h.acidWebUntil ? 1.6 : 1.3) : 1
+trapMult = (type in {spikes, pendulum} && held(h) ? 1.5 : 1)                     // 1.26: wahadło jak kolce
          * (caged(h) ? (h.cageIt && h.cageIt.lvl >= 3 ? 2 : 1.5) : 1)
-         * (webbed(h) ? (fl.time < h.acidWebUntil ? 1.6 : 1.3) : 1)
+         * max(holdK, slowK)                                                       // 1.26: nie sumują się, liczy się wyższy (do 1.25.1 samo slowK)
          * (type === 'spikes' && mods.stickySpikes && webbed(h) ? 1 + mods.stickySpikes : 1)
          * (pierce ? 1 : (h.type === 'warrior' && fl.time < h.shieldUpUntil ? sh(h.R.shield) : 1) * sh(shieldCover(h)))
-held(h)   = state in {fight, wait, talk, rest, disarm, boss, free} || caged(h) || webbed(h)
+held(h)   = rooted(h) || state in {fight, wait, talk, rest, disarm, boss, free, loot} || caged(h) || webbed(h)   // 1.26: rooted; 1.20: loot
 webbed(h) = fl.time < h.slowUntil        // każde spowolnienie, nie tylko sieć (5.11)
 shieldCover(h) = min po wojownikach o != h z podniesioną tarczą w odległości <= 1,8: (1 + o.R.shield) / 2
 ```
@@ -713,19 +741,19 @@ Tarcza wojownika: `R.shield = 0,5 * 0,94^(L-1)` (poziom 1: połowa rany). Podnos
 ```
 k = CLASS_RES[h.type][dtp] || 1
 P = PHYS[h.phys]; if (P && P.res[dtp]) k *= P.res[dtp] > 1 ? 1 + (P.res[dtp] - 1) * (1 + mods.weakK) : P.res[dtp]   // Słabe punkty wzmacniają tylko słabości
-return k * mods.dmgType[dtp] * (mods.arsenal && fl.arsenal4 ? 1 + mods.arsenal : 1)
+return k * (mods.dmgType[dtp] || 1) * (mods.arsenal && fl.arsenal4 ? 1 + mods.arsenal : 1)   // porażenie (1.26) nie ma pola w dmgType
 ```
 
 - `data/CLASS_RES.json`: mnożnik według klasy i typu; brak wpisu = 1. `data/PHYS.json`: ciało bohatera (`res` per typ, `text` dla UI). `data/DMG_OF.json`: typ obrażeń źródła (bez wpisu: brak typu, np. duch). `data/DMG_TYPES.json`: polskie nazwy typów.
-- `fl.arsenal4` = na starcie fali w lochu są elementy `ACTIVE` wszystkich 4 typów (`startWave`, Pełen arsenał).
+- `fl.arsenal4` = na starcie fali w lochu są elementy `ACTIVE` co najmniej 4 różnych typów (`startWave`, Pełen arsenał); od 1.26 typów jest 5 (porażenie), więc wystarczą 4 z 5.
 - `revealPhys`: pierwszy raz, gdy ciało (`PHYS`) zmienia ranę danego typu, cecha staje się jawna (kwestia, napis "Słabość/Odporność").
 - `typeMult` działa też na rany pasywne potworów (np. goblin wręcz = kłute) i podpalenie (ogień; krwawienie z kolców od 1.17.1 kłute).
 
 ### 5.6.4 Śmierć: `kill(h, kind, attr)` (`p3_flow.js`)
 
 1. `acc = 0`, statystyki (`killsHeart`, `killsMon`, reszta `killsTrap`), `bt(attr).kills++` (zasługa: typ pułapki, potwora, `burnBy` dla podpalenia, `'cage'` dla śmierci w klatce).
-2. Groza: `addPts(GZ.kill * (h.boss ? 2 : 1) * mods.soulMult * (Krypta ? 1,5 : 1), 'killPts', h)`, `GZ.kill = 1,2`.
-3. Spichlerz dusz (`run.stacks.granary++`), Głodne kolce (`attr === 'spikes'`).
+2. Groza: `addPts(GZ.kill * (h.boss ? 2 : 1) * mods.soulMult * (Krypta ? 1,5 : 1), 'killPts', h)`, `GZ.kill = 1,2`; od 1.26 też ×1,5 za kultystę i ×`omenK('killK')` (Krwawy księżyc 1,5). Kultysta oddaje sercu połowę wypitego.
+3. Spichlerz dusz (`run.stacks.granary++`, od 1.26 najwyżej 40), Głodne kolce (`attr === 'spikes'`). Od 1.26 także: Krwawa łaźnia (śmierć w pokoju serca: `fl.bathK × 1,1` za kopię, najwyżej 2), Kolekcja czaszek (`stacks.skulls`, najwyżej 20), Pamiętnik kata (`run.kata[typ zabójcy] += 0,02`, najwyżej 0,3), Uczta (`kind === 'monster'`, sekcja 03, 2.14) i `killHooks` (5.14.7).
 4. Kryształ wraca do serca, ekwipunek i złoto wypadają jako łup (sekcja 04).
 5. 1.17: zapis śmierci `{id, t, crypt, knows}` w `fl.deaths` (kto o niej wie; wieści, sekcja 06, 6.3.13).
 6. Ostatnie tchnienie: każdy żywy w tym samym pokoju `addFear(o, mods.lastGasp * o.courage, null, 'death')` (bez zmian w 1.17).
@@ -755,14 +783,16 @@ amt *= mods.fearMult                                            // Nawiedzenie �
      * (1 + 0.03 * (run.stacks.chronicle || 0) * mods.chronicle) // Kronika grozy
      * (Mgła ? 1.15 : Głusza ? 1.2 : 1)
 if (raging(h)) amt *= 0.5                                        // furia
+1.26: Naznaczony ×1,3; Odbicie (lustro B) ×1,2 raz, gdy attr !== 'mirror'
 amt *= phobiaMult(h, attr, src, dtp)
 h.fearBy[attr || src] += amt; feltBy (gdy attr = typ odpalanego elementu); statystyki fearSrc
 before = h.fear; h.fear += amt
 pts = addPts(amt / h.courage * GZ.fear * depthMult(h.room) * loneMult(h), 'fearPts', h)   // GZ.fear = 1,6; loneMult = 1
 GROTA: if (src !== 'echo' && Grota) każdy żywy o != h w nbrRooms(h.room): addFear(o, raw * 0.4, attr, 'echo')
-lim = h.courage * (fl.fearless ? 1.3 : 1)                       // po końcu cierpliwości bohaterowie wytrzymują więcej
+lim = h.courage * (fl.fearless ? 1.3 : 1) * (h.trait === 'hothead' ? 1.1 : 1)   // po końcu cierpliwości bohaterowie wytrzymują więcej; 1.26 Zapaleniec
 AMULET: if (!fleeing && !crystal && h.fear >= [0.85, 0.7, 0.6, 0.6][h.rank] * lim) useAmulet(h)
 pk = h.trait === 'coward' ? 0.55 : 0.7
+1.26 ZAPALENIEC: raz na falę (h.hotW) w miejscu paniki startRage(h, 'panic') → h.fear -= 0.25 * lim; return
 BARBARZYŃCA: before < pk*lim <= fear, nie ucieka, bez kryształu, po rageCd, startRage(h,'panic') udany
              → h.fear = max(0, h.fear - 0.25 * lim); return
 PANIKA: before < pk*lim <= fear && !fleeing && !crystal && fl.time > h.panicUntil
@@ -781,6 +811,9 @@ fearResist:
   k = 1
   attr in fl.knownTypes                          → ×0.6   // jakakolwiek wykryta pułapka tego typu (rebuildThreat)
   inny kapłan rangi >= 1 w odległości <= 3       → ×0.75 (Ołtarz w pokoju h: ×0.875)
+     1.26: albo paladyn (każdej rangi) w odległości <= 3 → ×0.8 (Ołtarz ×0.9); kapłan i paladyn się nie sumują: min(kapłan, paladyn)
+  1.26: h.trait === 'superstitious' && attr w SCARE albo w rodzinie Nawiedzenie → ×1.4
+  1.26: omenK(fala, 'fearK')                     → ×0.7 (Inkwizycja)
   bohater z przepowiedni w odległości <= 3       → ×0.75
   żywy boss, z którym jest (1.17: to on sam albo h go widzi lub słyszy; boss nie w klatce, nie w zapadni)   → ×0.85
                                                  // do 1.16: jakikolwiek żywy boss w fali, gdziekolwiek
@@ -805,7 +838,8 @@ phobiaOn = attr in F.attrs || dtp in F.types || src in F.srcs || (F.dark && (Mg�
 **Spadek** (`p5_ai.js: updateHero`, co krok, gdy nie ucieka):
 
 ```
-h.fear = max(0, h.fear - h.R.calm * mods.calmK * dt
+h.fear = max(0, h.fear - h.R.calm * mods.calmK * omenK(fala, 'calm') (Noc strachu 1.5; brak omenu = 1) * dt
+   * (fl.time < h.hexUntil ? 0.5 : 1) * (fl.time < h.icyUntil ? 0.5 : 1)   // 1.26: Klątwa szamana, Lodowata woda (zalewnia B)
    * (alone || lost || caged ? 0.5 : 1)
    * (fl.time - h.hurtAt < 1.5 ? 0.5 : 1)
    * (fl.time < h.shakenUntil ? 0.35 : 1)
@@ -820,11 +854,11 @@ Gęsta atmosfera: `calmK ×0,5`. Uciekający nie uspokaja się.
 **Ucieczka** (`startFlee`): `fear >= lim`; nie w klatce (klatka trzyma, strach dalej daje Grozę); niosący kryształ najpierw go rzuca (`dropCrystal`, kryształ wraca). Skutki:
 - `fleeing = true`, prędkość ×1,15, cel: wyjście, ostrożność ×0,6 (sekcja 06),
 - Krzyki w ścianach: każdy inny nieuciekający `addFear(o, mods.fleeShock * o.courage, null, 'screams')`,
-- czempion (jeśli żyje, nie ucieka i nie siedzi w klatce; od 1.17 tylko gdy widzi uciekającego albo słyszy jego krzyk) raz na 15 s okrzykiem obniża strach innego nieuciekającego o 25% jego odwagi (od 1.17 tylko tym, którzy słyszą okrzyk, do 14 kroków),
+- czempion (jeśli żyje, nie ucieka i nie siedzi w klatce; od 1.17 tylko gdy widzi uciekającego albo słyszy jego krzyk) raz na 15 s (od 1.26 raz na 25 s) okrzykiem obniża strach innego nieuciekającego o 25% jego odwagi (od 1.17 tylko tym, którzy słyszą okrzyk, do 14 kroków),
 - gdy uciekających jest ≥ `max(2, ceil(grupa / 2))`, cała drużyna się wycofuje (`partyFlee`); od 1.17 liczy się grupa przywódcy (ci, którzy go widzą albo słyszą), a ucieka tylko ten, kto słyszy krzyk przywódcy, bez uwięzionych w klatce i bez czempiona (sekcja 06, 6.6.3),
 - Panika (karta): każdy w odległości ≤ 3 `addFear(o, 25 * mods.panic, null, 'panic')`.
 
-**Wypłata za przestraszonego** (`heroExit`, gdy wychodzi z `fleeing`): `addPts(GZ.scare * (boss ? 2 : 1) * mods.scareMult, 'scarePts', h)`, `GZ.scare = 2,5` (Echo krzyku ×2); Żniwa strachu: `+mods.fearHarvest` Esencji bez mnożników; Kronika grozy `run.stacks.chronicle++`. Opowieść o skarbach i powroty: sekcje 03 i 04.
+**Wypłata za przestraszonego** (`heroExit`, gdy wychodzi z `fleeing`): `addPts(GZ.scare * (boss ? 2 : 1) * mods.scareMult, 'scarePts', h)`, `GZ.scare = 2,5` (od 1.26 4; Echo krzyku ×2, od 1.26 ×1,75); Żniwa strachu: `+mods.fearHarvest` Esencji bez mnożników; Kronika grozy `run.stacks.chronicle++`. Opowieść o skarbach i powroty: sekcje 03 i 04.
 
 ### 5.7.4 Strach ze śmierci (`kill`)
 
@@ -872,6 +906,13 @@ Do 1.16 reagował każdy żywy w lochu: `near = hypot(o - p) < 8` (w linii prost
 | śmierć `death` | 5.7.4 (widziana, usłyszana albo z wieści); Ostatnie tchnienie `lastGasp * courage` w pokoju | `kill`, `perceiveThink` |
 | krzyki `screams`, panika `panic` | karty | `startFlee` |
 | echo `echo` | 40% z Groty | `addFear` |
+| 1.26: krzyk serca `heartcry` | `(0,06 + heartCry) * courage`/s przy sercu od fali 2 (bez bossa i kultysty) | `step` |
+| 1.26: płomienie `burn` | 2/s, dopóki płonie (atrybut `fire`) | `statusTick` |
+| 1.26: odcięcie kratą | samotność 2,5/s z atrybutem `gate` przez 6 s (8 s Gilotyna) | `partyThink` (`h.cutUntil`) |
+| 1.26: zew `siren` | 30 po końcu uwiedzenia; aura kusicielki 5/s | `seduceEnd`, `driftTick` |
+| 1.26: dzwon `bell` | 24 na dzwon (najwyżej 2) każdemu żywemu przy każdej śmierci; 10 z checku | `killHooks`, `fireRaw` |
+| 1.26: para `steam` | 12 w chmurze 3×3 | `fireRaw` (flood) |
+| 1.26: nowe pułapki i potwory | 5.14.4, 5.14.5 | `fireRaw`, `newMonsterTick`, `driftTick` |
 
 Samotność i zgubienie płacą też stałą Grozę bez strachu: `GZ.alone * dt * depthMult * mods.loneMult` (0,09/s) i `GZ.lost * dt * depthMult * mods.lostMult` (0,12/s, przez pierwsze 12 s zgubienia) (`partyThink`). Od 1.16 celowe rozdzielenie (zwiad) płaci zamiast samotności `GZ.split * dt * depthMult * (alone ? mods.loneMult : 1)` (0,04/s). Zwiadowca, który jest sam, nadal ma `h.alone`, więc Oczy, Cień, fobia ciemności i Izolacja (źródło `'split'`: ×1,25) traktują go jak samotnego.
 
@@ -918,6 +959,8 @@ Komnata mówi, komu pokój służy. `data/KIND_INFO.json`: id → nazwa, narzęd
 | **gallery** Galeria | Portret, Oczy, Lustro | ▣ `#ecc65e` |
 | **nursery** Pokój dziecięcy | Pozytywka, Zawiasy | ♪ `#f2bcd4` |
 
+Od 1.26: 15 komnat i 44 elementy. Dopisane do starych: Goblinia nora + goblin saper, herszt; Gniazdo (dawne Gniazdo nietoperzy, tag "nietoperze i szczury") + rój szczurów; Zbrojownia + wahadło; Kuźnia + plama oleju, kocioł smoły; Więzienie + wnyki; Galeria + fałszywe przejście. Nowe: **lab** Laboratorium (wyziewy, zalewnia, runa piorunów; ⚗ `#9fe0c8`), **graveyard** Cmentarz (szkielet, zombie, licz, dzwon żałobny; ✟ `#c9d4b0`), **abyssgate** Wrota otchłani (chochlik, ogar piekielny, kusicielka, demon otchłani; ⛧ `#ff7a5a`). Przynęta nie ma komnaty (łup). `KIND_COST` 10 (było 12), zwrot 5. Komnata daje cechę A za darmo; element z cechą B w komnacie ma obie (5.14.3). Kwestie wejścia `rkEnter.k_lab/k_graveyard/k_abyssgate` i rozglądania się `lookKind.lab/graveyard/abyssgate`.
+
 Zasady (`p2_state_map.js`, `p3_flow.js: applyTool`):
 
 - **Działanie.** Element rodziny, który służy pokojowi z jej komnatą, ma cechę 3. poziomu bez ulepszania: `t3(it) = lvl >= 3 || inKind(it)`. Wszystkie miejsca w kodzie, które sprawdzały `lvl >= 3` dla cechy (`TRAITS`), pytają teraz `t3` (36 miejsc w `p2`-`p6`; klucz pamięci obszarów `AREA_MEMO` zawiera `t`, gdy element ma cechę). Element rodziny, który ma już 3. poziom, dostaje `KIND_POW = 1,25` mocy (`kindPow`): pułapki w `fireRaw` (`pw *= boost * lvlPow * kindPow * pactPower`), potwory w `monDmg`. Poziom 2 nie zyskuje nic poza cechą.
@@ -950,15 +993,21 @@ CHECK_LV_SPEED = 0.015
 CHECK_SHAPE = { spikes: 'bar', arrows: 'bar', gate: 'bar', mimic: 'bar', powder: 'fuse', fire: 'ring',
   portrait: 'double', ghost: 'double', web: 'spiral', spider: 'spiral', trapdoor: 'pulse', cage: 'pulse',
   goblin: 'swing', archer: 'swing', ogre: 'swing', shaman: 'swing', eyes: 'double', bones: 'pulse',
-  mirror: 'ring', creak: 'bar', coffin: 'fuse', musicbox: 'spiral', shade: 'double', bats: 'swing' }
+  mirror: 'ring', creak: 'bar', coffin: 'fuse', musicbox: 'spiral', shade: 'double', bats: 'swing',
+  // 1.26
+  pendulum: 'swing', snare: 'pulse', miasma: 'spiral', oilslick: 'ring', bolt: 'double', flood: 'pulse', bell: 'fuse', falsedoor: 'double', tar: 'fuse',
+  skeleton: 'swing', zombie: 'swing', lich: 'double', imp: 'double', hound: 'swing', siren: 'double', demon: 'swing', sapper: 'bar', warlord: 'swing', rats: 'pulse' }
 SHAPE_NAME = { bar: 'pasek', ring: 'tarcza', fuse: 'lont', double: 'podwójna tarcza', spiral: 'spirala', pulse: 'krąg', swing: 'wahadło' }
 SHAPE_DUR = { bar: 1, ring: 1.15, pulse: 0.95, swing: 1.55, fuse: 1.25, double: 1.2, spiral: 1.25 }
 LVL_ZONE = [1, 1, 1.15, 1.3]
 SWING_PASSES = 2, SWING_EASE = 0.35
 BASE_DMG = { spikes: 35, arrows: 25, fire: 20, gate: 60, powder: 60, mimic: 40, trapdoor: 20, goblin: 35, archer: 22,
   spider: 30, ogre: 45, ghost: 5, web: 0, cage: 0, portrait: 0, shaman: 0, eyes: 0, bones: 0, mirror: 0, creak: 0,
-  coffin: 0, musicbox: 0, shade: 0, bats: 6 }
-NO_KILL = { web, shaman, cage, portrait, eyes, bones, mirror, creak, coffin, musicbox, shade }   // nigdy nie pokazują czaszki
+  coffin: 0, musicbox: 0, shade: 0, bats: 6,
+  // 1.26
+  pendulum: 45, snare: 25, miasma: 0, oilslick: 0, bolt: 22, flood: 0, bell: 0, falsedoor: 0, tar: 25,
+  skeleton: 20, zombie: 15, lich: 25, imp: 0, hound: 30, siren: 0, demon: 40, sapper: 0, warlord: 30, rats: 8 }
+NO_KILL = { web, shaman, cage, portrait, eyes, bones, mirror, creak, coffin, musicbox, shade }   // nigdy nie pokazują czaszki (1.26: bez zmian; nowe straszaki z BASE_DMG 0 i tak nie zabijają)
 mods.critPw = 1.8, mods.okPw = 0.7     // Hazardzista: critPw ×1,35 (2,43), okPw ×0,57 (0,399)
 ```
 
@@ -1238,7 +1287,7 @@ Wartości domyślne: `p3_flow.js: freshMods`. Pełne opisy kart: załącznik B. 
 
 Zachowaj zachowanie z kodu, chyba że autor zdecyduje inaczej; każdą z tych rzeczy warto pokazać autorowi.
 
-1. **Wabik alarmuje raz na run**: `alarmed` nie jest kasowane w `setupFl` (i idzie do zapisu), a `decoyAlarm` od razu wychodzi, gdy `alarmed`. Od następnej fali "rozbrojenie" wabika (gałąź wabika w `updateHero` i `finishPrep` woła tylko `decoyAlarm`) nic nie robi: nie ma alarmu, a wabik zostaje włączony, więc złodziej może do niego wracać. Prawdopodobnie błąd; w Unity kasuj `alarmed` razem z resztą stanu fali, chyba że autor zdecyduje inaczej.
+1. **Wabik alarmuje raz na run** (naprawione w 1.26: `setupFl` kasuje `alarmed`, alarm raz na falę): do 1.25.1 `alarmed` nie było kasowane w `setupFl` (i idzie do zapisu), a `decoyAlarm` od razu wychodzi, gdy `alarmed`. Od następnej fali "rozbrojenie" wabika (gałąź wabika w `updateHero` i `finishPrep` woła tylko `decoyAlarm`) nic nie robi: nie ma alarmu, a wabik zostaje włączony, więc złodziej może do niego wracać. Prawdopodobnie błąd; w Unity kasuj `alarmed` razem z resztą stanu fali, chyba że autor zdecyduje inaczej.
 2. **Przytrzymany palec omija czaszkę**: w `checkTick` gałąź `ff` odpala bez `lethalFor`, wbrew zasadzie "trafienie, które zabije, zawsze pyta".
 3. **Czaszka nie zna combo i odporności**: `predictedDmg` pomija `cpow`, `typeMult`, unik; duch i nietoperze w prognozie mnożą przez `it.power`, a w `fireRaw` nie (przy Weteranach i ulepszeniu prognoza zawyża). Proch poziomu 3 i łucznik poziomu 3 podpalają, a prognoza tego nie liczy.
 4. **Strach bez combo i mocy**: sieć (6), zapadnia (25, 10, 25), klatka (20), krata (5), ogr poziomu 3 (15·pw), kołysanka na sekundę nie mają `cpow` (część także `pw`), choć komentarz 1.12 mówi, że combo wzmacnia "rany i strachy".
@@ -1257,6 +1306,12 @@ Zachowaj zachowanie z kodu, chyba że autor zdecyduje inaczej; każdą z tych rz
 17. **Zapadnia po limicie (1.24)**: bohater po limicie upadków nie jest celem żadnej zapadni, ale dalej stoi w jej obszarze i liczy się do obszaru innych elementów; zapadnia "widziana" przez niego staje się znana całej drużynie (jak każda wiedza o pułapkach, sekcja 06).
 18. **Draśnięcia z przerwy (1.24)** liczą się do `bt(typ).ok` jak trafione checki, więc karta elementu i statystyka "draśnięcia" w falach 1-2 obejmują też odpalenia bez stuknięcia (`calmAuto` rozdziela je tylko w danych testowych).
 19. **Połączona karta "named" a potwory (1.24)**: `lvlPow` potwora z `fuseLv` to stosunek `LVL_MON` poziomu wyższego do obecnego (poziom 1: ×1,5; 2: ×1,467; 3: ×1,467), a bez połączenia potwór ma moc 1 (rośnie przez HP i siłę). Mnożnik działa w `fireRaw` (zdolność), a `monDmg` (ciosy w walce) go nie używa.
+20. **Budowle 1.26** (naprawione po przeglądzie): w pierwszej wersji 1.26 dodatki Runy, Ołtarza, Kwasu, Zasłony i Kamienia wyjca były tylko w opisach; teraz kod je liczy (5.5.2). Kwas +10% i Ołtarz/wyjec +10% mnożą się z resztą kroków `damage` i `addFear`, więc w testach zgodności liczyć je w tej kolejności.
+21. **Czaszka nie zna Runy rodu i omenu (1.26)**: `predictedDmg` mnoży tylko `lvlPow` i `pactPower` (i `trapBoost` dla pułapek), bez `famK`, `kindPow`, `omenPow`, Krwawego księżyca i reakcji, więc przy rodzinie na wysokim poziomie zabija bez pytania częściej, niż prognoza mówi.
+22. **Pożar (1.26)**: plan mówi "podpalenie 2 razy dłużej", kod ustawia podpalonemu `burnUntil = max(burnUntil, teraz + 6)` w następnym kroku (stałe 6 s), a sąsiadów Oblanych podpala na 4 s.
+23. **Kościany pancerz (szkielet B, 1.26)**: plan "kłute ×0,6", kod zmniejsza ×0,6 każde obrażenie od kogoś innego niż mag (także obuchowe barbarzyńcy i flaszkę alchemika).
+24. **Szaman: zdolność a "nie sumuje się" (1.26)**: wybór najsilniejszego szamana (`bestHealer`) dotyczy tylko leczenia biernego; Wielkie leczenie z checku leczy od każdego szamana (ograniczone tylko limitem `healGot` = max HP na falę).
+25. **Runa rodu a czas statusów (1.26)**: plan "+8% mocy (rany, strach, czas statusów)"; czasy z `setStatus` są stałe, rosną tylko te, które kod liczy od `pw` (np. sieć pająka).
 
 ---
 
@@ -1316,3 +1371,232 @@ Obrażenia bohatera w walce na sekundę mnożą od 1.21 `vowK(h)` (zemsta, ×1,3
 ### 5.13.5 Animacje pułapek (1.24, sekcja 08)
 
 `fireRaw` kończy się `trapFx(it, area)`: każdy rodzaj pułapki ma krótką animację (kolce, strzały, ogień, krata, zapadnia, klatka, sieć, proch, mimik, portret, oczy, lustro, trumna, kości, pozytywka, zawiasy). Tylko widok, bez losowania; opis w sekcji 08.
+
+---
+
+## 5.14 Prototype 1.26 "Serce zabiera": statusy, reakcje, nowe elementy, poziom 3 A/B, rodziny (`p1_config.js: STATUS, REACTIONS, REACT_K, TRAITS_B, FAMILIES, FAMILY_OF, RUNE_MAX, runePrice`; `p4_traps.js: statusOn, statusList, rooted, setStatus, clearStatus, statusTick, seduceEnd, reaction, reactHit, famLv, famK, omenPow, warlordK, houndK, demonK, ratsK, impSteal, plagueAirTick, newMonsterTick, monsterDown, hazardsTick, baitBite, fireWall, ogreThrow, bestHealer, gateSplit`; `p2_state_map.js: t3, t3B, t3b, doorAlong, areaOf`; `p3_flow.js: kill, killHooks, riseZombie, damage`)
+
+Plan autora: dokument projektu `claude/rebalans-1.26-serce-zabiera.md` (sekcje 6-10). Gdy plan i kod się różnią, opisuję kod, a różnice zbieram w 5.11 (punkty 20-25) i 5.14.11.
+
+### 5.14.1 Statusy (`STATUS`)
+
+Statusy to flagi z czasem na bohaterze (bez osobnych obiektów); `setStatus(h, k, dur, src)` nakłada, `statusOn(h, k)` sprawdza, `statusList(h)` daje listę do karty bohatera i ikonek nad nim (sekcja 08). `setStatus` zwraca `false` dla martwego, wyszłego, zniknionego; w pokoju z Okowami spowolnienie i unieruchomienie trwają +1 s. Każde nałożenie liczy się w `stats.status[k]`, a pierwsze w fali pokazuje kartę "status" (raz w przeglądarce).
+
+| id | Nazwa | Pole | Nałożenie i działanie w kodzie |
+|---|---|---|---|
+| `slow` | Spowolniony | `slowUntil` | prędkość ×0,35, pułapki ×1,3 (`webbed`, jak dotąd) |
+| `root` | Unieruchomiony | `rootUntil`, `rootImm`; także `stunUntil` | stoi w miejscu (`rooted`: nie robi kroku, nie wyrywa kryształu, zegar rozbrajania stoi); `held` dla kolców i wahadła (×1,5), inne pułapki ×1,15, nie sumuje się ze spowolnieniem (liczy się wyższy mnożnik); czas `min(teraz + 5, ...)`, potem 3 s odporności (`rootImm`); bohatera z przepowiedni nie da się unieruchomić |
+| `burn` | Podpalony | `burnUntil` (przez `ignite`) | 4,2/s ognia (jak dotąd) i od 1.26 +2 strachu/s (`statusTick`); Mokrego nie da się podpalić |
+| `bleed` | Krwawiący | `bleedUntil` | 4,2/s kłute (`BLEED`); przy nałożeniu `sawNear(h, ['blood'])`; kapłan tamuje jak ogień |
+| `poison` | Zatruty | `poison` (stosy) | 2/s za stos (`POISONT`, trucizna); najwyżej 6 stosów (Toksyczny opar +4) |
+| `oiled` | Oblany | `oilUntil` | następny ogień = Pożar; przy każdym rozpoczętym kroku 25% (plama B: 50%) na poślizg = Unieruchomiony 1 s; Mokrego nie da się oblać |
+| `wet` | Mokry | `wetUntil` | prędkość ×0,8, ogień ×0,5 i gaśnie, zmywa olej; porażenie = Porażenie |
+| `infected` | Zarażony | `plague` (stosy) | rani jak trucizna (stosy trucizny i zarazy sumują się w tyknięciu, limit wspólny `POISON_CAP`); śmierć = Powstanie |
+| `marked` | Naznaczony | `markUntil` | każdy strach ×1,3; unoszące się potwory wybierają go na cel |
+| `seduced` | Uwiedziony | `seduceUntil`, `seducer` | idzie do kusicielki (`intent 'seduced'`, bez omijania niebezpieczeństw); po końcu 30 strachu, 4 s samotności (`cutUntil`), 6 s odporności; paladyn i bohater z przepowiedni odporni |
+| `dazed` | Oszołomiony | `dazedUntil` (+`slowUntil`) | po upadku z zapadni: spowolniony 3 s |
+
+Oczyszczanie: kapłan (gasi i tamuje krwawienie), alchemik (antidotum, sekcja 04, 4.3a), Mokry gasi Podpalonego, Wezwanie po krzyk zdejmuje unieruchomienie i uwiedzenie (sekcja 06, 6.16). Oślepienie (`blindUntil`, z Pary i Łzawiących wyziewów) blokuje tylko wykrywanie pułapek (`scanTraps`); Kokon (sieć B, `noItemUntil`) blokuje mikstury, talizman, amulet i buty przez 4 s.
+
+### 5.14.2 Reakcje (`REACTIONS`, `REACT_K = 1,6`)
+
+`reactHit(h, amt, dtp, kind, src)` wołane w `damage` dla obrażeń `fire` i `shock` (nie dla rodzaju `react` i nie poza falą):
+
+| Reakcja | Warunek | Skutek |
+|---|---|---|
+| (woda) | ogień trafia Mokrego | trafienie ×0,5 i podpalenie gaśnie; bez reakcji |
+| Pożar `blaze` | ogień (także tyknięcie podpalenia) trafia Oblanego | olej znika, trafienie ×1,6, w następnym kroku podpalenie do 6 s; każdy inny Oblany w 1,5 pola traci olej i płonie 4 s |
+| Detonacja `detonate` | ogień trafia Zatrutego z ≥ 2 stosami | stosy znikają; każdy w 3×3 (≤ 1,5 pola, także on) dostaje `6 × S.dmg × stosy × toxicDet` trucizny jako `react` |
+| Porażenie `shock` | porażenie trafia Mokrego | woda znika, ×1,6, ogłuszenie 0,5 s (`stunUntil`); każdy inny Mokry w pokoju (z Przewodnictwem także Spowolniony) traci wodę, 0,5 s ogłuszenia i `amt × 0,6` porażenia jako `react` |
+| Para `steam` | Zalewnia trafia Podpalonego | gasi; chmura ≤ 1,5 pola: 12 strachu (`steam`) i oślepienie 3 s |
+| Powstanie `rise` | Zarażony umiera | wstaje jako Twój zombie (`temp`, 120 HP) na najbliższym wolnym polu podłogi swojego pokoju; najwyżej 2 na falę (`fl.risenZ`) |
+
+`reaction(h, k)`: duży napis i iskry w kolorze reakcji, `addPts(0,3 × depthMult(h.room), 'reactPts', h)` (raz na bohatera), `stats.reactions[k]`, `stats.reactN`, oś czasu `re`; krok combo raz na odpalenie elementu (`fl.firing` i ten sam czas), gdy okno combo trwa albo reakcję wywołało odpalenie: `fl.combo++` (do 7) i odświeżenie okna; Reakcja łańcuchowa: okno +1 s i jeszcze +1 krok za kopię. Pierwsza reakcja w fali: karta "reaction". Obrażenia reakcji (`kind 'react'`) nie wywołują kolejnych reakcji i nie mają mnożników statusów.
+
+Nowy typ obrażeń `shock` (porażenie, `DMG_TYPES`), źródło: Runa piorunów. Zbroja z łupu: porażenie ×(1 + 0,05 × r). Odporności klas i ciał: sekcja 04, 4.3 i 4.4.
+
+### 5.14.3 Poziom 3: cecha A albo B (`TRAITS`, `TRAITS_B`, `it.branch`)
+
+```
+t3(it)  = (lvl >= 3 && it.branch !== 'B') || inKind(it)     // cecha A: dawna; komnata daje ją za darmo
+t3B(it) = lvl >= 3 && it.branch === 'B'                     // cecha B: tylko kupiona ulepszeniem
+upgradeItem(it, branch): przy wejściu na poziom 3 it.branch = branch === 'B' && TRAITS_B[typ] ? 'B' : 'A'
+```
+Ulepszenie z poziomu 2 elementu z `TRAITS_B` otwiera okno wyboru (`renderBranch`, sekcja 08); bez wyboru (np. stare testy) wychodzi A. Element w komnacie z cechą B ma obie cechy. Wyboru nie da się cofnąć (poza zdjęciem elementu). Wszystkie 43 elementy z poziomami (25 pułapek bez Przynęty i 18 potworów) mają obie cechy:
+
+| Element | A (`TRAITS`) | B (`TRAITS_B`) i jak działa w kodzie |
+|---|---|---|
+| spikes | Krwawienie 3 s | Zadziory: trafiony Unieruchomiony 1 s |
+| arrows | Przebijające groty | Zatrute groty: +1 stos trucizny za trafienie |
+| fire | Napalm (podpalenie 6 s) | Ściana ognia: najbliższe drzwi pokoju zamknięte na 3 s, 10 strachu każdemu w 2 polach od drzwi (`fireWall`) |
+| web | Kwaśna sieć | Kokon: złapany 4 s bez przedmiotów (`noItemUntil`) |
+| trapdoor | Bezdenny szyb | Kolce na dnie: rana upadku ×3 i krwawienie 4 s |
+| cage | Kolczasta klatka | Pułapka na ratownika: uwalniający po otwarciu Unieruchomiony 3 s |
+| portrait | Całun grozy | Oczy śledzą: przestraszony Naznaczony 8 s |
+| gate | Żelazna krata (+2 zamknięcia) | Gilotyna: miażdżenie ×2, odcięci samotni 8 s |
+| powder | Ognisty proch | Odłamki: wszyscy w wybuchu krwawią 3 s |
+| mimic | Pożeracz | Zachłanny: podnoszący łup w promieniu 1 dostaje ugryzienie z mocą 2 |
+| eyes | Wszystkowidzące | Wzrok bazyliszka: przestraszony Spowolniony 2 s |
+| bones | Kostnica (5×5) | Grzechot: atrybut strachu `rattle` (fobia hałasu), nowicjusze ×2 |
+| mirror | Krzywe zwierciadło | Odbicie: następny strach ×1,2 przez 8 s (raz) |
+| creak | Trzask | Skrzyp nocy: 7,5 × pw strachu w sąsiednich pokojach |
+| coffin | Pogrzebany żywcem | Wieko: najbliższy Unieruchomiony 2 s |
+| musicbox | Kołysanka śmierci (8 s) | Usypianka: ranny < 60% zasypia 3 s |
+| goblin | Podcięcie | Łupieżca: zabity przez niego (walka albo zdolność) zostawia stos łupu (2 monety) |
+| archer | Ogniste strzały | Zatrute strzały: +1 stos trucizny (zdolność i strzał bierny) |
+| spider | Gniazdo (sieć 3×3) | Jad paraliżujący: ukąszony zdolnością Unieruchomiony 1,5 s |
+| ogre | Grzmot | Rzut: trafiony zdolnością (nie boss, nie w klatce) ląduje w losowym sąsiednim pokoju, nie-przywódca gubi się (nowicjusz 70%, inni 40%), 12 strachu, `stats.ogreThrows` |
+| shaman | Tarcza ducha | Klątwa: zdolność przeklina bohaterów w pokoju na 8 s (+20% obrażeń, uspokajanie ×0,5) |
+| ghost | Wycie | Nawiedzenie: bierze cele do 7 pól także poza pokojem i wychodzi za nimi |
+| shade | Pożeracz światła | Szept: cel szeptu traci 15% odwagi (raz na falę) |
+| bats | Chmara | Wampiry: obrażenia zadane zdolnością leczą inne potwory w pokoju |
+| pendulum | Podwójne: drugi zamach 50% po 0,6 s | Ścięcie: krytyk (wynik checku `basePw >= mods.critPw`, nie moc po mnożnikach) = krwawienie 4 s |
+| snare | Zębate: krwawienie 3 s | Łańcuch: najbliższy sojusznik w 3 polach Unieruchomiony 2 s |
+| miasma | Gęste: chmura 8 s | Łzawiące: w chmurze bez wykrywania pułapek |
+| oilslick | Łatwopalna: Oblany zapala się od każdego trafienia pułapki (15%) (w kodzie nie działa, 5.14.11) | Śliska: poślizg 50% |
+| bolt | Burza: przeskok na suchych (50%, ×0,6, najwyżej 3 trafienia) | Przeciążenie: co 3. odpalenie ogłusza cel 2 s |
+| flood | Topiel: strefa spowolnienia na 12 s | Lodowata woda: uspokajanie ×0,5 przez 8 s |
+| bell | Requiem: +0,5 Grozy za każdego, kto usłyszy dzwon | Namaszczenie: skill check leczy wszystkie potwory w lochu o 20% |
+| falsedoor | Labirynt: zgubienie 18 s | Pętla: bohater wraca do 3 pól w tył swoją drogą |
+| tar | Wrzątek: podpalenie 4 s | Smoła: spowolnienie 6 s |
+| skeleton | Legion: składa się 2 razy | Kościany pancerz: obrażenia (poza magiem) ×0,6 |
+| zombie | Epidemia: co 4 s zaraza przeskakuje na sąsiadów | Gnijące mięso: powalony daje walczącym 3 stosy trucizny |
+| lich | Filakteria: powalony nie dodaje głodu | Armia: podnosi 2 razy |
+| imp | Kleptoman: 2 przedmioty, okradziony Naznaczony 8 s | Podpalacz: skradziony przedmiot wybucha (15 × D ognia), nie spada jako łup |
+| hound | Sfora: +25% za każdego innego ogara w lochu | Piekielny ogień: zdolność i walka podpalają 3 s |
+| siren | Pocałunek: odwaga uwiedzionego ×0,8 | Zazdrość: morale drużyny -0,1 |
+| demon | Pan otchłani: inne Demony otchłani +25% | Głód krwi: -3 głodu następnej fali za jego zabójstwo (bierne) |
+| sapper | Proch: jedna kolczatka na falę to bomba (40 × D × pw ognia w 3×3) | Zwijacz: raz uzbraja wyłączoną pułapkę w pokoju |
+| warlord | Wódz: aura także w sąsiednich pokojach | Grabież: zabity w jego pokoju zostawia stos łupu |
+| rats | Wścieklizna: zdolność i walka zarażają | Nora: powalony dzieli się na 2 małe roje (35 HP, `temp`) |
+
+### 5.14.4 Nowe pułapki (`p4_traps.js: fireRaw`; obszary `p2_state_map.js: areaOf`)
+
+Wartości przy `pw = 1`, `D = 0,7`. Wszystkie odblokowuje karta `u-<id>` (cena 7, sekcja 03, 5.2).
+
+| Typ | Nazwa | Slot, koszt, cd | Obszar | Działanie | Rodzina, komnata | Kształt |
+|---|---|---|---|---|---|---|
+| `pendulum` | Wahadło | ściana, 4, 4 s | pas 3 pól szerokości i 4 w głąb od ściany | `45*D` = 31,5 kłute każdemu ×cpow; ×1,5 trzymanym (jak kolce) | Mechanizmy, Zbrojownia | swing |
+| `snare` | Wnyki | podłoga, 3, 8 s | pole | pierwszy na polu: `25*D` = 17,5 kłute + Unieruchomiony 5 s (draśnięcie, wynik checku `basePw < 1`: 3,5 s); kwestia `snare` | Mechanizmy, Więzienie | pulse |
+| `miasma` | Wyziewy | podłoga, 5, 7 s | 3×3 | trafieni: +1 stos trucizny, `10*pw` strachu ×cpow; chmura (`fl.clouds`) 5 s: wejście +1 stos i 10 strachu (raz na chmurę), potem +1 stos co 1,5 s | Alchemia, Laboratorium | spiral |
+| `oilslick` | Plama oleju | podłoga, 4, 6 s | 3×3 | Oblany 8 s, Spowolniony 1,5 s | Ogień, Kuźnia | ring |
+| `bolt` | Runa piorunów | ściana, 5, 4 s | pola pokoju przed ścianą do 3 | najbliższy: `22*D` = 15,4 porażenia; każdy inny Mokry w pokoju też dostaje piorun | Alchemia, Laboratorium | double |
+| `flood` | Zalewnia | podłoga, 4, 10 s | cały pokój | Mokry 8 s, Spowolniony 2 s, `6*pw` strachu; podpalony: Para | Alchemia, Laboratorium | pulse |
+| `bell` | Dzwon żałobny | mebel, 4, 8 s | 3×3 | z checku `10*pw` strachu; biernie przy każdej śmierci bohatera w lochu `24 × (liczba dzwonów, najwyżej 2) × famK` strachu każdemu żywemu (`killHooks`, atrybut `bell`), `stats.bellTolls`; przeklęty (kapłan go odczyni) | Nieumarli, Cmentarz | fuse |
+| `falsedoor` | Fałszywe przejście | drzwi, 4, 10 s | drzwi + sąsiednie pola | pierwszy, kto nie był już nabrany przez to przejście (bez maga 8+ i bossa): `10*pw` strachu; nie-przywódca albo przywódca bez drużyny gubi się na 12 s (`fdLostUntil`, potem odnajduje drużynę); przywódca z drużyną tylko skręca źle i przeplanowuje | Nawiedzenie, Galeria | double |
+| `tar` | Kocioł smoły | drzwi, 5, 10 s | drzwi + sąsiednie pola | najbliższy: `25*D` = 17,5 ognia (bez podpalenia), potem Oblany 8 s i Spowolniony 3 s | Ogień, Kuźnia | fuse |
+| `bait` | Przynęta | podłoga (łup), 3 | pole | wygląda jak Monety (chciwość z widzenia jak `gold`); podnoszący: `20*D*pw` kłute, Unieruchomiony 3 s, pobliscy (≤ 3) 8 strachu; przynęta zostaje, odnowienie 6 s (`baitBite`) | Skarby, bez komnaty | (nie `ACTIVE`, bez checku) |
+
+Wszystkie nowe pułapki poza dzwonem i przynętą są w `DISARMABLE`. Obszar wahadła rysuje się na podłodze jak strzały (`WALL_TRAP`).
+
+### 5.14.5 Nowe potwory (`fireRaw`, `monstersTick`, `newMonsterTick`, `driftTick`, `monsterDown`)
+
+| Typ | Nazwa | Koszt, HP, wręcz/s, cd | Zdolność (pw = 1) | Biernie | Rodzina, komnata | Kształt |
+|---|---|---|---|---|---|---|
+| `skeleton` | Szkielet | 4, 70, 12 kłute, 4 s | `20*D*power` jednemu obok (walczącemu) | Składanie: przy powaleniu, jeśli `reN < (A ? 2 : 1) + mods.bonesUp` i nie dobił go paladyn, kapłan ani barbarzyńca w furii, wstaje po 5 s z 50% HP | Nieumarli, Cmentarz | swing |
+| `zombie` | Zombie | 5, 170, 8 trucizna, 5 s | `15*D*power` + 2 stosy trucizny jednemu obok | Zaraza: walczący z nim +1 stos zarazy co 1,5 s | Nieumarli, Cmentarz | swing |
+| `lich` | Licz | 9, 120, 4 obuchowe, 6 s | `25*D*power` + Spowolniony 2 s każdemu do 2 pól w pokoju | aura 8 strachu/s do 2 pól w pokoju; raz (B: 2 razy) podnosi powalonego (nie unoszącego się, nie `temp`) potwora swojego pokoju z 50% HP | Nieumarli, Cmentarz | double |
+| `imp` | Chochlik | 3, 40, 0 (unosi się), 6 s | Zwędzenie: cel z przedmiotami (losowy) 20 × pw strachu, zabiera przedmiot i upuszcza go na losowym polu innego pokoju (nie pokoju serca) jako łup | aura 4/s do 1,6; po trafieniu 50% unik teleportem (odnowienie 2 s) | Demony, Wrota otchłani | double |
+| `hound` | Ogar piekielny | 5, 90, 28 ogień, 5 s | Pogoń: najbardziej przestraszony w pokoju `30*D*power × houndK` | uciekający i panikujący dostają od niego ×2 (Piekielna sfora ×3); zabicie takiego w walce daje też Grozę ucieczki | Demony, Wrota otchłani | swing |
+| `siren` | Kusicielka | 6, 60, 0 (unosi się), 9 s | Zew: najmniej odważny w zasięgu 4 (nie paladyn, nie boss) Uwiedziony 4 s; przerywa to kapłan, paladyn albo śpiewający bard w jej pokoju ("Zew przerwany") | aura 5/s do 2 | Demony, Wrota otchłani | double |
+| `demon` | Demon otchłani | 10, 420, 28 ogień (wszystkim walczącym), 6 s | Pożoga: `40*D*power × demonK` każdemu w pokoju + podpalenie 3 s | aura 6/s do 2,5; Apetyt: dopóki stoi w lochu (nie `temp`), głód każdej fali +2 (Pakt z otchłanią +1) | Demony, Wrota otchłani | swing |
+| `sapper` | Goblin saper | 5, 80, 8 kłute, 8 s | Kolczatki: do 3 wolnych pól obok bohaterów w obszarze, najwyżej 9 kolczatek tego sapera w fali; wejście: `15*S.dmg*pw` kłute i Spowolniony 1,5 s (`hazardsTick`) | - | Zielonoskórzy, Goblinia nora | bar |
+| `warlord` | Herszt goblinów | 7, 160, 14 obuchowe, 5 s | Okrzyk: `30*D*power` i `15*pw` strachu każdemu w pokoju | zielonoskórzy (goblin, szaman, saper, herszt, łucznik, ogr) w jego pokoju ×1,5 (`warlordK`); po powaleniu goblina w jego pokoju szał 6 s (×1,5 więcej) | Zielonoskórzy, Goblinia nora | swing |
+| `rats` | Rój szczurów | 3, 35, 6 kłute (wszystkim walczącym), 4 s | Zalew: `8*D*power × ratsK` każdemu w pokoju | Rośnie: po fali bez powalenia `grow` +1 (najwyżej 3), HP i obrażenia ×(1 + 0,8 × grow); powalony wraca do 0 | Bestie, Gniazdo | pulse |
+
+Chochlik i kusicielka są w `DRIFT` (unoszą się, nie blokują, rani je kula ognia, święte światło, aura paladyna i strzał tropiciela). Kwestie i wejście do nowych komnat: sekcja 06.
+
+### 5.14.6 Odrodzenie (`hurtMonster`, `monsterDown`)
+
+```
+hurtMonster(m, dmg, by):
+  ... (chochlik: 50% unik; szkielet B ×0,6; Tarcza ducha ×0,7)
+  m.hp -= dmg
+  if m.hp <= 0: m.hp = 0; stats.monstersLost++; bt(typ).died++; tl('mn', ...)
+     if m.temp: usuń z fl.items                                  // duch z Krypty, zombie z Powstania, szkielet z armii, małe roje
+     else: m.down = true; m.downR = realNow; m.foeT = 0; monsterDown(m, by)
+     m.grow = 0 (rój); karta "revive" (raz w przeglądarce); ciało jak dotąd; napis "<Nazwa> na ziemi (wstanie, +1 głodu)"
+monsterDown(m, by): Składanie szkieletu (wtedy wstaje po 5 s, bez powalenia na stałe w tej fali; `monsterTick` przy `hp <= 0` woła dla takiego szkieletu `newMonsterTick`, który po `reAt` stawia go z 50% HP); Gnijące mięso zombie (B);
+                    Nora szczurów (B); goblin w pokoju herszta: herszt w szał na 6 s
+```
+Powalony potwór nie odpala, nie walczy i nie leczy się (wszędzie `hp > 0`), rysuje się leżący (sekcja 08). `setupFl` stawia go w następnej budowie z pełnym HP. Za każdego powalonego (bez `temp`, bez licza z Filakterią) głód następnej fali +1 (sekcja 03, 2.7).
+
+### 5.14.7 Śmierć bohatera w 1.26 (`killHooks`, wołane w `kill`)
+
+- Dzwon żałobny (5.14.4) i Requiem.
+- Powstanie: `h.plague > 0` i mniej niż 2 w fali: `riseZombie(h)`.
+- Polowanie: zabójca to ogar (`h.killer`: z walki, a po przeglądzie 1.26 także ze zdolności odpalonej checkiem, `fl.firing`) i ofiara uciekała albo panikowała: dodatkowo `addPts(GZ.scare × mods.scareMult, 'scarePts')`, `stats.houndHunt`.
+- Nieśmiertelna armia: zabójca z rodziny Nieumarłych, najwyżej 3 w fali: `riseZombie(h, 'skeleton')` (90 HP, `temp`).
+- Głód krwi: zabójca to demon z cechą B: `run.bloodHunger = { w: fala + 1, n: +3 }`.
+- Grabież: żywy herszt z cechą B w pokoju zmarłego: dodatkowy stos łupu (2 monety).
+- Łupieżca goblina (B): zabity przez goblina (walka albo Podcięcie z checku) zostawia stos łupu (w `kill`).
+
+### 5.14.8 Rodziny i Runy rodów (`FAMILIES`)
+
+| id | Nazwa | Elementy | Znak, kolor |
+|---|---|---|---|
+| `mech` | Mechanizmy | spikes, arrows, pendulum, snare, gate, trapdoor, cage, mimic | ⚙ `#c9d5e2` |
+| `fire` | Ogień | fire, powder, oilslick, tar | ♨ `#ffa65c` |
+| `alch` | Alchemia | miasma, flood, bolt | ⚗ `#9fe0c8` |
+| `haunt` | Nawiedzenie | portrait, eyes, mirror, creak, musicbox, falsedoor, ghost, shade | ✧ `#a6e8ff` |
+| `undead` | Nieumarli | bones, coffin, bell, skeleton, zombie, lich | ☠ `#c9d4b0` |
+| `beast` | Bestie | web, spider, bats, rats | ✳ `#d4cbe8` |
+| `green` | Zielonoskórzy | goblin, archer, shaman, ogre, sapper, warlord | ♣ `#a7d060` |
+| `demons` | Demony | imp, hound, siren, demon | ⛧ `#ff7a5a` |
+| `treasure` | Skarby | loot, lpotion, loot2, loot3, lcursed, bait | ◆ `#f2b94b` |
+
+Poziom rodziny `run.famLv[f]` (0-5, Runa rodu w sklepie, sekcja 03, 3.16): `famK(t) = 1 + 0,08 × poziom` mnoży moc pułapek i zdolności (`fireRaw`), ciosy potworów (`monDmg`), dzwon żałobny i przynętę; Skarby: chciwość z widzianego łupu. `cdOf` -4% na poziom. Rodziny liczą się też w Pełnej palecie (`fl.famN`), stylu gildii "holy" (nieumarli i demony) i Przesądnym (Nawiedzenie). Rodzina (`FAMILY_OF`) nie jest tym samym co komnata (`KIND_OF`): np. łucznik jest w rodzinie Zielonoskórych, a w komnacie Kaplica czaszek.
+
+### 5.14.9 Zmiany liczb istniejących elementów (plan 6.1-6.5)
+
+| Element | 1.25.1 | 1.26 |
+|---|---|---|
+| Kolce, strzały | koszt 3 | 4 |
+| Zapadnia | koszt 6 | 4, lądowanie Oszołomiony 3 s |
+| Krata | koszt 4, zamknięcie 4 s | 3, zamknięcie 6 s i Rozdzielenie (5.3.9) |
+| Lustro | `12 × (...)` | `16 × (...)` |
+| Zawiasy | 24 / 12 | 30 / 15 |
+| Trumna | koszt 5, 36 / 14, cd 9 | 4, 50 / 20, cd 7 |
+| Pozytywka | 6 + `5*pw`/s, cd 9 | 12 + `7*pw`/s, cd 8 |
+| Goblin | HP 110, wręcz 14 | 140, 16 |
+| Pająk, szaman | koszt 5 | 4; pająk zdolnością +1 stos trucizny |
+| Szaman | leczenie się sumuje, Groza 0,02 | najsilniejszy, limit 100% max HP na falę, Groza 0,1 |
+| Duch | aura 10/s, zdolność 40 | 12/s, 50 |
+| Cień | zdolność 30 | 40 |
+| Nietoperze | koszt 4, zdolność 16 | 3, 20 |
+| Mikstura (łup), Relikwia | 4, 10 | 3, 8 |
+| Kolejny łup tego samego typu | ×1,25 | ×1,15 |
+| Budowle | runa i ołtarz 14, kwas, zasłona, wyjec, okowy 12, wabik, bastion 10 | runa i ołtarz 10, kwas, wyjec, okowy, bastion 8, wabik, zasłona 6 (dodatki: 5.5.2) |
+| Efekty pokoi | 8 albo 10 | 8 |
+| Komnata | 12 (zwrot 6) | 10 (zwrot 5) |
+| `MON_FACTOR`, `DMG_FACTOR.monster` | 0,4 | 0,8 |
+
+Tooltip łupu w pasku budowy dalej mówi "+25% ceny" za każdy kolejny (`showTip`), choć `LOOT_STEP` to 1,15 (5.14.11).
+
+### 5.14.10 Karty statusów i rodzin (1.26, efekty w kodzie)
+
+| Karta | Gdzie w kodzie | Efekt |
+|---|---|---|
+| Smoła i siarka (`tarSulfur`) | `damage` | Oblany: kłute ×(1 + 0,3) |
+| Przewodnictwo (`conduct`) | `reactHit` | Porażenie przeskakuje też na Spowolnionych w pokoju |
+| Toksyczny opar (`toxicCap`, `toxicDet`) | `POISON_CAP`, `reactHit` | limit stosów 10, Detonacja ×1,25 |
+| Morowe powietrze (`plagueAir`) | `plagueAirTick` | co 3 s +1 stos zarazy każdemu w 1,5 pola od Zarażonego |
+| Piekielna sfora (`hellPack`) | `houndK`, `updateHero` | Polowanie ×3, uciekający i panikujący ×0,8 prędkości |
+| Kości niezłomne (`bonesUp`) | `monsterDown`, `monDmg` | +2 złożenia, szkielet po złożeniu ×1,2 |
+| Nieśmiertelna armia (`undyingArmy`) | `killHooks` | zabity przez nieumarłego wstaje jako szkielet (najwyżej 3 w fali) |
+| Pakt z otchłanią (`abyssPact`) | `hungerParts`, `monDmg` | Apetyt +1 zamiast +2, demony (cała rodzina) ×1,2 w walce |
+| Podwójne ostrze (`doubleEdge`) | `fireRaw` (kolce) | drugi cios 50% Unieruchomionym i Spowolnionym |
+| Echo serca (`heartEcho`) | `fireRaw` | pierwsza pułapka po nasyceniu odpala dwa razy |
+| Puls serca, Ostatni oddech, Strażnik | `heartK`, `monDmg`, `startWave` | sekcja 03, 3.9 |
+
+### 5.14.11 Różnice wobec planu w tej sekcji (do decyzji autora)
+
+- Plama oleju A (Łatwopalna): `h.oilA` jest zapisywane, ale nic go nie czyta, więc cecha nic nie robi.
+- Wnyki: opis "rozbrajanie trwa 1,5 raza dłużej" nie ma pokrycia (czas rozbrajania liczy tylko strzały, ogień i proch ×1,5). Otwarte (sekcja 11).
+- Ogar: "idzie za Krwawiącym do sąsiedniego pokoju" nie jest zaimplementowane (otwarte, sekcja 11); Polowanie (×2 w walce, Groza ucieczki przy zabójstwie walką albo zdolnością) działa.
+- Goblin saper "trzyma się za innymi potworami" nie jest zaimplementowany (otwarte, sekcja 11).
+- Oślepienie (Para, Łzawiące, Wyziewy B) blokuje wykrywanie, ale nie naukę pułapek (plan: "brak wykrywania i nauki"; otwarte, sekcja 11).
+- Liczniki potworów nie są zerowane między falami (`setupFl` zeruje tylko `hp`, `down`, `healGot` i stare pola): `m.raised` (licz podnosi raz na run, Armia 2 razy), `m.reN` (szkielet składa się raz na run, Legion 2 razy, a premia Kości niezłomnych zostaje na stałe po pierwszym złożeniu), `m.reAt` (szkielet powalony tuż przed końcem fali w następnej fali w chwili `reAt` dostaje `hp = 50% max`, nawet z pełnym HP), `it.rewound` (Zwijacz raz na run), `m.rangerHit` (pierwszy strzał tropiciela w latającego, z dodatkową sekundą obrażeń, raz na run na potwora), `it.boltN` (licznik Przeciążenia). Plan i opisy mówią "na falę".
+- Wyziewy: trafieni przy odpaleniu dostają stos i strach, a potem jeszcze raz przy "wejściu" do świeżej chmury w tym samym kroku (`c.seen` startuje puste).
+- Krwawy księżyc mnoży obrażenia potworów także w ich zdolnościach (`omenPow` w `fireRaw`), plan mówił ogólnie "potwory +30% obrażeń", więc zgodne; czaszka tego nie liczy (5.11, punkt 21).
+- Tooltip łupu "+25% ceny" przy `LOOT_STEP` 1,15.

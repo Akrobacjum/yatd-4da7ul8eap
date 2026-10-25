@@ -46,7 +46,7 @@ CRY1 = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => {
   const f = T.raid(['warrior', 'thief']), th = G.alive().find(h => h.type === 'thief');
   th.crystal = true; f.party.carrierId = th.id; G.heroExit(th);
   ok(R.crystals === 2 && f.crystalLost, 'stolen: ' + R.crystals);
-  f.score = 1; f.fed = 0; f.chain = null; T.floats0 = G.floats.length;
+  f.score = 1; f.fed = 0; f.chain = null; f.essence = 0; T.floats0 = G.floats.length;   // 1.26: an empty purse (the heart takes from it first)
   G.finishWave();
   const W = R.waves[R.waves.length - 1];
   out.wave = { crystals: W.crystals, ev: W.crystalEvents, hunger: W.hunger };
@@ -54,21 +54,21 @@ CRY1 = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => {
   ok(JSON.stringify(W.crystalEvents.map(e => e.cause + e.delta)) === JSON.stringify(['card1', 'card-1', 'stolen-1', 'hunger-1']), 'the wave record: card +1, card -1, stolen, hunger: ' + JSON.stringify(W.crystalEvents));
   ok(W.crystalEvents.filter(e => e.cause === 'stolen' || e.cause === 'hunger').every(e => typeof e.t === 'number') && W.crystalEvents.filter(e => e.cause === 'card').every(e => e.t === null), 't: wave time in the wave, null in the build');
   ok(3 + W.crystalEvents.reduce((a, e) => a + e.delta, 0) === W.crystals, 'per wave: 3 + the deltas = crystals');
-  ok(G.floats.some(x => x.text === 'Głód pochłonął kryształ!'), 'the float over the heart when hunger eats a crystal');
+  ok(G.floats.some(x => x.text === 'Głód pękł kryształ!'), 'the float over the heart when hunger eats a crystal');
   ok(G.modalKind === 'wave', 'the summary is up: ' + G.modalKind);
   const why = (document.querySelector('#wave-crystal-why') || {}).textContent || '';
   out.why = why;
-  ok(/Głód pochłonął kryształ: serce chciało \d+ Esencji z tej fali/.test(why) && /Kryształ skradziony: .+ wyniósł go z lochu|Kryształ skradziony: .+ wyniosła go z lochu/.test(why), 'the summary says why both crystals went: ' + why);
+  ok(/Głód pękł kryształ: serce chciało \d+ Esencji/.test(why) && /Kryształ skradziony: .+ wyniósł go z lochu|Kryształ skradziony: .+ wyniosła go z lochu/.test(why), 'the summary says why both crystals went: ' + why);
   // to the next build: the warning (the last wave brought less than the heart wants)
-  T.clean(); G.afterSummary(); T.clean();
+  T.clean(); G.afterSummary(); T.clean(); G.fl.essence = 0;   // 1.26: a purse that covers the hunger is no risk
   out.build = { phase: G.fl.phase, wave: R.wave, risk: G.hungerRisk(), need: G.hungerNeed(R.wave) };
   ok(G.fl.phase === 'build' && G.hungerRisk() === G.hungerNeed(R.wave) && G.hungerRisk() > 0, 'hunger threatens the coming wave: ' + JSON.stringify(out.build));
   return { fails, out }; }"""
 CRY2 = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => { if (!c) fails.push(m); };
   const R = G.run, row = document.querySelector('#h-hrow'), lab = document.querySelector('#h-hlabel').textContent;
   out.hud = { cls: row.className, lab, title: row.title };
-  ok(row.classList.contains('warn') && /^⚠ \d+ z fali albo kryształ$/.test(lab), 'the build warning in the heart row: ' + JSON.stringify(out.hud));
-  ok(/serce zje kryształ/.test(row.title), 'its long text');
+  ok(row.classList.contains('warn') && /^⚠ \d+ · zapas \d+$/.test(lab), 'the build warning in the heart row: ' + JSON.stringify(out.hud));
+  ok(/serce zabierze brak z sakiewki/.test(row.title) && /pęknie kryształ/.test(row.title), 'its long text');
   // the next wave: fed; a crystal bought, the continue ad (here as its code), a change nobody logged
   G.fl.essence = 9999; ok(G.buyCrystal(), 'a crystal bought');
   R.crystals += 1;   // unlogged on purpose
@@ -127,13 +127,13 @@ UNSP1 = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => 
   localStorage.removeItem('yatd-noask-ess');
   const R = T.newRun();
   out.start = { e: Math.floor(G.fl.essence), e0: R.essAtStart, cheap: G.cheapestItem() };
-  ok(R.essAtStart === 30 && G.fl.essence === 24 && G.cheapestItem().cost === 3, 'wave 1: 30 at the start, 24 left after the two start traps, the cheapest costs 3: ' + JSON.stringify(out.start));
+  ok(R.essAtStart === 25 && G.fl.essence === 25 && G.cheapestItem().cost === 3, 'wave 1 (1.26): 25 at the start, the start traps free, the cheapest costs 3: ' + JSON.stringify(out.start));
   return { fails, out }; }"""
 UNSP2 = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => { if (!c) fails.push(m); };
   const R = G.run, sc = document.querySelector('#h-score'), act = () => document.querySelector('#btn-action').click();
   ok(sc.classList.contains('afford'), 'the counter pulses while something is affordable');
   act(); out.ask1 = { kind: G.modalKind, phase: G.fl.phase, txt: (document.querySelector('#card') || {}).textContent.slice(0, 140) };
-  ok(G.modalKind === 'unspent' && G.fl.phase === 'build' && /Masz 24 Esencji/.test(out.ask1.txt) && /Rozpocząć falę mimo to\?|Warto jeszcze postawić/.test(out.ask1.txt), 'the question: ' + JSON.stringify(out.ask1));
+  ok(G.modalKind === 'unspent' && G.fl.phase === 'build' && /Masz 25 Esencji/.test(out.ask1.txt) && /Rozpocząć falę mimo to\?|Warto jeszcze postawić/.test(out.ask1.txt), 'the question: ' + JSON.stringify(out.ask1));
   document.querySelector('#unspent-back').click();
   ok(!G.modalKind && G.fl.phase === 'build', 'Buduj dalej: back to building');
   act(); ok(G.modalKind === 'unspent', 'asked again');

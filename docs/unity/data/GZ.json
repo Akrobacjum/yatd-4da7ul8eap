@@ -2,7 +2,7 @@
  "dmg": 1.5,
  "fear": 1.6,
  "kill": 1.2,
- "scare": 2.5,
+ "scare": 4,
  "lost": 0.12,
  "alone": 0.09,
  "split": 0.04,
@@ -10,5 +10,5 @@
  "heal": 0.45,
  "web": 0.25,
  "cage": 0.45,
- "crystal": 4
+ "crystal": 6
 }

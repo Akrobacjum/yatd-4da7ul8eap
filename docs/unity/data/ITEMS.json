@@ -1,7 +1,7 @@
 {
  "spikes": {
   "name": "Kolce",
-  "cost": 3,
+  "cost": 4,
   "slot": "floor",
   "tag": "szybkie",
   "cd": 1.5,
@@ -17,11 +17,11 @@
  },
  "trapdoor": {
   "name": "Zapadnia",
-  "cost": 6,
+  "cost": 4,
   "slot": "floor",
   "tag": "rozdziela",
   "cd": 8,
-  "desc": "Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony. Najwyżej 2 upadki bohatera na falę (elita i poz. 12+: 1), potem widzi zapadnie. Złodziej ją rozbroi."
+  "desc": "Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony i oszołomiony (Spowolniony 3 s). Najwyżej 2 upadki bohatera na falę (elita i poz. 12+: 1), potem widzi zapadnie. Złodziej ją rozbroi."
  },
  "cage": {
   "name": "Klatka",
@@ -33,7 +33,7 @@
  },
  "arrows": {
   "name": "Strzały",
-  "cost": 3,
+  "cost": 4,
   "slot": "wall",
   "tag": "linia",
   "cd": 3,
@@ -57,11 +57,11 @@
  },
  "gate": {
   "name": "Krata",
-  "cost": 4,
+  "cost": 3,
   "slot": "door",
   "tag": "rozdziela",
   "cd": 8,
-  "desc": "Krata (drzwi, obuchowe): zamyka przejście na 4 s i rozdziela drużynę. Odcięci szukają innej drogi albo się gubią. Odnawia się 8 s po otwarciu, 3 zamknięcia na falę."
+  "desc": "Krata (drzwi, obuchowe): zamyka przejście na 6 s i rozdziela drużynę. Odcięci są przez 6 s samotni (strach i Groza samotności), szukają innej drogi albo się gubią. Odnawia się 8 s po otwarciu, 3 zamknięcia na falę."
  },
  "crate": {
   "name": "Skrzynia",
@@ -92,10 +92,10 @@
   "cost": 4,
   "slot": "floor",
   "cd": 3,
-  "hp": 110,
-  "melee": 14,
+  "hp": 140,
+  "melee": 16,
   "tag": "blokuje",
-  "desc": "Goblin (potwór, kłute): blokuje przejście i mocno bije tego, kto z nim walczy. Ginie na dobre. Skill check: Dźgnięcie."
+  "desc": "Goblin (potwór, kłute): blokuje przejście i mocno bije tego, kto z nim walczy. Powalony wstaje w następnej budowie (+1 do głodu). Skill check: Dźgnięcie."
  },
  "archer": {
   "name": "Łucznik",
@@ -105,11 +105,11 @@
   "hp": 50,
   "melee": 4,
   "tag": "strzela",
-  "desc": "Łucznik (potwór, kłute): sam strzela do bohaterów w swoim pokoju (zasięg 4). Ginie na dobre. Skill check: Salwa."
+  "desc": "Łucznik (potwór, kłute): sam strzela do bohaterów w swoim pokoju (zasięg 4). Powalony wstaje w następnej budowie (+1 do głodu). Skill check: Salwa."
  },
  "spider": {
   "name": "Pająk",
-  "cost": 5,
+  "cost": 4,
   "slot": "floor",
   "cd": 5,
   "hp": 90,
@@ -129,13 +129,13 @@
  },
  "shaman": {
   "name": "Szaman",
-  "cost": 5,
+  "cost": 4,
   "slot": "floor",
   "cd": 8,
   "hp": 60,
   "melee": 3,
   "tag": "leczy",
-  "desc": "Szaman (potwór): leczy potwory w promieniu 2 pól. Skill check: Wielkie leczenie wszystkich potworów w pokoju."
+  "desc": "Szaman (potwór): leczy potwory w promieniu 2 pól (leczenie od kilku szamanów się nie sumuje; razem najwyżej 100% życia potwora na falę). Skill check: Wielkie leczenie wszystkich potworów w pokoju."
  },
  "ghost": {
   "name": "Duch",
@@ -181,10 +181,10 @@
  },
  "coffin": {
   "name": "Trumna",
-  "cost": 5,
+  "cost": 4,
   "slot": "floor",
   "tag": "mocny strach",
-  "cd": 9,
+  "cd": 7,
   "desc": "Trumna (podłoga): wieko się uchyla. Najbliższy bohater bardzo się boi, inni do 2 pól trochę. W Krypcie +50%. Złodziej zabije ją gwoździami."
  },
  "musicbox": {
@@ -192,7 +192,7 @@
   "cost": 4,
   "slot": "object",
   "tag": "cały pokój",
-  "cd": 9,
+  "cd": 8,
   "desc": "Pozytywka (mebel): gra kołysankę w całym pokoju i przez 4 s każdy, kto tam jest, boi się coraz bardziej. Złodziej ją rozbroi."
  },
  "shade": {
@@ -207,13 +207,194 @@
  },
  "bats": {
   "name": "Nietoperze",
-  "cost": 4,
+  "cost": 3,
   "slot": "floor",
   "cd": 6,
   "hp": 40,
   "melee": 0,
   "tag": "płoszą",
   "desc": "Nietoperze (potwór, kłute): szybki rój krąży między bohaterami, gryzie i straszy. Ranią go tylko mag i kapłan. Skill check: rój płoszy bohaterów (uciekają na oślep)."
+ },
+ "pendulum": {
+  "name": "Wahadło",
+  "cost": 4,
+  "slot": "wall",
+  "tag": "linia, ×1,5 trzymanym",
+  "cd": 4,
+  "desc": "Wahadło (ściana, kłute): ostrze tnie pas 3 pól szerokości i 4 w głąb pokoju: każdy w pasie dostaje cios. Unieruchomieni i spowolnieni ×1,5. Złodziej je rozbroi."
+ },
+ "snare": {
+  "name": "Wnyki",
+  "cost": 3,
+  "slot": "floor",
+  "tag": "unieruchamia",
+  "cd": 8,
+  "desc": "Wnyki (podłoga, kłute): rani i Unieruchamia na 5 s (draśnięcie 3,5 s; najwyżej 5 s, potem 3 s odporności). Rozbrajanie trwa 1,5 raza dłużej, złodziej nie zrobi uniku."
+ },
+ "miasma": {
+  "name": "Wyziewy",
+  "cost": 5,
+  "slot": "floor",
+  "tag": "trucizna",
+  "cd": 7,
+  "desc": "Wyziewy (podłoga, trucizna): chmura 3×3 na 5 s. Kto w nią wejdzie, dostaje stos trucizny, potem kolejny co 1,5 s, i 10 strachu przy pierwszym kontakcie. Zatruty + ogień = Detonacja."
+ },
+ "oilslick": {
+  "name": "Plama oleju",
+  "cost": 4,
+  "slot": "floor",
+  "tag": "Oblany",
+  "cd": 6,
+  "desc": "Plama oleju (podłoga): kwadrat 3×3, każdy w nim jest Oblany na 8 s i Spowolniony na 1,5 s, czasem się poślizgnie. Oblany + ogień = Pożar."
+ },
+ "bolt": {
+  "name": "Runa piorunów",
+  "cost": 5,
+  "slot": "wall",
+  "tag": "porażenie",
+  "cd": 4,
+  "desc": "Runa piorunów (ściana, porażenie): piorun w najbliższego bohatera do 3 pól, przeskakuje na wszystkich Mokrych w pokoju. Mokry + porażenie = Porażenie."
+ },
+ "flood": {
+  "name": "Zalewnia",
+  "cost": 4,
+  "slot": "floor",
+  "tag": "Mokry, cały pokój",
+  "cd": 10,
+  "desc": "Zalewnia (podłoga): woda zalewa cały pokój: Mokry na 8 s, Spowolniony na 2 s, 6 strachu. Gasi podpalonych (Para: chmura straszy i oślepia)."
+ },
+ "bell": {
+  "name": "Dzwon żałobny",
+  "cost": 4,
+  "slot": "object",
+  "tag": "śmierć straszy",
+  "cd": 8,
+  "desc": "Dzwon żałobny (mebel): każda śmierć bohatera w lochu to 24 strachu dla wszystkich żywych (liczą się najwyżej 2 dzwony; fobia hałasu). Skill check: 10 strachu w pokoju. Kapłan go odczyni."
+ },
+ "falsedoor": {
+  "name": "Fałszywe przejście",
+  "cost": 4,
+  "slot": "door",
+  "tag": "gubi",
+  "cd": 10,
+  "desc": "Fałszywe przejście (drzwi): pierwszy, kto przejdzie, skręca w złą stronę: zgubiony na 12 s (Groza zgubienia) i 10 strachu. Raz na bohatera w fali; mag od poziomu 8 widzi iluzję."
+ },
+ "tar": {
+  "name": "Kocioł smoły",
+  "cost": 5,
+  "slot": "door",
+  "tag": "ogień + Oblany",
+  "cd": 10,
+  "desc": "Kocioł smoły (drzwi, ogień): wylewa smołę na pierwszego w drzwiach: rani ogniem (bez podpalenia), Oblany i Spowolniony na 3 s."
+ },
+ "bait": {
+  "name": "Przynęta",
+  "cost": 3,
+  "slot": "floor",
+  "tag": "łup, który łapie",
+  "cd": 6,
+  "rarity": 1,
+  "desc": "Przynęta (łup): wygląda jak sakwa monet i kusi jak łup. Kto ją podniesie, jest Unieruchomiony na 3 s i ranny, pobliscy dostają 8 strachu, a przynęta zostaje na miejscu."
+ },
+ "skeleton": {
+  "name": "Szkielet",
+  "cost": 4,
+  "slot": "floor",
+  "cd": 4,
+  "hp": 70,
+  "melee": 12,
+  "tag": "składa się",
+  "desc": "Szkielet (potwór, kłute): blokuje i bije. Powalony pierwszy raz w fali składa się po 5 s z połową życia (nie po ciosie paladyna, kapłana ani barbarzyńcy w szale). Skill check: Kościany cios."
+ },
+ "zombie": {
+  "name": "Zombie",
+  "cost": 5,
+  "slot": "floor",
+  "cd": 5,
+  "hp": 170,
+  "melee": 8,
+  "tag": "zaraza",
+  "desc": "Zombie (potwór, trucizna): powolny tank. Walczący z nim co 1,5 s łapie stos Zarazy; Zarażony, który zginie, wstaje jako Twój zombie (Powstanie). Skill check: Ugryzienie (+2 stosy trucizny)."
+ },
+ "lich": {
+  "name": "Licz",
+  "cost": 9,
+  "slot": "floor",
+  "cd": 6,
+  "hp": 120,
+  "melee": 4,
+  "tag": "wskrzesza",
+  "desc": "Licz (potwór): raz na falę podnosi powalonego potwora w swoim pokoju (50% życia), straszy wszystkich do 2 pól. Skill check: Lodowy dotyk (rani i spowalnia)."
+ },
+ "imp": {
+  "name": "Chochlik",
+  "cost": 3,
+  "slot": "floor",
+  "cd": 6,
+  "hp": 40,
+  "melee": 0,
+  "tag": "kradnie",
+  "desc": "Chochlik (latający): krąży i straszy. Skill check: Zwędzenie: zabiera bohaterowi przedmiot i upuszcza go w innym pokoju jako łup (chciwość), +20 strachu. Trafiony czasem się teleportuje."
+ },
+ "hound": {
+  "name": "Ogar piekielny",
+  "cost": 5,
+  "slot": "floor",
+  "cd": 5,
+  "hp": 90,
+  "melee": 28,
+  "tag": "poluje",
+  "desc": "Ogar piekielny (potwór, ogień): uciekający i spanikowani dostają od niego 2 razy więcej; zabicie uciekiniera daje Grozę i za śmierć, i za ucieczkę. Skill check: Pogoń za najbardziej przestraszonym."
+ },
+ "siren": {
+  "name": "Kusicielka",
+  "cost": 6,
+  "slot": "floor",
+  "cd": 9,
+  "hp": 60,
+  "melee": 0,
+  "tag": "uwodzi",
+  "desc": "Kusicielka (latająca): straszy wokół. Skill check: Zew: najmniej odważny w promieniu 4 idzie do niej 4 s (Uwiedziony), odłącza się, potem 30 strachu. Kapłan, paladyn i pieśń barda przerywają zew."
+ },
+ "demon": {
+  "name": "Demon otchłani",
+  "cost": 10,
+  "slot": "floor",
+  "cd": 6,
+  "hp": 420,
+  "melee": 28,
+  "tag": "głód +2",
+  "desc": "Demon otchłani (potwór, ogień): ogromny, bije wszystkich walczących, straszy wokół. Dopóki stoi w lochu, głód każdej fali +2 (Apetyt demona). Skill check: Pożoga w całym pokoju."
+ },
+ "sapper": {
+  "name": "Goblin saper",
+  "cost": 5,
+  "slot": "floor",
+  "cd": 8,
+  "hp": 80,
+  "melee": 8,
+  "tag": "kolczatki",
+  "desc": "Goblin saper (potwór): skill check: Kolczatki: 3 pola przy bohaterach stają się pułapką do końca fali (rani i spowalnia, najwyżej 3 zestawy)."
+ },
+ "warlord": {
+  "name": "Herszt goblinów",
+  "cost": 7,
+  "slot": "floor",
+  "cd": 5,
+  "hp": 160,
+  "melee": 14,
+  "tag": "zielonoskórzy ×1,5",
+  "desc": "Herszt goblinów (potwór, obuchowe): zielonoskórzy w jego pokoju biją 1,5 raza mocniej; gdy goblin padnie przy nim, reszta wpada w szał (+50% na 6 s). Skill check: Okrzyk (rani i straszy cały pokój)."
+ },
+ "rats": {
+  "name": "Rój szczurów",
+  "cost": 3,
+  "slot": "floor",
+  "cd": 4,
+  "hp": 35,
+  "melee": 6,
+  "tag": "rośnie",
+  "desc": "Rój szczurów (potwór, kłute): bije wszystkich walczących. Każda fala przeżyta bez powalenia: +80% życia i siły (najwyżej 3 razy). Powalony wraca do bazowej siły. Skill check: Zalew całego pokoju."
  },
  "loot": {
   "name": "Monety",
@@ -226,7 +407,7 @@
  },
  "lpotion": {
   "name": "Mikstura",
-  "cost": 4,
+  "cost": 3,
   "slot": "floor",
   "tag": "wabi rannych",
   "cd": 0,
@@ -244,7 +425,7 @@
  },
  "loot3": {
   "name": "Relikwia",
-  "cost": 10,
+  "cost": 8,
   "slot": "floor",
   "tag": "legendarny",
   "cd": 0,
@@ -262,63 +443,63 @@
  },
  "rune": {
   "name": "Runa",
-  "cost": 14,
+  "cost": 10,
   "slot": "floor",
   "tag": "magowie",
   "build": true,
-  "desc": "Runa (budowla, blokuje przejście jak skrzynia): magowie nie zakłócą ani nie wyczują pułapek w tym pokoju. Kontra na gildię z magami. Jedna na pokój."
+  "desc": "Runa (budowla, blokuje przejście jak skrzynia): magowie nie zakłócą ani nie wyczują pułapek w tym pokoju, a pułapki w nim odnawiają się 10% szybciej. Kontra na gildię z magami. Jedna na pokój."
  },
  "altar": {
   "name": "Ołtarz",
-  "cost": 14,
+  "cost": 10,
   "slot": "floor",
   "tag": "kapłani",
   "build": true,
-  "desc": "Ołtarz (budowla, blokuje przejście jak skrzynia): moce kapłana i amulety działają tu o połowę słabiej. Kontra na kapłanów i leczenie. Jeden na pokój."
+  "desc": "Ołtarz (budowla, blokuje przejście jak skrzynia): moce kapłana i amulety działają tu o połowę słabiej, a strach w tym pokoju jest o 10% większy. Kontra na kapłanów i leczenie. Jeden na pokój."
  },
  "decoy": {
   "name": "Wabik",
-  "cost": 10,
+  "cost": 6,
   "slot": "floor",
   "tag": "złodzieje",
   "build": true,
-  "desc": "Wabik (budowla, blokuje przejście jak skrzynia): wygląda jak pułapka. Złodziej rozbraja go najpierw i podnosi alarm: odpalają wszystkie gotowe pułapki w pokoju."
+  "desc": "Wabik (budowla, blokuje przejście jak skrzynia): wygląda jak pułapka. Złodziej rozbraja go najpierw i podnosi alarm: odpalają wszystkie gotowe pułapki w pokoju. Alarm raz na falę."
  },
  "acid": {
   "name": "Kwas",
-  "cost": 12,
+  "cost": 8,
   "slot": "floor",
   "tag": "tarcze",
   "build": true,
-  "desc": "Kwas (budowla, blokuje przejście jak skrzynia): tarcza wojownika, osłona kapłana i talizmany chronią tu o połowę słabiej. Kontra na wojowników. Jeden na pokój."
+  "desc": "Kwas (budowla, blokuje przejście jak skrzynia): tarcza wojownika, osłona kapłana i talizmany chronią tu o połowę słabiej, a obrażenia w tym pokoju są o 10% większe. Kontra na wojowników. Jeden na pokój."
  },
  "veil": {
   "name": "Zasłona",
-  "cost": 12,
+  "cost": 6,
   "slot": "floor",
   "tag": "plotki",
   "build": true,
-  "desc": "Zasłona (budowla, blokuje przejście jak skrzynia): uciekinierzy nie zapamiętają tego pokoju ani jego pułapek. Jedna na pokój."
+  "desc": "Zasłona (budowla, blokuje przejście jak skrzynia): uciekinierzy nie zapamiętają tego pokoju ani jego pułapek, w pokoju łatwiej się zgubić, a jego pułapek nie słychać zza ścian. Jedna na pokój."
  },
  "howl": {
   "name": "Kamień wyjec",
-  "cost": 12,
+  "cost": 8,
   "slot": "floor",
   "tag": "bardowie",
   "build": true,
-  "desc": "Kamień wyjec (budowla, blokuje przejście jak skrzynia): wiatr wyje w jego otworach. Pieśń barda tu nie działa, a echo myli głosy: zgubiony nie trafi tu do drużyny po głosie. Kontra na bardów. Jeden na pokój."
+  "desc": "Kamień wyjec (budowla, blokuje przejście jak skrzynia): wiatr wyje w jego otworach. Pieśń barda tu nie działa, a echo myli głosy: zgubiony nie trafi tu do drużyny po głosie. Strach w tym pokoju +10%. Kontra na bardów. Jeden na pokój."
  },
  "shackles": {
   "name": "Okowy",
-  "cost": 12,
+  "cost": 8,
   "slot": "floor",
   "tag": "furia",
   "build": true,
-  "desc": "Okowy (budowla, blokuje przejście jak skrzynia): w tym pokoju nikt nie wpada w furię, a skrzyń i budowli nie da się tu rozbić. Kontra na barbarzyńców. Jeden na pokój."
+  "desc": "Okowy (budowla, blokuje przejście jak skrzynia): w tym pokoju nikt nie wpada w furię, a skrzyń i budowli nie da się tu rozbić. Unieruchomienie i spowolnienie trwa tu o 1 s dłużej. Kontra na barbarzyńców. Jeden na pokój."
  },
  "fortify": {
   "name": "Bastion",
-  "cost": 10,
+  "cost": 8,
   "slot": "floor",
   "tag": "wyłomy",
   "build": true,
@@ -374,7 +555,7 @@
  },
  "r_fog": {
   "name": "Mgła",
-  "cost": 10,
+  "cost": 8,
   "slot": "roomtype",
   "tag": "gubią się",
   "tool": true,
@@ -392,7 +573,7 @@
  },
  "r_grotto": {
   "name": "Grota",
-  "cost": 10,
+  "cost": 8,
   "slot": "roomtype",
   "tag": "echo strachu",
   "tool": true,
@@ -401,7 +582,7 @@
  },
  "r_crypt": {
   "name": "Krypta",
-  "cost": 10,
+  "cost": 8,
   "slot": "roomtype",
   "tag": "śmierć ×2",
   "tool": true,
@@ -410,7 +591,7 @@
  },
  "r_vault": {
   "name": "Sezam",
-  "cost": 10,
+  "cost": 8,
   "slot": "roomtype",
   "tag": "łup ×2",
   "tool": true,
@@ -419,7 +600,7 @@
  },
  "r_haven": {
   "name": "Sanktuarium",
-  "cost": 10,
+  "cost": 8,
   "slot": "roomtype",
   "tag": "fałszywy azyl",
   "tool": true,
@@ -428,7 +609,7 @@
  },
  "r_gears": {
   "name": "Zębatki",
-  "cost": 10,
+  "cost": 8,
   "slot": "roomtype",
   "tag": "combo z jednej",
   "tool": true,
@@ -446,7 +627,7 @@
  },
  "r_ice": {
   "name": "Lodownia",
-  "cost": 10,
+  "cost": 8,
   "slot": "roomtype",
   "tag": "poślizg",
   "tool": true,
@@ -455,16 +636,16 @@
  },
  "k_goblin": {
   "name": "Goblinia nora",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
   "tag": "gobliny",
   "tool": true,
   "rk": "goblin",
-  "desc": "Goblinia nora (komnata): Goblin i Szaman w tym pokoju mają cechę 3. poziomu bez ulepszania: Goblin: Podcięcie (trafiony zwalnia na 1,5 s); Szaman: Tarcza ducha (potwory w jego pokoju dostają 30% mniej obrażeń). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "Goblinia nora (komnata): Goblin, Szaman, Goblin saper i Herszt goblinów w tym pokoju mają cechę 3. poziomu bez ulepszania: Goblin: Podcięcie (trafiony zwalnia na 1,5 s); Szaman: Tarcza ducha (potwory w jego pokoju dostają 30% mniej obrażeń); Goblin saper: Proch (jeden zestaw kolczatek to mała bomba); Herszt goblinów: Wódz (aura obejmuje sąsiednie pokoje). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
  },
  "k_spider": {
   "name": "Leże pająków",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
   "tag": "pająki i sieci",
   "tool": true,
@@ -473,7 +654,7 @@
  },
  "k_ogre": {
   "name": "Jaskinia ogra",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
   "tag": "ogry",
   "tool": true,
@@ -482,7 +663,7 @@
  },
  "k_haunt": {
   "name": "Nawiedzona sala",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
   "tag": "duchy i cienie",
   "tool": true,
@@ -490,17 +671,17 @@
   "desc": "Nawiedzona sala (komnata): Duch i Cień w tym pokoju mają cechę 3. poziomu bez ulepszania: Duch: Wycie (straszy z dalszej odległości); Cień: Pożeracz światła (szept gubi samotnego bohatera). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
  },
  "k_bats": {
-  "name": "Gniazdo nietoperzy",
-  "cost": 12,
+  "name": "Gniazdo",
+  "cost": 10,
   "slot": "roomkind",
-  "tag": "nietoperze",
+  "tag": "nietoperze i szczury",
   "tool": true,
   "rk": "bats",
-  "desc": "Gniazdo nietoperzy (komnata): Nietoperze w tym pokoju ma cechę 3. poziomu bez ulepszania: Nietoperze: Chmara (rój sięga 3 pól i płoszy częściej). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "Gniazdo (komnata): Nietoperze i Rój szczurów w tym pokoju mają cechę 3. poziomu bez ulepszania: Nietoperze: Chmara (rój sięga 3 pól i płoszy częściej); Rój szczurów: Wścieklizna (ugryzienia zarażają). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
  },
  "k_ossuary": {
   "name": "Kaplica czaszek",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
   "tag": "kości i łucznicy",
   "tool": true,
@@ -509,34 +690,34 @@
  },
  "k_armory": {
   "name": "Zbrojownia",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
-  "tag": "kolce i strzały",
+  "tag": "kolce, strzały, wahadła",
   "tool": true,
   "rk": "armory",
-  "desc": "Zbrojownia (komnata): Kolce i Strzały w tym pokoju mają cechę 3. poziomu bez ulepszania: Kolce: Krwawienie (trafiony krwawi przez 3 s); Strzały: Przebijające groty (strzały przebijają tarczę wojownika i talizmany). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "Zbrojownia (komnata): Kolce, Strzały i Wahadło w tym pokoju mają cechę 3. poziomu bez ulepszania: Kolce: Krwawienie (trafiony krwawi przez 3 s); Strzały: Przebijające groty (strzały przebijają tarczę wojownika i talizmany); Wahadło: Podwójne (drugi zamach (50% mocy) po 0,6 s). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
  },
  "k_forge": {
   "name": "Kuźnia",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
-  "tag": "ogień i proch",
+  "tag": "ogień, proch, olej",
   "tool": true,
   "rk": "forge",
-  "desc": "Kuźnia (komnata): Ogień i Proch w tym pokoju mają cechę 3. poziomu bez ulepszania: Ogień: Napalm (podpalenie trwa 6 s zamiast 3); Proch: Ognisty proch (wybuch sięga o pole dalej i podpala). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "Kuźnia (komnata): Ogień, Proch, Plama oleju i Kocioł smoły w tym pokoju mają cechę 3. poziomu bez ulepszania: Ogień: Napalm (podpalenie trwa 6 s zamiast 3); Proch: Ognisty proch (wybuch sięga o pole dalej i podpala); Plama oleju: Łatwopalna (Oblany zapala się od każdego trafienia pułapki (15%)); Kocioł smoły: Wrzątek (oblany płonie 4 s). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
  },
  "k_prison": {
   "name": "Więzienie",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
-  "tag": "klatki i kraty",
+  "tag": "klatki, kraty, wnyki",
   "tool": true,
   "rk": "prison",
-  "desc": "Więzienie (komnata): Klatka, Zapadnia i Krata w tym pokoju mają cechę 3. poziomu bez ulepszania: Klatka: Kolczasta klatka (uwięziony dostaje 2 razy więcej obrażeń i boi się 2 razy bardziej); Zapadnia: Bezdenny szyb (spadający wychodzi zgubiony i dużo bardziej przestraszony); Krata: Żelazna krata (+2 zamknięcia na falę). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "Więzienie (komnata): Klatka, Zapadnia, Krata i Wnyki w tym pokoju mają cechę 3. poziomu bez ulepszania: Klatka: Kolczasta klatka (uwięziony dostaje 2 razy więcej obrażeń i boi się 2 razy bardziej); Zapadnia: Bezdenny szyb (spadający wychodzi zgubiony i dużo bardziej przestraszony); Krata: Żelazna krata (+2 zamknięcia na falę); Wnyki: Zębate (złapany krwawi przez 3 s). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
  },
  "k_junk": {
   "name": "Graciarnia",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
   "tag": "mimiki",
   "tool": true,
@@ -545,16 +726,43 @@
  },
  "k_gallery": {
   "name": "Galeria",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
   "tag": "obrazy i lustra",
   "tool": true,
   "rk": "gallery",
-  "desc": "Galeria (komnata): Portret, Oczy i Lustro w tym pokoju mają cechę 3. poziomu bez ulepszania: Portret: Całun grozy (portret straszy cały pokój); Oczy: Wszystkowidzące (samotny albo zgubiony boi się 3 razy bardziej); Lustro: Krzywe zwierciadło (lustro straszy cały pokój). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "Galeria (komnata): Portret, Oczy, Lustro i Fałszywe przejście w tym pokoju mają cechę 3. poziomu bez ulepszania: Portret: Całun grozy (portret straszy cały pokój); Oczy: Wszystkowidzące (samotny albo zgubiony boi się 3 razy bardziej); Lustro: Krzywe zwierciadło (lustro straszy cały pokój); Fałszywe przejście: Labirynt (zgubienie trwa 18 s). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_lab": {
+  "name": "Laboratorium",
+  "cost": 10,
+  "slot": "roomkind",
+  "tag": "wyziewy, woda, pioruny",
+  "tool": true,
+  "rk": "lab",
+  "desc": "Laboratorium (komnata): Wyziewy, Zalewnia i Runa piorunów w tym pokoju mają cechę 3. poziomu bez ulepszania: Wyziewy: Gęste (chmura trzyma się 8 s); Zalewnia: Topiel (wszyscy w pokoju są spowolnieni, dopóki w nim są); Runa piorunów: Burza (piorun przeskakuje też na 2 suchych (50%)). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_graveyard": {
+  "name": "Cmentarz",
+  "cost": 10,
+  "slot": "roomkind",
+  "tag": "nieumarli",
+  "tool": true,
+  "rk": "graveyard",
+  "desc": "Cmentarz (komnata): Szkielet, Zombie, Licz i Dzwon żałobny w tym pokoju mają cechę 3. poziomu bez ulepszania: Szkielet: Legion (składa się 2 razy w fali); Zombie: Epidemia (Zaraza przeskakuje na sąsiadów co 4 s); Licz: Filakteria (powalony licz nie dodaje głodu); Dzwon żałobny: Requiem (każdy, kto usłyszy dzwon, daje +0,5 Grozy). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+ },
+ "k_abyssgate": {
+  "name": "Wrota otchłani",
+  "cost": 10,
+  "slot": "roomkind",
+  "tag": "demony",
+  "tool": true,
+  "rk": "abyssgate",
+  "desc": "Wrota otchłani (komnata): Chochlik, Ogar piekielny, Kusicielka i Demon otchłani w tym pokoju mają cechę 3. poziomu bez ulepszania: Chochlik: Kleptoman (kradnie 2 przedmioty, okradziony jest Naznaczony); Ogar piekielny: Sfora (każdy inny ogar w lochu +25%); Kusicielka: Pocałunek (odwaga uwiedzionego -20% do końca fali); Demon otchłani: Pan otchłani (inne demony +25%). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
  },
  "k_nursery": {
   "name": "Pokój dziecięcy",
-  "cost": 12,
+  "cost": 10,
   "slot": "roomkind",
   "tag": "pozytywki",
   "tool": true,

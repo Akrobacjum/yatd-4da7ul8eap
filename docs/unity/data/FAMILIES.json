@@ -1,0 +1,114 @@
+{
+ "mech": {
+  "name": "Mechanizmy",
+  "items": [
+   "spikes",
+   "arrows",
+   "pendulum",
+   "snare",
+   "gate",
+   "trapdoor",
+   "cage",
+   "mimic"
+  ],
+  "color": "#c9d5e2",
+  "glyph": "⚙"
+ },
+ "fire": {
+  "name": "Ogień",
+  "items": [
+   "fire",
+   "powder",
+   "oilslick",
+   "tar"
+  ],
+  "color": "#ffa65c",
+  "glyph": "♨"
+ },
+ "alch": {
+  "name": "Alchemia",
+  "items": [
+   "miasma",
+   "flood",
+   "bolt"
+  ],
+  "color": "#9fe0c8",
+  "glyph": "⚗"
+ },
+ "haunt": {
+  "name": "Nawiedzenie",
+  "items": [
+   "portrait",
+   "eyes",
+   "mirror",
+   "creak",
+   "musicbox",
+   "falsedoor",
+   "ghost",
+   "shade"
+  ],
+  "color": "#a6e8ff",
+  "glyph": "✧"
+ },
+ "undead": {
+  "name": "Nieumarli",
+  "items": [
+   "bones",
+   "coffin",
+   "bell",
+   "skeleton",
+   "zombie",
+   "lich"
+  ],
+  "color": "#c9d4b0",
+  "glyph": "☠"
+ },
+ "beast": {
+  "name": "Bestie",
+  "items": [
+   "web",
+   "spider",
+   "bats",
+   "rats"
+  ],
+  "color": "#d4cbe8",
+  "glyph": "✳"
+ },
+ "green": {
+  "name": "Zielonoskórzy",
+  "items": [
+   "goblin",
+   "archer",
+   "shaman",
+   "ogre",
+   "sapper",
+   "warlord"
+  ],
+  "color": "#a7d060",
+  "glyph": "♣"
+ },
+ "demons": {
+  "name": "Demony",
+  "items": [
+   "imp",
+   "hound",
+   "siren",
+   "demon"
+  ],
+  "color": "#ff7a5a",
+  "glyph": "⛧"
+ },
+ "treasure": {
+  "name": "Skarby",
+  "items": [
+   "loot",
+   "lpotion",
+   "loot2",
+   "loot3",
+   "lcursed",
+   "bait"
+  ],
+  "color": "#f2b94b",
+  "glyph": "◆"
+ }
+}

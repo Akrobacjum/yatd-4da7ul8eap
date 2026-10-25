@@ -7,10 +7,10 @@
   function saveUI() { try { localStorage.setItem('yatd12-ui', JSON.stringify(UI)); } catch (e) {} }
   // 1.03: every further loot of the same kind already lying in the dungeon makes the next one 25% dearer (author's run: 223
   // Relikwie at 10 each). Loot the heroes dropped does not count; what you paid comes back when you take it off.
-  const LOOT_STEP = 1.25;
+  const LOOT_STEP = 1.15;   // 1.26: 1,25 -> 1,15 (greed builds were the weakest)
   const lootCount = t => { let n = 0; if (fl) fl.items.forEach(it => { if (it.type === t && !it.dropped) n++; }); return n; };
   const costOf = t => MODES[t] ? 0 : TOOLS[t] ? toolCost(t) : BUILDINGS[t] ? Math.ceil(ITEMS[t].cost * mods.buildingCost) : LOOT_KIND[t] ? Math.ceil(ITEMS[t].cost * Math.pow(LOOT_STEP, lootCount(t)) - 1e-9) : ITEMS[t].cost;
-  const upgCost = it => Math.ceil(ITEMS[it.type].cost * UPG_COST[(it.lvl || 1) + 1]);
+  const upgCost = it => Math.ceil(ITEMS[it.type].cost * UPG_COST[(it.lvl || 1) + 1] * (1 - (mods.upgDisc || 0)));   // 1.26 Kuźnia ciemności
   // v14.1: the tray is one row scrolled sideways; each tab remembers where it was scrolled to
   const trayScroll = {}; let trayTab = null;
   // 1.15: a komnata opens once one of its family is unlocked (nothing to make better before that)
@@ -40,6 +40,7 @@
         b.type = 'button'; b.className = 'tab'; b.id = 'tab-' + tb.id; b.setAttribute('role', 'tab'); b.textContent = tb.label;
         b.addEventListener('click', () => {
           if (trayTab) trayScroll[trayTab] = tray.scrollLeft; tab = tb.id; try { localStorage.setItem('yatd-tab', tab); } catch (e) {} updateTray();
+          if (tb.id === 'dungeon' && run) { const fl2 = Object.keys(FAMILIES).filter(f => run.famLv && run.famLv[f]); setHint('Loch: kopanie, przejścia, komnaty i typy pokoi. Rodziny: ' + (fl2.length ? fl2.map(f => FAMILIES[f].name + ' ' + run.famLv[f]).join(', ') : 'jeszcze żadna nie ma poziomu (Runa rodu w sklepie)') + '.'); }   // 1.26
           if (tb.id === 'deck' && run) setHint('Talia: ' + run.deck.length + ' z ' + run.deckSize + ' kart. Stuknij kartę, żeby ją przeczytać albo sprzedać (sprzedaż tylko między falami).');
         });
         tabs.appendChild(b);
@@ -47,7 +48,8 @@
       ITEM_ORDER.forEach(t => {
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'item' + (TOOLS[t] ? ' tool' : ''); b.id = 'item-' + t;
-        b.innerHTML = '<span class="top">' + ICONS[t] + '<span class="cost"></span></span><span class="nm"></span><span class="sl"></span>';
+        if (ART.has(t)) { b.classList.add('art'); b.innerHTML = '<span class="scene"><img alt="" draggable="false"><span class="cost"></span></span><span class="nm"></span><span class="sl"></span>'; }   // 1.26: a painted scene (its picture comes when the tile is first shown)
+        else b.innerHTML = '<span class="top">' + (ICONS[t] || genIcon(t)) + '<span class="cost"></span></span><span class="nm"></span><span class="sl"></span>';
         b.querySelector('.nm').textContent = ITEMS[t].name;
         if (ITEMS[t].name.length >= 9) b.classList.add('longnm');
         b.querySelector('.sl').textContent = ITEMS[t].tag;
@@ -112,7 +114,7 @@
     ITEM_ORDER.forEach(t => {
       const b = $('#item-' + t);
       b.hidden = !cur.items.includes(t) || !onbOk(t) || (cs && !cs.items.includes(t));
-      if (!b.hidden) b.style.setProperty('--d', String(Math.min(9, shown++)));
+      if (!b.hidden) { b.style.setProperty('--d', String(Math.min(9, shown++))); if (b.classList.contains('art') && !b.dataset.art) { b.dataset.art = '1'; b.querySelector('.scene img').src = ART.tile(t); } }
       const cst = b.querySelector('.cost');
       cst.textContent = MODES[t] ? '' : String(costOf(t)); cst.classList.toggle('nocost', !!MODES[t]);
       const locked = !run || !isOpenT(t);
@@ -140,7 +142,8 @@
     if (I.tag) box.appendChild(el('div', 'tg', I.tag));
     { const lb = effWords(t); if (lb.length) { const r = el('div', 'tlb'); lb.forEach(w => r.appendChild(el('span', w === 'Rani' ? 'hurt' : 'scare', w))); box.appendChild(r); } }   // 1.24 (B, P1-4)
     box.appendChild(el('p', null, I.desc));
-    if (LOOT_KIND[t]) { const n = lootCount(t); box.appendChild(el('div', 'tg', 'Każdy kolejny taki łup w lochu: +25% ceny' + (n ? ' (leży już: ' + n + ', bazowo ' + I.cost + ')' : '') + '.')); }
+    if (FAMILY_OF[t] && FAMILIES[FAMILY_OF[t]]) { const f = FAMILY_OF[t], lv = (run && run.famLv && run.famLv[f]) || 0; box.appendChild(el('div', 'tg', 'Rodzina: ' + FAMILIES[f].glyph + ' ' + FAMILIES[f].name + (lv ? ' (poziom ' + lv + ': +' + 8 * lv + '% mocy)' : ' (Runa rodu ze sklepu ją wzmocni)'))); }   // 1.26
+    if (LOOT_KIND[t]) { const n = lootCount(t); box.appendChild(el('div', 'tg', 'Każdy kolejny taki łup w lochu: +15% ceny' + (n ? ' (leży już: ' + n + ', bazowo ' + I.cost + ')' : '') + '.')); }
     if (run && KINDS[t] && run.unlocked.has(t) && !isOpenT(t)) box.appendChild(el('div', 'tw', 'Zablokowana: najpierw odblokuj ' + KIND_INFO[KINDS[t]].items.map(x => ITEMS[x].name).join(' albo ') + ' (kartą ze sklepu).'));
     else if (run && !MODES[t] && !run.unlocked.has(t)) box.appendChild(el('div', 'tw', 'Zablokowany: odblokujesz go kartą ze sklepu (na stałe, także w kolejnych runach).'));
     box.hidden = false; box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
@@ -161,16 +164,17 @@
   }
   // The deck tab: one tile per slot, filled or empty. Rebuilt only when the deck changes.
   function renderDeckTiles(show) {
-    const tray = $('#tray'), k = show ? run.deck.join(',') + '|' + (run.fused || []).join(',') + '|' + run.deckSize + '|' + JSON.stringify(run.stacks || {}) + '|' + (run.stash || []).join(',') + '|' + (run.freePicks || 0) + '|' + (fl ? fl.phase : '') : '';
+    const tray = $('#tray'), k = show ? run.deck.join(',') + '|' + (run.fused || []).join(',') + '|' + run.deckSize + '|' + JSON.stringify(run.stacks || {}) + '|' + (run.stash || []).join(',') + '|' + (run.freePicks || 0) + '|' + (run.heartPicks || []).length + '|' + (fl ? fl.phase : '') : '';
     if (tray.dataset.deck === k) return;
     tray.dataset.deck = k;
     tray.querySelectorAll('.dslot').forEach(e => e.remove());
     if (!show) return;
     const raidNow = !!(fl && fl.phase === 'raid');   // v14: during a wave the shop and the stash are out of reach and out of sight
     if (!raidNow) { const b = document.createElement('button'), build = fl && fl.phase === 'build';   // the shop tile: back to the shop screen while building
-      b.type = 'button'; b.className = 'item dslot shoptile' + (run.freePicks > 0 && build ? ' gift' : ''); b.id = 'tile-shop';
+      const hp = (run.heartPicks || []).length;
+      b.type = 'button'; b.className = 'item dslot shoptile' + ((run.freePicks > 0 || hp) && build ? ' gift' : '') + (hp && build ? ' heartgift' : ''); b.id = 'tile-shop';
       b.innerHTML = '<span class="dtag"></span><span class="dnm">Sklep</span>';
-      b.querySelector('.dtag').textContent = !build ? 'między falami' : run.freePicks > 0 ? 'gratis: ' + run.freePicks : 'wróć do sklepu';
+      b.querySelector('.dtag').textContent = !build ? 'między falami' : hp ? '♥ Dar serca' + (run.freePicks > 0 ? ' + ' + run.freePicks : '') : run.freePicks > 0 ? 'gratis: ' + run.freePicks : 'wróć do sklepu';
       b.disabled = !build; b.addEventListener('click', () => { if (!modalOpen && build) openModal({ type: 'shop' }); });
       tray.appendChild(b); }
     for (let i = 0; i < run.deckSize; i++) {
@@ -178,6 +182,7 @@
       b.type = 'button'; b.className = 'item dslot ' + (u ? 'rar-' + u.rar : 'empty') + (u && isFused(u.id) ? ' fused' : '');   // 1.24: ★
       if (u) {
         b.innerHTML = '<span class="dtag"></span><span class="dnm"></span>';
+        { const ca = ART.cardImg(u.id); if (ca) { b.prepend(ca); b.classList.add('hasart'); } }   // 1.26: the card's picture on its tile
         b.querySelector('.dtag').textContent = u.grows ? 'rośnie: ' + (run.stacks[u.id] || 0) : u.tag; b.querySelector('.dnm').textContent = cardName(u.id);
         b.setAttribute('aria-label', u.name + ', ' + RAR_NAME[u.rar] + ' karta. ' + u.text);
         b.addEventListener('click', () => { if (!modalOpen && run) { if (fl && fl.phase === 'raid' && !paused) setPaused(true); openModal({ type: 'card', idx: i }); } });
@@ -275,15 +280,21 @@
     { const rk = rankOf(tot); setText('h-rank', raidNow ? '' : rk.next ? rk.name + ' · ' + rk.next[1] + ' za ' + Math.ceil(Math.max(0, rk.next[0] - tot)) : 'ranga: ' + rk.name); }   // the run's harvest gives the rank (hidden in a wave: the formula needs the room)
     // Prototype 1.01: the heart takes its share of THIS wave's Esencja first. In a wave the bar fills as it eats; between waves
     // the row says how much the next wave has to bring.
+    // 1.26: the heart's row: the hunger (red) until it is fed, then the Nasycenie to the next level (gold); the thin gold line under it
+    // is the Nasycenie at any time; the small number is the heart's level. In the build: what it wants and what the purse covers.
     { const need = hungerNeed(run.wave), inW = fl.phase === 'raid' || fl.phase === 'summary', fed = inW ? Math.min(fl.fed || 0, need) : 0, ok = !!need && fed >= need - 0.001;
-      const risk = !inW && hungerRisk(), last = run.waves[run.waves.length - 1];   // 1.24 (D, P0-2): the build phase warns
-      const row = $('#h-hrow'), k = (need ? 1 : 0) + '|' + (ok ? 1 : 0) + '|' + Math.floor(fed) + '|' + need + '|' + (inW ? 1 : 0) + '|' + (risk ? 1 : 0);
+      const risk = !inW && hungerRisk(), last = run.waves[run.waves.length - 1], purse = Math.floor(fl.essence);
+      const L = run.heartLv || 0, s0 = heartLvAt(L), s1 = heartLvAt(L + 1), sf = clamp(((run.satiety || 0) - s0) / Math.max(1, s1 - s0), 0, 1);
+      const row = $('#h-hrow'), k = (need ? 1 : 0) + '|' + (ok ? 1 : 0) + '|' + Math.floor(fed) + '|' + need + '|' + (inW ? 1 : 0) + '|' + (risk ? 1 : 0) + '|' + L + '|' + Math.floor(run.satiety || 0) + '|' + (inW ? 0 : purse);
       if (hudCache.hunger !== k) {
         hudCache.hunger = k;
         row.classList.toggle('off', !need); row.classList.toggle('fed', ok); row.classList.toggle('hungry', !!need && !ok && inW); row.classList.toggle('warn', !!risk);
-        row.title = risk ? 'Głód: jeśli ta fala da mniej niż ' + need + ' Esencji, serce zje kryształ' + (last ? ' (ostatnia fala dała ' + Math.round(last.score) + ')' : '') + '.' : 'Głód serca: po fali serce zje tyle Esencji, inaczej zje kryształ';   // 1.24 (D)
-        $('#h-hfill').style.width = (need ? Math.min(1, fed / need) * 100 : 0).toFixed(1) + '%';
-        $('#h-hlabel').textContent = !need ? 'serce głodne od fali 2' : ok ? 'serce syte' : inW ? 'serce ' + Math.floor(fed) + '/' + need : risk ? '⚠ ' + need + ' z fali albo kryształ' : 'serce chce ' + need + ' z fali';   // 1.24 (D): the warning
+        row.title = risk ? 'Głód: ' + need + ' Esencji. Fala da mniej: serce zabierze brak z sakiewki (masz ' + purse + '), a gdy nie wystarczy, pęknie kryształ' + (last ? ' (ostatnia fala dała ' + Math.round(last.score) + ')' : '') + '.' : 'Serce: stuknij, żeby zobaczyć głód, Nasycenie i Ofiarę';
+        $('#h-hfill').style.width = (need ? (ok ? sf : Math.min(1, fed / need)) * 100 : 0).toFixed(1) + '%';
+        $('#h-sfill').style.width = (sf * 100).toFixed(1) + '%';
+        $('#h-hlv').textContent = L ? String(L) : '';
+        $('#h-hlabel').textContent = !need ? (L ? 'serce poz. ' + L : 'serce głodne od fali 2') : ok ? 'syte · Danina ' + Math.round(titheNow() * 100) + '% → poz. ' + (L + 1) : inW ? 'serce ' + Math.floor(fed) + '/' + need
+          : purse >= need ? 'serce chce ' + need + ' · zapas ' + purse : risk ? '⚠ ' + need + ' · zapas ' + purse : 'serce chce ' + need + ' · zapas ' + purse;
       }
     }
     const out = fl.party && fl.party.carrierId >= 0 && fl.phase === 'raid' ? 1 : 0;
@@ -466,7 +477,7 @@
     const card = $('#card'); card.innerHTML = ''; const scr = m.type === 'shop' || m.type === 'wave' || m.type === 'end', top = m.type === 'breach'; card.className = 'card enter' + (scr ? ' screen' : '') + (top ? ' topsheet' : '');
     card.scrollTop = 0; $('#overlay').classList.toggle('screenbg', scr); $('#overlay').classList.toggle('top', top);   // 1.01: the breach sheet sits at the top, the map stays in view
     clearTimeout(openModal.t); openModal.t = setTimeout(() => card.classList.remove('enter'), 900);   // the entrance plays once, not on every tap inside
-    ({ start: renderStart, menu: renderMenu, settings: renderSettings, tests: renderTests, upgrade: renderUpgrade, wave: renderWave, over: renderOver, name: renderName, unspent: renderUnspent, end: renderEnd, survey: renderSurvey, victory: renderVictory, card: renderCard, item: renderItem, breach: renderBreach, hungerTip: renderHungerTip, onb: renderOnb, news: renderNews, shop: renderShop, hero: renderHero, esencja: renderEsencja, keys: renderKeys })[m.type](card, m);
+    ({ start: renderStart, menu: renderMenu, settings: renderSettings, tests: renderTests, upgrade: renderUpgrade, wave: renderWave, over: renderOver, name: renderName, unspent: renderUnspent, end: renderEnd, survey: renderSurvey, victory: renderVictory, card: renderCard, item: renderItem, breach: renderBreach, hungerTip: renderHungerTip, onb: renderOnb, news: renderNews, shop: renderShop, hero: renderHero, esencja: renderEsencja, keys: renderKeys, heart: renderHeart, branch: renderBranch })[m.type](card, m);
     $('#overlay').hidden = false;
   }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -582,9 +593,9 @@
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.25.1 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.26 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
-    card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
+    card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Głodne serce zabiera z sakiewki, syte rośnie i daje karty. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
     if (rec.best || rec.runs) card.appendChild(el('p', 'note', 'Twój rekord: ' + Math.round(rec.best) + ' Esencji zebranej w runie (ranga: ' + rankOf(rec.best).name + ')' + (rec.wave ? ' · najdalej: fala ' + rec.wave : '') + (rec.runs ? ' · wygrane: ' + rec.wins + ' z ' + rec.runs : '') + '.'));
     const lab = el('label', 'field'); lab.textContent = 'Kto testuje (opcjonalnie)';
@@ -623,18 +634,34 @@
      'Przytrzymaj palec na mapie: gra przyspiesza, checków nie ma, a pułapki biją same: z zapamiętaną siłą albo jak draśnięcie. Puścisz palec i checki wracają.',
      'Gdy drużyna rozejdzie się po dużym lochu za daleko, ekran dzieli się na dwie części, po jednej dla każdej grupy (wyłączysz to w Ustawieniach). Przeciągnięcie mapy w fali daje na chwilę jeden ekran i wolną kamerę.',
      'Strach wypędza bohaterów; rany i śmierć towarzyszy też straszą, a strach powoli opada. Niosący kryształ rzuca go ze strachu. Uciekinier opowie innym o pułapkach, które go zraniły albo przestraszyły (najwyżej o 3, plotka żyje 2 fale), i może wrócić z blizną. Uwięzionego w klatce, którego nikt nie uwolni, klatka zabija.',
-     'Bohaterowie mają 6 klas i każdą poznasz po figurce: hełm, tarcza i miecz (wojownik), kaptur i sztylet (złodziej), aureola i szata z krzyżem (kapłan), spiczasty kapelusz i laska (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). W jednej drużynie nigdy nie ma dwóch tej samej klasy. Bard krzepi pieśnią i woła zgubionych, barbarzyńca wpada w furię i rozbija skrzynie i budowle. Sakiewka przy bohaterze znaczy łowcę skarbów.',
+     'Bohaterowie mają 10 klas i każdą poznasz po figurce: hełm, tarcza i miecz (wojownik), kaptur i sztylet (złodziej), aureola i szata z krzyżem (kapłan), spiczasty kapelusz i laska (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). Od fali 4 przychodzą też paladyn (uspokaja drużynę, bije nieumarłych i demony, nikogo nie zostawia) i tropiciel (wykrywa pułapki podłogowe i potwory obok, strzela do potworów), od fali 6 alchemik (zdejmuje statusy, rzuca flaszki). Kultysta przychodzi tylko z omenem Pielgrzymka: pije Esencję z serca. Bard krzepi pieśnią i woła zgubionych, barbarzyńca wpada w furię i rozbija skrzynie i budowle. Sakiewka przy bohaterze znaczy łowcę skarbów.',
+     'Statusy (ikonki nad bohaterem): spowolnienie, unieruchomienie, podpalenie, krwawienie, trucizna, olej, woda, zaraza, znak, zew, oszołomienie. Opis elementu mówi, co nakłada. Status i właściwe obrażenia dają reakcję: olej + ogień = Pożar, trucizna + ogień = Detonacja, woda + piorun = Porażenie, woda + ogień = Para. Reakcja daje Grozę i krok combo.',
+     'Rodziny: każdy element należy do jednej (Mechanizmy, Ogień, Alchemia, Nawiedzenie, Nieumarli, Bestie, Zielonoskórzy, Demony, Skarby). W sklepie zawsze leży Runa rodu: podnosi poziom rodziny (do 5), a każdy poziom to +8% mocy i -4% odnowienia jej elementów. Poziom rodziny widać w opisie każdego jej elementu (przytrzymaj kafelek).',
+     'Potwory nie giną na dobre: powalony leży do końca fali i wstaje w następnej budowie, ale za każdego powalonego serce zje o 1 Esencję więcej w następnej fali. Bohater zabity przez potwora karmi serce (Uczta).',
+     'Omeny: fale 3, 6 i 8 mają zasadę specjalną (np. Oblężenie, Elita, Pośpiech, Mgła wojny), widoczną przed falą. Omen, który utrudnia, daje nagrodę; ten, który ułatwia, podnosi głód.',
+     'Ulepszenie elementu na 3. poziom pyta o drogę: A albo B, dwie różne cechy (przy wyborze widać obie).',
      'Część pułapek nie rani, tylko straszy: portret, oczy, kości, lustro, zawiasy, trumna, pozytywka (w zakładce Pułapki, za raniącymi), a w zakładce Potwory duch, cień i nietoperze. Przestraszony uciekinier, który widział łup, opowie o nim i następna fala przyjdzie bardziej chciwa.',
      'Rany mają typ: kłute, obuchowe, ogień i trucizna. Klasa i ciało bohatera zmieniają obrażenia, a fobie podwajają strach. Stuknij bohatera (w fali albo na liście u góry), żeby zobaczyć jego kartę.',
      'Rany i strach to Groza. Dopóki trwa combo (różne pułapki pod rząd, każda w ciągu 3 s od poprzedniej; gdy nic się nie dzieje, ten czas płynie wolniej), Groza się zbiera, a każdy krok combo wzmacnia rany i strach kolejnych pułapek o 12%. Gdy combo się skończy, Groza wypłaca się jako Esencja: Groza × Chciwość (łup, rozległy loch, karty) × Combo. Chciwość rośnie coraz wolniej: im jej więcej, tym mniej dokłada kolejny łup. Esencję wydasz jeszcze w tej samej fali.',
-     'Od fali 2 serce bierze pierwsze porcje Esencji z każdej fali, aż się naje (♥ u góry pokazuje ile). Fala da za mało: serce zje to, co dostało, i kryształ. Trzymaj bohaterów w lochu jak najdłużej: wypędzeni od razu nie nakarmią serca. Limitu Esencji nie ma.',
+     'Od fali 2 serce bierze pierwsze porcje Esencji z każdej fali, aż się naje (♥ u góry pokazuje ile). Syte serce bierze Daninę (30% dalszych wypłat) w Nasycenie: pełne Nasycenie to poziom serca i darmowa karta z rzędu Dar serca (poziomy 2, 4, 6 dają miejsce w talii, 3, 5, 7 mogą odrodzić kryształ). Fala da za mało: po fali serce zabiera brak z sakiewki, a kryształ pęka dopiero, gdy sakiewka nie wystarczy. W budowie możesz też złożyć Ofiarę (Esencja w Nasycenie 1:1, do 40 na przerwę). Trzymaj bohaterów w lochu jak najdłużej: wypędzeni od razu nie nakarmią serca.',
      'Za każdą przetrwaną falę (nawet z utratą kryształu) dostajesz darmową kartę, po bossie legendarną w ofercie. Wybierasz ją w sklepie po fali; tam też kupisz karty za Esencję, odświeżysz ofertę, sprzedasz kartę albo odłożysz ją do schowka. Kryształu nie da się odkupić.',
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.25.1'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.26'));
     const ul2 = el('ul', 'conseq');
     [
+     '1.26: serce zabiera. Głodne serce po fali bierze brak z Twojej sakiewki, a kryształ pęka dopiero, gdy sakiewka nie wystarczy. Syte serce bierze Daninę (30% wypłat) w Nasycenie i rośnie poziomami. Stuknij serce u góry: zasady, z czego jest głód i co da następny poziom.',
+     '1.26: Dary serca są kartami. Po każdym poziomie serca w sklepie czeka rząd Dar serca: 3 karty grupy Serce, jedna za darmo. Poziomy 2, 4 i 6 dają miejsce w talii, 3, 5 i 7 mogą odrodzić kryształ (Odrost). Ofiara w budowie: Esencja w Nasycenie 1:1.',
+     '1.26: 10 nowych pułapek (wahadło, wnyki, wyziewy, plama oleju, runa piorunów, zalewnia, dzwon żałobny, fałszywe przejście, kocioł smoły, przynęta) i 10 nowych potworów (szkielet, zombie, licz, chochlik, ogar piekielny, kusicielka, demon otchłani, goblin saper, herszt, rój szczurów). Odblokujesz je kartami.',
+     '1.26: statusy i reakcje. Elementy nakładają stany (ikonki nad bohaterem), a status z właściwymi obrażeniami daje reakcję: Pożar, Detonację, Porażenie, Parę. Nowy typ obrażeń: porażenie.',
+     '1.26: rodziny i Runy rodów. Każdy element należy do rodziny, a Runa rodu ze sklepu wzmacnia całą rodzinę (do 5 poziomów). Trzy nowe komnaty: Laboratorium, Cmentarz, Wrota otchłani.',
+     '1.26: 3. poziom z wyborem A albo B dla każdego elementu, także starych.',
+     '1.26: potwory się odradzają. Powalony potwór wstaje w następnej budowie, a serce zje za niego o 1 Esencję więcej. Bohater zabity przez potwora karmi serce (Uczta).',
+     '1.26: nowi bohaterowie. Paladyn i tropiciel od fali 4, alchemik od fali 6, kultysta z omenem Pielgrzymka. 4 nowe cechy (przesądny, ciekawski, lojalny, zapaleniec) i 4 fobie (umarli, otchłań, hałas, roje). Serce krzyczy na kradnących, a zgraja potworów odstrasza drużynę od pokoju.',
+     '1.26: omeny fal 3, 6 i 8 (Oblężenie, Elita, Inkwizycja, Saperzy, Pośpiech, Krwawy księżyc, Złoty szał, Mgła wojny, Pielgrzymka, Noc strachu).',
+     '1.26: 34 nowe karty, w tym mnożniki Esencji (Koronacja strachu, Krwawa łaźnia, Przeklęta korona...), karty rosnące, Kopista i Lustro duszy (kolejność talii ma znaczenie: przesuniesz kartę w jej opisie).',
+     '1.26: nowa ekonomia. Tańsze elementy i budowle, dochód 6 po fali, start z 25 Esencji. Ilustracje kart, ikonki statusów, nowe kafelki i więcej detalu w pikselowej grafice; posąg jest teraz trójwymiarowy jak inne obiekty.',
      '1.25.1: łagodniejszy początek runu. Fale 1-4 w połowie drogi między 1.24 a wcześniejszymi wersjami (fala 1 jak dawna druga), od fali 5 bez zmian. Pierwszy run z przewodnikiem ma znowu dawną, łagodną krzywą.',
      '1.25.1: pytanie o niewydaną Esencję podpowiada, co kupić: jeden albo dwa elementy z powodem (np. pasuje na trasę bohaterów). Stuknięcie wybiera element, a Buduj dalej podświetla podpowiedzi w pasku.',
      '1.25: telefon, tablet i komputer. Na tablecie i dużym ekranie interfejs jest większy, a na ekranie szerszym niż wysokim budowa jest w panelu po prawej, HUD w lewym górnym rogu mapy, a mapa zajmuje resztę.',
@@ -908,7 +935,7 @@
     const locked = shuffle(UPGRADES.filter(u => u.kind === 'unlock' && !run.unlocked.has(u.unlock) && onbOk(u.unlock)));   // 1.12: nothing from a later run
     const f = 0.75 * Math.max(0, run.wave - 1), rareP = r >= 2 ? 1 : Math.min(0.6, 0.15 + 0.02 * f), legP = r >= 3 ? 1 : r >= 2 ? Math.min(0.4, 0.15 + 0.01 * f) : Math.min(0.15, 0.03 + 0.005 * f);
     const rarOk = u => u.rar === 'c' || (u.rar === 'r' && Math.random() < rareP) || (u.rar === 'l' && Math.random() < legP);   // the more famous the dungeon, the better the cards
-    const pool = UPGRADES.filter(u => u.kind !== 'unlock' && reqOk(u) && (ONB_CARD[u.id] || 1) <= stageOf() && !(u.unique && has(u.id)) && !isFused(u.id) && rarOk(u));   // 1.24: no third copy of a fused ★ card
+    const pool = UPGRADES.filter(u => u.kind !== 'unlock' && !u.heartOnly && reqOk(u) && (ONB_CARD[u.id] || 1) <= stageOf() && !(u.unique && has(u.id)) && !isFused(u.id) && rarOk(u));   // 1.26: Odrost only in the Dar serca row   // 1.24: no third copy of a fused ★ card
     const picks = [];
     if (r === 3) { const leg = shuffle(pool.filter(u => u.rar === 'l')); if (leg.length) picks.push(leg[0]); }
     if (locked.length && (r >= 2 || Math.random() < 0.5)) picks.push(locked[0]);
@@ -918,24 +945,38 @@
   }
   // v14: the shop between waves (like Balatro): free picks for waves held and points thresholds, four cards for Esencja,
   // a reroll that gets dearer (back to the base price every wave), selling, and a stash of inactive cards.
-  const SHOP_PRICE = { c: 6, r: 10, l: 16 }, STASH_BASE = 3;   // Prototype 1.01: higher prices
+  const SHOP_PRICE = { c: 5, r: 9, l: 14 }, STASH_BASE = 3;   // Prototype 1.01: higher prices; 1.26: 5 / 9 / 14 (less Esencja in the game)
   const stashCap = () => STASH_BASE + (mods.stashPlus || 0);
-  const priceOf = u => Math.max(1, Math.round((u.kind === 'unlock' ? 8 : SHOP_PRICE[u.rar]) * (1 - (mods.shopDisc || 0))));
+  const priceOf = u => Math.max(1, Math.round((u.kind === 'unlock' ? 7 : SHOP_PRICE[u.rar]) * (1 - (mods.shopDisc || 0))));
   const sellOf = u => Math.round(RAR_SELL[u.rar] * (mods.sellK || 1));
   const sellFor = id => UPG[id] ? sellOf(UPG[id]) * (isFused(id) ? 2 : 1) : 0;   // 1.24: a fused ★ card sells for two
   const fuses = u => !!u && u.kind === 'card' && !u.unique && ownsCard(u.id) && !isFused(u.id);   // 1.24: taking it fuses it with the one you have
   const unfuse = id => { if (run.fused) run.fused = run.fused.filter(x => x !== id); };   // 1.24: sold: the ★ goes with it
   const cardName = id => (isFused(id) ? '★ ' : '') + (UPG[id] ? UPG[id].name : id);   // 1.24
-  const rerollCost = () => run.shop && run.shop.rerolls < (mods.freeReroll || 0) ? 0 : 3 + (run.shop ? run.shop.rerolls - (mods.freeReroll || 0) : 0);
+  const rerollCost = () => run.shop && run.shop.rerolls < (mods.freeReroll || 0) ? 0 : 2 + (run.shop ? run.shop.rerolls - (mods.freeReroll || 0) : 0);   // 1.26: 2, 3, 4...
   function shopRoll() {
     const owed = run.shopOwed || 1, ids = upgradePicks(owed).map(u => u.id);
-    const more = upgradePicks(1).map(u => u.id).filter(id => !ids.includes(id));
-    if (more.length) ids.push(more[0]);
-    return ids.filter(id => !(UPG[id].unique && (run.stash || []).includes(id)) && !isFused(id)).slice(0, 4);   // 1.24: isFused
+    const n = 4 + (mods.shopPlus || 0);   // 1.26 Wiedza mroku: one more
+    for (let k = 0; k < 6 && ids.length < n; k++) { const more = upgradePicks(1).map(u => u.id).filter(id => !ids.includes(id)); if (more.length) ids.push(more[0]); }
+    return ids.filter(id => !(UPG[id].unique && (run.stash || []).includes(id)) && !isFused(id)).slice(0, n);   // 1.24: isFused
+  }
+  // 1.26 (10.2) Runa rodu: one in every shop, a family weighted 3 when one of its elements stands in the dungeon (else 1), never one at 5
+  function runeRoll() {
+    const has = new Set(); if (fl) fl.items.forEach(it => { if (FAMILY_OF[it.type] && !it.temp && !it.dropped) has.add(FAMILY_OF[it.type]); });
+    const fs = Object.keys(FAMILIES).filter(f => (run.famLv[f] || 0) < RUNE_MAX && (stageOf() >= 2 || has.has(f))), w = fs.map(f => has.has(f) ? 3 : 1), tot = w.reduce((a, b) => a + b, 0);
+    let x = Math.random() * tot; for (let i = 0; i < fs.length; i++) { x -= w[i]; if (x <= 0) return fs[i]; }
+    return fs[0] || null;
+  }
+  function runeBuy() {
+    const f = run.shop && run.shop.rune; if (!f || !fl || fl.phase !== 'build') return 'no';
+    const lv = run.famLv[f] || 0, c = runePrice(lv); if (fl.essence < c) return 'ess';
+    fl.essence -= c; run.famLv[f] = lv + 1; run.shop.rune = null; (run.runes = run.runes || []).push(f); fl.stats.runes = (fl.stats.runes || 0) + 1;
+    run.essence = fl.essence; fl.threatDirty = true; updateTray(); saveRunSoon(); return 'ok';
   }
   function shopRefresh(fresh) {
     const same = run.shop && run.shop.wave === run.wave;
-    run.shop = { wave: run.wave, ids: shopRoll(), rerolls: same && !fresh ? run.shop.rerolls : 0, ad: same && !fresh ? run.shop.ad : false };
+    run.famLv = run.famLv || {};
+    run.shop = { wave: run.wave, ids: shopRoll(), rerolls: same && !fresh ? run.shop.rerolls : 0, ad: same && !fresh ? run.shop.ad : false, rune: runeRoll() };
     if (fresh) run.shopOwed = 1;
     run.stash = run.stash || [];
   }
@@ -951,11 +992,42 @@
     run.essence = fl.essence; recomputeMods(); updateTray(); saveRunSoon();
     return toStash ? 'stash' : fz ? 'fused' : 'ok';
   }
+  // 1.26 Dar serca (4.5): every heart level waits in run.heartPicks for a free card from the Serce group: 3 to choose from (Dziesięcina:
+  // 4), rarity 55 / 35 / 10%; at levels 3, 5, 7 (and every second after) one of them is Odrost when a crystal is missing. A pick waits
+  // (in the shop) until taken; the offer of a pick stays the same once rolled (pk.ids).
+  function heartOffer() {
+    const pk = run && run.heartPicks && run.heartPicks[0]; if (!pk) return null;
+    const regrow = heartRegrowLv(pk.lv) && run.crystals < run.maxCrystals;
+    if (pk.ids && (pk.regrow === regrow)) return pk;
+    const has = id => run.deck.includes(id) || (run.stash || []).includes(id);
+    const pool = UPGRADES.filter(u => u.group === 'heart' && !u.heartOnly && u.kind !== 'unlock' && reqOk(u) && !(u.unique && has(u.id)) && !isFused(u.id));
+    const n = 3 + (mods.titheChoice || 0), ids = [];
+    for (let k = 0; k < n; k++) {
+      const r = Math.random(), want = r < 0.55 ? 'c' : r < 0.9 ? 'r' : 'l';
+      const left = pool.filter(u => !ids.includes(u.id)), of = left.filter(u => u.rar === want);
+      const u = (of.length ? pick(of) : left.length ? pick(left) : null); if (u) ids.push(u.id);
+    }
+    if (regrow) ids.splice(0, ids.length >= n ? 1 : 0, 'regrow');
+    pk.ids = ids; pk.regrow = regrow;
+    return pk;
+  }
+  function heartTake(i) {
+    const pk = heartOffer(); if (!pk || !fl || fl.phase !== 'build') return 'no';
+    const id = pk.ids[i], u = UPG[id]; if (!u) return 'no';
+    const fz = fuses(u), toS = u.kind === 'card' && !fz && run.deck.length >= run.deckSize;
+    if (toS && run.stash.length >= stashCap()) return 'full';
+    run.heartPicks.shift();
+    if (toS) { run.stash.push(id); run.upgrades.push(id); } else applyUpgrade(u);
+    (run.heartCards = run.heartCards || []).push(id);
+    fl.heartPick = { lv: pk.lv, took: id, offer: pk.ids.slice() }; fl.stats.heartPicks = (fl.stats.heartPicks || 0) + 1;
+    run.essence = fl.essence; recomputeMods(); updateTray(); saveRunSoon();
+    return toS ? 'stash' : fz ? 'fused' : 'ok';
+  }
   function shopReroll(ad) {
     if (!fl || fl.phase !== 'build') return false;
     if (ad) { if (run.shop.ad) return false; run.shop.ad = true; }
     else { const c = rerollCost(); if (fl.essence < c) return false; fl.essence -= c; run.shop.rerolls++; }
-    run.shop.ids = shopRoll(); run.essence = fl.essence; updateTray(); saveRunSoon(); return true;
+    run.shop.ids = shopRoll(); run.shop.rune = runeRoll(); run.essence = fl.essence; updateTray(); saveRunSoon(); return true;
   }
   function toStash(i) {
     if (run.stash.length >= stashCap() || !run.deck[i]) return false;
@@ -1034,6 +1106,27 @@
   // 1.05 (testers: the summary was a lot): one screen with what matters now: the harvest and the heart's share (the old reckoning
   // screen is folded in), Esencja, the heart, the crystals, the chart, three curiosities of the wave and the next party at a glance.
   // Where the Esencja came from, the hero list, the elements and the numbers sit under Szczegóły.
+  // 1.26: the heart's part of the wave summary: the purse it took from (an animated bar), the Danina, a new level, Odrodzenie, the theft near-miss
+  function heartLines(body, H) {
+    const s = fl.stats, box = el('div', 'heartsum'); box.id = 'wave-heart';
+    if (H && !H.fedWave && (H.tookPurse || 0) > 0) {
+      const p0 = Math.max(1, H.purse0 || 0), p1 = Math.max(0, p0 - (H.tookPurse || 0)) - (H.ate ? (H.lostPurse || 0) : 0);
+      const r = el('div', 'purse-take' + (H.ate ? ' ate' : '')), bar = el('div', 'pbar'), fill = el('i'); bar.appendChild(fill);
+      r.appendChild(el('span', null, H.ate ? '♥ Serce zjadło Twoje zapasy (' + Math.round(p0) + ') i kryształ' : '♥ Serce zabrało ' + fmtE(H.tookPurse) + ' z Twoich zapasów (' + Math.round(p0) + ' → ' + Math.round(Math.max(0, p1)) + ')'));
+      r.appendChild(bar); box.appendChild(r);
+      fill.style.width = '100%';
+      setTimeout(() => { fill.style.width = (100 * Math.max(0, p1) / p0).toFixed(1) + '%'; }, reduceMotion ? 0 : 450);
+    }
+    const bits = [];
+    if ((s.satietyGain || 0) >= 1) bits.push('Nasycenie +' + Math.round(s.satietyGain) + ' (Danina ' + fmtE(s.essTithe || 0) + ')');
+    if (s.heartUp) bits.push('serce urosło do poziomu ' + (run.heartLv || 0) + ': w sklepie czeka Dar serca');
+    if (s.revived) bits.push('powalone potwory wstaną: ' + s.revived + ' (+' + s.revived + ' do głodu następnej fali)');
+    if (s.feastPts >= 1) bits.push('Uczta: +' + fmtE(s.feastPts) + ' (zabici przez potwory)');
+    if (!fl.crystalLost && (s.stealMax || 0) >= 0.3) bits.push('bohaterowie byli ' + fmt2(Math.max(0, (1 - s.stealMax) * stealNeed())).replace(/,?0+$/, '') + ' s od kradzieży');
+    if (s.reactN) bits.push('reakcje: ' + Object.entries(s.reactions || {}).map(([k, v]) => REACTIONS[k].name + ' ' + v).join(', '));
+    if (bits.length) box.appendChild(el('p', 'note', bits.join(' · ') + '.'));
+    if (box.children.length) body.appendChild(box);
+  }
   const ITEM_GLYPH = {
     potion: '<path d="M9 2h6v2h-1v4.2l4.6 7.6A3.6 3.6 0 0 1 15.5 21h-7a3.6 3.6 0 0 1-3.1-5.2L10 8.2V4H9z"/>',
     charm: '<path d="M12 2l8 3v6c0 5-3.6 9-8 11-4.4-2-8-6-8-11V5z"/>',
@@ -1060,7 +1153,7 @@
     const ic = CLASS_ICON[type]; if (!ic) return '';
     return '<svg class="' + (cls || 'ci') + '" viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(' + ic.rot + ' 12 12)"><path fill-rule="evenodd" fill="' + color + '" d="' + ic.d + '"/></g></svg>';
   }
-  const DMG_SHORT = { pierce: 'kłute', blunt: 'obuch.', fire: 'ogień', poison: 'trucizna' };
+  const DMG_SHORT = { pierce: 'kłute', blunt: 'obuch.', fire: 'ogień', poison: 'trucizna', shock: 'porażenie' };
   // what a hero entry is weak to: class and (when known) body; the strongest first
   function weakOf(e, known) {
     const k = Object.assign({}, CLASS_RES[e.type] || {});
@@ -1069,6 +1162,12 @@
   }
   // one row of the next party: icon, name, class and level, character; what the class does; gear; weaknesses and what is known
   function nextRow(e) {
+    if (e.fog && !mods.revealAll) {   // 1.26 Mgła wojny: a shape in the fog
+      const r = el('div', 'np fog'); const ic = el('span', 'npi', '?'); r.appendChild(ic);
+      const l1 = el('div', 'np1'); l1.appendChild(el('b', null, '???')); l1.appendChild(el('small', null, ' ktoś w mgle')); r.appendChild(l1);
+      r.appendChild(el('div', 'np2', 'Omen Mgła wojny: klasa, poziom i sprzęt nieznane do startu fali.'));
+      return r;
+    }
     const T = HEROES[e.type], fem = e.female, kn = new Set(e.known || []), all = mods.revealAll;
     const r = el('div', 'np'); r.dataset.cls = e.type;
     const ic = el('span', 'npi'); ic.innerHTML = classIconSvg(e.type, T.color); r.appendChild(ic);
@@ -1134,14 +1233,14 @@
     const s = fl.stats, won = !!fl.victory, H = fl.hunger;
     lastWaveModal = m;
     if (won) card.classList.add('vic');
-    const heart = H ? Math.min(H.need, fl.fed || 0) : 0, ate = !!(H && !H.fed), mine = ate ? 0 : Math.max(0, fl.score - heart);
-    scrHead(card, waveName() + ' · ' + mmss(fl.time), won ? 'Zwycięstwo!' : fl.crystalLost ? 'Kryształ skradziony' : ate ? 'Serce zjadło kryształ' : 'Fala odparta', '+' + fmtE(fl.score), 'Esencji z fali', [fl.score, v => '+' + fmtE(v)]);
+    const heart = H ? Math.min(H.need, fl.fed || 0) : 0, ate = !!(H && !H.fed), mine = ate ? 0 : Math.max(0, fl.score - heart - ((H && H.tithe) || 0));   // 1.26: the purse's part and the Danina are not yours
+    scrHead(card, waveName() + ' · ' + mmss(fl.time), won ? 'Zwycięstwo!' : fl.crystalLost ? 'Kryształ skradziony' : ate ? 'Głód pękł kryształ' : H && H.tookPurse > 0 ? 'Serce zabrało z zapasów' : 'Fala odparta', '+' + fmtE(fl.score), 'Esencji z fali', [fl.score, v => '+' + fmtE(v)]);
     const body = el('div', 'scr-body'); card.appendChild(body);
     if (m.details) waveDetails(body, card, m);
     else {
       const tiles = el('div', 'statrow');
       statTile(tiles, String(Math.floor(run.essence)), 'masz Esencji', 'ess');
-      if (H) statTile(tiles, '♥ ' + H.need, H.fed ? 'serce syte' : 'zjadło kryształ', H.fed ? 'good' : 'bad');
+      if (H) statTile(tiles, '♥ ' + H.need, H.fedWave ? 'serce syte' : H.ate ? 'pękł kryształ' : H.credit ? 'kredyt krwi' : 'zabrało ' + Math.round(H.tookPurse || 0), H.fedWave ? 'good' : H.ate ? 'bad' : 'warn');
       else statTile(tiles, '-', run.wave < 2 ? 'głód od fali 2' : 'serce');
       statTile(tiles, run.crystals + '/' + run.maxCrystals, 'kryształy', fl.crystalLost || ate ? 'bad' : 'good');
       statTile(tiles, s.kills + ' · ' + s.scared, 'zabici · przestr.');
@@ -1150,11 +1249,13 @@
         fp.innerHTML = 'Zabici: <b>' + s.kills + '</b> (' + fmtE((s.killPts || 0) + (s.dmgPts || 0)) + ' pkt z ran) · <span class="sc">Wystraszeni: <b>' + s.scared + '</b> (' + fmtE((s.scarePts || 0) + (s.fearPts || 0)) + ' pkt ze strachu)</span>';
         body.appendChild(fp); }
       crystalWhy(body, H, heart);   // 1.24 (D, P0-2)
+      heartLines(body, H);   // 1.26: what the heart took, the Danina, a new level, the monsters that will stand up
       // the reckoning (1.01-1.04 had a screen of its own): Groza x the multipliers = Esencja, the heart's share, what is yours
       const rk = el('div', 'reck' + (ate ? ' ate' : ''));
       const part = (cls, html) => { const sp = el('span', cls); sp.innerHTML = html; rk.appendChild(sp); };
       part('g', 'Groza <b>' + fmtG(fl.base) + '</b> × ' + fmt2(fl.base > 0 ? fl.score / fl.base : 1) + ' = <b class="e">' + fmtE(fl.score) + '</b>');
-      if (H) part('h', H.fed ? '♥ <b>−' + fmtE(H.need) + '</b>' : '♥ za mało: <b>−' + fmtE(heart) + ' · kryształ</b>');
+      if (H) part('h', H.fedWave ? '♥ <b>−' + fmtE(H.need) + '</b>' : H.ate ? '♥ za mało: <b>−' + fmtE(heart) + ' −' + fmtE(H.tookPurse || 0) + ' z zapasów · kryształ</b>' : '♥ <b>−' + fmtE(heart) + '</b> i <b>−' + fmtE(H.tookPurse || 0) + '</b> z zapasów');
+      if (H && (H.tithe || 0) >= 1) part('t', 'Danina <b>' + fmtE(H.tithe) + '</b>');
       part('m', 'dla Ciebie <b>+' + fmtE(mine) + '</b>' + (run.lastIncome ? ' <small>(+' + run.lastIncome + ' po fali)</small>' : ''));
       body.appendChild(rk);
       fl.heroes.filter(h => h.nemesis).forEach(h => {   // 1.23: the bounty on a Nemezis of this wave: paid, or he got away (and comes back)
@@ -1171,7 +1272,9 @@
       const nx = run.crystals > 0 && run.nextFor === run.wave + 1 ? run.next : null;
       if (nx && nx.length) {
         const lv = nx.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), g = run.guild;
-        const pn = panel(body, 'Fala ' + (run.wave + 1) + ': ' + nx.length + ' bohaterów, poz. ' + (lo === hi ? lo : lo + '-' + hi), g ? 'gildia: ' + HEROES[GUILD_WANT[g.kind]].name[0].toLowerCase() : hungerNeed(run.wave + 1) ? 'serce chce ' + hungerNeed(run.wave + 1) : '', 'nextp');
+        const fogN = nx.some(e => e.fog) && !mods.revealAll, om = OMENS[run.omens && run.omens[run.wave + 1]];
+        const pn = panel(body, 'Fala ' + (run.wave + 1) + ': ' + nx.length + ' bohaterów' + (fogN ? ' w mgle' : ', poz. ' + (lo === hi ? lo : lo + '-' + hi)), g ? 'gildia: ' + HEROES[GUILD_WANT[g.kind]].name[0].toLowerCase() : hungerNeed(run.wave + 1) ? 'serce chce ' + hungerNeed(run.wave + 1) : '', 'nextp');
+        if (om) pn.appendChild(omenBox(run.omens[run.wave + 1]));   // 1.26 (15): the omen of the next wave
         const list = el('div', 'nplist'); nx.forEach(e => list.appendChild(nextRow(e))); pn.appendChild(list);
         nx.filter(e => e.nemesis).forEach(e => { const p = el('p', 'note', '☠ ' + nemName(e) + ' wraca ' + (e.times || 1) + '. raz. Nagroda za głowę: ' + bountyOf(e) + ' Esencji.'); p.style.color = '#ffd27a'; pn.appendChild(p); });   // 1.23
         fitList(list);
@@ -1209,7 +1312,7 @@
   function waveDetails(body, card, m) {
     const s = fl.stats, H = fl.hunger;
     const src = [['Rany', s.dmgPts, '#ff8a7a'], ['Strach', s.fearPts, '#c3b2ff'], ['Ucieczki', s.scarePts, '#8a6fe0'], ['Zabici', s.killPts, '#d8434f'], ['Łup', s.lootPts, '#f2b94b'],
-      ['Combo', s.comboPts || 0, '#a9d4da'], ['Inne', (s.crystalPts || 0) + (s.lostPts || 0) + (s.lonePts || 0) + (s.splitPts || 0) + (s.healPts || 0), '#7d7590']].filter(r => r[1] > 0.05);
+      ['Combo', s.comboPts || 0, '#a9d4da'], ['Reakcje', s.reactPts || 0, '#ff9a3c'], ['Uczta', s.feastPts || 0, '#ff9aa4'], ['Inne', (s.crystalPts || 0) + (s.lostPts || 0) + (s.lonePts || 0) + (s.splitPts || 0) + (s.healPts || 0), '#7d7590']].filter(r => r[1] > 0.05);
     const tot = src.reduce((a, r) => a + r[1], 0) || 1;
     const ps = panel(body, 'Skąd Esencja', 'Groza ' + fmtE(fl.base) + ' × średnio ' + fmt2(fl.base > 0 ? fl.score / fl.base : 1));
     const sb = el('div', 'srcbar'); src.forEach(r => { const i = el('i'); i.style.width = (100 * r[1] / tot).toFixed(1) + '%'; i.style.background = r[2]; i.title = r[0]; sb.appendChild(i); }); ps.appendChild(sb);
@@ -1225,11 +1328,12 @@
     if (cur === 'next') {
       const nb = bossOf(run.wave + 1), items = [s.swaps ? 'wymiany: ' + s.swaps : '', s.potionsGiven ? 'mikstury podane: ' + s.potionsGiven : '', s.charms ? 'talizmany: ' + s.charms : '', s.amulets ? 'amulety: ' + s.amulets : '', s.boots ? 'buty: ' + s.boots : '',
         s.gearGiven ? 'przekazane: ' + s.gearGiven : '', s.bodyLoot ? 'z ciał: ' + s.bodyLoot : '', s.gearKnocked ? 'wybite: ' + s.gearKnocked : '', s.lanternOut ? 'zgaszone latarnie: ' + s.lanternOut : '', s.bombCook ? 'bomby w ogniu: ' + s.bombCook : ''].filter(Boolean);   // 1.20
-      if (H && !H.fed) frow(list, 'Serce chciało ' + H.need + ' Esencji z fali, a fala dała ' + fmtE(fl.score) + ': zjadło wszystko i kryształ.', 'heart');
-      else if (H) frow(list, 'Serce wzięło pierwsze ' + H.need + ' Esencji' + (H.fedAt != null ? ' (najadło się w ' + mmss(H.fedAt) + ')' : '') + ', reszta (' + fmtE(Math.max(0, fl.score - H.need)) + ') trafiła do Ciebie.', 'heart');
+      if (H && H.ate) frow(list, 'Serce chciało ' + H.need + ' Esencji, fala dała ' + fmtE(fl.score) + ', z sakiewki wzięło ' + fmtE(H.tookPurse || 0) + ': za mało, pękł kryształ.', 'heart');
+      else if (H && !H.fedWave) frow(list, 'Serce chciało ' + H.need + ' Esencji, fala dała ' + fmtE(fl.score) + ': brak (' + fmtE(H.tookPurse || 0) + ') zabrało z Twoich zapasów' + (H.credit ? ' (Kredyt krwi: +' + H.credit + ' głodu w następnej fali)' : '') + '.', 'heart');
+      else if (H) frow(list, 'Serce wzięło pierwsze ' + H.need + ' Esencji' + (H.fedAt != null ? ' (najadło się w ' + mmss(H.fedAt) + ')' : '') + ', potem Daninę ' + fmtE(H.tithe || 0) + ' w Nasycenie; reszta trafiła do Ciebie.', 'heart');
       if (run.wave < RUN_WAVES || run.won) frow(list, 'Fala ' + (run.wave + 1) + ': poziom ok. ' + Math.round(waveBase(run.wave + 1)) + (nb ? ', prowadzi ' + (nb === 'final' ? 'bohater z przepowiedni' : 'czempion') : '') + '.', 'wave');
       if (run.guild && run.crystals > 0) frow(list, 'Gildia ' + run.guild.text, 'wave');
-      if (hungerNeed(run.wave + 1)) frow(list, 'Następna fala: serce weźmie pierwsze ' + hungerNeed(run.wave + 1) + ' Esencji. Trzymaj bohaterów w lochu, żeby było z czego.', 'heart');
+      if (hungerNeed(run.wave + 1)) frow(list, 'Następna fala: serce chce ' + hungerNeed(run.wave + 1) + ' Esencji (masz ' + Math.floor(run.essence) + ' w zapasie). Trzymaj bohaterów w lochu, żeby było z czego.', 'heart');
       frow(list, 'Esencja: +' + run.lastIncome + ' po fali' + (run.lastInterest ? ' (odsetki ' + run.lastInterest + ')' : '') + ', masz ' + Math.floor(run.essence) + '.', 'ess');
       frow(list, m.out ? 'Plotki: uciekinierzy opowiedzą o ' + m.rr + ' pokojach i ' + m.rt + ' pułapkach (tylko o tych, które ich zraniły albo przestraszyły). Przestaw je albo postaw Zasłonę.' : 'Nikt nie wyszedł żywy: Twoje sekrety są bezpieczne.');
       if (s.treasureTale) frow(list, 'Opowieści o skarbach: chciwość na start następnej fali +' + fmt2(s.treasureTale) + '.', 'ess');
@@ -1333,11 +1437,34 @@
     // Prototype 1.0: four offers, always in the same four places. Each shows its whole text (the letters shrink a little for a long one)
     // and has its own buy button: there is nothing to unfold.
     const og = el('div', 'offers');
-    run.shop.ids.forEach((id, i) => {
+    // 1.26 Dar serca: a heart level waits: its row takes the offers' place until a card is taken (or Później)
+    const hk = heartOffer(), heartView = !!hk && !m.heartLater && !sel;
+    if (heartView) {
+      og.classList.add('heartrow');
+      const hd = el('div', 'hearthead'); hd.id = 'heart-head';
+      hd.appendChild(el('b', null, '♥ Dar serca · poziom ' + hk.lv));
+      hd.appendChild(el('span', null, 'Serce urosło (Danina albo Ofiara): weź jedną kartę za darmo.' + (run.heartPicks.length > 1 ? ' Czeka jeszcze ' + (run.heartPicks.length - 1) + '.' : '') + (hk.ids.includes('regrow') ? ' Odrost odda utracony kryształ.' : '')));
+      og.appendChild(hd);
+      hk.ids.forEach((id, i) => {
+        const u = UPG[id], b = el('div', 'offer heart rar-' + u.rar); b.id = 'heart-offer-' + i;
+        { const ca = ART.cardImg(u.id); if (ca) b.appendChild(ca); }   // 1.26: the card's picture
+        b.appendChild(el('span', 'ok', id === 'regrow' ? 'kryształ · od razu' : kindShort(u))); b.appendChild(el('b', null, u.name));
+        const tx = el('span', 'tx', u.text), fit = cardFit(u);
+        if (fuses(u)) tx.appendChild(el('i', 'fit good fz', ' Połączy się w ★: ' + fuseText(u).replace(/^★ Połączona: /, '')));
+        if (fit) tx.appendChild(el('i', 'fit ' + (fit.ok ? 'good' : 'bad'), fit.text));
+        b.appendChild(tx);
+        const by = el('button', 'buy', 'Weź za darmo'); by.type = 'button'; by.id = 'heart-take-' + i;
+        by.addEventListener('click', () => { const r = heartTake(i); m.msg = r === 'full' ? 'Talia i schowek są pełne: sprzedaj albo odłóż kartę.' : r === 'stash' ? u.name + ': do schowka (talia pełna).' : r === 'fused' ? u.name + ': połączona w ★.' : r === 'no' ? '' : id === 'regrow' ? 'Odrost: kryształ wraca do serca.' : 'Dar serca: ' + u.name + ' w talii.'; rerender(); });
+        b.appendChild(by); og.appendChild(b);
+      });
+      const later = el('button', 'mini heartlater', 'Później (sklep)'); later.type = 'button'; later.id = 'heart-later'; later.addEventListener('click', () => { m.heartLater = true; rerender(); }); og.appendChild(later);
+    }
+    (heartView ? [] : run.shop.ids).forEach((id, i) => {
       const u = UPG[id], b = el('div', 'offer'); b.id = 'offer-' + i;
       if (!u) { b.classList.add('bought'); b.appendChild(el('b', null, 'Kupione')); og.appendChild(b); return; }
       const price = priceOf(u), poor = !free && fl.essence < price;
       b.classList.add('rar-' + u.rar); if (u.kind === 'unlock') b.classList.add('unlock'); if (poor) b.classList.add('poor');
+      { const ca = ART.cardImg(u.id); if (ca) b.appendChild(ca); }   // 1.26: the card's picture over its name
       b.appendChild(el('span', 'ok', kindShort(u))); b.appendChild(el('b', null, u.name));
       const tx = el('span', 'tx', u.text), fit = cardFit(u);
       if (fuses(u)) { b.classList.add('fuse'); tx.appendChild(el('i', 'fit good fz', ' Połączy się w ★: ' + fuseText(u).replace(/^★ Połączona: /, ''))); }   // 1.24
@@ -1375,6 +1502,17 @@
       }
     }
     body.appendChild(og);
+    // 1.26 Runa rodu: one rune a shop, under the offers
+    if (!heartView && run.shop.rune) {
+      const f = run.shop.rune, F = FAMILIES[f], lv = run.famLv[f] || 0, c = runePrice(lv), rb = el('div', 'runerow'); rb.id = 'shop-rune';
+      const nm = el('span', 'rn'); { const ru = ART.rune && ART.rune(f); if (ru) { const im = el('img', 'runeimg'); im.src = ru; im.alt = ''; nm.appendChild(im); } }
+      nm.insertAdjacentHTML('beforeend', '<b style="color:' + F.color + '">' + F.glyph + ' Runa rodu: ' + F.name + '</b> <small>poz. ' + lv + ' → ' + (lv + 1) + ' (max ' + RUNE_MAX + ')</small>');
+      rb.appendChild(nm);
+      rb.appendChild(el('span', 'rt', (f === 'treasure' ? 'łup podbija chciwość o 8% mocniej' : 'jej elementy +8% mocy i -4% odnowienia') + ' (' + F.items.filter(t => ITEMS[t]).map(t => ITEMS[t].name).slice(0, 4).join(', ') + (F.items.length > 4 ? '...' : '') + '). Działa od razu, nie zajmuje talii.'));
+      const b = el('button', 'buy', fl.essence < c ? 'Za mało (' + c + ')' : 'Kup za ' + c); b.type = 'button'; b.id = 'rune-buy'; b.disabled = fl.essence < c;
+      b.addEventListener('click', () => { const r = runeBuy(); m.msg = r === 'ok' ? 'Runa rodu: ' + F.name + ' na poziomie ' + (lv + 1) + '.' : 'Za mało Esencji.'; rerender(); });
+      rb.appendChild(b); body.appendChild(rb);
+    }
     // refresh, refresh for an ad: two buttons that are always there (1.05, author: crystals are no longer bought back for Esencja)
     const acts = el('div', 'acts');
     const act = (id, title, sub, off, fn) => { const b = el('button'); b.type = 'button'; b.id = id; b.appendChild(el('b', null, title)); b.appendChild(el('span', / Esencji$/.test(sub) ? 'ess' : null, sub)); b.disabled = !!off; b.addEventListener('click', fn); acts.appendChild(b); return b; };
@@ -1394,7 +1532,9 @@
     for (let i = 0; i < stashCap(); i++) slot(UPG[run.stash[i]], 's', i, 'schowek');
     dk.appendChild(g);
     const foot = el('div', 'scr-foot'); card.appendChild(foot);
-    const done = btn('primary', 'Do budowy fali ' + run.wave, free ? 'darmowe karty poczekają: ' + run.freePicks : 'sklep: pierwszy kafelek w Talii', closeModal); done.id = 'shop-close';
+    const hp = (run.heartPicks || []).length;
+    const done = btn('primary', 'Do budowy fali ' + run.wave, free || hp ? [free ? 'darmowe karty: ' + run.freePicks : '', hp ? 'Dar serca: ' + hp : ''].filter(Boolean).join(' · ') + ' poczekają' : 'sklep: pierwszy kafelek w Talii', closeModal); done.id = 'shop-close';
+    if (!heartView && hk) { const hb = el('button', 'mini heartback', '♥ Dar serca czeka (' + hp + ')'); hb.type = 'button'; hb.id = 'heart-back'; hb.addEventListener('click', () => { m.heartLater = false; m.sel = null; rerender(); }); foot.appendChild(hb); }
     foot.appendChild(done);
     if (m.msg) { foot.appendChild(el('div', 'shopmsg', m.msg)); m.msg = ''; }   // what just happened: a message over the big button (1.12.1: in the shop itself, the top hint is gone)
     requestAnimationFrame(() => { card.querySelectorAll('.offer:not(.bought), .sheet').forEach(fitText); card.querySelectorAll('.slot:not(.empty)').forEach(fitSlot); });
@@ -1482,6 +1622,7 @@
     if (no) return false;
     const e = Math.floor(fl.essence), e0 = run.essAtStart != null ? run.essAtStart : e, ch = cheapestItem();
     if (!ch.t || e < ch.cost || !(e > 0.5 * e0)) return false;
+    if (e <= hungerNeed(run.wave)) return false;   // 1.26: a purse kept for the hunger is a choice (the heart takes from it after a hungry wave)
     fl.stats.unspentAsk = (fl.stats.unspentAsk || 0) + 1;
     openModal({ type: 'unspent', e, ch });
     return true;
@@ -1643,14 +1784,22 @@
     card.appendChild(back);
   }
   // A placed element, tapped between waves: what it does, its level, upgrade it or take it down (full refund).
-  function upgradeItem(it) {
+  // 1.26: going to level 3 takes a branch, A or B (tapUpgrade and the item card ask first; a call without one takes A)
+  // 1.26: an icon for a tile that has no drawing yet (the family's colour and glyph, or the first letter)
+  function genIcon(t) {
+    const f = FAMILY_OF[t] || (KINDS[t] ? FAMILY_OF[(KIND_INFO[KINDS[t]].items || [])[0]] : null), F = f ? FAMILIES[f] : null, col = F ? F.color : '#c9c2d8', g = KINDS[t] ? KIND_INFO[KINDS[t]].glyph : F ? F.glyph : (ITEMS[t] ? ITEMS[t].name[0] : '?');
+    return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="4" fill="#1b1a20" stroke="' + col + '" stroke-width="1.4"/><text x="12" y="16.5" text-anchor="middle" font-size="12" fill="' + col + '" font-family="serif">' + g + '</text></svg>';
+  }
+  function upgradeItem(it, branch) {
     const c = upgCost(it); if (fl.phase !== 'build' || !ACTIVE[it.type] || (it.lvl || 1) >= 3 || fl.essence < c) return false;
     pushUndo('ulepszenie: ' + ITEMS[it.type].name);
     const was = it.lvl || 1;
     fl.essence -= c; it.spent = (it.spent || ITEMS[it.type].cost) + c; it.lvl = was + 1;
-    if (MONSTERS[it.type]) { const k = LVL_MON[it.lvl] / LVL_MON[was]; it.max = Math.round(it.max * k); it.hp = it.max; it.power *= k; }
+    if (it.lvl === 3) it.branch = branch === 'B' && TRAITS_B[it.type] ? 'B' : 'A';
+    if (mods.heartMem && it.memRes && it.memLvl === was) it.memLvl = it.lvl;   // 1.26 Pamięć serca
+    if (MONSTERS[it.type]) { const k = LVL_MON[it.lvl] / LVL_MON[was]; it.max = Math.round(it.max * k); it.hp = it.max; it.power *= k; if (it.baseMax) it.baseMax = Math.round(it.baseMax * k); }
     bt(it.type).spent += c; bt(it.type).upgraded = (bt(it.type).upgraded || 0) + 1; fl.stats.upgrades = (fl.stats.upgrades || 0) + 1; tutFlags.upgraded = true;
-    floatTile(it.x, it.y, 'Poziom ' + it.lvl + (it.lvl === 3 && TRAITS[it.type] ? ': ' + TRAITS[it.type][0] : ''), '#ffb35c', 15, -0.8);
+    floatTile(it.x, it.y, 'Poziom ' + it.lvl + (it.lvl === 3 && branchTrait(it) ? ': ' + branchTrait(it)[0] : ''), '#ffb35c', 15, -0.8);
     it.popR = realNow; burst(it.x + 0.5, it.y + 0.5, '#ffb35c', 12); particles.push({ ring: true, x: it.x + 0.5, y: it.y + 0.5, r: 0.2, maxR: 1.1, life: 0.4, color: '#ffb35c' });   // 1.09: an upgrade glows and pops
     updateTray(); saveRunSoon();
     return true;
@@ -1700,12 +1849,14 @@
     }
     return best;
   }
+  const branchTrait = it => (it.lvl || 1) >= 3 ? (it.branch === 'B' ? TRAITS_B[it.type] : TRAITS[it.type]) : null;   // 1.26
   function tapUpgrade(it) {
     const T = ITEMS[it.type], lvl = it.lvl || 1;
     if (!ACTIVE[it.type]) { note('Nie ulepsza się', it.x, it.y); return; }
     if (lvl >= 3) { note('Poziom 3 to maks', it.x, it.y); return; }
     const c = upgCost(it);
     if (fl.essence < c) { note('Za mało Esencji (' + c + ')', it.x, it.y); return; }
+    if (lvl === 2 && TRAITS_B[it.type]) { openModal({ type: 'branch', k: key(it.x, it.y) }); return; }   // 1.26: level 3 asks A or B
     upgradeItem(it);   // it says "Poziom N" over the tile itself (1.12.1: the second, same note is gone)
   }
   function tapMove(wx, wy) {
@@ -1744,7 +1895,7 @@
     const r = roomOf(it.x, it.y), rt = rtOf(r);
     const d = el('details'); d.appendChild(el('summary', null, 'Opis'));
     d.appendChild(el('p', null, T.desc));
-    if (up) d.appendChild(el('p', 'note', 'Moc teraz: ' + (TRAPS[it.type] ? '×' + fmt2(LVL_POW[lvl]) : 'HP i siła ×' + fmt2(LVL_MON[lvl])) + '. ' + (tr ? 'Poziom 3 dodaje cechę: ' + tr[0] + ' (' + tr[1] + ').' : '') + ' Ulepszenie nie zajmuje miejsca w pokoju, a poziom pułapki poszerza strefy skill checku.'));
+    if (up) d.appendChild(el('p', 'note', 'Moc teraz: ' + (TRAPS[it.type] ? '×' + fmt2(LVL_POW[lvl]) : 'HP i siła ×' + fmt2(LVL_MON[lvl])) + '. ' + (lvl >= 3 && branchTrait(it) ? 'Cecha ' + (it.branch || 'A') + ': ' + branchTrait(it)[0] + ' (' + branchTrait(it)[1] + ').' : tr ? 'Poziom 3 dodaje cechę do wyboru: A ' + tr[0] + ' (' + tr[1] + ')' + (TRAITS_B[it.type] ? ' albo B ' + TRAITS_B[it.type][0] + ' (' + TRAITS_B[it.type][1] + ')' : '') + '.' : '') + ' Ulepszenie nie zajmuje miejsca w pokoju, a poziom pułapki poszerza strefy skill checku.'));
     if (rt) d.appendChild(el('p', 'note', 'Pokój: ' + RT_INFO[rt].name + '. ' + ITEMS[RT_INFO[rt].item].desc.split(': ').slice(1).join(': ').replace(/ Stuknij znacznik pokoju\.$/, '')));
     if (KIND_OF[it.type] && inKind(it)) d.appendChild(el('p', 'note', 'Komnata: ' + KIND_INFO[KIND_OF[it.type]].name + '. ' + (lvl >= 3 ? 'Ma już 3. poziom, więc komnata daje mu +' + Math.round((KIND_POW - 1) * 100) + '% mocy.' : 'Cecha 3. poziomu działa bez ulepszania' + (tr ? ': ' + tr[0] + ' (' + tr[1] + ')' : '') + '.')));
     else if (KIND_OF[it.type]) d.appendChild(el('p', 'note', 'Pasuje do komnaty: ' + KIND_INFO[KIND_OF[it.type]].name + ' (zakładka Loch, Komnaty). Tam ma cechę 3. poziomu bez ulepszania.'));
@@ -1754,7 +1905,8 @@
     const row = el('div', 'row');
     if (up && lvl < 3) {
       const c = upgCost(it), next = lvl + 1;
-      const ub = btn('primary', 'Ulepsz do poziomu ' + next, c + ' Esencji · ' + (next === 3 && tr ? 'cecha: ' + tr[0] : 'moc ×' + fmt2(TRAPS[it.type] ? LVL_POW[next] : LVL_MON[next])), () => {
+      const ub = btn('primary', 'Ulepsz do poziomu ' + next, c + ' Esencji · ' + (next === 3 && tr ? (TRAITS_B[it.type] ? 'cecha A albo B' : 'cecha: ' + tr[0]) : 'moc ×' + fmt2(TRAPS[it.type] ? LVL_POW[next] : LVL_MON[next])), () => {
+        if (lvl === 2 && TRAITS_B[it.type]) { closeModal(); openModal({ type: 'branch', k: m.k, back: m }); return; }   // 1.26
         if (upgradeItem(it)) { card.innerHTML = ''; renderItem(card, m); setHint(T.name + ': poziom ' + it.lvl + '.'); }
       });
       ub.id = 'sheet-upgrade';
@@ -1769,9 +1921,22 @@
     card.appendChild(row);
     card.appendChild(btn('', 'Zamknij', null, closeModal));
   }
+  // 1.26: the level 3 choice: two traits side by side (A is the one a komnata gives free)
+  function renderBranch(card, m) {
+    const it = fl.items.get(m.k); if (!it || fl.phase !== 'build' || (it.lvl || 1) !== 2) { card.appendChild(el('p', null, 'Tego już nie ulepszysz.')); card.appendChild(btn('primary', 'Zamknij', null, closeModal)); return; }
+    const T = ITEMS[it.type], A = TRAITS[it.type], B = TRAITS_B[it.type], c = upgCost(it), poor = fl.essence < c, kind = KIND_OF[it.type] && inKind(it);
+    card.appendChild(el('div', 'sub', T.name + ' · poziom 3 · ' + c + ' Esencji'));
+    card.appendChild(el('h2', null, 'Wybierz cechę'));
+    card.appendChild(el('p', 'note', 'Moc rośnie tak samo, różni się cecha. Wyboru nie da się cofnąć (chyba że zdejmiesz element).' + (kind ? ' Ten element stoi w komnacie, która i tak daje mu cechę A: wybierz B, a będzie miał obie.' : '')));
+    const box = el('div', 'choices branch');
+    [['A', A], ['B', B]].forEach(([k, t]) => { if (!t) return; const b = btn(k === 'B' ? 'gold' : '', k + ': ' + t[0], t[1], () => { if (upgradeItem(it, k)) { closeModal(); setHint(T.name + ': poziom 3, ' + t[0] + '.'); if (m.back) openModal(m.back); } }); b.id = 'branch-' + k; b.disabled = poor; box.appendChild(b); });
+    card.appendChild(box);
+    card.appendChild(btn('primary', poor ? 'Za mało Esencji (' + c + ')' : 'Anuluj', null, () => { closeModal(); if (m.back) openModal(m.back); }));
+  }
   // v14: the full card of a hero: tap him in a wave (the game pauses), or tap a row of the party list / the next-wave list
-  const TRAIT_TEXT = { greedy: 'idzie po łup mimo ryzyka', coward: 'panikuje wcześniej, śmierć towarzysza straszy go mocniej', brave: 'śmierć towarzysza zamienia w furię', careful: 'sprawdza podłogę, rzadziej wpada w pułapki' };
-  const STATE_TEXT = { walk: 'idzie', rest: 'odpoczywa', talk: 'naradza się', wait: 'czeka', boss: 'wyważa kryształ', disarm: 'rozbraja', free: 'uwalnia kogoś', fight: 'walczy', smash: 'rozbija' };
+  const TRAIT_TEXT = { greedy: 'idzie po łup mimo ryzyka', coward: 'panikuje wcześniej, śmierć towarzysza straszy go mocniej', brave: 'śmierć towarzysza zamienia w furię', careful: 'sprawdza podłogę, rzadziej wpada w pułapki',
+    superstitious: 'rekwizyty strachu i Nawiedzenie straszą go 1,4 raza mocniej, nie tknie przeklętego łupu', curious: 'widzi łup z daleka (+4 pola), jako przywódca chętniej rozgląda się po pokojach', loyal: 'zawsze ratuje uwięzionych, biegnie na wołanie o pomoc nawet przez pułapki, za przyjaciela ślubuje zemstę', hothead: 'idzie przez znane pułapki, raz na falę zamiast paniki wpada w furię, wytrzyma 10% więcej strachu' };   // 1.26
+  const STATE_TEXT = { drink: 'pije Esencję z serca', walk: 'idzie', rest: 'odpoczywa', talk: 'naradza się', wait: 'czeka', boss: 'wyważa kryształ', disarm: 'rozbraja', free: 'uwalnia kogoś', fight: 'walczy', smash: 'rozbija' };
   // v15.1: a tap on the equation row: what each part means, and where this wave's Esencja came from
   function renderEsencja(card, m) {
     const raid = fl.phase === 'raid', s = fl.stats, cm = 1 + 0.25 * (comboNow() - 1);
@@ -1822,6 +1987,8 @@
       const st = live.dead ? (fem ? 'Zginęła.' : 'Zginął.') : live.fled ? (live.carriedOut ? 'Wyniósł kryształ.' : live.fleeing ? 'Uciekł ze strachu.' : 'Wyszedł z lochu.') :
         [live.fleeing ? 'UCIEKA' : '', live.crystal ? 'NIESIE KRYSZTAŁ' : '', caged(live) ? 'w klatce' : '', live.lost ? 'zgubiony' : live.goHome ? (live.female ? 'wraca sama do domu' : 'wraca sam do domu') : inG2(live) ? (fl.party.g2.leaderId === live.id ? 'prowadzi drugą grupę' : 'w drugiej grupie') : live.split ? 'na zwiadzie' : live.look && !live.look.done ? 'rozgląda się' : live.alone ? 'sam' : '', fl.time < live.burnUntil ? (live.burnBy === 'spikes' ? 'krwawi' : 'płonie') : '', live.cursed ? 'przeklęty' : '', fl.time < live.shakenUntil ? 'wstrząśnięty śmiercią' : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
       add('Teraz: ' + st + '.');
+      if (!live.dead && !live.fled) { const sl = statusList(live); if (sl.length) add('Statusy: ' + sl.map(k => STATUS[k].name + ' (' + STATUS[k].desc + ')').join('; ') + '.'); }   // 1.26 (7)
+      if (live.type === 'cultist' && live.drank > 0) add('Wypił' + (fem ? 'a' : '') + ' z serca ' + fmtE(live.drank) + ' Esencji (zabity odda połowę).');
     }
     add('Charakter: ' + (e.trait ? HERO_TRAITS[e.trait].name[fem ? 1 : 0] + ' (' + TRAIT_TEXT[e.trait] + ')' : 'zwyczajny') + '.');
     { const bm = bondMate(e, live); if (bm) add(bondLabel(e.bond, bm) + (bm.dead ? (bm.female ? ' (zginęła)' : ' (zginął)') : '') + '.'); }   // 1.21: his bond
@@ -1865,10 +2032,11 @@
     card.appendChild(el('h2', null, 'Serce jest głodne'));
     card.appendChild(el('p', 'lead', 'Od tej fali serce bierze pierwsze porcje Esencji z każdej fali, aż się naje: teraz ' + hungerNeed(run.wave) + ', potem coraz więcej. Dopiero reszta trafia do Ciebie.'));
     const ul = el('ul', 'conseq');
-    ['Pasek ♥ pod czasem napełnia się w trakcie fali. Gdy się zapełni, serce jest syte i cała dalsza Esencja jest Twoja.',
-     'Esencję daje Groza (rany, strach, śmierć, ucieczki) × Chciwość (łup, rozległy loch, karty) × Combo. Bez łupu nie ma show.',
-     'Wypędzeni od razu bohaterowie nie nakarmią serca: trzymaj ich w lochu jak najdłużej, rań i strasz, ale nie wyrzucaj w pierwszym pokoju.',
-     'Fala da za mało: serce zje to, co dostało, i kryształ. Kryształu nie da się odkupić (wyjątek: karta Żarłoczne serce).'].forEach(t => ul.appendChild(el('li', null, t)));
+    ['Pasek ♥ u góry napełnia się w trakcie fali. Gdy się zapełni, serce jest syte.',
+     'Syte serce bierze Daninę: 30% każdej dalszej wypłaty idzie w Nasycenie (złoty pasek), reszta do Twojej sakiewki. Pełne Nasycenie to poziom serca, a każdy poziom to darmowa karta (rząd Dar serca w sklepie).',
+     'Fala da za mało: po fali serce zabiera brak z Twojej sakiewki (zobaczysz to w podsumowaniu). Kryształ pęka dopiero wtedy, gdy sakiewka nie wystarczy, a sakiewka zostaje wtedy pusta.',
+     'Dlatego warto zostawiać zapas Esencji na następną falę (w budowie wiersz serca pisze "serce chce N · zapas X"). Stuknij serce u góry, żeby zobaczyć, z czego składa się głód.',
+     'Esencję daje Groza (rany, strach, śmierć, ucieczki) × Chciwość (łup, rozległy loch, karty) × Combo. Wypędzeni od razu bohaterowie nie nakarmią serca: trzymaj ich w lochu jak najdłużej.'].forEach(t => ul.appendChild(el('li', null, t)));
     card.appendChild(ul);
     card.appendChild(btn('primary', 'Rozumiem', null, closeModal));
   }
@@ -1895,11 +2063,20 @@
     if (!u) { card.appendChild(el('p', null, 'Tej karty już nie ma.')); card.appendChild(btn('primary', 'Zamknij', null, closeModal)); return; }
     const n = run.deck.filter(x => x === id).length, fz = isFused(id);
     card.appendChild(el('div', 'sub', capFirst(RAR_NAME[u.rar]) + ' karta' + (fz ? ' · połączona' : '') + ' · talia ' + run.deck.length + ' z ' + run.deckSize));
+    { const ca = ART.cardImg(id, true); if (ca) card.appendChild(ca); }   // 1.26: the card's picture, twice as big
     const h = el('h2', null, cardName(id)); h.style.color = fz ? '#f2c94c' : RAR_COLOR[u.rar]; card.appendChild(h);   // 1.24: a fused ★ card is golden
     card.appendChild(el('p', null, u.text));
     if (fz) card.appendChild(el('p', 'fuseline', fuseText(u)));   // 1.24
     if (n > 1) card.appendChild(el('p', 'note', 'Masz ' + n + ' kopie tej karty, działają razem.'));
     if (u.grows) card.appendChild(el('p', 'note', 'Zebrane w tym runie: ' + (run.stacks[u.id] || 0) + '. Sprzedaż ostatniej kopii zeruje licznik.'));
+    if (id === 'copyist' || id === 'soulmirror') { const t = copyTarget(id); card.appendChild(el('p', 'note', t ? 'Teraz kopiuje: ' + cardName(t) + '.' : 'Teraz nic nie kopiuje (' + (id === 'copyist' ? 'po prawej' : 'na pierwszym miejscu') + ' nie ma zwykłej karty).')); }
+    // 1.26: the order of the deck matters for Kopista and Lustro duszy: move a card left or right (between waves)
+    if (fl && fl.phase === 'build' && run.deck.some(x => x === 'copyist' || x === 'soulmirror') && run.deck.length > 1) {
+      const mv = el('div', 'row'), go = d => { const j = m.idx + d; if (j < 0 || j >= run.deck.length) return; const a = run.deck[m.idx]; run.deck[m.idx] = run.deck[j]; run.deck[j] = a; recomputeMods(); saveRunSoon(); openModal({ type: 'card', idx: j }); };
+      const lb = btn('', '◀ W lewo', 'miejsce ' + m.idx + ' z ' + run.deck.length, () => go(-1)); lb.id = 'card-left'; if (m.idx === 0) lb.disabled = true;
+      const rb = btn('', 'W prawo ▶', 'miejsce ' + (m.idx + 2) + ' z ' + run.deck.length, () => go(1)); rb.id = 'card-right'; if (m.idx >= run.deck.length - 1) rb.disabled = true;
+      mv.appendChild(lb); mv.appendChild(rb); card.appendChild(el('p', 'note', 'Kolejność ma znaczenie dla Kopisty i Lustra duszy.')); card.appendChild(mv);
+    }
     const row = el('div', 'row');
     if (fl && fl.phase === 'build') {
       const tb = btn('', 'Do schowka', run.stash && run.stash.length >= stashCap() ? 'schowek pełny' : 'nie działa, czeka', () => { if (toStash(m.idx)) { closeModal(); setHint(u.name + ': w schowku.'); } });
@@ -1917,7 +2094,7 @@
   // where the fear came from, in plain words
   const FEAR_SRC = { dmg: 'rany', death: 'śmierć towarzyszy', lost: 'zgubienie', alone: 'samotność', split: 'rozdzielenie (zwiad)', echo: 'echo groty', curse: 'klątwa', panic: 'panika', lowhp: 'ciężkie rany', ambush: 'zasadzki',
     carrier: 'klątwa kryształu', roar: 'ryk potworów', haunt: 'nawiedzone klatki', cageAlone: 'porzucenie w klatce', lull: 'kołysanka', other: 'inne',
-    heart: 'żar serca', screams: 'krzyki uciekających', phobia: 'fobia', nightmare: 'koszmary' };   // 1.12.1: these showed as raw keys
+    heart: 'żar serca', screams: 'krzyki uciekających', phobia: 'fobia', nightmare: 'koszmary', heartcry: 'krzyk serca', burn: 'płomienie', siren: 'zew kusicielki', steam: 'para', bell: 'dzwon żałobny' };   // 1.26   // 1.12.1: these showed as raw keys
   const fearSrcName = k => FEAR_SRC[k] || (ITEMS[k] ? ITEMS[k].name.toLowerCase() : k);
   function statTile(box, v, label, cls) { const d = el('div', 'stat' + (cls ? ' ' + cls : '')); d.appendChild(el('b', null, v)); d.appendChild(el('span', null, label)); box.appendChild(d); }
   function itemsTable(byType) {
@@ -2077,7 +2254,8 @@
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 61;   // 1.25.1: waves.summary.previewVis {buildSec, sec, openSec, coveredSec, firstAt} (how long the next wave's preview was on screen in the build), stats.unspentPick / unspentPicks (the buy hint in the unspent-Esencja question). 1.25 (60): runs.screen (w, h, ui, wide, mouse, touch: which layout and pointer the run was played with). Before: 1.24 Part B (the same 59): runs: tut.stepTimes (seconds on each step, by TUT order) and tut.stepIds; stage now follows the wave in the first run (runs.stage = the stage reached); waves: fearUi.bar (taps on a fear bar), stats.tutSpike (the guide's spikes sprung once). 1.24 Part D (59):runs: status one of win/end/quit/active (won => win), playerId, crystals0 + crystalEvents [{t, delta, cause, wave, why}] (cause stolen/hunger/saved/card/other), activeSec, sessions [{start, end}], endBonus (total = sum of waveMini.sc + endBonus); waves summary: crystalEvents, essenceAtStart, essenceAtWaveStart, itemsCount, roomsCount, previewOpened, fearUi {card, bar}, stats.checkByShape {shape: {ok, crit, miss, skip, auto}}, stats.calmAuto, unspentAsk, unspentGo; settings calmWaves, calmGap, okPulse, okSwing. 58, 1.24 Part A adds runs/waves fused (the fused ★ card ids), stats: exhausted, forcedOut, tdSeen; timeline xh (worn out: how many inside) fo (forced out: id, x, y, state). 1.23 adds heroes[].nem and stats: nemeses, nemesisNew, nemesisDropped, nemRooms, nemTraps, nemesisReply, nemesisWarn, nemesisBoast, nemesisRage, nemesisDown, nemesisOut, nemesisCrystal, grudgeHits, grudgeDone, bounties, essBounty, bountyTalk, fallenMemory; timeline nn nm ng nd nx nr nb no nw2 bn fm. 1.22 adds stats: escortForms, escortGuards, guardSoaks, guardSoakDmg, handOvers, lastStands, lastStandT, sacrifices, sacrificeFired, youFirst, taps, tapFound, notThisWay, notThisWayMoved, frontLines, woundedBack, nearExit; timeline ef gs ho lx le sf sd yf tp tf nw fm wb ne. 1.21 adds heroes[].bond (type[:role]:id) and stats: bonds, bondsBy, bondLines, griefs, revengeVows, revengeFights, grownUp, noLeave, noLeaveSaved, mentorWatch, mentorProud, rivalMock, quarrels, quarrelStops, quarrelWins, quarrelSulks, bets, betsWon, betsLost, betsOff; timeline bo bk gf vw gu rm mw mp qq nl ns ob bt be. 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
+  const LOG_VERSION = 62;   // 1.26: waves.summary satiety, satietyGain, heartLv, heartPick, regrow, feastPts, tithePts, ofiara, revived, stealMax, omen; stats essTithe, essDrained, reactN, antidotes, flasks, tracked, calls, freed, lootRetreat, crownPays...
+  // 61:   // 1.25.1: waves.summary.previewVis {buildSec, sec, openSec, coveredSec, firstAt} (how long the next wave's preview was on screen in the build), stats.unspentPick / unspentPicks (the buy hint in the unspent-Esencja question). 1.25 (60): runs.screen (w, h, ui, wide, mouse, touch: which layout and pointer the run was played with). Before: 1.24 Part B (the same 59): runs: tut.stepTimes (seconds on each step, by TUT order) and tut.stepIds; stage now follows the wave in the first run (runs.stage = the stage reached); waves: fearUi.bar (taps on a fear bar), stats.tutSpike (the guide's spikes sprung once). 1.24 Part D (59):runs: status one of win/end/quit/active (won => win), playerId, crystals0 + crystalEvents [{t, delta, cause, wave, why}] (cause stolen/hunger/saved/card/other), activeSec, sessions [{start, end}], endBonus (total = sum of waveMini.sc + endBonus); waves summary: crystalEvents, essenceAtStart, essenceAtWaveStart, itemsCount, roomsCount, previewOpened, fearUi {card, bar}, stats.checkByShape {shape: {ok, crit, miss, skip, auto}}, stats.calmAuto, unspentAsk, unspentGo; settings calmWaves, calmGap, okPulse, okSwing. 58, 1.24 Part A adds runs/waves fused (the fused ★ card ids), stats: exhausted, forcedOut, tdSeen; timeline xh (worn out: how many inside) fo (forced out: id, x, y, state). 1.23 adds heroes[].nem and stats: nemeses, nemesisNew, nemesisDropped, nemRooms, nemTraps, nemesisReply, nemesisWarn, nemesisBoast, nemesisRage, nemesisDown, nemesisOut, nemesisCrystal, grudgeHits, grudgeDone, bounties, essBounty, bountyTalk, fallenMemory; timeline nn nm ng nd nx nr nb no nw2 bn fm. 1.22 adds stats: escortForms, escortGuards, guardSoaks, guardSoakDmg, handOvers, lastStands, lastStandT, sacrifices, sacrificeFired, youFirst, taps, tapFound, notThisWay, notThisWayMoved, frontLines, woundedBack, nearExit; timeline ef gs ho lx le sf sd yf tp tf nw fm wb ne. 1.21 adds heroes[].bond (type[:role]:id) and stats: bonds, bondsBy, bondLines, griefs, revengeVows, revengeFights, grownUp, noLeave, noLeaveSaved, mentorWatch, mentorProud, rivalMock, quarrels, quarrelStops, quarrelWins, quarrelSulks, bets, betsWon, betsLost, betsOff; timeline bo bk gf vw gu rm mw mp qq nl ns ob bt be. 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
   // 56: Prototype 1.12: the first runs (stage 1-4, guided), combo +12% damage and fear a step, the combo window 2,5 s of wave time
   // 55: Prototype 1.11.1: the heart eats its need again (stats.essHeart is back), the need is 37 x 1,25^(wave-2), about half a typical wave
@@ -2158,7 +2336,7 @@
   // 1.24 (D, P0-2): the summary says in one red line why a crystal went (the testers lost crystals to hunger without noticing)
   function crystalWhy(body, H, heart) {
     const lines = [];
-    if (H && H.ate) lines.push('Głód pochłonął kryształ: serce chciało ' + H.need + ' Esencji z tej fali, a dostało ' + fmtE(heart) + '.');
+    if (H && H.ate) lines.push('Głód pękł kryształ: serce chciało ' + H.need + ' Esencji, fala dała ' + fmtE(heart) + ', a sakiewka tylko ' + fmtE(H.tookPurse || 0) + '. Resztę sakiewki serce zjadło.');
     fl.heroes.filter(h => h.carriedOut).forEach(h => lines.push('Kryształ skradziony: ' + heroName(h) + ' (' + className(h).toLowerCase() + ' ' + h.lvl + ') ' + (h.female ? 'wyniosła' : 'wyniósł') + ' go z lochu.'));
     if (!lines.length) return;
     const p = el('p', 'note crywhy', lines.join(' ')); p.id = 'wave-crystal-why'; body.appendChild(p);
@@ -2168,7 +2346,40 @@
   function hungerRisk() {
     const need = run ? hungerNeed(run.wave) : 0; if (!need || !fl || fl.phase !== 'build') return 0;
     const last = run.waves[run.waves.length - 1];
-    return !last || last.score < need * 1.25 || (last.hunger && last.hunger.ate) ? need : 0;
+    return (!last || last.score < need * 1.25 || (last.hunger && last.hunger.ate)) && fl.essence < need ? need : 0;   // 1.26: a purse that covers the hunger is no risk
+  }
+  // 1.26: the heart's card (a tap on the heart's row): this wave's hunger and where it comes from, the purse, the Danina and the
+  // Nasycenie to the next level, what the levels give, and the Ofiara (in the build)
+  function renderHeart(card, m) {
+    const L = run.heartLv || 0, s0 = heartLvAt(L), s1 = heartLvAt(L + 1), sat = Math.floor(run.satiety || 0), build = fl.phase === 'build';
+    const n = build ? run.wave : fl.phase === 'summary' ? run.wave + 1 : run.wave, P = hungerParts(n), need = hungerNeed(n), purse = Math.floor(fl.essence);
+    card.appendChild(el('div', 'sub', 'Serce · poziom ' + L + (L ? '' : ' (rośnie od pierwszego nasycenia)')));
+    card.appendChild(el('h2', null, need ? 'Głód fali ' + n + ': ' + need : 'Serce'));
+    const ul = el('ul', 'conseq');
+    ul.appendChild(el('li', null, 'Serce je pierwsze: z każdej wypłaty w fali bierze swoje, aż się naje (czerwony pasek). Reszta jest Twoja.'));
+    ul.appendChild(el('li', null, 'Fala da za mało: po fali serce zabierze brak z sakiewki' + (mods.stoneHeart ? ' (Kamienne serce: 75% braku)' : '') + '. Dopiero gdy sakiewka nie wystarczy, pęka kryształ, a serce zjada resztę sakiewki.'));
+    ul.appendChild(el('li', null, 'Syte serce bierze Daninę: ' + Math.round(titheNow() * 100) + '% każdej dalszej wypłaty idzie w Nasycenie (złoty pasek), które podnosi poziom serca.'));
+    ul.appendChild(el('li', null, 'Każdy poziom: darmowa karta z rzędu Dar serca w sklepie. Poziomy 2, 4, 6: +1 miejsce w talii. Poziomy 3, 5, 7: w rzędzie może być Odrost (utracony kryształ wraca).'));
+    card.appendChild(ul);
+    if (P) {
+      const parts = ['tabela ' + Math.round(P.table) + (P.base !== Math.round(P.table) ? ' → ' + P.base + ' (karty, omen)' : '')];
+      if (P.revive) parts.push('+' + P.revive + ' odrodzenie potworów'); if (P.demon) parts.push('+' + P.demon + ' demony'); if (P.credit) parts.push('+' + P.credit + ' kredyt krwi');
+      if (P.granary) parts.push('−' + P.granary + ' spichlerz'); if (P.blood) parts.push('−' + P.blood + ' głód krwi');
+      card.appendChild(el('p', 'note', 'Głód ' + need + ': ' + parts.join(', ') + '.' + (build ? ' Masz w sakiewce ' + purse + (purse >= need ? ': pokryje cały głód.' : ': fala musi dać co najmniej ' + (need - purse) + ', inaczej pęknie kryształ.') : '')));
+    }
+    const sb = el('div', 'satbar'); const si = el('i'); si.style.width = (100 * clamp((sat - s0) / Math.max(1, s1 - s0), 0, 1)).toFixed(1) + '%'; sb.appendChild(si); sb.appendChild(el('span', null, 'Nasycenie ' + sat + ' / ' + s1 + ' do poziomu ' + (L + 1)));
+    card.appendChild(sb);
+    const nx = L + 1, gift = ['karta Dar serca'].concat(heartSlotLv(nx) ? ['+1 miejsce w talii'] : [], heartRegrowLv(nx) ? ['może być Odrost'] : []);
+    card.appendChild(el('p', 'note', 'Poziom ' + nx + ': ' + gift.join(', ') + '.' + ((run.heartPicks || []).length ? ' Dar serca czeka w sklepie: ' + run.heartPicks.length + '.' : '')));
+    const row = el('div', 'row');
+    if (build) {
+      const left = ofiaraLeft(), done = run.ofiaraW === run.wave ? run.ofiaraN : 0;
+      const ob = btn('gold', 'Ofiaruj sercu ' + Math.min(left, 10), left ? 'Esencja z sakiewki w Nasycenie 1:1 (do ' + OFIARA_MAX + ' na przerwę, użyte ' + done + ')' : done >= OFIARA_MAX ? 'limit tej przerwy wykorzystany' : 'brak Esencji', () => { ofiara(10); closeModal(); if (modalKind !== 'shop') openModal({ type: 'heart' }); });
+      ob.id = 'heart-ofiara'; ob.disabled = !left; row.appendChild(ob);
+      if (left > 10) { const oa = btn('', 'Ofiaruj ' + left, 'cały limit', () => { ofiara(left); closeModal(); if (modalKind !== 'shop') openModal({ type: 'heart' }); }); oa.id = 'heart-ofiara-all'; row.appendChild(oa); }
+    }
+    row.appendChild(btn('primary', 'Zamknij', null, () => { closeModal(); if (m.unpause) setPaused(false); }));
+    card.appendChild(row);
   }
   function logWave(partial) {
     const w = run.waves[run.waves.length - 1];
@@ -2703,6 +2914,7 @@
     }
     cam.manualUntil = realNow + 6;
   });
+  { const hr = $('#h-hrow'), go = () => { if (modalOpen || !run || !fl) return; const pause = fl.phase === 'raid' && !paused; if (pause) setPaused(true); openModal({ type: 'heart', unpause: pause }); }; hr.addEventListener('click', go); hr.addEventListener('keydown', e => { if (e.key === 'Enter') go(); }); }   // 1.26: the heart's card
   $('#btn-settings').addEventListener('click', () => { if (!modalOpen) { const pause = !!(fl && fl.phase === 'raid' && !paused); if (pause) setPaused(true); openModal({ type: 'menu', unpause: pause }); } });
   window.addEventListener('resize', () => { applyLayout(); if (fl) resize(); coachSync(); hideHov(); });   // 1.25: the layout follows the screen (a tablet turned, a window resized)
   try { new ResizeObserver(() => { if (fl) resize(); }).observe(stage); } catch (e) {}   // the tray grows to two rows on the deck tab
@@ -2775,15 +2987,24 @@
     // 1.12: the full game (run 4 of the first ones): the first time each of these shows up
     body: 'Słabość albo odporność ciała! Ten bohater obrywa od jednego typu obrażeń mocniej (słabość) albo słabiej (odporność). Stuknij go, żeby zobaczyć kartę.',
     phobia: 'Fobia! Ten bohater boi się jednej rzeczy 2 razy bardziej i właśnie ją zobaczył. Stuknij go, żeby zobaczyć, czego się boi.',
-    returner: 'W drużynie jest powracający: uciekł Ci kiedyś, a teraz wraca silniejszy, z blizną i z pamięcią Twojego lochu (stuknij go na liście).'
+    returner: 'W drużynie jest powracający: uciekł Ci kiedyś, a teraz wraca silniejszy, z blizną i z pamięcią Twojego lochu (stuknij go na liście).',
+    // 1.26: the new rules explain themselves the first time they happen, in every run (once in this browser)
+    heartLv: 'Serce rośnie! Syte serce bierze Daninę: 30% każdej dalszej wypłaty idzie w Nasycenie (złoty pasek). Każdy poziom serca to darmowa karta z rzędu Dar serca w sklepie, poziomy 2, 4 i 6 dają miejsce w talii, a 3, 5 i 7 mogą odrodzić kryształ.',
+    heartCry: 'Serce krzyczy! Od fali 2 każdy, kto wyrywa kryształ, traci odwagę z każdą sekundą (6% na sekundę). Kradzież trwa 5 s: zrań go albo wystrasz, zanim skończy.',
+    status: 'Status! Element nałożył stan (ikonka nad bohaterem): spowolnienie, unieruchomienie, podpalenie, krwawienie, trucizna, olej, woda... Przytrzymaj kafelek pułapki, żeby zobaczyć, co nakłada. Statusy łączą się w reakcje.',
+    reaction: 'Reakcja! Status i właściwe obrażenia: olej + ogień = Pożar, trucizna + ogień = Detonacja, woda + porażenie = Porażenie, ogień + woda = Para. Reakcja daje Grozę i dodatkowy krok combo, a status znika.',
+    revive: 'Potwór powalony! Nie ginie na dobre: wstanie w następnej budowie, ale za każdego powalonego serce zje o 1 Esencję więcej w następnej fali.',
+    omen: 'Omen fali! Ta fala ma zasadę specjalną (podgląd fali przed jej startem). Omen, który ją utrudnia, daje nagrodę; ten, który ją ułatwia, podnosi głód.',
+    cultist: 'Kultysta! Nie kradnie kryształu: idzie do serca i wypija z niego zjedzoną Esencję. Zabij go albo dokarm serce, inaczej po fali serce zabierze brak z sakiewki.'
   };
+  const TUT_NEW = { heartLv: 1, heartCry: 1, status: 1, reaction: 1, revive: 1, omen: 1, cultist: 1 };   // 1.26: shown in any run, not only in the first ones
   let tutPopNow = null; const tutPopQ = [];
   function coachSync() { const co = $('#coach'); coachInset = !co.hidden && co.classList.contains('top') ? Math.round(co.getBoundingClientRect().bottom - stage.getBoundingClientRect().top) : 0; }   // 1.25: on the screen (the coach is zoomed on a big screen)   // read once per change, not every frame
   // 1.12: the cards show in the first runs (with the guide or not), each once in this browser
   const POPS_KEY = 'yatd-pops';
   const popsSeen = () => { try { return JSON.parse(localStorage.getItem(POPS_KEY) || '{}') || {}; } catch (e) { return {}; } };
   function tutPop(id) {   // true if the card shows (or waits for the one up now)
-    if (!run || !(run.guided || (run.tutorial && run.tut >= 0)) || !fl || fl.phase !== 'raid' || fl.ending !== null || fl.finishing || modalOpen || !TUT_POP[id]) return false;   // not as the wave ends
+    if (!run || !(run.guided || (run.tutorial && run.tut >= 0) || TUT_NEW[id]) || !fl || fl.phase !== 'raid' || fl.ending !== null || fl.finishing || modalOpen || !TUT_POP[id]) return false;   // not as the wave ends
     const seen = popsSeen();
     if (seen[id]) return false;
     seen[id] = 1; try { localStorage.setItem(POPS_KEY, JSON.stringify(seen)); } catch (e) {}
@@ -2825,9 +3046,22 @@
     newRun(!coachDone(), 1); run.guided = true;
     saveRun('build');
   }
+  // 1.26 (15): an omen as a small box: its picture, name, rule, and the reward or the price
+  function omenBox(id) {
+    const O = OMENS[id], d = el('div', 'omenbox'); if (!O) return d;
+    { const u = ART.omen && ART.omen(id); if (u) { const im = el('img', 'omenimg'); im.src = u; im.alt = ''; d.appendChild(im); } }
+    const t = el('div', 'omentx'); t.appendChild(el('b', null, 'Omen: ' + O.name)); t.appendChild(el('span', null, O.text));
+    if (O.reward) t.appendChild(el('span', 'good', 'Nagroda: ' + O.reward + '.')); if (O.cost) t.appendChild(el('span', 'bad', 'Za to ' + O.cost + '.'));
+    if (!O.reward && !O.cost) t.appendChild(el('span', 'unk', 'Bez nagrody: zmienia, co działa.'));
+    d.appendChild(t); return d;
+  }
   function renderNews(card) {   // 1.12.1: what the tavern says about the next wave (a tap on "Fala X/10" in the build)
     card.appendChild(el('div', 'sub', 'Wieści z karczmy'));
     card.appendChild(el('h2', null, waveName()));
+    if (run.omens && OMENS[run.omens[run.wave]]) {   // 1.26: the omen first; the first time in this browser, what an omen is
+      card.appendChild(omenBox(run.omens[run.wave]));
+      const seen = popsSeen(); if (!seen.omenNews) { seen.omenNews = 1; try { localStorage.setItem(POPS_KEY, JSON.stringify(seen)); } catch (e) {} card.appendChild(el('p', 'note', 'Omen to zasada specjalna tej jednej fali (fale 3, 6 i 8). Omen, który utrudnia falę, daje nagrodę; ten, który ją ułatwia, podnosi głód serca. Buduj pod niego.')); }
+    }
     waveHint().split(/(?<=[.!?])\s+(?=[A-ZŁŚŻŹĆŃÓĘĄ])/).forEach(t => card.appendChild(el('p', null, t)));
     const b = btn('primary', 'Zamknij', null, closeModal); b.id = 'news-close'; card.appendChild(b);
   }
@@ -2938,7 +3172,7 @@
   kick();   // 1.24 (C): the paced loop (p6 FP)
 
   // Hook for automated checks; no effect on normal play.
-  const yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  const yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, partyPool, essMultNow, copyTarget, hurtMonster, statusList, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

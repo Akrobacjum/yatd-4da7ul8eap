@@ -1,10 +1,10 @@
 # Załącznik B: karty (UPGRADES) i ich efekty w kodzie
 
-Wygenerowane z `src/p1_config.js` (Prototype 1.24; do 1.17.1: 1.12.1). Kolumna "efekt w kodzie" to dosłowna treść funkcji `apply` (dla kart `card` działa na obiekcie `mods`, `m` = mods; dla `instant` działa raz na `run`/`fl`). W Unity każdą kartę zapisz jako dane (id, nazwa, opis, rzadkość, unikalna, wymaganie, etap nauki, grupa łączenia) plus listę operacji na modyfikatorach (np. `spikeDmg *= 1.5`), a nie jako kod. Znaczenie pól `mods` i miejsca, gdzie kod je czyta: sekcja 03 (3.9), dla kart 1.18 także sekcje 05 (5.13) i 06 (6.3.14).
+Wygenerowane z `src/p1_config.js` (Prototype 1.26; do 1.24 tabela główna, karty 1.26 w B.4, zmiany 1.26 w B.5; do 1.17.1: 1.12.1). Kolumna "efekt w kodzie" to dosłowna treść funkcji `apply` (dla kart `card` działa na obiekcie `mods`, `m` = mods; dla `instant` działa raz na `run`/`fl`). W Unity każdą kartę zapisz jako dane (id, nazwa, opis, rzadkość, unikalna, wymaganie, etap nauki, grupa łączenia) plus listę operacji na modyfikatorach (np. `spikeDmg *= 1.5`), a nie jako kod. Znaczenie pól `mods` i miejsca, gdzie kod je czyta: sekcja 03 (3.9), dla kart 1.18 także sekcje 05 (5.13) i 06 (6.3.14).
 
-140 kart (1.18: 113 -> 140): 122 do talii (zwykłe 63, rzadkie 52, legendarne 7), 14 odblokowań, 4 jednorazowe. W 1.18 doszło 28 kart (24 "MUST" z propozycji i `badnews`, `coins`, `tainted`, `rhythm`), a usunięta została `u-portrait` (portret jest w `START_UNLOCKED`, karta nigdy nie mogła wypaść). Nie zrobione z propozycji: `challenge`, `contagion`, `spite`, `scouthunt`.
+**Od 1.26: 202 wpisy** (140 -> 202, +62): 163 do talii (zwykłe 76, rzadkie 72, legendarne 15; +41), 34 odblokowania (+20: 9 nowych pułapek, łup Przynęta i 10 nowych potworów), 5 jednorazowych (zwykła 1, rzadkie 2, legendarne 2; +1: Odrost). Grupa Serce (`group: 'heart'`, rząd Dar serca, sekcja 03, 3.15): 15 kart do talii oraz `crystal` i `regrow`. Ceny od 1.26: zwykła 5, rzadka 9, legendarna 14, odblokowanie 7 (`SHOP_PRICE`, `priceOf`). Do 1.25.1: 140 kart (1.18: 113 -> 140): 122 do talii (zwykłe 63, rzadkie 52, legendarne 7), 14 odblokowań, 4 jednorazowe. W 1.18 doszło 28 kart (24 "MUST" z propozycji i `badnews`, `coins`, `tainted`, `rhythm`), a usunięta została `u-portrait` (portret jest w `START_UNLOCKED`, karta nigdy nie mogła wypaść). Nie zrobione z propozycji: `challenge`, `contagion`, `spite`, `scouthunt`.
 
-Kolumna "etap": etap nauki (`ONB_CARD`, a dla kart `unlock` `ONB_ITEM` odblokowywanego elementu), od którego karta może wypaść; od 1.24 w pierwszym runie etap 1 = od fali 1, 2 = od fali 3, 3 = od fali 5, 4 = od fali 7 (`ONB_WAVE`, sekcja 03, 5.3), w kolejnych runach wszystkie. Karty komnat i efektów (1.18) mają `req` "ten element jest w lochu" (`hasRk(k)` albo `hasRt(t)`) i nie wypadają bez niego. Kolumna "★": grupa łączenia (1.24, sekcja 03, 3.13): `named` (element o poziom wyżej), `power` (+10% mocy, ×2,75), `fear` (strach +15%), `hero` (+25%, ×3,125), `ess` (+2 Esencji po fali), `greed` (+0,1 chciwości), `shop` (darmowe odświeżenie); "-" = karta `unique`, nie łączy się. Ceny: zwykła 6, rzadka 10, legendarna 16, odblokowanie 8 Esencji (`priceOf`, przed zniżką Pośrednika); sprzedaż połączonej ★ za cenę dwóch.
+Kolumna "etap": etap nauki (`ONB_CARD`, a dla kart `unlock` `ONB_ITEM` odblokowywanego elementu), od którego karta może wypaść; od 1.24 w pierwszym runie etap 1 = od fali 1, 2 = od fali 3, 3 = od fali 5, 4 = od fali 7 (`ONB_WAVE`, sekcja 03, 5.3), w kolejnych runach wszystkie. Karty komnat i efektów (1.18) mają `req` "ten element jest w lochu" (`hasRk(k)` albo `hasRt(t)`) i nie wypadają bez niego. Kolumna "★": grupa łączenia (1.24, sekcja 03, 3.13): `named` (element o poziom wyżej), `power` (+10% mocy, ×2,75), `fear` (strach +15%), `hero` (+25%, ×3,125), `ess` (+2 Esencji po fali), `greed` (+0,1 chciwości), `shop` (darmowe odświeżenie); "-" = karta `unique`, nie łączy się. Ceny do 1.25.1: zwykła 6, rzadka 10, legendarna 16, odblokowanie 8 Esencji (`priceOf`, przed zniżką Pośrednika; od 1.26: 5, 9, 14, 7); sprzedaż połączonej ★ za cenę dwóch.
 
 | id | nazwa | opis w grze | rodzaj | rzadkość | unikalna | wymaga | etap | ★ | efekt w kodzie |
 |---|---|---|---|---|---|---|---|---|---|
@@ -22,8 +22,8 @@ Kolumna "etap": etap nauki (`ONB_CARD`, a dla kart `unlock` `ONB_ITEM` odblokowy
 | `u-musicbox` | Nowa pułapka: Pozytywka | Na obiekt. Kołysanka straszy cały pokój przez kilka sekund. | unlock | zwykła |  |  | 2 |  | `unlock: musicbox` |
 | `u-shade` | Nowy potwór: Cień | Sunie za samotnym bohaterem i szepcze. Rani go tylko kapłan. | unlock | zwykła |  |  | 2 |  | `unlock: shade` |
 | `u-bats` | Nowy potwór: Nietoperze | Szybki rój: gryzie, straszy i płoszy bohaterów. | unlock | zwykła |  |  | 2 |  | `unlock: bats` |
-| `crystal` | Żarłoczne serce | Od razu: serce dostaje dodatkowy kryształ (także maksymalnie, do końca runu). | instant | rzadka |  |  | 1 |  | `() => { run.crystals += 1; run.maxCrystals += 1; }` |
-| `infusion` | Zastrzyk Esencji | Od razu: +20 Esencji. | instant | zwykła |  |  | 1 |  | `() => { fl.essence += 20; run.essence = fl.essence; }` |
+| `crystal` | Żarłoczne serce | Od razu: serce dostaje dodatkowy kryształ (także maksymalnie, do końca runu). | instant | legendarna |  |  | 1 |  | `() => { run.crystals += 1; run.maxCrystals += 1; }` |
+| `infusion` | Zastrzyk Esencji | Od razu: +15 Esencji. | instant | zwykła |  |  | 1 |  | `() => { fl.essence += 15; run.essence = fl.essence; }` |
 | `gift` | Hojny kupiec | Od razu: 2 darmowe karty do wybrania w sklepie. | instant | rzadka |  |  | 1 |  | `() => { run.freePicks = (run.freePicks \|\| 0) + 2; }` |
 | `pact` | Pakt | Do końca runu +1 miejsce w talii, ale serce traci 1 kryształ (także maksymalnie, zawsze zostaje co najmniej 1). | instant | legendarna |  |  | 1 |  | `() => { run.deckSize += 1; run.maxCrystals = Math.max(1, run.maxCrystals - 1); run.crystals = Math.max(1, Math.min(run.crystals - 1, run.maxCrystals)); }` |
 | `spikes` | Ostrzejsze kolce | Kolce zadają +50% obrażeń. | card | zwykła |  |  | 1 | named | `m => { m.spikeDmg *= 1.5; }` |
@@ -40,27 +40,27 @@ Kolumna "etap": etap nauki (`ONB_CARD`, a dla kart `unlock` `ONB_ITEM` odblokowy
 | `portrait` | Galeria grozy | Portret sięga o 2 pola dalej i straszy o 30% mocniej. Portret z cechą 3. poziomu (także w Galerii) i tak straszy cały pokój, więc dostaje tylko strach. | card | zwykła |  | `portrait` | 1 | named | `m => { m.portraitR += 2; m.portraitFear *= 1.3; }` |
 | `spider` | Pajęcze gniazdo | Ugryzienie pająka oplata siecią cały kwadrat 3×3 (pająk z cechą 3. poziomu robi to i bez karty), a pajęczyna każdego pająka trzyma 2 s dłużej. | card | rzadka | tak | `spider` | 1 | - | `m => { m.spiderNest = true; }` |
 | `ghost` | Zimny dotyk | Duch straszy o 50% mocniej, a zranić go może już tylko kapłan. | card | rzadka | tak | `ghost` | 1 | - | `m => { m.ghostAura *= 1.5; m.ghostPriestOnly = true; }` |
-| `monster` | Weterani | Nowo postawione potwory mają +40% HP i biją o 40% mocniej. | card | zwykła |  |  | 1 | power | `m => { m.monster *= 1.4; }` |
+| `monster` | Weterani | Nowo postawione potwory mają +40% HP i biją o 40% mocniej (bonus zostaje, gdy wstaną po powaleniu). | card | zwykła |  |  | 1 | power | `m => { m.monster *= 1.4; }` |
 | `loottrap` | Zatruty łup | Podniesienie łupu zadaje obrażenia (więcej przy rzadszym). | card | zwykła |  |  | 1 | power | `m => { m.lootTrap += 15; }` |
 | `disarm` | Zardzewiałe zamki | Złodziej rozbraja 2 razy wolniej (masz więcej czasu, żeby go przyłapać). | card | zwykła |  |  | 1 | hero | `m => { m.disarm *= 2; }` |
 | `suicide` | Mechanizm samobójczy | Rozbrajana pułapka ma 30% szans, że odpali w twarz rozbrajającemu. | card | zwykła |  |  | 1 | power | `m => { m.suicideMech += 0.3; }` |
 | `essence` | Żyła esencji | Esencja z Grozy +30% (Groza × Chciwość × Combo × 1,3). | card | zwykła |  |  | 1 | ess | `m => { m.regen *= 1.3; }` |
-| `income` | Mroczny dochód | +4 Esencji po każdej fali. | card | zwykła |  |  | 1 | ess | `m => { m.income += 4; }` |
-| `usurer` | Lichwiarz | Po fali dostajesz 15% niewydanej Esencji (najwyżej 12). | card | zwykła |  |  | 1 | ess | `m => { m.usurer += 0.15; }` |
+| `income` Mroczny dochód | Mroczny dochód | +3 Esencji po każdej fali. | card | zwykła |  |  | 1 | ess | `m => { m.income += 3; }` |
+| `usurer` | Lichwiarz | Po fali (gdy serce już zabrało swoje) dostajesz 15% niewydanej Esencji (najwyżej 10). | card | zwykła |  |  | 1 | ess | `m => { m.usurer += 0.15; }` |
 | `dig` | Kopacze | Pokój i przejście kosztują o 2 Esencji mniej. | card | zwykła |  |  | 1 | ess | `m => { m.digDiscount += 2; }` |
 | `mole` | Kret | Co drugą falę jedno kopanie pokoju za darmo. | card | zwykła |  |  | 1 | ess | `m => { m.mole += 1; }` |
-| `harvest` | Żniwa strachu | Każdy bohater, który ucieknie ze strachu, daje dodatkowo 2 Esencji (bez mnożników). | card | zwykła |  |  | 2 | ess | `m => { m.fearHarvest += 2; }` |
+| `harvest` Żniwa strachu | Żniwa strachu | Każdy bohater, który ucieknie ze strachu, daje dodatkowo 3 Esencji (bez mnożników). | card | zwykła |  |  | 2 | ess | `m => { m.fearHarvest += 3; }` |
 | `soul` | Żniwiarz | Śmierć bohatera daje 2 razy więcej Grozy. | card | rzadka |  |  | 1 | ess | `m => { m.soulMult *= 2; }` |
 | `greed` | Złote runo | Zobaczony łup podbija chciwość o połowę mocniej. | card | zwykła |  |  | 1 | greed | `m => { m.greedMult *= 1.5; }` |
 | `fever` | Gorączka złota | Każda fala zaczyna z chciwością wyższą o 0,3. | card | zwykła |  |  | 1 | greed | `m => { m.greedStart += 0.3; }` |
 | `depth` | Głębia mroku | Mnożnik pokoju z sercem i pokoi tuż przed nim +0,5. | card | zwykła |  |  | 1 | greed | `m => { m.depthBonus += 0.5; }` |
 | `infamous` | Zła sława | Każdy kryształ w sercu daje +0,15 chciwości (liczone na starcie fali). | card | zwykła |  |  | 1 | greed | `m => { m.crystalPts += 0.15; }` |
-| `collector` | Kolekcjoner | +0,05 chciwości za każdy inny rodzaj pułapki lub potwora w lochu (na starcie fali). | card | rzadka |  |  | 1 | greed | `m => { m.collector += 0.05; }` |
+| `collector` | Kolekcjoner | +0,04 chciwości za każdy inny rodzaj pułapki lub potwora w lochu (na starcie fali). | card | rzadka |  |  | 1 | greed | `m => { m.collector += 0.04; }` |
 | `miser` | Skąpiec | +0,05 chciwości za każdy element mniej niż 15 w lochu (pułapki i potwory, na starcie fali). | card | rzadka |  |  | 1 | greed | `m => { m.miser += 0.05; }` |
 | `lonely` | Echo samotności | Samotność bohatera daje 2 razy więcej Grozy. | card | rzadka |  |  | 1 | fear | `m => { m.loneMult *= 2; }` |
 | `maze` | Kręte korytarze | Zgubiony bohater daje 2 razy więcej Grozy (Groza ze zgubienia płynie przez jego pierwsze 12 s). | card | rzadka |  |  | 1 | fear | `m => { m.lostMult *= 2; }` |
 | `haunt` | Nawiedzenie | Każdy strach jest o 25% silniejszy (więcej Grozy, szybsze ucieczki). | card | zwykła |  |  | 2 | fear | `m => { m.fearMult *= 1.25; }` |
-| `echo` | Echo krzyku | Bohater, który ucieknie ze strachu, daje 2 razy więcej Grozy. | card | rzadka |  |  | 2 | fear | `m => { m.scareMult *= 2; }` |
+| `echo` Echo krzyku | Echo krzyku | Bohater, który ucieknie ze strachu, daje 1,75 raza więcej Grozy. | card | rzadka |  |  | 2 | fear | `m => { m.scareMult *= 1.75; }` |
 | `panic` | Panika | Bohater, który zaczyna uciekać, straszy wszystkich w promieniu 3 pól (25 strachu). | card | rzadka |  |  | 2 | fear | `m => { m.panic += 1; }` |
 | `hgallery` | Nawiedzona galeria | Duch w pokoju z portretem straszy 2 razy mocniej. | card | rzadka |  | `ghost` | 1 | named | `m => { m.hauntedGallery += 1; }` |
 | `curse` | Klątwa kryształu | Niosący kryształ idzie o 35% wolniej i boi się coraz bardziej. | card | rzadka |  |  | 1 | hero | `m => { m.carrierSlow *= 0.65; m.carrierFear += 4; }` |
@@ -79,7 +79,7 @@ Kolumna "etap": etap nauki (`ONB_CARD`, a dla kart `unlock` `ONB_ITEM` odblokowy
 | `choir` | Chór potępionych | Odpalony portret odpala też wszystkie gotowe portrety w tym samym pokoju (z 60% mocy, każda kolejna kopia +40%). | card | legendarna |  | `portrait` | 1 | named | `m => { m.choir += 1; }` |
 | `hunger` | Głodne kolce | Kolce zadają do końca runu +4% obrażeń za każde zabójstwo kolcami (licznik rośnie przez cały run). | card | rzadka |  |  | 1 | power | `m => { m.hunger += 1; }` |
 | `chronicle` | Kronika grozy | Strach jest o 3% silniejszy za każdego bohatera, który w tym runie uciekł ze strachu (do końca runu). | card | rzadka |  |  | 2 | power | `m => { m.chronicle += 1; }` |
-| `granary` | Spichlerz dusz | Każdy zabity bohater zmniejsza głód serca o 1 do końca runu. | card | zwykła |  |  | 1 | ess | `m => { m.granary += 1; }` |
+| `granary` | Spichlerz dusz | Każdy zabity bohater zmniejsza głód serca o 1 do końca runu (najwyżej o 40). | card | zwykła |  |  | 1 | ess | `m => { m.granary += 1; }` |
 | `bank` | Skarbiec | Każda fala bez kradzieży kryształu dodaje +2 Esencji do przychodu po każdej kolejnej fali (do końca runu). | card | zwykła |  |  | 1 | ess | `m => { m.bank += 1; }` |
 | `tempered` | Zaprawione mechanizmy | Pułapki działają o 1% mocniej za każde 4 trafienia pułapek w tym runie (do końca runu). | card | rzadka |  |  | 1 | power | `m => { m.tempered += 1; }` |
 | `bloodpact` | Krwawa umowa | Pułapki i potwory działają ×1,6 mocniej, ale bohaterowie przychodzą o 2 poziomy silniejsi. | card | legendarna |  |  | 1 | power | `m => { m.pactPower *= 1.6; m.pactLevels += 2; }` |
@@ -94,7 +94,7 @@ Kolumna "etap": etap nauki (`ONB_CARD`, a dla kart `unlock` `ONB_ITEM` odblokowy
 | `venom` | Jadowite gruczoły | Obrażenia od trucizny (pająk, szaman, Zatruty łup) +30%. | card | zwykła |  |  | 1 | power | `m => { m.dmgType.poison *= 1.3; }` |
 | `weakspot` | Słabe punkty | Słabości ciała bohaterów działają 2 razy mocniej (np. kruche kości: obuchowe +80% zamiast +40%). | card | rzadka |  |  | 4 | hero | `m => { m.weakK += 1; }` |
 | `anatomy` | Anatomia ofiar | Przed falą znasz ciało i fobie każdego bohatera. | card | rzadka | tak |  | 4 | - | `m => { m.revealAll = true; }` |
-| `arsenal` | Pełen arsenał | Jeśli na starcie fali masz w lochu wszystkie 4 typy obrażeń, wszystkie obrażenia +20%. | card | rzadka |  |  | 1 | power | `m => { m.arsenal += 0.2; }` |
+| `arsenal` Pełen arsenał | Pełen arsenał | Jeśli na starcie fali masz w lochu 4 z 5 typów obrażeń (kłute, obuchowe, ogień, trucizna, porażenie), wszystkie obrażenia +20%. | card | rzadka |  |  | 1 | power | `m => { m.arsenal += 0.2; }` |
 | `nightmares` | Koszmary | Fobie straszą 3 razy mocniej zamiast 2 (kolejna kopia: 4 razy). | card | rzadka |  |  | 4 | fear | `m => { m.phobiaK += 1; }` |
 | `oddbodies` | Przeklęta karczma | Więcej bohaterów przychodzi z fobią albo słabością ciała (+10% szans na każdą). | card | zwykła |  |  | 4 | hero | `m => { m.oddBodies += 1; }` |
 | `scars` | Blizny na duszy | Trauma łapie już poniżej 50% HP i straszy 2 razy (zamiast 1,5 raza). | card | rzadka |  |  | 4 | fear | `m => { m.traumaK += 1; }` |
@@ -111,8 +111,8 @@ Kolumna "etap": etap nauki (`ONB_CARD`, a dla kart `unlock` `ONB_ITEM` odblokowy
 | `deepstash` | Głęboki schowek | Schowek mieści 2 karty więcej. | card | rzadka |  |  | 1 | shop | `m => { m.stashPlus += 2; }` |
 | `patron` | Mecenas | Co drugą falę dostajesz dodatkową darmową kartę. | card | rzadka |  |  | 1 | shop | `m => { m.patron += 1; }` |
 | `hoard` | Kolekcja w schowku | Każda karta w schowku daje +0,1 chciwości. | card | rzadka |  |  | 1 | shop | `m => { m.stashGreed += 0.1; }` |
-| `wager` | Zakład z sercem | Chciwość +0,8, ale serce chce o 30% więcej. | card | legendarna |  |  | 1 | ess | `m => { m.greedFlat += 0.8; m.hungerK *= 1.3; }` |
-| `gluttony` | Obżarstwo | Gdy serce jest już syte, Esencja z fali wpada o 25% większa. | card | rzadka |  |  | 1 | ess | `m => { m.storeK *= 1.25; }` |
+| `wager` | Zakład z sercem | Chciwość +0,8, ale serce chce o 20% więcej. | card | legendarna |  |  | 1 | ess | `m => { m.greedFlat += 0.8; m.hungerK *= 1.2; }` |
+| `gluttony` | Obżarstwo | Gdy serce jest już syte, Esencja, która trafia do sakiewki (po Daninie), wpada o 25% większa. | card | rzadka |  |  | 1 | ess | `m => { m.storeK *= 1.25; }` |
 | `fasting` | Post | Serce chce o 15% mniej, ale chciwość -0,2. | card | zwykła |  |  | 1 | ess | `m => { m.hungerK *= 0.85; m.greedFlat -= 0.2; }` |
 | `heartbeat` | Bijące serce | Gdy serce jest już syte w tej fali, pułapki i potwory działają o 20% mocniej. | card | rzadka |  |  | 1 | ess | `m => { m.heartbeat += 0.2; }` |
 | `gilded` | Pozłacane pułapki | +0,05 chciwości za każdą pułapkę i potwora na poziomie 2 lub 3. | card | zwykła |  |  | 1 | greed | `m => { m.gilded += 0.05; }` |
@@ -201,7 +201,7 @@ Od 1.24 druga kopia nie leży już obok pierwszej: łączy się w kartę ★, kt
 | `deaf` Głuche ściany | tekst: tracą też połowę opowieści o łupie |
 | `u-portrait` | usunięta (stare zapisy pomijają jej id w talii, schowku i ofercie) |
 
-## B.3 Rozkład grup łączenia (1.24)
+## B.3 Rozkład grup łączenia (1.24; liczby 1.26 pod tabelą)
 
 | Grupa | Liczba kart | Karty |
 |---|---|---|
@@ -212,3 +212,93 @@ Od 1.24 druga kopia nie leży już obok pierwszej: łączy się w kartę ★, kt
 | `ess` | 14 | essence, income, usurer, dig, mole, harvest, soul, granary, bank, cheapwalls, wager, gluttony, fasting, heartbeat |
 | `greed` | 10 | greed, fever, depth, infamous, collector, miser, glass, gilded, golddust, coins |
 | `shop` | 6 | broker, luckydraw, pawnshop, deepstash, patron, hoard |
+
+Od 1.26 (163 karty do talii; grupa liczona przez `fuseGroup`, także dla kart `unique`, które się nie łączą): `named` 20 (5 `unique`: arrows, spider, ghost, conduct, hellpack; nowe: doubleedge, bonesunbroken, conduct, hellpack), `power` 71 (25 `unique`; nowe: heartcry, heavycrystal, warden, bloodflow, lastbreath, heartpulse, fearcrown, bloodbath, lonewolf, palette, minimalist, cursedcrown, skulls, execdiary, risinglegend, pantry, chainreact, tarsulfur, toxicfume, abysspact oraz `unique` heartroom, darklore, heartmem, bloodcredit, copyist, soulmirror, sharedmech, heartecho, plague, undyingarmy, goldendream, croesus), `fear` 21, `hero` 16, `ess` 19 (nowe w `FUSE_GROUP`: darkforge, tithe, stoneheart, glutton, kingsfeast), `greed` 10, `shop` 6. Karty `unique` razem: 30 (14 nowych).
+
+## B.4 Karty dodane w 1.26
+
+Kolumny jak w tabeli głównej, plus "grupa / uwagi": `heart` = grupa Serce (wypada też w rzędzie Dar serca), "rośnie" = `grows` (licznik `run.stacks`, sekcja 03, 3.1), "tylko Dar serca" = `heartOnly`. Etap 1 przy kartach 1.26 oznacza brak wpisu w `ONB_CARD` (wypadają od początku, jeśli spełniają `req`); odblokowania mają etap z `ONB_ITEM` (Wahadło i Wnyki 1, reszta 2-3). Kopista i Lustro duszy mają pustą `apply`: kopiują w `buildMods` (sekcja 03, 3.8). Mechanika nowych kart: sekcje 03 (3.9, 3.15) i 05 (5.14.10).
+
+| id | nazwa | opis w grze | rodzaj | rzadkość | unikalna | wymaga | etap | ★ | grupa / uwagi | efekt w kodzie |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `u-pendulum` | Nowa pułapka: Wahadło | Na ścianę. Ostrze tnie pas 3×4 pól, Unieruchomieni i spowolnieni dostają 1,5 raza więcej. | unlock | zwykła |  |  | 1 |  |  | `unlock: pendulum` |
+| `u-snare` | Nowa pułapka: Wnyki | Na podłogę. Rani i Unieruchamia na 5 s: kolce i wahadło biją go wtedy 1,5 raza mocniej. | unlock | zwykła |  |  | 1 |  |  | `unlock: snare` |
+| `u-miasma` | Nowa pułapka: Wyziewy | Na podłogę. Trująca chmura 3×3: stosy trucizny. Zatruty + ogień = Detonacja. | unlock | zwykła |  |  | 3 |  |  | `unlock: miasma` |
+| `u-oilslick` | Nowa pułapka: Plama oleju | Na podłogę. Oblany na 8 s i spowolniony. Oblany + ogień = Pożar. | unlock | zwykła |  |  | 2 |  |  | `unlock: oilslick` |
+| `u-bolt` | Nowa pułapka: Runa piorunów | Na ścianę. Piorun (porażenie) przeskakuje na Mokrych. Mokry + porażenie = Porażenie. | unlock | zwykła |  |  | 3 |  |  | `unlock: bolt` |
+| `u-flood` | Nowa pułapka: Zalewnia | Na podłogę. Woda w całym pokoju: Mokry, spowolniony; gasi podpalonych (Para). | unlock | zwykła |  |  | 3 |  |  | `unlock: flood` |
+| `u-bell` | Nowa pułapka: Dzwon żałobny | Na mebel. Każda śmierć bohatera w lochu straszy wszystkich żywych. | unlock | zwykła |  |  | 2 |  |  | `unlock: bell` |
+| `u-falsedoor` | Nowa pułapka: Fałszywe przejście | Na drzwi. Pierwszy, kto przejdzie, gubi się na 12 s. | unlock | zwykła |  |  | 2 |  |  | `unlock: falsedoor` |
+| `u-tar` | Nowa pułapka: Kocioł smoły | Na drzwi. Smoła: ogień, Oblany i spowolniony. Z ogniem obok robi Pożar. | unlock | zwykła |  |  | 2 |  |  | `unlock: tar` |
+| `u-bait` | Nowy łup: Przynęta | Wygląda jak sakwa monet. Kto ją podniesie, jest Unieruchomiony i ranny; przynęta zostaje. | unlock | zwykła |  |  | 2 |  |  | `unlock: bait` |
+| `u-skeleton` | Nowy potwór: Szkielet | Powalony pierwszy raz w fali składa się po 5 s z połową życia. | unlock | zwykła |  |  | 2 |  |  | `unlock: skeleton` |
+| `u-zombie` | Nowy potwór: Zombie | Zaraża walczących; Zarażony, który zginie, wstaje jako Twój zombie. | unlock | zwykła |  |  | 2 |  |  | `unlock: zombie` |
+| `u-lich` | Nowy potwór: Licz | Raz na falę podnosi powalonego potwora w swoim pokoju i straszy wokół. | unlock | zwykła |  |  | 3 |  |  | `unlock: lich` |
+| `u-imp` | Nowy potwór: Chochlik | Latający złodziejaszek: kradnie przedmioty i rzuca je jako łup w innym pokoju. | unlock | zwykła |  |  | 2 |  |  | `unlock: imp` |
+| `u-hound` | Nowy potwór: Ogar piekielny | Poluje na uciekających i spanikowanych (×2). | unlock | zwykła |  |  | 2 |  |  | `unlock: hound` |
+| `u-siren` | Nowy potwór: Kusicielka | Zew wabi najmniej odważnego i odłącza go od drużyny. | unlock | zwykła |  |  | 2 |  |  | `unlock: siren` |
+| `u-demon` | Nowy potwór: Demon otchłani | Ogromny i ognisty, ale dopóki stoi, głód każdej fali +2. | unlock | zwykła |  |  | 3 |  |  | `unlock: demon` |
+| `u-sapper` | Nowy potwór: Goblin saper | Rozrzuca kolczatki przy bohaterach. | unlock | zwykła |  |  | 3 |  |  | `unlock: sapper` |
+| `u-warlord` | Nowy potwór: Herszt goblinów | Zielonoskórzy przy nim biją 1,5 raza mocniej. | unlock | zwykła |  |  | 3 |  |  | `unlock: warlord` |
+| `u-rats` | Nowy potwór: Rój szczurów | Tani rój, który rośnie z każdą przeżytą falą. | unlock | zwykła |  |  | 2 |  |  | `unlock: rats` |
+| `regrow` | Odrost | Od razu: serce odrasta jeden utracony kryształ (do maksimum). | instant | rzadka |  |  | 1 |  | `heart`, tylko Dar serca | `() => { if (run.crystals < run.maxCrystals) { run.crystals += 1; run.regrowCount = (run.regrowCount \|\| 0) + 1; if (fl && fl.stats) fl.stats.regrow = (fl.stats.regrow \|\| 0) + 1; } }` |
+| `heartcry` | Krzyk serca | Serce krzyczy głośniej: kradnący przy sercu tracą 10% odwagi na sekundę zamiast 6%. | card | zwykła |  |  | 1 | power | `heart` | `m => { m.heartCry += 0.04; }` |
+| `heavycrystal` | Ciężki kryształ | Wyrwanie kryształu trwa o 1,5 s dłużej. | card | zwykła |  |  | 1 | power | `heart` | `m => { m.heavyCrystal += 1; }` |
+| `heartroom` | Komora serca | Pokój serca mieści o 1 element więcej. | card | rzadka | tak |  | 1 | - | `heart` | `m => { m.heartRoom += 1; }` |
+| `warden` | Strażnik | Potwory w pokoju serca mają +30% HP i biją o 30% mocniej. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.warden += 0.3; }` |
+| `darkforge` | Kuźnia ciemności | Ulepszenia pułapek i potworów kosztują o 25% mniej. | card | zwykła |  |  | 1 | ess | `heart` | `m => { m.upgDisc = Math.min(0.6, m.upgDisc + 0.25); }` |
+| `darklore` | Wiedza mroku | Sklep pokazuje o 1 kartę więcej. | card | rzadka | tak |  | 1 | - | `heart` | `m => { m.shopPlus += 1; }` |
+| `heartmem` | Pamięć serca | Ulepszenie nie kasuje zapamiętanego wyniku skill checku. | card | zwykła | tak |  | 1 | - | `heart` | `m => { m.heartMem = true; }` |
+| `tithe` | Dziesięcina | Danina rośnie z 30% do 45% (szybsze poziomy serca), a w rzędzie Dar serca wybierasz z 4 kart zamiast z 3. | card | rzadka |  |  | 1 | ess | `heart` | `m => { m.titheAdd += 0.15; m.titheChoice += 1; }` |
+| `stoneheart` | Kamienne serce | Po fali serce potrzebuje z sakiewki tylko 75% braku: jeśli tyle masz, jest syte. Nasycenie rośnie za to o 25% wolniej. | card | zwykła |  |  | 1 | ess | `heart` | `m => { m.stoneHeart = true; m.satietyK *= 0.75; }` |
+| `bloodcredit` | Kredyt krwi | Raz na run: gdy po fali sakiewka nie pokryje głodu, zamiast pęknięcia kryształu brakująca reszta ×2 dopisze się do głodu następnej fali (sakiewka zostaje). | card | rzadka | tak |  | 1 | - | `heart` | `m => { m.bloodCredit = true; }` |
+| `glutton` | Głodomór | Serce chce o 20% więcej, ale Danina daje 2 razy więcej Nasycenia (Ofiara bez zmian). | card | legendarna |  |  | 1 | ess | `heart` | `m => { m.hungerK *= 1.2; m.satietyK *= 2; }` |
+| `bloodflow` | Krwiobieg | Każda wypłata combo ×2 lub więcej (5 różnych pułapek z rzędu) daje sercu +3 Nasycenia ponad Daninę. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.bloodflow += 3; }` |
+| `kingsfeast` | Uczta królów | Uczta (bohater zabity przez potwora karmi serce) daje o 50% więcej. | card | zwykła |  |  | 1 | ess | `heart` | `m => { m.feastK *= 1.5; }` |
+| `lastbreath` | Ostatni oddech | Gdy po rozliczeniu głodu sakiewka jest pusta, w następnej fali pułapki i potwory działają o 25% mocniej. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.lastBreath += 0.25; }` |
+| `fearcrown` | Koronacja strachu | Łańcuch, w którym ktoś uciekł ze strachu, wypłaca 1,5 raza więcej Esencji. | card | legendarna |  |  | 1 | power |  | `m => { m.fearCrown *= 1.5; }` |
+| `bloodbath` | Krwawa łaźnia | Każde zabójstwo w pokoju serca mnoży Esencję ×1,1 do końca fali (najwyżej ×2). | card | legendarna |  |  | 1 | power |  | `m => { m.bloodbath += 1; }` |
+| `lonewolf` | Samotny wilk | Gdy w lochu został już tylko 1 bohater (z kilku), Esencja ×1,3. | card | rzadka |  |  | 1 | power |  | `m => { m.lonewolf *= 1.3; }` |
+| `palette` | Pełna paleta | Gdy na starcie fali masz w lochu elementy z 5 lub więcej rodzin, Esencja ×1,25 przez całą falę. | card | rzadka |  |  | 1 | power |  | `m => { m.palette *= 1.25; }` |
+| `minimalist` | Minimalista | Gdy na starcie fali masz w lochu najwyżej 12 pułapek i potworów, Esencja ×1,4 przez całą falę. | card | rzadka |  |  | 1 | power |  | `m => { m.minimalist *= 1.4; }` |
+| `cursedcrown` | Przeklęta korona | Bohaterowie przychodzą o 1 poziom silniejsi, ale cała Esencja ×1,35. | card | legendarna |  |  | 1 | power |  | `m => { m.cursedCrown *= 1.35; m.crownLv += 1; }` |
+| `skulls` | Kolekcja czaszek | Każdy bohater zabity w tym runie dodaje +0,03 do mnożnika Esencji (najwyżej +0,6, czyli ×1,6). | card | rzadka |  |  | 1 | power | rośnie | `m => { m.skulls += 1; }` |
+| `execdiary` | Pamiętnik kata | Każde zabójstwo: ten rodzaj pułapki albo potwora działa o 2% mocniej do końca runu (najwyżej +30% na rodzaj). | card | zwykła |  |  | 1 | power |  | `m => { m.execDiary += 1; }` |
+| `risinglegend` | Rosnąca legenda | Każda fala bez utraty kryształu: +0,1 chciwości na start fali, i tak dalej. Utrata kryształu zeruje licznik. | card | rzadka |  |  | 1 | power | rośnie | `m => { m.risingLegend += 1; }` |
+| `pantry` | Spiżarnia | Fala, w której Danina dała sercu Nasycenia co najmniej za połowę głodu tej fali (bez Ofiary): dochód +2 do końca runu (najwyżej +10). | card | zwykła |  |  | 1 | power | rośnie | `m => { m.pantry += 1; }` |
+| `copyist` | Kopista | Działa jak karta tuż po jego prawej w talii (nie kopiuje kart unikalnych ani innych kopiujących). Kolejność kart zmienisz w karcie talii. | card | legendarna | tak |  | 1 | - |  | `() => {}` |
+| `soulmirror` | Lustro duszy | Działa jak pierwsza karta w talii (nie kopiuje kart unikalnych ani innych kopiujących). Kolejność kart zmienisz w karcie talii. | card | legendarna | tak |  | 1 | - |  | `() => {}` |
+| `doubleedge` | Podwójne ostrze | Kolce trafiają Unieruchomionych i Spowolnionych drugi raz, z połową siły. | card | rzadka |  | `spikes` | 1 | named |  | `m => { m.doubleEdge += 0.5; }` |
+| `sharedmech` | Wspólny mechanizm | W całym lochu ta sama pułapka odpalona ponownie też podbija combo (jak w Zębatkach). | card | rzadka | tak |  | 1 | - |  | `m => { m.sharedMech = true; }` |
+| `chainreact` | Reakcja łańcuchowa | Każda reakcja (Pożar, Porażenie, Detonacja...) przedłuża okno combo o 1 s i podbija combo o 1. | card | rzadka |  |  | 1 | power |  | `m => { m.chainReact += 1; }` |
+| `heartecho` | Echo serca | Pierwsza pułapka, która odpali po nasyceniu serca w fali, odpala dwa razy. | card | rzadka | tak |  | 1 | - |  | `m => { m.heartEcho = true; }` |
+| `tarsulfur` | Smoła i siarka | Oblani (olej, smoła) dostają też o 30% więcej obrażeń kłutych. | card | zwykła |  | `() => run.unlocked.has('oilslick') \|\| run.unlocked.has('tar')` | 1 | power |  | `m => { m.tarSulfur += 0.3; }` |
+| `conduct` | Przewodnictwo | Porażenie przeskakuje nie tylko na Mokrych, ale też na Spowolnionych w tym samym pokoju. | card | zwykła | tak | `bolt` | 1 | - |  | `m => { m.conduct = true; }` |
+| `toxicfume` | Toksyczny opar | Trucizna i Zaraza kumulują się do 10 stosów zamiast 6, a Detonacja jest o 25% silniejsza. | card | zwykła |  | `() => ['miasma', 'zombie', 'rats', 'lcursed'].some(t => run.unlocked.has(t))` | 1 | power |  | `m => { m.toxicCap += 4; m.toxicDet *= 1.25; }` |
+| `plague` | Morowe powietrze | Co 3 s Zaraza przeskakuje z każdego Zarażonego na bohaterów obok. | card | rzadka | tak | `() => run.unlocked.has('zombie') \|\| run.unlocked.has('rats')` | 1 | - |  | `m => { m.plagueAir = true; }` |
+| `hellpack` | Piekielna sfora | Ogary biją uciekających 3 razy mocniej (zamiast 2), a uciekający biegną o 20% wolniej. | card | rzadka | tak | `hound` | 1 | - |  | `m => { m.hellPack = true; }` |
+| `bonesunbroken` | Kości niezłomne | Szkielety składają się 2 razy więcej, a złożone biją o 20% mocniej. | card | zwykła |  | `skeleton` | 1 | named |  | `m => { m.bonesUp += 2; }` |
+| `undyingarmy` | Nieśmiertelna armia | Bohater zabity przez nieumarłego potwora wstaje jako Twój szkielet do końca fali (najwyżej 3 na falę, bez miejsca). | card | legendarna | tak | `() => ['skeleton', 'zombie', 'lich'].some(t => run.unlocked.has(t))` | 1 | - |  | `m => { m.undyingArmy = true; }` |
+| `abysspact` | Pakt z otchłanią | Apetyt demona otchłani o połowę mniejszy (+1 do głodu zamiast +2), a demony (chochlik, ogar, kusicielka, demon) biją o 20% mocniej. | card | rzadka |  | `() => ['imp', 'hound', 'siren', 'demon'].some(t => run.unlocked.has(t))` | 1 | power |  | `m => { m.abyssPact += 1; }` |
+| `goldendream` | Złoty sen | Łup w pokoju serca i w pokojach obok kusi 1,5 raza mocniej, ale nie da się go podnieść: bohater próbuje 3 s i odchodzi. | card | rzadka | tak |  | 1 | - |  | `m => { m.goldenDream = true; }` |
+| `croesus` | Krezus | Chciwość liczy się w Esencji do kwadratu (×2 daje ×4), ale poziomy bohaterów z chciwości rosną 1,5 raza szybciej. | card | legendarna | tak |  | 1 | - |  | `m => { m.croesus = true; }` |
+| `heartpulse` | Puls serca | Gdy serce jest syte, pułapki i potwory w pokoju serca działają o 30% mocniej. | card | zwykła |  |  | 1 | power | `heart` | `m => { m.heartPulse += 0.3; }` |
+
+## B.5 Karty zmienione w 1.26
+
+Wartości w tabeli głównej są już z 1.26; poprzednie (1.25.1) tutaj.
+
+| Karta | Do 1.25.1 | Od 1.26 |
+|---|---|---|
+| `crystal` Żarłoczne serce | rzadka | legendarna, grupa Serce (wypada też w rzędzie Dar serca) |
+| `infusion` Zastrzyk Esencji | +20 Esencji | +15 Esencji |
+| `monster` Weterani | opis bez dopisku | dopisek "bonus zostaje, gdy wstaną po powaleniu" (Odrodzenie) |
+| `income` Mroczny dochód | +4 Esencji po fali | +3 |
+| `usurer` Lichwiarz | 15% niewydanej, najwyżej 12 | najwyżej 10, "gdy serce już zabrało swoje" |
+| `harvest` Żniwa strachu | +2 Esencji za ucieczkę | +3 |
+| `collector` Kolekcjoner | +0,05 chciwości za rodzaj | +0,04 |
+| `echo` Echo krzyku | Groza za ucieczkę ×2 | ×1,75 |
+| `granary` Spichlerz dusz | -1 głodu za zabitego, bez limitu | najwyżej -40 na run |
+| `arsenal` Pełen arsenał | 4 typy obrażeń z 4 | 4 z 5 (doszło porażenie) |
+| `wager` Zakład z sercem | serce chce o 30% więcej | o 20% |
+| `gluttony` Obżarstwo | "Esencja z fali wpada o 25% większa" | to samo, ale liczone po Daninie (tylko część do sakiewki) |

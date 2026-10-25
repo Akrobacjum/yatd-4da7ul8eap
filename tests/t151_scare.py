@@ -117,7 +117,7 @@ JS = r'''() => {
     out.tale = { tale, greedNext: gn, parts, grozaFlee: Math.round(grozaFlee * 100) / 100 };
     ok(Math.abs(tale - 0.24) < 0.001, 'tale 2 x 0.12');
     ok(Math.abs(gn - 0.24) < 0.001, 'greedNext set');
-    ok(Math.abs(grozaFlee - 5) < 0.01 || live.some(h => h.boss), 'flee groza 2.5 each');
+    ok(Math.abs(grozaFlee - 8) < 0.01 || live.some(h => h.boss), 'flee groza 4 each (1.26)');
     ok(parts.some(p => p.startsWith('opowieści o skarbach')), 'shown in greed parts');
   }
   // 7. the cap

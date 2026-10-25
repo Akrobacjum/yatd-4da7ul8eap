@@ -78,5 +78,76 @@
    "shade",
    "bats"
   ]
+ },
+ "dead": {
+  "name": "umarli",
+  "attrs": [
+   "skeleton",
+   "zombie",
+   "lich",
+   "bones",
+   "coffin",
+   "bell"
+  ],
+  "srcs": [
+   "bell",
+   "death"
+  ],
+  "sees": [
+   "skeleton",
+   "zombie",
+   "lich",
+   "bones",
+   "coffin",
+   "bell"
+  ]
+ },
+ "abyss": {
+  "name": "otchłań",
+  "attrs": [
+   "trapdoor",
+   "falsedoor",
+   "pendulum"
+  ],
+  "sees": [
+   "trapdoor",
+   "falsedoor",
+   "pendulum"
+  ]
+ },
+ "noise": {
+  "name": "hałas",
+  "attrs": [
+   "creak",
+   "musicbox",
+   "bell",
+   "gate",
+   "rattle",
+   "howl"
+  ],
+  "srcs": [
+   "screams",
+   "bell"
+  ],
+  "sees": [
+   "creak",
+   "musicbox",
+   "bell"
+  ]
+ },
+ "swarm": {
+  "name": "roje",
+  "attrs": [
+   "bats",
+   "rats",
+   "imp",
+   "miasma"
+  ],
+  "sees": [
+   "bats",
+   "rats",
+   "imp",
+   "miasma"
+  ]
  }
 }

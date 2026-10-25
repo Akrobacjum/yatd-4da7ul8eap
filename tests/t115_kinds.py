@@ -14,10 +14,10 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   // the Loch tab: three sub-tabs, 12 komnaty in the middle one
   const loch = G.TABS.find(t => t.id === 'dungeon');
   out.subs = loch.subs.map(s => s.id + ':' + s.label + ':' + s.items.length);
-  ok(out.subs.join() === 'dig:Kopanie:4,kind:Komnaty:12,effect:Efekty:' + loch.subs[2].items.length && loch.subs[2].items.every(t => t.startsWith('r_')), 'Loch = Kopanie (4) / Komnaty (12) / Efekty (r_*)');
-  ok(Object.keys(G.KIND_INFO).length === 12, '12 komnaty');
+  ok(out.subs.join() === 'dig:Kopanie:4,kind:Komnaty:15,effect:Efekty:' + loch.subs[2].items.length && loch.subs[2].items.every(t => t.startsWith('r_')), 'Loch = Kopanie (4) / Komnaty (15) / Efekty (r_*)');
+  ok(Object.keys(G.KIND_INFO).length === 15, '15 komnaty (1.26: Laboratorium, Cmentarz, Wrota otchłani)');
   Object.values(G.KIND_INFO).forEach(K => K.items.forEach(t => ok(G.KIND_OF[t] === Object.keys(G.KIND_INFO).find(k => G.KIND_INFO[k] === K), t + ' belongs to its komnata')));
-  const ALL = 'spikes web trapdoor cage arrows fire portrait gate powder mimic eyes bones mirror creak coffin musicbox goblin archer spider ogre shaman ghost shade bats'.split(' ');
+  const ALL = 'spikes web trapdoor cage arrows fire portrait gate powder mimic eyes bones mirror creak coffin musicbox goblin archer spider ogre shaman ghost shade bats pendulum snare miasma oilslick bolt flood bell falsedoor tar skeleton zombie lich imp hound siren demon sapper warlord rats'.split(' ');
   out.noKind = ALL.filter(t => !G.KIND_OF[t]); ok(!out.noKind.length, 'every trap and monster has a komnata');
   ok(Object.values(G.KIND_INFO).reduce((a, K) => a + K.items.length, 0) === ALL.length, 'each in exactly one');
   // a trap of the family: no trait, then the trait for free
@@ -28,10 +28,10 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   const ar = wx && f.items.get(wx[0] + ',' + wx[1]);
   out.before = [G.t3(sp), ar && G.t3(ar)]; ok(!out.before[0] && !out.before[1], 'no trait at level 1 before');
   const m = G.toolMarkers('k_armory').find(q => q.room === R.key);
-  out.cost = G.toolCost('k_armory', m); ok(out.cost === 12, 'a komnata costs 12');
+  out.cost = G.toolCost('k_armory', m); ok(out.cost === 10, 'a komnata costs 10 (1.26)');
   const e0 = f.essence;
   ok(G.applyTool(m), 'Zbrojownia goes in');
-  out.paid = e0 - f.essence; ok(out.paid === 12, 'paid 12');
+  out.paid = e0 - f.essence; ok(out.paid === 10, 'paid 10');
   out.after = [G.t3(sp), ar && G.t3(ar)]; ok(out.after[0], 'Kolce get the trait'); ok(!wx || out.after[1], 'Strzały on the wall facing the room get it too');
   out.pow = [G.kindPow(sp)]; sp.lvl = 3; out.pow.push(G.kindPow(sp)); sp.lvl = 1;
   ok(out.pow[0] === 1 && out.pow[1] === 1.25, 'level 1: no extra power; level 3: x1,25');
@@ -50,7 +50,7 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   // off for half back
   const m3 = G.toolMarkers('k_armory').find(q => q.room === R.key); out.has = m3.has; out.offCost = G.toolCost('k_armory', m3);
   const e1 = G.fl.essence; G.applyTool(m3); out.refund = G.fl.essence - e1;
-  ok(m3.has && out.offCost === 0 && out.refund === 6 && !R2.rk && R2.rt === 'fog', 'off for 6 back, the effect stays');
+  ok(m3.has && out.offCost === 0 && out.refund === 5 && !R2.rk && R2.rt === 'fog', 'off for 5 back, the effect stays');
   // a door trap counts in both rooms of its door (its slotRoom is often the corridor)
   G.run.unlocked.add('gate'); G.run.unlocked.add('k_prison'); G.fl.essence = 900;
   const dr = [...G.fl.doors.values()].find(d => (d.a === R2.id || d.b === R2.id) && G.canPlace('gate', d.x, d.y));
@@ -64,10 +64,10 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   return { out, fails }; }'''
 DRAW = r'''() => { const G = __yatd, out = {};
   G.run.wave = 6; G.startBuild(); G.fl.essence = 9999; Object.keys(G.ITEMS).forEach(k => G.run.unlocked.add(k));
-  for (let k = 0; k < 12; k++) { const dm = G.toolMarkers('dig'); if (!dm.length) break; G.applyTool(dm[Math.floor(dm.length / 2)]); G.fl.essence = 9999; }
+  for (let k = 0; k < 16; k++) { const dm = G.toolMarkers('dig'); if (!dm.length) break; G.applyTool(dm[Math.floor(dm.length / 2)]); G.fl.essence = 9999; }
   const rooms = G.fl.rooms.filter(r => r.kind === 'room' && r.id !== G.fl.heart.room), kinds = Object.keys(G.KIND_INFO);
   const effs = Object.keys(G.RT_INFO);
-  rooms.forEach((R, i) => { const m = G.toolMarkers(G.KIND_INFO[kinds[i % 12]].item).find(q => q.room === R.key); if (m) G.applyTool(m); G.fl.essence = 9999;
+  rooms.forEach((R, i) => { const m = G.toolMarkers(G.KIND_INFO[kinds[i % kinds.length]].item).find(q => q.room === R.key); if (m) G.applyTool(m); G.fl.essence = 9999;
     const me = G.toolMarkers(G.RT_INFO[effs[i % effs.length]].item).find(q => q.room === R.key); if (me) G.applyTool(me); G.fl.essence = 9999; });   // author: a kind and an effect stack
   out.kinds = [...new Set(G.fl.rooms.filter(r => r.rk).map(r => r.rk))].length;
   out.props = G.fl.rooms.filter(r => r.rk).map(r => [r.rk, G.kindProps(r).length]);
@@ -87,7 +87,7 @@ async def main():
         r['out']['junkTray'] = lk
         if r['out']['junkLocked'] and not (lk[0] and lk[1]): fails.append('Graciarnia is off in the tray while no mimic is open')
         d = await page.evaluate(DRAW); r['out'].update(d)
-        if d['kinds'] < 12: fails.append('could not set all 12 komnaty (%d)' % d['kinds'])
+        if d['kinds'] < 15: fails.append('could not set all 15 komnaty (%d)' % d['kinds'])
         if d['effs'] < 9: fails.append('every effect sits with a komnata somewhere (%d of 9)' % d['effs'])
         if any(n < 1 for k, n in d['props']): fails.append('a komnata without anything standing in it: %s' % d['props'])
         if d['noDraw'] or d['plans']: fails.append('props or wall pieces without a drawing: %s %s' % (d['noDraw'], d['plans']))

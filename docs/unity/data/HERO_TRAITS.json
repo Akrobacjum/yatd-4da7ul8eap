@@ -26,5 +26,33 @@
    "ostrożna"
   ],
   "w": 1
+ },
+ "superstitious": {
+  "name": [
+   "przesądny",
+   "przesądna"
+  ],
+  "w": 1
+ },
+ "curious": {
+  "name": [
+   "ciekawski",
+   "ciekawska"
+  ],
+  "w": 1
+ },
+ "loyal": {
+  "name": [
+   "lojalny",
+   "lojalna"
+  ],
+  "w": 1
+ },
+ "hothead": {
+  "name": [
+   "zapaleniec",
+   "zapaleniec"
+  ],
+  "w": 1
  }
 }

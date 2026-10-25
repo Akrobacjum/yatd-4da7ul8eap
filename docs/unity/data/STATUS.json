@@ -1,0 +1,68 @@
+{
+ "slow": {
+  "name": "Spowolniony",
+  "short": "spowolnienie",
+  "color": "#a9c6ff",
+  "desc": "idzie 3 razy wolniej, pułapki ranią go o 30% mocniej"
+ },
+ "root": {
+  "name": "Unieruchomiony",
+  "short": "unieruchomienie",
+  "color": "#e2c98f",
+  "desc": "stoi w miejscu (najwyżej 5 s, potem 3 s odporności): kolce i wahadło ×1,5, inne pułapki ×1,15; nie kradnie i nie rozbraja"
+ },
+ "burn": {
+  "name": "Podpalony",
+  "short": "podpalenie",
+  "color": "#ff9a3c",
+  "desc": "płonie (rany od ognia co sekundę) i boi się (+2 strachu/s); Oblany zapala się mocniej (Pożar)"
+ },
+ "bleed": {
+  "name": "Krwawiący",
+  "short": "krwawienie",
+  "color": "#ff5a6a",
+  "desc": "traci krew (kłute co sekundę), zostawia ślad, za którym idzie Ogar; budzi fobię krwi"
+ },
+ "poison": {
+  "name": "Zatruty",
+  "short": "trucizna",
+  "color": "#8fd060",
+  "desc": "stosy trucizny (2 rany/s na stos, najwyżej 6); ogień przy 2+ stosach = Detonacja"
+ },
+ "oiled": {
+  "name": "Oblany",
+  "short": "olej",
+  "color": "#d6b25a",
+  "desc": "oblany olejem 8 s: następny ogień to Pożar; czasem się poślizgnie"
+ },
+ "wet": {
+  "name": "Mokry",
+  "short": "woda",
+  "color": "#6fb7ff",
+  "desc": "mokry 8 s: wolniejszy, ogień rani o połowę i gaśnie, porażenie = Porażenie (reakcja)"
+ },
+ "infected": {
+  "name": "Zarażony",
+  "short": "zaraza",
+  "color": "#a8c86a",
+  "desc": "zaraza jak trucizna; zarażony, który zginie, wstaje jako Twój zombie (Powstanie)"
+ },
+ "marked": {
+  "name": "Naznaczony",
+  "short": "znak",
+  "color": "#c39bff",
+  "desc": "każdy strach ×1,3, latające potwory biorą go na cel"
+ },
+ "seduced": {
+  "name": "Uwiedziony",
+  "short": "zew",
+  "color": "#ff8ac8",
+  "desc": "idzie do kusicielki i odłącza się od drużyny"
+ },
+ "dazed": {
+  "name": "Oszołomiony",
+  "short": "oszołomienie",
+  "color": "#efe3a8",
+  "desc": "po upadku: spowolniony"
+ }
+}

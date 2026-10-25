@@ -1,0 +1,88 @@
+{
+ "siege": {
+  "name": "Oblężenie",
+  "text": "+2 bohaterów, ale wszyscy o 2 poziomy słabsi.",
+  "cost": "serce chce o 15% więcej",
+  "extra": 2,
+  "lvAdd": -2,
+  "hunger": 1.15
+ },
+ "elite": {
+  "name": "Elita",
+  "text": "1 bohater mniej, za to wszyscy o 3 poziomy silniejsi i z dodatkowym przedmiotem.",
+  "reward": "+1 darmowa karta w sklepie",
+  "extra": -1,
+  "lvAdd": 3,
+  "gear": 1,
+  "free": 1,
+  "minW": 6
+ },
+ "inquisition": {
+  "name": "Inkwizycja",
+  "text": "Na pewno przyjdą kapłan i paladyn. Wszyscy +1 poziom i boją się o 30% mniej.",
+  "force": [
+   "priest",
+   "paladin"
+  ],
+  "lvAdd": 1,
+  "fearK": 0.7
+ },
+ "sappers": {
+  "name": "Saperzy",
+  "text": "Przychodzi 2 złodziei (od fali 6: złodziej i tropiciel): pułapki będą wykrywane i rozbrajane.",
+  "reward": "+1 darmowa karta w sklepie",
+  "force": [
+   "thief",
+   "ranger"
+  ],
+  "free": 1,
+  "minW": 6
+ },
+ "haste": {
+  "name": "Pośpiech",
+  "text": "Cierpliwość tylko 60 s, idą o 20% szybciej i nie odpoczywają.",
+  "cost": "serce chce o 15% mniej",
+  "patience": 60,
+  "speed": 1.2,
+  "noRest": 1,
+  "hunger": 0.85
+ },
+ "bloodmoon": {
+  "name": "Krwawy księżyc",
+  "text": "Bohaterowie mają 20% więcej HP, Twoje potwory biją o 30% mocniej, a zabójstwo daje 1,5 raza więcej Grozy.",
+  "hpK": 1.2,
+  "monDmg": 1.3,
+  "killK": 1.5
+ },
+ "goldrush": {
+  "name": "Złoty szał",
+  "text": "Wszyscy są chciwi, chciwość na start +0,5 i przychodzi 1 łowca skarbów więcej.",
+  "cost": "serce chce o 15% więcej",
+  "greedAll": 1,
+  "greedStart": 0.5,
+  "hunters": 1,
+  "hunger": 1.15
+ },
+ "warfog": {
+  "name": "Mgła wojny",
+  "text": "Przed falą nie widać klas ani poziomów bohaterów, a w lochu łatwiej się gubią.",
+  "reward": "+10 Nasycenia serca po fali",
+  "fog": 1,
+  "lostAdd": 0.2,
+  "satiety": 10
+ },
+ "pilgrimage": {
+  "name": "Pielgrzymka",
+  "text": "2 kultystów zamiast 2 zwykłych bohaterów. Idą prosto do serca i piją z niego zjedzoną Esencję. Zabity kultysta oddaje połowę.",
+  "reward": "+1 darmowa karta w sklepie",
+  "cultists": 2,
+  "free": 1,
+  "minW": 6
+ },
+ "fearnight": {
+  "name": "Noc strachu",
+  "text": "Odwaga bohaterów ×0,8, ale strach opada 1,5 raza szybciej: skacze i szybko mija.",
+  "courage": 0.8,
+  "calm": 1.5
+ }
+}

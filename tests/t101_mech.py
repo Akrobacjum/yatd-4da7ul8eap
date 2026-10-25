@@ -12,7 +12,7 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   G.fire(it, 2.43 * 2.4);   // a critical hit with Hazardzista on a level 3 gate: used to shut it for ~23 s
   const shut = door.closedUntil - G.fl.time;
   out.gate = { shut: Math.round(shut * 100) / 100, cd: Math.round(it.cd * 100) / 100 };
-  ok(Math.abs(shut - 4) < 0.01, 'gate shut 4 s whatever the power'); ok(it.cd > shut + 7.9, 'cooldown starts when it opens');
+  ok(Math.abs(shut - 6) < 0.01, 'gate shut 6 s whatever the power (1.26)'); ok(it.cd > shut + 7.9, 'cooldown starts when it opens');
   for (let k = 0; k < 6; k++) { it.cd = 0; it.disabled = false; G.fire(it, 1); }
   out.gate.uses = it.uses; out.gate.disabled = it.disabled;
   ok(it.uses <= 7, 'level 3: 3 + 2 closings');

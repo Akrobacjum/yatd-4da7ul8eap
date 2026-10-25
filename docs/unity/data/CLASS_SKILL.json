@@ -1,4 +1,8 @@
 {
+ "paladin": "przysięga uspokaja drużynę, bije nieumarłych i demony, nie zostawia nikogo",
+ "ranger": "wykrywa pułapki podłogowe i potwory obok, strzela do potworów",
+ "alchemist": "antidotum zdejmuje statusy, flaszka rani potwory albo neutralizuje strefy",
+ "cultist": "idzie do serca i wypija z niego Esencję",
  "warrior": "tarcza, walczy z potworami",
  "thief": "wykrywa i rozbraja pułapki",
  "priest": "leczy, osłania, odczynia",

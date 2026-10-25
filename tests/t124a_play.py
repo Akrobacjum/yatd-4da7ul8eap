@@ -64,8 +64,8 @@ EXHAUST = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) =
   return { fails, out }; }"""
 # ---------- 2. the trapdoor: cost 6, 2 falls a wave (1 for an elite or level 12+), then it does not fire on him ----------
 TRAPDOOR = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => { if (!c) fails.push(m); };
-  ok(G.ITEMS.trapdoor.cost === 6 && G.costOf('trapdoor') === 6, 'cost 6: ' + G.costOf('trapdoor'));
-  ok(G.upgCost({ type: 'trapdoor', lvl: 1 }) === 12 && G.upgCost({ type: 'trapdoor', lvl: 2 }) === 24, 'the upgrade costs follow the price (x2, x4): ' + G.upgCost({ type: 'trapdoor', lvl: 1 }));
+  ok(G.ITEMS.trapdoor.cost === 4 && G.costOf('trapdoor') === 4, 'cost 4 (1.26): ' + G.costOf('trapdoor'));
+  ok(G.upgCost({ type: 'trapdoor', lvl: 1 }) === 8 && G.upgCost({ type: 'trapdoor', lvl: 2 }) === 16, 'the upgrade costs follow the price (x2, x4): ' + G.upgCost({ type: 'trapdoor', lvl: 1 }));
   const fallsOf = (rank, lvl) => {
     T.fresh(7); const tds = [];
     for (const R of T.big()) for (const t of T.floorSpots(R, 'trapdoor')) { if (tds.length >= 3) break; const it = T.place('trapdoor', t); if (it) tds.push(it); }
@@ -95,16 +95,17 @@ WAVES = r"""() => { const { G } = T, fails = [], out = { table: [] }; const ok =
   while (G.modalKind) G.closeModal(); G.setUser(false); G.newRun(false); while (G.modalKind) G.closeModal();
   const near = (a, b) => Math.abs(a - b) < 1e-6;
   // 1.25.1: halfway back (wave 1 like the old 2, then 2,75 / 3,5 / 4,25)
-  ok(near(G.waveBase(1), G.waveBase0(2)), 'wave 1 = the old wave 2');
-  ok(near(G.waveBase(2), G.waveBase0(2) * 0.25 + G.waveBase0(3) * 0.75), 'wave 2 = the old 2,75');
-  ok(near(G.waveBase(3), (G.waveBase0(3) + G.waveBase0(4)) / 2), 'wave 3 = the old 3,5');
-  ok(near(G.waveBase(4), G.waveBase0(4) * 0.75 + G.waveBase0(5) * 0.25), 'wave 4 = the old 4,25');
+  // 1.26 (5.1): wave 1 like the old 1,5, then 2,25 / 3 / 4
+  ok(near(G.waveBase(1), (G.waveBase0(1) + G.waveBase0(2)) / 2), 'wave 1 = the old 1,5');
+  ok(near(G.waveBase(2), G.waveBase0(2) * 0.75 + G.waveBase0(3) * 0.25), 'wave 2 = the old 2,25');
+  ok(near(G.waveBase(3), G.waveBase0(3)), 'wave 3 = the old 3');
+  ok(near(G.waveBase(4), G.waveBase0(4)), 'wave 4 = the old 4');
   for (let n = 5; n <= 10; n++) { ok(near(G.waveBase(n), G.waveBase0(n)), 'wave ' + n + ' unchanged'); ok(near(G.earlyHpK(n), G.hpK0(n)), 'wave ' + n + ' HP unchanged'); }
-  ok(near(G.earlyHpK(1), Math.max(G.hpK0(1), G.hpK0(2))), 'wave 1 HP bonus = the old wave 2 (or its own)');
+  ok(near(G.earlyHpK(1), Math.max(G.hpK0(1), (G.hpK0(1) + G.hpK0(2)) / 2)), 'wave 1 HP bonus = the old wave 1,5 (or its own)');
   const stat = n => { let lv = 0, hp = 0, k = 0, size = 0; for (let i = 0; i < 150; i++) { const L = G.makeWave(n); size += L.length; L.forEach(e => { lv += e.lvl; hp += e.max; k++; }); } return { n, base: Math.round(G.waveBase(n) * 100) / 100, old: Math.round(G.waveBase0(n) * 100) / 100, lvl: Math.round(lv / k * 100) / 100, hp: Math.round(hp / k), size: size / 150 }; };
   for (let n = 1; n <= 7; n++) out.table.push(stat(n));
   const T1 = out.table[0];
-  ok(T1.lvl >= 2.4 && T1.lvl <= 4.0 && T1.size === 3, 'wave 1: 3 heroes about level 3 (the old wave 2): ' + JSON.stringify(T1));
+  ok(T1.lvl >= 1.6 && T1.lvl <= 3.4 && T1.size === 3, 'wave 1: 3 heroes about level 2-3 (the old wave 1,5): ' + JSON.stringify(T1));
   ok(out.table[1].lvl > T1.lvl && out.table[2].lvl > out.table[1].lvl, 'waves 1-3 climb');
   ok(G.makeWave(1).every(e => ['warrior', 'thief', 'mage', 'priest'].includes(e.type)), 'the classic classes in wave 1');
   // the tutorial's first wave as before: 2 rookies, levels at most 2
@@ -171,7 +172,7 @@ FUSE = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => {
   x = one('cooldown', ['cooldown']); ok(near(x.b.cooldown, Math.pow(0.75, 2.75)), 'power: +10% (2,75 copies): ' + x.b.cooldown);
   x = one('haunt', ['fearMult']); ok(near(x.b.fearMult, Math.pow(1.25, 2.5) * 1.15), 'fear: +15% fear: ' + x.b.fearMult);
   x = one('lure', ['lure']); ok(near(x.b.lure, 3.125), 'hero: +25% (3,125 copies): ' + x.b.lure);
-  x = one('income', ['income']); ok(near(x.b.income, 4 * 2.5 + 2), 'Esencja: +2 a wave: ' + x.b.income);
+  x = one('income', ['income']); ok(near(x.b.income, 3 * 2.5 + 2), 'Esencja (1.26: +3 a copy): +2 a wave: ' + x.b.income);
   x = one('fever', ['greedStart', 'greedFlat']); ok(near(x.b.greedStart, 0.75) && near(x.b.greedFlat, 0.1), 'greed: +0,1 at the start: ' + JSON.stringify(x.b));
   x = one('luckydraw', ['freeReroll']); ok(x.b.freeReroll === 3 && G.rerollCost() === 0, 'shop: a free refresh (2 + 1, counts rounded down): ' + x.b.freeReroll);
   x = one('patron', ['patron']); ok(x.b.patron === 2, 'counts rounded down (patron 2,5 -> 2): ' + x.b.patron);

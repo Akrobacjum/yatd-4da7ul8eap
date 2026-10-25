@@ -78,5 +78,25 @@
    "poison": 1.4
   },
   "text": "trucizna +40%"
+ },
+ "conductive": {
+  "name": [
+   "przewodzący",
+   "przewodząca"
+  ],
+  "res": {
+   "shock": 1.4
+  },
+  "text": "porażenie +40%"
+ },
+ "grounded": {
+  "name": [
+   "uziemiony",
+   "uziemiona"
+  ],
+  "res": {
+   "shock": 0.7
+  },
+  "text": "porażenie -30%"
  }
 }

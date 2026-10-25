@@ -1,0 +1,27 @@
+{
+ "blaze": {
+  "name": "Pożar",
+  "color": "#ff7a2a",
+  "desc": "ogień trafia Oblanego: ×1,6, podpalenie 2 razy dłużej, ogień przeskakuje na Oblanych obok"
+ },
+ "detonate": {
+  "name": "Detonacja",
+  "color": "#b6e05a",
+  "desc": "ogień trafia Zatrutego (2+ stosy): wybuch 3×3 za każdy stos"
+ },
+ "shock": {
+  "name": "Porażenie",
+  "color": "#9fd6ff",
+  "desc": "porażenie trafia Mokrego: ×1,6, przeskakuje na wszystkich Mokrych w pokoju, ogłusza"
+ },
+ "steam": {
+  "name": "Para",
+  "color": "#dfe8f0",
+  "desc": "woda trafia Podpalonego: gasi go, chmura 3×3 straszy i oślepia"
+ },
+ "rise": {
+  "name": "Powstanie",
+  "color": "#a8c86a",
+  "desc": "Zarażony umiera i wstaje jako Twój zombie do końca fali (najwyżej 2 na falę)"
+ }
+}

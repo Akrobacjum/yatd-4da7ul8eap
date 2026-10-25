@@ -112,9 +112,171 @@
   "text": "Szybki rój: gryzie, straszy i płoszy bohaterów."
  },
  {
+  "id": "u-pendulum",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "pendulum",
+  "name": "Nowa pułapka: Wahadło",
+  "text": "Na ścianę. Ostrze tnie pas 3×4 pól, Unieruchomieni i spowolnieni dostają 1,5 raza więcej."
+ },
+ {
+  "id": "u-snare",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "snare",
+  "name": "Nowa pułapka: Wnyki",
+  "text": "Na podłogę. Rani i Unieruchamia na 5 s: kolce i wahadło biją go wtedy 1,5 raza mocniej."
+ },
+ {
+  "id": "u-miasma",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "miasma",
+  "name": "Nowa pułapka: Wyziewy",
+  "text": "Na podłogę. Trująca chmura 3×3: stosy trucizny. Zatruty + ogień = Detonacja."
+ },
+ {
+  "id": "u-oilslick",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "oilslick",
+  "name": "Nowa pułapka: Plama oleju",
+  "text": "Na podłogę. Oblany na 8 s i spowolniony. Oblany + ogień = Pożar."
+ },
+ {
+  "id": "u-bolt",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "bolt",
+  "name": "Nowa pułapka: Runa piorunów",
+  "text": "Na ścianę. Piorun (porażenie) przeskakuje na Mokrych. Mokry + porażenie = Porażenie."
+ },
+ {
+  "id": "u-flood",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "flood",
+  "name": "Nowa pułapka: Zalewnia",
+  "text": "Na podłogę. Woda w całym pokoju: Mokry, spowolniony; gasi podpalonych (Para)."
+ },
+ {
+  "id": "u-bell",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "bell",
+  "name": "Nowa pułapka: Dzwon żałobny",
+  "text": "Na mebel. Każda śmierć bohatera w lochu straszy wszystkich żywych."
+ },
+ {
+  "id": "u-falsedoor",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "falsedoor",
+  "name": "Nowa pułapka: Fałszywe przejście",
+  "text": "Na drzwi. Pierwszy, kto przejdzie, gubi się na 12 s."
+ },
+ {
+  "id": "u-tar",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "tar",
+  "name": "Nowa pułapka: Kocioł smoły",
+  "text": "Na drzwi. Smoła: ogień, Oblany i spowolniony. Z ogniem obok robi Pożar."
+ },
+ {
+  "id": "u-bait",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "bait",
+  "name": "Nowy łup: Przynęta",
+  "text": "Wygląda jak sakwa monet. Kto ją podniesie, jest Unieruchomiony i ranny; przynęta zostaje."
+ },
+ {
+  "id": "u-skeleton",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "skeleton",
+  "name": "Nowy potwór: Szkielet",
+  "text": "Powalony pierwszy raz w fali składa się po 5 s z połową życia."
+ },
+ {
+  "id": "u-zombie",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "zombie",
+  "name": "Nowy potwór: Zombie",
+  "text": "Zaraża walczących; Zarażony, który zginie, wstaje jako Twój zombie."
+ },
+ {
+  "id": "u-lich",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "lich",
+  "name": "Nowy potwór: Licz",
+  "text": "Raz na falę podnosi powalonego potwora w swoim pokoju i straszy wokół."
+ },
+ {
+  "id": "u-imp",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "imp",
+  "name": "Nowy potwór: Chochlik",
+  "text": "Latający złodziejaszek: kradnie przedmioty i rzuca je jako łup w innym pokoju."
+ },
+ {
+  "id": "u-hound",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "hound",
+  "name": "Nowy potwór: Ogar piekielny",
+  "text": "Poluje na uciekających i spanikowanych (×2)."
+ },
+ {
+  "id": "u-siren",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "siren",
+  "name": "Nowy potwór: Kusicielka",
+  "text": "Zew wabi najmniej odważnego i odłącza go od drużyny."
+ },
+ {
+  "id": "u-demon",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "demon",
+  "name": "Nowy potwór: Demon otchłani",
+  "text": "Ogromny i ognisty, ale dopóki stoi, głód każdej fali +2."
+ },
+ {
+  "id": "u-sapper",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "sapper",
+  "name": "Nowy potwór: Goblin saper",
+  "text": "Rozrzuca kolczatki przy bohaterach."
+ },
+ {
+  "id": "u-warlord",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "warlord",
+  "name": "Nowy potwór: Herszt goblinów",
+  "text": "Zielonoskórzy przy nim biją 1,5 raza mocniej."
+ },
+ {
+  "id": "u-rats",
+  "kind": "unlock",
+  "rar": "c",
+  "unlock": "rats",
+  "name": "Nowy potwór: Rój szczurów",
+  "text": "Tani rój, który rośnie z każdą przeżytą falą."
+ },
+ {
   "id": "crystal",
   "kind": "instant",
-  "rar": "r",
+  "rar": "l",
+  "group": "heart",
+  "heartOnly": false,
   "name": "Żarłoczne serce",
   "text": "Od razu: serce dostaje dodatkowy kryształ (także maksymalnie, do końca runu).",
   "apply": "fn: () => { run.crystals += 1; run.maxCrystals += 1; }"
@@ -124,8 +286,8 @@
   "kind": "instant",
   "rar": "c",
   "name": "Zastrzyk Esencji",
-  "text": "Od razu: +20 Esencji.",
-  "apply": "fn: () => { fl.essence += 20; run.essence = fl.essence; }"
+  "text": "Od razu: +15 Esencji.",
+  "apply": "fn: () => { fl.essence += 15; run.essence = fl.essence; }"
  },
  {
   "id": "gift",
@@ -285,7 +447,7 @@
   "rar": "c",
   "tag": "weterani",
   "name": "Weterani",
-  "text": "Nowo postawione potwory mają +40% HP i biją o 40% mocniej.",
+  "text": "Nowo postawione potwory mają +40% HP i biją o 40% mocniej (bonus zostaje, gdy wstaną po powaleniu).",
   "apply": "fn: m => { m.monster *= 1.4; }"
  },
  {
@@ -328,10 +490,10 @@
   "id": "income",
   "kind": "card",
   "rar": "c",
-  "tag": "+4 po fali",
+  "tag": "+3 po fali",
   "name": "Mroczny dochód",
-  "text": "+4 Esencji po każdej fali.",
-  "apply": "fn: m => { m.income += 4; }"
+  "text": "+3 Esencji po każdej fali.",
+  "apply": "fn: m => { m.income += 3; }"
  },
  {
   "id": "usurer",
@@ -339,7 +501,7 @@
   "rar": "c",
   "tag": "odsetki",
   "name": "Lichwiarz",
-  "text": "Po fali dostajesz 15% niewydanej Esencji (najwyżej 12).",
+  "text": "Po fali (gdy serce już zabrało swoje) dostajesz 15% niewydanej Esencji (najwyżej 10).",
   "apply": "fn: m => { m.usurer += 0.15; }"
  },
  {
@@ -364,10 +526,10 @@
   "id": "harvest",
   "kind": "card",
   "rar": "c",
-  "tag": "żniwa +2",
+  "tag": "żniwa +3",
   "name": "Żniwa strachu",
-  "text": "Każdy bohater, który ucieknie ze strachu, daje dodatkowo 2 Esencji (bez mnożników).",
-  "apply": "fn: m => { m.fearHarvest += 2; }"
+  "text": "Każdy bohater, który ucieknie ze strachu, daje dodatkowo 3 Esencji (bez mnożników).",
+  "apply": "fn: m => { m.fearHarvest += 3; }"
  },
  {
   "id": "soul",
@@ -418,10 +580,10 @@
   "id": "collector",
   "kind": "card",
   "rar": "r",
-  "tag": "+0,05 chciwości/rodzaj",
+  "tag": "+0,04 chciwości/rodzaj",
   "name": "Kolekcjoner",
-  "text": "+0,05 chciwości za każdy inny rodzaj pułapki lub potwora w lochu (na starcie fali).",
-  "apply": "fn: m => { m.collector += 0.05; }"
+  "text": "+0,04 chciwości za każdy inny rodzaj pułapki lub potwora w lochu (na starcie fali).",
+  "apply": "fn: m => { m.collector += 0.04; }"
  },
  {
   "id": "miser",
@@ -463,10 +625,10 @@
   "id": "echo",
   "kind": "card",
   "rar": "r",
-  "tag": "ucieczka ×2",
+  "tag": "ucieczka ×1,75",
   "name": "Echo krzyku",
-  "text": "Bohater, który ucieknie ze strachu, daje 2 razy więcej Grozy.",
-  "apply": "fn: m => { m.scareMult *= 2; }"
+  "text": "Bohater, który ucieknie ze strachu, daje 1,75 raza więcej Grozy.",
+  "apply": "fn: m => { m.scareMult *= 1.75; }"
  },
  {
   "id": "panic",
@@ -646,7 +808,7 @@
   "tag": "rośnie",
   "grows": true,
   "name": "Spichlerz dusz",
-  "text": "Każdy zabity bohater zmniejsza głód serca o 1 do końca runu.",
+  "text": "Każdy zabity bohater zmniejsza głód serca o 1 do końca runu (najwyżej o 40).",
   "apply": "fn: m => { m.granary += 1; }"
  },
  {
@@ -783,9 +945,9 @@
   "id": "arsenal",
   "kind": "card",
   "rar": "r",
-  "tag": "4 typy: +20%",
+  "tag": "4 z 5 typów: +20%",
   "name": "Pełen arsenał",
-  "text": "Jeśli na starcie fali masz w lochu wszystkie 4 typy obrażeń, wszystkie obrażenia +20%.",
+  "text": "Jeśli na starcie fali masz w lochu 4 z 5 typów obrażeń (kłute, obuchowe, ogień, trucizna, porażenie), wszystkie obrażenia +20%.",
   "apply": "fn: m => { m.arsenal += 0.2; }"
  },
  {
@@ -936,10 +1098,10 @@
   "id": "wager",
   "kind": "card",
   "rar": "l",
-  "tag": "chciwość +0,8, głód +30%",
+  "tag": "chciwość +0,8, głód +20%",
   "name": "Zakład z sercem",
-  "text": "Chciwość +0,8, ale serce chce o 30% więcej.",
-  "apply": "fn: m => { m.greedFlat += 0.8; m.hungerK *= 1.3; }"
+  "text": "Chciwość +0,8, ale serce chce o 20% więcej.",
+  "apply": "fn: m => { m.greedFlat += 0.8; m.hungerK *= 1.2; }"
  },
  {
   "id": "gluttony",
@@ -947,7 +1109,7 @@
   "rar": "r",
   "tag": "po sytości ×1,25",
   "name": "Obżarstwo",
-  "text": "Gdy serce jest już syte, Esencja z fali wpada o 25% większa.",
+  "text": "Gdy serce jest już syte, Esencja, która trafia do sakiewki (po Daninie), wpada o 25% większa.",
   "apply": "fn: m => { m.storeK *= 1.25; }"
  },
  {
@@ -1295,5 +1457,425 @@
   "name": "Rytm lochu",
   "text": "Okno combo trwa 1 s dłużej (4 s zamiast 3).",
   "apply": "fn: m => { m.rhythm += 1; }"
+ },
+ {
+  "id": "regrow",
+  "kind": "instant",
+  "rar": "r",
+  "group": "heart",
+  "heartOnly": true,
+  "name": "Odrost",
+  "text": "Od razu: serce odrasta jeden utracony kryształ (do maksimum).",
+  "apply": "fn: () => { if (run.crystals < run.maxCrystals) { run.crystals += 1; run.regrowCount = (run.regrowCount || 0) + 1; if (fl && fl.stats) fl.stats.regrow = (fl.stats.regrow || 0) + 1; } }"
+ },
+ {
+  "id": "heartcry",
+  "kind": "card",
+  "rar": "c",
+  "group": "heart",
+  "tag": "krzyk 10%/s",
+  "name": "Krzyk serca",
+  "text": "Serce krzyczy głośniej: kradnący przy sercu tracą 10% odwagi na sekundę zamiast 6%.",
+  "apply": "fn: m => { m.heartCry += 0.04; }"
+ },
+ {
+  "id": "heavycrystal",
+  "kind": "card",
+  "rar": "c",
+  "group": "heart",
+  "tag": "kradzież +1,5 s",
+  "name": "Ciężki kryształ",
+  "text": "Wyrwanie kryształu trwa o 1,5 s dłużej.",
+  "apply": "fn: m => { m.heavyCrystal += 1; }"
+ },
+ {
+  "id": "heartroom",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "unique": true,
+  "tag": "pokój serca +1",
+  "name": "Komora serca",
+  "text": "Pokój serca mieści o 1 element więcej.",
+  "apply": "fn: m => { m.heartRoom += 1; }"
+ },
+ {
+  "id": "warden",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "tag": "potwory przy sercu +30%",
+  "name": "Strażnik",
+  "text": "Potwory w pokoju serca mają +30% HP i biją o 30% mocniej.",
+  "apply": "fn: m => { m.warden += 0.3; }"
+ },
+ {
+  "id": "darkforge",
+  "kind": "card",
+  "rar": "c",
+  "group": "heart",
+  "tag": "ulepszenia -25%",
+  "name": "Kuźnia ciemności",
+  "text": "Ulepszenia pułapek i potworów kosztują o 25% mniej.",
+  "apply": "fn: m => { m.upgDisc = Math.min(0.6, m.upgDisc + 0.25); }"
+ },
+ {
+  "id": "darklore",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "unique": true,
+  "tag": "sklep +1 karta",
+  "name": "Wiedza mroku",
+  "text": "Sklep pokazuje o 1 kartę więcej.",
+  "apply": "fn: m => { m.shopPlus += 1; }"
+ },
+ {
+  "id": "heartmem",
+  "kind": "card",
+  "rar": "c",
+  "group": "heart",
+  "unique": true,
+  "tag": "pamięć zostaje",
+  "name": "Pamięć serca",
+  "text": "Ulepszenie nie kasuje zapamiętanego wyniku skill checku.",
+  "apply": "fn: m => { m.heartMem = true; }"
+ },
+ {
+  "id": "tithe",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "tag": "Danina 45%",
+  "name": "Dziesięcina",
+  "text": "Danina rośnie z 30% do 45% (szybsze poziomy serca), a w rzędzie Dar serca wybierasz z 4 kart zamiast z 3.",
+  "apply": "fn: m => { m.titheAdd += 0.15; m.titheChoice += 1; }"
+ },
+ {
+  "id": "stoneheart",
+  "kind": "card",
+  "rar": "c",
+  "group": "heart",
+  "tag": "brak -25%",
+  "name": "Kamienne serce",
+  "text": "Po fali serce potrzebuje z sakiewki tylko 75% braku: jeśli tyle masz, jest syte. Nasycenie rośnie za to o 25% wolniej.",
+  "apply": "fn: m => { m.stoneHeart = true; m.satietyK *= 0.75; }"
+ },
+ {
+  "id": "bloodcredit",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "unique": true,
+  "tag": "raz: dług zamiast kryształu",
+  "name": "Kredyt krwi",
+  "text": "Raz na run: gdy po fali sakiewka nie pokryje głodu, zamiast pęknięcia kryształu brakująca reszta ×2 dopisze się do głodu następnej fali (sakiewka zostaje).",
+  "apply": "fn: m => { m.bloodCredit = true; }"
+ },
+ {
+  "id": "glutton",
+  "kind": "card",
+  "rar": "l",
+  "group": "heart",
+  "tag": "głód +20%, Nasycenie ×2",
+  "name": "Głodomór",
+  "text": "Serce chce o 20% więcej, ale Danina daje 2 razy więcej Nasycenia (Ofiara bez zmian).",
+  "apply": "fn: m => { m.hungerK *= 1.2; m.satietyK *= 2; }"
+ },
+ {
+  "id": "bloodflow",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "tag": "combo 5+: +3 Nasycenia",
+  "name": "Krwiobieg",
+  "text": "Każda wypłata combo ×2 lub więcej (5 różnych pułapek z rzędu) daje sercu +3 Nasycenia ponad Daninę.",
+  "apply": "fn: m => { m.bloodflow += 3; }"
+ },
+ {
+  "id": "kingsfeast",
+  "kind": "card",
+  "rar": "c",
+  "group": "heart",
+  "tag": "Uczta ×1,5",
+  "name": "Uczta królów",
+  "text": "Uczta (bohater zabity przez potwora karmi serce) daje o 50% więcej.",
+  "apply": "fn: m => { m.feastK *= 1.5; }"
+ },
+ {
+  "id": "lastbreath",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "tag": "pusta sakiewka: +25%",
+  "name": "Ostatni oddech",
+  "text": "Gdy po rozliczeniu głodu sakiewka jest pusta, w następnej fali pułapki i potwory działają o 25% mocniej.",
+  "apply": "fn: m => { m.lastBreath += 0.25; }"
+ },
+ {
+  "id": "fearcrown",
+  "kind": "card",
+  "rar": "l",
+  "tag": "ucieczka: łańcuch ×1,5",
+  "name": "Koronacja strachu",
+  "text": "Łańcuch, w którym ktoś uciekł ze strachu, wypłaca 1,5 raza więcej Esencji.",
+  "apply": "fn: m => { m.fearCrown *= 1.5; }"
+ },
+ {
+  "id": "bloodbath",
+  "kind": "card",
+  "rar": "l",
+  "tag": "zabójstwo przy sercu ×1,1",
+  "name": "Krwawa łaźnia",
+  "text": "Każde zabójstwo w pokoju serca mnoży Esencję ×1,1 do końca fali (najwyżej ×2).",
+  "apply": "fn: m => { m.bloodbath += 1; }"
+ },
+ {
+  "id": "lonewolf",
+  "kind": "card",
+  "rar": "r",
+  "tag": "ostatni bohater ×1,3",
+  "name": "Samotny wilk",
+  "text": "Gdy w lochu został już tylko 1 bohater (z kilku), Esencja ×1,3.",
+  "apply": "fn: m => { m.lonewolf *= 1.3; }"
+ },
+ {
+  "id": "palette",
+  "kind": "card",
+  "rar": "r",
+  "tag": "5+ rodzin ×1,25",
+  "name": "Pełna paleta",
+  "text": "Gdy na starcie fali masz w lochu elementy z 5 lub więcej rodzin, Esencja ×1,25 przez całą falę.",
+  "apply": "fn: m => { m.palette *= 1.25; }"
+ },
+ {
+  "id": "minimalist",
+  "kind": "card",
+  "rar": "r",
+  "tag": "do 12 elementów ×1,4",
+  "name": "Minimalista",
+  "text": "Gdy na starcie fali masz w lochu najwyżej 12 pułapek i potworów, Esencja ×1,4 przez całą falę.",
+  "apply": "fn: m => { m.minimalist *= 1.4; }"
+ },
+ {
+  "id": "cursedcrown",
+  "kind": "card",
+  "rar": "l",
+  "tag": "bohaterowie +1 poz., ×1,35",
+  "name": "Przeklęta korona",
+  "text": "Bohaterowie przychodzą o 1 poziom silniejsi, ale cała Esencja ×1,35.",
+  "apply": "fn: m => { m.cursedCrown *= 1.35; m.crownLv += 1; }"
+ },
+ {
+  "id": "skulls",
+  "kind": "card",
+  "rar": "r",
+  "grows": true,
+  "tag": "rośnie",
+  "name": "Kolekcja czaszek",
+  "text": "Każdy bohater zabity w tym runie dodaje +0,03 do mnożnika Esencji (najwyżej +0,6, czyli ×1,6).",
+  "apply": "fn: m => { m.skulls += 1; }"
+ },
+ {
+  "id": "execdiary",
+  "kind": "card",
+  "rar": "c",
+  "tag": "zabójca +2%/zabójstwo",
+  "name": "Pamiętnik kata",
+  "text": "Każde zabójstwo: ten rodzaj pułapki albo potwora działa o 2% mocniej do końca runu (najwyżej +30% na rodzaj).",
+  "apply": "fn: m => { m.execDiary += 1; }"
+ },
+ {
+  "id": "risinglegend",
+  "kind": "card",
+  "rar": "r",
+  "grows": true,
+  "tag": "rośnie",
+  "name": "Rosnąca legenda",
+  "text": "Każda fala bez utraty kryształu: +0,1 chciwości na start fali, i tak dalej. Utrata kryształu zeruje licznik.",
+  "apply": "fn: m => { m.risingLegend += 1; }"
+ },
+ {
+  "id": "pantry",
+  "kind": "card",
+  "rar": "c",
+  "grows": true,
+  "tag": "rośnie",
+  "name": "Spiżarnia",
+  "text": "Fala, w której Danina dała sercu Nasycenia co najmniej za połowę głodu tej fali (bez Ofiary): dochód +2 do końca runu (najwyżej +10).",
+  "apply": "fn: m => { m.pantry += 1; }"
+ },
+ {
+  "id": "copyist",
+  "kind": "card",
+  "rar": "l",
+  "unique": true,
+  "tag": "kopiuje kartę z prawej",
+  "name": "Kopista",
+  "text": "Działa jak karta tuż po jego prawej w talii (nie kopiuje kart unikalnych ani innych kopiujących). Kolejność kart zmienisz w karcie talii.",
+  "apply": "fn: () => {}"
+ },
+ {
+  "id": "soulmirror",
+  "kind": "card",
+  "rar": "l",
+  "unique": true,
+  "tag": "kopiuje 1. kartę",
+  "name": "Lustro duszy",
+  "text": "Działa jak pierwsza karta w talii (nie kopiuje kart unikalnych ani innych kopiujących). Kolejność kart zmienisz w karcie talii.",
+  "apply": "fn: () => {}"
+ },
+ {
+  "id": "doubleedge",
+  "kind": "card",
+  "rar": "r",
+  "req": "spikes",
+  "tag": "kolce: 2. cios",
+  "name": "Podwójne ostrze",
+  "text": "Kolce trafiają Unieruchomionych i Spowolnionych drugi raz, z połową siły.",
+  "apply": "fn: m => { m.doubleEdge += 0.5; }"
+ },
+ {
+  "id": "sharedmech",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "tag": "combo: ten sam rodzaj",
+  "name": "Wspólny mechanizm",
+  "text": "W całym lochu ta sama pułapka odpalona ponownie też podbija combo (jak w Zębatkach).",
+  "apply": "fn: m => { m.sharedMech = true; }"
+ },
+ {
+  "id": "chainreact",
+  "kind": "card",
+  "rar": "r",
+  "tag": "reakcja: combo +1",
+  "name": "Reakcja łańcuchowa",
+  "text": "Każda reakcja (Pożar, Porażenie, Detonacja...) przedłuża okno combo o 1 s i podbija combo o 1.",
+  "apply": "fn: m => { m.chainReact += 1; }"
+ },
+ {
+  "id": "heartecho",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "tag": "syte: pułapka 2×",
+  "name": "Echo serca",
+  "text": "Pierwsza pułapka, która odpali po nasyceniu serca w fali, odpala dwa razy.",
+  "apply": "fn: m => { m.heartEcho = true; }"
+ },
+ {
+  "id": "tarsulfur",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => run.unlocked.has('oilslick') || run.unlocked.has('tar')",
+  "tag": "oblani: kłute +30%",
+  "name": "Smoła i siarka",
+  "text": "Oblani (olej, smoła) dostają też o 30% więcej obrażeń kłutych.",
+  "apply": "fn: m => { m.tarSulfur += 0.3; }"
+ },
+ {
+  "id": "conduct",
+  "kind": "card",
+  "rar": "c",
+  "req": "bolt",
+  "unique": true,
+  "tag": "porażenie: spowolnieni",
+  "name": "Przewodnictwo",
+  "text": "Porażenie przeskakuje nie tylko na Mokrych, ale też na Spowolnionych w tym samym pokoju.",
+  "apply": "fn: m => { m.conduct = true; }"
+ },
+ {
+  "id": "toxicfume",
+  "kind": "card",
+  "rar": "c",
+  "req": "fn: () => ['miasma', 'zombie', 'rats', 'lcursed'].some(t => run.unlocked.has(t))",
+  "tag": "trucizna: 10 stosów",
+  "name": "Toksyczny opar",
+  "text": "Trucizna i Zaraza kumulują się do 10 stosów zamiast 6, a Detonacja jest o 25% silniejsza.",
+  "apply": "fn: m => { m.toxicCap += 4; m.toxicDet *= 1.25; }"
+ },
+ {
+  "id": "plague",
+  "kind": "card",
+  "rar": "r",
+  "req": "fn: () => run.unlocked.has('zombie') || run.unlocked.has('rats')",
+  "unique": true,
+  "tag": "zaraza się szerzy",
+  "name": "Morowe powietrze",
+  "text": "Co 3 s Zaraza przeskakuje z każdego Zarażonego na bohaterów obok.",
+  "apply": "fn: m => { m.plagueAir = true; }"
+ },
+ {
+  "id": "hellpack",
+  "kind": "card",
+  "rar": "r",
+  "req": "hound",
+  "unique": true,
+  "tag": "polowanie ×3",
+  "name": "Piekielna sfora",
+  "text": "Ogary biją uciekających 3 razy mocniej (zamiast 2), a uciekający biegną o 20% wolniej.",
+  "apply": "fn: m => { m.hellPack = true; }"
+ },
+ {
+  "id": "bonesunbroken",
+  "kind": "card",
+  "rar": "c",
+  "req": "skeleton",
+  "tag": "szkielety: +2 złożenia",
+  "name": "Kości niezłomne",
+  "text": "Szkielety składają się 2 razy więcej, a złożone biją o 20% mocniej.",
+  "apply": "fn: m => { m.bonesUp += 2; }"
+ },
+ {
+  "id": "undyingarmy",
+  "kind": "card",
+  "rar": "l",
+  "req": "fn: () => ['skeleton', 'zombie', 'lich'].some(t => run.unlocked.has(t))",
+  "unique": true,
+  "tag": "zabici wstają",
+  "name": "Nieśmiertelna armia",
+  "text": "Bohater zabity przez nieumarłego potwora wstaje jako Twój szkielet do końca fali (najwyżej 3 na falę, bez miejsca).",
+  "apply": "fn: m => { m.undyingArmy = true; }"
+ },
+ {
+  "id": "abysspact",
+  "kind": "card",
+  "rar": "r",
+  "req": "fn: () => ['imp', 'hound', 'siren', 'demon'].some(t => run.unlocked.has(t))",
+  "tag": "apetyt -50%, demony +20%",
+  "name": "Pakt z otchłanią",
+  "text": "Apetyt demona otchłani o połowę mniejszy (+1 do głodu zamiast +2), a demony (chochlik, ogar, kusicielka, demon) biją o 20% mocniej.",
+  "apply": "fn: m => { m.abyssPact += 1; }"
+ },
+ {
+  "id": "goldendream",
+  "kind": "card",
+  "rar": "r",
+  "unique": true,
+  "tag": "łup przy sercu ×1,5",
+  "name": "Złoty sen",
+  "text": "Łup w pokoju serca i w pokojach obok kusi 1,5 raza mocniej, ale nie da się go podnieść: bohater próbuje 3 s i odchodzi.",
+  "apply": "fn: m => { m.goldenDream = true; }"
+ },
+ {
+  "id": "croesus",
+  "kind": "card",
+  "rar": "l",
+  "unique": true,
+  "tag": "chciwość²",
+  "name": "Krezus",
+  "text": "Chciwość liczy się w Esencji do kwadratu (×2 daje ×4), ale poziomy bohaterów z chciwości rosną 1,5 raza szybciej.",
+  "apply": "fn: m => { m.croesus = true; }"
+ },
+ {
+  "id": "heartpulse",
+  "kind": "card",
+  "rar": "c",
+  "group": "heart",
+  "tag": "syte: przy sercu +30%",
+  "name": "Puls serca",
+  "text": "Gdy serce jest syte, pułapki i potwory w pokoju serca działają o 30% mocniej.",
+  "apply": "fn: m => { m.heartPulse += 0.3; }"
  }
 ]

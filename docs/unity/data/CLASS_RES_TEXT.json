@@ -1,8 +1,12 @@
 {
- "warrior": "płyty: kłute -25%, obuchowe +25%",
+ "paladin": "zbroja i wiara: ogień -10%, obuchowe -10%, porażenie +20%",
+ "ranger": "skóry: kłute -10%, porażenie -10%",
+ "alchemist": "odtrutki i fartuch: trucizna -50%, ogień -15%",
+ "cultist": "brak",
+ "warrior": "płyty: kłute -25%, obuchowe +25%, porażenie +20%",
  "thief": "skóra: ogień +25%, trucizna -25% (odtrutki)",
  "priest": "szaty i modlitwa: kłute +10%, ogień -15%, trucizna -15%",
- "mage": "szata i bariera: kłute +25%, obuchowe +10%, ogień -30%",
+ "mage": "szata i bariera: kłute +25%, obuchowe +10%, ogień -30%, porażenie -20%",
  "bard": "lekki strój: obuchowe +20%, trucizna +10%",
  "barbarian": "futra i krzepa: obuchowe -20%, ogień +20%, trucizna +10%"
 }

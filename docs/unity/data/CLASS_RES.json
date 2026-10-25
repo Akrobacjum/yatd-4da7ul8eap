@@ -1,7 +1,22 @@
 {
+ "paladin": {
+  "fire": 0.9,
+  "blunt": 0.9,
+  "shock": 1.2
+ },
+ "ranger": {
+  "pierce": 0.9,
+  "shock": 0.9
+ },
+ "alchemist": {
+  "poison": 0.5,
+  "fire": 0.85
+ },
+ "cultist": {},
  "warrior": {
   "pierce": 0.75,
-  "blunt": 1.25
+  "blunt": 1.25,
+  "shock": 1.2
  },
  "thief": {
   "fire": 1.25,
@@ -15,7 +30,8 @@
  "mage": {
   "pierce": 1.25,
   "blunt": 1.1,
-  "fire": 0.7
+  "fire": 0.7,
+  "shock": 0.8
  },
  "bard": {
   "blunt": 1.2,

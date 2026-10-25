@@ -23,5 +23,8 @@
  "k_prison": 1,
  "k_junk": 1,
  "k_gallery": 1,
+ "k_lab": 1,
+ "k_graveyard": 1,
+ "k_abyssgate": 1,
  "k_nursery": 1
 }

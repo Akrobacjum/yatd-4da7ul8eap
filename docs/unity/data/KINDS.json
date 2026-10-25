@@ -10,5 +10,8 @@
  "k_prison": "prison",
  "k_junk": "junk",
  "k_gallery": "gallery",
+ "k_lab": "lab",
+ "k_graveyard": "graveyard",
+ "k_abyssgate": "abyssgate",
  "k_nursery": "nursery"
 }

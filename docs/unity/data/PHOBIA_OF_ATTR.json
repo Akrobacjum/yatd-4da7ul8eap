@@ -14,5 +14,17 @@
  "mirror": "ghosts",
  "bones": "blood",
  "shade": "dark",
- "bats": "dark"
+ "bats": "dark",
+ "skeleton": "dead",
+ "zombie": "dead",
+ "lich": "dead",
+ "bell": "dead",
+ "falsedoor": "abyss",
+ "pendulum": "abyss",
+ "musicbox": "noise",
+ "rattle": "noise",
+ "howl": "noise",
+ "rats": "swarm",
+ "imp": "swarm",
+ "miasma": "swarm"
 }

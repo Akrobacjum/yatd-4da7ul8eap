@@ -6,5 +6,15 @@
  "shaman": 1,
  "ghost": 1,
  "shade": 1,
- "bats": 1
+ "bats": 1,
+ "skeleton": 1,
+ "zombie": 1,
+ "lich": 1,
+ "imp": 1,
+ "hound": 1,
+ "siren": 1,
+ "demon": 1,
+ "sapper": 1,
+ "warlord": 1,
+ "rats": 1
 }

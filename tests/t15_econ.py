@@ -7,16 +7,18 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   // 1.01: the heart eats first from the wave's Esencja; short at the end of the wave: a crystal. 1.11.1: the need is about half
   // a typical wave (37 x 1,25^(wave-2))
   run.wave = 3; const need = G.hungerNeed(3); f.essence = 5; f.fed = 0; f.score = 0;
-  ok(need === 46, 'the need in wave 3 is 46 (' + need + ')'); ok(G.hungerNeed(10) === 221, 'and 221 in wave 10 (' + G.hungerNeed(10) + ')');
+  ok(need === 50, 'the need in wave 3 is 50 (1.26) (' + need + ')'); ok(G.hungerNeed(10) === 350, 'and 350 in wave 10 (' + G.hungerNeed(10) + ')');
   G.essIn(need * 0.5); out.half = { fed: f.fed, ess: f.essence };
   ok(Math.abs(f.fed - need * 0.5) < 1e-6 && f.essence === 5, 'half a need: all to the heart');
   G.feedHeart(); out.ate = { hunger: f.hunger, crystals: run.crystals, ess: f.essence };
-  ok(f.hunger.ate && run.crystals === 2 && f.essence === 5, 'short: the heart eats a crystal, the purse is left alone');
+  ok(f.hunger.ate && f.hunger.bankrupt && run.crystals === 2 && f.essence === 0, 'short and the purse (5) cannot cover it: a crystal, the purse emptied (1.26)');
   f.fed = 0; G.essIn(need + 7); out.fed = { fed: f.fed, ess: f.essence };
-  ok(f.fed === need && Math.abs(f.essence - 12) < 1e-6, 'fed: the rest to the purse');
+  ok(f.fed === need && Math.abs(f.essence - 7 * (1 - G.titheNow())) < 1e-6, 'fed: the rest to the purse after the Danina (1.26)');
   G.feedHeart(); ok(f.hunger.fed && run.crystals === 2, 'fed: no crystal');
   // no purse limit
-  f.essence = 0; G.essIn(5000); ok(f.essence === 5000, 'no limit');
+  f.essence = 0; G.essIn(5000); ok(Math.abs(f.essence - 5000 * (1 - G.titheNow())) < 1e-6, 'no limit (the Danina aside)');
+  // 1.26: short, but the purse covers it: no crystal, the purse pays
+  f.fed = 0; f.essence = 100; f.hunger = null; const c9 = run.crystals; G.feedHeart(); ok(!f.hunger.ate && run.crystals === c9 && Math.abs(f.essence - (100 - need)) < 1e-6, 'short, the purse covers it: no crystal ' + JSON.stringify(f.hunger));
   // crystal bought in the shop
   G.fl.phase = 'build'; G.fl.essence = 50; const c0 = G.crystalCost(); const okb = G.buyCrystal();
   out.buy = { okb, c0, crystals: run.crystals, ess: G.fl.essence, next: G.crystalCost() };

@@ -1,6 +1,6 @@
 # 06. AI bohaterów i rozmowy
 
-Ta sekcja opisuje "mózg" drużyny bohaterów z prototypu (Prototype 1.12.1, uzupełniane do 1.17.1): kto prowadzi, dokąd idą, co wiedzą, kiedy biorą łup, kiedy się wycofują, szturmują serce albo uciekają, jak każda klasa używa swoich umiejętności i przedmiotów, oraz cały system mowy (dymki, kolejki, rozmowy, katalog kluczy `SAY`). Od 1.17 także: co kto widzi i słyszy (percepcja, plan każdego bohatera, wieści, 6.3.13), ciekawość (rozglądanie się po pokoju i dźwięki zza ściany, 6.3.3a) i narada na końcu cierpliwości (6.3.10a). Od 1.17.1: pamięć bohatera (co widział albo poczuł w tej fali) i dopasowanie kwestii do niej (6.7.10). Od 1.18-1.24 (stan Prototype 1.24): karty zachowań bohaterów (6.3.14), Rozłam: druga grupa, bunt, foch (6.10, 1.19), ekwipunek w zachowaniu (6.11, 1.20), więzi i dramaty (6.12, 1.21), finał fali (6.13, 1.22), Nemezis i pamięć poległych (6.14, 1.23), wyczerpanie na końcu fali i częstość zdarzeń (6.15, 1.24).
+Ta sekcja opisuje "mózg" drużyny bohaterów z prototypu (Prototype 1.12.1, uzupełniane do 1.26): kto prowadzi, dokąd idą, co wiedzą, kiedy biorą łup, kiedy się wycofują, szturmują serce albo uciekają, jak każda klasa używa swoich umiejętności i przedmiotów, oraz cały system mowy (dymki, kolejki, rozmowy, katalog kluczy `SAY`). Od 1.17 także: co kto widzi i słyszy (percepcja, plan każdego bohatera, wieści, 6.3.13), ciekawość (rozglądanie się po pokoju i dźwięki zza ściany, 6.3.3a) i narada na końcu cierpliwości (6.3.10a). Od 1.17.1: pamięć bohatera (co widział albo poczuł w tej fali) i dopasowanie kwestii do niej (6.7.10). Od 1.18-1.24 (stan Prototype 1.24): karty zachowań bohaterów (6.3.14), Rozłam: druga grupa, bunt, foch (6.10, 1.19), ekwipunek w zachowaniu (6.11, 1.20), więzi i dramaty (6.12, 1.21), finał fali (6.13, 1.22), Nemezis i pamięć poległych (6.14, 1.23), wyczerpanie na końcu fali i częstość zdarzeń (6.15, 1.24). Od 1.26 (stan Prototype 1.26): nowe klasy, cechy, statusy i zachowania w AI (6.16: Najpierw uzdrowiciel, Lęk przed zgrają, Odwrót z łupem, Wezwanie po krzyk, kultysta, Serce krzyczy, Ostatni zryw, Unieruchomienie i Uwiedzenie w ruchu, omeny w AI).
 
 Źródła: `p5_ai.js` (w całości), z `p3_flow.js` części: mowa (`say`, `sayTick`, `earshot`...), spawn i start fali (`spawnHero`, `regroupAtDoor`, `becomeImpatient`, `goHome`, `heroExit`), strach w zachowaniu (`addFear`, `startFlee`, `partyFlee`, `dropCrystal`, `crystalReturns`, `kill`), łupy (`noticeLoot`, `pickup`, `giveItem`, `dropItem`, `itemValue`, `curse`); z `p6_loop.js`: `step`, `takeCrystal`, `stealNeed`, `GATE_T`; z `p2_state_map.js`: przejezdność, wiedza o mapie, `bfs`; z `p4_traps.js`: `learnTrap`, `rebuildThreat`, `disarmSpots`, klatka, zapadnia, potwory (tylko to, co dotyczy decyzji bohaterów); z `p1_config.js`: `nameGen`, `nameFill`, `pickS` i tabele kwestii (od 1.17.1 także `LINE_NEEDS`).
 
@@ -632,7 +632,7 @@ elif h.sepT > 3 && !h.sepRolled: h.sepRolled = true; if rand < lostChance(h): ge
 elif h.room >= 0 && isRt(h.room,'fog') && d > 1.5
      && rand < dt * 0.22 * max(0.35, 1 - 0.03*h.lvl) * (thief ? 0.6 : 1): getLost(h, 'fog')
 
-lostChance(h) = clamp(0.12 + 0.03*max(0, roomCount()-6) + (isRt(h.room,'fog') ? 0.45 : 0) - 0.01*h.lvl - (thief ? 0.1 : 0), 0.02, 0.6)
+lostChance(h) = clamp(0.12 + 0.03*max(0, roomCount()-6) + (Zasłona w h.room ? 0.15 : 0) + (isRt(h.room,'fog') ? 0.45 : 0) - 0.01*h.lvl - (thief ? 0.1 : 0), 0.02, 0.6)   // Zasłona od 1.26
 ```
 
 `roomCount()` = liczba pokoi (`kind 'room'`). Inne źródła zgubienia: Cień poz. 3 (`p4_traps.js: fireRaw`, samotny nie-lider, `getLost(tgt,'shade')`), wyjście z zapadni (`landFallen`: `h.lost = L && (hdist > 6 || mgła)`, Bezdenny szyb zawsze), patrz 6.5.10.
@@ -1088,7 +1088,7 @@ Mebel z mimikiem, prochem albo pozytywką odpala dopiero na końcu oglądania, w
 
 **Dźwięk zza ściany** (`hearFar(it, hit)`, wołane z `p4_traps.js: fireRaw` przy każdym odpaleniu pułapki `TRAPS`, przed świadkami):
 ```
-stop, gdy: brak drużyny, nie fala, time < P.soundCd, goingOut(), pokój pułapki (slotRoom) to Głusza
+stop, gdy: brak drużyny, nie fala, time < P.soundCd, goingOut(), pokój pułapki (slotRoom) to Głusza albo (od 1.26) stoi w nim Zasłona
 c = żywi: nie zgubieni, nie panikują, nie w klatce, nie wychodzą, nie w pokoju pułapki, nie w Głuszy,
     w odległości <= 12 (od środka pola pułapki), nie trafieni tą pułapką
 if c puste: return
@@ -3084,3 +3084,84 @@ Cały run (fale 1-10 grane dalej: powracający, Nemezis, polegli, więzi przecho
 | pamięć poległych | 1,02 / 57% | 0,96 / 50% | |
 
 Zmiany 1.24 (dramatyczne zdarzenia mniej więcej raz na 2-3 fale, każde z napisem na starcie): zakład (6.12.6), drwina rywala (6.12.5), więzi 75% / 45%, rywale 45%, mistrzowie 20% (sekcja 04, 2.9), kłótnia z napisem "Kłótnia!", bunt (6.10.3), rozłam (6.10.2), żałoba z napisem "Żałoba"/"Szok" i "Zemsta!", ostatni bastion także za rannym przyjacielem i dla elity (6.13.3), przekazanie (6.13.2). Rzadkie z założenia albo przez warunki i zostawione: rozłam z narady, łom, wymiana sprzętu.
+
+## 6.16 Nowe klasy, cechy, statusy i zachowania (1.26; `p5_ai.js: newClassTick, heroAI126, callNeeds, planHero, updateHero, scanTraps, lootSeen, lootDecision, heroAbilities, rescueThink, partyThink`; `p4_traps.js: rebuildThreat`; `p6_loop.js: step`; `p3_flow.js: addFear, fearResist`)
+
+Plan autora: dokument projektu `claude/rebalans-1.26-serce-zabiera.md` (sekcje 5.4, 14.1-14.5). Liczby klas i cech: sekcja 04 (4.2, 4.3a); statusy i reakcje: sekcja 05 (5.14).
+
+### 6.16.1 Kolejność w `updateHero`
+
+Po przeliczeniu pola (`heroTile`) i pokoju, przed podpaleniem i miksturą, co krok: `statusTick(h, dt)` (krwawienie, trucizna i zaraza, strach z płomieni, poślizg na oleju, koniec uwiedzenia; sekcja 05, 5.14.1), potem `heroAI126(h, dt)` (co 0,5 s: Wezwanie po krzyk i Odwrót z łupem). W `heroAbilities` paladyn, tropiciel i alchemik wołają `newClassTick` zamiast zaklęć kapłana i maga. Unieruchomiony (`rooted`: `rootUntil` albo `stunUntil`) nie robi kroku (`updateHero` wychodzi przed ruchem), nie wyrywa kryształu (`p6_loop.js: step` pomija go w `atHeart`) i nie rozbraja (zegar `disarm` stoi). Prędkość: Mokry ×0,8, Piekielna sfora (uciekający i panikujący) ×0,8, Pośpiech ×1,2. Zakaz przedmiotów Kokonu (`noItemUntil`): mikstura, talizman, amulet, buty.
+
+### 6.16.2 Cel w `planHero` (kolejność)
+
+1. **Uwiedziony** (`fl.time < h.seduceUntil` i żywa kusicielka): `intent 'seduced'`, cel = pole kusicielki (`gx, gy`) albo najbliższe przechodnie pole obok, `noDanger` (idzie przez pułapki). Przed paniką, więc uwiedziony nie ucieka.
+2. Panika, ostatni bastion, poświęcenie (jak dotąd).
+3. **Wezwanie po krzyk** (`h.callFor`, wezwany nie wychodzi, wołający dalej potrzebuje pomocy): `intent 'call'`, cel = pole wołającego albo pole obok, `noDanger`; w BFS `avoid ×0,3`.
+4. **Kultysta** (nie wychodzi, nie po wyczerpaniu): `intent 'cult'`, cel `heartGoal()` (serce albo otwór najbliższy sercu według plotek), z omijaniem znanego niebezpieczeństwa.
+5. Wychodzenie, plan drużyny itd. (jak dotąd).
+
+W `chooseTarget`-owym wyborze zadania (po "wróć do drużyny"): **Najpierw uzdrowiciel** (6.16.4). W BFS `avoid` dla zapaleńca ×0,7.
+
+### 6.16.3 Klasy (`newClassTick`, co krok, gdy żywy, nie zniknął, nie panikuje, nie w klatce)
+
+- **Paladyn**: każdy żywy unoszący się potwór w odległości ≤ 1,5 od niego (do `gx, gy`) traci `10 × R.pow × dt` HP (`hurtMonster(m, ..., h)`). Przysięga (strach ×0,8 w promieniu 3) jest w `fearResist`; "nie zostawiamy nikogo" w ratunku (6.16.6) i w Wezwaniu po krzyk (6.16.5); ×1,5 w walce z nieumarłymi i demonami w `monstersTick`. Kwestie w rozmowach: `SAY.oath`.
+- **Tropiciel**: co 1 s tropienie: każdy żywy potwór w jego pokoju i pokojach sąsiednich (`nbrRooms`), którego drużyna nie zna, dostaje `m.trackedW = fala` (`stats.tracked`, `threatDirty`); `rebuildThreat` traktuje takiego potwora jak znanego (zagrożenie na mapie, ścieżki go omijają, liczy się do zgrai). Gdy nie walczy i nie wychodzi: najbliższy żywy potwór w jego pokoju w odległości < 4,01 (nie ukryty w zasadzce) dostaje `12 × R.dps × dt`, a pierwszy strzał w unoszącego się (`DRIFT`) od razu jeszcze jedną sekundę obrażeń: `12 × R.dps × (dt + 1)` (flaga `rangerHit`), linia strzału co 1,2 s. Wykrywanie pułapek: promień +2 jak złodziej, ale bez innego źródła wykrywania (`R.detect`, amulet) tylko pułapek podłogowych. Kwestie `SAY.rangerIdle`.
+- **Alchemik**: zegary `antT` i `flaskT`. Antidotum, gdy `antT <= 0` i ktoś w promieniu 3 (także on) ma podpalenie, krwawienie, truciznę, olej, wodę albo spowolnienie: zdejmuje je wszystkim takim, +8% maks. HP każdemu, `antT = 10`, kwestia `SAY.antidote`, napis "Antidotum", `stats.antidotes`. Flaszka, gdy `flaskT <= 0`: chmura (`fl.clouds`) albo strefa z elementem (`fl.zones`: sieć, pająk, Topiel) z polem w promieniu 3 kończy się od razu ("Flaszka: zneutralizowane"); inaczej najbliższy żywy potwór w pokoju < 4,01 dostaje `60 × R.pow`; `flaskT = 12`, `stats.flasks`. Kwestie `SAY.alchIdle`.
+- **Kultysta**: bez łupu (`lootDecision` zwraca false), przy sercu (Manhattan 1, nie wychodzi, nie panikuje) stan `'drink'` (zamiast `'boss'`, także w szturmie); w pierwszym takim momencie fali karta "cultist" i napis "Kultysta pije z serca!". Stan `'drink'` kończy się przy wyjściu, panice albo wyczerpaniu. Spijanie liczy `p6_loop.js: step` (sekcja 03, 2.9); kwestie `SAY.cultDrink` (pierwsza zawsze, potem 15% co 1,5 s), w rozmowach `SAY.cultIdle` (dwa razy na liście, czyli częściej). Karta bohatera: "pije Esencję z serca", "Wypił z serca X Esencji".
+
+### 6.16.4 Najpierw uzdrowiciel (plan 14.4)
+
+Wojownik, paladyn i tropiciel (nie wychodzi, nie panikuje, w pokoju), gdy nie ma ważniejszego zadania: najbliższy (BFS) żywy szaman albo licz w jego pokoju, którego drużyna zna i który nie siedzi w zasadzce, staje się celem walki (`job { intent 'fight' }`). Pierwszy raz w fali drużyny kwestia `SAY.healerFirst` ("Najpierw szaman! Bez niego padną!"), `stats.healerFirst`. Mag celuje kulą ognia w szamana albo licza, jakby byli 3 pola bliżej (`heroAbilities`).
+
+### 6.16.5 Wezwanie po krzyk (`heroAI126`)
+
+```
+callNeeds(t) = t żywy, w lochu, i Unieruchomiony albo Uwiedziony
+co 0,5 s dla każdego bohatera h:
+  jeśli h.callFor i wołający już nie potrzebuje: h.callFor = null; needPlan
+  jeśli callNeeds(h) i !h.called i nie boss:
+      r = najbliższy żywy lojalny albo paladyn (nie wychodzi, nie panikuje, nie w klatce, sam nie potrzebuje, bez callFor) w odległości <= 10
+      r: h.called = true; r.callFor = h.id; kwestia SAY.help h (głośno), "Biegnę!" nad r, stats.calls, oś czasu cl
+  jeśli !callNeeds(h): h.called = false
+  jeśli h.callFor i wołający w odległości <= 1,2: zdejmuje mu unieruchomienie i uwiedzenie, "Uwolniony/Uwolniona", stats.freed
+```
+Wnyki trwają najwyżej 5 s, więc ratownik zdąży tylko z bliska; Pułapka na ratownika (klatka B) to osobny mechanizm przy uwalnianiu z klatki.
+
+### 6.16.6 Ratunek z klatki, Lęk przed zgrają, Odwrót z łupem
+
+- **Ratunek** (`rescueThink`, decyzja przy uwięzieniu): `rescue = przywódca rangi >= 2 || jego para (nie rywal) || w drużynie jest paladyn albo lojalny || (średni strach grupy < 0,6 i rzut)`. Do 1.25.1 bez paladyna i lojalnego.
+- **Lęk przed zgrają** (`rebuildThreat`): gdy przywódca ma rangę >= 1, pokoje z co najmniej 3 żywymi, nie powalonymi potworami, które drużyna zna (albo wytropiła) i które nie siedzą w zasadzce, dostają +2 zagrożenia na każdym polu (najwyżej 6), `fl.packRooms`. Ścieżki omijają je, gdy jest inna droga; gdy nie ma, drużyna idzie dalej (zagrożenie tylko podnosi koszt).
+- **Odwrót z łupem** (`heroAI126`): bohater (nie boss, nie kultysta, nie przywódca, nie wychodzi) z HP < 40% i co najmniej 2 przedmiotami rzadkości >= 2 z łupu (`src` `loot` albo `relic`) wraca sam (`h.goHome = true`, przerywa zwiad, wstaje z odpoczynku i rozmowy), napis "Wraca z łupem", kwestia `SAY.lootHome`, `stats.lootRetreat`, oś czasu `gh`; karta bohatera "wraca sam do domu".
+
+### 6.16.7 Cechy w AI
+
+- Przesądny: nie bierze przeklętego łupu (`lootDecision`), strach ×1,4 od straszaków i Nawiedzenia (`fearResist`).
+- Ciekawski: widzi łup z odległości większej o 4 pola (`lootSeen`, dla łupu rzadkości 1 tylko na znanych polach jak dotąd).
+- Lojalny: ratunek i Wezwanie po krzyk (wyżej).
+- Zapaleniec: `avoid ×0,7`, limit strachu ×1,1, raz na falę furia zamiast paniki (`addFear`).
+- Kwestie w rozmowach (`chatter`): `chat_superstitious`, `chat_curious`, `chat_loyal`, `chat_hothead`.
+
+### 6.16.8 Przy sercu: Serce krzyczy i Ostatni zryw (`p6_loop.js: step`, plan 5.4)
+
+Od fali 2 każdy wyrywający kryształ (stan `'boss'`, nie Unieruchomiony, nie boss, nie kultysta) dostaje strach `(0,06 + mods.heartCry) × courage × dt` (źródło `heartcry`, "krzyk serca"); pierwszy raz w fali napis "Serce krzyczy!" i karta "heartCry". Ostatni zryw: gdy któryś wyrywający ma HP < 30% maks., postęp kradzieży całej grupy ×1,5; raz na falę napis "Ostatni zryw!" nad nim i kwestia `SAY.lastPush`, `stats.lastPush`. `stats.stealMax` = najwyższy ułamek postępu kradzieży w fali (podsumowanie: "bohaterowie byli S s od kradzieży"). Kradzież trwa 5 s (Ciężki kryształ +1,5 s za kopię, Szklane serce ÷2).
+
+### 6.16.9 Omeny i statusy w AI
+
+- Mgła wojny: w każdym pokoju zgubienie jak we Mgle z dodatkowym rzutem 0,2 na krok (`partyThink`, sekcja 03, rozdział 6, punkt 23). Pośpiech: narada po 60 s, bez odwrotu na odpoczynek (`partyThink`), prędkość ×1,2.
+- Odcięty kratą (`h.cutUntil`): liczy się jako samotny (`partyThink`), strach samotności z atrybutem `gate`.
+- Fałszywe przejście: zgubiony na 12 s (`fdLostUntil`), potem `hazardsTick` kończy zgubienie i każe przeplanować.
+- Rzut ogra (B): bohater ląduje w sąsiednim pokoju, nie-przywódca często zgubiony (sekcja 05, 5.14.3).
+- Oślepiony (`blindUntil`): `scanTraps` nic nie robi.
+
+### 6.16.10 Kwestie 1.26 (`SAY`, `p1_config.js`)
+
+Nowe klucze: `help`, `lootHome`, `snare`, `seduced`, `antidote`, `cultDrink`, `oath`, `lastPush`, `healerFirst`, `guildReactions`, `guildHoly`, `guildFlyers`, `chat_superstitious`, `chat_curious`, `chat_loyal`, `chat_hothead`, `cultIdle`, `rangerIdle`, `alchIdle`; podklucze `trauma.shock`, `weakHit.shock`, `resistHit.shock`, `phobia.dead/abyss/noise/swarm`, `lookKind.lab/graveyard/abyssgate`, `rkEnter.k_lab/k_graveyard/k_abyssgate`. Nowe kwestie nie mają wpisów w `LINE_NEEDS` (filtr pamięci z 6.7.10 ich nie sprawdza, więc mogą paść bez tego, co opisują; np. `oath` i `rangerIdle` w small talku).
+
+### 6.16.11 Różnice wobec planu (do decyzji autora)
+
+- Przesądny nie czeka przed pokojem z portretem albo lustrem; ciekawski nie sprawdza każdej usłyszanej pułapki i nie przeszukuje mebli częściej (rozgląda się częściej jako przywódca, `lookRoll` 0,7, a lojalny zawsze ślubuje zemstę za przyjaciela, `griefOf`: oba od poprawki po przeglądzie); zapaleniec nie szarżuje na każdego potwora i nie ma 30% przejścia przez znaną pułapkę (sekcja 04, 4.2).
+- Lęk przed zgrają nie sprawdza "jeśli jest inna droga" wprost: dokłada koszt +2 do pól pokoju, więc przy słabszym zagrożeniu na objeździe drużyna i tak może wejść.
+- Tropiciel w pokoju bez potworów nie "rani z odległości do 4 pól" w sąsiednim pokoju: strzela tylko do potworów w swoim pokoju.
+- Kultysta nie ma osobnego unikania walk (plan: "unika walk"): idzie do serca, omijając znane niebezpieczeństwo jak inni, tylko bez łupu. Prowadzi tylko, gdy nikt inny nie może (`leader()` wymienia przywódcę-kultystę), i nie zostaje powracającym (poprawki po przeglądzie).
+- Paladyn "przy kradzieży głównym celem Serca krzyczącego" wynika tylko z jego wysokiej odwagi (strach procentowy taki sam jak u innych).

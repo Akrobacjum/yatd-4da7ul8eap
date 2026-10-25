@@ -28,14 +28,14 @@ async def main():
             else:
                 if r['cardBottom'] > r['screenH'] * 0.6: fails.append('%d: the sheet covers too much (%d of %d)' % (W, r['cardBottom'], r['screenH']))
                 if not (r['cardBottom'] < r['breachOnScreen'][1] < r['stage'][1]): fails.append('%d: breach not visible under the sheet %s' % (W, r))
-                if '20' not in r['btn']: fails.append('patch is 20')
+                if '15' not in r['btn']: fails.append('patch is 15 (1.26)')
             await page.clock.run_for(600)
             await page.screenshot(path=OUT + 'breach_%dx%d.png' % (W, H), timeout=120000)
             if r['ok']:
                 e0 = await page.evaluate("__yatd.fl.essence")
                 await page.click('#sheet-patch'); await page.clock.run_for(300)
                 e1 = await page.evaluate("[__yatd.fl.essence, !!__yatd.fl.breach, __yatd.modalKind]"); print(' patched', e0, e1)
-                if not (abs(e0 - e1[0] - 20) < 1e-6 and not e1[1] and not e1[2]): fails.append('patch failed')
+                if not (abs(e0 - e1[0] - 15) < 1e-6 and not e1[1] and not e1[2]): fails.append('patch failed')
             print(' errs', errs[:3])
         print('FAILS', fails)
         await b.close()

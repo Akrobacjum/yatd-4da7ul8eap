@@ -49,5 +49,8 @@
  "k_prison",
  "k_junk",
  "k_gallery",
+ "k_lab",
+ "k_graveyard",
+ "k_abyssgate",
  "k_nursery"
 ]

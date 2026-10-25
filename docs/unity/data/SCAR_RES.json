@@ -2,5 +2,6 @@
  "pierce": "thickskin",
  "blunt": "sturdy",
  "fire": "fireproof",
- "poison": "venomproof"
+ "poison": "venomproof",
+ "shock": "grounded"
 }

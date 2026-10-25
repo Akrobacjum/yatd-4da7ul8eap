@@ -83,19 +83,20 @@
   "fmt": "fn: v => v.toFixed(1).replace('.', ',')"
  },
  {
-  "k": "hungerBase",
-  "label": "Głód serca: Esencja z fali 2",
+  "k": "hungerK",
+  "label": "Głód serca (× tabela 1.26; 0 = bez głodu)",
   "min": 0,
-  "max": 200,
-  "step": 1
+  "max": 2,
+  "step": 0.04,
+  "fmt": "fn: v => '×' + v.toFixed(2).replace('.', ',')"
  },
  {
-  "k": "hungerGrowth",
-  "label": "Głód serca: wzrost na falę",
-  "min": 1.2,
-  "max": 2,
+  "k": "tithe",
+  "label": "Danina: część wypłat dla sytego serca",
+  "min": 0,
+  "max": 0.6,
   "step": 0.05,
-  "fmt": "fn: v => '×' + v.toFixed(2).replace('.', ',')"
+  "fmt": "fn: v => Math.round(v * 100) + '%'"
  },
  {
   "k": "greedW",

@@ -1,6 +1,6 @@
 # 07. Mapa, budowanie, pętla gry, zapis i dane testowe
 
-Ta sekcja opisuje: model lochu (układ komórek i mapę kafelków), zasady budowania i narzędzia lochu, główną pętlę symulacji, zapis gry i ustawień oraz dane testowe (telemetrię) prototypu "Prototype 1.12.1". Źródłem prawdy jest kod w `src/`. Każda reguła ma odnośnik `plik.js: funkcja`.
+Ta sekcja opisuje: model lochu (układ komórek i mapę kafelków), zasady budowania i narzędzia lochu, główną pętlę symulacji, zapis gry i ustawień oraz dane testowe (telemetrię) prototypu "Prototype 1.12.1" (uzupełniane do 1.26: kolejność kroku 7.10.4, pola runu i zapis 7.11.3, dane testowe `LOG_VERSION` 62 w 7.12). Źródłem prawdy jest kod w `src/`. Każda reguła ma odnośnik `plik.js: funkcja`.
 
 Sąsiednie sekcje (tu tylko odnośniki, bez powtórzeń):
 - sekcja 03: przebieg runu i fali, ekonomia (Groza, Chciwość, Combo, Esencja, głód serca), sklep, talia, plotki, wyłom (kiedy), gildia;
@@ -326,6 +326,7 @@ depthMult(r) = r < 0 ? 1 : 1 + (S.depthMax - 1) * R.dist / fl.maxD
 ```
 SLOTTED(t) = ACTIVE[t] (pułapki + potwory) || BUILDINGS[t]        // łup i skrzynia się NIE liczą
 roomCap(R) = (R.kind == 'hall' ? 1 : 2 + (R.tiles.length >= 20 ? 1 : 0)) + (R.lvl || 0)
+             + (mods.heartRoom && R.id === fl.heart.room ? mods.heartRoom : 0)       // 1.26 Komora serca
 roomLoads()[r] = liczba elementów SLOTTED, dla których slotRoom(...) == r
 roomFull(type, x, y) = SLOTTED(type) && loads[slotRoom(type,x,y)] >= roomCap(fl.rooms[r])
 ```
@@ -354,7 +355,7 @@ Kafelek w pasku (`p8b_ui.js: updateTray`, kliknięcie): tryb (`MODES`) tylko w b
 ### 7.7.2 Cena (`p8b_ui.js: costOf, LOOT_STEP`)
 
 ```
-LOOT_STEP = 1.25
+LOOT_STEP = 1.15        // 1.26; do 1.25.1 1.25
 lootCount(t) = liczba elementów typu t w fl.items z !it.dropped       // łup upuszczony przez bohaterów się nie liczy
 costOf(t) =
   MODES[t]      -> 0
@@ -489,11 +490,13 @@ Za darmo, poziom, `spent` i pamięć checku zostają. Plotki są przypisane do k
 
 ```
 UPG_COST = [0, 0, 2, 4]; LVL_POW = [1, 1, 1.6, 2.4]; LVL_MON = [1, 1, 1.5, 2.2]     // p1_config.js
-upgCost(it) = ceil(ITEMS[it.type].cost * UPG_COST[(it.lvl || 1) + 1])            // poziom 2: 2× cena bazowa, poziom 3: 4×
+upgCost(it) = ceil(ITEMS[it.type].cost * UPG_COST[(it.lvl || 1) + 1] * (1 - mods.upgDisc))   // poziom 2: 2× cena bazowa, poziom 3: 4×; 1.26 Kuźnia ciemności
 tapUpgrade: !ACTIVE -> 'Nie ulepsza się'; lvl >= 3 -> 'Poziom 3 to maks'; essence < c -> 'Za mało Esencji (c)'
-upgradeItem (tylko build, tylko ACTIVE, lvl < 3, stać nas):
+            1.26: lvl === 2 i TRAITS_B[typ] -> okno 'branch' (wybór cechy A albo B, sekcja 08), dopiero ono woła upgradeItem(it, 'A' | 'B')
+upgradeItem(it, branch) (tylko build, tylko ACTIVE, lvl < 3, stać nas):
   pushUndo; essence -= c; it.spent = (it.spent || cost) + c; it.lvl++
-  potwór: k = LVL_MON[nowy] / LVL_MON[stary]; max = round(max*k); hp = max; power *= k
+  1.26: lvl === 3 -> it.branch = branch === 'B' && TRAITS_B[typ] ? 'B' : 'A'; Pamięć serca: memLvl przechodzi na nowy poziom
+  potwór: k = LVL_MON[nowy] / LVL_MON[stary]; max = round(max*k); hp = max; power *= k; 1.26: baseMax *= k (rój szczurów)
   bt.spent += c; bt.upgraded++; stats.upgrades++
 ```
 Łączny koszt poziomu 3 = 7× cena bazowa (bez rabatów kart). Ulepszają się tylko pułapki i potwory (nie łup, nie budowle). Poziom 3 dodaje cechę (`TRAITS`, sekcja 05); zmiana poziomu unieważnia pamięć checku (`memLvl`, sekcja 05).
@@ -552,7 +555,7 @@ dig:          run.freeDigs > 0 ? 0
 tunnel:       max(0, ITEMS.tunnel.cost - mods.digDiscount)            // 4
 demolish:     max(0, 0) = 0
 ```
-Ceny bazowe: `dig` 8, `tunnel` 4, `expand` 4, `demolish` 0, efekty 8 lub 10, komnaty 12 (`KIND_COST`) (`ITEMS.json`).
+Ceny bazowe: `dig` 8, `tunnel` 4, `expand` 4, `demolish` 0, efekty 8 lub 10 (od 1.26 każdy 8), komnaty 12 (`KIND_COST`; od 1.26 10, zwrot 5) (`ITEMS.json`). Od 1.26 15 komnat (nowe `k_lab`, `k_graveyard`, `k_abyssgate`, sekcja 05, 5.8a).
 
 ### 7.9.3 Zastosowanie: `applyTool(m)` (`p3_flow.js`)
 
@@ -634,7 +637,7 @@ kandydaci: pokoje (kind 'room'), nie wejście, nie serce, odległość od serca 
   wynik = dist(od wejścia) * 2 - danger + random
 pokój z najwyższym wynikiem, losowe miejsce: L.breach = {cell, x, y, ox, oy, fresh: true, born: wave}
 ```
-Pierwsza fala po wyłomie wchodzi nim (`fresh`); `finishWave` ustawia `fresh = false`, a kolejne fale wybierają wejście (`chooseEntrance`, sekcja 03/06). Łatanie: w budowie, bez wybranego elementu, stuknięcie w promieniu 1,1 od wyłomu otwiera arkusz; `patchBreach` kosztuje `BREACH_PATCH = 20`, ma cofanie, usuwa `L.breach`, `stats.patched++`, `rebuildDungeon(true)`.
+Pierwsza fala po wyłomie wchodzi nim (`fresh`); `finishWave` ustawia `fresh = false`, a kolejne fale wybierają wejście (`chooseEntrance`, sekcja 03/06). Łatanie: w budowie, bez wybranego elementu, stuknięcie w promieniu 1,1 od wyłomu otwiera arkusz; `patchBreach` kosztuje `BREACH_PATCH = 20` (od 1.26 15), ma cofanie, usuwa `L.breach`, `stats.patched++`, `rebuildDungeon(true)`.
 
 ---
 
@@ -710,7 +713,7 @@ gałąź QUIET.r == 0 (stara reguła "cały pokój zajęty") jest martwa przy r 
 
 ### 7.10.4 Kolejność operacji w `step(dt)` (`p6_loop.js: step`)
 
-1. `fl.time += dt`; `fl.cardMult = cardMultNow()` (zawsze 1).
+1. `fl.time += dt`; od 1.26 `gameLaterRun()` (mała kolejka zadań na następny krok, np. podpalenie po Pożarze, `p4_traps.js: setTimeoutGame`); `fl.cardMult = cardMultNow()` (zawsze 1).
 2. Co 0,1 s: `fl.quiet = quietNow()`; aktualizacja `quietT`, `autoFFTime`.
 3. `fl.cclock += dt × (fl.quiet ? S.comboQuiet : 1)` (1.12.1: w ciszy 4 razy wolniej); `chainTick()`: wypłata zakończonego łańcucha combo (sekcja 03).
 4. Karta Nawiedzona galeria: `fl.portraitRooms = portraitRooms()`.
@@ -718,7 +721,7 @@ gałąź QUIET.r == 0 (stara reguła "cały pokój zajęty") jest martwa przy r 
 6. Liczniki `stats.ffTime` (przy `ff`), `stats.speedTime` (martwe).
 7. Wpuszczanie bohaterów z `fl.queue`: jeśli drużyna w środku ucieka (`party.plan == 'flee'`) i ktoś w środku żyje, reszta czeka przy drzwiach, dopóki `fl.holdT` (suma dt) < 8 s; po 8 s albo gdy w środku nikt już nie żyje: `regroupAtDoor()` (`tl('rg')`, druga grupa) i wpuszczanie; normalnie: `spawnTimer -= dt`, przy `<= 0` wchodzi następny i `spawnTimer = 0.3`. Pierwszy wchodzi w pierwszym kroku (stoi do otwarcia bramy).
 8. Elementy: `cd` maleje do 0 (wykryta pułapka przechodząca przez 0,3 s ustawia `threatDirty`); koniec `jamUntil` ustawia `threatDirty`; `anim` maleje.
-9. Wygasłe strefy `fl.zones` usunięte.
+9. Wygasłe strefy `fl.zones` usunięte. Od 1.26 `hazardsTick(dt)` (chmury Wyziewów `fl.clouds`, Kolczatki `fl.caltrops`, koniec zgubienia z Fałszywego przejścia) i `plagueAirTick(dt)` (Morowe powietrze), sekcja 05, 5.14.
 10. `regenTick(dt)`: `S.regenBase / 10 * mods.regen` Esencji na sekundę (domyślnie 0).
 11. `stats.silenceTime` (martwe: `fl.silence` nigdy nie jest `true`).
 12. `fl.threatDirty` -> `rebuildThreat()` (mapa niebezpieczeństwa, sekcja 06).
@@ -730,9 +733,9 @@ gałąź QUIET.r == 0 (stara reguła "cały pokój zajęty") jest martwa przy r 
 18. Brama: przy `fl.time >= GATE_T (1.8)` `fl.gateOpen = true` i kwestia `SAY.gate` przywódcy (od 1.17 naprawdę przywódcy, `leader()`; do 1.16 mówił `alive()[0]`, pierwszy w kolejności wejścia, choć kwestie brzmią "za mną").
 19. Jeśli brama otwarta: `updateHero(h, dt)` dla każdego, kto nie zginął i nie wyszedł (ruch, spadek strachu, decyzje: sekcja 06); potem `checkTick()` (samodzielne odpalanie pułapek i nowe skill checki, sekcja 05).
 20. `monstersTick(dt)` (zawsze, także przed bramą).
-21. Serce: bohaterowie w stanie `boss` przy planie `assault` i `fl.ending == null`: `P.steal += dt * (1 + 0.5*(n-1))`; serce parzy pierwszego `damage(5*dt, HEART)`; fala 1 odpycha przy `0.85 * stealNeed`; przy `P.steal >= stealNeed() = 4 / 2^mods.glass` kradzież (`takeCrystal`). Od 1.17, gdy nikt nie stoi przy sercu, `P.steal` maleje o `0,5 × dt` do 0 (napoczęty kryształ osiada z powrotem; do 1.16 postęp zostawał). Szczegóły: sekcja 03/05.
+21. Serce: bohaterowie w stanie `boss` przy planie `assault` i `fl.ending == null` (od 1.26 bez Unieruchomionych i kultystów): `P.steal += dt * (1 + 0.5*(n-1))` (od 1.26 ×1,5 przy Ostatnim zrywie, `stats.stealMax`); serce parzy pierwszego `damage(5*dt, HEART)`; od 1.26 od fali 2 Serce krzyczy (strach 6% odwagi/s każdemu poza bossem i kultystą); fala 1 odpycha przy `0.85 * stealNeed`; przy `P.steal >= stealNeed() = 4 / 2^mods.glass` (od 1.26 `(5 + 1.5 × heavyCrystal) / 2^glass`) kradzież (`takeCrystal`). 21a (1.26): kultyści w stanie `drink` spijają `fl.fed` (sekcja 03, 2.9). Od 1.17, gdy nikt nie stoi przy sercu, `P.steal` maleje o `0,5 × dt` do 0 (napoczęty kryształ osiada z powrotem; do 1.16 postęp zostawał). Szczegóły: sekcja 03/05.
 22. `fl.heartHit -= dt`.
-23. Cierpliwość (1.12.1): `fl.patT += dt × (narada albo odpoczynek ? 0,5 : 1)`; `!fl.fearless && fl.ending == null && fl.patT >= S.waveTime` (domyślnie 120 s) -> `becomeImpatient()`. Do 1.16 wołane raz (ustawiało `fearless`). Od 1.17 woła się co krok, dopóki nie ma `fearless`: pierwszy raz otwiera naradę (`P.council`, sekcja 06, 6.3.10a) albo, bez wyboru, `goHome`; w trakcie narady nic nie robi; wynik narady ustawia `fearless` (dom, szturm) albo cofa `fl.patT` o 30 s ("jeszcze chwila", raz na falę).
+23. Cierpliwość (1.12.1): `fl.patT += dt × (narada albo odpoczynek ? 0,5 : 1)`; `!fl.fearless && fl.ending == null && fl.patT >= S.waveTime` (domyślnie 120 s; od 1.26 przy omenie Pośpiech 60 s) -> `becomeImpatient()`. Do 1.16 wołane raz (ustawiało `fearless`). Od 1.17 woła się co krok, dopóki nie ma `fearless`: pierwszy raz otwiera naradę (`P.council`, sekcja 06, 6.3.10a) albo, bez wyboru, `goHome`; w trakcie narady nic nie robi; wynik narady ustawia `fearless` (dom, szturm) albo cofa `fl.patT` o 30 s ("jeszcze chwila", raz na falę).
 24. Od 1.24: `fl.patT >= S.waveTime + 60` i `!fl.exhausted` -> `waveExhausted()` (bohaterowie wyczerpani wychodzą sami, sekcja 03, 1.7, i sekcja 06, 6.15); `fl.patT >= S.waveTime + 150` -> `waveForceOut()` (każdy w środku wychodzi z miejsca, kryształ wraca do serca). Do 1.23: przy `+ 60` każdy w środku wychodził od razu (`heroExit`).
 25. Koniec fali: kolejka pusta, są bohaterowie i każdy zginął albo wyszedł -> `fl.ending = 1.2`.
 26. Dymki mowy, którym minął czas, znikają.
@@ -846,13 +849,30 @@ Jak w 7.10.8: żyją jedną falę i nie trafiają do zapisu (wyjątki zaznaczone
 | element | `belly` | 1.20: brzuch mimika (zostaje między falami i w zapisie) |
 | stos łupu | `item`, `from`, `fromNm`, `fromFem`, `fromWave`, `body`, `knocked`, `firstBy`, `qBan` | 1.20-1.21: rzecz w stosie, czyje ciało, wybity, kto pierwszy zobaczył, ban po kłótni |
 
+### 7.10.11 Stan dopisany w 1.26 (pola `fl`, bohatera i elementu)
+
+| Gdzie | Pole | Znaczenie |
+|---|---|---|
+| `fl` | `needNow`, `needParts`, `needFor`, `ofiara` | głód fali zamrożony w `startWave` i jego składniki (sekcja 03, 2.7) |
+| `fl` | `hunger` (rozszerzone) | `needBase`, `needRevive`, `needDemon`, `needCredit`, `needGranary`, `needBlood`, `tookPurse`, `bankrupt`, `purse0`, `tithe`, `satiety`, `heartLv`, `fedWave`, `credit`, `lostPurse` |
+| `fl` | `famN`, `elemN`, `bathK`, `armyN`, `heartEchoW`, `risenZ` | rodziny i elementy na starcie fali, Krwawa łaźnia, Nieśmiertelna armia, Echo serca, Powstania w fali |
+| `fl` | `clouds`, `caltrops`, `fireN`, `firing`, `reactFire`, `reactFireT`, `plagueT`, `packRooms` | chmury Wyziewów, kolczatki, licznik odpaleń, krok combo reakcji raz na odpalenie, Morowe powietrze, pokoje zgrai |
+| `fl` | `heartPick`, `titheFloatT`, `zrywSaid`, `cryShown`, `cultShown`, `statusShown`, `reactShown` | telemetria Daru serca, napisy i karty raz na falę |
+| bohater | `bleedUntil`, `rootUntil`, `rootImm`, `stunUntil`, `poison`, `plague`, `oilUntil`, `oilSlipK`, `oilSlipT`, `wetUntil`, `markUntil`, `seduceUntil`, `seducer`, `seduceImm`, `dazedUntil`, `blindUntil`, `hexUntil`, `icyUntil`, `reflectUntil`, `noItemUntil` | statusy i ich odporności (sekcja 05, 5.14.1) |
+| bohater | `cutUntil`, `fdLostUntil`, `fooled`, `snareSaid`, `whispered`, `napped` | odcięty kratą, zgubienie z Fałszywego przejścia, nabrany przez przejście, Szept cienia (B), drzemka |
+| bohater | `callFor`, `called`, `ai126T`, `goHome`, `hotW`, `drank`, `drinkSaid`, `drinkFT`, `antT`, `flaskT`, `trackT`, `shotT`, `fog` | Wezwanie po krzyk, Odwrót z łupem, furia zapaleńca, Spijanie kultysty, zegary alchemika i tropiciela, Mgła wojny (we wpisie) |
+| element | `branch` | 1.26: cecha poziomu 3, `'A'` albo `'B'` (zostaje i jest w zapisie) |
+| element | `down`, `downR`, `healGot` | powalony potwór, chwila powalenia (rysunek), leczenie szamanów w tej fali (zerowane w `setupFl`) |
+| element | `grow`, `baseMax` | rój szczurów: wzrost i bazowe HP (zostają między falami i w zapisie) |
+| element | `raised`, `reN`, `reAt`, `rewound`, `rangerHit`, `boltN`, `plT`, `epT`, `trackedW`, `blinkCd`, `furyUntil`, `cdUntil` | liczniki nowych potworów i pułapek; `raised`, `reN`, `reAt`, `rewound`, `rangerHit`, `boltN` nie są zerowane między falami (błąd, sekcja 05, 5.14.11), więc trafiają też do zapisu |
+
 ---
 
 ## 7.11 Zapis gry i ustawienia
 
 ### 7.11.1 Ustawienia: `S`, `DEFAULTS`, `GAME_SETTINGS`, `SLIDERS` (`p2_state_map.js`, `p1_config.js`)
 
-- `S = Object.assign({}, DEFAULTS)` (`DEFAULTS.json`): balans (`waveTime`, `scale`, `heroHp`, `heroSpeed`, `dmg`, `monDmg`, `essence`, `deckSize`, `waveIncome`, `regenBase`, `fearRate`, `essenceCap`, `crystals`, `comboWin`, `thrBase`, `depthMax`, `hungerBase`, `hungerGrowth`, `greedW`, `earlyHp`) i ustawienia gracza (`volume`, `music`, `haptics`, `series`, `split`, `checkDiff`, `autoFF`, `ffSpeed`, `topPad`, `trayAuto`).
+- `S = Object.assign({}, DEFAULTS)` (`DEFAULTS.json`): balans (`waveTime`, `scale`, `heroHp`, `heroSpeed`, `dmg`, `monDmg`, `essence`, `deckSize`, `waveIncome`, `regenBase`, `fearRate`, `essenceCap`, `crystals`, `comboWin`, `thrBase`, `depthMax`, `hungerBase`, `hungerGrowth`, `greedW`, `earlyHp`; od 1.26 `essence` 25, `waveIncome` 6, a zamiast `hungerBase` i `hungerGrowth` są `hungerK` 1 (mnożnik tabeli głodu) i `tithe` 0,3 (Danina)) i ustawienia gracza (`volume`, `music`, `haptics`, `series`, `split`, `checkDiff`, `autoFF`, `ffSpeed`, `topPad`, `trayAuto`).
 - `GAME_SETTINGS.json`: 9 ustawień gracza widocznych w menu Ustawienia (`renderSettings`): `volume`, `music`, `haptics`, `series`, `split`, `checkDiff`, `autoFF`, `ffSpeed`, `topPad`. Suwaki i przełączniki (0/1). Zmiana działa od razu i zapisuje się (`saveSettings`); `topPad` ustawia zmienną CSS `--top-extra` (`applyLook`).
 - `SLIDERS.json`: suwaki balansu do testów (`renderTests`, modal `tests`). W 1.12 nic tego modala nie otwiera (martwy UI); wartości balansu są zawsze z `DEFAULTS`.
 - Wczytanie:
@@ -886,7 +906,7 @@ W Unity: ustawienia gracza w `PlayerPrefs` (albo w małym pliku JSON) z polem we
 | `yatd12-save` (`SAVE_KEY`) | zapis runu | `loadSave` / `saveRun` / `clearSave` |
 | `yatd-device` | identyfikator urządzenia | tworzony raz (7.11.6) |
 | `yatd-survey` | `''`, `'done'`, `'skipped'` | ankieta (7.12.8) |
-| `yatd-pops` (`POPS_KEY`) | `{id: 1}` widziane karty samouczka | `tutPop`; kasowane przy "Samouczek" od nowa |
+| `yatd-pops` (`POPS_KEY`) | `{id: 1}` widziane karty samouczka (od 1.26 także karty nowych zasad `heartLv`, `heartCry`, `status`, `reaction`, `revive`, `cultist`, pokazywane w każdym runie, i `omenNews`: notka o omenach w wieściach z karczmy) | `tutPop`, `renderNews`; kasowane przy "Samouczek" od nowa |
 | `yatd-onb` (`ONB_KEY`) | etap nauki 1-5 | `onbStage` / `setOnb` |
 | `yatd-coach` (`COACH_KEY`) | `'1'` = przewodnik ukończony | `tutEnd`; kasowane przy "Samouczek" od nowa |
 | `yatd-found` | lista odkrytych elementów (1.14) | `loadFound` / `saveFound` |
@@ -914,7 +934,7 @@ replacer(k, v):
 loadSave: JSON.parse z reviverem (__m -> Map, __s -> Set); ważny, gdy v == SAVE_VER i jest run.layout
 clearSave: w endRun (koniec runu każdym sposobem)
 ```
-W zapisie jest cały obiekt `run` (od 1.18 także `run.restock`, od 1.21 `run.next[].bond`, od 1.23 `run.fallen` i `run.returners[].nemesis`, `run.next[].nemesis`, od 1.24 `run.fused`, `onbW`, `onbNews`, dziennik kryształów, `activeSec`, `sessions`, `playerId`, `essAtStart`; pola elementów: od 1.20 `item.fromNm` i brzuch mimika `belly`, które `prim` w `saveRun` przepuszcza jawnie): układ lochu (`layout` z `Map` komórek i krawędzi), elementy, plotki (`rumor.tiles`, `rumor.traps`, `rumor.loot`), talia, schowek, sklep, następna fala (`next`), powracający, liczniki, `waveDocs` (bez osi czasu), `waveStart`, `memSpots`, stan samouczka itd. Stanu fali (`fl`) w zapisie nie ma: po wczytaniu mapa i stan fali są budowane od nowa.
+W zapisie jest cały obiekt `run` (od 1.18 także `run.restock`, od 1.21 `run.next[].bond`, od 1.23 `run.fallen` i `run.returners[].nemesis`, `run.next[].nemesis`, od 1.24 `run.fused`, `onbW`, `onbNews`, dziennik kryształów, `activeSec`, `sessions`, `playerId`, `essAtStart`; od 1.26 `satiety`, `heartLv`, `heartLvMax`, `heartPicks`, `heartCards`, `famLv`, `runes`, `regrowCount`, `ofiaraW`, `ofiaraN`, `revive`, `credit`, `creditUsed`, `bloodHunger`, `omens`, `kata`, `lastBreathW`, `stacks.skulls/risinglegend/pantry`, `shop.rune`, `next[].fog`; pola elementów: od 1.20 `item.fromNm` i brzuch mimika `belly`, które `prim` w `saveRun` przepuszcza jawnie): układ lochu (`layout` z `Map` komórek i krawędzi), elementy, plotki (`rumor.tiles`, `rumor.traps`, `rumor.loot`), talia, schowek, sklep, następna fala (`next`), powracający, liczniki, `waveDocs` (bez osi czasu), `waveStart`, `memSpots`, stan samouczka itd. Stanu fali (`fl`) w zapisie nie ma: po wczytaniu mapa i stan fali są budowane od nowa.
 
 Kiedy zapisuje:
 | Moment | Wywołanie |
@@ -945,6 +965,8 @@ deck i stash: tylko karty istniejące w UPG (1.18: także run.shop.ids: nieznane
 1.24: run.fused ||= []; drugi egzemplarz karty w talii albo schowku -> run.fused (jedna karta ★); trzecia kopia albo duplikat karty unique -> sprzedany za RAR_SELL;
       run.fused tylko z id w talii albo schowku; mods = buildMods(); run.sessNew = true (wczytanie = nowe posiedzenie);
       run zapisany w etapie nauki zachowuje etap (bez onbW); run.crystalsSeen == null -> dziennik kryształów zaczyna się teraz
+1.26: bez osobnej migracji; kod czyta nowe pola z wartością domyślną (run.satiety || 0, run.heartPicks ||= [], run.famLv ||= {} w shopRefresh),
+      ale run sprzed 1.26 nie ma run.omens, więc omenOf zwraca null i taki run do końca nie dostaje omenów
 stage == 'summary': setupFl('summary'), kamera, afterSummary()       // dokończ wybory po fali, potem budowa
 inaczej:            startBuild(true); gv < 38: nowa fala (makeWave) i zapis; tutResume()
 ```
@@ -987,7 +1009,7 @@ W Unity: identyfikator instalacji (losowy GUID w `PlayerPrefs`), nie `SystemInfo
 
 ### 7.12.1 Przegląd
 
-Po każdej fali gra wysyła dokument fali i podsumowanie runu do bazy, a gracz może pobrać cały run jako plik JSON. Służy to autorowi do analizy balansu (także przez Claude). Wersja formatu: od 1.25.1 `LOG_VERSION = 61` (`previewVis`, `stats.unspentPicks/unspentPick`), w 1.25 60 (`runs.screen`), w 1.24 59 (`p8b_ui.js`; do 1.24 część A 58); komentarz przy stałej to historia zmian formatu od wersji 31 (59: 1.24 części D i B, 7.12.4-7.12.5; w 58 dopisywano pola 1.20-1.24 część A bez zmiany numeru; np. 58: Prototype 1.13, rozmowy z nowymi statystykami fali `convos` (zaczęte wymiany), `convoNo` (dlaczego kwestia nie zaczęła wymiany: `breath`, `talk`, `queue`, `luck`, `hush`, `alone`, `fit`) i `toSafety` (zejścia z niebezpiecznego pola), narady tylko dla stojących razem; 57: Prototype 1.12.1, jedno pole na bohatera z nowymi statystykami fali `sidesteps` (zejścia z pola i objazdy) i `squeezes` (przeciśnięcia), dłuższe narady i odpoczynki, cierpliwość `fl.patT`, zegar combo w ciszy ×`S.comboQuiet`, okno 3 s, Groza z ran bez dodatku HP, `S.essK`; 56: etapy nauki, combo +12% na krok, okno 2,5 s; 55: serce znowu je, `stats.essHeart`; 53: `slips`, `naps`, `hushUnlearned`, `hushLost`; 52: `memLost`, `memFires`, `frozen`; 50: `trayPauses`, `pauseTime`; 48: `cpm`, `frozen`, `perf.realSec`, `tut`; 47: `perf`, `errors`). Wersje 1.13.1-1.17 nie zmieniły numeru; 1.16 i 1.17 dopisują tylko nowe statystyki fali (7.12.7) i kody osi czasu (7.12.5: `rz`, `cn`, `gh`, `lk`, `lt`, `hs`), czego komentarz przy stałej nie wymienia.
+Po każdej fali gra wysyła dokument fali i podsumowanie runu do bazy, a gracz może pobrać cały run jako plik JSON. Służy to autorowi do analizy balansu (także przez Claude). Wersja formatu: od 1.26 `LOG_VERSION = 62` (pola serca, Uczty, Daniny, Ofiary, Odrodzenia, kradzieży i omenu w podsumowaniu fali oraz nowe statystyki, 7.12.5 i 7.12.7), w 1.25.1 61 (`previewVis`, `stats.unspentPicks/unspentPick`), w 1.25 60 (`runs.screen`), w 1.24 59 (`p8b_ui.js`; do 1.24 część A 58); komentarz przy stałej to historia zmian formatu od wersji 31 (59: 1.24 części D i B, 7.12.4-7.12.5; w 58 dopisywano pola 1.20-1.24 część A bez zmiany numeru; np. 58: Prototype 1.13, rozmowy z nowymi statystykami fali `convos` (zaczęte wymiany), `convoNo` (dlaczego kwestia nie zaczęła wymiany: `breath`, `talk`, `queue`, `luck`, `hush`, `alone`, `fit`) i `toSafety` (zejścia z niebezpiecznego pola), narady tylko dla stojących razem; 57: Prototype 1.12.1, jedno pole na bohatera z nowymi statystykami fali `sidesteps` (zejścia z pola i objazdy) i `squeezes` (przeciśnięcia), dłuższe narady i odpoczynki, cierpliwość `fl.patT`, zegar combo w ciszy ×`S.comboQuiet`, okno 3 s, Groza z ran bez dodatku HP, `S.essK`; 56: etapy nauki, combo +12% na krok, okno 2,5 s; 55: serce znowu je, `stats.essHeart`; 53: `slips`, `naps`, `hushUnlearned`, `hushLost`; 52: `memLost`, `memFires`, `frozen`; 50: `trayPauses`, `pauseTime`; 48: `cpm`, `frozen`, `perf.realSec`, `tut`; 47: `perf`, `errors`). Wersje 1.13.1-1.17 nie zmieniły numeru; 1.16 i 1.17 dopisują tylko nowe statystyki fali (7.12.7) i kody osi czasu (7.12.5: `rz`, `cn`, `gh`, `lk`, `lt`, `hs`), czego komentarz przy stałej nie wymienia.
 
 W Unity: ten sam podział na dokument runu i dokument fali, wysyłka `UnityWebRequest` POST w tle po fali (kolejka offline w pliku), adres i znacznik z konfiguracji builda (`web_config.json`), nie z kodu w repo.
 
@@ -1029,7 +1051,7 @@ Pliki na Dysku: `waves_<runId>_<NN>.json`, `runs_<runId>.json` (nadpisywany po k
 
 | Pole | Znaczenie |
 |---|---|
-| `version` | `LOG_VERSION` (61 od 1.25.1; 60 w 1.25; 59 w 1.24) |
+| `version` | `LOG_VERSION` (62 od 1.26; 61 w 1.25.1; 60 w 1.25; 59 w 1.24) |
 | `runId`, `startedAt`, `at` | identyfikator, start i chwila wysłania (ISO) |
 | `player`, `playerId`, `device`, `web` | imię (max 40), od 1.24 identyfikator gracza (`playerIdNow`), `deviceId`, 1 = wersja WWW |
 | `screen` (1.25) | `{w, h, ui, wide, mouse, touch}`: rozmiar okna w chwili zapisu, mnożnik interfejsu, 1 = układ z panelem po prawej, 1 = mysz jako wskaźnik, 1 = ekran dotykowy |
@@ -1040,7 +1062,7 @@ Pliki na Dysku: `waves_<runId>_<NN>.json`, `runs_<runId>.json` (nadpisywany po k
 | `endBonus` | 1.24: `round(total) - suma waveMini.sc` (0 w nowym runie; premii końcowej w grze nie ma; run sprzed 1.24 pokazuje tu stare zaokrąglenie) |
 | `waves`, `total`, `best` | liczba zapisanych fal, Esencja runu, rekord przeglądarki |
 | `resumed` | ile razy run wczytano z zapisu |
-| `stacks` | liczniki rosnących kart (`run.stacks`) |
+| `stacks` | liczniki rosnących kart (`run.stacks`; od 1.26 też `skulls`, `risinglegend`, `pantry`) |
 | `crystals`, `continueUsed` | kryształy, użycie kontynuacji za reklamę (`renderOver` ustawia `true`) |
 | `upgrades`, `deck`, `fused`, `deckSize`, `sold` | wzięte karty (kolejno), talia, od 1.24 połączone karty ★, rozmiar talii, sprzedane |
 | `fires` | liczba odpaleń pułapek w runie |
@@ -1080,7 +1102,7 @@ To wystarcza, żeby odtworzyć loch w narzędziu analitycznym (albo w Unity w te
 | `wave`, `score`, `time`, `buildSec` | numer, Esencja z fali, czas fali (s gry), czas budowy przed falą (s rzeczywiste) |
 | `crystalLost`, `crystals` | kryształ wyniesiony w tej fali, kryształy po fali |
 | `heroes[]` | `{type, lvl, boss, rank, trait, out, fear, hp}`; `out`: `dead`, `scared`, `crystal`, `left` |
-| `hunger` | `fl.hunger`: `{need, got, fedAmt, fedAt, fed, ate?}` albo `null` (sekcja 03) |
+| `hunger` | `fl.hunger`: `{need, got, fedAmt, fedAt, fed, ate?}` albo `null` (sekcja 03); od 1.26 także `fedWave` (fala sama nakarmiła serce), `needBase`, `needRevive`, `needDemon`, `needCredit`, `needGranary`, `needBlood` (składniki głodu), `tookPurse` (ile serce zabrało z sakiewki), `bankrupt`, `lostPurse` (zjedziona reszta sakiewki), `credit` (Kredyt krwi), `purse0` (sakiewka przed zabraniem), `tithe`, `satiety`, `heartLv` |
 | `groza`, `grozaTotal`, `greedRep`, `greed` | Groza fali, suma w runie, chciwość zapamiętana przez gildię, chciwość na końcu |
 | `guild` | rodzaj gildii albo `null` |
 | `autoFF` | sekundy autoprzyspieszenia |
@@ -1097,6 +1119,13 @@ To wystarcza, żeby odtworzyć loch w narzędziu analitycznym (albo w Unity w te
 | `previewOpened` | 1.24: ile razy w budowie oglądano następną falę (karta wieści, rozwinięta lista drużyny, karta bohatera następnej drużyny, stuknięcie podglądu; `notePreview`) |
 | `previewVis` (1.25.1) | `{buildSec, sec, openSec, coveredSec, firstAt}`: sekundy budowy z graczem przy ekranie (ta sama bramka co `activeSec`), sekundy z podglądem następnej fali na ekranie (narysowany i na wierzchu w 2 z 3 punktów wzdłuż niego, `previewState`), z tego z rozwiniętą listą, sekundy zasłonięte (karta, samouczek, podpowiedź, HUD), sekunda budowy, w której podgląd pierwszy raz był widoczny; licznik co 1 s (`pvTick`), jeden na budowę (`run.pv`) |
 | `fearUi` | 1.24: `{card, bar}`: karty bohaterów otwarte w fali (pokazują strach) i stuknięcia paska strachu (`noteFearUi`) |
+| `satiety`, `satietyGain`, `heartLv` | 1.26: Nasycenie po fali (łącznie w runie), przyrost w tej fali (Danina, Ofiara, Krwiobieg, omen), poziom serca |
+| `heartPick` | 1.26: `{lv, took, offer[]}`: Dar serca wzięty w budowie przed tą falą (poziom, wzięta karta, oferowane) albo `null` |
+| `regrow` | 1.26: ile razy Odrost oddał kryształ (w tej budowie i fali) |
+| `feastPts`, `tithePts`, `ofiara` | 1.26: Uczta, Danina (zaokrąglone), Esencja ofiarowana w budowie przed falą |
+| `revived` | 1.26: potwory powalone w tej fali (głód następnej +1 za każdego) |
+| `stealMax` | 1.26: najwyższy ułamek postępu kradzieży w fali (0-1, do 0,1) |
+| `omen` | 1.26: id omenu tej fali albo `null` |
 
 Limit rozmiaru (`logWave`): gdy JSON dokumentu > 230000 bajtów, najpierw zostaje co trzecia próbka (`smp`, `thinned: 3`), potem zdarzenia są przycinane do 70% długości, dopóki dokument jest za duży i zdarzeń jest > 100 (`cut: true`). Dokument trafia do `run.waveDocs` (pobranie pliku) i do `pushLog`.
 
@@ -1114,16 +1143,18 @@ Kody zdarzeń:
 | `pl` | plan | zmiana planu drużyny (`partyThink`) |
 | `ip` | 0/1 | koniec cierpliwości: 0 = odwrót (`goHome`: bez wyboru albo wynik narady "do domu"), 1 = szturm serca (bohater z przepowiedni w `becomeImpatient` albo, od 1.17, wynik narady w `councilDone`) |
 | `cn` | wynik (`'home'`, `'storm'`, `'more'`), liczba głosujących, liczba wracających samotnie | 1.17: narada po cierpliwości przegłosowana (`councilThink`, gdy zaczyna się rozmowa) |
-| `gh` | id | 1.17: przegłosowany wraca sam do domu (`councilDone`) |
+| `gh` | id | 1.17: przegłosowany wraca sam do domu (`councilDone`); od 1.26 ten sam kod dla Odwrotu z łupem (`heroAI126`) |
 | `lk` | pokój, liczba oglądających | 1.17: drużyna zaczyna się rozglądać (`lookRoll`) |
 | `lt` | id, type, x, y | 1.17: przeszukanie mebla odpaliło mimika, pozytywkę albo proch (`lookDone`) |
 | `hs` | id słyszącego, type | 1.17: pułapka usłyszana zza ściany (`hearFar`) |
 | `fi` | type, x, y, trafieni, moc | odpalenie elementu (`p4_traps.js: fire`) |
 | `ch` | type, x, y, wynik, w obszarze, dodatkowe w serii, maks. poziom, odchylenie % | wynik skill checku (`resolveCheck`); przy odpuszczeniu: type, x, y, `'skip'`, w obszarze (`skipCheck`) |
 | `cp` | Groza, mnożnik combo, Esencja | wypłata łańcucha combo, gdy combo > 1 albo Esencja >= 1 (`payChain`) |
-| `hg` | `'full'`/`'fed'`/`'ate'`, liczba | serce syte w trakcie / nakarmione na końcu / zjadło kryształ (brakująca kwota) |
+| `hg` | `'full'`/`'fed'`/`'ate'`, liczba | serce syte w trakcie / nakarmione na końcu / zjadło kryształ (brakująca kwota); od 1.26 też `'took'` (zabrało z sakiewki, kwota) i `'credit'` (Kredyt krwi, dług) |
+| `hl` | poziom | 1.26: serce osiągnęło poziom (`heartLevelUp`) |
+| `re` | reakcja, id | 1.26: reakcja na bohaterze (`blaze`, `detonate`, `shock`, `steam`, `rise`) |
 | `rk` | indeks | nowa ranga (`checkThresholds`) |
-| `k` | id, źródło | śmierć bohatera (`kill`) |
+| `k` | id, źródło | śmierć bohatera (`kill`) (w pierwszej wersji 1.26 nie było zapisywane, 7.13) |
 | `sc` | id | wypędzony strachem (`heroExit`) |
 | `ex` | id | wyszedł zwyczajnie |
 | `cx` | id | wyniósł kryształ |
@@ -1148,7 +1179,7 @@ Kody zdarzeń:
 | `sw` | id, stary, nowy | wymiana przedmiotu |
 | `cu` | id | przeklęty |
 | `cw` | x, y | kapłan rozpoznał przeklęty łup |
-| `cl` | id kapłana, id | klątwa zdjęta |
+| `cl` | id kapłana, id | klątwa zdjęta; od 1.26 ten sam kod dla Wezwania po krzyk (id wołającego, id ratownika) |
 | `rv` | id, `'phys'`/`'phobia'` | ujawnione ciało albo fobia |
 | `dp` | id chciwego, 0/1 | spór na rozwidleniu (1 = przekonał) |
 | `fg` | id pokoju | błądzenie lidera we mgle |
@@ -1259,6 +1290,8 @@ Statystyki dopisane w 1.17 (w locie, nie ma ich w `newStats`; sekcja 06):
 
 Statystyki 1.18-1.24 (dopisywane w locie; nazwy z komentarza przy `LOG_VERSION`): 1.18 `risen`, `cellDrops`, `vaultSnaps`, `cauldron`, `stripped`, `gearLinks`, `ambushes`, `bodies`, `falseCalls`, `lullNaps`, `frames`, `wisps`, `batLost`, `iceFalls`, `tainted`, `coinGreed`; 1.19 `rifts`, `rift_<powód>`, `g2end_<powód>`, `g2Time`, `merges`, `mutinies`, `mutinyWins`, `mutinyHomes`, `sulks`; 1.20 `lootFallen`, `predecessorSeen`, `greedBody`, `cursePassed`, `bodyLoot`, `bodyLootBy`, `lootDeadObject`, `gearGiven`, `gearTrades`, `amuletGiven`, `tooHeavy`, `loadSlowT`, `lootAssign`, `lootRival`, `lootOffer`, `lootOfferTaken`, `lanternSaves`, `lanternOut`, `lanterns`, `lanternGrope`, `crowbarGate`, `crowbarCage`, `gearKnocked`, `gearBack`, `mimicAte`, `mimicSpill`, `bombCook`, `bombFriendly`, `bombHeld`, `returnGear`; 1.21 `bonds`, `bondsBy`, `bondLines`, `griefs`, `revengeVows`, `revengeFights`, `grownUp`, `noLeave`, `noLeaveSaved`, `mentorWatch`, `mentorProud`, `rivalMock`, `quarrels`, `quarrelStops`, `quarrelWins`, `quarrelSulks`, `bets`, `betsWon`, `betsLost`, `betsOff`; 1.22 `escortForms`, `escortGuards`, `guardSoaks`, `guardSoakDmg`, `handOvers`, `lastStands`, `lastStandT`, `sacrifices`, `sacrificeFired`, `youFirst`, `taps`, `tapFound`, `notThisWay`, `notThisWayMoved`, `frontLines`, `woundedBack`, `nearExit`; 1.23 `nemeses`, `nemesisNew`, `nemesisDropped`, `nemRooms`, `nemTraps`, `nemesisReply`, `nemesisWarn`, `nemesisBoast`, `nemesisRage`, `nemesisDown`, `nemesisOut`, `nemesisCrystal`, `grudgeHits`, `grudgeDone`, `bounties`, `essBounty`, `bountyTalk`, `fallenMemory`; 1.24 `exhausted`, `forcedOut`, `tdSeen`, `checkByShape` (`{kształt: {ok, crit, miss, skip, auto}}`, jedyne nowe pole w `newStats`), `calmAuto`, `unspentAsk`, `unspentGo`, `tutSpike`, `shamanHeal`. Ustawienia w dokumencie (`settings`) od 1.24 mają też `calmWaves`, `calmGap`, `okPulse`, `okSwing`.
 
+Statystyki 1.26 (dopisywane w locie): serce i ekonomia `essTithe` (Danina), `essDrained` (wypite przez kultystów), `drainBack`, `heartTook` (zabrane z sakiewki), `satietyGain`, `sat_tithe`, `sat_ofiara`, `sat_bloodflow`, `sat_omen`, `heartUp`, `heartPicks`, `regrow`, `ofiara`, `feastPts`, `reactPts`, `crownPays`, `pantryUp`, `omenFree`, `omenSat`, `revived`, `stealMax`, `lastPush`; statusy i reakcje `status` (`{status: liczba}`), `reactions` (`{reakcja: liczba}`), `reactN`; elementy `bellTolls`, `houndHunt`, `armyRisen`, `gateSplits`, `ogreThrows`, `doubleEdge`, `caltrops`, `plagueJumps`, `lichRaise`, `skelUp`, `impStole`, `sirenQuarrel`, `baits`, `dreamTries`, `lullNaps`, `runes`; bohaterowie `antidotes`, `flasks`, `tracked`, `calls`, `freed`, `lootRetreat`, `healerFirst`. Dokument runu (`runSummary`) nie ma osobnych pól 1.26 (plan 4.11 przewidywał `heartLvMax`, `regrowCount` i karty z rzędu Dar serca); są w rekordach fal i w kopii `settings`, a `run.heartLvMax`, `run.regrowCount`, `run.heartCards` tylko w zapisie gry.
+
 Pola dopisywane w locie (nie ma ich w `newStats`; poza tabelą wyżej): `alarms`, `altarBlocks`, `altarHeals`, `answers`, `autoFires` (odpalenia przy `ff`), `bardCalls`, `bardHeard`, `batScatter`, `breachOpen`, `broken`, `cageDeaths`, `charmSoak`, `chorus`, `comboPts`, `crystalDropped`, `cursedSeen`, `disputes`, `echoes`, `essGlut`, `essHeart` (porcja serca), `essWave` (Esencja do sakiewki), `fogGrope`, `healCalls`, `howlBlocks`, `hungerAte`, `hushLost`, `hushUnlearned`, `lootArgue`, `lootWeighed`, `memFires`, `memLost`, `naps`, `panicExits`, `panicked`, `patched`, `phobiaFear`, `prophecy`, `rage`, `rageNoPanic`, `rages`, `regroupsDoor`, `repelled`, `reroutes`, `returnersOut`, `revealed`, `revenge`, `rigged`, `rumorLoot`, `runeBlocks`, `shackleBlocks`, `shouts`, `skullOff`, `slips`, `smashedObj`, `smashes`, `songs`, `speedTime` (martwe), `traumas`, `trayPauses`, `treasureTale`, `upgrades`, `volleys`, `volleyTraps`, `wildfire`. Każde jest licznikiem albo flagą 0/1 ustawianą tam, gdzie zdarzenie zachodzi (nazwa opisuje zdarzenie; miejsca: `grep "stats.<pole>"`).
 
 W Unity: stały, typowany słownik statystyk (np. `enum StatId`) zamiast pól dodawanych w locie; zaokrąglanie dopiero w eksporcie i nie do liczb całkowitych dla wartości ułamkowych.
@@ -1304,4 +1337,8 @@ Niespójności:
 - `expandRefund` liczy zwrot z ceny bazowej, bez `mods.expandCost`.
 - `canPlace` dla typu z `slot: null` (tryby) zwraca prawdę na kafelku, którego `slotOf` jest `null`; nieszkodliwe, bo tryby nie trafiają do `tryPlace`.
 - `HEART` w `p1_config.js` (`{kind: 'heart'}`) to źródło obrażeń, a nie serce na mapie (`fl.heart`).
+- 1.26 (naprawione po przeglądzie): w pierwszej wersji 1.26 wywołanie `tl('k', h.id, attr || kind)` w `kill` trafiło do komentarza i oś czasu nie miała zdarzeń śmierci `k`; teraz jest wołane. Pliki z tej pierwszej wersji (też `LOG_VERSION` 62) mogą nie mieć `k`, wtedy śmierci brać z `heroes[].end`/`summary.heroes[].out`.
+- 1.26: kody osi czasu użyte drugi raz: `gs` (osłona strażnika 1.22 i rozdzielenie kratą), `cl` (zdjęcie klątwy i Wezwanie po krzyk), `gh` (powrót przegłosowanego i Odwrót z łupem); rozróżnienie tylko po liczbie i rodzaju argumentów.
+- 1.26: run zapisany przed 1.26 nie ma `run.omens`, więc po wczytaniu nie dostaje omenów (7.11.3).
+- 1.26: liczniki nowych potworów (`raised`, `reN`, `reAt`, `rewound`, `rangerHit`, `boltN`) nie są zerowane w `setupFl` i trafiają do zapisu (sekcja 05, 5.14.11).
 

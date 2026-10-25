@@ -4,7 +4,9 @@
   "item": "k_goblin",
   "items": [
    "goblin",
-   "shaman"
+   "shaman",
+   "sapper",
+   "warlord"
   ],
   "tag": "gobliny",
   "glyph": "♣",
@@ -43,12 +45,13 @@
   "color": "#a6e8ff"
  },
  "bats": {
-  "name": "Gniazdo nietoperzy",
+  "name": "Gniazdo",
   "item": "k_bats",
   "items": [
-   "bats"
+   "bats",
+   "rats"
   ],
-  "tag": "nietoperze",
+  "tag": "nietoperze i szczury",
   "glyph": "☾",
   "color": "#bba2e6"
  },
@@ -69,9 +72,10 @@
   "item": "k_armory",
   "items": [
    "spikes",
-   "arrows"
+   "arrows",
+   "pendulum"
   ],
-  "tag": "kolce i strzały",
+  "tag": "kolce, strzały, wahadła",
   "glyph": "⚔",
   "color": "#c9d5e2"
  },
@@ -80,9 +84,11 @@
   "item": "k_forge",
   "items": [
    "fire",
-   "powder"
+   "powder",
+   "oilslick",
+   "tar"
   ],
-  "tag": "ogień i proch",
+  "tag": "ogień, proch, olej",
   "glyph": "⚒",
   "color": "#ffa65c"
  },
@@ -92,9 +98,10 @@
   "items": [
    "cage",
    "trapdoor",
-   "gate"
+   "gate",
+   "snare"
   ],
-  "tag": "klatki i kraty",
+  "tag": "klatki, kraty, wnyki",
   "glyph": "⛓",
   "color": "#bdb19b"
  },
@@ -114,11 +121,50 @@
   "items": [
    "portrait",
    "eyes",
-   "mirror"
+   "mirror",
+   "falsedoor"
   ],
   "tag": "obrazy i lustra",
   "glyph": "▣",
   "color": "#ecc65e"
+ },
+ "lab": {
+  "name": "Laboratorium",
+  "item": "k_lab",
+  "items": [
+   "miasma",
+   "flood",
+   "bolt"
+  ],
+  "tag": "wyziewy, woda, pioruny",
+  "glyph": "⚗",
+  "color": "#9fe0c8"
+ },
+ "graveyard": {
+  "name": "Cmentarz",
+  "item": "k_graveyard",
+  "items": [
+   "skeleton",
+   "zombie",
+   "lich",
+   "bell"
+  ],
+  "tag": "nieumarli",
+  "glyph": "✟",
+  "color": "#c9d4b0"
+ },
+ "abyssgate": {
+  "name": "Wrota otchłani",
+  "item": "k_abyssgate",
+  "items": [
+   "imp",
+   "hound",
+   "siren",
+   "demon"
+  ],
+  "tag": "demony",
+  "glyph": "⛧",
+  "color": "#ff7a5a"
  },
  "nursery": {
   "name": "Pokój dziecięcy",

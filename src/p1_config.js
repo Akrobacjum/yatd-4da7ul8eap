@@ -11,8 +11,8 @@
   const DIRS8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
 
   const DEFAULTS = {
-    waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 30, deckSize: 7, waveIncome: 8, regenBase: 0, fearRate: 1,
-    essenceCap: 40, crystals: 3, comboWin: 3, comboQuiet: 0.25, essK: 1.1, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerBase: 37, hungerGrowth: 1.25, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
+    waveTime: 120, scale: 1, heroHp: 100, heroSpeed: 100, dmg: 0.7, monDmg: 1, essence: 25, deckSize: 7, waveIncome: 6, regenBase: 0, fearRate: 1,
+    essenceCap: 40, crystals: 3, comboWin: 3, comboQuiet: 0.25, essK: 1.1, checkDiff: 1, ffSpeed: 3, thrBase: 1500, depthMax: 2.4, volume: 0.6, hungerK: 1, tithe: 0.3, greedW: 1.0, autoFF: 1.5, earlyHp: 1,
     music: 0.5,   // 1.07: the music's volume (0 = off)
     haptics: 1, trayAuto: 1, series: 1, split: 1,   // game settings (0/1): vibration, tray folds during a wave, one check for a volley, split screen (1.03)
     topPad: 0,   // 1.02: extra gap at the top of the screen (px), for phones whose camera or corners still cut the top
@@ -33,8 +33,8 @@
     { k: 'waveIncome', label: 'Esencja po każdej fali', min: 0, max: 30, step: 1 },
     { k: 'regenBase', label: 'Odnawianie w trakcie fali (na 10 s)', min: 0, max: 6, step: 0.1, fmt: f1 },
     { k: 'fearRate', label: 'Esencja z ran i strachu', min: 0, max: 6, step: 0.5, fmt: f1 },
-    { k: 'hungerBase', label: 'Głód serca: Esencja z fali 2', min: 0, max: 200, step: 1 },
-    { k: 'hungerGrowth', label: 'Głód serca: wzrost na falę', min: 1.2, max: 2, step: 0.05, fmt: x2 },
+    { k: 'hungerK', label: 'Głód serca (× tabela 1.26; 0 = bez głodu)', min: 0, max: 2, step: 0.04, fmt: x2 },
+    { k: 'tithe', label: 'Danina: część wypłat dla sytego serca', min: 0, max: 0.6, step: 0.05, fmt: v => Math.round(v * 100) + '%' },
     { k: 'greedW', label: 'Chciwość: poziomy przywódcy za każde +1 chciwości', min: 0, max: 3, step: 0.1, fmt: v => v.toFixed(1).replace('.', ',') },
     { k: 'crystals', label: 'Kryształy w sercu (od nowego runu)', min: 1, max: 6, step: 1 },
     { k: 'deckSize', label: 'Miejsca w talii (od nowego runu)', min: 3, max: 12, step: 1 },
@@ -60,46 +60,68 @@
   const rankOf = pts => { let i = 0; RANKS.forEach((r, k) => { if (pts >= r[0]) i = k; }); return { i, name: RANKS[i][1], next: RANKS[i + 1] || null }; };
   const SLOT_LABEL = { floor: 'podłoga', wall: 'ściana', door: 'drzwi', object: 'mebel', dig: 'skała przy lochu', tunnel: 'dwa sąsiednie pokoje', demolish: 'pokój albo przejście', expand: 'pokój albo korytarz', roomtype: 'cały pokój', roomkind: 'cały pokój' };
   const ITEMS = {
-    spikes: { name: 'Kolce', cost: 3, slot: 'floor', tag: 'szybkie', cd: 1.5, desc: 'Kolce (podłoga, kłute): jedno pole, szybkie odnowienie. +50%, gdy bohater stoi: walczy, czeka, w sieci albo w klatce. Najlepsze tuż za drzwiami.' },
+    spikes: { name: 'Kolce', cost: 4, slot: 'floor', tag: 'szybkie', cd: 1.5, desc: 'Kolce (podłoga, kłute): jedno pole, szybkie odnowienie. +50%, gdy bohater stoi: walczy, czeka, w sieci albo w klatce. Najlepsze tuż za drzwiami.' },
     web: { name: 'Sieć', cost: 3, slot: 'floor', tag: 'spowalnia', cd: 7, desc: 'Sieć (podłoga): spowalnia w kwadracie 3×3 na 3 s, a bohater w sieci dostaje +30% obrażeń. Mag potrafi ją rozproszyć.' },
-    trapdoor: { name: 'Zapadnia', cost: 6, slot: 'floor', tag: 'rozdziela', cd: 8, desc: 'Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony. Najwyżej 2 upadki bohatera na falę (elita i poz. 12+: 1), potem widzi zapadnie. Złodziej ją rozbroi.' },   // 1.24: the cap
+    trapdoor: { name: 'Zapadnia', cost: 4, slot: 'floor', tag: 'rozdziela', cd: 8, desc: 'Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony i oszołomiony (Spowolniony 3 s). Najwyżej 2 upadki bohatera na falę (elita i poz. 12+: 1), potem widzi zapadnie. Złodziej ją rozbroi.' },   // 1.24: the cap
     cage: { name: 'Klatka', cost: 4, slot: 'floor', tag: 'więzi', cd: 10, desc: 'Klatka (podłoga): więzi bohatera na 6 s, uwięziony dostaje +50% obrażeń. Jeśli drużyna go nie uwolni, umiera w klatce (boss wyłamie kraty).' },
-    arrows: { name: 'Strzały', cost: 3, slot: 'wall', tag: 'linia', cd: 3, desc: 'Strzały (ściana, kłute): strzała leci przez cały pokój w linii prostej i trafia każdego. Mebel ją zatrzymuje.' },
+    arrows: { name: 'Strzały', cost: 4, slot: 'wall', tag: 'linia', cd: 3, desc: 'Strzały (ściana, kłute): strzała leci przez cały pokój w linii prostej i trafia każdego. Mebel ją zatrzymuje.' },
     fire: { name: 'Ogień', cost: 4, slot: 'wall', tag: 'podpala', cd: 5, desc: 'Ogień (ściana, ogień): płomień 2×3 przed ścianą i podpalenie na 3 s. Podpalonego nie leczy odpoczynek, kapłan musi go ugasić.' },
     portrait: { name: 'Portret', cost: 4, slot: 'wall', tag: 'strach', cd: 6, desc: 'Portret (ściana): nie rani, tylko straszy wszystkich w zasięgu 4 pól. Doświadczony kapłan potrafi go odczynić.' },
-    gate: { name: 'Krata', cost: 4, slot: 'door', tag: 'rozdziela', cd: 8, desc: 'Krata (drzwi, obuchowe): zamyka przejście na 4 s i rozdziela drużynę. Odcięci szukają innej drogi albo się gubią. Odnawia się 8 s po otwarciu, 3 zamknięcia na falę.' },
+    gate: { name: 'Krata', cost: 3, slot: 'door', tag: 'rozdziela', cd: 8, desc: 'Krata (drzwi, obuchowe): zamyka przejście na 6 s i rozdziela drużynę. Odcięci są przez 6 s samotni (strach i Groza samotności), szukają innej drogi albo się gubią. Odnawia się 8 s po otwarciu, 3 zamknięcia na falę.' },
     crate: { name: 'Skrzynia', cost: 3, slot: 'floor', tag: 'blokuje', build: true, desc: 'Skrzynia (podłoga pokoju, między falami): blokuje przejście i jest meblem pod proch, mimika albo pozytywkę. Przytrzymanie w budowie zwraca Esencję.' },
     powder: { name: 'Proch', cost: 3, slot: 'object', tag: 'wybuch', cd: 0, desc: 'Proch (mebel, ogień): wybuch 3×3, mebel znika i otwiera nowe przejście. Jednorazowy.' },
     mimic: { name: 'Mimik', cost: 4, slot: 'object', tag: 'gryzie', cd: 4, desc: 'Mimik (mebel, kłute): mebel gryzie wszystkich dookoła. Złodziej go nie rozbroi.' },
-    goblin: { name: 'Goblin', cost: 4, slot: 'floor', cd: 3, hp: 110, melee: 14, tag: 'blokuje', desc: 'Goblin (potwór, kłute): blokuje przejście i mocno bije tego, kto z nim walczy. Ginie na dobre. Skill check: Dźgnięcie.' },
-    archer: { name: 'Łucznik', cost: 4, slot: 'floor', cd: 4, hp: 50, melee: 4, tag: 'strzela', desc: 'Łucznik (potwór, kłute): sam strzela do bohaterów w swoim pokoju (zasięg 4). Ginie na dobre. Skill check: Salwa.' },
-    spider: { name: 'Pająk', cost: 5, slot: 'floor', cd: 5, hp: 90, melee: 12, tag: 'oplata', desc: 'Pająk (potwór, trucizna): blokuje przejście, gryzie i oplata siecią. Skill check: Oplątanie 3×3 z ugryzieniem.' },
+    goblin: { name: 'Goblin', cost: 4, slot: 'floor', cd: 3, hp: 140, melee: 16, tag: 'blokuje', desc: 'Goblin (potwór, kłute): blokuje przejście i mocno bije tego, kto z nim walczy. Powalony wstaje w następnej budowie (+1 do głodu). Skill check: Dźgnięcie.' },
+    archer: { name: 'Łucznik', cost: 4, slot: 'floor', cd: 4, hp: 50, melee: 4, tag: 'strzela', desc: 'Łucznik (potwór, kłute): sam strzela do bohaterów w swoim pokoju (zasięg 4). Powalony wstaje w następnej budowie (+1 do głodu). Skill check: Salwa.' },
+    spider: { name: 'Pająk', cost: 4, slot: 'floor', cd: 5, hp: 90, melee: 12, tag: 'oplata', desc: 'Pająk (potwór, trucizna): blokuje przejście, gryzie i oplata siecią. Skill check: Oplątanie 3×3 z ugryzieniem.' },
     ogre: { name: 'Ogr', cost: 7, slot: 'floor', cd: 6, hp: 240, melee: 18, tag: 'tank', desc: 'Ogr (potwór, obuchowe): bardzo dużo życia, bije wszystkich, którzy z nim walczą. Skill check: Uderzenie 3×3.' },
-    shaman: { name: 'Szaman', cost: 5, slot: 'floor', cd: 8, hp: 60, melee: 3, tag: 'leczy', desc: 'Szaman (potwór): leczy potwory w promieniu 2 pól. Skill check: Wielkie leczenie wszystkich potworów w pokoju.' },
+    shaman: { name: 'Szaman', cost: 4, slot: 'floor', cd: 8, hp: 60, melee: 3, tag: 'leczy', desc: 'Szaman (potwór): leczy potwory w promieniu 2 pól (leczenie od kilku szamanów się nie sumuje; razem najwyżej 100% życia potwora na falę). Skill check: Wielkie leczenie wszystkich potworów w pokoju.' },
     ghost: { name: 'Duch', cost: 5, slot: 'floor', cd: 7, hp: 60, melee: 5, tag: 'straszy', desc: 'Duch (potwór): krąży przy bohaterach i straszy, nie blokuje przejścia. Ranią go tylko kapłan i mag. Skill check: Wrzask.' },
     // v15.1: more things that only scare (as many as the things that wound)
     eyes: { name: 'Oczy', cost: 3, slot: 'wall', tag: 'samotni ×2', cd: 3, desc: 'Oczy (ściana): patrzą w linii przez cały pokój i straszą każdego na tej linii. Samotny albo zgubiony boi się 2 razy bardziej. Kapłan je odczyni.' },
     bones: { name: 'Kości', cost: 3, slot: 'floor', tag: 'nowicjusze', cd: 4, desc: 'Kości (podłoga): grzechoczą i straszą w kwadracie 3×3. Nowicjusze boją się 1,5 raza bardziej. Kapłan je odczyni.' },
     mirror: { name: 'Lustro', cost: 4, slot: 'wall', tag: 'dobija', cd: 6, desc: 'Lustro (ściana): straszy w zasięgu 3 pól, tym mocniej, im bardziej bohater już się boi (do 2,5 raza). Kapłan je odczyni.' },
     creak: { name: 'Zawiasy', cost: 3, slot: 'door', tag: 'próg', cd: 4, desc: 'Skrzypiące zawiasy (drzwi): mocno straszą tego, kto jest w drzwiach albo tuż przy nich, słabiej każdego do 2 pól. Złodziej je rozbroi.' },
-    coffin: { name: 'Trumna', cost: 5, slot: 'floor', tag: 'mocny strach', cd: 9, desc: 'Trumna (podłoga): wieko się uchyla. Najbliższy bohater bardzo się boi, inni do 2 pól trochę. W Krypcie +50%. Złodziej zabije ją gwoździami.' },
-    musicbox: { name: 'Pozytywka', cost: 4, slot: 'object', tag: 'cały pokój', cd: 9, desc: 'Pozytywka (mebel): gra kołysankę w całym pokoju i przez 4 s każdy, kto tam jest, boi się coraz bardziej. Złodziej ją rozbroi.' },
+    coffin: { name: 'Trumna', cost: 4, slot: 'floor', tag: 'mocny strach', cd: 7, desc: 'Trumna (podłoga): wieko się uchyla. Najbliższy bohater bardzo się boi, inni do 2 pól trochę. W Krypcie +50%. Złodziej zabije ją gwoździami.' },
+    musicbox: { name: 'Pozytywka', cost: 4, slot: 'object', tag: 'cały pokój', cd: 8, desc: 'Pozytywka (mebel): gra kołysankę w całym pokoju i przez 4 s każdy, kto tam jest, boi się coraz bardziej. Złodziej ją rozbroi.' },
     shade: { name: 'Cień', cost: 5, slot: 'floor', cd: 8, hp: 50, melee: 0, tag: 'samotni', desc: 'Cień (potwór): sunie za samotnym albo ostatnim w szyku i szepcze mu do ucha. Samotny boi się 2 razy bardziej. Rani go tylko kapłan. Skill check: Szept.' },
-    bats: { name: 'Nietoperze', cost: 4, slot: 'floor', cd: 6, hp: 40, melee: 0, tag: 'płoszą', desc: 'Nietoperze (potwór, kłute): szybki rój krąży między bohaterami, gryzie i straszy. Ranią go tylko mag i kapłan. Skill check: rój płoszy bohaterów (uciekają na oślep).' },
+    bats: { name: 'Nietoperze', cost: 3, slot: 'floor', cd: 6, hp: 40, melee: 0, tag: 'płoszą', desc: 'Nietoperze (potwór, kłute): szybki rój krąży między bohaterami, gryzie i straszy. Ranią go tylko mag i kapłan. Skill check: rój płoszy bohaterów (uciekają na oślep).' },
+    // 1.26 (plan 8): ten new traps
+    pendulum: { name: 'Wahadło', cost: 4, slot: 'wall', tag: 'linia, ×1,5 trzymanym', cd: 4, desc: 'Wahadło (ściana, kłute): ostrze tnie pas 3 pól szerokości i 4 w głąb pokoju: każdy w pasie dostaje cios. Unieruchomieni i spowolnieni ×1,5. Złodziej je rozbroi.' },
+    snare: { name: 'Wnyki', cost: 3, slot: 'floor', tag: 'unieruchamia', cd: 8, desc: 'Wnyki (podłoga, kłute): rani i Unieruchamia na 5 s (draśnięcie 3,5 s; najwyżej 5 s, potem 3 s odporności). Rozbrajanie trwa 1,5 raza dłużej, złodziej nie zrobi uniku.' },
+    miasma: { name: 'Wyziewy', cost: 5, slot: 'floor', tag: 'trucizna', cd: 7, desc: 'Wyziewy (podłoga, trucizna): chmura 3×3 na 5 s. Kto w nią wejdzie, dostaje stos trucizny, potem kolejny co 1,5 s, i 10 strachu przy pierwszym kontakcie. Zatruty + ogień = Detonacja.' },
+    oilslick: { name: 'Plama oleju', cost: 4, slot: 'floor', tag: 'Oblany', cd: 6, desc: 'Plama oleju (podłoga): kwadrat 3×3, każdy w nim jest Oblany na 8 s i Spowolniony na 1,5 s, czasem się poślizgnie. Oblany + ogień = Pożar.' },
+    bolt: { name: 'Runa piorunów', cost: 5, slot: 'wall', tag: 'porażenie', cd: 4, desc: 'Runa piorunów (ściana, porażenie): piorun w najbliższego bohatera do 3 pól, przeskakuje na wszystkich Mokrych w pokoju. Mokry + porażenie = Porażenie.' },
+    flood: { name: 'Zalewnia', cost: 4, slot: 'floor', tag: 'Mokry, cały pokój', cd: 10, desc: 'Zalewnia (podłoga): woda zalewa cały pokój: Mokry na 8 s, Spowolniony na 2 s, 6 strachu. Gasi podpalonych (Para: chmura straszy i oślepia).' },
+    bell: { name: 'Dzwon żałobny', cost: 4, slot: 'object', tag: 'śmierć straszy', cd: 8, desc: 'Dzwon żałobny (mebel): każda śmierć bohatera w lochu to 24 strachu dla wszystkich żywych (liczą się najwyżej 2 dzwony; fobia hałasu). Skill check: 10 strachu w pokoju. Kapłan go odczyni.' },
+    falsedoor: { name: 'Fałszywe przejście', cost: 4, slot: 'door', tag: 'gubi', cd: 10, desc: 'Fałszywe przejście (drzwi): pierwszy, kto przejdzie, skręca w złą stronę: zgubiony na 12 s (Groza zgubienia) i 10 strachu. Raz na bohatera w fali; mag od poziomu 8 widzi iluzję.' },
+    tar: { name: 'Kocioł smoły', cost: 5, slot: 'door', tag: 'ogień + Oblany', cd: 10, desc: 'Kocioł smoły (drzwi, ogień): wylewa smołę na pierwszego w drzwiach: rani ogniem (bez podpalenia), Oblany i Spowolniony na 3 s.' },
+    bait: { name: 'Przynęta', cost: 3, slot: 'floor', tag: 'łup, który łapie', cd: 6, rarity: 1, desc: 'Przynęta (łup): wygląda jak sakwa monet i kusi jak łup. Kto ją podniesie, jest Unieruchomiony na 3 s i ranny, pobliscy dostają 8 strachu, a przynęta zostaje na miejscu.' },
+    // 1.26 (plan 9): ten new monsters
+    skeleton: { name: 'Szkielet', cost: 4, slot: 'floor', cd: 4, hp: 70, melee: 12, tag: 'składa się', desc: 'Szkielet (potwór, kłute): blokuje i bije. Powalony pierwszy raz w fali składa się po 5 s z połową życia (nie po ciosie paladyna, kapłana ani barbarzyńcy w szale). Skill check: Kościany cios.' },
+    zombie: { name: 'Zombie', cost: 5, slot: 'floor', cd: 5, hp: 170, melee: 8, tag: 'zaraza', desc: 'Zombie (potwór, trucizna): powolny tank. Walczący z nim co 1,5 s łapie stos Zarazy; Zarażony, który zginie, wstaje jako Twój zombie (Powstanie). Skill check: Ugryzienie (+2 stosy trucizny).' },
+    lich: { name: 'Licz', cost: 9, slot: 'floor', cd: 6, hp: 120, melee: 4, tag: 'wskrzesza', desc: 'Licz (potwór): raz na falę podnosi powalonego potwora w swoim pokoju (50% życia), straszy wszystkich do 2 pól. Skill check: Lodowy dotyk (rani i spowalnia).' },
+    imp: { name: 'Chochlik', cost: 3, slot: 'floor', cd: 6, hp: 40, melee: 0, tag: 'kradnie', desc: 'Chochlik (latający): krąży i straszy. Skill check: Zwędzenie: zabiera bohaterowi przedmiot i upuszcza go w innym pokoju jako łup (chciwość), +20 strachu. Trafiony czasem się teleportuje.' },
+    hound: { name: 'Ogar piekielny', cost: 5, slot: 'floor', cd: 5, hp: 90, melee: 28, tag: 'poluje', desc: 'Ogar piekielny (potwór, ogień): uciekający i spanikowani dostają od niego 2 razy więcej; zabicie uciekiniera daje Grozę i za śmierć, i za ucieczkę. Skill check: Pogoń za najbardziej przestraszonym.' },
+    siren: { name: 'Kusicielka', cost: 6, slot: 'floor', cd: 9, hp: 60, melee: 0, tag: 'uwodzi', desc: 'Kusicielka (latająca): straszy wokół. Skill check: Zew: najmniej odważny w promieniu 4 idzie do niej 4 s (Uwiedziony), odłącza się, potem 30 strachu. Kapłan, paladyn i pieśń barda przerywają zew.' },
+    demon: { name: 'Demon otchłani', cost: 10, slot: 'floor', cd: 6, hp: 420, melee: 28, tag: 'głód +2', desc: 'Demon otchłani (potwór, ogień): ogromny, bije wszystkich walczących, straszy wokół. Dopóki stoi w lochu, głód każdej fali +2 (Apetyt demona). Skill check: Pożoga w całym pokoju.' },
+    sapper: { name: 'Goblin saper', cost: 5, slot: 'floor', cd: 8, hp: 80, melee: 8, tag: 'kolczatki', desc: 'Goblin saper (potwór): skill check: Kolczatki: 3 pola przy bohaterach stają się pułapką do końca fali (rani i spowalnia, najwyżej 3 zestawy).' },
+    warlord: { name: 'Herszt goblinów', cost: 7, slot: 'floor', cd: 5, hp: 160, melee: 14, tag: 'zielonoskórzy ×1,5', desc: 'Herszt goblinów (potwór, obuchowe): zielonoskórzy w jego pokoju biją 1,5 raza mocniej; gdy goblin padnie przy nim, reszta wpada w szał (+50% na 6 s). Skill check: Okrzyk (rani i straszy cały pokój).' },
+    rats: { name: 'Rój szczurów', cost: 3, slot: 'floor', cd: 4, hp: 35, melee: 6, tag: 'rośnie', desc: 'Rój szczurów (potwór, kłute): bije wszystkich walczących. Każda fala przeżyta bez powalenia: +80% życia i siły (najwyżej 3 razy). Powalony wraca do bazowej siły. Skill check: Zalew całego pokoju.' },
     loot: { name: 'Monety', cost: 3, slot: 'floor', tag: 'chciwość', cd: 0, rarity: 1, desc: 'Monety (łup): widać je dopiero z pokoju. Tanio i mocno podbijają chciwość, kuszą chciwych i złodziei. Połowa chciwości zostaje do końca runu.' },
-    lpotion: { name: 'Mikstura', cost: 4, slot: 'floor', tag: 'wabi rannych', cd: 0, rarity: 1, desc: 'Mikstura (łup): prawie bez chciwości, ale ranny bohater pójdzie po nią nawet przez pułapki. Postaw ją w pokoju śmierci.' },
+    lpotion: { name: 'Mikstura', cost: 3, slot: 'floor', tag: 'wabi rannych', cd: 0, rarity: 1, desc: 'Mikstura (łup): prawie bez chciwości, ale ranny bohater pójdzie po nią nawet przez pułapki. Postaw ją w pokoju śmierci.' },
     loot2: { name: 'Ekwipunek', cost: 5, slot: 'floor', tag: 'rzadki', cd: 0, rarity: 2, desc: 'Ekwipunek (łup): widać go z sąsiedniego pokoju, mocno podbija chciwość. Zabrany daje rzadki przedmiot, gorszy zostaje na podłodze.' },
-    loot3: { name: 'Relikwia', cost: 10, slot: 'floor', tag: 'legendarny', cd: 0, rarity: 3, desc: 'Relikwia (łup): lśni przez kilka pokoi, bardzo podbija chciwość i rozdziela drużynę. Zabrana: 4 Esencji i legendarny przedmiot.' },
+    loot3: { name: 'Relikwia', cost: 8, slot: 'floor', tag: 'legendarny', cd: 0, rarity: 3, desc: 'Relikwia (łup): lśni przez kilka pokoi, bardzo podbija chciwość i rozdziela drużynę. Zabrana: 4 Esencji i legendarny przedmiot.' },
     lcursed: { name: 'Przeklęty', cost: 5, slot: 'floor', tag: 'klątwa', cd: 0, rarity: 2, desc: 'Przeklęty skarb (łup, trucizna): wygląda jak ekwipunek. Kto go weźmie: +30% obrażeń, słabsze przedmioty, rosnący strach. Kapłan zdejmie klątwę.' },
-    rune: { name: 'Runa', cost: 14, slot: 'floor', tag: 'magowie', build: true, desc: 'Runa (budowla, blokuje przejście jak skrzynia): magowie nie zakłócą ani nie wyczują pułapek w tym pokoju. Kontra na gildię z magami. Jedna na pokój.' },
-    altar: { name: 'Ołtarz', cost: 14, slot: 'floor', tag: 'kapłani', build: true, desc: 'Ołtarz (budowla, blokuje przejście jak skrzynia): moce kapłana i amulety działają tu o połowę słabiej. Kontra na kapłanów i leczenie. Jeden na pokój.' },
-    decoy: { name: 'Wabik', cost: 10, slot: 'floor', tag: 'złodzieje', build: true, desc: 'Wabik (budowla, blokuje przejście jak skrzynia): wygląda jak pułapka. Złodziej rozbraja go najpierw i podnosi alarm: odpalają wszystkie gotowe pułapki w pokoju.' },
-    acid: { name: 'Kwas', cost: 12, slot: 'floor', tag: 'tarcze', build: true, desc: 'Kwas (budowla, blokuje przejście jak skrzynia): tarcza wojownika, osłona kapłana i talizmany chronią tu o połowę słabiej. Kontra na wojowników. Jeden na pokój.' },
-    veil: { name: 'Zasłona', cost: 12, slot: 'floor', tag: 'plotki', build: true, desc: 'Zasłona (budowla, blokuje przejście jak skrzynia): uciekinierzy nie zapamiętają tego pokoju ani jego pułapek. Jedna na pokój.' },
+    rune: { name: 'Runa', cost: 10, slot: 'floor', tag: 'magowie', build: true, desc: 'Runa (budowla, blokuje przejście jak skrzynia): magowie nie zakłócą ani nie wyczują pułapek w tym pokoju, a pułapki w nim odnawiają się 10% szybciej. Kontra na gildię z magami. Jedna na pokój.' },
+    altar: { name: 'Ołtarz', cost: 10, slot: 'floor', tag: 'kapłani', build: true, desc: 'Ołtarz (budowla, blokuje przejście jak skrzynia): moce kapłana i amulety działają tu o połowę słabiej, a strach w tym pokoju jest o 10% większy. Kontra na kapłanów i leczenie. Jeden na pokój.' },
+    decoy: { name: 'Wabik', cost: 6, slot: 'floor', tag: 'złodzieje', build: true, desc: 'Wabik (budowla, blokuje przejście jak skrzynia): wygląda jak pułapka. Złodziej rozbraja go najpierw i podnosi alarm: odpalają wszystkie gotowe pułapki w pokoju. Alarm raz na falę.' },
+    acid: { name: 'Kwas', cost: 8, slot: 'floor', tag: 'tarcze', build: true, desc: 'Kwas (budowla, blokuje przejście jak skrzynia): tarcza wojownika, osłona kapłana i talizmany chronią tu o połowę słabiej, a obrażenia w tym pokoju są o 10% większe. Kontra na wojowników. Jeden na pokój.' },
+    veil: { name: 'Zasłona', cost: 6, slot: 'floor', tag: 'plotki', build: true, desc: 'Zasłona (budowla, blokuje przejście jak skrzynia): uciekinierzy nie zapamiętają tego pokoju ani jego pułapek, w pokoju łatwiej się zgubić, a jego pułapek nie słychać zza ścian. Jedna na pokój.' },
     // 1.05: counters to the two new classes
-    howl: { name: 'Kamień wyjec', cost: 12, slot: 'floor', tag: 'bardowie', build: true, desc: 'Kamień wyjec (budowla, blokuje przejście jak skrzynia): wiatr wyje w jego otworach. Pieśń barda tu nie działa, a echo myli głosy: zgubiony nie trafi tu do drużyny po głosie. Kontra na bardów. Jeden na pokój.' },
-    shackles: { name: 'Okowy', cost: 12, slot: 'floor', tag: 'furia', build: true, desc: 'Okowy (budowla, blokuje przejście jak skrzynia): w tym pokoju nikt nie wpada w furię, a skrzyń i budowli nie da się tu rozbić. Kontra na barbarzyńców. Jeden na pokój.' },
-    fortify: { name: 'Bastion', cost: 10, slot: 'floor', tag: 'wyłomy', build: true, desc: 'Bastion (budowla, blokuje przejście jak skrzynia): przez ściany tego pokoju gildia nie przebije wyłomu. Jeden na pokój.' },
+    howl: { name: 'Kamień wyjec', cost: 8, slot: 'floor', tag: 'bardowie', build: true, desc: 'Kamień wyjec (budowla, blokuje przejście jak skrzynia): wiatr wyje w jego otworach. Pieśń barda tu nie działa, a echo myli głosy: zgubiony nie trafi tu do drużyny po głosie. Strach w tym pokoju +10%. Kontra na bardów. Jeden na pokój.' },
+    shackles: { name: 'Okowy', cost: 8, slot: 'floor', tag: 'furia', build: true, desc: 'Okowy (budowla, blokuje przejście jak skrzynia): w tym pokoju nikt nie wpada w furię, a skrzyń i budowli nie da się tu rozbić. Unieruchomienie i spowolnienie trwa tu o 1 s dłużej. Kontra na barbarzyńców. Jeden na pokój.' },
+    fortify: { name: 'Bastion', cost: 8, slot: 'floor', tag: 'wyłomy', build: true, desc: 'Bastion (budowla, blokuje przejście jak skrzynia): przez ściany tego pokoju gildia nie przebije wyłomu. Jeden na pokój.' },
     upgrade: { name: 'Ulepsz', cost: 0, slot: null, tag: 'poziom +1', mode: true, desc: 'Ulepsz: stuknij pułapkę albo potwora (koszt nad elementem). Poziom 2 i 3 to więcej mocy, poziom 3 dodaje cechę. Stuknij Ulepsz znowu, żeby wyjść.' },
     move: { name: 'Przenieś', cost: 0, slot: null, tag: 'za darmo', mode: true, desc: 'Przenieś: stuknij element, potem nowe miejsce. Za darmo, poziom zostaje. Tak przestawisz pułapki znane z plotek.' },
     dig: { name: 'Nowy pokój', cost: 8, slot: 'dig', tag: 'kopanie', tool: true, desc: 'Nowy pokój: stuknij plus przy krawędzi lochu. Nowego pokoju nie znają plotki, więc bohaterowie muszą go odkryć.' },
@@ -107,36 +129,38 @@
     expand: { name: 'Rozbuduj', cost: 4, slot: 'expand', tag: '+1 miejsce', tool: true, desc: 'Rozbuduj pokój albo korytarz: +1 miejsce na element. Każda kolejna rozbudowa tego miejsca kosztuje 2 razy więcej.' },
     demolish: { name: 'Wyburz', cost: 0, slot: 'demolish', tag: 'zwrot', tool: true, desc: 'Wyburz pokój albo przejście. Elementy wracają jako Esencja, pokój zwraca jeszcze 5. Serca nie odetniesz od wejścia.' },
     // room types: a whole room gets a character (one type per room, tap it again with the same type to take it off for half back)
-    r_fog: { name: 'Mgła', cost: 10, slot: 'roomtype', tag: 'gubią się', tool: true, rt: 'fog', desc: 'Mgła (pokój): widać na 2 pola, drużyna się rozłazi i każdy łatwo się gubi, nikt nie wykrywa pułapek, strach +15%. Stuknij znacznik pokoju.' },
+    r_fog: { name: 'Mgła', cost: 8, slot: 'roomtype', tag: 'gubią się', tool: true, rt: 'fog', desc: 'Mgła (pokój): widać na 2 pola, drużyna się rozłazi i każdy łatwo się gubi, nikt nie wykrywa pułapek, strach +15%. Stuknij znacznik pokoju.' },
     r_swamp: { name: 'Bagno', cost: 8, slot: 'roomtype', tag: 'spowalnia', tool: true, rt: 'swamp', desc: 'Bagno (pokój): ruch o 35% wolniej, bez odpoczynku, rozbrajanie trwa o połowę dłużej. Stuknij znacznik pokoju.' },
-    r_grotto: { name: 'Grota', cost: 10, slot: 'roomtype', tag: 'echo strachu', tool: true, rt: 'grotto', desc: 'Grota (pokój): 40% strachu słychać w sąsiednich pokojach, combo z groty czeka o połowę dłużej. Stuknij znacznik pokoju.' },
-    r_crypt: { name: 'Krypta', cost: 10, slot: 'roomtype', tag: 'śmierć ×2', tool: true, rt: 'crypt', desc: 'Krypta (pokój): śmierć straszy 2 razy mocniej i daje +50% Grozy, potwory mają +25% HP. Stuknij znacznik pokoju.' },
-    r_vault: { name: 'Sezam', cost: 10, slot: 'roomtype', tag: 'łup ×2', tool: true, rt: 'vault', desc: 'Sezam (pokój): łup podbija chciwość 2 razy mocniej i kusi 1,5 raza bardziej, mnożnik pokoju +0,15. Stuknij znacznik pokoju.' },
+    r_grotto: { name: 'Grota', cost: 8, slot: 'roomtype', tag: 'echo strachu', tool: true, rt: 'grotto', desc: 'Grota (pokój): 40% strachu słychać w sąsiednich pokojach, combo z groty czeka o połowę dłużej. Stuknij znacznik pokoju.' },
+    r_crypt: { name: 'Krypta', cost: 8, slot: 'roomtype', tag: 'śmierć ×2', tool: true, rt: 'crypt', desc: 'Krypta (pokój): śmierć straszy 2 razy mocniej i daje +50% Grozy, potwory mają +25% HP. Stuknij znacznik pokoju.' },
+    r_vault: { name: 'Sezam', cost: 8, slot: 'roomtype', tag: 'łup ×2', tool: true, rt: 'vault', desc: 'Sezam (pokój): łup podbija chciwość 2 razy mocniej i kusi 1,5 raza bardziej, mnożnik pokoju +0,15. Stuknij znacznik pokoju.' },
     // 1.10 (author: more room types, each playing with the other mechanics)
-    r_haven: { name: 'Sanktuarium', cost: 10, slot: 'roomtype', tag: 'fałszywy azyl', tool: true, rt: 'haven', desc: 'Sanktuarium (pokój): wygląda na najbezpieczniejsze miejsce w lochu. Ranni chcą tu odpocząć (sami, w biegu, i cała drużyna przy odwrocie), ale rany goją się tu 2 razy wolniej, a śpiących dręczą koszmary: strach rośnie. Stuknij znacznik pokoju.' },
-    r_gears: { name: 'Zębatki', cost: 10, slot: 'roomtype', tag: 'combo z jednej', tool: true, rt: 'gears', desc: 'Zębatki (pokój): pułapki w tym pokoju przeładowują się o 25% szybciej, a ta sama pułapka odpalona drugi raz z rzędu też podbija combo. Stuknij znacznik pokoju.' },
+    r_haven: { name: 'Sanktuarium', cost: 8, slot: 'roomtype', tag: 'fałszywy azyl', tool: true, rt: 'haven', desc: 'Sanktuarium (pokój): wygląda na najbezpieczniejsze miejsce w lochu. Ranni chcą tu odpocząć (sami, w biegu, i cała drużyna przy odwrocie), ale rany goją się tu 2 razy wolniej, a śpiących dręczą koszmary: strach rośnie. Stuknij znacznik pokoju.' },
+    r_gears: { name: 'Zębatki', cost: 8, slot: 'roomtype', tag: 'combo z jednej', tool: true, rt: 'gears', desc: 'Zębatki (pokój): pułapki w tym pokoju przeładowują się o 25% szybciej, a ta sama pułapka odpalona drugi raz z rzędu też podbija combo. Stuknij znacznik pokoju.' },
     r_hush: { name: 'Głusza', cost: 8, slot: 'roomtype', tag: 'bez słów', tool: true, rt: 'hush', desc: 'Głusza (pokój): nic tu nie słychać. Bohaterowie nie ostrzegą się nawzajem (pułapki, które tu odpalą, nie trafią do ich wiedzy), nie zawołają kapłana, nie dodadzą sobie otuchy, a zgubiony nie usłyszy odpowiedzi. Strach +20%. Stuknij znacznik pokoju.' },
-    r_ice: { name: 'Lodownia', cost: 10, slot: 'roomtype', tag: 'poślizg', tool: true, rt: 'ice', desc: 'Lodownia (pokój): ślisko. Co trzeci krok bohater jedzie jedno pole dalej, prosto w to, co tam leży (doświadczeni i złodziej rzadziej). Nikt tu nie odpoczywa. Stuknij znacznik pokoju.' }
+    r_ice: { name: 'Lodownia', cost: 8, slot: 'roomtype', tag: 'poślizg', tool: true, rt: 'ice', desc: 'Lodownia (pokój): ślisko. Co trzeci krok bohater jedzie jedno pole dalej, prosto w to, co tam leży (doświadczeni i złodziej rzadziej). Nikt tu nie odpoczywa. Stuknij znacznik pokoju.' }
   };
   const TABS = [
     // Prototype 1.01 (author's layout): what wounds and what scares together, every monster in one tab, loot apart,
     // Obiekty = what stands in a room like a crate (the crate and the counter-buildings), Loch = digging and room types.
     // 1.14 (author: subcategories in the build bar, for now wounds and fear): a tab with subs shows one of them at a time
     // (Rany also holds the traps that hold, split and slow: they work with the wounding ones)
-    { id: 'traps', label: 'Pułapki', items: ['spikes', 'arrows', 'web', 'trapdoor', 'cage', 'fire', 'gate', 'powder', 'mimic', 'portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox'],
-      subs: [{ id: 'dmg', label: 'Rany', items: ['spikes', 'arrows', 'web', 'trapdoor', 'cage', 'fire', 'gate', 'powder', 'mimic'] },
-             { id: 'fear', label: 'Strach', items: ['portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox'] }] },
-    { id: 'monster', label: 'Potwory', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman', 'ghost', 'shade', 'bats'],
-      subs: [{ id: 'dmg', label: 'Rany', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman'] },
-             { id: 'fear', label: 'Strach', items: ['ghost', 'shade', 'bats'] }] },
-    { id: 'loot', label: 'Łup', items: ['loot', 'lpotion', 'loot2', 'loot3', 'lcursed'] },
+    { id: 'traps', label: 'Pułapki', items: ['spikes', 'arrows', 'web', 'trapdoor', 'cage', 'fire', 'gate', 'powder', 'mimic', 'pendulum', 'snare', 'oilslick', 'tar', 'miasma', 'flood', 'bolt', 'portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox', 'bell', 'falsedoor'],
+      subs: [{ id: 'dmg', label: 'Rany', items: ['spikes', 'arrows', 'web', 'trapdoor', 'cage', 'fire', 'gate', 'powder', 'mimic', 'pendulum', 'snare'] },
+             { id: 'stat', label: 'Statusy', items: ['oilslick', 'tar', 'miasma', 'flood', 'bolt'] },
+             { id: 'fear', label: 'Strach', items: ['portrait', 'eyes', 'bones', 'mirror', 'creak', 'coffin', 'musicbox', 'bell', 'falsedoor'] }] },
+    { id: 'monster', label: 'Potwory', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman', 'sapper', 'warlord', 'rats', 'skeleton', 'zombie', 'lich', 'hound', 'demon', 'ghost', 'shade', 'bats', 'imp', 'siren'],
+      subs: [{ id: 'dmg', label: 'Rany', items: ['goblin', 'archer', 'spider', 'ogre', 'shaman', 'sapper', 'warlord', 'rats'] },
+             { id: 'dark', label: 'Mrok', items: ['skeleton', 'zombie', 'lich', 'hound', 'demon'] },
+             { id: 'fear', label: 'Strach', items: ['ghost', 'shade', 'bats', 'imp', 'siren'] }] },
+    { id: 'loot', label: 'Łup', items: ['loot', 'lpotion', 'loot2', 'loot3', 'lcursed', 'bait'] },
     { id: 'object', label: 'Obiekty', items: ['crate', 'rune', 'altar', 'decoy', 'acid', 'howl', 'shackles', 'veil', 'fortify'] },
     // 1.15 (author: split what you do to the dungeon into rooms, kinds and effects): Kopanie (the rooms themselves), Komnaty
     // (what a room is for: one family of traps or monsters works better there), Efekty (what the room does to the heroes)
-    { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish', 'k_goblin', 'k_spider', 'k_ogre', 'k_haunt', 'k_bats', 'k_ossuary', 'k_armory', 'k_forge', 'k_prison', 'k_junk', 'k_gallery', 'k_nursery',
+    { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish', 'k_goblin', 'k_spider', 'k_ogre', 'k_haunt', 'k_bats', 'k_ossuary', 'k_armory', 'k_forge', 'k_prison', 'k_junk', 'k_gallery', 'k_nursery', 'k_lab', 'k_graveyard', 'k_abyssgate',
       'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'],   // no Przenieś (a tap moves), no Ulepsz (a double tap upgrades)
       subs: [{ id: 'dig', label: 'Kopanie', items: ['dig', 'tunnel', 'expand', 'demolish'] },
-             { id: 'kind', label: 'Komnaty', items: ['k_goblin', 'k_spider', 'k_ogre', 'k_haunt', 'k_bats', 'k_ossuary', 'k_armory', 'k_forge', 'k_prison', 'k_junk', 'k_gallery', 'k_nursery'] },
+             { id: 'kind', label: 'Komnaty', items: ['k_goblin', 'k_spider', 'k_ogre', 'k_haunt', 'k_bats', 'k_ossuary', 'k_armory', 'k_forge', 'k_prison', 'k_junk', 'k_gallery', 'k_nursery', 'k_lab', 'k_graveyard', 'k_abyssgate'] },
              { id: 'effect', label: 'Efekty', items: ['r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'] }] },
     { id: 'deck', label: 'Talia', items: [] }
   ];
@@ -153,6 +177,8 @@
   // (both of the author's winning runs leaned on monsters: the kill run on the ogre, the archer and the goblin, so the wounding
   // monsters stay in run 1; a run 1 of traps only would be another game)
   const ONB_ITEM = { ghost: 2, shade: 2, bats: 2, portrait: 2, eyes: 2, bones: 2, mirror: 2, creak: 2, coffin: 2, musicbox: 2,
+    oilslick: 2, tar: 2, bell: 2, falsedoor: 2, bait: 2, imp: 2, siren: 2, hound: 2, rats: 2, skeleton: 2, zombie: 2,   // 1.26 (8.2): Wahadło and Wnyki from stage 1, the rest from stage 2-3
+    miasma: 3, flood: 3, bolt: 3, lich: 3, demon: 3, sapper: 3, warlord: 3,
     crate: 3, rune: 3, altar: 3, decoy: 3, acid: 3, howl: 3, shackles: 3, veil: 3, fortify: 3,
     r_fog: 3, r_swamp: 3, r_grotto: 3, r_crypt: 3, r_vault: 3, r_haven: 3, r_gears: 3, r_hush: 3, r_ice: 3 };
   // cards that only make sense with what a later run brings (a card that needs a locked trap or monster is filtered by its req)
@@ -167,9 +193,10 @@
     { name: 'Strach', news: [
       'Pułapki, które straszą (w zakładce Pułapki, za raniącymi): portret, oczy i kości od razu, a z kart lustro, zawiasy, trumna i pozytywka. Nie ranią, ale strach to też Groza, a pełny fioletowy pasek wygania bohatera z lochu.',
       'Potwory, które straszą (z kart w sklepie): duch, cień i nietoperze.',
-      'Wystraszony uciekinier daje Esencję, ale opowie następnej fali o pułapkach, które go zraniły albo przestraszyły. Nowe karty w sklepie grają strachem.'] },
+      'Wystraszony uciekinier daje Esencję, ale opowie następnej fali o pułapkach, które go zraniły albo przestraszyły. Nowe karty w sklepie grają strachem.',
+      'Od fali 4 przychodzą też paladyn (uspokaja drużynę, nie zostawia nikogo) i tropiciel (wykrywa pułapki podłogowe i potwory w sąsiednich pokojach), od fali 6 alchemik (zdejmuje statusy). Stuknij bohatera, żeby zobaczyć, co umie.'] },
     { name: 'Gildia i loch', news: [
-      'Gildia czyta raporty z fal i od teraz przysyła specjalistę na Twój styl: kapłana z amuletem na strach, wojownika z talizmanem na zabijanie, złodzieja na masę pułapek, maga na potwory, barda na błądzenie, barbarzyńcę na zastawione przejścia. Kogo i po co przysyła, zobaczysz przed falą.',
+      'Gildia czyta raporty z fal i od teraz przysyła specjalistę na Twój styl: kapłana z amuletem na strach, wojownika z talizmanem na zabijanie, złodzieja na masę pułapek, maga na potwory, barda na błądzenie, barbarzyńcę na zastawione przejścia, alchemika na reakcje, paladyna na nieumarłych i demony, tropiciela na latające potwory. Kogo i po co przysyła, zobaczysz przed falą.',
       'Zakładka Obiekty: skrzynia i budowle-kontry na specjalistów (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy, Zasłona, Bastion).',
       'Typy pokoi na końcu zakładki Loch: Mgła, Bagno, Grota, Krypta, Sezam, Sanktuarium, Zębatki, Głusza i Lodownia. Każdy zmienia zasady w jednym pokoju (przytrzymaj kafelek, żeby przeczytać).'] },
     { name: 'Pełna gra', news: [
@@ -181,13 +208,14 @@
   // every later run is the full game. (A run saved before 1.24 in a stage keeps its stage.)
   const ONB_WAVE = [0, 1, 3, 5, 7];
   const onbWaveStage = w => w >= ONB_WAVE[4] ? 4 : w >= ONB_WAVE[3] ? 3 : w >= ONB_WAVE[2] ? 2 : 1;
-  const TRAPS = { spikes: 1, web: 1, trapdoor: 1, cage: 1, arrows: 1, fire: 1, portrait: 1, gate: 1, powder: 1, mimic: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1 };
-  const MONSTERS = { goblin: 1, archer: 1, spider: 1, ogre: 1, shaman: 1, ghost: 1, shade: 1, bats: 1 };
+  const TRAPS = { spikes: 1, web: 1, trapdoor: 1, cage: 1, arrows: 1, fire: 1, portrait: 1, gate: 1, powder: 1, mimic: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1,
+    pendulum: 1, snare: 1, miasma: 1, oilslick: 1, bolt: 1, flood: 1, bell: 1, falsedoor: 1, tar: 1 };   // 1.26 (8): Przynęta is loot that bites (pickup)
+  const MONSTERS = { goblin: 1, archer: 1, spider: 1, ogre: 1, shaman: 1, ghost: 1, shade: 1, bats: 1, skeleton: 1, zombie: 1, lich: 1, imp: 1, hound: 1, siren: 1, demon: 1, sapper: 1, warlord: 1, rats: 1 };
   // v15.1: traps that only scare (no wounds), the cursed ones a priest lifts (the thief and bombs leave them alone),
   // and monsters that float after the heroes (never block the way, never fight hand to hand)
-  const SCARE = { portrait: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1 };
-  const CURSED = { portrait: 1, eyes: 1, bones: 1, mirror: 1 };
-  const DRIFT = { ghost: 1, shade: 1, bats: 1 };
+  const SCARE = { portrait: 1, eyes: 1, bones: 1, mirror: 1, creak: 1, coffin: 1, musicbox: 1, bell: 1, falsedoor: 1 };
+  const CURSED = { portrait: 1, eyes: 1, bones: 1, mirror: 1, bell: 1 };
+  const DRIFT = { ghost: 1, shade: 1, bats: 1, imp: 1, siren: 1 };
   // 1.24 (B, P1-4: new players did not see that scaring pays): what an element does to a hero, as a word on its description
   const SCARES = t => !!(SCARE[t] || DRIFT[t]);
   const HURTS = t => !!DMG_OF[t] && !LOOT_KIND[t];
@@ -201,7 +229,7 @@
   const ACTIVE = Object.assign({}, TRAPS, MONSTERS);   // everything that can fire
   // Loot comes in kinds the player picks: coins (pure greed), a potion (a lure for the wounded), gear, a relic, a cursed treasure.
   // rarity = how far it can be seen from (1: the same room, 2: the next room, 3: across the dungeon).
-  const LOOT_KIND = { loot: 'gold', lpotion: 'potion', loot2: 'gear', loot3: 'relic', lcursed: 'cursed' };
+  const LOOT_KIND = { loot: 'gold', lpotion: 'potion', loot2: 'gear', loot3: 'relic', lcursed: 'cursed', bait: 'gold' };   // 1.26: Przynęta looks like coins
   // 1.12: how much one combo step adds to the power of a trap's wounds and scares (see fireRaw)
   const COMBO_POW = 0.12;
   // ...and the heroes get more HP to make up for it (author: longer raids, a reward for grouped traps rather than for more of
@@ -215,9 +243,9 @@
   const isLoot = t => !!LOOT_KIND[t];
   const RARITY_NAME = ['', 'zwykły', 'rzadki', 'legendarny'];
   const RARITY_COLOR = ['#f2b94b', '#f2b94b', '#6fb7ff', '#ff8a3c'];
-  const LOOT_COLOR = { loot: '#f2b94b', lpotion: '#8be38f', loot2: '#6fb7ff', loot3: '#ff8a3c', lcursed: '#b48cff' };
+  const LOOT_COLOR = { loot: '#f2b94b', lpotion: '#8be38f', loot2: '#6fb7ff', loot3: '#ff8a3c', lcursed: '#b48cff', bait: '#f2b94b' };
   const SIZE_BONUS = 0.05;   // Rozległość lochu: +0,05 greed for every room over 5 (v14: everything global is greed)
-  const DISARMABLE = { spikes: 1, web: 1, trapdoor: 1, cage: 1, gate: 1, arrows: 1, fire: 1, powder: 1, decoy: 1, creak: 1, coffin: 1, musicbox: 1 };
+  const DISARMABLE = { spikes: 1, web: 1, trapdoor: 1, cage: 1, gate: 1, arrows: 1, fire: 1, powder: 1, decoy: 1, creak: 1, coffin: 1, musicbox: 1, pendulum: 1, snare: 1, miasma: 1, oilslick: 1, bolt: 1, flood: 1, falsedoor: 1, tar: 1 };
   // Counter-buildings: placed between waves on a room floor, take a slot, one of each kind per room.
   const BUILDINGS = { rune: 1, altar: 1, decoy: 1, acid: 1, veil: 1, fortify: 1, howl: 1, shackles: 1 };
   const SMASHABLE_OBJ = { crate: 1, barrel: 1, shelf: 1 };   // 1.05: what a barbarian's axe goes through (wood; not the stone statues)
@@ -249,25 +277,68 @@
     coffin: ['Pogrzebany żywcem', 'najbliższy boi się 1,5 raza bardziej i zwalnia na 3 s'],
     musicbox: ['Kołysanka śmierci', 'kołysanka trwa 8 s'],
     shade: ['Pożeracz światła', 'szept gubi samotnego bohatera'],
-    bats: ['Chmara', 'rój sięga 3 pól i płoszy częściej']
+    bats: ['Chmara', 'rój sięga 3 pól i płoszy częściej'],
+    // 1.26 (8.1, 9.2)
+    pendulum: ['Podwójne', 'drugi zamach (50% mocy) po 0,6 s'], snare: ['Zębate', 'złapany krwawi przez 3 s'], miasma: ['Gęste', 'chmura trzyma się 8 s'], oilslick: ['Łatwopalna', 'Oblany zapala się od każdego trafienia pułapki (15%)'],
+    bolt: ['Burza', 'piorun przeskakuje też na 2 suchych (50%)'], flood: ['Topiel', 'wszyscy w pokoju są spowolnieni, dopóki w nim są'], bell: ['Requiem', 'każdy, kto usłyszy dzwon, daje +0,5 Grozy'],
+    falsedoor: ['Labirynt', 'zgubienie trwa 18 s'], tar: ['Wrzątek', 'oblany płonie 4 s'],
+    skeleton: ['Legion', 'składa się 2 razy w fali'], zombie: ['Epidemia', 'Zaraza przeskakuje na sąsiadów co 4 s'], lich: ['Filakteria', 'powalony licz nie dodaje głodu'], imp: ['Kleptoman', 'kradnie 2 przedmioty, okradziony jest Naznaczony'],
+    hound: ['Sfora', 'każdy inny ogar w lochu +25%'], siren: ['Pocałunek', 'odwaga uwiedzionego -20% do końca fali'], demon: ['Pan otchłani', 'inne demony +25%'],
+    sapper: ['Proch', 'jeden zestaw kolczatek to mała bomba'], warlord: ['Wódz', 'aura obejmuje sąsiednie pokoje'], rats: ['Wścieklizna', 'ugryzienia zarażają']
+  };
+  // 1.26 (6.1, 6.2, 8.1, 9.2): level 3 is a choice: A (the trait in TRAITS, which a komnata also gives for free) or B (bought only)
+  const TRAITS_B = {
+    spikes: ['Zadziory', 'trafiony jest Unieruchomiony na 1 s'],
+    arrows: ['Zatrute groty', 'każde trafienie dodaje stos trucizny'],
+    fire: ['Ściana ognia', 'płomień zamyka najbliższe drzwi pokoju na 3 s, przejście płonie (+10 strachu)'],
+    web: ['Kokon', 'złapany przez 4 s nie użyje żadnego przedmiotu'],
+    trapdoor: ['Kolce na dnie', 'upadek rani 3 razy mocniej i zostawia krwawienie'],
+    cage: ['Pułapka na ratownika', 'kto otworzy klatkę, jest Unieruchomiony na 3 s'],
+    portrait: ['Oczy śledzą', 'przestraszony jest Naznaczony na 8 s (każdy strach ×1,3)'],
+    gate: ['Gilotyna', 'miażdży 2 razy mocniej, odcięci są samotni przez 8 s'],
+    powder: ['Odłamki', 'wszyscy w wybuchu krwawią przez 3 s'],
+    mimic: ['Zachłanny', 'gryzie 2 razy mocniej bohatera, który podnosi łup obok'],
+    eyes: ['Wzrok bazyliszka', 'przestraszony jest Spowolniony na 2 s'],
+    bones: ['Grzechot', 'budzi fobię hałasu, nowicjusze boją się 2 razy bardziej'],
+    mirror: ['Odbicie', 'następny strach przestraszonego jest o 20% większy (8 s)'],
+    creak: ['Skrzyp nocy', 'połowę strachu słychać w sąsiednich pokojach'],
+    coffin: ['Wieko', 'najbliższy jest Unieruchomiony na 2 s'],
+    musicbox: ['Usypianka', 'ranny (poniżej 60% HP) zasypia na 3 s, w każdym pokoju'],
+    goblin: ['Łupieżca', 'zabity przez niego bohater zostawia dodatkowy stos łupu'],
+    archer: ['Zatrute strzały', 'każdy strzał dodaje stos trucizny'],
+    spider: ['Jad paraliżujący', 'ukąszony jest Unieruchomiony na 1,5 s'],
+    ogre: ['Rzut', 'wyrzuca bohatera do sąsiedniego pokoju: samotność, często zgubienie'],
+    shaman: ['Klątwa', 'skill check przeklina bohatera na 8 s: uspokaja się 2 razy wolniej, dostaje +20% obrażeń'],
+    ghost: ['Nawiedzenie', 'idzie za celem także do następnego pokoju'],
+    shade: ['Szept', 'odwaga celu -15% do końca fali'],
+    bats: ['Wampiry', 'ukąszenia leczą potwory w pokoju o zadane obrażenia'],
+    pendulum: ['Ścięcie', 'krytyk zostawia krwawienie na 4 s'], snare: ['Łańcuch', 'najbliższy sojusznik też jest Unieruchomiony na 2 s'], miasma: ['Łzawiące', 'w chmurze nikt nie wykrywa ani nie zapamiętuje pułapek'], oilslick: ['Śliska', 'poślizg w połowie kroków'],
+    bolt: ['Przeciążenie', 'co 3. odpalenie ogłusza na 2 s'], flood: ['Lodowata woda', 'Mokrzy uspokajają się 2 razy wolniej'], bell: ['Namaszczenie', 'skill check leczy wszystkie potwory w lochu o 20%'],
+    falsedoor: ['Pętla', 'przejście wyprowadza z powrotem do poprzedniego pokoju'], tar: ['Smoła', 'spowolnienie na 6 s'],
+    skeleton: ['Kościany pancerz', 'kłute rani go o 40% słabiej'], zombie: ['Gnijące mięso', 'powalony wybucha: 3 stosy trucizny walczącym'], lich: ['Armia', 'wskrzesza 2 razy na falę'], imp: ['Podpalacz', 'skradziony przedmiot wybucha ogniem'],
+    hound: ['Piekielny ogień', 'ugryzienie podpala na 3 s'], siren: ['Zazdrość', 'uwiedzenie wywołuje kłótnię (morale -0,1)'], demon: ['Głód krwi', 'każde jego zabójstwo -3 do głodu następnej fali'],
+    sapper: ['Zwijacz', 'raz na falę uzbraja z powrotem rozbrojoną pułapkę w pokoju'], warlord: ['Grabież', 'zabity w jego pokoju zostawia stos łupu'], rats: ['Nora', 'powalony dzieli się na 2 małe roje do końca fali']
   };
   // 1.15 (author: room kinds that work on a family of units or traps, as many as the prototype's content calls for): a komnata
   // is what a room is for. Every trap and monster belongs to one family; in a room of its kind it has its level 3 trait without
   // being upgraded, and one already at level 3 gets KIND_POW more power. A room has one kind and one effect (Efekty) at a time,
   // both at once is fine; a kind takes no slot. It opens once one of its family is unlocked.
-  const KIND_POW = 1.25, KIND_COST = 12;
+  const KIND_POW = 1.25, KIND_COST = 10;   // 1.26: 12 -> 10 (half back: 5)
   const KIND_INFO = {
-    goblin: { name: 'Goblinia nora', item: 'k_goblin', items: ['goblin', 'shaman'], tag: 'gobliny', glyph: '♣', color: '#a7d060' },
+    goblin: { name: 'Goblinia nora', item: 'k_goblin', items: ['goblin', 'shaman', 'sapper', 'warlord'], tag: 'gobliny', glyph: '♣', color: '#a7d060' },
     spider: { name: 'Leże pająków', item: 'k_spider', items: ['spider', 'web'], tag: 'pająki i sieci', glyph: '✳', color: '#d4cbe8' },
     ogre: { name: 'Jaskinia ogra', item: 'k_ogre', items: ['ogre'], tag: 'ogry', glyph: '♠', color: '#d99a6c' },
     haunt: { name: 'Nawiedzona sala', item: 'k_haunt', items: ['ghost', 'shade'], tag: 'duchy i cienie', glyph: '✧', color: '#a6e8ff' },
-    bats: { name: 'Gniazdo nietoperzy', item: 'k_bats', items: ['bats'], tag: 'nietoperze', glyph: '☾', color: '#bba2e6' },
+    bats: { name: 'Gniazdo', item: 'k_bats', items: ['bats', 'rats'], tag: 'nietoperze i szczury', glyph: '☾', color: '#bba2e6' },
     ossuary: { name: 'Kaplica czaszek', item: 'k_ossuary', items: ['bones', 'coffin', 'archer'], tag: 'kości i łucznicy', glyph: '☠', color: '#efe6cc' },
-    armory: { name: 'Zbrojownia', item: 'k_armory', items: ['spikes', 'arrows'], tag: 'kolce i strzały', glyph: '⚔', color: '#c9d5e2' },
-    forge: { name: 'Kuźnia', item: 'k_forge', items: ['fire', 'powder'], tag: 'ogień i proch', glyph: '⚒', color: '#ffa65c' },
-    prison: { name: 'Więzienie', item: 'k_prison', items: ['cage', 'trapdoor', 'gate'], tag: 'klatki i kraty', glyph: '⛓', color: '#bdb19b' },
+    armory: { name: 'Zbrojownia', item: 'k_armory', items: ['spikes', 'arrows', 'pendulum'], tag: 'kolce, strzały, wahadła', glyph: '⚔', color: '#c9d5e2' },
+    forge: { name: 'Kuźnia', item: 'k_forge', items: ['fire', 'powder', 'oilslick', 'tar'], tag: 'ogień, proch, olej', glyph: '⚒', color: '#ffa65c' },
+    prison: { name: 'Więzienie', item: 'k_prison', items: ['cage', 'trapdoor', 'gate', 'snare'], tag: 'klatki, kraty, wnyki', glyph: '⛓', color: '#bdb19b' },
     junk: { name: 'Graciarnia', item: 'k_junk', items: ['mimic'], tag: 'mimiki', glyph: '⌂', color: '#dcae6c' },
-    gallery: { name: 'Galeria', item: 'k_gallery', items: ['portrait', 'eyes', 'mirror'], tag: 'obrazy i lustra', glyph: '▣', color: '#ecc65e' },
+    gallery: { name: 'Galeria', item: 'k_gallery', items: ['portrait', 'eyes', 'mirror', 'falsedoor'], tag: 'obrazy i lustra', glyph: '▣', color: '#ecc65e' },
+    lab: { name: 'Laboratorium', item: 'k_lab', items: ['miasma', 'flood', 'bolt'], tag: 'wyziewy, woda, pioruny', glyph: '⚗', color: '#9fe0c8' },   // 1.26 (10.1)
+    graveyard: { name: 'Cmentarz', item: 'k_graveyard', items: ['skeleton', 'zombie', 'lich', 'bell'], tag: 'nieumarli', glyph: '✟', color: '#c9d4b0' },
+    abyssgate: { name: 'Wrota otchłani', item: 'k_abyssgate', items: ['imp', 'hound', 'siren', 'demon'], tag: 'demony', glyph: '⛧', color: '#ff7a5a' },
     nursery: { name: 'Pokój dziecięcy', item: 'k_nursery', items: ['musicbox', 'creak'], tag: 'pozytywki', glyph: '♪', color: '#f2bcd4' }
   };
   const KINDS = {};   // tool id -> kind id
@@ -279,24 +350,69 @@
       desc: K.name + ' (komnata): ' + fam[0] + ' w tym pokoju ' + (fam0.length > 1 ? 'mają' : 'ma') + ' cechę 3. poziomu bez ulepszania: ' + tr.join('; ') + '. Te już na 3. poziomie: +' + Math.round((KIND_POW - 1) * 100) + '% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju.' };
     TOOLS[K.item] = 1; ONB_ITEM[K.item] = 3; START_UNLOCKED.push(K.item);
   });
+  // 1.26 (10.1) families: every trap, monster and loot belongs to one; a Runa rodu from the shop raises a family's level (max 5):
+  // +8% power (wounds, fear) and -4% cooldown a level for its elements (Skarby: +8% greed from loot)
+  const FAMILIES = {
+    mech: { name: 'Mechanizmy', items: ['spikes', 'arrows', 'pendulum', 'snare', 'gate', 'trapdoor', 'cage', 'mimic'], color: '#c9d5e2', glyph: '⚙' },
+    fire: { name: 'Ogień', items: ['fire', 'powder', 'oilslick', 'tar'], color: '#ffa65c', glyph: '♨' },
+    alch: { name: 'Alchemia', items: ['miasma', 'flood', 'bolt'], color: '#9fe0c8', glyph: '⚗' },
+    haunt: { name: 'Nawiedzenie', items: ['portrait', 'eyes', 'mirror', 'creak', 'musicbox', 'falsedoor', 'ghost', 'shade'], color: '#a6e8ff', glyph: '✧' },
+    undead: { name: 'Nieumarli', items: ['bones', 'coffin', 'bell', 'skeleton', 'zombie', 'lich'], color: '#c9d4b0', glyph: '☠' },
+    beast: { name: 'Bestie', items: ['web', 'spider', 'bats', 'rats'], color: '#d4cbe8', glyph: '✳' },
+    green: { name: 'Zielonoskórzy', items: ['goblin', 'archer', 'shaman', 'ogre', 'sapper', 'warlord'], color: '#a7d060', glyph: '♣' },
+    demons: { name: 'Demony', items: ['imp', 'hound', 'siren', 'demon'], color: '#ff7a5a', glyph: '⛧' },
+    treasure: { name: 'Skarby', items: ['loot', 'lpotion', 'loot2', 'loot3', 'lcursed', 'bait'], color: '#f2b94b', glyph: '◆' }
+  };
+  const FAMILY_OF = {};
+  Object.keys(FAMILIES).forEach(f => FAMILIES[f].items.forEach(t => { FAMILY_OF[t] = f; }));
+  const RUNE_MAX = 5, runePrice = lv => 5 + lv;   // 5 / 6 / 7 / 8 / 9
   // Hero personalities: about half of the heroes have one; it shows on their plate and changes how they decide.
   const HERO_TRAITS = {
     greedy: { name: ['chciwy', 'chciwa'], w: 1 },
     coward: { name: ['tchórzliwy', 'tchórzliwa'], w: 1 },
     brave: { name: ['bohaterski', 'bohaterska'], w: 1 },
-    careful: { name: ['ostrożny', 'ostrożna'], w: 1 }
+    careful: { name: ['ostrożny', 'ostrożna'], w: 1 },
+    // 1.26 (14.2)
+    superstitious: { name: ['przesądny', 'przesądna'], w: 1 },
+    curious: { name: ['ciekawski', 'ciekawska'], w: 1 },
+    loyal: { name: ['lojalny', 'lojalna'], w: 1 },
+    hothead: { name: ['zapaleniec', 'zapaleniec'], w: 1 }
   };
   let ARM_TIME = 2;   // a trap built during a wave needs a moment to arm
   // v14: damage types. Every hit is piercing, blunt, fire or poison; heroes take more or less by class, body and scars.
-  const DMG_TYPES = { pierce: 'kłute', blunt: 'obuchowe', fire: 'ogień', poison: 'trucizna' };
+  const DMG_TYPES = { pierce: 'kłute', blunt: 'obuchowe', fire: 'ogień', poison: 'trucizna', shock: 'porażenie' };   // 1.26 (7.3): Porażenie
+  // 1.26 (plan 7): statuses as one system: elements put them on the heroes, a status + the right damage = a reaction
+  const STATUS = {
+    slow: { name: 'Spowolniony', short: 'spowolnienie', color: '#a9c6ff', desc: 'idzie 3 razy wolniej, pułapki ranią go o 30% mocniej' },
+    root: { name: 'Unieruchomiony', short: 'unieruchomienie', color: '#e2c98f', desc: 'stoi w miejscu (najwyżej 5 s, potem 3 s odporności): kolce i wahadło ×1,5, inne pułapki ×1,15; nie kradnie i nie rozbraja' },
+    burn: { name: 'Podpalony', short: 'podpalenie', color: '#ff9a3c', desc: 'płonie (rany od ognia co sekundę) i boi się (+2 strachu/s); Oblany zapala się mocniej (Pożar)' },
+    bleed: { name: 'Krwawiący', short: 'krwawienie', color: '#ff5a6a', desc: 'traci krew (kłute co sekundę), zostawia ślad, za którym idzie Ogar; budzi fobię krwi' },
+    poison: { name: 'Zatruty', short: 'trucizna', color: '#8fd060', desc: 'stosy trucizny (2 rany/s na stos, najwyżej 6); ogień przy 2+ stosach = Detonacja' },
+    oiled: { name: 'Oblany', short: 'olej', color: '#d6b25a', desc: 'oblany olejem 8 s: następny ogień to Pożar; czasem się poślizgnie' },
+    wet: { name: 'Mokry', short: 'woda', color: '#6fb7ff', desc: 'mokry 8 s: wolniejszy, ogień rani o połowę i gaśnie, porażenie = Porażenie (reakcja)' },
+    infected: { name: 'Zarażony', short: 'zaraza', color: '#a8c86a', desc: 'zaraza jak trucizna; zarażony, który zginie, wstaje jako Twój zombie (Powstanie)' },
+    marked: { name: 'Naznaczony', short: 'znak', color: '#c39bff', desc: 'każdy strach ×1,3, latające potwory biorą go na cel' },
+    seduced: { name: 'Uwiedziony', short: 'zew', color: '#ff8ac8', desc: 'idzie do kusicielki i odłącza się od drużyny' },
+    dazed: { name: 'Oszołomiony', short: 'oszołomienie', color: '#efe3a8', desc: 'po upadku: spowolniony' }
+  };
+  // a reaction: +0,3 Groza x depth, a big word, an extra step of combo (also from the same trap); the status it used is gone
+  const REACTIONS = {
+    blaze: { name: 'Pożar', color: '#ff7a2a', desc: 'ogień trafia Oblanego: ×1,6, podpalenie 2 razy dłużej, ogień przeskakuje na Oblanych obok' },
+    detonate: { name: 'Detonacja', color: '#b6e05a', desc: 'ogień trafia Zatrutego (2+ stosy): wybuch 3×3 za każdy stos' },
+    shock: { name: 'Porażenie', color: '#9fd6ff', desc: 'porażenie trafia Mokrego: ×1,6, przeskakuje na wszystkich Mokrych w pokoju, ogłusza' },
+    steam: { name: 'Para', color: '#dfe8f0', desc: 'woda trafia Podpalonego: gasi go, chmura 3×3 straszy i oślepia' },
+    rise: { name: 'Powstanie', color: '#a8c86a', desc: 'Zarażony umiera i wstaje jako Twój zombie do końca fali (najwyżej 2 na falę)' }
+  };
+  const REACT_K = 1.6;
   const DMG_OF = { spikes: 'pierce', arrows: 'pierce', archer: 'pierce', goblin: 'pierce', mimic: 'pierce', gate: 'blunt', ogre: 'blunt', trapdoor: 'blunt',
-    fire: 'fire', powder: 'fire', spider: 'poison', shaman: 'poison', loot: 'poison', bats: 'pierce' };
-  const CLASS_RES = { warrior: { pierce: 0.75, blunt: 1.25 }, thief: { fire: 1.25, poison: 0.75 }, priest: { pierce: 1.1, fire: 0.85, poison: 0.85 }, mage: { pierce: 1.25, blunt: 1.1, fire: 0.7 },
-    bard: { blunt: 1.2, poison: 1.1 }, barbarian: { blunt: 0.8, fire: 1.2, poison: 1.1 } };
-  const CLASS_RES_TEXT = { warrior: 'płyty: kłute -25%, obuchowe +25%', thief: 'skóra: ogień +25%, trucizna -25% (odtrutki)', priest: 'szaty i modlitwa: kłute +10%, ogień -15%, trucizna -15%', mage: 'szata i bariera: kłute +25%, obuchowe +10%, ogień -30%',
+    fire: 'fire', powder: 'fire', spider: 'poison', shaman: 'poison', loot: 'poison', bats: 'pierce',
+    pendulum: 'pierce', snare: 'pierce', miasma: 'poison', tar: 'fire', bolt: 'shock', bait: 'pierce', skeleton: 'pierce', zombie: 'poison', lich: 'blunt', hound: 'fire', demon: 'fire', sapper: 'pierce', warlord: 'blunt', rats: 'pierce' };   // 1.26
+  const CLASS_RES = { paladin: { fire: 0.9, blunt: 0.9, shock: 1.2 }, ranger: { pierce: 0.9, shock: 0.9 }, alchemist: { poison: 0.5, fire: 0.85 }, cultist: {}, warrior: { pierce: 0.75, blunt: 1.25, shock: 1.2 }, thief: { fire: 1.25, poison: 0.75 }, priest: { pierce: 1.1, fire: 0.85, poison: 0.85 }, mage: { pierce: 1.25, blunt: 1.1, fire: 0.7, shock: 0.8 },
+    bard: { blunt: 1.2, poison: 1.1 }, barbarian: { blunt: 0.8, fire: 1.2, poison: 1.1 } };   // 1.26 (7.3): metal draws the lightning, the mage's barrier stops some
+  const CLASS_RES_TEXT = { paladin: 'zbroja i wiara: ogień -10%, obuchowe -10%, porażenie +20%', ranger: 'skóry: kłute -10%, porażenie -10%', alchemist: 'odtrutki i fartuch: trucizna -50%, ogień -15%', cultist: 'brak', warrior: 'płyty: kłute -25%, obuchowe +25%, porażenie +20%', thief: 'skóra: ogień +25%, trucizna -25% (odtrutki)', priest: 'szaty i modlitwa: kłute +10%, ogień -15%, trucizna -15%', mage: 'szata i bariera: kłute +25%, obuchowe +10%, ogień -30%, porażenie -20%',
     bard: 'lekki strój: obuchowe +20%, trucizna +10%', barbarian: 'futra i krzepa: obuchowe -20%, ogień +20%, trucizna +10%' };
   // 1.05: what each class does, in a few words (the list of the next party, the hero card)
-  const CLASS_SKILL = { warrior: 'tarcza, walczy z potworami', thief: 'wykrywa i rozbraja pułapki', priest: 'leczy, osłania, odczynia', mage: 'kula ognia, zakłóca pułapki',
+  const CLASS_SKILL = { paladin: 'przysięga uspokaja drużynę, bije nieumarłych i demony, nie zostawia nikogo', ranger: 'wykrywa pułapki podłogowe i potwory obok, strzela do potworów', alchemist: 'antidotum zdejmuje statusy, flaszka rani potwory albo neutralizuje strefy', cultist: 'idzie do serca i wypija z niego Esencję', warrior: 'tarcza, walczy z potworami', thief: 'wykrywa i rozbraja pułapki', priest: 'leczy, osłania, odczynia', mage: 'kula ognia, zakłóca pułapki',
     bard: 'pieśń krzepi, woła zgubionych', barbarian: 'furia, rozbija skrzynie i budowle' };
   // 1.05: class icons (24x24, drawn on the map and in the lists): sword, dagger, cross, wand, lute, axe; the bag marks a treasure hunter
   const CLASS_ICON = {
@@ -306,7 +422,11 @@
     mage: { rot: 0, d: 'M3.2 19.4l10.6-10.6 1.8 1.8L5 21.2z M17.5 1.5l1.3 3 3.2 1.2-3.2 1.3-1.3 3-1.3-3-3.2-1.3 3.2-1.2z' },
     bard: { rot: 0, d: 'M8.5 9a6.2 6.2 0 1 1-0.01 0z M8.5 13.6a1.6 1.6 0 1 0 0.01 0z M11.6 10.6l6.6-6.6 1.6 1.6-6.6 6.6z M17.4 3.2l2.2-1.7 2.9 2.9-1.7 2.2z' },
     barbarian: { rot: 0, d: 'M12 2h2.2v20.5H12z M12 4.6L5.4 2.2C2.6 6.2 2.6 11.6 5.4 15.6L12 12.6z M14.2 6.2h2.8v4.4h-2.8z' },
-    bag: { rot: 0, d: 'M8.8 6.6h6.4l-1.1-3.6H9.9z M5 15.2c0-4.9 3.3-7.6 7-7.6s7 2.7 7 7.6c0 4.2-3 6.3-7 6.3s-7-2.1-7-6.3z' }
+    bag: { rot: 0, d: 'M8.8 6.6h6.4l-1.1-3.6H9.9z M5 15.2c0-4.9 3.3-7.6 7-7.6s7 2.7 7 7.6c0 4.2-3 6.3-7 6.3s-7-2.1-7-6.3z' },
+    paladin: { rot: 0, d: 'M12 2l8 3v6c0 5-3.6 9-8 11-4.4-2-8-6-8-11V5z M11 6h2v4h3v2h-3v6h-2v-6H8v-2h3z' },   // 1.26: a shield, a bow, a flask, a hood
+    ranger: { rot: 0, d: 'M5 2.5C13 5 15 9 15 12s-2 7-10 9.5l-.8-1.4C11 18 13 15 13 12S11 6 4.2 3.9z M3.5 11h13.5l-2.4-2.4 1-1L20 12l-4.4 4.4-1-1 2.4-2.4H3.5z' },
+    alchemist: { rot: 0, d: 'M9 2h6v2h-1v5l5.5 9.5A2.4 2.4 0 0 1 17.4 22H6.6a2.4 2.4 0 0 1-2.1-3.5L10 9V4H9z M7.5 16h9l-2.3-4H9.8z' },
+    cultist: { rot: 0, d: 'M12 2c4 0 7 4 7 9v11H5V11c0-5 3-9 7-9z M9 11a3 3 0 0 0 6 0z' }
   };
 
   // body: a weakness or a toughness (some heroes have one; a scar from your dungeon gives one too)
@@ -318,9 +438,11 @@
     fireproof: { name: ['hartowany ogniem', 'hartowana ogniem'], res: { fire: 0.6 }, text: 'ogień -40%' },
     burned: { name: ['dawne oparzenia', 'dawne oparzenia'], res: { fire: 1.4 }, text: 'ogień +40%' },
     venomproof: { name: ['odporny na jady', 'odporna na jady'], res: { poison: 0.6 }, text: 'trucizna -40%' },
-    allergic: { name: ['wrażliwy na jady', 'wrażliwa na jady'], res: { poison: 1.4 }, text: 'trucizna +40%' }
+    allergic: { name: ['wrażliwy na jady', 'wrażliwa na jady'], res: { poison: 1.4 }, text: 'trucizna +40%' },
+    conductive: { name: ['przewodzący', 'przewodząca'], res: { shock: 1.4 }, text: 'porażenie +40%' },   // 1.26 (6.8)
+    grounded: { name: ['uziemiony', 'uziemiona'], res: { shock: 0.7 }, text: 'porażenie -30%' }
   };
-  const SCAR_RES = { pierce: 'thickskin', blunt: 'sturdy', fire: 'fireproof', poison: 'venomproof' };   // what a survivor learns from the wound that nearly killed him
+  const SCAR_RES = { pierce: 'thickskin', blunt: 'sturdy', fire: 'fireproof', poison: 'venomproof', shock: 'grounded' };   // what a survivor learns from the wound that nearly killed him
   // phobias: fear from these things counts twice; seeing them for the first time hurts (15% of courage)
   const PHOBIAS = {
     fire: { name: 'ogień', attrs: ['fire', 'powder'], types: ['fire'], sees: ['fire', 'powder'] },
@@ -328,10 +450,15 @@
     closed: { name: 'ciasnota', attrs: ['cage', 'trapdoor', 'gate', 'creak', 'coffin'], sees: ['cage', 'gate', 'creak', 'coffin'] },
     ghosts: { name: 'duchy', attrs: ['ghost', 'portrait', 'eyes', 'mirror'], sees: ['ghost', 'portrait', 'eyes', 'mirror'] },
     blood: { name: 'krew i kości', srcs: ['death'], attrs: ['bones'], sees: ['bones'] },
-    dark: { name: 'ciemność', dark: true, attrs: ['shade', 'bats'], sees: ['shade', 'bats'] }
+    dark: { name: 'ciemność', dark: true, attrs: ['shade', 'bats'], sees: ['shade', 'bats'] },
+    // 1.26 (14.3)
+    dead: { name: 'umarli', attrs: ['skeleton', 'zombie', 'lich', 'bones', 'coffin', 'bell'], srcs: ['bell', 'death'], sees: ['skeleton', 'zombie', 'lich', 'bones', 'coffin', 'bell'] },
+    abyss: { name: 'otchłań', attrs: ['trapdoor', 'falsedoor', 'pendulum'], sees: ['trapdoor', 'falsedoor', 'pendulum'] },
+    noise: { name: 'hałas', attrs: ['creak', 'musicbox', 'bell', 'gate', 'rattle', 'howl'], srcs: ['screams', 'bell'], sees: ['creak', 'musicbox', 'bell'] },
+    swarm: { name: 'roje', attrs: ['bats', 'rats', 'imp', 'miasma'], sees: ['bats', 'rats', 'imp', 'miasma'] }
   };
   const PHOBIA_OF_ATTR = {};
-  Object.keys(PHOBIAS).forEach(k => (PHOBIAS[k].attrs || []).forEach(a => { PHOBIA_OF_ATTR[a] = k; }));
+  Object.keys(PHOBIAS).forEach(k => (PHOBIAS[k].attrs || []).forEach(a => { PHOBIA_OF_ATTR[a] = PHOBIA_OF_ATTR[a] || k; }));   // 1.26: an old attr keeps its old scar
 
   // Heroes: four classes, each wave brings new people with names, and ranks that decide how much they know and how well they think.
   const HEROES = {
@@ -340,12 +467,19 @@
     priest: { name: ['Kapłan', 'Kapłanka'], hp: 80, speed: 1.3, dps: 6, color: '#ffd23f', letter: 'K', greed: 0.9 },
     mage: { name: ['Mag', 'Czarodziejka'], hp: 65, speed: 1.3, dps: 8, color: '#b76dff', letter: 'M', greed: 1.0 },
     bard: { name: ['Bard', 'Bardka'], hp: 75, speed: 1.4, dps: 7, color: '#2fd3c4', letter: 'B', greed: 1.2 },   // 1.05
-    barbarian: { name: ['Barbarzyńca', 'Barbarzynka'], hp: 135, speed: 1.45, dps: 20, color: '#ff7a33', letter: 'R', greed: 0.7 }   // 1.05
+    barbarian: { name: ['Barbarzyńca', 'Barbarzynka'], hp: 135, speed: 1.45, dps: 20, color: '#ff7a33', letter: 'R', greed: 0.7 },   // 1.05
+    // 1.26 (14.1)
+    paladin: { name: ['Paladyn', 'Paladynka'], hp: 110, speed: 1.35, dps: 14, color: '#f0e2a8', letter: 'P', greed: 0.7 },
+    ranger: { name: ['Tropiciel', 'Tropicielka'], hp: 80, speed: 1.6, dps: 12, color: '#c8904e', letter: 'T', greed: 1.1 },
+    alchemist: { name: ['Alchemik', 'Alchemiczka'], hp: 70, speed: 1.35, dps: 7, color: '#e070b0', letter: 'A', greed: 1.0 },
+    cultist: { name: ['Kultysta', 'Kultystka'], hp: 75, speed: 1.4, dps: 6, color: '#b8323e', letter: 'C', greed: 0 }
   };
   // 1.05: six classes and never two of one class in a party (the first waves bring the four classic ones)
   const PARTY = ['warrior', 'thief', 'priest', 'mage', 'bard', 'barbarian'];
   const CLASSIC = ['warrior', 'thief', 'priest', 'mage'];
-  const LEADER_ORDER = ['warrior', 'barbarian', 'priest', 'bard', 'mage', 'thief'];
+  const LEADER_ORDER = ['warrior', 'paladin', 'barbarian', 'priest', 'bard', 'ranger', 'mage', 'alchemist', 'thief'];   // 1.26: a cultist never leads
+  // 1.26 (14.1): the pool of classes: from wave 4 + paladin and ranger, from wave 6 + alchemist; a cultist only with the omen Pielgrzymka
+  const partyPool = n => n <= 3 ? CLASSIC : n <= 5 ? PARTY.concat(['paladin', 'ranger']) : PARTY.concat(['paladin', 'ranger', 'alchemist']);
   // [mianownik, biernik, wołacz]
   const NAMES_M = [['Borys', 'Borysa', 'Borysie'], ['Wit', 'Wita', 'Wicie'], ['Radek', 'Radka', 'Radku'], ['Zbych', 'Zbycha', 'Zbychu'], ['Mirek', 'Mirka', 'Mirku'],
     ['Bogdan', 'Bogdana', 'Bogdanie'], ['Lech', 'Lecha', 'Lechu'], ['Gniewko', 'Gniewka', 'Gniewku'], ['Lis', 'Lisa', 'Lisie'], ['Jarek', 'Jarka', 'Jarku'],
@@ -378,7 +512,7 @@
       sapper: L >= 7 ? Math.min(1, 0.08 * (L - 6)) : 0, sight: L >= 8 };   // sapper = chance that a disarm takes the trap apart for good
   }
   // The kit grows with the level: more pieces and better ones (power r has no ceiling either).
-  const KIT = { warrior: { potion: 3, charm: 3, bomb: 2, amulet: 1 }, thief: { boots: 3, amulet: 2, potion: 2, bomb: 1 }, priest: { potion: 3, amulet: 3, charm: 2 }, mage: { bomb: 3, potion: 2, amulet: 2, charm: 1 },
+  const KIT = { paladin: { potion: 3, charm: 2, amulet: 2 }, ranger: { potion: 3, boots: 2, bomb: 1 }, alchemist: { potion: 4, bomb: 2, amulet: 1 }, cultist: { potion: 1 }, warrior: { potion: 3, charm: 3, bomb: 2, amulet: 1 }, thief: { boots: 3, amulet: 2, potion: 2, bomb: 1 }, priest: { potion: 3, amulet: 3, charm: 2 }, mage: { bomb: 3, potion: 2, amulet: 2, charm: 1 },
     bard: { potion: 2, amulet: 3, boots: 2 }, barbarian: { potion: 3, bomb: 2, charm: 1 } };
   function makeKit(type, L) {
     const n = L <= 2 ? (Math.random() < 0.3 ? 1 : 0) : Math.floor((L + 1) / 3), r = 1 + Math.floor((L - 1) / 4), w = KIT[type], out = [];
@@ -411,7 +545,7 @@
   };
   // 1.20 Udźwig (author: a mage carries as much as a barbarian, armour weighs what an amulet does): what a class carries, +0,3 kg
   // a level (p3_flow.js: carryOf). Past 60% of it he slows down (burden), on ice he slips more; past 100% he takes nothing more.
-  const CARRY = { warrior: 14, barbarian: 16, priest: 10, bard: 10, thief: 9, mage: 8 };
+  const CARRY = { warrior: 14, barbarian: 16, priest: 10, bard: 10, thief: 9, mage: 8, paladin: 15, ranger: 10, alchemist: 12, cultist: 8 };
   // 1.20: how well a kind of gear fits a class (itemValue; 1 when not listed). It replaces the one favourite class of each kind,
   // so a mage no longer values armour like a warrior does, and the party can hand gear to whoever it fits (p5_ai.js: shareThink).
   const CLASS_FIT = {
@@ -451,9 +585,30 @@
     { id: 'u-musicbox', kind: 'unlock', rar: 'c', unlock: 'musicbox', name: 'Nowa pułapka: Pozytywka', text: 'Na obiekt. Kołysanka straszy cały pokój przez kilka sekund.' },
     { id: 'u-shade', kind: 'unlock', rar: 'c', unlock: 'shade', name: 'Nowy potwór: Cień', text: 'Sunie za samotnym bohaterem i szepcze. Rani go tylko kapłan.' },
     { id: 'u-bats', kind: 'unlock', rar: 'c', unlock: 'bats', name: 'Nowy potwór: Nietoperze', text: 'Szybki rój: gryzie, straszy i płoszy bohaterów.' },
+    // 1.26 (8.2, 9): the new traps and monsters come by unlock cards (Wahadło and Wnyki from stage 1, the rest from stage 2-3)
+    { id: 'u-pendulum', kind: 'unlock', rar: 'c', unlock: 'pendulum', name: 'Nowa pułapka: Wahadło', text: 'Na ścianę. Ostrze tnie pas 3×4 pól, Unieruchomieni i spowolnieni dostają 1,5 raza więcej.' },
+    { id: 'u-snare', kind: 'unlock', rar: 'c', unlock: 'snare', name: 'Nowa pułapka: Wnyki', text: 'Na podłogę. Rani i Unieruchamia na 5 s: kolce i wahadło biją go wtedy 1,5 raza mocniej.' },
+    { id: 'u-miasma', kind: 'unlock', rar: 'c', unlock: 'miasma', name: 'Nowa pułapka: Wyziewy', text: 'Na podłogę. Trująca chmura 3×3: stosy trucizny. Zatruty + ogień = Detonacja.' },
+    { id: 'u-oilslick', kind: 'unlock', rar: 'c', unlock: 'oilslick', name: 'Nowa pułapka: Plama oleju', text: 'Na podłogę. Oblany na 8 s i spowolniony. Oblany + ogień = Pożar.' },
+    { id: 'u-bolt', kind: 'unlock', rar: 'c', unlock: 'bolt', name: 'Nowa pułapka: Runa piorunów', text: 'Na ścianę. Piorun (porażenie) przeskakuje na Mokrych. Mokry + porażenie = Porażenie.' },
+    { id: 'u-flood', kind: 'unlock', rar: 'c', unlock: 'flood', name: 'Nowa pułapka: Zalewnia', text: 'Na podłogę. Woda w całym pokoju: Mokry, spowolniony; gasi podpalonych (Para).' },
+    { id: 'u-bell', kind: 'unlock', rar: 'c', unlock: 'bell', name: 'Nowa pułapka: Dzwon żałobny', text: 'Na mebel. Każda śmierć bohatera w lochu straszy wszystkich żywych.' },
+    { id: 'u-falsedoor', kind: 'unlock', rar: 'c', unlock: 'falsedoor', name: 'Nowa pułapka: Fałszywe przejście', text: 'Na drzwi. Pierwszy, kto przejdzie, gubi się na 12 s.' },
+    { id: 'u-tar', kind: 'unlock', rar: 'c', unlock: 'tar', name: 'Nowa pułapka: Kocioł smoły', text: 'Na drzwi. Smoła: ogień, Oblany i spowolniony. Z ogniem obok robi Pożar.' },
+    { id: 'u-bait', kind: 'unlock', rar: 'c', unlock: 'bait', name: 'Nowy łup: Przynęta', text: 'Wygląda jak sakwa monet. Kto ją podniesie, jest Unieruchomiony i ranny; przynęta zostaje.' },
+    { id: 'u-skeleton', kind: 'unlock', rar: 'c', unlock: 'skeleton', name: 'Nowy potwór: Szkielet', text: 'Powalony pierwszy raz w fali składa się po 5 s z połową życia.' },
+    { id: 'u-zombie', kind: 'unlock', rar: 'c', unlock: 'zombie', name: 'Nowy potwór: Zombie', text: 'Zaraża walczących; Zarażony, który zginie, wstaje jako Twój zombie.' },
+    { id: 'u-lich', kind: 'unlock', rar: 'c', unlock: 'lich', name: 'Nowy potwór: Licz', text: 'Raz na falę podnosi powalonego potwora w swoim pokoju i straszy wokół.' },
+    { id: 'u-imp', kind: 'unlock', rar: 'c', unlock: 'imp', name: 'Nowy potwór: Chochlik', text: 'Latający złodziejaszek: kradnie przedmioty i rzuca je jako łup w innym pokoju.' },
+    { id: 'u-hound', kind: 'unlock', rar: 'c', unlock: 'hound', name: 'Nowy potwór: Ogar piekielny', text: 'Poluje na uciekających i spanikowanych (×2).' },
+    { id: 'u-siren', kind: 'unlock', rar: 'c', unlock: 'siren', name: 'Nowy potwór: Kusicielka', text: 'Zew wabi najmniej odważnego i odłącza go od drużyny.' },
+    { id: 'u-demon', kind: 'unlock', rar: 'c', unlock: 'demon', name: 'Nowy potwór: Demon otchłani', text: 'Ogromny i ognisty, ale dopóki stoi, głód każdej fali +2.' },
+    { id: 'u-sapper', kind: 'unlock', rar: 'c', unlock: 'sapper', name: 'Nowy potwór: Goblin saper', text: 'Rozrzuca kolczatki przy bohaterach.' },
+    { id: 'u-warlord', kind: 'unlock', rar: 'c', unlock: 'warlord', name: 'Nowy potwór: Herszt goblinów', text: 'Zielonoskórzy przy nim biją 1,5 raza mocniej.' },
+    { id: 'u-rats', kind: 'unlock', rar: 'c', unlock: 'rats', name: 'Nowy potwór: Rój szczurów', text: 'Tani rój, który rośnie z każdą przeżytą falą.' },
     // instants
-    { id: 'crystal', kind: 'instant', rar: 'r', name: 'Żarłoczne serce', text: 'Od razu: serce dostaje dodatkowy kryształ (także maksymalnie, do końca runu).', apply: () => { run.crystals += 1; run.maxCrystals += 1; } },
-    { id: 'infusion', kind: 'instant', rar: 'c', name: 'Zastrzyk Esencji', text: 'Od razu: +20 Esencji.', apply: () => { fl.essence += 20; run.essence = fl.essence; } },
+    { id: 'crystal', kind: 'instant', rar: 'l', group: 'heart', heartOnly: false, name: 'Żarłoczne serce', text: 'Od razu: serce dostaje dodatkowy kryształ (także maksymalnie, do końca runu).', apply: () => { run.crystals += 1; run.maxCrystals += 1; } },
+    { id: 'infusion', kind: 'instant', rar: 'c', name: 'Zastrzyk Esencji', text: 'Od razu: +15 Esencji.', apply: () => { fl.essence += 15; run.essence = fl.essence; } },
     { id: 'gift', kind: 'instant', rar: 'r', name: 'Hojny kupiec', text: 'Od razu: 2 darmowe karty do wybrania w sklepie.', apply: () => { run.freePicks = (run.freePicks || 0) + 2; } },
     { id: 'pact', kind: 'instant', rar: 'l', name: 'Pakt', text: 'Do końca runu +1 miejsce w talii, ale serce traci 1 kryształ (także maksymalnie, zawsze zostaje co najmniej 1).', apply: () => { run.deckSize += 1; run.maxCrystals = Math.max(1, run.maxCrystals - 1); run.crystals = Math.max(1, Math.min(run.crystals - 1, run.maxCrystals)); } },
     // cards: traps and monsters
@@ -471,30 +626,30 @@
     { id: 'portrait', kind: 'card', rar: 'c', req: 'portrait', tag: 'portret +', name: 'Galeria grozy', text: 'Portret sięga o 2 pola dalej i straszy o 30% mocniej. Portret z cechą 3. poziomu (także w Galerii) i tak straszy cały pokój, więc dostaje tylko strach.', apply: m => { m.portraitR += 2; m.portraitFear *= 1.3; } },
     { id: 'spider', kind: 'card', rar: 'r', req: 'spider', unique: true, tag: 'gniazdo', name: 'Pajęcze gniazdo', text: 'Ugryzienie pająka oplata siecią cały kwadrat 3×3 (pająk z cechą 3. poziomu robi to i bez karty), a pajęczyna każdego pająka trzyma 2 s dłużej.', apply: m => { m.spiderNest = true; } },
     { id: 'ghost', kind: 'card', rar: 'r', req: 'ghost', unique: true, tag: 'zimny dotyk', name: 'Zimny dotyk', text: 'Duch straszy o 50% mocniej, a zranić go może już tylko kapłan.', apply: m => { m.ghostAura *= 1.5; m.ghostPriestOnly = true; } },
-    { id: 'monster', kind: 'card', rar: 'c', tag: 'weterani', name: 'Weterani', text: 'Nowo postawione potwory mają +40% HP i biją o 40% mocniej.', apply: m => { m.monster *= 1.4; } },
+    { id: 'monster', kind: 'card', rar: 'c', tag: 'weterani', name: 'Weterani', text: 'Nowo postawione potwory mają +40% HP i biją o 40% mocniej (bonus zostaje, gdy wstaną po powaleniu).', apply: m => { m.monster *= 1.4; } },
     { id: 'loottrap', kind: 'card', rar: 'c', tag: 'zatruty łup', name: 'Zatruty łup', text: 'Podniesienie łupu zadaje obrażenia (więcej przy rzadszym).', apply: m => { m.lootTrap += 15; } },
     { id: 'disarm', kind: 'card', rar: 'c', tag: 'zamki ×2', name: 'Zardzewiałe zamki', text: 'Złodziej rozbraja 2 razy wolniej (masz więcej czasu, żeby go przyłapać).', apply: m => { m.disarm *= 2; } },
     { id: 'suicide', kind: 'card', rar: 'c', tag: 'zemsta 30%', name: 'Mechanizm samobójczy', text: 'Rozbrajana pułapka ma 30% szans, że odpali w twarz rozbrajającemu.', apply: m => { m.suicideMech += 0.3; } },
     // cards: economy
     { id: 'essence', kind: 'card', rar: 'c', tag: 'Esencja +30%', name: 'Żyła esencji', text: 'Esencja z Grozy +30% (Groza × Chciwość × Combo × 1,3).', apply: m => { m.regen *= 1.3; } },
-    { id: 'income', kind: 'card', rar: 'c', tag: '+4 po fali', name: 'Mroczny dochód', text: '+4 Esencji po każdej fali.', apply: m => { m.income += 4; } },
-    { id: 'usurer', kind: 'card', rar: 'c', tag: 'odsetki', name: 'Lichwiarz', text: 'Po fali dostajesz 15% niewydanej Esencji (najwyżej 12).', apply: m => { m.usurer += 0.15; } },
+    { id: 'income', kind: 'card', rar: 'c', tag: '+3 po fali', name: 'Mroczny dochód', text: '+3 Esencji po każdej fali.', apply: m => { m.income += 3; } },
+    { id: 'usurer', kind: 'card', rar: 'c', tag: 'odsetki', name: 'Lichwiarz', text: 'Po fali (gdy serce już zabrało swoje) dostajesz 15% niewydanej Esencji (najwyżej 10).', apply: m => { m.usurer += 0.15; } },
     { id: 'dig', kind: 'card', rar: 'c', tag: 'kopanie -2', name: 'Kopacze', text: 'Pokój i przejście kosztują o 2 Esencji mniej.', apply: m => { m.digDiscount += 2; } },
     { id: 'mole', kind: 'card', rar: 'c', tag: 'pokój za 0', name: 'Kret', text: 'Co drugą falę jedno kopanie pokoju za darmo.', apply: m => { m.mole += 1; } },
-    { id: 'harvest', kind: 'card', rar: 'c', tag: 'żniwa +2', name: 'Żniwa strachu', text: 'Każdy bohater, który ucieknie ze strachu, daje dodatkowo 2 Esencji (bez mnożników).', apply: m => { m.fearHarvest += 2; } },
+    { id: 'harvest', kind: 'card', rar: 'c', tag: 'żniwa +3', name: 'Żniwa strachu', text: 'Każdy bohater, który ucieknie ze strachu, daje dodatkowo 3 Esencji (bez mnożników).', apply: m => { m.fearHarvest += 3; } },
     { id: 'soul', kind: 'card', rar: 'r', tag: 'śmierć ×2', name: 'Żniwiarz', text: 'Śmierć bohatera daje 2 razy więcej Grozy.', apply: m => { m.soulMult *= 2; } },
     // cards: points and greed
     { id: 'greed', kind: 'card', rar: 'c', tag: 'chciwość ×1,5', name: 'Złote runo', text: 'Zobaczony łup podbija chciwość o połowę mocniej.', apply: m => { m.greedMult *= 1.5; } },
     { id: 'fever', kind: 'card', rar: 'c', tag: 'gorączka', name: 'Gorączka złota', text: 'Każda fala zaczyna z chciwością wyższą o 0,3.', apply: m => { m.greedStart += 0.3; } },
     { id: 'depth', kind: 'card', rar: 'c', tag: 'głębia +0,5', name: 'Głębia mroku', text: 'Mnożnik pokoju z sercem i pokoi tuż przed nim +0,5.', apply: m => { m.depthBonus += 0.5; } },
     { id: 'infamous', kind: 'card', rar: 'c', tag: '+0,15 chciwości/kryształ', name: 'Zła sława', text: 'Każdy kryształ w sercu daje +0,15 chciwości (liczone na starcie fali).', apply: m => { m.crystalPts += 0.15; } },
-    { id: 'collector', kind: 'card', rar: 'r', tag: '+0,05 chciwości/rodzaj', name: 'Kolekcjoner', text: '+0,05 chciwości za każdy inny rodzaj pułapki lub potwora w lochu (na starcie fali).', apply: m => { m.collector += 0.05; } },
+    { id: 'collector', kind: 'card', rar: 'r', tag: '+0,04 chciwości/rodzaj', name: 'Kolekcjoner', text: '+0,04 chciwości za każdy inny rodzaj pułapki lub potwora w lochu (na starcie fali).', apply: m => { m.collector += 0.04; } },
     { id: 'miser', kind: 'card', rar: 'r', tag: 'minimalizm', name: 'Skąpiec', text: '+0,05 chciwości za każdy element mniej niż 15 w lochu (pułapki i potwory, na starcie fali).', apply: m => { m.miser += 0.05; } },
     { id: 'lonely', kind: 'card', rar: 'r', tag: 'samotność ×2', name: 'Echo samotności', text: 'Samotność bohatera daje 2 razy więcej Grozy.', apply: m => { m.loneMult *= 2; } },
     { id: 'maze', kind: 'card', rar: 'r', tag: 'zgubieni ×2', name: 'Kręte korytarze', text: 'Zgubiony bohater daje 2 razy więcej Grozy (Groza ze zgubienia płynie przez jego pierwsze 12 s).', apply: m => { m.lostMult *= 2; } },
     // cards: fear
     { id: 'haunt', kind: 'card', rar: 'c', tag: 'strach +25%', name: 'Nawiedzenie', text: 'Każdy strach jest o 25% silniejszy (więcej Grozy, szybsze ucieczki).', apply: m => { m.fearMult *= 1.25; } },
-    { id: 'echo', kind: 'card', rar: 'r', tag: 'ucieczka ×2', name: 'Echo krzyku', text: 'Bohater, który ucieknie ze strachu, daje 2 razy więcej Grozy.', apply: m => { m.scareMult *= 2; } },
+    { id: 'echo', kind: 'card', rar: 'r', tag: 'ucieczka ×1,75', name: 'Echo krzyku', text: 'Bohater, który ucieknie ze strachu, daje 1,75 raza więcej Grozy.', apply: m => { m.scareMult *= 1.75; } },
     { id: 'panic', kind: 'card', rar: 'r', tag: 'panika', name: 'Panika', text: 'Bohater, który zaczyna uciekać, straszy wszystkich w promieniu 3 pól (25 strachu).', apply: m => { m.panic += 1; } },
     { id: 'hgallery', kind: 'card', rar: 'r', req: 'ghost', tag: 'galeria ×2', name: 'Nawiedzona galeria', text: 'Duch w pokoju z portretem straszy 2 razy mocniej.', apply: m => { m.hauntedGallery += 1; } },
     { id: 'curse', kind: 'card', rar: 'r', tag: 'klątwa', name: 'Klątwa kryształu', text: 'Niosący kryształ idzie o 35% wolniej i boi się coraz bardziej.', apply: m => { m.carrierSlow *= 0.65; m.carrierFear += 4; } },
@@ -515,7 +670,7 @@
     // cards that grow during the run (they count only while the card is in the deck; selling the last copy resets the count)
     { id: 'hunger', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Głodne kolce', text: 'Kolce zadają do końca runu +4% obrażeń za każde zabójstwo kolcami (licznik rośnie przez cały run).', apply: m => { m.hunger += 1; } },
     { id: 'chronicle', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Kronika grozy', text: 'Strach jest o 3% silniejszy za każdego bohatera, który w tym runie uciekł ze strachu (do końca runu).', apply: m => { m.chronicle += 1; } },
-    { id: 'granary', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Spichlerz dusz', text: 'Każdy zabity bohater zmniejsza głód serca o 1 do końca runu.', apply: m => { m.granary += 1; } },
+    { id: 'granary', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Spichlerz dusz', text: 'Każdy zabity bohater zmniejsza głód serca o 1 do końca runu (najwyżej o 40).', apply: m => { m.granary += 1; } },
     { id: 'bank', kind: 'card', rar: 'c', tag: 'rośnie', grows: true, name: 'Skarbiec', text: 'Każda fala bez kradzieży kryształu dodaje +2 Esencji do przychodu po każdej kolejnej fali (do końca runu).', apply: m => { m.bank += 1; } },
     { id: 'tempered', kind: 'card', rar: 'r', tag: 'rośnie', grows: true, name: 'Zaprawione mechanizmy', text: 'Pułapki działają o 1% mocniej za każde 4 trafienia pułapek w tym runie (do końca runu).', apply: m => { m.tempered += 1; } },
     // cards with a price
@@ -533,7 +688,7 @@
     { id: 'venom', kind: 'card', rar: 'c', tag: 'trucizna +30%', name: 'Jadowite gruczoły', text: 'Obrażenia od trucizny (pająk, szaman, Zatruty łup) +30%.', apply: m => { m.dmgType.poison *= 1.3; } },
     { id: 'weakspot', kind: 'card', rar: 'r', tag: 'słabości ×2', name: 'Słabe punkty', text: 'Słabości ciała bohaterów działają 2 razy mocniej (np. kruche kości: obuchowe +80% zamiast +40%).', apply: m => { m.weakK += 1; } },
     { id: 'anatomy', kind: 'card', rar: 'r', unique: true, tag: 'wszystko jawne', name: 'Anatomia ofiar', text: 'Przed falą znasz ciało i fobie każdego bohatera.', apply: m => { m.revealAll = true; } },
-    { id: 'arsenal', kind: 'card', rar: 'r', tag: '4 typy: +20%', name: 'Pełen arsenał', text: 'Jeśli na starcie fali masz w lochu wszystkie 4 typy obrażeń, wszystkie obrażenia +20%.', apply: m => { m.arsenal += 0.2; } },
+    { id: 'arsenal', kind: 'card', rar: 'r', tag: '4 z 5 typów: +20%', name: 'Pełen arsenał', text: 'Jeśli na starcie fali masz w lochu 4 z 5 typów obrażeń (kłute, obuchowe, ogień, trucizna, porażenie), wszystkie obrażenia +20%.', apply: m => { m.arsenal += 0.2; } },
     { id: 'nightmares', kind: 'card', rar: 'r', tag: 'fobie ×3', name: 'Koszmary', text: 'Fobie straszą 3 razy mocniej zamiast 2 (kolejna kopia: 4 razy).', apply: m => { m.phobiaK += 1; } },
     { id: 'oddbodies', kind: 'card', rar: 'c', tag: 'więcej fobii', name: 'Przeklęta karczma', text: 'Więcej bohaterów przychodzi z fobią albo słabością ciała (+10% szans na każdą).', apply: m => { m.oddBodies += 1; } },
     { id: 'scars', kind: 'card', rar: 'r', tag: 'trauma ×2', name: 'Blizny na duszy', text: 'Trauma łapie już poniżej 50% HP i straszy 2 razy (zamiast 1,5 raza).', apply: m => { m.traumaK += 1; } },
@@ -553,8 +708,8 @@
     { id: 'patron', kind: 'card', rar: 'r', tag: 'karta co 2 fale', name: 'Mecenas', text: 'Co drugą falę dostajesz dodatkową darmową kartę.', apply: m => { m.patron += 1; } },
     { id: 'hoard', kind: 'card', rar: 'r', tag: 'schowek = chciwość', name: 'Kolekcja w schowku', text: 'Każda karta w schowku daje +0,1 chciwości.', apply: m => { m.stashGreed += 0.1; } },
     // v14: the heart's hunger
-    { id: 'wager', kind: 'card', rar: 'l', tag: 'chciwość +0,8, głód +30%', name: 'Zakład z sercem', text: 'Chciwość +0,8, ale serce chce o 30% więcej.', apply: m => { m.greedFlat += 0.8; m.hungerK *= 1.3; } },
-    { id: 'gluttony', kind: 'card', rar: 'r', tag: 'po sytości ×1,25', name: 'Obżarstwo', text: 'Gdy serce jest już syte, Esencja z fali wpada o 25% większa.', apply: m => { m.storeK *= 1.25; } },
+    { id: 'wager', kind: 'card', rar: 'l', tag: 'chciwość +0,8, głód +20%', name: 'Zakład z sercem', text: 'Chciwość +0,8, ale serce chce o 20% więcej.', apply: m => { m.greedFlat += 0.8; m.hungerK *= 1.2; } },
+    { id: 'gluttony', kind: 'card', rar: 'r', tag: 'po sytości ×1,25', name: 'Obżarstwo', text: 'Gdy serce jest już syte, Esencja, która trafia do sakiewki (po Daninie), wpada o 25% większa.', apply: m => { m.storeK *= 1.25; } },
     { id: 'fasting', kind: 'card', rar: 'c', tag: 'głód -15%', name: 'Post', text: 'Serce chce o 15% mniej, ale chciwość -0,2.', apply: m => { m.hungerK *= 0.85; m.greedFlat -= 0.2; } },
     { id: 'heartbeat', kind: 'card', rar: 'r', tag: 'pełne serce +20%', name: 'Bijące serce', text: 'Gdy serce jest już syte w tej fali, pułapki i potwory działają o 20% mocniej.', apply: m => { m.heartbeat += 0.2; } },
     // v14: greed and loot
@@ -594,7 +749,56 @@
     { id: 'badnews', kind: 'card', rar: 'c', tag: 'wieści ×2', name: 'Złe wieści', text: 'Śmierć, o której bohater dowie się później (z krzyku zza ścian albo od towarzysza), straszy go 2 razy mocniej.', apply: m => { m.badnews += 1; } },
     { id: 'coins', kind: 'card', rar: 'c', tag: 'meble: chciwość', name: 'Podrzucone grosze', text: 'Przeszukany mebel 2 razy częściej kryje monetę, a znaleziona moneta podbija chciwość jak zobaczone Monety.', apply: m => { m.coins += 1; } },
     { id: 'tainted', kind: 'card', rar: 'c', tag: 'mikstury zepsute', name: 'Zepsute mikstury', text: 'Mikstury z Twojego łupu są zepsute: wypita leczy o połowę słabiej i straszy pijącego (10% odwagi).', apply: m => { m.tainted += 1; } },
-    { id: 'rhythm', kind: 'card', rar: 'c', tag: 'combo +1 s', name: 'Rytm lochu', text: 'Okno combo trwa 1 s dłużej (4 s zamiast 3).', apply: m => { m.rhythm += 1; } }
+    { id: 'rhythm', kind: 'card', rar: 'c', tag: 'combo +1 s', name: 'Rytm lochu', text: 'Okno combo trwa 1 s dłużej (4 s zamiast 3).', apply: m => { m.rhythm += 1; } },
+    // 1.26 (4.6) the Serce group: the old Heart Gifts that did something no card did, plus the new heart cards (13.2). They come in the
+    // "Dar serca" row of the shop after a heart level (Odrost only there) and among the ordinary offers too (not Odrost).
+    { id: 'regrow', kind: 'instant', rar: 'r', group: 'heart', heartOnly: true, name: 'Odrost', text: 'Od razu: serce odrasta jeden utracony kryształ (do maksimum).', apply: () => { if (run.crystals < run.maxCrystals) { run.crystals += 1; run.regrowCount = (run.regrowCount || 0) + 1; if (fl && fl.stats) fl.stats.regrow = (fl.stats.regrow || 0) + 1; } } },
+    { id: 'heartcry', kind: 'card', rar: 'c', group: 'heart', tag: 'krzyk 10%/s', name: 'Krzyk serca', text: 'Serce krzyczy głośniej: kradnący przy sercu tracą 10% odwagi na sekundę zamiast 6%.', apply: m => { m.heartCry += 0.04; } },
+    { id: 'heavycrystal', kind: 'card', rar: 'c', group: 'heart', tag: 'kradzież +1,5 s', name: 'Ciężki kryształ', text: 'Wyrwanie kryształu trwa o 1,5 s dłużej.', apply: m => { m.heavyCrystal += 1; } },
+    { id: 'heartroom', kind: 'card', rar: 'r', group: 'heart', unique: true, tag: 'pokój serca +1', name: 'Komora serca', text: 'Pokój serca mieści o 1 element więcej.', apply: m => { m.heartRoom += 1; } },
+    { id: 'warden', kind: 'card', rar: 'r', group: 'heart', tag: 'potwory przy sercu +30%', name: 'Strażnik', text: 'Potwory w pokoju serca mają +30% HP i biją o 30% mocniej.', apply: m => { m.warden += 0.3; } },
+    { id: 'darkforge', kind: 'card', rar: 'c', group: 'heart', tag: 'ulepszenia -25%', name: 'Kuźnia ciemności', text: 'Ulepszenia pułapek i potworów kosztują o 25% mniej.', apply: m => { m.upgDisc = Math.min(0.6, m.upgDisc + 0.25); } },
+    { id: 'darklore', kind: 'card', rar: 'r', group: 'heart', unique: true, tag: 'sklep +1 karta', name: 'Wiedza mroku', text: 'Sklep pokazuje o 1 kartę więcej.', apply: m => { m.shopPlus += 1; } },
+    { id: 'heartmem', kind: 'card', rar: 'c', group: 'heart', unique: true, tag: 'pamięć zostaje', name: 'Pamięć serca', text: 'Ulepszenie nie kasuje zapamiętanego wyniku skill checku.', apply: m => { m.heartMem = true; } },
+    { id: 'tithe', kind: 'card', rar: 'r', group: 'heart', tag: 'Danina 45%', name: 'Dziesięcina', text: 'Danina rośnie z 30% do 45% (szybsze poziomy serca), a w rzędzie Dar serca wybierasz z 4 kart zamiast z 3.', apply: m => { m.titheAdd += 0.15; m.titheChoice += 1; } },
+    { id: 'stoneheart', kind: 'card', rar: 'c', group: 'heart', tag: 'brak -25%', name: 'Kamienne serce', text: 'Po fali serce potrzebuje z sakiewki tylko 75% braku: jeśli tyle masz, jest syte. Nasycenie rośnie za to o 25% wolniej.', apply: m => { m.stoneHeart = true; m.satietyK *= 0.75; } },
+    { id: 'bloodcredit', kind: 'card', rar: 'r', group: 'heart', unique: true, tag: 'raz: dług zamiast kryształu', name: 'Kredyt krwi', text: 'Raz na run: gdy po fali sakiewka nie pokryje głodu, zamiast pęknięcia kryształu brakująca reszta ×2 dopisze się do głodu następnej fali (sakiewka zostaje).', apply: m => { m.bloodCredit = true; } },
+    { id: 'glutton', kind: 'card', rar: 'l', group: 'heart', tag: 'głód +20%, Nasycenie ×2', name: 'Głodomór', text: 'Serce chce o 20% więcej, ale Danina daje 2 razy więcej Nasycenia (Ofiara bez zmian).', apply: m => { m.hungerK *= 1.2; m.satietyK *= 2; } },
+    { id: 'bloodflow', kind: 'card', rar: 'r', group: 'heart', tag: 'combo 5+: +3 Nasycenia', name: 'Krwiobieg', text: 'Każda wypłata combo ×2 lub więcej (5 różnych pułapek z rzędu) daje sercu +3 Nasycenia ponad Daninę.', apply: m => { m.bloodflow += 3; } },
+    { id: 'kingsfeast', kind: 'card', rar: 'c', group: 'heart', tag: 'Uczta ×1,5', name: 'Uczta królów', text: 'Uczta (bohater zabity przez potwora karmi serce) daje o 50% więcej.', apply: m => { m.feastK *= 1.5; } },
+    { id: 'lastbreath', kind: 'card', rar: 'r', group: 'heart', tag: 'pusta sakiewka: +25%', name: 'Ostatni oddech', text: 'Gdy po rozliczeniu głodu sakiewka jest pusta, w następnej fali pułapki i potwory działają o 25% mocniej.', apply: m => { m.lastBreath += 0.25; } },
+    // 1.26 (13.2) Mnożniki Esencji: rare, conditional, they break the game in pairs (like Balatro's xMult)
+    { id: 'fearcrown', kind: 'card', rar: 'l', tag: 'ucieczka: łańcuch ×1,5', name: 'Koronacja strachu', text: 'Łańcuch, w którym ktoś uciekł ze strachu, wypłaca 1,5 raza więcej Esencji.', apply: m => { m.fearCrown *= 1.5; } },
+    { id: 'bloodbath', kind: 'card', rar: 'l', tag: 'zabójstwo przy sercu ×1,1', name: 'Krwawa łaźnia', text: 'Każde zabójstwo w pokoju serca mnoży Esencję ×1,1 do końca fali (najwyżej ×2).', apply: m => { m.bloodbath += 1; } },
+    { id: 'lonewolf', kind: 'card', rar: 'r', tag: 'ostatni bohater ×1,3', name: 'Samotny wilk', text: 'Gdy w lochu został już tylko 1 bohater (z kilku), Esencja ×1,3.', apply: m => { m.lonewolf *= 1.3; } },
+    { id: 'palette', kind: 'card', rar: 'r', tag: '5+ rodzin ×1,25', name: 'Pełna paleta', text: 'Gdy na starcie fali masz w lochu elementy z 5 lub więcej rodzin, Esencja ×1,25 przez całą falę.', apply: m => { m.palette *= 1.25; } },
+    { id: 'minimalist', kind: 'card', rar: 'r', tag: 'do 12 elementów ×1,4', name: 'Minimalista', text: 'Gdy na starcie fali masz w lochu najwyżej 12 pułapek i potworów, Esencja ×1,4 przez całą falę.', apply: m => { m.minimalist *= 1.4; } },
+    { id: 'cursedcrown', kind: 'card', rar: 'l', tag: 'bohaterowie +1 poz., ×1,35', name: 'Przeklęta korona', text: 'Bohaterowie przychodzą o 1 poziom silniejsi, ale cała Esencja ×1,35.', apply: m => { m.cursedCrown *= 1.35; m.crownLv += 1; } },
+    // rosnące w trakcie runu
+    { id: 'skulls', kind: 'card', rar: 'r', grows: true, tag: 'rośnie', name: 'Kolekcja czaszek', text: 'Każdy bohater zabity w tym runie dodaje +0,03 do mnożnika Esencji (najwyżej +0,6, czyli ×1,6).', apply: m => { m.skulls += 1; } },
+    { id: 'execdiary', kind: 'card', rar: 'c', tag: 'zabójca +2%/zabójstwo', name: 'Pamiętnik kata', text: 'Każde zabójstwo: ten rodzaj pułapki albo potwora działa o 2% mocniej do końca runu (najwyżej +30% na rodzaj).', apply: m => { m.execDiary += 1; } },
+    { id: 'risinglegend', kind: 'card', rar: 'r', grows: true, tag: 'rośnie', name: 'Rosnąca legenda', text: 'Każda fala bez utraty kryształu: +0,1 chciwości na start fali, i tak dalej. Utrata kryształu zeruje licznik.', apply: m => { m.risingLegend += 1; } },
+    { id: 'pantry', kind: 'card', rar: 'c', grows: true, tag: 'rośnie', name: 'Spiżarnia', text: 'Fala, w której Danina dała sercu Nasycenia co najmniej za połowę głodu tej fali (bez Ofiary): dochód +2 do końca runu (najwyżej +10).', apply: m => { m.pantry += 1; } },
+    // kopiujące i zmieniające zasady
+    { id: 'copyist', kind: 'card', rar: 'l', unique: true, tag: 'kopiuje kartę z prawej', name: 'Kopista', text: 'Działa jak karta tuż po jego prawej w talii (nie kopiuje kart unikalnych ani innych kopiujących). Kolejność kart zmienisz w karcie talii.', apply: () => {} },
+    { id: 'soulmirror', kind: 'card', rar: 'l', unique: true, tag: 'kopiuje 1. kartę', name: 'Lustro duszy', text: 'Działa jak pierwsza karta w talii (nie kopiuje kart unikalnych ani innych kopiujących). Kolejność kart zmienisz w karcie talii.', apply: () => {} },
+    { id: 'doubleedge', kind: 'card', rar: 'r', req: 'spikes', tag: 'kolce: 2. cios', name: 'Podwójne ostrze', text: 'Kolce trafiają Unieruchomionych i Spowolnionych drugi raz, z połową siły.', apply: m => { m.doubleEdge += 0.5; } },
+    { id: 'sharedmech', kind: 'card', rar: 'r', unique: true, tag: 'combo: ten sam rodzaj', name: 'Wspólny mechanizm', text: 'W całym lochu ta sama pułapka odpalona ponownie też podbija combo (jak w Zębatkach).', apply: m => { m.sharedMech = true; } },
+    { id: 'chainreact', kind: 'card', rar: 'r', tag: 'reakcja: combo +1', name: 'Reakcja łańcuchowa', text: 'Każda reakcja (Pożar, Porażenie, Detonacja...) przedłuża okno combo o 1 s i podbija combo o 1.', apply: m => { m.chainReact += 1; } },
+    { id: 'heartecho', kind: 'card', rar: 'r', unique: true, tag: 'syte: pułapka 2×', name: 'Echo serca', text: 'Pierwsza pułapka, która odpali po nasyceniu serca w fali, odpala dwa razy.', apply: m => { m.heartEcho = true; } },
+    // statusy i rodziny
+    { id: 'tarsulfur', kind: 'card', rar: 'c', req: () => run.unlocked.has('oilslick') || run.unlocked.has('tar'), tag: 'oblani: kłute +30%', name: 'Smoła i siarka', text: 'Oblani (olej, smoła) dostają też o 30% więcej obrażeń kłutych.', apply: m => { m.tarSulfur += 0.3; } },
+    { id: 'conduct', kind: 'card', rar: 'c', req: 'bolt', unique: true, tag: 'porażenie: spowolnieni', name: 'Przewodnictwo', text: 'Porażenie przeskakuje nie tylko na Mokrych, ale też na Spowolnionych w tym samym pokoju.', apply: m => { m.conduct = true; } },
+    { id: 'toxicfume', kind: 'card', rar: 'c', req: () => ['miasma', 'zombie', 'rats', 'lcursed'].some(t => run.unlocked.has(t)), tag: 'trucizna: 10 stosów', name: 'Toksyczny opar', text: 'Trucizna i Zaraza kumulują się do 10 stosów zamiast 6, a Detonacja jest o 25% silniejsza.', apply: m => { m.toxicCap += 4; m.toxicDet *= 1.25; } },
+    { id: 'plague', kind: 'card', rar: 'r', req: () => run.unlocked.has('zombie') || run.unlocked.has('rats'), unique: true, tag: 'zaraza się szerzy', name: 'Morowe powietrze', text: 'Co 3 s Zaraza przeskakuje z każdego Zarażonego na bohaterów obok.', apply: m => { m.plagueAir = true; } },
+    { id: 'hellpack', kind: 'card', rar: 'r', req: 'hound', unique: true, tag: 'polowanie ×3', name: 'Piekielna sfora', text: 'Ogary biją uciekających 3 razy mocniej (zamiast 2), a uciekający biegną o 20% wolniej.', apply: m => { m.hellPack = true; } },
+    { id: 'bonesunbroken', kind: 'card', rar: 'c', req: 'skeleton', tag: 'szkielety: +2 złożenia', name: 'Kości niezłomne', text: 'Szkielety składają się 2 razy więcej, a złożone biją o 20% mocniej.', apply: m => { m.bonesUp += 2; } },
+    { id: 'undyingarmy', kind: 'card', rar: 'l', req: () => ['skeleton', 'zombie', 'lich'].some(t => run.unlocked.has(t)), unique: true, tag: 'zabici wstają', name: 'Nieśmiertelna armia', text: 'Bohater zabity przez nieumarłego potwora wstaje jako Twój szkielet do końca fali (najwyżej 3 na falę, bez miejsca).', apply: m => { m.undyingArmy = true; } },
+    { id: 'abysspact', kind: 'card', rar: 'r', req: () => ['imp', 'hound', 'siren', 'demon'].some(t => run.unlocked.has(t)), tag: 'apetyt -50%, demony +20%', name: 'Pakt z otchłanią', text: 'Apetyt demona otchłani o połowę mniejszy (+1 do głodu zamiast +2), a demony (chochlik, ogar, kusicielka, demon) biją o 20% mocniej.', apply: m => { m.abyssPact += 1; } },
+    // chciwość
+    { id: 'goldendream', kind: 'card', rar: 'r', unique: true, tag: 'łup przy sercu ×1,5', name: 'Złoty sen', text: 'Łup w pokoju serca i w pokojach obok kusi 1,5 raza mocniej, ale nie da się go podnieść: bohater próbuje 3 s i odchodzi.', apply: m => { m.goldenDream = true; } },
+    { id: 'croesus', kind: 'card', rar: 'l', unique: true, tag: 'chciwość²', name: 'Krezus', text: 'Chciwość liczy się w Esencji do kwadratu (×2 daje ×4), ale poziomy bohaterów z chciwości rosną 1,5 raza szybciej.', apply: m => { m.croesus = true; } },
+    { id: 'heartpulse', kind: 'card', rar: 'c', group: 'heart', tag: 'syte: przy sercu +30%', name: 'Puls serca', text: 'Gdy serce jest syte, pułapki i potwory w pokoju serca działają o 30% mocniej.', apply: m => { m.heartPulse += 0.3; } },
   ];
   const UPG = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
   const RAR_NAME = { c: 'zwykła', r: 'rzadka', l: 'legendarna' }, RAR_COLOR = { c: '#c9c2d8', r: '#6fb7ff', l: '#ff8a3c' }, RAR_SELL = { c: 2, r: 4, l: 6 };
@@ -610,22 +814,38 @@
   const FUSE_GROUP = {};   // 1.24
   [['fear', 'haunt echo panic lonely maze dread screams isolation nightmares scars memories lastgasp heavyair monsterroar frames body lullsleep cocoons batscatter farecho deepsleep'],
    ['hero', 'deaf survivors badnews lure onemore weakspot cursed disarm oddbodies tainted drawers wisps mire blackice strip curse'],
-   ['ess', 'essence income usurer harvest soul wager gluttony fasting heartbeat granary bank dig mole cheapwalls'],
+   ['ess', 'essence income usurer harvest soul wager gluttony fasting heartbeat granary bank dig mole cheapwalls tithe stoneheart glutton kingsfeast darkforge'],
    ['greed', 'greed fever depth infamous collector miser glass gilded golddust coins'],
    ['shop', 'broker luckydraw pawnshop deepstash patron hoard']].forEach(([g, ids]) => ids.split(' ').forEach(id => { FUSE_GROUP[id] = g; }));
-  const FUSE_INT = ['patron', 'mole', 'echoFire', 'freeReroll', 'stashPlus', 'gateUses'];   // 1.24: counts: a fused card rounds them down
+  const FUSE_INT = ['patron', 'mole', 'echoFire', 'freeReroll', 'stashPlus', 'gateUses', 'crownLv', 'titheChoice', 'shopPlus', 'heartRoom'];   // 1.26: + hero levels, offer counts, a slot   // 1.24: counts: a fused card rounds them down
   const FUSE_TEXT = { named: n => n + ': moc jak o poziom wyżej', power: () => '+10% tej mocy', fear: () => 'cały strach w lochu +15%', hero: () => '+25% do szansy i efektu',
     ess: () => '+2 Esencji po każdej fali', greed: () => '+0,1 chciwości na start fali', shop: () => 'jedno darmowe odświeżenie sklepu' };   // 1.24
+  // 1.26 (15): wave omens (like Balatro's boss blinds). Waves 3, 6 and 8 (endless: every wave without a boss) get one, never twice
+  // in a run, none in the guided run; it shows in the preview of the next wave. One that makes the wave harder gives a reward,
+  // one that makes it easier raises the hunger. The numbers are read with omenK(wave, key).
+  const OMENS = {
+    siege: { name: 'Oblężenie', text: '+2 bohaterów, ale wszyscy o 2 poziomy słabsi.', cost: 'serce chce o 15% więcej', extra: 2, lvAdd: -2, hunger: 1.15 },
+    elite: { name: 'Elita', text: '1 bohater mniej, za to wszyscy o 3 poziomy silniejsi i z dodatkowym przedmiotem.', reward: '+1 darmowa karta w sklepie', extra: -1, lvAdd: 3, gear: 1, free: 1, minW: 6 },
+    inquisition: { name: 'Inkwizycja', text: 'Na pewno przyjdą kapłan i paladyn. Wszyscy +1 poziom i boją się o 30% mniej.', force: ['priest', 'paladin'], lvAdd: 1, fearK: 0.7 },
+    sappers: { name: 'Saperzy', text: 'Przychodzi 2 złodziei (od fali 6: złodziej i tropiciel): pułapki będą wykrywane i rozbrajane.', reward: '+1 darmowa karta w sklepie', force: ['thief', 'ranger'], free: 1, minW: 6 },
+    haste: { name: 'Pośpiech', text: 'Cierpliwość tylko 60 s, idą o 20% szybciej i nie odpoczywają.', cost: 'serce chce o 15% mniej', patience: 60, speed: 1.2, noRest: 1, hunger: 0.85 },
+    bloodmoon: { name: 'Krwawy księżyc', text: 'Bohaterowie mają 20% więcej HP, Twoje potwory biją o 30% mocniej, a zabójstwo daje 1,5 raza więcej Grozy.', hpK: 1.2, monDmg: 1.3, killK: 1.5 },
+    goldrush: { name: 'Złoty szał', text: 'Wszyscy są chciwi, chciwość na start +0,5 i przychodzi 1 łowca skarbów więcej.', cost: 'serce chce o 15% więcej', greedAll: 1, greedStart: 0.5, hunters: 1, hunger: 1.15 },
+    warfog: { name: 'Mgła wojny', text: 'Przed falą nie widać klas ani poziomów bohaterów, a w lochu łatwiej się gubią.', reward: '+10 Nasycenia serca po fali', fog: 1, lostAdd: 0.2, satiety: 10 },
+    pilgrimage: { name: 'Pielgrzymka', text: '2 kultystów zamiast 2 zwykłych bohaterów. Idą prosto do serca i piją z niego zjedzoną Esencję. Zabity kultysta oddaje połowę.', reward: '+1 darmowa karta w sklepie', cultists: 2, free: 1, minW: 6 },
+    fearnight: { name: 'Noc strachu', text: 'Odwaga bohaterów ×0,8, ale strach opada 1,5 raza szybciej: skacze i szybko mija.', courage: 0.8, calm: 1.5 }
+  };
+  const OMEN_WAVES = [3, 6, 8];
   const ROOM_TINT = ['#424448', '#44464a', '#46464b', '#48464b', '#4a464a'];   // 1.15 (author: plain room floors greyer): grey stone all the way down, only a breath warmer deep down (1.0-1.14: '#3f4246' to '#5f3239', dried blood deep down)
   const OBJ_KINDS = ['barrel', 'crate', 'statue', 'shelf'];
-  const HEART = { kind: 'heart' }, LOOTTRAP = { kind: 'loot' }, BURN = { kind: 'burn' };
-  const MON_FACTOR = 0.4;   // monsters acting on their own score and feed fear at a reduced rate
-  const DMG_FACTOR = { trap: 1, loot: 1, burn: 1, monster: MON_FACTOR, heart: 0, other: 0 };
+  const HEART = { kind: 'heart' }, LOOTTRAP = { kind: 'loot' }, BURN = { kind: 'burn' }, BLEED = { kind: 'bleed' }, POISONT = { kind: 'poison' };   // 1.26: bleeding and poison ticks
+  const MON_FACTOR = 0.8;   // monsters acting on their own score and feed fear at a reduced rate (1.26: 0,4 -> 0,8, monsters have to feed the heart)
+  const DMG_FACTOR = { trap: 1, loot: 1, burn: 1, monster: MON_FACTOR, heart: 0, other: 0, bleed: 1, poison: 1, react: 1 };   // 1.26: the statuses' ticks and the reactions
   // v15: one currency. Every event gives a little Groza, measured against the hero (all his HP lost or his whole fear bar filled
   // is about 1,5 Groza), and Esencja = Groza x Chciwość x Combo is paid out at once.
   // 1.16 (author: they may also split up on purpose, e.g. to scout, and that pays Groza slower than getting lost): split 0,04
   // a second while a scout (or his mate, or a rookie on his own errand) is away from the party, instead of 'alone' (0,09)
-  const GZ = { dmg: 1.5, fear: 1.6, kill: 1.2, scare: 2.5, lost: 0.12, alone: 0.09, split: 0.04, loot: 0.4, heal: 0.45, web: 0.25, cage: 0.45, crystal: 4 };
+  const GZ = { dmg: 1.5, fear: 1.6, kill: 1.2, scare: 4, lost: 0.12, alone: 0.09, split: 0.04, loot: 0.4, heal: 0.45, web: 0.25, cage: 0.45, crystal: 6 };   // 1.26: an escape 2,5 -> 4 (a fear build ends waves early), a crystal won back 4 -> 6
   const fmtE = v => v >= 10 ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1).replace('.', ',').replace(',0', '');
   const ACTS = {};
   const actSrc = type => ACTS[type] || (ACTS[type] = { kind: 'trap', type });   // a tapped monster ability scores like a trap
@@ -702,6 +922,14 @@
       'Mniej krwi, więcej życia.', 'Łasko, spłyń na nas.'],
     cleanse: ['Gaszę ogień!', 'Gaszę! Już!', 'Zgaśnij!', 'Płomienie, precz!', 'Ogień, odstąp!', 'Już, już, zgaszone!'],
     barrier: ['Bariera!', 'Osłona dla wszystkich!', 'Tarcza światła!', 'Niech światło nas osłoni!', 'Święty krąg!', 'Bogowie, okryjcie nas!'],
+    // 1.26
+    help: ['Pomocy! Tutaj!', 'Niech ktoś mnie stąd wyciągnie!', 'Ratunku, nie mogę się ruszyć!', 'Hej! Tutaj, szybko!'],
+    lootHome: ['Mam swoje. Wracam.', 'Dość. Zabieram to i znikam.', 'Żywy i bogaty, to mi wystarczy.', 'Wy sobie szukajcie, ja wracam.'],
+    snare: ['Noga! Coś mnie trzyma!', 'Sidła! Nie mogę się ruszyć!', 'Pomóżcie, utknąłem!', 'Przeklęte wnyki!'],
+    seduced: ['Ten głos... idę...', 'Ktoś mnie woła...', 'Tak pięknie śpiewa...', 'Muszę tam iść...'],
+    antidote: ['Pij, to odtrutka!', 'Trzymaj, zejdzie z ciebie!', 'Antidotum, szybko!', 'Jedna kropla i po sprawie.'],
+    cultDrink: ['Serce... daj mi siebie.', 'Pij, bracie, pij.', 'Ono jest nasze.', 'Ciepłe... żywe...'],
+    oath: ['Nikogo nie zostawiamy!', 'Za mną, nie ma strachu!', 'Przysięgałem was chronić.', 'Światło idzie z nami!'],
     dispel: ['Rozpraszam sieć!', 'Precz, pajęczyno!', 'Nici, w proch!', 'Rozplątuję czarem!', 'Sieć znika na moje słowo.',
       'Lepkie paskudztwo, zniknij!'],
     fireball: ['Kula ognia!', 'Spłoń!', 'Masz, gorąco ci będzie!', 'Ognisty pocisk!', 'Zobaczmy, jak się palisz!', 'Popiół z ciebie zostanie!'],
@@ -752,6 +980,8 @@
       'Kryształ czeka. Ruszamy!', 'Prosto do serca!', 'Za mną, do kryształu!'],
     steal: ['Mam kryształ! Uciekamy!', 'Kryształ jest nasz! Do wyjścia!', 'Jest! Kryształ w garści!', 'Wyrwał{em|am} go! W nogi!',
       'Mam go! Teraz tylko wyjść!', 'Ciężki, ale mój! Do wyjścia!'],
+    lastPush: ['Jeszcze chwila! Wyrwę go albo zginę!', 'Teraz albo nigdy! Ciągnij!', 'Nie puszczę! Już prawie!', 'Ostatkiem sił... już schodzi!'],   // 1.26 Ostatni zryw
+    healerFirst: ['Najpierw szaman! Bez niego padną!', 'Bić uzdrowiciela! Reszta potem!', 'Zostawcie tego dużego, łapać szamana!', 'Ten, co ich leczy! Na niego!'],   // 1.26 Najpierw uzdrowiciel
     heartRepel: ['Ono parzy! Kryształ ani drgnie!', 'Serce nas odpycha!', 'Nie da się go wyrwać, za gorąco!', 'Parzy! Puszczam!',
       'Moje ręce! Nie utrzymam!', 'Ten kamień płonie żywym ogniem!', 'Nie wyrwę go! Uciekam!', 'Serce się broni!', 'Skóra mi schodzi z dłoni!'],   // 1.05: wave 1
     crystalDrop: ['Kryształ! Nie!', 'Zgubiliśmy kryształ!', 'Nie! Wrócił do serca!', 'Przepadł! Cały trud na nic!', 'Loch odebrał nam kryształ!',
@@ -941,6 +1171,9 @@
       'Kto tu karmi te wszystkie bestie?', 'Na bestie najlepszy ogień. Mamy go.'],
     guildLost: ['Mamy muzykę. Tym razem nikt się nie zgubi.', 'Mamy lutnię. Trzymajcie się dźwięku.', 'Tu ludzie gubią się i giną sami. Nie my.',
       'Kto się odłączy, przepadnie. Tak mówi gildia.', 'Jak się zgubicie, idźcie na muzykę.', 'Ten loch rozdziela drużyny. Pilnujmy się.'],
+    guildReactions: ['Gildia dała nam alchemika. Niech płoną inni.', 'Mamy odtrutki na każdą truciznę tego lochu.', 'Ogień, kwas, piorun? Alchemik ma na to flaszkę.'],
+    guildHoly: ['Gildia przysłała paladyna. Umarli wrócą do grobów.', 'Światło idzie z nami. Demony niech drżą.', 'Paladyn na przedzie. Nikogo nie zostawimy.'],
+    guildFlyers: ['Gildia dała nam tropiciela. Nic nie przeleci niezauważone.', 'Tropiciel zestrzeli każdego nietoperza.', 'Mamy łuk i oczy. Te latające bestie nas nie zaskoczą.'],
     guildBlock: ['Gildia przysłała barbarzyńcę. Skrzynie nas nie zatrzymają.', 'Mamy topór, a tu wszystko zastawione!',
       'Ponoć wszystkie przejścia tu zastawione.', 'Zapory? Barykady? Mamy na to sposób.', 'Przejść tu nie ma? To się je zrobi.',
       'Kto tu tak lubi zastawiać drogę?'],
@@ -1113,7 +1346,8 @@
       fire: ['Płonę! Tylko nie ogień, nie znowu!', 'Czuję jeszcze ten żar...', 'Skóra mi schodzi! Nigdy więcej ognia!',
         'Czuć ode mnie spaleniznę...', 'Ten żar... ja się jeszcze tlę!', 'Każdy płomień będzie mi się śnił...'],
       poison: ['Jad... cał{y|a} drżę od środka.', 'Trucizna... robi mi się ciemno.', 'Jad krąży... czuję go w żyłach.', 'Wszystko mi się rozmywa...',
-        'Gorączka... trucizna mnie zżera.', 'Usta mi drętwieją...'] },
+        'Gorączka... trucizna mnie zżera.', 'Usta mi drętwieją...'],
+      shock: ['Piorun... cał{y|a} drżę!', 'Nie czuję rąk po tym błysku...', 'Iskry w zębach! Nigdy więcej!', 'Serce mi stanęło na chwilę...'] },
     weakHit: { pierce: ['Stare rany się otwierają!', 'Zawsze mnie biorą ostrza...', 'Ała! Stara blizna pękła!', 'Znowu w to samo miejsce!',
         'Moje dawne rany... krwawią na nowo!', 'Każde ukłucie czuję podwójnie!'],
       blunt: ['Moje kości! Zawsze były kruche...', 'To boli bardziej niż powinno!', 'Trzasnęło! To chyba kość!', 'Moje biedne gnaty!',
@@ -1121,7 +1355,8 @@
       fire: ['Dawne oparzenia znowu palą!', 'Nie znoszę ognia, skóra mi pęka!', 'Ogień zawsze znajdzie moje blizny.', 'Pali jak wtedy... jak wtedy!',
         'Skóra pamięta ogień. I krzyczy!', 'Parzy dwa razy mocniej!'],
       poison: ['Jestem wrażliw{y|a} na jady!', 'Trucizna działa na mnie od razu...', 'Puchnę od tego jadu!', 'Gardło mi się zaciska!',
-        'Swędzi, piecze, puchnie!', 'Matka mówiła, że jady mnie kiedyś zabiją...'] },
+        'Swędzi, piecze, puchnie!', 'Matka mówiła, że jady mnie kiedyś zabiją...'],
+      shock: ['Każdy piorun idzie prosto we mnie!', 'Zbroja ciągnie błyskawice!', 'Trzęsie mną jak liściem!', 'Iskry! Zawsze we mnie!'] },
     resistHit: { pierce: ['Ha! Mam grubą skórę.', 'Ledwo drasnęło.', 'Mnie tak łatwo nie przedziurawisz!', 'Skóra jak podeszwa, ha!',
         'Tylko tyle? Mam skórę jak dzik.', 'Gruba skóra to błogosławieństwo.'],
       blunt: ['Wytrzymam więcej!', 'Krzepk{i|a} jestem, nie przewrócisz mnie.', 'Tward{y|a} jestem jak dąb!', 'Mnie się nie łamie. Najwyżej gnie.',
@@ -1129,7 +1364,8 @@
       fire: ['Ogień? Był{em|am} już w gorszych piecach.', 'Hartowan{y|a} w ogniu. Niestraszny mi żar.', 'Ogień i ja to starzy znajomi.',
         'Parzy? Mnie tylko grzeje.', 'Kuźnia hartowała mnie latami.', 'Nie takie płomienie lizały mi skórę.'],
       poison: ['Jady mnie nie biorą.', 'Pił{em|am} gorsze trucizny.', 'Jad? Smakuje jak zepsute wino.', 'Moja krew sama sobie z tym radzi.',
-        'Trochę mnie mdli. I tyle.', 'Wyrosł{em|am} wśród żmij. Jad mi nie straszny.'] },
+        'Trochę mnie mdli. I tyle.', 'Wyrosł{em|am} wśród żmij. Jad mi nie straszny.'],
+      shock: ['Ledwo mnie połaskotało.', 'Stoję mocno na ziemi, piorun spływa.', 'Iskierka? Tylko tyle?', 'Burze mnie nie biorą.'] },
     phobia: { fire: ['Ogień! Nie, tylko nie ogień!', 'Boję się płomieni... od dziecka.', 'Ogień! Jak wtedy, kiedy spłonął dom...',
         'Ten syk... ten żar... nie!', 'Nienawidzę ognia! Nienawidzę!', 'Znowu ten ogień z moich snów!'],
       spiders: ['Pająki! Nienawidzę pająków!', 'Nie, nie, tylko nie pająki!', 'Pająki... czuję je na skórze!', 'Coś mi chodzi po plecach!',
@@ -1142,7 +1378,11 @@
       blood: ['Tyle krwi... robi mi się słabo.', 'Kości... nie chcę tu skończyć jak oni!', 'Krew... nie mogę na to patrzeć!',
         'Kręci mi się w głowie... krew...', 'Tak wygląda śmierć... tak wygląda!', 'Martwe ciało... nie, nie, nie!'],
       dark: ['Nic nie widzę... ciemność mnie zjada!', 'W ciemności... nie, nie!', 'Ciemno... gdzie jest światło?!',
-        'Nie widzę nic... a coś widzi mnie!', 'Ciemność oddycha! Słyszę ją!', 'Światła! Choć odrobinę światła!'] },
+        'Nie widzę nic... a coś widzi mnie!', 'Ciemność oddycha! Słyszę ją!', 'Światła! Choć odrobinę światła!'],
+      dead: ['Umarli chodzą! Umarli chodzą!', 'Nie patrz na mnie tymi pustymi oczami!', 'Trupy powinny leżeć!', 'Czuję zapach grobu...', 'Oni wstają... oni zawsze wstają!'],
+      abyss: ['Pode mną nic nie ma!', 'Ta przepaść mnie woła...', 'Nie spojrzę w dół. Nie spojrzę.', 'Grunt ucieka mi spod nóg!', 'Zaraz spadnę... wiem, że spadnę!'],
+      noise: ['Cicho! Niech to ucichnie!', 'Ten dźwięk mi rozsadza głowę!', 'Za głośno... za głośno!', 'Zatkajcie to czymś!', 'Każdy trzask to jak nóż!'],
+      swarm: ['Roi się! Wszędzie się roi!', 'Tysiąc małych łapek...', 'Złaźcie ze mnie!', 'Ten szum skrzydeł...', 'Ich jest za dużo!'] },
     hunters: ['Słyszał{em|am} o złocie w tym lochu!', 'Gdzie te skarby, o których śpiewają?', 'Przysz{edłem|łam} po złoto, nie po kryształy.',
       'Mówią, że tu złoto leży na podłodze.', 'Kryształy dla gildii, złoto dla mnie.', 'Moja sakwa jest głodna.', 'Pierwsza skrzynia jest moja!',
       'Ktoś tu ukrył majątek. Czuję to.', 'Wrócę bogat{y|a} albo wcale.'],
@@ -1164,6 +1404,13 @@
     chat_coward: ['Może jednak wrócimy?', 'Ja tu tylko noszę bagaże...', 'Czemu zawsze ja idę w środku?', 'Ktoś jeszcze słyszy, jak mi serce wali?',
       'Jakby co, to ja nic nie dotykał{em|am}.', 'Gdzie było wyjście? Pytam na wszelki wypadek.', 'Mama mówiła: nie chodź do lochów.',
       'Jak coś wyskoczy, ja krzyczę, a wy walczycie.', 'To mój ostatni loch. Przysięgam.'],
+    chat_superstitious: ['Nie patrz w to lustro. Nigdy nie patrz.', 'Splunąłem przez ramię. Trzy razy.', 'To złowróżbne miejsce, mówię wam.', 'Dotknij żelaza, bo przyniesie pecha.'],
+    chat_curious: ['Ciekawe, co jest za tymi drzwiami...', 'O, a to co? Muszę zobaczyć.', 'Słyszeliście? Coś tam kliknęło. Sprawdzę.', 'Każda skrzynia coś skrywa.'],
+    chat_loyal: ['Trzymamy się razem, jasne?', 'Nikogo tu nie zostawię.', 'Jak ktoś wpadnie, wołajcie. Przybiegnę.', 'Wchodzimy razem, wychodzimy razem.'],
+    chat_hothead: ['Dość gadania, bijemy!', 'Niech tylko coś się ruszy!', 'Obchodzić pułapki? Nudy.', 'Kto pierwszy do potwora, ten lepszy!'],
+    cultIdle: ['Serce bije... słyszysz je?', 'Jeszcze kawałek. Ono czeka.', 'Nie po złoto tu przyszliśmy.', 'Ofiara musi się dopełnić.'],
+    rangerIdle: ['Ślady. Tędy szło coś dużego.', 'Coś lata w tamtym pokoju.', 'Cicho. Nasłuchuję.', 'Patrzcie pod nogi. Ja patrzę na wszystko.'],
+    alchIdle: ['Mam odtrutkę, gdyby co.', 'Ten opar... ciekawy skład.', 'Nie wąchajcie tego. Serio.', 'Flaszka gotowa. Tylko wskaż cel.'],
     chat_brave: ['Nie bój się, jestem z tobą.', 'Niech tylko coś wyskoczy!', 'Idziemy dalej, głowa do góry.', 'Strach to tylko słowo.',
       'Ten loch jeszcze nauczy się nas bać.', 'Lubię, kiedy jest trudno.', 'Nie po to tu przysz{edłem|łam}, żeby się trząść.',
       'Za kilka dni będą o nas śpiewać.', 'Jak coś nas zaatakuje, tym gorzej dla niego.'],
@@ -1314,7 +1561,8 @@
       bones: ['Ktoś tu nie wyszedł.', 'Stare kości. Biedak.', 'Te kości są całkiem świeże.', 'Czaszka. I reszta, w kawałkach.',
         'Biedaczysko. Ciekawe, kim był.', 'Pouczający widok. Bardzo.', 'Ktoś tu leży od dawna.', 'Żadnych pierścieni? Szkoda.',
         'Czaszka się szczerzy. Bezczelna.'] },
-    lookKind: { goblin: ['Ognisko jeszcze ciepłe...', 'Gobliny tu obozowały.', 'Śmierdzi goblinem.', 'Zielone grzyby. Świecą...',
+    lookKind: { lab: ['Ten kocioł jeszcze bulgocze...', 'Flaszki z czymś zielonym.', 'Księgi alchemika. Strony nadpalone.'], graveyard: ['Nagrobek bez imienia.', 'Ziemia na tym grobie jest świeża...', 'Krzyż przechylony, jakby ktoś go odsunął.'], abyssgate: ['Krąg run. Jeszcze ciepły.', 'Siarka na kamieniach.', 'Żar w misie nie gaśnie.'],
+      goblin: ['Ognisko jeszcze ciepłe...', 'Gobliny tu obozowały.', 'Śmierdzi goblinem.', 'Zielone grzyby. Świecą...',
         'Totem z czaszką. Urocze.', 'Zielone łapy na ścianach. Brr.', 'Gobliny nie sprzątają po sobie.', 'Dym gryzie w oczy.',
         'Ile tu tego tałatajstwa spało?'],
       spider: ['Jaja... ogromne jaja.', 'Kokony. W środku coś jest.', 'Wszędzie pajęczyna.', 'Nici kleją się do butów.',
@@ -1589,7 +1837,10 @@
       'Dość słuchania, {v}. Idę w drugą stronę.', 'Wasza droga to strata czasu. Kto mądry, za mną.', 'Ty sobie idź, {v}. Ja wybieram tamtą.',
       'Tamtędy łup, tędy nuda. Kto ze mną po złoto?', 'Nie będę dreptać za tobą, {v}. Rozdzielamy się.', 'Głosu nie mam? To mam nogi. Idę tamtędy.',
       'Tam coś jest, mówię wam. Kto wierzy, ten idzie.'],   // 1.19: Rozłam (lines from e119)
-    rkEnter: { k_goblin: ['Nora goblinów. Czuć dym i grzyby.', 'Ognisko i totem z czaszką. Gobliny.', 'Fuj. Goblinie legowisko.',
+    rkEnter: { k_lab: ['Laboratorium. Coś bulgocze w kotle.', 'Flaszki, rurki, smród siarki.', 'Nie dotykajcie niczego, co świeci.', 'Kto tu warzy te trucizny?'],
+      k_graveyard: ['Cmentarz. W lochu?', 'Groby. Świeżo poruszona ziemia.', 'Mgła nad mogiłami. Nie podoba mi się to.', 'Tu ktoś nie śpi spokojnie.'],
+      k_abyssgate: ['Wrota otchłani. Krąg płonie.', 'Czuć siarkę i żar.', 'Ten krąg na podłodze... on oddycha.', 'Coś patrzy z drugiej strony.'],
+      k_goblin: ['Nora goblinów. Czuć dym i grzyby.', 'Ognisko i totem z czaszką. Gobliny.', 'Fuj. Goblinie legowisko.',
         'Ziemia, korzenie i smród. Nora jak się patrzy.', 'Ktoś tu obozuje. I wcale się nie myje.', 'Świecące grzybki... Goblinia spiżarnia?',
         'Odciski zielonych dłoni... Goblinie znaki.', 'Krąg kamieni, patyki... Obozowisko.', 'Goblinia nora. Oby nikogo w domu.'],
       k_spider: ['Leże pająków. Wszędzie jedwab.', 'Jaja w gromadach... Pajęcze gniazdo.', 'Kokony na nitkach. Niedobrze.',

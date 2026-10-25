@@ -65,7 +65,7 @@ APPLY = r"""() => { const { G } = T, fails = [], out = { fields: {} }; const ok 
     ok(u.name && u.tag && u.text && !/[–—]/.test(u.text + u.name + u.tag), id + ': name, tag, text, plain hyphens');
   });
   out.n = Object.keys(RAR).length;
-  ok(G.UPGRADES.filter(u => u.kind === 'card').length === 94 + 28, 'card count ' + G.UPGRADES.filter(u => u.kind === 'card').length);
+  ok(G.UPGRADES.filter(u => u.kind === 'card').length === 94 + 28 + 15 + 26, 'card count ' + G.UPGRADES.filter(u => u.kind === 'card').length);
   // the deck path: two copies stack, every field set
   T.fresh(5); T.deck(Object.keys(RAR).concat(['lure', 'wisps']));
   ok(G.mods.drawers === 1 && G.mods.lure === 2 && G.mods.wisps === 2 && G.mods.risen === true && G.mods.rhythm === 1, 'deck applies, copies stack');
@@ -101,7 +101,7 @@ REQ = r"""() => { const { G } = T, fails = [], out = { hits: {} }; const ok = (c
     const [k, v] = w.split(':'); T.setRoom(R, k === 'rk' ? { rk: v, rt: null } : { rk: null, rt: v });
     ok(G.reqOk(G.UPG[id]), id + ': req true with ' + v);
     const other = Object.entries(REQ).filter(([i2, w2]) => w2 !== w && G.reqOk(G.UPG[i2])).map(e => e[0]); ok(!other.length, v + ' also lets in ' + other);
-    let n = 0; for (let i = 0; i < 300; i++) if (G.upgradePicks(3).some(u => u.id === id)) n++;
+    let n = 0; for (let i = 0; i < 1200; i++) if (G.upgradePicks(3).some(u => u.id === id)) n++;   // 1.26: 163 cards in the pool
     out.hits[id] = n; ok(n > 0, id + ' never offered with ' + v);
     const fit = G.cardFit(G.UPG[id]); ok(fit && fit.ok, id + ': fits with ' + v);
   });
@@ -141,7 +141,7 @@ FUNC = r"""(only) => { const { G, key } = T, fails = [], out = {}; const ok = (c
   // scores close to it (chooseTarget's sum for a careful leader: 1,15 x steps - 0,18 x distance from the entrance, plus up to 1 by chance)
   S('lure', () => {
     let done = false; const why = [];
-    for (let tr = 0; tr < 20 && !done; tr++) {
+    for (let tr = 0; tr < 45 && !done; tr++) {   // 1.26: more layouts (the setup needs a far frontier that scores close)
       if (tr % 5 === 0) { T.fresh(12); T.raid(['warrior', 'thief', 'priest']); }
       const f = G.fl, L = G.leader(), P = f.party; if (!L) { why.push('no leader'); continue; }
       L.trait = 'careful'; L.rank = 2;

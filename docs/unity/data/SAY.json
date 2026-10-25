@@ -371,6 +371,48 @@
   "Święty krąg!",
   "Bogowie, okryjcie nas!"
  ],
+ "help": [
+  "Pomocy! Tutaj!",
+  "Niech ktoś mnie stąd wyciągnie!",
+  "Ratunku, nie mogę się ruszyć!",
+  "Hej! Tutaj, szybko!"
+ ],
+ "lootHome": [
+  "Mam swoje. Wracam.",
+  "Dość. Zabieram to i znikam.",
+  "Żywy i bogaty, to mi wystarczy.",
+  "Wy sobie szukajcie, ja wracam."
+ ],
+ "snare": [
+  "Noga! Coś mnie trzyma!",
+  "Sidła! Nie mogę się ruszyć!",
+  "Pomóżcie, utknąłem!",
+  "Przeklęte wnyki!"
+ ],
+ "seduced": [
+  "Ten głos... idę...",
+  "Ktoś mnie woła...",
+  "Tak pięknie śpiewa...",
+  "Muszę tam iść..."
+ ],
+ "antidote": [
+  "Pij, to odtrutka!",
+  "Trzymaj, zejdzie z ciebie!",
+  "Antidotum, szybko!",
+  "Jedna kropla i po sprawie."
+ ],
+ "cultDrink": [
+  "Serce... daj mi siebie.",
+  "Pij, bracie, pij.",
+  "Ono jest nasze.",
+  "Ciepłe... żywe..."
+ ],
+ "oath": [
+  "Nikogo nie zostawiamy!",
+  "Za mną, nie ma strachu!",
+  "Przysięgałem was chronić.",
+  "Światło idzie z nami!"
+ ],
  "dispel": [
   "Rozpraszam sieć!",
   "Precz, pajęczyno!",
@@ -625,6 +667,18 @@
   "Wyrwał{em|am} go! W nogi!",
   "Mam go! Teraz tylko wyjść!",
   "Ciężki, ale mój! Do wyjścia!"
+ ],
+ "lastPush": [
+  "Jeszcze chwila! Wyrwę go albo zginę!",
+  "Teraz albo nigdy! Ciągnij!",
+  "Nie puszczę! Już prawie!",
+  "Ostatkiem sił... już schodzi!"
+ ],
+ "healerFirst": [
+  "Najpierw szaman! Bez niego padną!",
+  "Bić uzdrowiciela! Reszta potem!",
+  "Zostawcie tego dużego, łapać szamana!",
+  "Ten, co ich leczy! Na niego!"
  ],
  "heartRepel": [
   "Ono parzy! Kryształ ani drgnie!",
@@ -1408,6 +1462,21 @@
   "Jak się zgubicie, idźcie na muzykę.",
   "Ten loch rozdziela drużyny. Pilnujmy się."
  ],
+ "guildReactions": [
+  "Gildia dała nam alchemika. Niech płoną inni.",
+  "Mamy odtrutki na każdą truciznę tego lochu.",
+  "Ogień, kwas, piorun? Alchemik ma na to flaszkę."
+ ],
+ "guildHoly": [
+  "Gildia przysłała paladyna. Umarli wrócą do grobów.",
+  "Światło idzie z nami. Demony niech drżą.",
+  "Paladyn na przedzie. Nikogo nie zostawimy."
+ ],
+ "guildFlyers": [
+  "Gildia dała nam tropiciela. Nic nie przeleci niezauważone.",
+  "Tropiciel zestrzeli każdego nietoperza.",
+  "Mamy łuk i oczy. Te latające bestie nas nie zaskoczą."
+ ],
  "guildBlock": [
   "Gildia przysłała barbarzyńcę. Skrzynie nas nie zatrzymają.",
   "Mamy topór, a tu wszystko zastawione!",
@@ -2106,6 +2175,12 @@
    "Wszystko mi się rozmywa...",
    "Gorączka... trucizna mnie zżera.",
    "Usta mi drętwieją..."
+  ],
+  "shock": [
+   "Piorun... cał{y|a} drżę!",
+   "Nie czuję rąk po tym błysku...",
+   "Iskry w zębach! Nigdy więcej!",
+   "Serce mi stanęło na chwilę..."
   ]
  },
  "weakHit": {
@@ -2140,6 +2215,12 @@
    "Gardło mi się zaciska!",
    "Swędzi, piecze, puchnie!",
    "Matka mówiła, że jady mnie kiedyś zabiją..."
+  ],
+  "shock": [
+   "Każdy piorun idzie prosto we mnie!",
+   "Zbroja ciągnie błyskawice!",
+   "Trzęsie mną jak liściem!",
+   "Iskry! Zawsze we mnie!"
   ]
  },
  "resistHit": {
@@ -2174,6 +2255,12 @@
    "Moja krew sama sobie z tym radzi.",
    "Trochę mnie mdli. I tyle.",
    "Wyrosł{em|am} wśród żmij. Jad mi nie straszny."
+  ],
+  "shock": [
+   "Ledwo mnie połaskotało.",
+   "Stoję mocno na ziemi, piorun spływa.",
+   "Iskierka? Tylko tyle?",
+   "Burze mnie nie biorą."
   ]
  },
  "phobia": {
@@ -2226,6 +2313,34 @@
    "Nie widzę nic... a coś widzi mnie!",
    "Ciemność oddycha! Słyszę ją!",
    "Światła! Choć odrobinę światła!"
+  ],
+  "dead": [
+   "Umarli chodzą! Umarli chodzą!",
+   "Nie patrz na mnie tymi pustymi oczami!",
+   "Trupy powinny leżeć!",
+   "Czuję zapach grobu...",
+   "Oni wstają... oni zawsze wstają!"
+  ],
+  "abyss": [
+   "Pode mną nic nie ma!",
+   "Ta przepaść mnie woła...",
+   "Nie spojrzę w dół. Nie spojrzę.",
+   "Grunt ucieka mi spod nóg!",
+   "Zaraz spadnę... wiem, że spadnę!"
+  ],
+  "noise": [
+   "Cicho! Niech to ucichnie!",
+   "Ten dźwięk mi rozsadza głowę!",
+   "Za głośno... za głośno!",
+   "Zatkajcie to czymś!",
+   "Każdy trzask to jak nóż!"
+  ],
+  "swarm": [
+   "Roi się! Wszędzie się roi!",
+   "Tysiąc małych łapek...",
+   "Złaźcie ze mnie!",
+   "Ten szum skrzydeł...",
+   "Ich jest za dużo!"
   ]
  },
  "hunters": [
@@ -2305,6 +2420,48 @@
   "Mama mówiła: nie chodź do lochów.",
   "Jak coś wyskoczy, ja krzyczę, a wy walczycie.",
   "To mój ostatni loch. Przysięgam."
+ ],
+ "chat_superstitious": [
+  "Nie patrz w to lustro. Nigdy nie patrz.",
+  "Splunąłem przez ramię. Trzy razy.",
+  "To złowróżbne miejsce, mówię wam.",
+  "Dotknij żelaza, bo przyniesie pecha."
+ ],
+ "chat_curious": [
+  "Ciekawe, co jest za tymi drzwiami...",
+  "O, a to co? Muszę zobaczyć.",
+  "Słyszeliście? Coś tam kliknęło. Sprawdzę.",
+  "Każda skrzynia coś skrywa."
+ ],
+ "chat_loyal": [
+  "Trzymamy się razem, jasne?",
+  "Nikogo tu nie zostawię.",
+  "Jak ktoś wpadnie, wołajcie. Przybiegnę.",
+  "Wchodzimy razem, wychodzimy razem."
+ ],
+ "chat_hothead": [
+  "Dość gadania, bijemy!",
+  "Niech tylko coś się ruszy!",
+  "Obchodzić pułapki? Nudy.",
+  "Kto pierwszy do potwora, ten lepszy!"
+ ],
+ "cultIdle": [
+  "Serce bije... słyszysz je?",
+  "Jeszcze kawałek. Ono czeka.",
+  "Nie po złoto tu przyszliśmy.",
+  "Ofiara musi się dopełnić."
+ ],
+ "rangerIdle": [
+  "Ślady. Tędy szło coś dużego.",
+  "Coś lata w tamtym pokoju.",
+  "Cicho. Nasłuchuję.",
+  "Patrzcie pod nogi. Ja patrzę na wszystko."
+ ],
+ "alchIdle": [
+  "Mam odtrutkę, gdyby co.",
+  "Ten opar... ciekawy skład.",
+  "Nie wąchajcie tego. Serio.",
+  "Flaszka gotowa. Tylko wskaż cel."
  ],
  "chat_brave": [
   "Nie bój się, jestem z tobą.",
@@ -2864,6 +3021,21 @@
   ]
  },
  "lookKind": {
+  "lab": [
+   "Ten kocioł jeszcze bulgocze...",
+   "Flaszki z czymś zielonym.",
+   "Księgi alchemika. Strony nadpalone."
+  ],
+  "graveyard": [
+   "Nagrobek bez imienia.",
+   "Ziemia na tym grobie jest świeża...",
+   "Krzyż przechylony, jakby ktoś go odsunął."
+  ],
+  "abyssgate": [
+   "Krąg run. Jeszcze ciepły.",
+   "Siarka na kamieniach.",
+   "Żar w misie nie gaśnie."
+  ],
   "goblin": [
    "Ognisko jeszcze ciepłe...",
    "Gobliny tu obozowały.",
@@ -3864,6 +4036,24 @@
   "Tam coś jest, mówię wam. Kto wierzy, ten idzie."
  ],
  "rkEnter": {
+  "k_lab": [
+   "Laboratorium. Coś bulgocze w kotle.",
+   "Flaszki, rurki, smród siarki.",
+   "Nie dotykajcie niczego, co świeci.",
+   "Kto tu warzy te trucizny?"
+  ],
+  "k_graveyard": [
+   "Cmentarz. W lochu?",
+   "Groby. Świeżo poruszona ziemia.",
+   "Mgła nad mogiłami. Nie podoba mi się to.",
+   "Tu ktoś nie śpi spokojnie."
+  ],
+  "k_abyssgate": [
+   "Wrota otchłani. Krąg płonie.",
+   "Czuć siarkę i żar.",
+   "Ten krąg na podłodze... on oddycha.",
+   "Coś patrzy z drugiej strony."
+  ],
   "k_goblin": [
    "Nora goblinów. Czuć dym i grzyby.",
    "Ognisko i totem z czaszką. Gobliny.",

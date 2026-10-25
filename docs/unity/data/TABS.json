@@ -12,13 +12,22 @@
    "gate",
    "powder",
    "mimic",
+   "pendulum",
+   "snare",
+   "oilslick",
+   "tar",
+   "miasma",
+   "flood",
+   "bolt",
    "portrait",
    "eyes",
    "bones",
    "mirror",
    "creak",
    "coffin",
-   "musicbox"
+   "musicbox",
+   "bell",
+   "falsedoor"
   ],
   "subs": [
    {
@@ -33,7 +42,20 @@
      "fire",
      "gate",
      "powder",
-     "mimic"
+     "mimic",
+     "pendulum",
+     "snare"
+    ]
+   },
+   {
+    "id": "stat",
+    "label": "Statusy",
+    "items": [
+     "oilslick",
+     "tar",
+     "miasma",
+     "flood",
+     "bolt"
     ]
    },
    {
@@ -46,7 +68,9 @@
      "mirror",
      "creak",
      "coffin",
-     "musicbox"
+     "musicbox",
+     "bell",
+     "falsedoor"
     ]
    }
   ]
@@ -60,9 +84,19 @@
    "spider",
    "ogre",
    "shaman",
+   "sapper",
+   "warlord",
+   "rats",
+   "skeleton",
+   "zombie",
+   "lich",
+   "hound",
+   "demon",
    "ghost",
    "shade",
-   "bats"
+   "bats",
+   "imp",
+   "siren"
   ],
   "subs": [
    {
@@ -73,7 +107,21 @@
      "archer",
      "spider",
      "ogre",
-     "shaman"
+     "shaman",
+     "sapper",
+     "warlord",
+     "rats"
+    ]
+   },
+   {
+    "id": "dark",
+    "label": "Mrok",
+    "items": [
+     "skeleton",
+     "zombie",
+     "lich",
+     "hound",
+     "demon"
     ]
    },
    {
@@ -82,7 +130,9 @@
     "items": [
      "ghost",
      "shade",
-     "bats"
+     "bats",
+     "imp",
+     "siren"
     ]
    }
   ]
@@ -95,7 +145,8 @@
    "lpotion",
    "loot2",
    "loot3",
-   "lcursed"
+   "lcursed",
+   "bait"
   ]
  },
  {
@@ -133,6 +184,9 @@
    "k_junk",
    "k_gallery",
    "k_nursery",
+   "k_lab",
+   "k_graveyard",
+   "k_abyssgate",
    "r_fog",
    "r_swamp",
    "r_grotto",
@@ -169,7 +223,10 @@
      "k_prison",
      "k_junk",
      "k_gallery",
-     "k_nursery"
+     "k_nursery",
+     "k_lab",
+     "k_graveyard",
+     "k_abyssgate"
     ]
    },
    {

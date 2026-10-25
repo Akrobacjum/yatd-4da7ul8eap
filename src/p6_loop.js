@@ -227,7 +227,8 @@
   const CHECK_DUR = 1.15;
   const CHECK_PREP = 0.5;
   const CHECK_SLOW = 0.25;   // 1.09: the world's speed under a check
-  const BASE_DMG = { spikes: 35, arrows: 25, fire: 20, gate: 60, powder: 60, mimic: 40, trapdoor: 20, goblin: 35, archer: 22, spider: 30, ogre: 45, ghost: 5, web: 0, cage: 0, portrait: 0, shaman: 0,
+  const BASE_DMG = { pendulum: 45, snare: 25, miasma: 0, oilslick: 0, bolt: 22, flood: 0, bell: 0, falsedoor: 0, tar: 25, skeleton: 20, zombie: 15, lich: 25, imp: 0, hound: 30, siren: 0, demon: 40, sapper: 0, warlord: 30, rats: 8,   // 1.26
+    spikes: 35, arrows: 25, fire: 20, gate: 60, powder: 60, mimic: 40, trapdoor: 20, goblin: 35, archer: 22, spider: 30, ogre: 45, ghost: 5, web: 0, cage: 0, portrait: 0, shaman: 0,
     eyes: 0, bones: 0, mirror: 0, creak: 0, coffin: 0, musicbox: 0, shade: 0, bats: 6 };
   function predictedDmg(it, pw) {
     const D = S.dmg, burn = 18 * D;   // the skull counts the burn too
@@ -275,7 +276,9 @@
   // (the strongest one in the area); an upgraded trap gets wider zones (level 2: +15%, level 3: +30%).
   // v14: seven shapes, every kind of element has its own: bar (blades and bars), dial (fire), fuse (powder: the spark speeds up),
   // double dial (scares: two chances), spiral (webs and spiders), closing ring (falls and cages), pendulum (monsters).
-  const CHECK_SHAPE = { spikes: 'bar', arrows: 'bar', gate: 'bar', mimic: 'bar', powder: 'fuse', fire: 'ring', portrait: 'double', ghost: 'double', web: 'spiral', spider: 'spiral',
+  const CHECK_SHAPE = { pendulum: 'swing', snare: 'pulse', miasma: 'spiral', oilslick: 'ring', bolt: 'double', flood: 'pulse', bell: 'fuse', falsedoor: 'double', tar: 'fuse',   // 1.26
+    skeleton: 'swing', zombie: 'swing', lich: 'double', imp: 'double', hound: 'swing', siren: 'double', demon: 'swing', sapper: 'bar', warlord: 'swing', rats: 'pulse',
+    spikes: 'bar', arrows: 'bar', gate: 'bar', mimic: 'bar', powder: 'fuse', fire: 'ring', portrait: 'double', ghost: 'double', web: 'spiral', spider: 'spiral',
     trapdoor: 'pulse', cage: 'pulse', goblin: 'swing', archer: 'swing', ogre: 'swing', shaman: 'swing',
     eyes: 'double', bones: 'pulse', mirror: 'ring', creak: 'bar', coffin: 'fuse', musicbox: 'spiral', shade: 'double', bats: 'swing' };   // v15.1
   // 1.24 (D, P0-6): checks by shape in the wave's stats: checkByShape[shape] = { ok, crit, miss, skip } (+ auto: fired by itself in the
@@ -474,9 +477,10 @@
     });
     if (!tutPop('theft')) setHint('Kryształ skradziony! Zabij niosącego, zanim dojdzie do wyjścia, a kryształ wróci do serca.');
   }
-  const stealNeed = () => 4 / Math.pow(2, mods.glass);   // Szklane serce: the crystal comes loose 2 times faster per copy
+  const stealNeed = () => (5 + 1.5 * (mods.heavyCrystal || 0)) / Math.pow(2, mods.glass);   // Szklane serce: the crystal comes loose 2 times faster per copy; 1.26: 5 s (was 4), Ciężki kryształ +1,5 s
   function step(dt) {
     fl.time += dt;
+    gameLaterRun();   // 1.26
     fl.cardMult = cardMultNow();
     fl.quietCheckT = (fl.quietCheckT || 0) - dt;
     if (fl.quietCheckT <= 0) { fl.quietCheckT = 0.1; fl.quiet = quietNow(); }   // v15.1: checked 10 times a second (was 5)
@@ -507,6 +511,7 @@
       if (it.anim > 0) it.anim = Math.max(0, it.anim - dt);
     });
     if (fl.zones.length) fl.zones = fl.zones.filter(z => z.until > fl.time);
+    hazardsTick(dt); plagueAirTick(dt);   // 1.26: Wyziewy, Kolczatki, Morowe powietrze
     regenTick(dt);
     if (fl.silence) fl.stats.silenceTime += dt;
     if (fl.threatDirty) rebuildThreat();
@@ -534,12 +539,19 @@
     }
     monstersTick(dt);
     // at the heart: they pry a crystal loose while the heart burns them
-    const P = fl.party, atHeart = alive().filter(h => h.state === 'boss');
+    const P = fl.party, atHeart = alive().filter(h => h.state === 'boss' && !rooted(h) && h.type !== 'cultist');   // 1.26: held fast he cannot pry, a cultist drinks instead
     if (!atHeart.length && P.steal > 0) P.steal = Math.max(0, P.steal - 0.5 * dt);   // 1.17 (6.8 #12): pried loose half way and left, the crystal settles back
     if (atHeart.length && P.plan === 'assault' && fl.ending === null) {
-      P.steal += dt * (1 + 0.5 * (atHeart.length - 1));
+      // 1.26 (5.4) Ostatni zryw: one of them below 30% HP: the whole group pries x1,5 (desperation)
+      const zryw = atHeart.some(h => h.hp < 0.3 * h.max);
+      if (zryw && !fl.zrywSaid) { fl.zrywSaid = true; const d = atHeart.find(h => h.hp < 0.3 * h.max); floatHero(d, 'Ostatni zryw!', '#ff9a3c', 15, -1); say(d, pick(SAY.lastPush), 4, 2); fl.stats.lastPush = (fl.stats.lastPush || 0) + 1; }
+      P.steal += dt * (1 + 0.5 * (atHeart.length - 1)) * (zryw ? 1.5 : 1);
+      fl.stats.stealMax = Math.max(fl.stats.stealMax || 0, P.steal / stealNeed());
       fl.heartHit = 0.12;
       damage(atHeart[0], 5 * dt, HEART);
+      // 1.26 (5.4) Serce krzyczy: from wave 2 every thief at the heart (not a boss, not a cultist) loses 6% of his courage a second to fear
+      if (run.wave >= 2) atHeart.forEach(h => { if (!h.boss && h.type !== 'cultist') addFear(h, (0.06 + (mods.heartCry || 0)) * h.courage * dt * (omenK(run.wave, 'heartCry') || 1), null, 'heartcry'); });
+      if (run.wave >= 2 && !fl.cryShown) { fl.cryShown = true; floatTile(fl.heart.x, fl.heart.y, 'Serce krzyczy!', '#ff9ab0', 15, -1.6); tutPop('heartCry'); }
       // 1.05 (author: wave 1 should not be able to take a crystal even from an empty dungeon): the heart will not let the first
       // party have it. It burns their courage and the crystal does not come loose; sooner or later they run
       // (a replay of an empty dungeon: without giving up they circled the heart for 100 s, panicking and coming back)
@@ -556,10 +568,12 @@
       // 1.04: the heart's burn can kill the last one prying in this very tick (a bot found it: the step threw, the game froze)
       if (P.steal >= stealNeed()) { const by = alive().filter(h => h.state === 'boss'); if (by.length) takeCrystal(by); }
     }
+    // 1.26 Kultysta: Spijanie: he takes back what the heart already ate (fl.fed), 6 x (1 + 0,05 L) a second; it has to be fed again
+    { const dr = alive().filter(h => h.state === 'drink'); if (dr.length && fl.ending === null) dr.forEach(h => { const x = Math.min(fl.fed, 6 * (1 + 0.05 * h.lvl) * dt); if (x > 0) { fl.fed -= x; h.drank = (h.drank || 0) + x; fl.stats.essDrained = (fl.stats.essDrained || 0) + x; fl.heartHit = 0.12; if (fl.time - (h.drinkFT || -9) > 1.5) { if (!h.drinkSaid || Math.random() < 0.15) { h.drinkSaid = true; say(h, pick(SAY.cultDrink), 2); } h.drinkFT = fl.time; floatTile(fl.heart.x, fl.heart.y, 'Spija −' + fmtE(x / dt * 1.5), '#c86a7a', 13, -1.1); } } }); }
     if (fl.heartHit > 0) fl.heartHit -= dt;
     // 1.12.1: patience runs at half speed while the party talks it over or rests (longer scenes do not cut their search short)
     fl.patT = (fl.patT || 0) + dt * (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0) ? 0.5 : 1);
-    if (!fl.fearless && fl.ending === null && fl.patT >= S.waveTime) becomeImpatient();
+    if (!fl.fearless && fl.ending === null && fl.patT >= (omenK(run.wave, 'patience') || S.waveTime)) becomeImpatient();   // 1.26 Pośpiech: 60 s
     if (fl.ending === null && !fl.exhausted && fl.patT >= S.waveTime + 60) waveExhausted();   // 1.24: worn out, they walk out (up to 1.23 they were teleported out here)
     if (fl.ending === null && fl.patT >= S.waveTime + 150) waveForceOut();   // 1.24: the true safety net: nobody stays forever
     if (fl.ending === null && fl.queue.length === 0 && fl.heroes.length && fl.heroes.every(h => h.dead || h.fled)) fl.ending = 1.2;

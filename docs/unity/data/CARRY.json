@@ -1,0 +1,12 @@
+{
+ "warrior": 14,
+ "barbarian": 16,
+ "priest": 10,
+ "bard": 10,
+ "thief": 9,
+ "mage": 8,
+ "paladin": 15,
+ "ranger": 10,
+ "alchemist": 12,
+ "cultist": 8
+}

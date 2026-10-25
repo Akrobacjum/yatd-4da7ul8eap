@@ -94,5 +94,81 @@
  "bats": [
   "Chmara",
   "rój sięga 3 pól i płoszy częściej"
+ ],
+ "pendulum": [
+  "Podwójne",
+  "drugi zamach (50% mocy) po 0,6 s"
+ ],
+ "snare": [
+  "Zębate",
+  "złapany krwawi przez 3 s"
+ ],
+ "miasma": [
+  "Gęste",
+  "chmura trzyma się 8 s"
+ ],
+ "oilslick": [
+  "Łatwopalna",
+  "Oblany zapala się od każdego trafienia pułapki (15%)"
+ ],
+ "bolt": [
+  "Burza",
+  "piorun przeskakuje też na 2 suchych (50%)"
+ ],
+ "flood": [
+  "Topiel",
+  "wszyscy w pokoju są spowolnieni, dopóki w nim są"
+ ],
+ "bell": [
+  "Requiem",
+  "każdy, kto usłyszy dzwon, daje +0,5 Grozy"
+ ],
+ "falsedoor": [
+  "Labirynt",
+  "zgubienie trwa 18 s"
+ ],
+ "tar": [
+  "Wrzątek",
+  "oblany płonie 4 s"
+ ],
+ "skeleton": [
+  "Legion",
+  "składa się 2 razy w fali"
+ ],
+ "zombie": [
+  "Epidemia",
+  "Zaraza przeskakuje na sąsiadów co 4 s"
+ ],
+ "lich": [
+  "Filakteria",
+  "powalony licz nie dodaje głodu"
+ ],
+ "imp": [
+  "Kleptoman",
+  "kradnie 2 przedmioty, okradziony jest Naznaczony"
+ ],
+ "hound": [
+  "Sfora",
+  "każdy inny ogar w lochu +25%"
+ ],
+ "siren": [
+  "Pocałunek",
+  "odwaga uwiedzionego -20% do końca fali"
+ ],
+ "demon": [
+  "Pan otchłani",
+  "inne demony +25%"
+ ],
+ "sapper": [
+  "Proch",
+  "jeden zestaw kolczatek to mała bomba"
+ ],
+ "warlord": [
+  "Wódz",
+  "aura obejmuje sąsiednie pokoje"
+ ],
+ "rats": [
+  "Wścieklizna",
+  "ugryzienia zarażają"
  ]
 }

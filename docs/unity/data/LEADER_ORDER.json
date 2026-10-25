@@ -1,8 +1,11 @@
 [
  "warrior",
+ "paladin",
  "barbarian",
  "priest",
  "bard",
+ "ranger",
  "mage",
+ "alchemist",
  "thief"
 ]

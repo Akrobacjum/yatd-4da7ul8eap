@@ -1,4 +1,22 @@
 {
+ "paladin": {
+  "potion": 3,
+  "charm": 2,
+  "amulet": 2
+ },
+ "ranger": {
+  "potion": 3,
+  "boots": 2,
+  "bomb": 1
+ },
+ "alchemist": {
+  "potion": 4,
+  "bomb": 2,
+  "amulet": 1
+ },
+ "cultist": {
+  "potion": 1
+ },
  "warrior": {
   "potion": 3,
   "charm": 3,

@@ -21,6 +21,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(); page = await (await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2)).new_page()
         errs = []; page.on('pageerror', lambda e: errs.append(str(e)))
+        await page.add_init_script("try { localStorage.setItem('yatd-pops', JSON.stringify({ heartLv: 1, heartCry: 1, status: 1, reaction: 1, revive: 1, omen: 1, cultist: 1 })); } catch (e) {}")   # 1.26: the new rule cards stop the game; not here
         await page.clock.install(); await page.goto('file://' + SC + 'test/page15.html'); await page.clock.run_for(500)
         await page.evaluate(SETUP, [doc, 0, [0, 1], 0.9, prev, {}, 'v12', [1.0, 1.0, []], ['gauss', 0.037, 1.9]])
         # let everyone come in, answer checks

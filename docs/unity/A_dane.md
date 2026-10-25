@@ -1,17 +1,17 @@
 # Załącznik A: dane wyeksportowane z prototypu
 
-Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (wszystkie pliki tabel przeeksportowane na Prototype 1.17.1; **nie przeeksportowane na 1.24**: tabele zmienione i nowe w 1.18-1.24 są wymienione w A.9 i trzeba je wyeksportować `tools/dump.js` przed użyciem w Unity, albo czytać z `src/p1_config.js` 1.24; od 1.13.1 zmieniły się `TABS` w 1.14, w 1.15 `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`, w 1.16 `GZ` i `SAY`, w 1.17 tabele kwestii `SAY`, `SOLO`, `SOLO_MUTE`, `CHAT_REPLY`, `CONVO` i `CONVO_P`, w 1.17.1 `SAY`, `SOLO`, `SOLO_MUTE`, `CONVO`, `CONVO_P` i nowa `LINE_NEEDS`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
+Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (**od 1.26 wszystkie pliki tabel przeeksportowane na Prototype 1.26**, 95 tabel; tabele zmienione i nowe w 1.18-1.24 opisuje A.9, w 1.26 A.10; kilka stałych z `p1_config.js` nie trafia do eksportu, lista w A.0; historia: do 1.25.1 eksport był z 1.17.1, a od 1.13.1 zmieniły się `TABS` w 1.14, w 1.15 `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`, w 1.16 `GZ` i `SAY`, w 1.17 tabele kwestii `SAY`, `SOLO`, `SOLO_MUTE`, `CHAT_REPLY`, `CONVO` i `CONVO_P`, w 1.17.1 `SAY`, `SOLO`, `SOLO_MUTE`, `CONVO`, `CONVO_P` i nowa `LINE_NEEDS`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
 
-- `yatd_content_1.17.1.json`: wszystkie tabele w jednym pliku: `{ version, source, tables: { ITEMS: ..., UPGRADES: ..., ... } }` (83 tabele; 1.17: 82, doszła `LINE_NEEDS`), złożony z plików tabel poniżej (stan 1.17.1; zastąpił `yatd_content_1.17.json`). Ten plik warto wczytać w Unity.
+- `yatd_content_1.26.json`: wszystkie tabele w jednym pliku: `{ version: 'Prototype 1.26', source, tables: { ITEMS: ..., UPGRADES: ..., ... } }` (95 tabel; 1.17.1: 83, doszły `ACTS`, `BLEED`, `POISONT`, `FAMILIES`, `FAMILY_OF`, `OMENS`, `OMEN_WAVES`, `REACTIONS`, `REACT_K`, `RUNE_MAX`, `STATUS`, `TRAITS_B`), złożony z plików tabel poniżej (zastąpił `yatd_content_1.17.1.json`). Ten plik warto wczytać w Unity.
 - `<NAZWA>.json`: ta sama tabela osobno (wygodne do czytania i porównań).
 - `levelStats_1_30.json`: wynik `levelStats(L)` dla poziomów 1-30 (zaokrąglone do 4 miejsc).
 - `golden_1.13.1.json`: wartości policzone przez działający prototyp do testów (sekcja 09).
 
-Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pól.
+Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pól. Wartości zmienione w 1.26 (np. `GZ.scare` 4, `GZ.crystal` 6, `MON_FACTOR` 0,8, `DEFAULTS.essence` 25, `waveIncome` 6, `KIND_COST` 10) są w A.10; opisy w A.1-A.4 podają też starsze liczby.
 
-## A.0 Stan danych a Prototype 1.24
+## A.0 Stan danych a Prototype 1.26
 
-Eksport w `data/` odpowiada 1.17.1. Różnice w 1.24 (szczegóły A.9): `ITEMS` (zapadnia `cost` 6 i opis z limitem upadków), `HITEMS` (narzędzia `lantern`, `crowbar`, pole `kg` i `tool`), `LOOT_GREED` (`body`), `UPGRADES` (140 kart), `ONB_CARD` (karty 1.18), `DEFAULTS` (`calmWaves`, `calmGap`, `okPulse`, `okSwing`), tabele kwestii `SAY`, `SOLO`, `CONVO`, `LINE_NEEDS` (A.5), nowe `ONB_WAVE`, `CARRY`, `CLASS_FIT`, `FUSE_POW`, `FUSE_K`, `FUSE_GROUP`, `FUSE_INT`, `FUSE_TEXT` oraz funkcje `SCARES`, `HURTS`, `fitOf`, `onbWaveStage`. Plik zbiorczy powinien dostać nazwę `yatd_content_1.24.json`.
+**Od 1.26** eksport w `data/` odpowiada 1.26 (`yatd_content_1.26.json` i pliki tabel). Wartości 1.18-1.26 opisane w A.9 i A.10 są więc w JSON-ach, z wyjątkiem stałych, których `tools/dump.js` nie wypisuje (trzeba je przepisać z `src/p1_config.js` albo dopisać do skryptu): `ONB_WAVE`, `CLASS_FIT`, `ITEM_COLOR`, `FUSE_POW`, `FUSE_K`, `FUSE_GROUP`, `FUSE_INT`, `FUSE_TEXT`, funkcje `SCARES`, `HURTS`, `fitOf`, `onbWaveStage`, `partyPool`, `runePrice` oraz stałe spoza `p1_config.js` (A.7-A.10). Do 1.25.1 eksport odpowiadał 1.17.1. Różnice w 1.24 (szczegóły A.9): `ITEMS` (zapadnia `cost` 6 i opis z limitem upadków), `HITEMS` (narzędzia `lantern`, `crowbar`, pole `kg` i `tool`), `LOOT_GREED` (`body`), `UPGRADES` (140 kart), `ONB_CARD` (karty 1.18), `DEFAULTS` (`calmWaves`, `calmGap`, `okPulse`, `okSwing`), tabele kwestii `SAY`, `SOLO`, `CONVO`, `LINE_NEEDS` (A.5), nowe `ONB_WAVE`, `CARRY`, `CLASS_FIT`, `FUSE_POW`, `FUSE_K`, `FUSE_GROUP`, `FUSE_INT`, `FUSE_TEXT` oraz funkcje `SCARES`, `HURTS`, `fitOf`, `onbWaveStage`. (Do 1.25.1 plik zbiorczy był z 1.17.1; od 1.26 jest `yatd_content_1.26.json`.)
 
 ## A.1 Treść gry
 
@@ -58,7 +58,7 @@ Eksport w `data/` odpowiada 1.17.1. Różnice w 1.24 (szczegóły A.9): `ITEMS` 
 
 | Plik | Pola i znaczenie |
 |---|---|
-| `UPGRADES` (113 w eksporcie 1.17.1; 140 w 1.24, załącznik B) | `id`; `kind`: `unlock` (odblokowanie elementu, pole `unlock`), `instant` (działa raz przy kupnie), `card` (leży w talii i działa przez `apply` na `mods`); `rar`: `c` zwykła, `r` rzadka, `l` legendarna; `name`, `text`, `tag`; `unique` (tylko jedna kopia); `req` (wymagane odblokowanie: id albo funkcja); `grows` (karta z licznikiem rosnącym w runie, np. Głodne kolce); `apply` (kod efektu). Pełna tabela: załącznik B |
+| `UPGRADES` (202 w eksporcie 1.26; 140 w 1.24, 113 w 1.17.1; załącznik B) | `id`; `kind`: `unlock` (odblokowanie elementu, pole `unlock`), `instant` (działa raz przy kupnie), `card` (leży w talii i działa przez `apply` na `mods`); `rar`: `c` zwykła, `r` rzadka, `l` legendarna; `name`, `text`, `tag`; `unique` (tylko jedna kopia); `req` (wymagane odblokowanie: id albo funkcja); `grows` (karta z licznikiem rosnącym w runie, np. Głodne kolce); `apply` (kod efektu). Pełna tabela: załącznik B |
 | `RAR_NAME`, `RARITY_NAME` | nazwy rzadkości kart i łupu |
 | `DECK_SIZE` | 7 miejsc w talii |
 | `RANKS` | progi rang lochu z sumy Esencji w runie: Nora 0, Piwnica 150, Loch 400, Labirynt 1000, Twierdza grozy 2500, Legenda 6000 |
@@ -80,17 +80,17 @@ Eksport w `data/` odpowiada 1.17.1. Różnice w 1.24 (szczegóły A.9): `ITEMS` 
 
 **Rozmiary tabel kwestii (jedyne miejsce w tym pliku z liczbami; 1.17.1 i wcześniej policzone na `data/*.json`, 1.18-1.24 policzone na `src/p1_config.js` danej wersji):**
 
-| Tabela | 1.24 | 1.17.1 | 1.17 | 1.16.1 |
-|---|---|---|---|---|
-| `SAY` | 376 kluczy, 4107 kwestii | 272 klucze, 3173 kwestie (z zagnieżdżonymi) | 269 kluczy, 2535 kwestii | 222 klucze, 669 kwestii |
-| `SOLO` | 84 klucze, 517 kwestii | 68 kluczy, 434 kwestie | 67 kluczy, 431 kwestii | 38 kluczy, 89 kwestii |
-| `SOLO_MUTE` | 40 kluczy | 40 kluczy | 39 kluczy | 35 kluczy |
-| `CHAT_REPLY` | 75 zaczepek, 206 odpowiedzi | 75 zaczepek, 206 odpowiedzi | 75 zaczepek, 206 odpowiedzi | 19 zaczepek, 31 odpowiedzi |
-| `CONVO` | 103 zestawy, 635 wymian, 1429 kwestii | 87 zestawów, 520 wymian, 1125 kwestii | 85 zestawów, 497 wymian, 1073 kwestie | 74 zestawy, 143 wymiany, 305 kwestii |
-| `CONVO_P` | 80 kluczy (nowe zestawy 1.19-1.23 bez wpisu: szansa domyślna 0,5) | 80 kluczy | 78 kluczy | 67 kluczy |
-| `LINE_NEEDS` | 57 tagów, 900 wpisów (899 różnych kwestii) | 57 tagów, 803 wpisy (802 różne kwestie) | - | - |
+| Tabela | 1.26 | 1.24 | 1.17.1 | 1.17 | 1.16.1 |
+|---|---|---|---|---|---|
+| `SAY` | 395 kluczy, 4233 kwestie | 376 kluczy, 4107 kwestii | 272 klucze, 3173 kwestie (z zagnieżdżonymi) | 269 kluczy, 2535 kwestii | 222 klucze, 669 kwestii |
+| `SOLO` | 84 klucze, 517 kwestii | 84 klucze, 517 kwestii | 68 kluczy, 434 kwestie | 67 kluczy, 431 kwestii | 38 kluczy, 89 kwestii |
+| `SOLO_MUTE` | 40 kluczy | 40 kluczy | 40 kluczy | 39 kluczy | 35 kluczy |
+| `CHAT_REPLY` | 75 zaczepek, 206 odpowiedzi | 75 zaczepek, 206 odpowiedzi | 75 zaczepek, 206 odpowiedzi | 75 zaczepek, 206 odpowiedzi | 19 zaczepek, 31 odpowiedzi |
+| `CONVO` | 103 zestawy, 635 wymian, 1429 kwestii | 103 zestawy, 635 wymian, 1429 kwestii | 87 zestawów, 520 wymian, 1125 kwestii | 85 zestawów, 497 wymian, 1073 kwestie | 74 zestawy, 143 wymiany, 305 kwestii |
+| `CONVO_P` | 80 kluczy | 80 kluczy (nowe zestawy 1.19-1.23 bez wpisu: szansa domyślna 0,5) | 80 kluczy | 78 kluczy | 67 kluczy |
+| `LINE_NEEDS` | 57 tagów, 900 wpisów (899 różnych kwestii) | 57 tagów, 900 wpisów (899 różnych kwestii) | 57 tagów, 803 wpisy (802 różne kwestie) | - | - |
 
-Przyrost `SAY` po wersjach (klucze, kwestie): 1.18 +3, +14 (`bodyFound`, `lullNap`, `lullDream`); 1.19 +19, +185 (Rozłam); 1.20 +24, +164 (ekwipunek); 1.21 +25, +250 (więzi); 1.22 +19, +185 (finał); 1.23 +14, +136 (Nemezis). Listy kluczy: sekcja 06 (6.3.14, 6.10.4, 6.11.6, 6.12.9, 6.13.7, 6.14.5).
+Przyrost `SAY` po wersjach (klucze, kwestie): 1.26 +19, +126 (klucze 1.26 i podklucze: sekcja 06, 6.16.10; nowe kwestie nie mają wpisów w `LINE_NEEDS`); 1.18 +3, +14 (`bodyFound`, `lullNap`, `lullDream`); 1.19 +19, +185 (Rozłam); 1.20 +24, +164 (ekwipunek); 1.21 +25, +250 (więzi); 1.22 +19, +185 (finał); 1.23 +14, +136 (Nemezis). Listy kluczy: sekcja 06 (6.3.14, 6.10.4, 6.11.6, 6.12.9, 6.13.7, 6.14.5).
 
 `CHANGES1171.md` podaje w przybliżeniu "SAY ~3180 kwestii, SOLO 437"; policzone na eksporcie wychodzi 3173 i 434 (do porównań brać tabelę wyżej).
 
@@ -187,7 +187,7 @@ Jak w A.7: siedzą w kodzie, `tools/dump.js` ich nie eksportuje. Mechanika: sekc
 
 | Stała | Plik | Wartość | Do czego |
 |---|---|---|---|
-| `EARLY_W` | `p3_flow.js` | `[0, 2, 2.75, 3.5, 4.25]` (1.25.1; w 1.24 `[0, 3, 3.75, 4.3, 4.6]`) | trudniejsze fale 1-4 (sekcja 04, 3.9) |
+| `EARLY_W` | `p3_flow.js` | od 1.26 `[0, 1.5, 2.25, 3, 4]` (1.25.1 `[0, 2, 2.75, 3.5, 4.25]`; 1.24 `[0, 3, 3.75, 4.3, 4.6]`) | trudniejsze fale 1-4 (sekcja 04, 3.9) |
 | `EARLY_W_TUT` | `p3_flow.js` | `[0, 1, 2, 3, 4]` | 1.25.1: pierwszy run z przewodnikiem po staremu (v58), limit poziomu 4 w falach 1-2 |
 | `NEM_TITLE` | `p5_ai.js` | `thief` Złodziej/Złodziejka Kryształu, `avenger` Mściciel/Mścicielka, `scar` Blizna, `survivor` Ocalały/Ocalała, `steady` Niezłomny/Niezłomna | tytuły Nemezis (sekcja 04, 6.9) |
 | `BOND_NOUN` | `p3_flow.js` | `friend` Przyjaciel/Przyjaciółka, `sibling` Brat/Siostra, `rival` Rywal/Rywalka, `mentor` Mistrz/Mistrzyni, `apprentice` Uczeń/Uczennica | etykieta więzi |
@@ -202,5 +202,165 @@ Jak w A.7: siedzą w kodzie, `tools/dump.js` ich nie eksportuje. Mechanika: sekc
 | `ACT_IDLE`, `SESSION_GAP` | `p8b_ui.js` | 60 s, 300 s | czas aktywnej gry, posiedzenia |
 | `NOASK_KEY`, `NAME_ASKED` | `p8b_ui.js` | `'yatd-noask-ess'`, `'yatd-name-asked'` | pytania o Esencję i imię |
 | `CARD_ALL` | `p8b_ui.js` | `{ hgallery: true }` | wszystkie potrzeby karty |
-| `LOG_VERSION` | `p8b_ui.js` | 59 | format danych testowych |
+| `LOG_VERSION` | `p8b_ui.js` | 59 (1.24), 60 (1.25), 61 (1.25.1), od 1.26 62 | format danych testowych (sekcja 07, 7.12) |
 | liczby AI 1.19-1.24 | `p5_ai.js` | sekcja 06, 6.9.1 i 6.10-6.15 | Rozłam, ekwipunek, więzi, finał, Nemezis, wyczerpanie |
+
+## A.10 Tabele i stałe dodane albo zmienione w 1.26
+
+Wszystkie z `p1_config.js` są w eksporcie 1.26 (`data/`), chyba że zaznaczono inaczej. Mechanika: sekcje 03 (2.7, 2.14, 3.15, 3.16), 04 (4.3a, 6.11), 05 (5.14), 06 (6.16).
+
+### A.10.1 Statusy, reakcje, rodziny, omeny (`p1_config.js`)
+
+| Tabela | Wartość / kształt | Do czego |
+|---|---|---|
+| `STATUS` | 11 statusów `id -> {name, short, color, desc}`: `slow` Spowolniony, `root` Unieruchomiony, `burn` Podpalony, `bleed` Krwawiący, `poison` Zatruty, `oiled` Oblany, `wet` Mokry, `infected` Zarażony, `marked` Naznaczony, `seduced` Uwiedziony, `dazed` Oszołomiony | karta bohatera, ikonki (`ART.status`), `statusOn`, `setStatus` (05, 5.14.1) |
+| `REACTIONS` | 5 reakcji `id -> {name, color, desc}`: `blaze` Pożar, `detonate` Detonacja, `shock` Porażenie, `steam` Para, `rise` Powstanie | `reaction(h, k)`, napis i pierścień (05, 5.14.2) |
+| `REACT_K` | 1,6 | mnożnik obrażeń Pożaru i Porażenia |
+| `BLEED`, `POISONT`, `ACTS` | `{kind: 'bleed'}`, `{kind: 'poison'}`, `{}` (pamięć podręczna `actSrc`) | źródła obrażeń krwawienia i trucizny (`DMG_FACTOR` 1), źródło zdolności potwora |
+| `FAMILIES` | 9 rodzin `id -> {name, items, color, glyph}`: `mech` Mechanizmy ⚙ (spikes, arrows, pendulum, snare, gate, trapdoor, cage, mimic), `fire` Ogień ♨ (fire, powder, oilslick, tar), `alch` Alchemia ⚗ (miasma, flood, bolt), `haunt` Nawiedzenie ✧ (portrait, eyes, mirror, creak, musicbox, falsedoor, ghost, shade), `undead` Nieumarli ☠ (bones, coffin, bell, skeleton, zombie, lich), `beast` Bestie ✳ (web, spider, bats, rats), `green` Zielonoskórzy ♣ (goblin, archer, shaman, ogre, sapper, warlord), `demons` Demony ⛧ (imp, hound, siren, demon), `treasure` Skarby ◆ (loot, lpotion, loot2, loot3, lcursed, bait) | Runa rodu (03, 3.16), `famK`, `cdOf`, Pełna paleta |
+| `FAMILY_OF` | element -> rodzina | odwrotność `FAMILIES` |
+| `RUNE_MAX`, `runePrice` | 5; `lv => 5 + lv` (5, 6, 7, 8, 9; funkcja poza eksportem) | poziom rodziny i cena runy |
+| `OMEN_WAVES` | `[3, 6, 8]` | fale z omenem (w falach bez końca każda bez bossa) |
+| `OMENS` | 10 omenów, tabela niżej | `omenOf`, `omenK(fala, klucz)` (04, 6.11) |
+| `TRAITS_B` | 43 elementy: `id -> [nazwa, opis]`, tabela niżej | cecha B poziomu 3 (05, 5.14.3) |
+| `TRAITS` | + cechy A 20 nowych elementów (tabela A.10.3) | cecha A |
+| `DMG_TYPES` | + `shock` "porażenie" | piąty typ obrażeń |
+| `CLASS_RES`, `CLASS_RES_TEXT` | + `shock` u wojownika 1,2 i maga 0,8; nowe klasy (A.10.4) | odporności klas |
+| `PHYS`, `SCAR_RES` | + `conductive` (porażenie ×1,4), `grounded` (×0,7); blizna po porażeniu -> `grounded` | ciała |
+| `PHOBIAS` | + `dead` umarli (skeleton, zombie, lich, bones, coffin, bell; źródła bell, death), `abyss` otchłań (trapdoor, falsedoor, pendulum), `noise` hałas (creak, musicbox, bell, gate, rattle, howl; źródła screams, bell), `swarm` roje (bats, rats, imp, miasma) | 10 fobii |
+| `HERO_TRAITS` | 8 charakterów, wszystkie `w` 1 (+ superstitious, curious, loyal, hothead) | charakter u ok. 60% nie-bossów (04, 4.2) |
+| `HEROES`, `KIT`, `CARRY`, `CLASS_SKILL` | + 4 klasy (A.10.4) | |
+| `LEADER_ORDER` | warrior, paladin, barbarian, priest, bard, ranger, mage, alchemist, thief (bez kultysty) | remis rangi przy wyborze przywódcy |
+| `partyPool(n)` | funkcja (poza eksportem): fale 1-3 `CLASSIC`; 4-5 `PARTY` + paladin, ranger; od 6 + alchemist | klasy fali (04, 2.2) |
+| `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_COST` | + `lab` Laboratorium ⚗ (miasma, flood, bolt), `graveyard` Cmentarz ✟ (skeleton, zombie, lich, bell), `abyssgate` Wrota otchłani ⛧ (imp, hound, siren, demon); 15 komnat; cena 10 (było 12) | komnaty (05, 5.8a) |
+| `GZ` | `scare` 4 (było 2,5), `crystal` 6 (było 4); reszta bez zmian | 03, 2.2 |
+| `MON_FACTOR`, `DMG_FACTOR` | 0,8 (było 0,4); `DMG_FACTOR`: `monster` 0,8, nowe `bleed` 1, `poison` 1, `react` 1 | Groza z ran od potworów i statusów |
+| `DEFAULTS` | `essence` 25 (było 30), `waveIncome` 6 (było 8), nowe `hungerK` 1 i `tithe` 0,3; `hungerBase` i `hungerGrowth` usunięte (głód z tabeli `HUNGER_T`) | 03, 2.7 i 2.10 |
+| `START_UNLOCKED` | + `k_lab`, `k_graveyard`, `k_abyssgate` (komnaty dostępne od startu, zablokowane bez odblokowanej rodziny) | |
+| `ONB_ITEM` | nowe elementy: Wahadło i Wnyki etap 1 (brak wpisu), oilslick, tar, bell, falsedoor, bait, imp, siren, hound, rats, skeleton, zombie 2; miasma, flood, bolt, lich, demon, sapper, warlord 3 | etapy nauki |
+| `ITEMS` | 88 wpisów (+23: 20 elementów i 3 komnaty, A.10.3); koszty starych elementów i budowli obniżone (05, 5.14.9) | |
+| `UPGRADES` | 202 wpisy (+62), pola `group` ('heart'), `heartOnly` | załącznik B (B.4, B.5) |
+| `FUSE_GROUP` | + `ess`: tithe, stoneheart, glutton, kingsfeast, darkforge (poza eksportem) | B.3 |
+| `FUSE_INT` | + `crownLv`, `titheChoice`, `shopPlus`, `heartRoom` (poza eksportem) | pola zaokrąglane w dół przy ★ |
+
+**`OMENS`** (pola liczbowe czyta `omenK`):
+
+| id | Nazwa | Działanie (pola) | Nagroda / koszt | Od fali |
+|---|---|---|---|---|
+| `siege` | Oblężenie | `extra` +2 bohaterów, `lvAdd` -2 | koszt: `hunger` ×1,15 | 3 |
+| `elite` | Elita | `extra` -1, `lvAdd` +3, `gear` +1 przedmiot | +1 darmowa karta (`free`) | 6 (`minW`) |
+| `inquisition` | Inkwizycja | `force` kapłan i paladyn, `lvAdd` +1, `fearK` 0,7 | brak | 3 |
+| `sappers` | Saperzy | `force` złodziej i tropiciel (przed falą 6 dwóch złodziei) | +1 darmowa karta | 6 (`minW`) |
+| `haste` | Pośpiech | `patience` 60 s, `speed` ×1,2, `noRest` | koszt: `hunger` ×0,85 (tekst "serce chce o 15% mniej") | 3 |
+| `bloodmoon` | Krwawy księżyc | `hpK` 1,2, `monDmg` 1,3, `killK` 1,5 | brak | 3 |
+| `goldrush` | Złoty szał | `greedAll`, `greedStart` +0,5, `hunters` +1 | koszt: `hunger` ×1,15 | 3 |
+| `warfog` | Mgła wojny | `fog` (drużyna ukryta), `lostAdd` 0,2 | +10 Nasycenia po fali (`satiety`) | 3 |
+| `pilgrimage` | Pielgrzymka | `cultists` 2 | +1 darmowa karta | 6 (`minW`) |
+| `fearnight` | Noc strachu | `courage` ×0,8, `calm` ×1,5 | brak | 3 |
+
+### A.10.2 Cechy poziomu 3: A i B (`TRAITS`, `TRAITS_B`)
+
+| id | Element | Cecha A | Cecha B: opis |
+|---|---|---|---|
+| `spikes` | Kolce | Krwawienie | Zadziory: trafiony jest Unieruchomiony na 1 s |
+| `arrows` | Strzały | Przebijające groty | Zatrute groty: każde trafienie dodaje stos trucizny |
+| `fire` | Ogień | Napalm | Ściana ognia: płomień zamyka najbliższe drzwi pokoju na 3 s, przejście płonie (+10 strachu) |
+| `web` | Sieć | Kwaśna sieć | Kokon: złapany przez 4 s nie użyje żadnego przedmiotu |
+| `trapdoor` | Zapadnia | Bezdenny szyb | Kolce na dnie: upadek rani 3 razy mocniej i zostawia krwawienie |
+| `cage` | Klatka | Kolczasta klatka | Pułapka na ratownika: kto otworzy klatkę, jest Unieruchomiony na 3 s |
+| `portrait` | Portret | Całun grozy | Oczy śledzą: przestraszony jest Naznaczony na 8 s (każdy strach ×1,3) |
+| `gate` | Krata | Żelazna krata | Gilotyna: miażdży 2 razy mocniej, odcięci są samotni przez 8 s |
+| `powder` | Proch | Ognisty proch | Odłamki: wszyscy w wybuchu krwawią przez 3 s |
+| `mimic` | Mimik | Pożeracz | Zachłanny: gryzie 2 razy mocniej bohatera, który podnosi łup obok |
+| `eyes` | Oczy | Wszystkowidzące | Wzrok bazyliszka: przestraszony jest Spowolniony na 2 s |
+| `bones` | Kości | Kostnica | Grzechot: budzi fobię hałasu, nowicjusze boją się 2 razy bardziej |
+| `mirror` | Lustro | Krzywe zwierciadło | Odbicie: następny strach przestraszonego jest o 20% większy (8 s) |
+| `creak` | Zawiasy | Trzask | Skrzyp nocy: połowę strachu słychać w sąsiednich pokojach |
+| `coffin` | Trumna | Pogrzebany żywcem | Wieko: najbliższy jest Unieruchomiony na 2 s |
+| `musicbox` | Pozytywka | Kołysanka śmierci | Usypianka: ranny (poniżej 60% HP) zasypia na 3 s, w każdym pokoju |
+| `goblin` | Goblin | Podcięcie | Łupieżca: zabity przez niego bohater zostawia dodatkowy stos łupu |
+| `archer` | Łucznik | Ogniste strzały | Zatrute strzały: każdy strzał dodaje stos trucizny |
+| `spider` | Pająk | Gniazdo | Jad paraliżujący: ukąszony jest Unieruchomiony na 1,5 s |
+| `ogre` | Ogr | Grzmot | Rzut: wyrzuca bohatera do sąsiedniego pokoju: samotność, często zgubienie |
+| `shaman` | Szaman | Tarcza ducha | Klątwa: skill check przeklina bohatera na 8 s: uspokaja się 2 razy wolniej, dostaje +20% obrażeń |
+| `ghost` | Duch | Wycie | Nawiedzenie: idzie za celem także do następnego pokoju |
+| `shade` | Cień | Pożeracz światła | Szept: odwaga celu -15% do końca fali |
+| `bats` | Nietoperze | Chmara | Wampiry: ukąszenia leczą potwory w pokoju o zadane obrażenia |
+| `pendulum` | Wahadło | Podwójne | Ścięcie: krytyk zostawia krwawienie na 4 s |
+| `snare` | Wnyki | Zębate | Łańcuch: najbliższy sojusznik też jest Unieruchomiony na 2 s |
+| `miasma` | Wyziewy | Gęste | Łzawiące: w chmurze nikt nie wykrywa ani nie zapamiętuje pułapek |
+| `oilslick` | Plama oleju | Łatwopalna | Śliska: poślizg w połowie kroków |
+| `bolt` | Runa piorunów | Burza | Przeciążenie: co 3. odpalenie ogłusza na 2 s |
+| `flood` | Zalewnia | Topiel | Lodowata woda: Mokrzy uspokajają się 2 razy wolniej |
+| `bell` | Dzwon żałobny | Requiem | Namaszczenie: skill check leczy wszystkie potwory w lochu o 20% |
+| `falsedoor` | Fałszywe przejście | Labirynt | Pętla: przejście wyprowadza z powrotem do poprzedniego pokoju |
+| `tar` | Kocioł smoły | Wrzątek | Smoła: spowolnienie na 6 s |
+| `skeleton` | Szkielet | Legion | Kościany pancerz: kłute rani go o 40% słabiej |
+| `zombie` | Zombie | Epidemia | Gnijące mięso: powalony wybucha: 3 stosy trucizny walczącym |
+| `lich` | Licz | Filakteria | Armia: wskrzesza 2 razy na falę |
+| `imp` | Chochlik | Kleptoman | Podpalacz: skradziony przedmiot wybucha ogniem |
+| `hound` | Ogar piekielny | Sfora | Piekielny ogień: ugryzienie podpala na 3 s |
+| `siren` | Kusicielka | Pocałunek | Zazdrość: uwiedzenie wywołuje kłótnię (morale -0,1) |
+| `demon` | Demon otchłani | Pan otchłani | Głód krwi: każde jego zabójstwo -3 do głodu następnej fali |
+| `sapper` | Goblin saper | Proch | Zwijacz: raz na falę uzbraja z powrotem rozbrojoną pułapkę w pokoju |
+| `warlord` | Herszt goblinów | Wódz | Grabież: zabity w jego pokoju zostawia stos łupu |
+| `rats` | Rój szczurów | Wścieklizna | Nora: powalony dzieli się na 2 małe roje do końca fali |
+
+### A.10.3 Nowe elementy 1.26 (`ITEMS`)
+
+Kolumny: miejsce (`slot`), koszt w Esencji, odnowienie `cd` (s), HP / `melee` (potwory), typ obrażeń (`DMG_OF`), rodzina, etap nauki (`ONB_ITEM`, brak wpisu = 1), cecha A. Komnaty `k_lab`, `k_graveyard`, `k_abyssgate`: `slot` `roomkind`, koszt 10, etap 3. Działanie: sekcja 05, 5.14.4 i 5.14.5.
+
+| id | Nazwa | Miejsce | Koszt | cd | HP / melee | Obrażenia | Rodzina | Etap | Cecha A |
+|---|---|---|---|---|---|---|---|---|---|
+| `pendulum` | Wahadło | wall | 4 | 4 |  | kłute | Mechanizmy | 1 | Podwójne |
+| `snare` | Wnyki | floor | 3 | 8 |  | kłute | Mechanizmy | 1 | Zębate |
+| `miasma` | Wyziewy | floor | 5 | 7 |  | trucizna | Alchemia | 3 | Gęste |
+| `oilslick` | Plama oleju | floor | 4 | 6 |  | - | Ogień | 2 | Łatwopalna |
+| `bolt` | Runa piorunów | wall | 5 | 4 |  | porażenie | Alchemia | 3 | Burza |
+| `flood` | Zalewnia | floor | 4 | 10 |  | - | Alchemia | 3 | Topiel |
+| `bell` | Dzwon żałobny | object | 4 | 8 |  | - | Nieumarli | 2 | Requiem |
+| `falsedoor` | Fałszywe przejście | door | 4 | 10 |  | - | Nawiedzenie | 2 | Labirynt |
+| `tar` | Kocioł smoły | door | 5 | 10 |  | ogień | Ogień | 2 | Wrzątek |
+| `bait` | Przynęta | floor | 3 | 6 |  | kłute | Skarby | 2 |  |
+| `skeleton` | Szkielet | floor | 4 | 4 | 70 / 12 | kłute | Nieumarli | 2 | Legion |
+| `zombie` | Zombie | floor | 5 | 5 | 170 / 8 | trucizna | Nieumarli | 2 | Epidemia |
+| `lich` | Licz | floor | 9 | 6 | 120 / 4 | obuchowe | Nieumarli | 3 | Filakteria |
+| `imp` | Chochlik | floor | 3 | 6 | 40 / 0 | - | Demony | 2 | Kleptoman |
+| `hound` | Ogar piekielny | floor | 5 | 5 | 90 / 28 | ogień | Demony | 2 | Sfora |
+| `siren` | Kusicielka | floor | 6 | 9 | 60 / 0 | - | Demony | 2 | Pocałunek |
+| `demon` | Demon otchłani | floor | 10 | 6 | 420 / 28 | ogień | Demony | 3 | Pan otchłani |
+| `sapper` | Goblin saper | floor | 5 | 8 | 80 / 8 | kłute | Zielonoskórzy | 3 | Proch |
+| `warlord` | Herszt goblinów | floor | 7 | 5 | 160 / 14 | obuchowe | Zielonoskórzy | 3 | Wódz |
+| `rats` | Rój szczurów | floor | 3 | 4 | 35 / 6 | kłute | Bestie | 2 | Wścieklizna |
+
+### A.10.4 Nowe klasy bohaterów (`HEROES`, `CLASS_RES`, `KIT`, `CARRY`)
+
+| Klasa | Nazwa | HP | Szybkość | dps | Chciwość | Kolor, litera | Odporności | Wyposażenie (wagi) | Udźwig (kg) |
+|---|---|---|---|---|---|---|---|---|---|
+| `paladin` | Paladyn / Paladynka | 110 | 1,35 | 14 | 0,7 | `#f0e2a8`, P | ogień 0,9, obuchowe 0,9, porażenie 1,2 | potion 3, charm 2, amulet 2 | 15 |
+| `ranger` | Tropiciel / Tropicielka | 80 | 1,6 | 12 | 1,1 | `#c8904e`, T | kłute 0,9, porażenie 0,9 | potion 3, boots 2, bomb 1 | 10 |
+| `alchemist` | Alchemik / Alchemiczka | 70 | 1,35 | 7 | 1,0 | `#e070b0`, A | trucizna 0,5, ogień 0,85 | potion 4, bomb 2, amulet 1 | 12 |
+| `cultist` | Kultysta / Kultystka | 75 | 1,4 | 6 | 0 | `#b8323e`, C | brak | potion 1 | 8 |
+
+`PARTY` i `CLASSIC` bez zmian (6 i 4 klasy); nowe klasy wchodzą przez `partyPool`, kultysta tylko z omenem Pielgrzymka. Umiejętności: sekcja 04, 4.3a, i 06, 6.16.3.
+
+### A.10.5 Stałe 1.26 poza `p1_config.js` (nie eksportuje ich `tools/dump.js`)
+
+| Stała | Plik | Wartość | Do czego |
+|---|---|---|---|
+| `HUNGER_T` | `p3_flow.js` | `[0, 0, 38, 50, 72, 104, 150, 190, 230, 272, 350]`, po fali 10 ×1,2 na falę | głód fali (03, 2.7) |
+| `HEART_LV`, `heartLvAt` | `p3_flow.js` | `[0, 30, 75, 135, 210, 300, 410, 540]`, dalej +150 na poziom | próg Nasycenia poziomu serca |
+| `heartSlotLv`, `heartRegrowLv` | `p3_flow.js` | poziomy 2, 4, 6; poziomy nieparzyste od 3 | miejsce w talii; Odrost w rzędzie Dar serca |
+| `titheNow` | `p3_flow.js` | `min(0,6, S.tithe 0,3 + mods.titheAdd + omen)` | Danina |
+| `OFIARA_MAX` | `p3_flow.js` | 40 na przerwę między falami | Ofiara (03, 2.14) |
+| `BREACH_PATCH` | `p3_flow.js` | 15 (było 20) | łatanie wyłomu |
+| `EARLY_W`, `EARLY_W_TUT` | `p3_flow.js` | `[0, 1.5, 2.25, 3, 4]`, `[0, 1, 2, 3, 4]` | fale 1-4 (04, 3.9) |
+| `famK`, `cdOf` | `p4_traps.js` | `1 + 0,08 × poziom rodziny`; odnowienie `× (1 - 0,04 × poziom)` | Runa rodu |
+| `stealNeed` | `p6_loop.js` | `(5 + 1,5 × heavyCrystal) / 2^glass` s (było 4 s) | kradzież kryształu |
+| `SHOP_PRICE`, odblokowanie | `p8b_ui.js` | `{c: 5, r: 9, l: 14}`, 7 (było 6/10/16, 8) | ceny kart (03, 3.4) |
+| `LOOT_STEP` | `p8b_ui.js` | 1,15 (było 1,25) | wzrost ceny kolejnego takiego samego łupu |
+| `TUT_NEW` | `p8b_ui.js` | `heartLv`, `heartCry`, `status`, `reaction`, `revive`, `omen`, `cultist` | karty nowych zasad w każdym runie (08, 8.4) |
+| `LOG_VERSION` | `p8b_ui.js` | 62 | dane testowe (07, 7.12.1) |
+| `ST_PRIO` | `p7c_art.js` | root, burn, poison, oiled, wet, marked, seduced, bleed, slow, infected, dazed | kolejność ikonek statusów (08, 6.7a) |
+| `MON_H2` | `p7c_art.js` | skeleton 0,9, zombie 0,9, lich 1,0, imp 0,55, hound 0,62, siren 0,95, demon 1,35, sapper 0,8, warlord 1,0, rats 0,4 | wysokość figur nowych potworów (08, 6.8) |
+| paleta `HEX` | `p7c_art.js` | 32 kolory (08, 6.14a) | grafika malowana w kodzie |
