@@ -152,7 +152,8 @@ HEART = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => 
   T.fresh(8); const run = G.run;
   const hearts = G.UPGRADES.filter(u => u.group === 'heart');
   out.rar = hearts.filter(u => u.rar === 'c').map(u => u.id); ok(!out.rar.length, 'no common heart cards: ' + out.rar);
-  ['heartguide', 'heartdread', 'heartgreed', 'heartpatience', 'heartgrowth', 'heartcore', 'secondheart', 'resonance'].forEach(id => ok(G.UPG[id] && G.UPG[id].group === 'heart', 'new heart card ' + id));
+  ['heartguide', 'heartdread', 'heartgreed', 'heartpatience', 'heartgrowth', 'secondheart'].forEach(id => ok(G.UPG[id] && G.UPG[id].group === 'heart', 'new heart card ' + id));
+  ['heartcore', 'resonance', 'glutton'].forEach(id => ok(G.UPG[id] && G.UPG[id].group !== 'heart' && G.UPG[id].unique && G.UPG[id].rar === 'l', '1.27.5: an ordinary unique legend ' + id));
   // the ordinary shop never offers a heart card
   let leak = [];
   for (let i = 0; i < 300; i++) [1, 2, 3].forEach(r => G.upgradePicks(r).forEach(u => { const c = typeof u === 'string' ? G.UPG[u] : u; if (c && c.group === 'heart') leak.push(c.id); }));
@@ -164,7 +165,8 @@ HEART = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => 
   // the multipliers
   run.deck = []; G.recomputeMods(); const e0 = G.essMultNow ? G.essMultNow() : 1;
   run.deck = ['heartcore']; G.recomputeMods(); const e1 = G.essMultNow(); out.core = [e0, e1]; ok(Math.abs(e1 / e0 - 1.2) < 0.01, 'Serce lochu x1.2 ' + JSON.stringify(out.core));
-  run.deck = ['resonance', 'heartguide', 'heartdread', 'heartgreed']; G.recomputeMods(); const e2 = G.essMultNow(); out.res = e2 / e0; ok(Math.abs(e2 / e0 - 1.12) < 0.01, 'Rezonans: 4 cards = +12% ' + out.res);
+  run.deck = ['resonance', 'cooldown', 'sharp', 'heavy']; G.recomputeMods(); const e2 = G.essMultNow(); out.res = e2 / e0; ok(Math.abs(e2 / e0 - 1.12) < 0.01, 'Rezonans: 4 cards = +12% ' + out.res);
+  run.deck = ['heartguide', 'heartdread', 'heartgreed']; G.recomputeMods();   // 1.27.5: the three gift cards on their own
   out.mods = [G.mods.pactPower, G.mods.fearMult, G.mods.greedStart]; ok(Math.abs(G.mods.pactPower - 1.1) < 0.01 && Math.abs(G.mods.fearMult - 1.15) < 0.01 && Math.abs(G.mods.greedStart - 0.3) < 0.01, 'Wola, Groza, Złote tętno ' + JSON.stringify(out.mods));
   run.deck = ['heartpatience']; G.recomputeMods(); ok(G.mods.patience === 20, 'Cierpliwość serca +20 s');
   const ds = run.deckSize; G.applyUpgrade(G.UPG.heartgrowth); ok(run.deckSize === ds + 1, 'Rozrost serca: +1 slot');

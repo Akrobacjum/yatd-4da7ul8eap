@@ -707,20 +707,116 @@
   // ---------- 1.26: the new traps on the map ----------
   // flat on the floor (drawn in the floor's plane like the web and the trapdoor): TOP_ART[type](it, T, px, py, s)
   const FLAT_ART = { snare: 1, oilslick: 1, flood: 1, miasma: 1, bait: 1 };
+  // 1.27.5: Wnyki and Przynęta are solid now: still drawn in the floor pass (low, under what stands), but in screen space with
+  // the boxes and cylinders of the rest, the pop of a new trap kept
+  function trapOnFloor(it, draw) {
+    ctx.save(); screenT(); noRelief();
+    const k = popK(it); if (k !== 1) { const f = W2S(it.x + 0.5, it.y + 0.5, 0); ctx.translate(f[0], f[1]); ctx.scale(k, k); ctx.translate(-f[0], -f[1]); }
+    draw(); ctx.restore();
+  }
+  // one iron jaw: a half ring R round (cx, cy) hinged on the line along x through the centre (s = 1 the near half, -1 the far
+  // one), phi lifts it (0 flat and open, about pi/2 upright and shut); a band with its teeth along the upper edge.
+  // cols: [band, lit edge, tooth, tooth's shaded side]
+  function jaw3D(cx, cy, R, phi, s, cols, T, n) {
+    const cp = Math.cos(phi), sn = Math.sin(phi), bh = 0.045, th = 0.075, N = 10;
+    const at = (a, l) => { const yl = R * Math.sin(a); return W2S(cx + R * Math.cos(a), cy + s * (yl * cp - l * sn), 0.015 + yl * sn + l * cp); };   // l up the jaw from its rim
+    ctx.beginPath();
+    for (let k = 0; k <= N; k++) { const p = at(Math.PI * k / N, 0); if (k) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); }
+    for (let k = N; k >= 0; k--) { const p = at(Math.PI * k / N, bh); ctx.lineTo(p[0], p[1]); }
+    ctx.closePath(); ctx.fillStyle = cols[0]; ctx.fill();
+    ctx.strokeStyle = cols[1]; ctx.lineWidth = Math.max(1, T * 0.018); ctx.beginPath();
+    for (let k = 0; k <= N; k++) { const p = at(Math.PI * k / N, bh); if (k) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); }
+    ctx.stroke();
+    for (let k = 0; k < n; k++) { const a = Math.PI * (k + 0.5) / n, d = Math.PI / n * 0.36, m = at(a, bh), tip = at(a, bh + th); poly([at(a - d, bh), tip, m], cols[2]); poly([m, tip, at(a + d, bh)], cols[3]); }
+  }
+  function grateRim(it, o, w) {   // four low iron bars round a square grate (o: its offset in the tile, w: its size), the far ones first
+    const x0 = it.x + o, y0 = it.y + o, e = 0.035, h = 0.03, c = ['#6a6e78', '#50555e', '#3a3e46'];
+    isoBox(x0 + w / 2, y0 + e / 2, w, e, h, c[0], c[1], c[2]); isoBox(x0 + e / 2, y0 + w / 2, e, w, h, c[0], c[1], c[2]);
+    isoBox(x0 + w - e / 2, y0 + w / 2, e, w, h, c[0], c[1], c[2]); isoBox(x0 + w / 2, y0 + w - e / 2, w, e, h, c[0], c[1], c[2]);
+  }
+  // 1.27.5: small solid parts for the rest of the map (screen space, tiles; a = [x, y, z])
+  function rod3D(a, b, w, col, lit) {   // a round bar from a to b, w thick: its body and a lit stripe along its upper left
+    const p = W2S(a[0], a[1], a[2]), q = W2S(b[0], b[1], b[2]), lw = Math.max(1.2, cam.s * w);
+    ctx.lineCap = 'round'; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+    if (lit && lw >= 2.2) {
+      const dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy) || 1; let nx = -dy / L, ny = dx / L; if (nx + ny > 0) { nx = -nx; ny = -ny; }
+      const o = lw * 0.24; ctx.strokeStyle = lit; ctx.lineWidth = lw * 0.34; ctx.beginPath(); ctx.moveTo(p[0] + nx * o, p[1] + ny * o); ctx.lineTo(q[0] + nx * o, q[1] + ny * o); ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+  }
+  function bone3D(x0, y0, x1, y1, z, w, col, lit) {   // a long bone lying on the floor: a round shaft, two knobs at each end
+    rod3D([x0, y0, z + w / 2], [x1, y1, z + w / 2], w, col, lit);
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L * w * 0.55, ny = dx / L * w * 0.55;
+    [[x0, y0], [x1, y1]].forEach(e => { pBall(e[0] - nx, e[1] - ny, z, w * 0.62, col, 'rgba(60,50,40,0.3)'); pBall(e[0] + nx, e[1] + ny, z, w * 0.62, col, 'rgba(60,50,40,0.3)'); });
+  }
+  function skull3D(cx, cy, z, r, col) {   // a skull lying on the floor, looking at you: a round cranium, a jaw under it, dark sockets
+    const T = cam.s;
+    isoBox(cx, cy + r * 0.45, r * 1.05, r * 0.7, r * 0.55, col, '#b8ae9a', '#9a907e', z);   // the jaw
+    const p = pBall(cx, cy, z + r * 0.25, r, col, 'rgba(70,60,48,0.32)'), rr = T * r;
+    ctx.fillStyle = '#1a1424'; ctx.beginPath(); ctx.ellipse(p[0] - rr * 0.36, p[1] + rr * 0.18, rr * 0.24, rr * 0.27, 0, 0, Math.PI * 2); ctx.ellipse(p[0] + rr * 0.36, p[1] + rr * 0.18, rr * 0.24, rr * 0.27, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(p[0] - rr * 0.06, p[1] + rr * 0.48, rr * 0.12, rr * 0.16);
+  }
+  // a round vessel turned on a lathe: prof = [[z, r], ...] from its foot up to its mouth (open, inner colour), lit from the left;
+  // lean shifts each ring along (lx, ly) by lean x its height (a cauldron tipping)
+  function lathe3D(cx, cy, prof, side, inner, rim, lean, lx, ly) {
+    const T = cam.s, n = prof.length, P = prof.map(q => { const k = (lean || 0) * (q[0] - prof[0][0]), c = W2S(cx + (lx || 0) * k, cy + (ly || 0) * k, q[0]); return [c[0], c[1], q[1] * T]; });
+    const path = () => { ctx.beginPath(); for (let i = n - 1; i >= 0; i--) ctx.lineTo(P[i][0] - P[i][2], P[i][1]); ctx.ellipse(P[0][0], P[0][1], P[0][2], P[0][2] * SP, 0, Math.PI, 0, true); for (let i = 1; i < n; i++) ctx.lineTo(P[i][0] + P[i][2], P[i][1]); ctx.closePath(); };
+    let xl = Infinity, xr = -Infinity; P.forEach(q => { xl = Math.min(xl, q[0] - q[2]); xr = Math.max(xr, q[0] + q[2]); });
+    path(); ctx.fillStyle = side; ctx.fill();
+    const g = ctx.createLinearGradient(xl, 0, xr, 0); g.addColorStop(0, 'rgba(255,235,200,0.2)'); g.addColorStop(0.35, 'rgba(255,235,200,0.03)'); g.addColorStop(0.62, 'rgba(0,0,0,0.12)'); g.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = g; ctx.fill();
+    const m = P[n - 1];
+    if (inner) { ctx.fillStyle = inner; ctx.beginPath(); ctx.ellipse(m[0], m[1], m[2], m[2] * SP, 0, 0, Math.PI * 2); ctx.fill(); }
+    if (rim) { ctx.strokeStyle = rim; ctx.lineWidth = Math.max(1, T * 0.025); ctx.beginPath(); ctx.ellipse(m[0], m[1], m[2], m[2] * SP, 0, 0, Math.PI * 2); ctx.stroke(); }
+    return m;
+  }
+  function ring3D(cx, cy, z, r, h, col, lit) {   // a thick iron ring lying on the floor (a cuff, a link): its dark underside, its lit top
+    const T = cam.s, b = W2S(cx, cy, z), t = W2S(cx, cy, z + h), lw = Math.max(1.2, T * h * 1.1);
+    ctx.lineWidth = lw; ctx.strokeStyle = col; ctx.beginPath(); ctx.ellipse(b[0], b[1], T * r, T * r * SP, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = lw * 0.7; ctx.strokeStyle = lit; ctx.beginPath(); ctx.ellipse(t[0], t[1], T * r, T * r * SP, 0, Math.PI * 0.95, Math.PI * 2.05); ctx.stroke();
+  }
+  // a slab standing on the floor from A to B ([x, y]), t thick, z0 to z1: its end and top as faces, its front (the side towards
+  // you) through art(), drawn in the front's unit square (u along A to B, v down) - a door leaf, a painted false wall
+  function slab3D(A, B, t, z0, z1, top, front, end, art) {
+    const dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1; let nx = -dy / L * t / 2, ny = dx / L * t / 2; if (nx + ny < 0) { nx = -nx; ny = -ny; }
+    const a0 = [A[0] - nx, A[1] - ny], a1 = [A[0] + nx, A[1] + ny], b0 = [B[0] - nx, B[1] - ny], b1 = [B[0] + nx, B[1] + ny];
+    const E = (B[0] + B[1] >= A[0] + A[1]) ? [b0, b1] : [a0, a1];   // the end that faces you
+    poly([W2S(E[0][0], E[0][1], z0), W2S(E[1][0], E[1][1], z0), W2S(E[1][0], E[1][1], z1), W2S(E[0][0], E[0][1], z1)], end);
+    ctx.save(); faceMap(a1[0], a1[1], b1[0], b1[1], z0, z1); ctx.fillStyle = front; ctx.fillRect(0, 0, 1, 1); if (art) art(); ctx.restore();
+    poly([W2S(a0[0], a0[1], z1), W2S(b0[0], b0[1], z1), W2S(b1[0], b1[1], z1), W2S(a1[0], a1[1], z1)], top);
+  }
+  function crystal3D(x, y, r, col, dark) {   // a crystal standing on its point: an octahedron, its left facets lit, its right ones dark
+    poly([[x, y - r * 1.4], [x - r, y], [x, y + r * 0.25]], col); poly([[x, y - r * 1.4], [x + r, y], [x, y + r * 0.25]], dark);
+    poly([[x - r, y], [x, y + r * 1.4], [x, y + r * 0.25]], dark); poly([[x + r, y], [x, y + r * 1.4], [x, y + r * 0.25]], 'rgba(0,0,0,0.35)');
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x, y - r * 1.4); ctx.stroke();
+  }
+  const BAIT_COINS = [[-0.08, -0.05, 0, 0], [0, -0.01, 0, 0], [0, -0.01, 0.022, 1], [0, -0.01, 0.044, 0], [0.07, -0.07, 0, 1], [0.07, -0.07, 0.022, 0], [-0.03, 0.07, 0, 1], [0.08, 0.05, 0, 0]];   // [dx, dy, dz, bright], far ones first
+  const OIL_BLOBS = [[0, 0, 0.36], [-0.18, 0.12, 0.2], [0.2, -0.1, 0.22], [0.12, 0.2, 0.16], [-0.16, -0.16, 0.16]];
   const TOP_ART = {
-    snare(it, T, px, py, s) {   // open iron jaws on the floor; shut when sprung
-      const cx = px + s / 2, cy = py + s / 2, shut = it.anim > 0, R = s * 0.32;
-      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.arc(cx, cy, R * 1.15, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#6e6a78'; ctx.lineWidth = Math.max(1.2, s * 0.05); ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = '#b9bccb';
-      if (shut) { ctx.fillRect(cx - R, cy - s * 0.03, R * 2, s * 0.06); for (let k = 0; k < 6; k++) { const x = cx - R + (k + 0.5) * R / 3; ctx.beginPath(); ctx.moveTo(x - s * 0.03, cy); ctx.lineTo(x, cy - s * 0.07); ctx.lineTo(x + s * 0.03, cy); ctx.fill(); } }
-      else for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R, ox = Math.cos(a) * s * 0.07, oy = Math.sin(a) * s * 0.07, nx = -Math.sin(a) * s * 0.03, ny = Math.cos(a) * s * 0.03; ctx.beginPath(); ctx.moveTo(x + nx, y + ny); ctx.lineTo(x - ox, y - oy); ctx.lineTo(x - nx, y - ny); ctx.fill(); }
-      ctx.fillStyle = '#8a8496'; ctx.fillRect(cx - s * 0.06, cy - s * 0.06, s * 0.12, s * 0.12); ctx.fillStyle = '#c4a052'; ctx.fillRect(cx - s * 0.025, cy - s * 0.025, s * 0.05, s * 0.05);
-      ctx.strokeStyle = '#55505e'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.setLineDash([s * 0.04, s * 0.03]); ctx.beginPath(); ctx.moveTo(cx + R, cy); ctx.lineTo(px + s * 0.94, py + s * 0.82); ctx.stroke(); ctx.setLineDash([]);
+    snare(it, T) {   // 1.27.5: raised iron jaws on a spring bar, their teeth standing up; sprung, they snap up shut (a solid body, drawn in screen space)
+      const cx = it.x + 0.5, cy = it.y + 0.5, shut = it.anim > 0, R = 0.3, sp = sparkSet(it, shut);
+      trapOnFloor(it, () => {
+        const dk = ['#77727f', '#55505e', '#45404e'], cols = ['#5e5a68', '#a9acba', '#c9ccd8', '#8a8496'];
+        groundShadow(cx + 0.03, cy + 0.03, 0.4, 0.36, 0.3);
+        const s0 = W2S(cx + 0.4, cy + 0.03, 0.02), s1 = W2S(it.x + 0.9, it.y + 0.86, 0.02);
+        ctx.strokeStyle = '#55505e'; ctx.lineWidth = Math.max(1, T * 0.03); ctx.setLineDash([T * 0.04, T * 0.03]); ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]); ctx.stroke(); ctx.setLineDash([]);   // the chain to its stake
+        isoBox(it.x + 0.9, it.y + 0.86, 0.06, 0.06, 0.1, '#77727f', '#55505e', '#45404e');
+        isoBox(cx, cy, 0.86, 0.07, 0.035, dk[0], dk[1], dk[2]);   // the spring bar on the hinge
+        isoBox(cx - 0.41, cy, 0.09, 0.13, 0.06, dk[0], dk[1], dk[2]);
+        const pan = () => { isoBox(cx, cy, 0.15, 0.15, 0.03, '#a29cae', '#8a8496', '#6a6476', 0.02); isoBox(cx, cy, 0.05, 0.05, 0.015, '#e0c070', '#c4a052', '#9a7a3a', 0.05); };
+        if (shut) pan();
+        jaw3D(cx, cy, R, shut ? 1.48 : 0.05, -1, cols, T, 6);
+        if (!shut) pan();
+        jaw3D(cx, cy, R, shut ? 1.48 : 0.05, 1, cols, T, 6);
+        isoBox(cx + 0.41, cy, 0.09, 0.13, 0.06, dk[0], dk[1], dk[2]);
+        if (sp.edge) for (let k = 0; k < 7; k++) { const a = Math.random() * Math.PI * 2, v = 0.6 + Math.random() * 0.8; sparkAdd(sp, cx + Math.cos(a) * 0.1, cy, 0.3, Math.cos(a) * v, Math.sin(a) * v * 0.5, 0.5 + Math.random(), 0.3 + Math.random() * 0.2, k % 2 ? '#ffe9a8' : '#ffffff', 0.03, 3); }   // sparks off the teeth
+        sparkRun(sp, T);
+      });
     },
     oilslick(it, T, px, py, s) {   // a black pool with a sheen that moves
-      const cx = px + s / 2, cy = py + s / 2;
-      ctx.fillStyle = '#140d08'; [[0, 0, 0.36], [-0.18, 0.12, 0.2], [0.2, -0.1, 0.22], [0.12, 0.2, 0.16], [-0.16, -0.16, 0.16]].forEach(q => { ctx.beginPath(); ctx.arc(cx + q[0] * s, cy + q[1] * s, q[2] * s, 0, Math.PI * 2); ctx.fill(); });
+      const cx = px + s / 2, cy = py + s / 2, B = OIL_BLOBS;
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; B.forEach(q => { ctx.beginPath(); ctx.arc(cx + (q[0] + 0.025) * s, cy + (q[1] + 0.025) * s, q[2] * s, 0, Math.PI * 2); ctx.fill(); });   // 1.27.5: the pool's thick edge (it stands a little off the floor)
+      ctx.fillStyle = '#140d08'; B.forEach(q => { ctx.beginPath(); ctx.arc(cx + q[0] * s, cy + q[1] * s, q[2] * s, 0, Math.PI * 2); ctx.fill(); });
       const t = realNow * 0.6 + it.x;
       [['rgba(160,140,232,0.45)', 0], ['rgba(156,194,126,0.35)', 2.1], ['rgba(240,216,144,0.4)', 4.2]].forEach(([c, o]) => { ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(cx + Math.cos(t + o) * s * 0.14, cy + Math.sin(t + o) * s * 0.1, s * 0.12, s * 0.04, t + o, 0, Math.PI * 2); ctx.fill(); });
       if (it.anim > 0) { ctx.fillStyle = 'rgba(255,240,200,0.35)'; ctx.beginPath(); ctx.arc(cx, cy, s * 0.4, 0, Math.PI * 2); ctx.fill(); }
@@ -730,6 +826,7 @@
       ctx.fillStyle = '#1d2633'; ctx.fillRect(px + s * 0.22, py + s * 0.22, s * 0.56, s * 0.56);
       ctx.fillStyle = 'rgba(111,154,168,0.8)'; ctx.fillRect(px + s * 0.26, py + s * 0.26, s * 0.48, s * 0.48);
       ctx.fillStyle = '#50555e'; for (let k = 0; k < 4; k++) ctx.fillRect(px + s * (0.28 + k * 0.13), py + s * 0.24, s * 0.04, s * 0.52);
+      trapOnFloor(it, () => grateRim(it, 0.22, 0.56));   // 1.27.5: a raised iron rim round the grate
       const n = it.anim > 0 ? 3 : 1;
       for (let k = 0; k < n; k++) { const u = (realNow * (it.anim > 0 ? 1.2 : 0.4) + k / n + it.x * 0.1) % 1; ctx.strokeStyle = 'rgba(169,212,218,' + (0.6 * (1 - u)).toFixed(2) + ')'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.beginPath(); ctx.arc(cx, cy, s * (0.2 + u * (it.anim > 0 ? 1.2 : 0.3)), 0, Math.PI * 2); ctx.stroke(); }
     },
@@ -737,16 +834,89 @@
       const cx = px + s / 2, cy = py + s / 2;
       ctx.fillStyle = '#16171c'; ctx.fillRect(px + s * 0.24, py + s * 0.24, s * 0.52, s * 0.52);
       ctx.fillStyle = '#50555e'; for (let k = 0; k < 4; k++) ctx.fillRect(px + s * 0.24, py + s * (0.27 + k * 0.13), s * 0.52, s * 0.035);
+      trapOnFloor(it, () => grateRim(it, 0.24, 0.52));   // 1.27.5: a raised iron rim round the grate
       const big = it.anim > 0, R = big ? s * 1.3 : s * 0.42, t = realNow * 0.8 + it.x;
       for (let k = 0; k < (big ? 7 : 3); k++) { const a = t + k * 2.4, rr0 = R * (0.25 + 0.5 * ((k * 0.37) % 1)); ctx.fillStyle = k % 2 ? 'rgba(124,190,90,0.22)' : 'rgba(156,194,126,0.26)'; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * rr0 * 0.6, cy + Math.sin(a) * rr0 * 0.6, R * (0.35 + 0.1 * Math.sin(t + k)), 0, Math.PI * 2); ctx.fill(); }
     },
-    bait(it, T, px, py, s) {   // under the loot: a dull plate with jaws round its rim (the heroes see only the loot)
-      const cx = px + s / 2, cy = py + s / 2, R = s * 0.34, shut = it.anim > 0;
-      ctx.fillStyle = 'rgba(30,28,36,0.7)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = shut ? '#c9cdd8' : 'rgba(150,150,165,0.55)';
-      for (let k = 0; k < 10; k++) { const a = k * Math.PI / 5 + 0.3, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R, ox = Math.cos(a) * s * 0.06, oy = Math.sin(a) * s * 0.06, nx = -Math.sin(a) * s * 0.025, ny = Math.cos(a) * s * 0.025; ctx.beginPath(); ctx.moveTo(x + nx, y + ny); ctx.lineTo(x - ox, y - oy); ctx.lineTo(x - nx, y - ny); ctx.fill(); }
+    bait(it, T) {   // 1.27.5: a plate with real thickness and a little heap of coins on it, dull iron jaws lying round it (the heroes see only the loot); they spring up shut when someone grabs it
+      const cx = it.x + 0.5, cy = it.y + 0.5, shut = it.anim > 0, R = 0.36, sp = sparkSet(it, shut), phi = shut ? 1.4 : 0.03;
+      trapOnFloor(it, () => {
+        const cols = shut ? ['#5e5a68', '#a9acba', '#c9cdd8', '#8a8496'] : ['#3c3a44', '#5a5864', '#7a7a88', '#5a5a68'];
+        groundShadow(cx + 0.03, cy + 0.03, 0.42, 0.38, 0.3);
+        jaw3D(cx, cy, R, phi, -1, cols, T, 5);
+        pCyl(cx, cy, 0.25, 0.05, '#2e2c36', '#4a4856');
+        BAIT_COINS.forEach(q => pCyl(cx + q[0], cy + q[1], 0.065, 0.022, '#c99a3a', q[3] ? '#f0cc6c' : '#e8c060', 0.05 + q[2]));
+        jaw3D(cx, cy, R, phi, 1, cols, T, 5);
+        if (!shut && T >= 14 && (realNow * 0.7 + it.x) % 3 < 0.25) { const p = W2S(cx + 0.03, cy - 0.06, 0.13); ctx.fillStyle = '#fff6d0'; ctx.fillRect(p[0] - 1, p[1] - T * 0.04, 2, T * 0.08); ctx.fillRect(p[0] - T * 0.04, p[1] - 1, T * 0.08, 2); }   // a glint on the coins
+        if (sp.edge) for (let k = 0; k < 6; k++) { const a = Math.random() * Math.PI * 2, v = 0.6 + Math.random() * 0.7; sparkAdd(sp, cx + Math.cos(a) * 0.2, cy, 0.25, Math.cos(a) * v, Math.sin(a) * v * 0.5, 0.5 + Math.random(), 0.3 + Math.random() * 0.2, k % 2 ? '#ffe9a8' : '#f2b94b', 0.03, 3); }
+        sparkRun(sp, T);
+      });
+    },
+    web(it, T) {   // 1.27.5: a web strung low between four iron pins, sagging in the middle, its shadow on the floor under it; it shakes when it catches
+      const cx = it.x + 0.5, cy = it.y + 0.5, hot = it.anim > 0, sh = hot && !reduceMotion ? Math.sin(realNow * 30) * 0.012 : 0;
+      trapOnFloor(it, () => {
+        const pin = [[-0.36, -0.36], [0.36, -0.36], [-0.36, 0.36], [0.36, 0.36]], H = 0.15;
+        const at = (a, r) => { const f = r / 0.5, z = 0.03 + (H - 0.03) * f * f; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.92, z + sh * (1 - f)]; };
+        // radials and two rings; zk = 0 lays it on the floor (its shadow); part: 1 the anchor threads to the pins, 2 the rest, 3 both; ox, oy: a shift in px
+        const web = (zk, col, lw, part, ox, oy) => {
+          part = part || 3; ox = ox || 0; oy = oy || 0; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
+          const pt = (a, r) => { const q = at(a, r), w = W2S(q[0] + (1 - zk) * q[2] * 0.5, q[1] + (1 - zk) * q[2] * 0.7, q[2] * zk); w[0] += ox; w[1] += oy; return w; };
+          for (let k = 0; k < 8; k++) { if (!(part & (k % 2 ? 2 : 1))) continue; const a = k * Math.PI / 4 + Math.PI / 4, p = pt(a, 0), q = pt(a, k % 2 ? 0.38 : 0.5); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+          if (part & 2) [0.13, 0.26].forEach(r => { for (let k = 0; k <= 8; k++) { const q = pt(k * Math.PI / 4 + Math.PI / 4, k % 2 ? r * 0.95 : r * 1.25); if (k) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } });
+          ctx.stroke();
+        };
+        // 1.27.5: round threads: a dark underside, the silk, a bright upper edge; the anchor threads to the pins thicker
+        const lw = Math.max(1, T * 0.02), silk = (part, w) => { ctx.lineCap = 'round'; web(1, 'rgba(70,72,92,0.9)', w * 1.7, part, w * 0.25, w * 0.35); web(1, hot ? '#ffffff' : '#c9cfe2', w, part); if (w > 1.3) web(1, 'rgba(255,255,255,0.95)', w * 0.38, part, -w * 0.18, -w * 0.25); ctx.lineCap = 'butt'; };
+        web(0, 'rgba(0,0,0,0.3)', lw * 1.3);
+        pin.slice(0, 2).forEach(q => pCyl(cx + q[0], cy + q[1], 0.028, H + 0.04, '#4a4652', '#77727f'));
+        silk(2, lw); silk(1, lw * 1.4);
+        const c = W2S(cx, cy, 0.03 + sh); ctx.fillStyle = 'rgba(240,244,255,0.9)'; ctx.beginPath(); ctx.ellipse(c[0], c[1], T * 0.035, T * 0.025, 0, 0, Math.PI * 2); ctx.fill();   // the knot of silk in the middle
+        pin.slice(2).forEach(q => pCyl(cx + q[0], cy + q[1], 0.028, H + 0.04, '#4a4652', '#77727f'));
+      });
+    },
+    trapdoor(it, T) {   // 1.27.5: two oak leaves in a raised frame; open, they hang down into a pit with walls you can see
+      const x0 = it.x + 0.12, y0 = it.y + 0.12, w = 0.76, open = it.anim > 0;
+      trapOnFloor(it, () => {
+        const P = (u, v, z) => W2S(x0 + u * w, y0 + v * w, z);
+        if (open) {
+          ctx.save(); poly([P(0, 0, 0), P(1, 0, 0), P(1, 1, 0), P(0, 1, 0)], '#050308'); ctx.clip();
+          const D = -0.7;
+          poly([P(0, 0, 0), P(1, 0, 0), P(1, 0, D), P(0, 0, D)], '#2a2026');   // the far walls of the pit, the north one lit
+          poly([P(0, 0, 0), P(0, 1, 0), P(0, 1, D), P(0, 0, D)], '#1a1418');
+          ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(1, T * 0.02); ctx.beginPath(); [-0.18, -0.36].forEach(z => { const a = P(0, 1, z), b = P(0, 0, z), c = P(1, 0, z); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); }); ctx.stroke();   // courses of stone
+          poly([P(0, 0, 0), P(0, 1, 0), P(0.06, 1, -0.48), P(0.06, 0, -0.48)], '#4a3626');   // the leaves hang from their hinges
+          poly([P(1, 0, 0), P(1, 1, 0), P(0.94, 1, -0.48), P(0.94, 0, -0.48)], '#2e2016');
+          ctx.restore();
+        } else {
+          isoBox(x0 + w / 4, y0 + w / 2, w / 2 - 0.01, w, 0.025, '#4a3828', '#3a2c20', '#2e2218');
+          isoBox(x0 + w * 3 / 4, y0 + w / 2, w / 2 - 0.01, w, 0.025, '#4a3828', '#3a2c20', '#2e2218');
+          ctx.strokeStyle = 'rgba(20,14,8,0.6)'; ctx.lineWidth = Math.max(1, T * 0.015); ctx.beginPath(); [0.25, 0.75].forEach(u => { const a = P(u, 0.02, 0.025), b = P(u, 0.98, 0.025); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }); ctx.stroke();   // the planks
+          if (T >= 24) [[0.04, 0.2], [0.04, 0.8], [0.96, 0.2], [0.96, 0.8]].forEach(q => isoBox(x0 + q[0] * w, y0 + q[1] * w, 0.07, 0.05, 0.015, '#9a96a6', '#77727f', '#55505e', 0.025));   // the hinges
+          if (T >= 24) [0.47, 0.53].forEach(u => isoBox(x0 + u * w, y0 + w / 2, 0.025, 0.08, 0.02, '#9a96a6', '#77727f', '#55505e', 0.025));   // the iron pulls
+        }
+        const e = 0.05, h = 0.04, c = ['#5a4a3a', '#46382a', '#33281e'];   // the frame, far bars first
+        isoBox(x0 + w / 2, y0 - e / 2, w + e * 2, e, h, c[0], c[1], c[2]); isoBox(x0 - e / 2, y0 + w / 2, e, w, h, c[0], c[1], c[2]);
+        isoBox(x0 + w + e / 2, y0 + w / 2, e, w, h, c[0], c[1], c[2]); isoBox(x0 + w / 2, y0 + w + e / 2, w + e * 2, e, h, c[0], c[1], c[2]);
+      });
+    },
+    cage(it, T) {   // 1.27.5: set and waiting: the cage's iron foot ring sunk in the floor, the stubs of its bars just showing
+      const x0 = it.x + 0.12, y0 = it.y + 0.12, w = 0.76;
+      trapOnFloor(it, () => {
+        const e = 0.045, h = 0.035, c = ['#8e8a9a', '#6c6878', '#4e4a58'];
+        const stubs = (far) => { for (let k = 0; k <= 4; k++) { const u = k / 4; (far ? [[x0 + w * u, y0], [x0, y0 + w * u]] : [[x0 + w * u, y0 + w], [x0 + w, y0 + w * u]]).forEach(q => pCyl(q[0], q[1], 0.018, 0.08, '#77727f', '#b9bccb', h)); } };
+        isoBox(x0 + w / 2, y0, w + e, e, h, c[0], c[1], c[2]); isoBox(x0, y0 + w / 2, e, w + e, h, c[0], c[1], c[2]);
+        if (T >= 24) stubs(true);   // (the stubs only close up)
+        isoBox(x0 + w, y0 + w / 2, e, w + e, h, c[0], c[1], c[2]); isoBox(x0 + w / 2, y0 + w, w + e, e, h, c[0], c[1], c[2]);
+        if (T >= 24) stubs(false);
+      });
     }
   };
+  // 1.27.5: a building smashed by a barbarian: a heap of broken stone blocks (rubble for the rest of the wave)
+  const RUBBLE = [[-0.22, -0.12, 0.13, 0.11, 0], [0.12, -0.2, 0.11, 0.09, 0], [0.02, 0.0, 0.16, 0.1, 0], [-0.18, 0.16, 0.1, 0.08, 0], [0.2, 0.08, 0.12, 0.09, 0], [-0.04, -0.06, 0.1, 0.07, 0.1], [0.08, 0.22, 0.08, 0.06, 0]];
+  function rubble3D(it, T) {
+    const cx = it.x + 0.5, cy = it.y + 0.5;
+    trapOnFloor(it, () => { groundShadow(cx + 0.03, cy + 0.04, 0.4, 0.34, 0.35); RUBBLE.forEach(q => isoBox(cx + q[0], cy + q[1], q[2], q[2] * 0.85, q[3], '#5a5664', '#46424f', '#34303c', q[4])); });
+  }
   // on a wall (in the wall's unit square: x along the wall, y down; k: light)
   Object.assign(WALL_ITEM, { pendulum: 1, bolt: 1 });
   const WALL_ART = {
@@ -769,39 +939,93 @@
       if (hot) { ctx.strokeStyle = '#e6f4ff'; ctx.lineWidth = 0.03; ctx.beginPath(); ctx.moveTo(0.5, 0.45); for (let j = 1; j <= 5; j++) ctx.lineTo(0.5 + (Math.random() - 0.5) * 0.4, 0.45 + j * 0.12); ctx.stroke(); }
     }
   };
+  // 1.27.5: the same two as solid bodies (WALL_3D, p7_draw.js), on a standing face or lying on a cut wall's lip (lipKit)
+  Object.assign(WALL_3D, {
+    pendulum(K, it, hot, T) {   // an iron bracket and a timber beam standing out of the top of the face; the rod and a thick blade hang from its end out in the room and swing along the wall
+      const a = hot ? Math.sin(realNow * 9) * 0.9 : Math.sin(realNow * 1.4 + it.x) * 0.12, L = 0.7, pv = -0.1, D = 0.42, bx = 0.5 + Math.sin(a) * L, by = pv + Math.cos(a) * L;
+      const sp = sparkSet(it, hot), wood = ['#7a5530', '#5e4024', '#46301a'], iron = K.k < 1 ? ['#5a5a66', '#3a3a44', '#2e2e36'] : ['#64646f', '#4a4a56', '#34343e'];
+      const blade = () => { ctx.save(); ctx.translate(bx, by); ctx.rotate(-a); ctx.moveTo(-0.32, -0.04); ctx.quadraticCurveTo(0, 0.3, 0.32, -0.04); ctx.lineTo(0.22, -0.07); ctx.quadraticCurveTo(0, 0.1, -0.22, -0.07); ctx.closePath(); ctx.restore(); };
+      K.shadow(blade, 0.2, 2.6);   // far out in the room: a faint shadow well off on the face
+      K.box(0.38, 0.62, -0.2, 0.06, 0, 0.03, iron);   // the bracket
+      K.box(0.44, 0.56, -0.17, -0.06, 0.03, D + 0.05, wood);   // the beam
+      K.box(0.43, 0.57, -0.18, -0.04, D - 0.04, D + 0.06, iron);   // the iron head with the pivot
+      K.plane(D - 0.025); ctx.fillStyle = '#5c616c'; ctx.beginPath(); blade(); ctx.fill();   // the blade's back (its thickness)
+      K.plane(D); ctx.strokeStyle = '#767b84'; ctx.lineWidth = 0.04; ctx.beginPath(); ctx.moveTo(0.5, pv); ctx.lineTo(bx, by); ctx.stroke();
+      ctx.strokeStyle = 'rgba(230,235,245,0.35)'; ctx.lineWidth = 0.012; ctx.beginPath(); ctx.moveTo(0.49, pv); ctx.lineTo(bx - 0.01, by); ctx.stroke();
+      if (hot) { ctx.strokeStyle = 'rgba(230,225,214,0.35)'; ctx.lineWidth = 0.05; ctx.beginPath(); ctx.arc(0.5, pv, L + 0.12, Math.PI / 2 - 0.9, Math.PI / 2 + 0.9); ctx.stroke(); }
+      K.plane(D + 0.025);
+      ctx.fillStyle = K.k < 1 ? '#9aa0ae' : '#c5ccd8'; ctx.beginPath(); blade(); ctx.fill();
+      ctx.save(); ctx.translate(bx, by); ctx.rotate(-a);
+      ctx.fillStyle = '#e6e1d6'; ctx.beginPath(); ctx.moveTo(-0.3, -0.01); ctx.quadraticCurveTo(0, 0.29, 0.3, -0.01); ctx.quadraticCurveTo(0, 0.22, -0.3, -0.01); ctx.fill();   // the edge
+      ctx.fillStyle = '#4a4a56'; ctx.fillRect(-0.045, -0.1, 0.09, 0.07);   // the hub
+      ctx.restore();
+      screenT();
+      if (sp.edge || (hot && Math.random() < 0.3)) { const tu = bx + Math.sin(a) * 0.25, tv = by + Math.cos(a) * 0.25; sparkBurst(sp, K, tu, tv, D + 0.03, sp.edge ? 4 : 1, Math.random() < 0.5 ? '#ffe9a8' : '#ffffff', 1.1, 0.35, 0.03, 3); }   // sparks off the edge
+      sparkRun(sp, T);
+    },
+    bolt(K, it, hot, T) {   // a stone stele standing out of the face under a capstone, the storm rune glowing in its sunk panel; lightning leaps from it into the room when it fires
+      const st = K.k < 1 ? ['#4a4c56', '#2f3036', '#2a2b31'] : ['#575964', '#3e4048', '#2c2d33'], cap = K.k < 1 ? ['#5c5e68', '#3c3e46', '#30323a'] : ['#686a76', '#4a4c55', '#34363d'];
+      const sp = sparkSet(it, hot), pulse = hot ? 1 : 0.55 + 0.35 * Math.sin(realNow * 3 + it.x);
+      K.shadow(() => ctx.rect(0.26, 0.1, 0.48, 0.68));
+      K.box(0.28, 0.72, 0.17, 0.78, 0, 0.1, st);
+      K.box(0.25, 0.75, 0.1, 0.18, 0, 0.13, cap);
+      K.recess(0.1, 0.035, () => ctx.rect(0.33, 0.24, 0.34, 0.48), '#202126', () => {
+        ctx.fillStyle = K.k < 1 ? '#3e4048' : '#4c4e58'; ctx.fillRect(0.33, 0.24, 0.34, 0.48);
+        ctx.globalAlpha *= pulse; ctx.drawImage(glowSprite('rune3d', [[0, 'rgba(140,200,255,0.6)'], [1, 'rgba(140,200,255,0)']]), 0.25, 0.2, 0.5, 0.5); ctx.globalAlpha /= pulse;
+        ctx.strokeStyle = 'rgba(140,200,255,' + pulse.toFixed(2) + ')'; ctx.lineWidth = 0.055; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(0.55, 0.28); ctx.lineTo(0.44, 0.47); ctx.lineTo(0.56, 0.47); ctx.lineTo(0.45, 0.68); ctx.stroke();
+        ctx.strokeStyle = 'rgba(230,244,255,' + (pulse * 0.7).toFixed(2) + ')'; ctx.lineWidth = 0.018; ctx.stroke(); ctx.lineJoin = 'miter';
+      });
+      screenT();
+      if (hot) {   // two jagged bolts from the rune down to the floor in front of it
+        const vf = K.z1 / Math.max(0.01, K.z1 - K.z0);
+        for (let b = 0; b < 2; b++) {
+          const eu = 0.5 + (Math.random() - 0.5) * 0.9, ed = 0.55 + Math.random() * 0.35;
+          ctx.beginPath(); for (let j = 0; j <= 5; j++) { const t = j / 5, p = K.P(0.5 + (eu - 0.5) * t + (j && j < 5 ? (Math.random() - 0.5) * 0.18 : 0), 0.46 + (vf - 0.46) * t * t, 0.11 + (ed - 0.11) * t); if (j) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); }
+          ctx.strokeStyle = 'rgba(140,200,255,0.45)'; ctx.lineWidth = Math.max(2, T * 0.07); ctx.stroke(); ctx.strokeStyle = '#e6f4ff'; ctx.lineWidth = Math.max(1, T * 0.025); ctx.stroke();
+        }
+      }
+      if (sp.edge) sparkBurst(sp, K, 0.5, 0.46, 0.12, 6, '#bfe3ff', 0.9, 0.4, 0.03, 0.5);
+      else if (Math.random() < (hot ? 0.45 : 0.012)) sparkBurst(sp, K, 0.33 + Math.random() * 0.34, 0.24 + Math.random() * 0.48, 0.11, 1, '#bfe3ff', 0.35, 0.3, 0.025, 0);   // crackle round the rune
+      sparkRun(sp, T);
+    }
+  });
   // doors and furniture
   Object.assign(ISO_ART, {
-    falsedoor(it, bx, by, T) {   // the doorway looks walled up: painted stone with a pale shimmer; it flickers when it fools someone
-      const ax = doorAlongX(it.x, it.y), H = DOOR_H * 0.95, A = ax ? [bx - 0.45, by] : [bx, by - 0.45], B = ax ? [bx + 0.45, by] : [bx, by + 0.45];
-      ctx.save(); faceMap(A[0], A[1], B[0], B[1], 0, H);
-      ctx.globalAlpha *= it.anim > 0 ? 0.35 + 0.3 * Math.sin(realNow * 30) : 0.72;
-      ctx.fillStyle = '#4b4755'; ctx.fillRect(0, 0, 1, 1);
-      ctx.fillStyle = 'rgba(20,16,26,0.5)'; for (let r = 0; r < 4; r++) { ctx.fillRect(0, r * 0.25, 1, 0.02); for (let c = 0; c < 3; c++) ctx.fillRect(((c + (r % 2) * 0.5) / 3) % 1, r * 0.25, 0.02, 0.25); }
-      ctx.fillStyle = 'rgba(160,140,232,' + (0.18 + 0.12 * Math.sin(realNow * 2 + it.x)).toFixed(2) + ')'; ctx.fillRect(0, 0, 1, 1);
+    falsedoor(it, bx, by, T) {   // the doorway looks walled up: painted stone with a pale shimmer; it flickers when it fools someone (1.27.5: a thin false wall with a top and an edge)
+      const ax = doorAlongX(it.x, it.y), H = DOOR_H * 0.95, A = ax ? [bx - 0.45, by] : [bx, by - 0.45], B = ax ? [bx + 0.45, by] : [bx, by + 0.45], sh = 0.18 + 0.12 * Math.sin(realNow * 2 + it.x);
+      ctx.save(); ctx.globalAlpha *= it.anim > 0 ? 0.35 + 0.3 * Math.sin(realNow * 30) : 0.78;
+      slab3D(A, B, 0.16, 0, H, '#5a5664', ax ? '#4b4755' : '#3c3946', ax ? '#36333f' : '#4b4755', () => {
+        ctx.fillStyle = 'rgba(20,16,26,0.5)'; for (let r = 0; r < 4; r++) { ctx.fillRect(0, r * 0.25, 1, 0.02); for (let c = 0; c < 3; c++) ctx.fillRect(((c + (r % 2) * 0.5) / 3) % 1, r * 0.25, 0.02, 0.25); }
+        ctx.fillStyle = 'rgba(255,240,255,0.07)'; for (let r = 0; r < 4; r++) ctx.fillRect(0, r * 0.25 + 0.02, 1, 0.025);   // the lit top of each course
+        ctx.fillStyle = 'rgba(160,140,232,' + sh.toFixed(2) + ')'; ctx.fillRect(0, 0, 1, 1);
+      });
       ctx.restore();
     },
-    tar(it, bx, by, T) {   // a cauldron of tar hanging over the doorway, tipping when it pours
-      const ax = doorAlongX(it.x, it.y), H = DOOR_H, pour = it.anim > 0, tip = pour ? 0.5 : 0;
-      const A = ax ? [bx - 0.5, by] : [bx, by - 0.5], B = ax ? [bx + 0.5, by] : [bx, by + 0.5];
-      line2(W2S(A[0], A[1], H + 0.05), W2S(B[0], B[1], H + 0.05), '#2a1b12', Math.max(2, T * 0.07));
-      const p = W2S(bx, by, H - 0.05), r = T * 0.17;
-      ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(tip);
-      ctx.fillStyle = '#26262e'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI); ctx.fill(); ctx.fillRect(-r, -r * 0.3, r * 2, r * 0.3);
-      ctx.fillStyle = '#0e0b08'; ctx.beginPath(); ctx.ellipse(0, -r * 0.3, r, r * 0.3, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-      if (pour) { const f = W2S(bx, by, 0); ctx.fillStyle = '#0e0b08'; ctx.fillRect(p[0] + r * 0.6, p[1], T * 0.08, f[1] - p[1]); ctx.beginPath(); ctx.ellipse(f[0] + r * 0.6, f[1], T * 0.22, T * 0.22 * SP, 0, 0, Math.PI * 2); ctx.fill(); }
-      flame([p[0] - r * 0.2, p[1] + r * 1.4], T, 1.4, false);
+    tar(it, bx, by, T) {   // a cauldron of tar hanging over the doorway, tipping when it pours (1.27.5: a beam, two chains, a round iron cauldron)
+      const ax = doorAlongX(it.x, it.y), H = DOOR_H, pour = it.anim > 0, tip = pour ? 0.9 : 0, z0 = H - 0.36;
+      if (ax) isoBox(bx, by, 1.04, 0.09, 0.09, '#4a3220', '#3a2716', '#2a1b12', H + 0.02); else isoBox(bx, by, 0.09, 1.04, 0.09, '#4a3220', '#3a2716', '#2a1b12', H + 0.02);
+      const fw = W2S(bx, by + 0.06, z0 - 0.04); flame([fw[0], fw[1]], T, 1.4, false);   // the fire under it
+      const lx = ax ? 0 : 1, ly = ax ? 1 : 0, m = lathe3D(bx, by, [[z0, 0.07], [z0 + 0.06, 0.15], [z0 + 0.16, 0.19], [z0 + 0.27, 0.17]], '#4a4a56', '#16100a', '#9a9aa8', tip, lx, ly);
+      ctx.fillStyle = 'rgba(255,220,170,0.22)'; ctx.beginPath(); ctx.ellipse(m[0] - m[2] * 0.3, m[1] - m[2] * SP * 0.2, m[2] * 0.35, m[2] * SP * 0.25, 0, 0, Math.PI * 2); ctx.fill();   // a gleam on the tar
+      [-1, 1].forEach(sd => rod3D([bx + (ax ? sd * 0.17 : tip * 0.25), by + (ax ? tip * 0.25 : sd * 0.17), z0 + 0.27], [bx + (ax ? sd * 0.08 : 0), by + (ax ? 0 : sd * 0.08), H + 0.02], 0.022, '#3a3a44', '#8a8a96'));
+      if (pour) { const sx = bx + lx * 0.3, sy = by + ly * 0.3; rod3D([sx, sy, z0 + 0.2], [sx, sy, 0.01], 0.07, '#0e0b08', 'rgba(120,100,80,0.5)'); const f = W2S(sx, sy, 0); ctx.fillStyle = '#0e0b08'; ctx.beginPath(); ctx.ellipse(f[0], f[1], T * 0.22, T * 0.22 * SP, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(160,140,232,0.25)'; ctx.beginPath(); ctx.ellipse(f[0] - T * 0.05, f[1] - T * 0.02, T * 0.08, T * 0.03, 0, 0, Math.PI * 2); ctx.fill(); }
     },
-    bell(it, bx, by, T) {   // a funeral bell: on the furniture if it stands on one, else in its own black frame
-      const o = fl.objects.get(key(it.x, it.y)), z = o ? objTopZ(o) : 0, sw = it.anim > 0 ? Math.sin(realNow * 14) * 0.35 : Math.sin(realNow * 0.8 + it.x) * 0.04;
-      if (!o) { groundShadow(bx, by, 0.32, 0.22, 0.35); const H = 0.95; [-0.3, 0.3].forEach(d => line2(W2S(bx + d, by, 0), W2S(bx + d, by, H), '#2a1b12', Math.max(2, T * 0.07))); line2(W2S(bx - 0.36, by, H), W2S(bx + 0.36, by, H), '#3a2716', Math.max(2, T * 0.08)); }
+    bell(it, bx, by, T) {   // a funeral bell: on the furniture if it stands on one, else in its own black frame (1.27.5: square posts and beam, a round bronze bell)
+      const o = fl.objects.get(key(it.x, it.y)), z = o ? objTopZ(o) : 0, sw = it.anim > 0 ? Math.sin(realNow * 14) * 0.35 : Math.sin(realNow * 0.8 + it.x) * 0.04, wd = ['#4a3220', '#3a2716', '#2a1b12'];
+      if (!o) { groundShadow(bx, by, 0.32, 0.22, 0.35); isoBox(bx - 0.3, by, 0.07, 0.07, 0.95, wd[0], wd[1], wd[2]); }
       const top = W2S(bx, by, o ? z + 0.45 : 0.9), s = T * (o ? 0.2 : 0.26);
-      if (o) line2(W2S(bx, by, z), top, '#3a2716', Math.max(1.5, T * 0.05));
+      if (o) { isoBox(bx, by, 0.05, 0.05, 0.47, wd[0], wd[1], wd[2], z); isoBox(bx, by, 0.2, 0.05, 0.04, wd[0], wd[1], wd[2], z + 0.45); }
       ctx.save(); ctx.translate(top[0], top[1]); ctx.rotate(sw);
-      ctx.fillStyle = '#9a6a2e'; ctx.beginPath(); ctx.moveTo(-s * 0.35, 0); ctx.lineTo(s * 0.35, 0); ctx.quadraticCurveTo(s * 0.5, s * 0.7, s * 0.75, s * 1.0); ctx.lineTo(-s * 0.75, s * 1.0); ctx.quadraticCurveTo(-s * 0.5, s * 0.7, -s * 0.35, 0); ctx.fill();
-      ctx.fillStyle = 'rgba(255,220,150,0.35)'; ctx.fillRect(-s * 0.5, s * 0.15, s * 0.18, s * 0.7);
-      ctx.fillStyle = '#c4a052'; ctx.fillRect(-s * 0.75, s * 0.92, s * 1.5, s * 0.1);
+      ctx.fillStyle = '#3a2716'; ctx.fillRect(-s * 0.12, -s * 0.12, s * 0.24, s * 0.16);   // the crown it hangs by
+      ctx.beginPath(); ctx.moveTo(-s * 0.35, s * 0.02); ctx.bezierCurveTo(-s * 0.35, -s * 0.12, s * 0.35, -s * 0.12, s * 0.35, s * 0.02); ctx.quadraticCurveTo(s * 0.5, s * 0.7, s * 0.75, s * 1.0); ctx.lineTo(-s * 0.75, s * 1.0); ctx.quadraticCurveTo(-s * 0.5, s * 0.7, -s * 0.35, s * 0.02); ctx.closePath();
+      const g = ctx.createLinearGradient(-s * 0.75, 0, s * 0.75, 0); g.addColorStop(0, '#c08a44'); g.addColorStop(0.3, '#e0b060'); g.addColorStop(0.55, '#9a6a2e'); g.addColorStop(1, '#4e3214');
+      ctx.fillStyle = g; ctx.fill();
+      ctx.fillStyle = '#1a1008'; ctx.beginPath(); ctx.ellipse(0, s * 1.0, s * 0.75, s * 0.2, 0, 0, Math.PI); ctx.fill();   // the dark inside of its mouth
+      ctx.fillStyle = '#c4a052'; ctx.beginPath(); ctx.ellipse(0, s * 1.0, s * 0.75, s * 0.2, 0, Math.PI, Math.PI * 2); ctx.ellipse(0, s * 1.0, s * 0.62, s * 0.13, 0, Math.PI * 2, Math.PI, true); ctx.fill();   // its thick lip
+      ctx.strokeStyle = 'rgba(80,50,20,0.6)'; ctx.lineWidth = Math.max(1, s * 0.05); ctx.beginPath(); ctx.ellipse(0, s * 0.72, s * 0.58, s * 0.13, 0, 0, Math.PI); ctx.stroke();   // a band
+      ctx.fillStyle = '#5a4630'; ctx.beginPath(); ctx.arc(s * 0.1, s * 1.12, s * 0.11, 0, Math.PI * 2); ctx.fill();   // the clapper
       ctx.restore();
+      if (!o) { isoBox(bx + 0.3, by, 0.07, 0.07, 0.95, wd[0], wd[1], wd[2]); isoBox(bx, by, 0.8, 0.09, 0.08, wd[0], wd[1], wd[2], 0.95); }
       if (it.anim > 0) { const ph = (realNow * 1.5) % 1; ctx.strokeStyle = 'rgba(230,225,214,' + (0.6 * (1 - ph)).toFixed(2) + ')'; ctx.lineWidth = Math.max(1, T * 0.03); ctx.beginPath(); ctx.arc(top[0], top[1] + s * 0.5, T * (0.3 + 0.4 * ph), 0, Math.PI * 2); ctx.stroke(); }
     }
   });
@@ -1015,7 +1239,7 @@
       goldendream: 'loot|moon|greed', croesus: '@crown|coin|greed',
       heartguide: '@pulse|up|heart', heartdread: '@skull|up|heart', heartgreed: '@crown|coin|heart', heartpatience: '@hourglass|time|heart', heartgrowth: '@heartAltar|plus|heart', heartcore: '@heartEcho|x2|heart', secondheart: '@crystal|loop|heart', resonance: '@book|chain|heart'
     };
-    const HEART_IDS = new Set(['regrow', 'heartcry', 'heavycrystal', 'heartroom', 'warden', 'darkforge', 'darklore', 'heartmem', 'tithe', 'stoneheart', 'bloodcredit', 'glutton', 'bloodflow', 'kingsfeast', 'lastbreath', 'heartpulse', 'heartguide', 'heartdread', 'heartgreed', 'heartpatience', 'heartgrowth', 'heartcore', 'secondheart', 'resonance']);
+    const HEART_IDS = new Set(['regrow', 'heartcry', 'heavycrystal', 'heartroom', 'warden', 'darkforge', 'darklore', 'heartmem', 'tithe', 'stoneheart', 'bloodcredit', 'bloodflow', 'kingsfeast', 'lastbreath', 'heartpulse', 'heartguide', 'heartdread', 'heartgreed', 'heartpatience', 'heartgrowth', 'secondheart']);   // 1.27.5 (brief C): Serce lochu, Rezonans, Głodomór left the group (ordinary legends now)
     ART.NEW_CARDS = Object.keys(T_).filter(id => !UPG[id]);
     ART.isHeart = id => HEART_IDS.has(id) || !!(UPG[id] && UPG[id].group === 'heart');
     const STAGE = { arrows: 'wall', fire: 'wall', portrait: 'wall', eyes: 'wall', mirror: 'wall', pendulum: 'wall', bolt: 'wall', gate: 'door', creak: 'door', falsedoor: 'door', tar: 'door' };
@@ -1261,6 +1485,7 @@
   // Topiel (a zone of the flood trap): shallow water with moving ripples and glints; Wyziewy (fl.clouds): a green haze rolling over
   // its tiles, thinning in its last second; Kolczatki (fl.caltrops): three iron caltrops on the tile, a small keg with a lit fuse
   // for the bomb.
+  const BRK = { m: null, n: -1, t: null, l: [] };   // 1.27.5: the breach's doors, found once per map
   function drawHazards(T) {
     const t = reduceMotion ? 0 : realNow;
     fl.zones.forEach(z => {
@@ -1283,25 +1508,30 @@
       });
       ctx.globalAlpha = 1;
     });
-    if (fl.caltrops && fl.caltrops.length) fl.caltrops.forEach(c => {
-      const x = c.x * T, y = c.y * T;
-      if (c.bomb) {
-        const cx = x + T * 0.5, cy = y + T * 0.5, r = T * 0.17;
-        ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.arc(cx + T * 0.04, cy + T * 0.05, r * 1.1, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#26262e'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#4a4a56'; ctx.lineWidth = Math.max(1, T * 0.03); ctx.beginPath(); ctx.arc(cx, cy, r * 0.7, 0, Math.PI * 2); ctx.stroke();
-        ctx.strokeStyle = '#b08a5a'; ctx.beginPath(); ctx.moveTo(cx + r * 0.6, cy - r * 0.6); ctx.lineTo(cx + r * 1.3, cy - r * 1.2); ctx.stroke();
-        ctx.fillStyle = Math.sin(t * 16) > 0 ? '#ffd27a' : '#ff7a3c'; ctx.beginPath(); ctx.arc(cx + r * 1.35, cy - r * 1.25, Math.max(1.2, T * 0.04), 0, Math.PI * 2); ctx.fill();
-        return;
-      }
-      for (let k = 0; k < 3; k++) {
-        const cx = x + T * (0.25 + 0.5 * kH(c.x * 3 + k, c.y, 21)), cy = y + T * (0.25 + 0.5 * kH(c.x, c.y * 3 + k, 22)), r = T * 0.09, a0 = kH(c.x + k, c.y, 23) * 6.28;
-        ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.arc(cx + T * 0.02, cy + T * 0.03, r, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#9a96a6'; ctx.lineWidth = Math.max(1, T * 0.03); ctx.beginPath();
-        for (let j = 0; j < 3; j++) { const a = a0 + j * 2.094; ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); }
-        ctx.stroke(); ctx.fillStyle = '#d0ccd8'; ctx.fillRect(cx - 0.5, cy - 0.5, Math.max(1, T * 0.03), Math.max(1, T * 0.03));
-      }
-    });
+    // 1.27.5: the caltrops, the sapper's bomb and the breach's broken stone are solid, drawn in screen space (still under what stands)
+    if (BRK.m !== fl.doors || BRK.n !== fl.doors.size || BRK.t !== fl.tiles) { BRK.m = fl.doors; BRK.n = fl.doors.size; BRK.t = fl.tiles; BRK.l = [...fl.doors.values()].filter(d => d.breach); }   // (made with the map)
+    const brk = BRK.l.length ? BRK.l : null;
+    if ((fl.caltrops && fl.caltrops.length) || brk) {
+      ctx.save(); screenT(); noRelief();
+      if (brk) brk.forEach(d => { const cx = d.x + 0.5, cy = d.y + 0.5; RUBBLE.forEach((q, k) => { if (k % 2) isoBox(cx + q[0] * 1.2, cy + q[1] * 1.2, q[2] * 0.8, q[2] * 0.7, q[3] * 0.8, '#6a5a5e', '#4e3e42', '#3a2c30', q[4] * 0.6); }); });
+      if (fl.caltrops) fl.caltrops.forEach(c => {
+        if (c.bomb) {   // a round iron bomb, a cap, a fuse that sparks
+          const cx = c.x + 0.5, cy = c.y + 0.5; groundShadow(cx + 0.03, cy + 0.03, 0.2, 0.18, 0.4);
+          pBall(cx, cy, 0, 0.16, '#2a2a32', 'rgba(0,0,0,0.4)');
+          pCyl(cx + 0.05, cy - 0.05, 0.045, 0.05, '#3a3a44', '#55555f', 0.26);
+          const a = W2S(cx + 0.05, cy - 0.05, 0.31), b = W2S(cx + 0.12, cy - 0.1, 0.42); line2(a, b, '#b08a5a', Math.max(1, T * 0.03));
+          ctx.fillStyle = Math.sin(t * 16) > 0 ? '#ffd27a' : '#ff7a3c'; ctx.beginPath(); ctx.arc(b[0], b[1], Math.max(1.2, T * 0.04), 0, Math.PI * 2); ctx.fill();
+          return;
+        }
+        for (let k = 0; k < 3; k++) {   // three caltrops: three iron legs on the floor and one pointing up
+          const cx = c.x + 0.25 + 0.5 * kH(c.x * 3 + k, c.y, 21), cy = c.y + 0.25 + 0.5 * kH(c.x, c.y * 3 + k, 22), r = 0.09, a0 = kH(c.x + k, c.y, 23) * 6.28, m = [cx, cy, 0.035];
+          groundShadow(cx + 0.02, cy + 0.02, 0.09, 0.08, 0.35);
+          for (let j = 0; j < 3; j++) { const a = a0 + j * 2.094; rod3D(m, [cx + Math.cos(a) * r, cy + Math.sin(a) * r, 0.005], 0.026, '#6c6878', '#c9c6d4'); }
+          rod3D(m, [cx, cy, 0.12], 0.026, '#7a7686', '#d8d5e2');
+        }
+      });
+      ctx.restore();
+    }
   }
   // ---------- 1.26 round 2: a knocked-out monster: grey, on its side, stars over its head, "+1 ♥" (it costs 1 hunger) ----------
   function downSprite(type) {   // the figure in muted grey, made once a type
@@ -1340,8 +1570,8 @@
         g.fillStyle = '#3a4642'; g.fillRect(0, 0, 1, WALL_H);
         courses(g, rnd, 0.28, 0.5, ['#3e4a46', '#44504b', '#38433f'], 'rgba(14,20,18,0.6)', true);
         g.fillStyle = 'rgba(120,200,110,0.22)'; per(g, () => { for (let k = 0; k < 3; k++) { const x = 0.15 + 0.32 * k + rnd() * 0.08, y0 = 0.2 + rnd() * 0.5; g.fillRect(x, y0, 0.03, 0.3 + rnd() * 0.5); g.beginPath(); g.ellipse(x + 0.015, y0, 0.05, 0.03, 0, 0, 7); g.fill(); } });
-        if (v === 1) { g.fillStyle = '#2a201a'; g.fillRect(0.2, 0.55, 0.6, 0.04); [[0.3, '#7fe05a'], [0.45, '#8cc8ff'], [0.62, '#c78be3']].forEach(([x, c]) => { g.fillStyle = 'rgba(200,215,240,0.55)'; g.fillRect(x - 0.02, 0.4, 0.04, 0.08); g.fillStyle = c; g.beginPath(); g.ellipse(x, 0.5, 0.05, 0.05, 0, 0, 7); g.fill(); }); }
-      },
+      },   // (1.27.5: variant 1's shelf of flasks is solid: solid)
+      solidV: 1, solid(K, v, h, T) { if (v !== 1) return; K.box(0.2, 0.8, 0.55, 0.59, 0, 0.12, ['#4a3828', '#2a201a', '#1e1712']); [[0.3, '#7fe05a'], [0.45, '#8cc8ff'], [0.62, '#c78be3']].forEach(([x, c]) => { const [wx, wy] = K.W(x, 0.06); pFlask(wx, wy, K.Z(0.55), 0.05, c); }); },   // 1.27.5: a shelf with round flasks
       topTex(g) { g.fillStyle = '#46524e'; g.fillRect(0, 0, 1, 1); g.fillStyle = 'rgba(120,200,110,0.15)'; g.beginPath(); g.ellipse(0.4, 0.6, 0.2, 0.12, 0, 0, 7); g.fill(); } },
     graveyard: { s: '#4a4e44', e: '#363a32', top: '#52584a', lip: '#3e4238',
       tex(g, rnd, v) {
@@ -1349,8 +1579,8 @@
         courses(g, rnd, 0.34, 0.4, ['#4a4e44', '#50544a', '#42463c', '#4e5246'], 'rgba(18,20,14,0.6)', true);
         g.fillStyle = 'rgba(92,140,58,0.45)'; per(g, () => { for (let k = 0; k < 7; k++) { g.beginPath(); g.ellipse(rnd(), WALL_H - rnd() * 0.5, 0.06 + rnd() * 0.06, 0.03 + rnd() * 0.03, 0, 0, 7); g.fill(); } });   // moss low on the wall
         g.strokeStyle = 'rgba(20,22,16,0.6)'; g.lineWidth = 0.014; g.beginPath(); g.moveTo(0.3, 0.1); g.lineTo(0.36, 0.5); g.lineTo(0.3, 0.8); g.stroke();
-        if (v === 1) { g.fillStyle = '#5e6252'; g.fillRect(0.3, 0.45, 0.4, 0.32); g.strokeStyle = 'rgba(20,22,16,0.6)'; g.strokeRect(0.3, 0.45, 0.4, 0.32); g.fillStyle = 'rgba(20,22,16,0.55)'; g.fillRect(0.47, 0.5, 0.06, 0.2); g.fillRect(0.4, 0.56, 0.2, 0.05); }   // a memorial plaque
-      } },
+      },   // (1.27.5: variant 1's memorial plaque is solid: solid)
+      solidV: 1, solid(K, v, h, T) { if (v !== 1) return; K.shadow(() => { ctx.rect(0.3, 0.45, 0.4, 0.32); ctx.fill(); }, 0.3, 0.6); K.box(0.3, 0.7, 0.45, 0.77, 0, 0.045, ['#7a7e6c', '#5e6252', '#44483a']); K.plane(0.045); ctx.fillStyle = 'rgba(20,22,16,0.6)'; ctx.fillRect(0.47, 0.5, 0.06, 0.2); ctx.fillRect(0.4, 0.56, 0.2, 0.05); ctx.fillStyle = 'rgba(220,226,200,0.25)'; ctx.fillRect(0.53, 0.5, 0.012, 0.2); ctx.fillRect(0.4, 0.61, 0.2, 0.012); } },   // 1.27.5: a stone plaque standing out, a cross cut in it
     abyssgate: { s: '#3a1e1a', e: '#2a1512', top: '#2e1c18', lip: '#26150f',
       tex(g, rnd, v) {
         g.fillStyle = '#2e1a16'; g.fillRect(0, 0, 1, WALL_H);
@@ -1367,12 +1597,12 @@
       c.strokeStyle = 'rgba(200,235,220,0.12)'; c.lineWidth = Math.max(1, T * 0.02); c.beginPath();
       R.tiles.forEach(([tx, ty]) => { c.rect((tx + 0.05) * T, (ty + 0.05) * T, T * 0.42, T * 0.42); c.rect((tx + 0.53) * T, (ty + 0.53) * T, T * 0.42, T * 0.42); }); c.stroke();
       R.tiles.forEach(([tx, ty]) => { const a = kH(tx, ty, 31); if (a < 0.6) return; c.fillStyle = 'rgba(110,200,90,' + (0.18 + 0.2 * a).toFixed(2) + ')'; c.beginPath(); c.ellipse((tx + 0.3 + 0.4 * kH(tx, ty, 32)) * T, (ty + 0.3 + 0.4 * kH(tx, ty, 33)) * T, T * 0.22, T * 0.13, a * 4, 0, Math.PI * 2); c.fill(); });
-      const [mx, my] = roomMid(R); c.fillStyle = 'rgba(10,14,12,0.6)'; c.fillRect(mx * T - T * 0.16, my * T - T * 0.16, T * 0.32, T * 0.32); c.strokeStyle = 'rgba(160,180,170,0.4)'; c.beginPath(); for (let k = 0; k < 4; k++) { c.moveTo(mx * T - T * 0.12 + k * T * 0.08, my * T - T * 0.14); c.lineTo(mx * T - T * 0.12 + k * T * 0.08, my * T + T * 0.14); } c.stroke();
+      const [mx, my] = roomMid(R); floorDrain(c, mx * T, my * T, T * 0.16, T, 3);   // 1.27.5: a hole with its inner sides, bars over it
     },
     graveyard(c, R, T) {   // earth and grass, a grave mound in the middle
       const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
       c.fillStyle = 'rgba(74,60,36,0.3)'; c.fillRect(x, y, w, h);
-      R.tiles.forEach(([tx, ty]) => { for (let k = 0; k < 3; k++) { if (kH(tx, ty, 40 + k) < 0.45) continue; const gx = (tx + 0.15 + 0.7 * kH(tx, ty, 43 + k)) * T, gy = (ty + 0.15 + 0.7 * kH(tx, ty, 46 + k)) * T; c.strokeStyle = 'rgba(120,150,80,0.55)'; c.lineWidth = Math.max(1, T * 0.022); c.beginPath(); for (let j = -1; j <= 1; j++) { c.moveTo(gx, gy); c.lineTo(gx + j * T * 0.05, gy - T * 0.1); } c.stroke(); } });
+      // (1.27.5: the grass stands up out of it as solid tufts now: CLUTTER_PLAN.graveyard)
       const [mx, my] = roomMid(R); c.fillStyle = 'rgba(40,30,18,0.9)'; c.beginPath(); c.ellipse(mx * T, my * T, T * 0.45, T * 0.74, 0, 0, Math.PI * 2); c.fill(); c.strokeStyle = 'rgba(140,120,80,0.5)'; c.lineWidth = Math.max(1, T * 0.03); c.stroke(); c.fillStyle = 'rgba(110,88,56,0.7)'; c.beginPath(); c.ellipse(mx * T - T * 0.08, my * T - T * 0.1, T * 0.28, T * 0.5, 0, 0, Math.PI * 2); c.fill();
     },
     abyssgate(c, R, T) {   // cracked black floor with ember cracks, the rune circle's lines (it glows in KIND_LIVE)
@@ -1399,7 +1629,7 @@
   Object.assign(PROP_PLAN, {
     lab(R, o) { const [mx, my] = roomMid(R); o.push(['labtable', R.x0 + Math.max(0.7, (R.x1 - R.x0 + 1) * 0.3), R.y0 + 0.7, 1, 0, 0.6]); o.push(['gcauldron', mx + 0.6, my + 0.4, 1, 0, 0.55]);
       PROP_SCATTER(R, o, 221, 0.55, 0.15, (q) => q < 0.45 ? ['flasks', 0.3] : q < 0.75 ? ['crateS', 0.35] : ['books', 0.2]); },
-    graveyard(R, o) { PROP_SCATTER(R, o, 231, 0.85, 0.35, (q, e) => q < 0.45 ? ['headstone', 0.55] : q < 0.7 ? ['gcross', 0.6] : q < 0.85 ? ['deadgrass', 0.2] : ['skullpile', 0.4]); },
+    graveyard(R, o) { const [mx, my] = roomMid(R); o.push(['gmound', mx, my, 1, 0, 0.18]); PROP_SCATTER(R, o, 231, 0.85, 0.35, (q, e) => q < 0.45 ? ['headstone', 0.55] : q < 0.7 ? ['gcross', 0.6] : q < 0.85 ? ['deadgrass', 0.2] : ['skullpile', 0.4]); },
     abyssgate(R, o) { const [mx, my] = roomMid(R), w = R.x1 - R.x0 + 1; o.push(['rbrazier', R.x0 + 0.6, R.y0 + 0.6, 1, 0, 0.6]); if (w > 2) o.push(['rbrazier', R.x1 + 0.4, R.y0 + 0.6, 1, 1, 0.6]);
       PROP_SCATTER(R, o, 241, 0.55, 0.12, (q) => q < 0.5 ? ['brimstone', 0.25] : q < 0.8 ? ['horns', 0.25] : ['chainpile', 0.15]); void mx; void my; }
   });
@@ -1411,11 +1641,15 @@
       const [x, y] = at(tx, ty, salt + 2), q = kH(tx, ty, salt + 5), t = pick(q, e); if (t) out.push([t[0], x, y, 0.85 + 0.3 * kH(tx, ty, salt + 7), Math.floor(kH(tx, ty, salt + 9) * 4), t[1]]);
     });
   }
+  // 1.27.5: the headstones' profiles (u across, v up; counter-clockwise): a round top, square shoulders, a broken slant
+  const HS_PROF = [(() => { const o = [[0, 0], [1, 0], [1, 0.62]]; for (let k = 1; k < 8; k++) { const a = k * Math.PI / 8; o.push([0.5 + 0.5 * Math.cos(a), 0.62 + 0.38 * Math.sin(a)]); } o.push([0, 0.62]); return o; })(),
+    [[0, 0], [1, 0], [1, 0.84], [0.84, 1], [0.16, 1], [0, 0.84]], [[0, 0], [1, 0], [1, 0.62], [0, 0.95]]];
+  const pFlask = (x, y, z, r, col) => { pCyl(x, y, r * 0.32, r * 2.6, 'rgba(200,215,240,0.55)', 'rgba(230,240,255,0.7)', z + r * 1.2); pBall(x, y, z, r, col); };   // 1.27.5: a round glass bulb, a glass neck
   Object.assign(PROP, {
-    labtable(p, T) {   // a table with an alembic, flasks and a burner
+    labtable(p, T) {   // a table with flasks and a burner
       groundShadow(p.x, p.y, 0.42, 0.22, 0.38);
       isoBox(p.x, p.y, 0.7, 0.38, 0.32, '#5a3f2a', '#46301f', '#382617');
-      [[-0.22, '#7fe05a'], [0.02, '#8cc8ff'], [0.22, '#c78be3']].forEach(([u, col], k) => { const b = W2S(p.x + u, p.y, 0.32), r = T * (0.06 + 0.02 * (k % 2)); ctx.fillStyle = 'rgba(200,215,240,0.5)'; ctx.fillRect(b[0] - T * 0.015, b[1] - r * 2.8, T * 0.03, r * 1.2); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(b[0], b[1] - r, r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(b[0] - r * 0.5, b[1] - r * 1.4, Math.max(1, T * 0.02), Math.max(1, T * 0.02)); });
+      [[-0.22, '#7fe05a'], [0.02, '#8cc8ff'], [0.22, '#c78be3']].forEach(([u, col], k) => pFlask(p.x + u, p.y - u * 0.15, 0.32, 0.06 + 0.02 * (k % 2), col));
       const g = W2S(p.x - 0.22, p.y, 0.48); ctx.drawImage(glowSprite('kflask', [[0, 'rgba(127,224,90,0.45)'], [1, 'rgba(127,224,90,0)']]), g[0] - T * 0.3, g[1] - T * 0.3, T * 0.6, T * 0.6);
     },
     gcauldron(p, T, t) {   // a cauldron of green brew bubbling over coals
@@ -1425,43 +1659,85 @@
       if (!reduceMotion) for (let k = 0; k < 3; k++) { const u = (t * 0.8 + k / 3 + p.seed * 0.1) % 1, b = W2S(p.x + (k - 1) * 0.08, p.y, 0.36 + u * 0.4); ctx.fillStyle = 'rgba(156,230,120,' + (0.8 * (1 - u)).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(b[0], b[1], Math.max(1, T * 0.03 * (1 - u * 0.5)), 0, Math.PI * 2); ctx.fill(); }
       const f = W2S(p.x, p.y, 0.02); ctx.drawImage(glowSprite('kcoal', [[0, 'rgba(255,120,50,0.5)'], [1, 'rgba(255,120,50,0)']]), f[0] - T * 0.3, f[1] - T * 0.15, T * 0.6, T * 0.3);
     },
-    flasks(p, T) { groundShadow(p.x, p.y, 0.16, 0.1, 0.3); [[-0.06, 0, '#7fe05a'], [0.07, 0.04, '#e0643c'], [0, 0.08, '#8cc8ff']].slice(0, 2 + (p.v % 2)).forEach(([u, v, col]) => { const b = W2S(p.x + u, p.y + v, 0), r = T * 0.055 * p.s; ctx.fillStyle = 'rgba(200,215,240,0.5)'; ctx.fillRect(b[0] - T * 0.012, b[1] - r * 3.2, T * 0.024, r * 1.4); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(b[0], b[1] - r, r, 0, Math.PI * 2); ctx.fill(); }); },
-    headstone(p, T) {   // a crooked headstone, rounded top, a carved cross, moss
-      groundShadow(p.x, p.y, 0.2, 0.1, 0.35);
-      const b = W2S(p.x, p.y, 0), w = T * 0.2 * p.s, h = T * 0.42 * p.s, lean = (p.v - 1.5) * 0.08;
-      ctx.save(); ctx.translate(b[0], b[1]); ctx.rotate(lean);
-      ctx.fillStyle = '#6e7262'; ctx.beginPath(); ctx.moveTo(-w, 0); ctx.lineTo(-w, -h + w); ctx.arc(0, -h + w, w, Math.PI, 0); ctx.lineTo(w, 0); ctx.fill();
-      ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fillRect(w * 0.35, -h + w * 0.6, w * 0.65, h - w * 0.6);
-      ctx.fillStyle = '#3e4236'; ctx.fillRect(-w * 0.08, -h * 0.75, w * 0.16, h * 0.4); ctx.fillRect(-w * 0.35, -h * 0.65, w * 0.7, w * 0.16);
-      ctx.fillStyle = 'rgba(92,140,58,0.7)'; ctx.fillRect(-w, -h * 0.12, w * 1.2, h * 0.12);
+    flasks(p, T) { groundShadow(p.x, p.y, 0.16, 0.1, 0.3); [[-0.06, 0, '#7fe05a'], [0.07, 0.04, '#e0643c'], [0, 0.08, '#8cc8ff']].slice(0, 2 + (p.v % 2)).forEach(([u, v, col]) => pFlask(p.x + u, p.y + v, 0, 0.055 * p.s, col)); },
+    headstone(p, T) {   // 1.27.5: a crooked headstone with its thickness (round, square or broken top), a carved cross, moss at its foot
+      const E = p.v % 2 === 1, w = 0.36 * p.s, h = 0.44 * p.s, d = 0.085 * p.s, lu = (p.v - 1.5) * 0.04, lb = 0.02 + 0.015 * (p.v % 3);
+      groundShadow(p.x + 0.04, p.y + 0.02, 0.22, 0.12, 0.38);
+      const q = pSlab(p.x, p.y, w, d, h, HS_PROF[p.v % 3], E ? ['#5c6052', '#8a8e7c', '#6e7262'] : ['#767a68', '#8e9280', '#4e5246'], E, lu, lb);
+      ctx.save(); onFace(q);
+      ctx.fillStyle = 'rgba(30,32,24,0.75)'; ctx.fillRect(0.45, 0.2, 0.1, 0.42); ctx.fillRect(0.3, 0.3, 0.4, 0.09);   // the cross cut into it
+      ctx.fillStyle = 'rgba(220,226,200,0.3)'; ctx.fillRect(0.55, 0.2, 0.025, 0.42); ctx.fillRect(0.3, 0.39, 0.4, 0.025);   // its lit lower edges
+      ctx.fillStyle = 'rgba(30,32,24,0.4)'; ctx.fillRect(0.28, 0.72, 0.44, 0.03); ctx.fillRect(0.34, 0.8, 0.32, 0.03);   // worn letters
+      ctx.fillStyle = 'rgba(92,140,58,0.75)'; ctx.beginPath(); ctx.moveTo(0, 1); ctx.lineTo(0, 0.86); ctx.quadraticCurveTo(0.3, 0.8, 0.5, 0.9); ctx.quadraticCurveTo(0.7, 0.84, 0.85, 0.92); ctx.lineTo(0.85, 1); ctx.fill();
       ctx.restore();
     },
-    gcross(p, T) { groundShadow(p.x, p.y, 0.14, 0.08, 0.3); const b = W2S(p.x, p.y, 0), t2 = W2S(p.x, p.y, 0.5 * p.s), m = W2S(p.x, p.y, 0.36 * p.s), lw = Math.max(2, T * 0.06); ctx.save(); ctx.translate(b[0], b[1]); ctx.rotate((p.v - 1.5) * 0.1); ctx.translate(-b[0], -b[1]); pLine(b, t2, '#4a3a28', lw); pLine([m[0] - T * 0.12, m[1]], [m[0] + T * 0.12, m[1]], '#4a3a28', lw); ctx.restore(); },
-    deadgrass(p, T) { const b = W2S(p.x, p.y, 0); ctx.strokeStyle = '#8a8a5a'; ctx.lineWidth = Math.max(1, T * 0.02); ctx.beginPath(); for (let k = -2; k <= 2; k++) { ctx.moveTo(b[0] + k * T * 0.03, b[1]); ctx.lineTo(b[0] + k * T * 0.06, b[1] - T * (0.12 + 0.04 * (k % 2))); } ctx.stroke(); },
-    rbrazier(p, T, t) {   // an iron brazier of red fire
+    gcross(p, T) {   // 1.27.5: a wooden cross of two square beams, leaning
+      groundShadow(p.x + 0.03, p.y + 0.02, 0.15, 0.09, 0.32);
+      const E = p.v % 2 === 1, s = p.s, H = 0.5 * s, zb = 0.3 * s, hb = 0.065 * s, lx = (p.v - 1.5) * 0.05, ly = (p.v % 3 - 1) * 0.04, W = ['#7a6044', '#4e3c2a', '#3a2c1e'], f0 = zb / H, f1 = (zb + hb) / H;
+      pBox(p.x, p.y, 0.065, 0.065, zb, W, 0, lx * f0, ly * f0);
+      pBox(p.x + lx * f0, p.y + ly * f0, E ? 0.055 : 0.3 * s, E ? 0.3 * s : 0.055, hb, W, zb, lx * (f1 - f0), ly * (f1 - f0));
+      pBox(p.x + lx * f1, p.y + ly * f1, 0.065, 0.065, H - zb - hb, W, zb + hb, lx * (1 - f1), ly * (1 - f1));
+    },
+    deadgrass(p, T) { pTuft(p.x - 0.05, p.y - 0.03, 0.16, 5, '#8a8a52', p.v); pTuft(p.x + 0.06, p.y + 0.04, 0.13, 4, '#7a8248', p.v + 1); },   // 1.27.5: two tufts of standing blades
+    rbrazier(p, T, t) {   // an iron brazier of red fire on round legs
       groundShadow(p.x, p.y, 0.2, 0.12, 0.35);
-      pLine(W2S(p.x - 0.12, p.y, 0), W2S(p.x, p.y, 0.4), '#2a2226', Math.max(1.5, T * 0.04)); pLine(W2S(p.x + 0.12, p.y, 0), W2S(p.x, p.y, 0.4), '#2a2226', Math.max(1.5, T * 0.04));
-      pCyl(p.x, p.y, 0.16, 0.08, '#3a2a2a', '#1a0a0a', 0.4);
-      const q = W2S(p.x, p.y, 0.48); pFlame(q[0], q[1], T * 0.34, t, p.seed, 'rgba(255,200,120,0.95)', 'rgba(230,50,30,0.9)', ['kfireR', [[0, 'rgba(255,70,40,0.42)'], [0.5, 'rgba(255,50,30,0.12)'], [1, 'rgba(255,40,20,0)']]]);
+      pCap(p.x - 0.12, p.y, 0, p.x, p.y, 0.4, 0.022, '#3a3236'); pCap(p.x + 0.12, p.y, 0, p.x, p.y, 0.4, 0.022, '#3a3236');
+      pBowl(p.x, p.y, 0.4, 0.16, 0.08, '#3a2a2a', '#5a4446', t, Math.round(p.seed), true);   // 1.27.5 (round 3): a bowl with its rim and hollow, red coals heaped in it
+      const q = W2S(p.x, p.y, 0.5); pFlame(q[0], q[1], T * 0.34, t, p.seed, 'rgba(255,200,120,0.95)', 'rgba(230,50,30,0.9)', ['kfireR', [[0, 'rgba(255,70,40,0.42)'], [0.5, 'rgba(255,50,30,0.12)'], [1, 'rgba(255,40,20,0)']]]);
     },
     brimstone(p, T) { groundShadow(p.x, p.y, 0.16, 0.1, 0.3); [[-0.06, 0.02, 0.08], [0.06, -0.02, 0.06], [0.01, 0.06, 0.05]].forEach(([u, v, r]) => pBall(p.x + u, p.y + v, 0, r * p.s, '#c4a052', 'rgba(60,30,10,0.45)')); },
-    horns(p, T) { groundShadow(p.x, p.y, 0.16, 0.08, 0.3); const s = W2S(p.x, p.y, 0.06), r = T * 0.1 * p.s; skullT(ctx, s[0], s[1] - r * 0.4, r * 1.4, '#c9bfa8', 'rgba(110,100,80,0.5)', '#2a1414'); ctx.strokeStyle = '#d9cfb4'; ctx.lineWidth = Math.max(1.5, T * 0.035); ctx.beginPath(); ctx.moveTo(s[0] - r * 0.5, s[1] - r); ctx.quadraticCurveTo(s[0] - r * 1.4, s[1] - r * 1.4, s[0] - r * 1.1, s[1] - r * 2.2); ctx.moveTo(s[0] + r * 0.5, s[1] - r); ctx.quadraticCurveTo(s[0] + r * 1.4, s[1] - r * 1.4, s[0] + r * 1.1, s[1] - r * 2.2); ctx.stroke(); },
-    chainpile(p, T) { const b = W2S(p.x, p.y, 0.02); ctx.strokeStyle = '#6a6672'; ctx.lineWidth = Math.max(1, T * 0.025); for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.ellipse(b[0] + Math.cos(k * 1.7) * T * 0.1, b[1] + Math.sin(k * 1.7) * T * 0.05, T * 0.035, T * 0.022, k, 0, Math.PI * 2); ctx.stroke(); } }
+    horns(p, T) {   // 1.27.5: a horned skull: round horns curling up behind it, the skull in front
+      groundShadow(p.x, p.y, 0.16, 0.08, 0.3); const s = W2S(p.x, p.y, 0.02), r = T * 0.1 * p.s, w = Math.max(1.6, T * 0.045 * p.s);
+      [-1, 1].forEach(sd => pCurve([s[0] + sd * r * 0.45, s[1] - r * 1.6], [s[0] + sd * r * 1.5, s[1] - r * 2.0], [s[0] + sd * r * 1.1, s[1] - r * 2.9], w, '#d9cfb4'));
+      pSkull(s[0], s[1], r * 0.7, '#c9bfa8', '#2a1414', 0);
+    },
+    chainpile(p, T) { groundShadow(p.x, p.y, 0.16, 0.09, 0.3); const b = W2S(p.x, p.y, 0.02); [3, 0, 5, 2, 4, 1, 6].forEach(k => pRing(b[0] + Math.cos(k * 1.7) * T * 0.1 * (k < 6), b[1] + Math.sin(k * 1.7) * T * 0.05 * (k < 6) - (k % 2 || k === 6) * T * 0.035, T * 0.05, T * 0.03, Math.max(1.4, T * 0.03), '#8a8692', k * 0.7)); },   // 1.27.5: round links heaped up
+    gmound(p, T) {   // 1.27.5: the grave in the middle of a Cmentarz: a mound of earth raised over its painted outline
+      const x = p.x - 0.03, y = p.y - 0.04, k = 1 / PROP_K;   // (drawProp scales it up: the mound keeps to the painted outline)
+      [[0, 0.4, 0.66, '#33261a'], [0.06, 0.36, 0.6, '#45351f'], [0.12, 0.3, 0.52, '#58452c'], [0.17, 0.23, 0.42, '#6a5536'], [0.21, 0.14, 0.28, '#7a6442']].forEach(([z, rx, ry, c]) => pFloorEll(x, y, z, rx * k, ry * k, c));
+      const q = W2S(x - 0.04, y - 0.08, 0.21); ctx.fillStyle = 'rgba(255,230,180,0.12)'; ctx.beginPath(); ctx.ellipse(q[0], q[1], T * 0.12, T * 0.05, -0.4, 0, 7); ctx.fill();
+    }
   });
-  Object.assign(KIND_WALL, {
-    lab(u0, t, alt) {   // a shelf of bottles; or a chart of the elements
-      if (alt) { ctx.fillStyle = '#c9bfa8'; ctx.fillRect(0.25, 0.15, 0.5, 0.55); ctx.strokeStyle = '#4a3a28'; ctx.lineWidth = 0.02; ctx.strokeRect(0.25, 0.15, 0.5, 0.55); ctx.strokeStyle = '#3a6a3a'; ctx.beginPath(); ctx.arc(0.5, 0.38, 0.12, 0, 7); ctx.moveTo(0.38, 0.38); ctx.lineTo(0.62, 0.38); ctx.moveTo(0.5, 0.26); ctx.lineTo(0.5, 0.5); ctx.stroke(); for (let k = 0; k < 3; k++) { ctx.fillStyle = '#4a3a28'; ctx.fillRect(0.3, 0.55 + k * 0.04, 0.4 - k * 0.08, 0.015); } return; }
-      ctx.fillStyle = '#4a3020'; ctx.fillRect(0.12, 0.42, 0.76, 0.05); ctx.fillRect(0.12, 0.72, 0.76, 0.05);
-      [['#7fe05a', 0.2], ['#8cc8ff', 0.36], ['#c78be3', 0.54], ['#e0643c', 0.72]].forEach(([c, x], k) => { [0.42, 0.72].forEach((y, j) => { if ((k + j) % 3 === 2) return; ctx.fillStyle = 'rgba(200,215,240,0.5)'; ctx.fillRect(x, y - 0.17, 0.035, 0.06); ctx.fillStyle = c; ctx.fillRect(x - 0.025, y - 0.11, 0.085, 0.11); }); });
-      ctx.fillStyle = 'rgba(127,224,90,' + (0.15 + 0.1 * Math.sin(t * 2 + u0 * 9)).toFixed(2) + ')'; ctx.fillRect(0.12, 0.2, 0.76, 0.55);
+  Object.assign(KIND_WALL, {   // 1.27.5: in the face's frame K (kwKit), as the old ones
+    lab(K, t, u0, alt, T) {   // two shelves standing out of the wall with bottles on them; or a chart of the elements pinned up
+      if (alt) {
+        kwSheet(K, 0.25, 0.15, 0.75, 0.7, 0.012, 0.06, '#c9bfa8', () => {   // 1.27.5: its lower half curling off the stone
+          ctx.strokeStyle = '#4a3a28'; ctx.lineWidth = 0.02; ctx.strokeRect(0.27, 0.17, 0.46, 0.51); ctx.strokeStyle = '#3a6a3a'; ctx.beginPath(); ctx.arc(0.5, 0.38, 0.12, 0, 7); ctx.moveTo(0.38, 0.38); ctx.lineTo(0.62, 0.38); ctx.moveTo(0.5, 0.26); ctx.lineTo(0.5, 0.5); ctx.stroke(); for (let k = 0; k < 3; k++) { ctx.fillStyle = '#4a3a28'; ctx.fillRect(0.3, 0.55 + k * 0.04, 0.4 - k * 0.08, 0.015); } });
+        [0.28, 0.72].forEach(u => { const q = K.P(u, 0.17, 0.025); pKnob(q[0], q[1], Math.max(1.2, T * 0.018), '#9a9da5'); });
+        return;
+      }
+      [0.42, 0.72].forEach((v, j) => {
+        K.box(0.12, 0.88, v, v + 0.05, 0, 0.15, ['#6a4a30', '#4a3020', '#3a2618']);
+        const z = K.Z(v);
+        [['#7fe05a', 0.2], ['#8cc8ff', 0.36], ['#c78be3', 0.54], ['#e0643c', 0.72]].forEach(([c, x], k) => { if ((k + j) % 3 === 2) return; const [wx, wy] = K.W(x + 0.018, 0.08); pCyl(wx, wy, 0.045, 0.13, c, kSh(c, 1.3), z); pCyl(wx, wy, 0.016, 0.07, 'rgba(200,215,240,0.6)', 'rgba(230,240,255,0.8)', z + 0.13); });
+      });
+      const g = K.P(0.45, 0.5, 0.1), a = 0.6 + 0.4 * Math.sin(t * 2 + u0 * 9); ctx.globalAlpha *= a; ctx.drawImage(glowSprite('kflask', [[0, 'rgba(127,224,90,0.45)'], [1, 'rgba(127,224,90,0)']]), g[0] - T * 0.45, g[1] - T * 0.45, T * 0.9, T * 0.9); ctx.globalAlpha /= a;
     },
-    graveyard(u0, t, alt) {   // ivy hanging down; or an iron lantern with a pale flame
-      if (alt) { ctx.strokeStyle = '#2a2a2e'; ctx.lineWidth = 0.025; ctx.beginPath(); ctx.moveTo(0.5, 0.05); ctx.lineTo(0.5, 0.25); ctx.stroke(); ctx.fillStyle = '#2a2a2e'; ctx.fillRect(0.4, 0.25, 0.2, 0.26); ctx.fillStyle = 'rgba(200,230,220,' + (0.55 + 0.25 * Math.sin(t * 5 + u0 * 7)).toFixed(2) + ')'; ctx.fillRect(0.44, 0.29, 0.12, 0.18); return; }
-      ctx.strokeStyle = '#3e5a2a'; ctx.lineWidth = 0.025; for (let k = 0; k < 4; k++) { const x = 0.15 + k * 0.22 + u0 * 0.05; ctx.beginPath(); ctx.moveTo(x, 0); ctx.quadraticCurveTo(x + 0.06, 0.3, x - 0.02, 0.45 + 0.15 * (k % 2)); ctx.stroke(); ctx.fillStyle = k % 2 ? '#5c8c3a' : '#4a7a30'; for (let j = 1; j < 5; j++) { ctx.beginPath(); ctx.ellipse(x + 0.03 * Math.sin(j * 2), j * 0.1, 0.035, 0.022, j, 0, 7); ctx.fill(); } }
+    graveyard(K, t, u0, alt, T) {   // ivy hanging down off the top (round vines, leaves); or an iron lantern on a bracket with a pale flame
+      if (alt) {
+        K.box(0.46, 0.54, 0.02, 0.08, 0, 0.02, KW_IRON); pRod(K.P(0.5, 0.05, 0.01), K.P(0.5, 0.05, 0.14), Math.max(1.4, T * 0.022), '#3a3a40');
+        const top = K.P(0.5, 0.05, 0.14), bot = K.P(0.5, 0.2, 0.14); ctx.strokeStyle = '#2a2a2e'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(top[0], top[1]); ctx.lineTo(bot[0], bot[1]); ctx.stroke();
+        K.box(0.42, 0.58, 0.2, 0.25, 0.08, 0.2, KW_IRON);   // its roof
+        K.box(0.43, 0.57, 0.25, 0.5, 0.09, 0.19, ['#3a3a40', '#2a2a2e', '#222226']);
+        const lg = 0.55 + 0.25 * Math.sin(t * 5 + u0 * 7); K.plane(0.19);
+        ctx.fillStyle = 'rgba(200,230,220,' + lg.toFixed(2) + ')'; ctx.fillRect(0.455, 0.28, 0.09, 0.19); ctx.fillStyle = 'rgba(255,255,240,0.5)'; ctx.fillRect(0.485, 0.33, 0.03, 0.09);
+        screenT(); const q = K.P(0.5, 0.38, 0.14); ctx.globalAlpha *= lg; ctx.drawImage(glowSprite('kgwisp', [[0, 'rgba(220,255,230,0.9)'], [0.4, 'rgba(170,230,200,0.3)'], [1, 'rgba(170,230,200,0)']]), q[0] - T * 0.3, q[1] - T * 0.3, T * 0.6, T * 0.6); ctx.globalAlpha /= lg;
+        return;
+      }
+      for (let k = 0; k < 4; k++) {
+        const x = 0.15 + k * 0.22 + u0 * 0.05, e = 0.45 + 0.15 * (k % 2), a = K.P(x, 0, 0.02), c = K.P(x + 0.06, 0.3, 0.05), b = K.P(x - 0.02, e, 0.04);
+        pCurve(a, c, b, Math.max(1.4, T * 0.024), '#4e6e36');
+        for (let j = 1; j < 5; j++) { const q = K.P(x + 0.03 * Math.sin(j * 2), j * 0.1, 0.055); pOval(q[0], q[1], T * 0.035, T * 0.024, k % 2 ? '#5c8c3a' : '#4a7a30', j); }
+      }
     },
-    abyssgate(u0, t, alt) {   // a sigil burning in the stone; or chains with a hook
-      if (alt) { ctx.strokeStyle = '#5a5664'; ctx.lineWidth = 0.02; for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.ellipse(0.4 + (k % 2) * 0.02, 0.08 + k * 0.08, 0.025, 0.04, 0, 0, 7); ctx.stroke(); } ctx.beginPath(); ctx.arc(0.43, 0.6, 0.06, 0, Math.PI); ctx.stroke(); return; }
-      const a = 0.5 + 0.3 * Math.sin(t * 2 + u0 * 8);
+    abyssgate(K, t, u0, alt, T) {   // a sigil burning in the stone; or a chain of round links with a hook, off the wall
+      if (alt) {
+        K.box(0.37, 0.45, 0.02, 0.07, 0, 0.02, KW_IRON);
+        for (let k = 0; k < 6; k++) { const q = K.P(0.4 + (k % 2) * 0.02, 0.08 + k * 0.08, 0.03 + k * 0.006); pRing(q[0], q[1], T * (k % 2 ? 0.016 : 0.026), T * (k % 2 ? 0.04 : 0.03), Math.max(1, T * 0.016), '#8a8694'); }
+        const h0 = K.P(0.43, 0.56, 0.07), h1 = K.P(0.43, 0.7, 0.08), h2 = K.P(0.5, 0.62, 0.08); pCurve(h0, [h1[0] - T * 0.06, h1[1]], h1, Math.max(1.6, T * 0.03), '#8a8694'); pCurve(h1, [h1[0] + T * 0.06, h1[1]], h2, Math.max(1.6, T * 0.03), '#8a8694');
+        return;
+      }
+      const a = 0.5 + 0.3 * Math.sin(t * 2 + u0 * 8); K.plane(0);
       ctx.strokeStyle = 'rgba(255,90,50,' + a.toFixed(2) + ')'; ctx.lineWidth = 0.03; ctx.beginPath(); ctx.arc(0.5, 0.45, 0.22, 0, 7);
       for (let k = 0; k <= 5; k++) { const b = -Math.PI / 2 + k * 4 * Math.PI / 5; k ? ctx.lineTo(0.5 + Math.cos(b) * 0.22, 0.45 + Math.sin(b) * 0.22) : ctx.moveTo(0.5 + Math.cos(b) * 0.22, 0.45 + Math.sin(b) * 0.22); }
       ctx.stroke();
@@ -1521,20 +1797,1120 @@
   // ---------- 1.26: raised wall pieces of the three new komnaty (KIND_WALL3D, like the old ones) ----------
   Object.assign(KIND_WALL3D, {
     lab(F, h, T, t, s) {   // a shelf with flasks, one bubbling green; a copper pipe on the other pieces
-      if (s % 2) { const a = F.P(0.15, 0.06, h - 0.2), b = F.P(0.15, 0.06, 0.3), c = F.P(0.85, 0.06, 0.3); pLine(a, b, '#a8683a', Math.max(2, T * 0.04)); pLine(b, c, '#a8683a', Math.max(2, T * 0.04)); return; }
+      if (s % 2) { const a = F.P(0.15, 0.07, h - 0.2), b = F.P(0.15, 0.07, 0.3), c = F.P(0.85, 0.07, 0.3), w = Math.max(2, T * 0.045); pRod(a, b, w, '#b8743e'); pRod(b, c, w, '#b8743e'); [[0.15, h - 0.5], [0.5, 0.3], [0.8, 0.3]].forEach(([u, z]) => F.box(u, 0.035, 0.05, 0.07, 0.04, z - 0.02, '#5e626c', '#464a52', '#34373e')); pKnob(b[0], b[1], w * 0.75, '#c8844a'); return; }   // 1.27.5: a round copper pipe on brackets
       const z = Math.min(1.0, h - 0.35); F.box(0.5, 0.1, 0.8, 0.16, 0.04, z, '#5a4430', '#4a3828', '#3a2c20');
       [[0.25, '#7fd08a'], [0.45, '#d8c06a'], [0.68, '#9fb8e0']].forEach(([u, col], k) => { const [wx, wy] = F.W(u, 0.1); pCyl(wx, wy, 0.05, 0.12 + 0.03 * k, col, '#e8f0e8', z + 0.04); });
       const q = F.P(0.25, 0.1, z + 0.22 + Math.sin(t * 3 + s) * 0.03); ctx.fillStyle = 'rgba(160,240,170,0.7)'; ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(1.5, T * 0.025), 0, Math.PI * 2); ctx.fill();
     },
     graveyard(F, h, T, t, s) {   // ivy hanging off the top; a small iron lantern on every third piece
-      ctx.strokeStyle = '#3e5a34'; ctx.lineWidth = Math.max(1.5, T * 0.03); ctx.lineCap = 'round';
-      [0.2, 0.55, 0.8].forEach((u, k) => { const a = F.P(u, 0.02, h - 0.02), b = F.P(u + 0.05, 0.08, h - 0.4 - 0.15 * k); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(b[0] + T * 0.06, (a[1] + b[1]) / 2, b[0], b[1]); ctx.stroke(); ctx.fillStyle = '#4e7040'; ctx.beginPath(); ctx.arc(b[0], b[1], Math.max(1.5, T * 0.035), 0, Math.PI * 2); ctx.fill(); });
-      ctx.lineCap = 'butt';
+      [0.2, 0.55, 0.8].forEach((u, k) => { const a = F.P(u, 0.02, h - 0.02), b = F.P(u + 0.05, 0.08, h - 0.4 - 0.15 * k); pCurve(a, [b[0] + T * 0.06, (a[1] + b[1]) / 2], b, Math.max(1.6, T * 0.032), '#4e6e3c');   // 1.27.5: round vines, leaves
+        for (let j = 1; j <= 3; j++) { const f = j / 4, q = [a[0] + (b[0] - a[0]) * f + T * 0.04 * Math.sin(f * 3), a[1] + (b[1] - a[1]) * f]; pOval(q[0] + (j % 2 ? -1 : 1) * T * 0.03, q[1], T * 0.035, T * 0.024, j % 2 ? '#5c8c3a' : '#4a7a30', j); }
+        pOval(b[0], b[1], T * 0.04, T * 0.03, '#5a8240'); });
       if (s % 3 === 0) { const z = Math.min(0.95, h - 0.4); pLine(F.P(0.5, 0, z + 0.1), F.P(0.5, 0.14, z + 0.1), '#2a2a2e', Math.max(1.5, T * 0.03)); F.box(0.5, 0.16, 0.1, 0.1, 0.14, z - 0.06, '#3a3a40', '#2c2c32', '#222226'); const q = F.P(0.5, 0.16, z + 0.02); ctx.fillStyle = 'rgba(240,220,150,' + (0.6 + 0.2 * Math.sin(t * 4 + s)) + ')'; ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(1.5, T * 0.03), 0, Math.PI * 2); ctx.fill(); }
     },
     abyssgate(F, h, T, t, s) {   // a glowing crack running down the stone; chains with a hook on the other pieces
-      if (s % 2) { [0.3, 0.7].forEach((u, k) => { const a = F.P(u, 0.03, h - 0.05), b = F.P(u, 0.06, h - 0.6 - 0.15 * k); pLine(a, b, '#3a3236', Math.max(1.5, T * 0.03)); }); return; }
+      if (s % 2) { [0.3, 0.7].forEach((u, k) => { const n = 6 + k * 2; for (let j = 0; j <= n; j++) { const f = j / n, q = F.P(u, 0.03 + 0.03 * f, h - 0.05 - (0.55 + 0.15 * k) * f); pRing(q[0], q[1], T * (j % 2 ? 0.014 : 0.024), T * (j % 2 ? 0.03 : 0.022), Math.max(1, T * 0.016), '#6a6270'); } }); return; }   // 1.27.5: chains of round links
       const g = 0.55 + 0.35 * Math.sin(t * 2 + s), pts = [[0.4, h - 0.1], [0.48, h - 0.45], [0.42, h - 0.75], [0.52, 0.35]].map(([u, z]) => F.P(u, 0.01, Math.max(0.1, z)));
       ctx.strokeStyle = 'rgba(255,90,50,' + g.toFixed(2) + ')'; ctx.lineWidth = Math.max(1.5, T * 0.035); ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
     }
   });
+  /* ================= 1.27.5: the room effects dress their rooms like the komnaty do ================= */
+  // 1.27.5 (author: the komnaty look good, the room effects mediocre): every effect now has what a komnata has. Its floor is
+  // painted once per room and zoom into a cache (RFX_FLOOR, rfxFloorCache, clipped to the room's tiles); what moves on that floor
+  // is drawn every frame over it (RFX_LIVE); a few small things stand in the room and never block (RFX_PLAN, drawn by drawProp
+  // among the komnaty's props: the same rules, kind 5 of drawSO); a light layer of particles hangs in the air over it (RFX_AIR:
+  // no state, every particle is a phase of the clock, a fixed cap per room, only rooms on screen, none with reduceMotion); and
+  // raised pieces stand out of the faces of its walls (RFX_WALL3D, from rtWallWash). With a komnata in the same room the effect
+  // steps back: a lighter floor, fewer and smaller props only on the edge tiles the komnata left free, thin wall pieces only.
+  const RFX_TILES = new Map(), RFC = new Map(), RFP = new Map();
+  const rfxBox = R => R.x0 + ',' + R.y0 + ',' + R.x1 + ',' + R.y1 + ',' + R.tiles.length;
+  function rfxTilePath(R) {   // the room's tiles as one path, in tile units (a plain rectangle when the room is one)
+    const k = rfxBox(R); let e = RFX_TILES.get(R.key);
+    if (e && e.k === k) return e.p;
+    const p = new Path2D(); if (R.tiles.length === (R.x1 - R.x0 + 1) * (R.y1 - R.y0 + 1)) p.rect(R.x0, R.y0, R.x1 - R.x0 + 1, R.y1 - R.y0 + 1); else R.tiles.forEach(([x, y]) => p.rect(x, y, 1, 1));
+    if (RFX_TILES.size > 80) RFX_TILES.clear(); RFX_TILES.set(R.key, { k, p }); return p;
+  }
+  function rfxFloorCache(R, T) {   // as kindFloorCache: one picture per room and zoom step, at the screen's resolution
+    const s = Math.max(4, Math.round(T * DPR / 3) * 3), W = R.x1 - R.x0 + 1, H = R.y1 - R.y0 + 1, key = R.rt + '|' + (R.rk ? 1 : 0) + '|' + s + '|' + rfxBox(R);
+    let e = RFC.get(R.key);
+    if (e && e.key === key) return e.c;
+    if (RFC.size > 80) RFC.clear();
+    const c = (e && e.c) || document.createElement('canvas'); c.width = W * s; c.height = H * s;
+    const g = c.getContext('2d'); g.translate(-R.x0 * s, -R.y0 * s);
+    g.save(); g.scale(s, s); g.clip(rfxTilePath(R)); g.scale(1 / s, 1 / s);
+    try { RFX_FLOOR[R.rt](g, R, s, !!R.rk, rfxPlan(R)); } finally { g.restore(); }
+    RFC.set(R.key, { key, c }); return c;
+  }
+  // where the effect's things go, fixed by the tiles: pools (tile units), spots (runes, pits...), props [type, x, y, scale, variant, height]
+  function rfxPlan(R) {
+    const k = R.rt + '|' + (R.rk || '') + '|' + rfxBox(R); let e = RFP.get(R.key);
+    if (e && e.k === k) return e.p;
+    const lite = !!R.rk, taken = new Set(), set = new Set(R.tiles.map(q => q[0] + ',' + q[1]));
+    if (lite) kindProps(R).forEach(q => taken.add(Math.floor(q.x) + ',' + Math.floor(q.y)));
+    const p = { pools: [], spots: [], props: [], set, lite };
+    const out = [];
+    if (RFX_PLAN[R.rt]) RFX_PLAN[R.rt](R, p, out, lite, taken);
+    p.props = out.map(([t, x, y, s, v, h]) => ({ t, x, y, s, v, h, seed: (x * 7.3 + y * 3.1) % 10 }));
+    p.bits = []; if (RFX_BITS[R.rt]) { RFX_BITS[R.rt](R, p, p.bits, lite); p.bits.sort((a, b) => (a[0] === 'rug' ? -1e9 : a[1] + a[2]) - (b[0] === 'rug' ? -1e9 : b[1] + b[2])); }   // 1.27.5: the small solid things on its floor
+    if (RFP.size > 80) RFP.clear(); RFP.set(R.key, { k, p }); return p;
+  }
+  // the komnaty's scatter rule, quieter with a komnata (edge tiles only, fewer, smaller, never on a tile with one of its props)
+  function rxScatter(R, out, salt, pEdge, pIn, pick, lite, taken) {
+    R.tiles.forEach(([tx, ty]) => {
+      const e = edgeTile(R, tx, ty), r = kH(tx, ty, salt);
+      if (lite && (!e || taken.has(tx + ',' + ty))) return;
+      if (r > (e ? pEdge * (lite ? 0.45 : 1) : pIn)) return;
+      const x = tx + 0.22 + 0.56 * kH(tx, ty, salt + 2), y = ty + 0.22 + 0.56 * kH(tx, ty, salt + 3), q = kH(tx, ty, salt + 5), t = pick(q, e);
+      if (t) out.push([t[0], x, y, (0.85 + 0.3 * kH(tx, ty, salt + 7)) * (lite ? 0.8 : 1), Math.floor(kH(tx, ty, salt + 9) * 4), t[1]]);
+    });
+  }
+  const rfxFree = (R, tx, ty, taken) => !taken.has(tx + ',' + ty) && !isHeart(tx, ty);
+  // a prop is drawn only on a free floor tile (as the komnaty's: kindPropsSO); its particles follow the same rule
+  const rfxPropOk = p => { const tx = Math.floor(p.x), ty = Math.floor(p.y), k = key(tx, ty); return !fl.items.has(k) && !fl.objects.has(k) && !isHeart(tx, ty) && tileAt(tx, ty) === FLOOR; };
+  function rfxPropsSO(SO, T) {
+    if (T < 9) return;
+    fl.rooms.forEach(R => {
+      if (R.kind !== 'room' || !R.rt || !RFX_PLAN[R.rt] || !roomSeen(R, T)) return;
+      rfxPlan(R).props.forEach(p => {
+        if (!rfxPropOk(p) || !onScreen(W2S(p.x, p.y, 0), T * 2)) return;
+        SO.push([p.x + p.y, 5, p, p.x, p.y, p.h]);
+      });
+    });
+  }
+  // the floor's moving part, in floorT (tile pixels); the others keep inside their room by themselves
+  const RFX_CLIP = { fog: 1, crypt: 1 };
+  function rfxLive(R, T, t) {
+    const fn = RFX_LIVE[R.rt]; if (!fn || (T < 14 && R.rt !== 'fog')) return;   // far out the still floor says it (the fog's drift stays: it is the fog)
+    ctx.save(); if (RFX_CLIP[R.rt]) { ctx.scale(T, T); ctx.clip(rfxTilePath(R)); ctx.scale(1 / T, 1 / T); }   // a clip is dear on a phone: only what drifts over the room's edge asks for one
+    try { fn(ctx, R, T, t, !!R.rk, rfxPlan(R)); } finally { ctx.restore(); }
+  }
+  // the particles in the air over each effect room on screen (screen space, under the walls in front, like drawKindLife)
+  function rfxAir(T) {
+    if (T < 14 || reduceMotion) return;
+    const t = realNow, few = T < 24;   // further out, half the particles (as with a komnata)
+    fl.rooms.forEach(R => {
+      if (R.kind !== 'room' || !R.rt || !RFX_AIR[R.rt] || !roomSeen(R, T)) return;
+      const [mx, my] = roomMid(R); if (fogged(Math.floor(mx), Math.floor(my))) return;
+      const seed = R.x0 * 13 + R.y0 * 7, ph = (k, sp) => ((t * sp + k * 0.6180339 + seed * 0.071) % 1 + 1) % 1;
+      ctx.save();
+      try { RFX_AIR[R.rt](R, T, t, rfxPlan(R), !!R.rk || few, ph, seed, R.x1 - R.x0 + 1, R.y1 - R.y0 + 1); } finally { ctx.restore(); ctx.globalAlpha = 1; }
+    });
+  }
+  // the raised pieces on a wall face that looks into an effect room (rtWallWash calls it for a standing block)
+  function rfxWall3D(x, y, face, h, T, t, s, R) {
+    const fn = R && RFX_WALL3D[R.rt]; if (!fn || T < 20) return;   // small things: close up only
+    ctx.save();
+    try { fn(wallFrame(x, y, face), h, T, t, s, !!R.rk); } finally { ctx.restore(); }
+  }
+  // ---------- 1.27.5: little painters ----------
+  function rxBlob(c, cx, cy, rx, ry, seed) {   // an uneven rounded patch (a smooth closed curve through 12 wobbly points)
+    const n = 12, P = [];
+    for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2, f = 0.74 + 0.36 * kH(seed, k, 71); P.push([cx + Math.cos(a) * rx * f, cy + Math.sin(a) * ry * f]); }
+    c.beginPath(); c.moveTo((P[n - 1][0] + P[0][0]) / 2, (P[n - 1][1] + P[0][1]) / 2);
+    for (let k = 0; k < n; k++) { const a = P[k], b = P[(k + 1) % n]; c.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); }
+    c.closePath();
+  }
+  function rxEdgeGlow(c, R, T, col, depth, set) {   // a soft band of colour along the room's walls, inward
+    R.tiles.forEach(([tx, ty]) => {
+      [[0, -1], [-1, 0], [0, 1], [1, 0]].forEach(([dx, dy]) => {
+        if (set.has((tx + dx) + ',' + (ty + dy))) return;
+        const ax = (dx === 1 ? tx + 1 : tx) * T, ay = (dy === 1 ? ty + 1 : ty) * T, bx = ax - dx * depth * T, by = ay - dy * depth * T;
+        const g = c.createLinearGradient(ax, ay, bx, by); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g;
+        c.fillRect(Math.min(ax, bx, tx * T), Math.min(ay, by, ty * T), dx ? depth * T : T, dy ? depth * T : T);
+      });
+    });
+  }
+  function rxCrack(c, x, y, T, n, seed, len) {   // a jagged crack (a path; the caller strokes it)
+    let px = x, py = y, a = kH(seed, 1, 81) * 6.28; c.moveTo(px, py);
+    for (let k = 0; k < n; k++) { a += (kH(seed, k, 82) - 0.5) * 1.4; const L = T * len * (0.5 + kH(seed, k, 83)); px += Math.cos(a) * L; py += Math.sin(a) * L; c.lineTo(px, py);
+      if (kH(seed, k, 84) > 0.6) { const b = a + (kH(seed, k, 85) > 0.5 ? 0.9 : -0.9); c.moveTo(px, py); c.lineTo(px + Math.cos(b) * L * 0.6, py + Math.sin(b) * L * 0.6); c.moveTo(px, py); } }
+  }
+  function rxGear(cx, cy, r, n, a0, body, edge, hole, cc) {
+    const c = cc || ctx;   // a cog in the current plane (unit square coordinates), centre cx, cy
+    c.beginPath();
+    for (let k = 0; k < n; k++) {
+      const a = a0 + k * Math.PI * 2 / n, d = Math.PI / n;
+      [[a - d * 0.95, 0.78], [a - d * 0.5, 1], [a + d * 0.5, 1], [a + d * 0.95, 0.78]].forEach(([b, q], j) => { const px = cx + Math.cos(b) * r * q, py = cy + Math.sin(b) * r * q; (k || j) ? c.lineTo(px, py) : c.moveTo(px, py); });
+    }
+    c.closePath(); c.fillStyle = body; c.fill();
+    if (edge) { c.strokeStyle = edge; c.lineWidth = r * 0.07; c.beginPath(); c.arc(cx, cy, r * 0.62, 0, Math.PI * 2); c.stroke(); }
+    if (hole) { c.fillStyle = hole; c.beginPath(); c.arc(cx, cy, r * 0.18, 0, Math.PI * 2); for (let k = 0; k < 4; k++) { const a = a0 * 1 + k * Math.PI / 2 + Math.PI / 4, hx = cx + Math.cos(a) * r * 0.42, hy = cy + Math.sin(a) * r * 0.42; c.moveTo(hx + r * 0.11, hy); c.arc(hx, hy, r * 0.11, 0, Math.PI * 2); } c.fill(); }
+  }
+  const rxMist = () => glowSprite('rxmist', [[0, 'rgba(226,232,244,0.6)'], [0.45, 'rgba(216,224,238,0.28)'], [1, 'rgba(210,220,235,0)']]);
+  const rxFog = () => glowSprite('rxfog', [[0, 'rgba(200,210,228,0.55)'], [0.5, 'rgba(190,200,220,0.22)'], [1, 'rgba(185,196,216,0)']]);
+  const rxDot = (x, y, z, r, fill) => { const q = W2S(x, y, z); ctx.fillStyle = fill; if (r < 2.2) ctx.fillRect(q[0] - r, q[1] - r, r * 2, r * 2); else { ctx.beginPath(); ctx.arc(q[0], q[1], r, 0, Math.PI * 2); ctx.fill(); } return q; };   // a tiny one is a square (far cheaper)
+  const rxStar = (q, r, col) => { ctx.strokeStyle = col; ctx.lineWidth = Math.max(1, r * 0.22); ctx.beginPath(); ctx.moveTo(q[0] - r, q[1]); ctx.lineTo(q[0] + r, q[1]); ctx.moveTo(q[0], q[1] - r); ctx.lineTo(q[0], q[1] + r); ctx.stroke(); };
+  const rxRing = (x, y, r, col, lw) => { const q = W2S(x, y, 0); ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); ctx.ellipse(q[0], q[1], r, r * SP, 0, 0, Math.PI * 2); ctx.stroke(); };
+  // ---------- 1.27.5: where things go ----------
+  const RFX_PLAN = {
+    fog(R, P, o, lite, taken) {
+      if (!lite) R.tiles.forEach(([tx, ty]) => { if (!edgeTile(R, tx, ty) && kH(tx, ty, 401) < 0.22 && P.spots.length < 2 && rfxFree(R, tx, ty, taken)) o.push(['rx_vent', tx + 0.5, ty + 0.5, 1, Math.floor(kH(tx, ty, 402) * 4), 0.12]); });
+      rxScatter(R, o, 405, 0.4, 0.08, q => q < 0.7 ? ['rx_snag', 0.5] : ['rx_vent', 0.12], lite, taken);
+    },
+    swamp(R, P, o, lite, taken) {
+      R.tiles.forEach(([tx, ty]) => {   // pools of black water, a few per room; smaller and by the walls with a komnata
+        const e = edgeTile(R, tx, ty); if (kH(tx, ty, 411) > (lite ? (e ? 0.42 : 0.12) : 0.42)) return;
+        const r = (lite ? 0.32 : 0.36 + 0.14 * kH(tx, ty, 412)); P.pools.push([tx + 0.5 + (kH(tx, ty, 413) - 0.5) * 0.3, ty + 0.5 + (kH(tx, ty, 414) - 0.5) * 0.3, r, r * (0.7 + 0.25 * kH(tx, ty, 415)), tx * 31 + ty * 17]);
+      });
+      P.pools.forEach((q, k) => { if (k % 2 === 0 && !lite) o.push(['rx_reeds', q[0] + q[2] * 0.75, q[1] - q[3] * 0.4, 1, k % 4, 0.55]); });
+      rxScatter(R, o, 417, 0.5, 0.06, q => q < 0.55 ? ['rx_reeds', 0.55] : q < 0.8 ? ['rx_stump', 0.3] : ['rx_toad', 0.2], lite, taken);
+    },
+    grotto(R, P, o, lite, taken) {
+      const W = R.x1 - R.x0 + 1, H = R.y1 - R.y0 + 1;
+      if (!lite) { const r = Math.min(W, H) * 0.24 + 0.25; P.pools.push([R.x0 + W * 0.62, R.y0 + H * 0.38, r * 1.15, r * 0.85, R.x0 * 7 + R.y0]); }
+      else P.pools.push([R.x0 + 0.75, R.y1 + 0.25, 0.5, 0.36, R.x0 * 7 + R.y0]);
+      R.tiles.forEach(([tx, ty]) => { if (kH(tx, ty, 421) < 0.22) P.pools.push([tx + 0.3 + 0.4 * kH(tx, ty, 422), ty + 0.3 + 0.4 * kH(tx, ty, 423), 0.16, 0.11, tx * 13 + ty]); });   // puddles
+      rxScatter(R, o, 425, 0.6, lite ? 0 : 0.12, q => q < 0.65 ? ['rx_stalag', 0.6] : ['rx_gcrystal', 0.35], lite, taken);
+    },
+    crypt(R, P, o, lite, taken) {
+      R.tiles.forEach(([tx, ty]) => { if (kH(tx, ty, 431) < (lite ? 0.12 : 0.2) && P.spots.length < 5) P.spots.push([tx + 0.5, ty + 0.5, 0.3 + 0.08 * kH(tx, ty, 432), tx * 5 + ty * 3]); });   // runes
+      if (!P.spots.length) P.spots.push([R.x0 + 0.5, R.y0 + 0.5, 0.32, R.x0 + R.y0]);
+      rxScatter(R, o, 435, 0.55, 0.06, q => q < 0.4 ? ['rx_tomb', 0.6] : q < 0.8 ? ['rx_candlesV', 0.4] : ['rx_urn', 0.4], lite, taken);   // 1.27.5: an urn of its own (turned, solid)
+    },
+    vault(R, P, o, lite, taken) {
+      rxScatter(R, o, 441, 0.6, 0.14, q => q < 0.5 ? ['rx_coins', 0.35] : q < 0.75 ? ['rx_chest', 0.35] : ['rx_bars', 0.2], lite, taken);
+    },
+    haven(R, P, o, lite, taken) {
+      rxScatter(R, o, 451, 0.55, 0.05, (q, e) => q < 0.45 ? ['rx_candlesH', 0.45] : q < 0.75 ? ['rx_bedroll', 0.2] : ['rx_jug', 0.3], lite, taken);
+    },
+    gears(R, P, o, lite, taken) {
+      R.tiles.forEach(([tx, ty]) => { if (edgeTile(R, tx, ty) && (R.x1 - R.x0 > 1 && R.y1 - R.y0 > 1)) return; if (kH(tx, ty, 461) < (lite ? 0.12 : 0.3) && P.spots.length < (lite ? 1 : 3)) P.spots.push([tx + 0.5, ty + 0.5, 0.36, (tx + ty) % 2 ? 1 : -1]); });   // pits with a cog turning in them
+      if (!P.spots.length && !lite) { const [mx, my] = roomMid(R); P.spots.push([Math.floor(mx) + 0.5, Math.floor(my) + 0.5, 0.36, 1]); }
+      rxScatter(R, o, 465, 0.45, 0.04, q => q < 0.45 ? ['rx_cog', 0.75] : q < 0.8 ? ['rx_pipe', 0.8] : ['rx_lever', 0.4], lite, taken);
+    },
+    hush(R, P, o, lite, taken) {
+      rxScatter(R, o, 471, 0.5, 0.06, q => q < 0.45 ? ['rx_bale', 0.35] : q < 0.75 ? ['rx_snuffed', 0.2] : ['rx_bell', 0.4], lite, taken);
+    },
+    ice(R, P, o, lite, taken) {
+      const dr = new Set(); if (!lite) [[R.x0, R.y0], [R.x1, R.y0], [R.x0, R.y1]].forEach(([tx, ty], k) => { if (!P.set.has(tx + ',' + ty) || !rfxFree(R, tx, ty, taken)) return; dr.add(tx + ',' + ty); o.push(['rx_drift', tx + (tx === R.x0 ? 0.3 : 0.7), ty + (ty === R.y0 ? 0.3 : 0.7), 1, k, 0.16]); });   // 1.27.5: snow drifts heaped in the corners (solid)
+      const n = o.length; rxScatter(R, o, 481, 0.6, 0.12, q => q < 0.65 ? ['rx_shard', 0.6] : ['rx_iceblock', 0.4], lite, taken);
+      for (let k = o.length - 1; k >= n; k--) if (dr.has(Math.floor(o[k][1]) + ',' + Math.floor(o[k][2]))) o.splice(k, 1);
+    }
+  };
+  // ---------- 1.27.5: the still floors (tile pixels; c is the cache, T its tile size; clipped to the room's tiles) ----------
+  const RFX_FLOOR = {
+    fog(c, R, T, lite, P) {   // damp grey stone, mist banked thick against the walls (1.27.5: the dew is solid beads: RFX_BITS)
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
+      c.fillStyle = 'rgba(120,134,160,0.16)'; c.fillRect(x, y, w, h);
+      R.tiles.forEach(([tx, ty]) => {
+        if (kH(tx, ty, 301) > 0.5) { c.fillStyle = 'rgba(14,20,32,0.2)'; rxBlob(c, (tx + 0.5) * T, (ty + 0.5) * T, T * 0.44, T * 0.32, tx * 31 + ty * 7); c.fill(); }
+      });
+      rxEdgeGlow(c, R, T, 'rgba(200,212,232,' + (lite ? 0.2 : 0.3) + ')', 0.9, P.set);
+    },
+    swamp(c, R, T, lite, P) {   // mud, black water standing in pools with a rim of wet mud, light on the water (1.27.5: duckweed and lily pads solid: RFX_BITS)
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
+      c.fillStyle = lite ? 'rgba(58,74,30,0.32)' : 'rgba(58,72,28,0.42)'; c.fillRect(x, y, w, h);
+      R.tiles.forEach(([tx, ty]) => { if (kH(tx, ty, 341) < 0.5) return; c.fillStyle = 'rgba(44,34,16,0.3)'; rxBlob(c, (tx + kH(tx, ty, 342)) * T, (ty + kH(tx, ty, 343)) * T, T * 0.4, T * 0.28, tx * 7 + ty * 29); c.fill(); });
+      P.pools.forEach(([px, py, rx, ry, sd]) => {
+        c.fillStyle = 'rgba(36,30,14,0.6)'; rxBlob(c, px * T, py * T, rx * T * 1.25, ry * T * 1.25, sd); c.fill();   // the wet rim
+        const g = c.createLinearGradient((px - rx) * T, (py - ry) * T, (px + rx) * T, (py + ry) * T); g.addColorStop(0, 'rgba(58,84,62,0.95)'); g.addColorStop(1, 'rgba(14,24,18,0.95)');
+        c.fillStyle = g; rxBlob(c, px * T, py * T, rx * T, ry * T, sd); c.fill();
+        c.strokeStyle = 'rgba(150,190,110,0.35)'; c.lineWidth = Math.max(1, T * 0.018); c.stroke();
+        c.strokeStyle = 'rgba(220,240,220,0.22)'; c.lineWidth = Math.max(1, T * 0.03); c.beginPath(); c.ellipse(px * T - rx * T * 0.25, py * T - ry * T * 0.3, rx * T * 0.45, ry * T * 0.22, -0.5, Math.PI * 1.1, Math.PI * 1.7); c.stroke();   // the light on the water
+      });
+      c.fillStyle = 'rgba(110,140,60,0.4)';   // 1.27.5: green slime lying flat on the mud (what stands up is a prop: rx_reeds)
+      R.tiles.forEach(([tx, ty]) => { for (let k = 0; k < 3; k++) { if (kH(tx, ty, 350 + k) < 0.55) continue; rxBlob(c, (tx + 0.1 + 0.8 * kH(tx, ty, 353 + k)) * T, (ty + 0.1 + 0.8 * kH(tx, ty, 356 + k)) * T, T * 0.07, T * 0.05, tx * 5 + ty * 11 + k); c.fill(); } });
+    },
+    grotto(c, R, T, lite, P) {   // wet blue stone that shines, a shallow clear pool, puddles (1.27.5: the pebbles are solid: RFX_BITS)
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
+      c.fillStyle = 'rgba(42,62,118,0.3)'; c.fillRect(x, y, w, h);
+      R.tiles.forEach(([tx, ty]) => {   // the wet sheen on each stone, darker joints
+        const g = c.createLinearGradient(tx * T, ty * T, (tx + 1) * T, (ty + 1) * T); g.addColorStop(0, 'rgba(170,200,255,0.12)'); g.addColorStop(0.5, 'rgba(170,200,255,0)'); g.addColorStop(1, 'rgba(10,16,40,0.18)');
+        c.fillStyle = g; c.fillRect(tx * T, ty * T, T, T);
+      });
+      P.pools.forEach(([px, py, rx, ry, sd], k) => {
+        const big = k === 0, X = px * T, Y = py * T;
+        c.fillStyle = 'rgba(20,30,60,0.5)'; rxBlob(c, X, Y, rx * T * 1.12, ry * T * 1.12, sd); c.fill();
+        const g = c.createRadialGradient(X - rx * T * 0.2, Y - ry * T * 0.2, 0, X, Y, rx * T); g.addColorStop(0, big ? 'rgba(110,170,240,0.8)' : 'rgba(120,160,230,0.55)'); g.addColorStop(1, 'rgba(36,70,140,0.75)');
+        c.fillStyle = g; rxBlob(c, X, Y, rx * T, ry * T, sd); c.fill();
+        c.strokeStyle = 'rgba(200,225,255,0.45)'; c.lineWidth = Math.max(1, T * 0.02); c.stroke();
+        if (big) {   // the caustic net (1.27.5: the pebbles under the water are solid: RFX_BITS)
+          c.save(); rxBlob(c, X, Y, rx * T, ry * T, sd); c.clip();
+          c.strokeStyle = 'rgba(200,230,255,0.22)'; c.lineWidth = Math.max(1, T * 0.015); c.beginPath();
+          for (let j = 0; j < 14; j++) { const qx = X + (kH(sd, j, 378) - 0.5) * rx * T * 2, qy = Y + (kH(sd, j, 379) - 0.5) * ry * T * 2, r = T * (0.06 + 0.06 * kH(sd, j, 380)); c.moveTo(qx + r, qy); c.ellipse(qx, qy, r, r * 0.7, kH(sd, j, 381), 0, Math.PI * 2); }
+          c.stroke(); c.restore();
+        }
+      });
+    },
+    crypt(c, R, T, lite, P) {   // big dark slabs, cracked; faint violet runes cut in the stone (1.27.5: the wax drips are solid: RFX_BITS)
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
+      c.fillStyle = 'rgba(28,14,44,0.42)'; c.fillRect(x, y, w, h);
+      R.tiles.forEach(([tx, ty]) => {   // a slab per tile, alternately split, a lit top edge, a dark joint
+        const X = tx * T, Y = ty * T, v = (tx + ty) % 2;
+        c.fillStyle = 'rgba(70,56,92,' + (0.12 + 0.12 * kH(tx, ty, 391)).toFixed(2) + ')'; c.fillRect(X + T * 0.04, Y + T * 0.04, T * 0.92, T * 0.92);
+        c.strokeStyle = 'rgba(8,4,14,0.6)'; c.lineWidth = Math.max(1, T * 0.035); c.beginPath(); c.rect(X + T * 0.02, Y + T * 0.02, T * 0.96, T * 0.96); if (v) { c.moveTo(X + T * 0.5, Y); c.lineTo(X + T * 0.5, Y + T); } c.stroke();
+        c.strokeStyle = 'rgba(210,190,240,0.1)'; c.lineWidth = Math.max(1, T * 0.02); c.beginPath(); c.moveTo(X + T * 0.05, Y + T * 0.95); c.lineTo(X + T * 0.05, Y + T * 0.05); c.lineTo(X + T * 0.95, Y + T * 0.05); c.stroke();
+        if (kH(tx, ty, 392) > 0.55) { c.strokeStyle = 'rgba(6,2,10,0.7)'; c.lineWidth = Math.max(1, T * 0.022); c.beginPath(); rxCrack(c, (tx + 0.2 + 0.6 * kH(tx, ty, 393)) * T, (ty + 0.2 + 0.6 * kH(tx, ty, 394)) * T, T, 4, tx * 11 + ty * 19, 0.12); c.stroke(); }
+      });
+      P.spots.forEach(([px, py, r, sd]) => {   // a rune: two rings and marks between them, cut in, a faint violet
+        const X = px * T, Y = py * T, rr = r * T;
+        c.strokeStyle = 'rgba(8,4,14,0.55)'; c.lineWidth = Math.max(1.5, T * 0.04); c.beginPath(); c.arc(X + 1, Y + 1, rr, 0, Math.PI * 2); c.stroke();
+        c.strokeStyle = 'rgba(190,150,255,0.32)'; c.lineWidth = Math.max(1, T * 0.022); c.beginPath(); c.arc(X, Y, rr, 0, Math.PI * 2); c.moveTo(X + rr * 0.72, Y); c.arc(X, Y, rr * 0.72, 0, Math.PI * 2);
+        for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + kH(sd, 1, 398), b = a + 0.4; c.moveTo(X + Math.cos(a) * rr * 0.76, Y + Math.sin(a) * rr * 0.76); c.lineTo(X + Math.cos(b) * rr * 0.96, Y + Math.sin(b) * rr * 0.96); }
+        c.moveTo(X, Y - rr * 0.45); c.lineTo(X, Y + rr * 0.45); c.moveTo(X - rr * 0.25, Y - rr * 0.15); c.lineTo(X + rr * 0.25, Y - rr * 0.15); c.stroke();
+      });
+    },
+    vault(c, R, T, lite, P) {   // polished tiles inlaid with gold, gold dust in the joints (1.27.5: the coins and gems are solid: RFX_BITS)
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
+      c.fillStyle = 'rgba(120,88,28,0.24)'; c.fillRect(x, y, w, h);
+      R.tiles.forEach(([tx, ty]) => {
+        const X = tx * T, Y = ty * T;
+        c.fillStyle = (tx + ty) % 2 ? 'rgba(40,28,10,0.28)' : 'rgba(150,110,40,0.14)'; c.fillRect(X, Y, T, T);
+        c.strokeStyle = 'rgba(255,214,122,0.4)'; c.lineWidth = Math.max(1, T * 0.022); c.beginPath(); c.rect(X + T * 0.04, Y + T * 0.04, T * 0.92, T * 0.92);
+        c.moveTo(X + T * 0.62, Y + T * 0.5); c.arc(X + T * 0.5, Y + T * 0.5, T * 0.12, 0, Math.PI * 2); c.stroke();
+        if ((tx + ty) % 2 === 0) { c.fillStyle = 'rgba(255,214,122,0.45)'; c.beginPath(); c.arc(X + T * 0.5, Y + T * 0.5, T * 0.05, 0, Math.PI * 2); c.fill(); }   // a gold medallion set in every other tile
+        c.fillStyle = 'rgba(255,220,130,0.6)'; c.beginPath(); for (let k = 0; k < 6; k++) { const px = (tx + kH(tx, ty, 501 + k)) * T, py = (ty + kH(tx, ty, 511 + k)) * T, r = Math.max(0.6, T * 0.01); c.moveTo(px + r, py); c.arc(px, py, r, 0, Math.PI * 2); } c.fill();
+      });
+    },
+    haven(c, R, T, lite, P) {   // warm boards; a rug laid out in the middle (with a komnata: none); 1.27.5: the straw, the rug's edges and fringe are solid: RFX_BITS
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
+      c.fillStyle = 'rgba(180,130,70,0.16)'; c.fillRect(x, y, w, h);
+      const W = R.x1 - R.x0 + 1, H = R.y1 - R.y0 + 1;
+      if (!lite && W >= 3 && H >= 3) {   // the rug: deep red, an ochre border, a pattern of diamonds, a fringe at the ends
+        const ix = W >= 4 ? 1 : 0.6, iy = H >= 4 ? 1.1 : 0.7, rx0 = (R.x0 + ix) * T, ry0 = (R.y0 + iy) * T, rw = (W - 2 * ix) * T, rh = (H - 2 * iy) * T;
+        c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(rx0 + T * 0.06, ry0 + T * 0.07, rw, rh);
+        c.fillStyle = '#7a2a22'; c.fillRect(rx0, ry0, rw, rh);
+        c.strokeStyle = '#c99a48'; c.lineWidth = Math.max(1.5, T * 0.06); c.strokeRect(rx0 + T * 0.1, ry0 + T * 0.1, rw - T * 0.2, rh - T * 0.2);
+        c.strokeStyle = '#3a1410'; c.lineWidth = Math.max(1, T * 0.02); c.strokeRect(rx0 + T * 0.19, ry0 + T * 0.19, rw - T * 0.38, rh - T * 0.38);
+        c.fillStyle = '#d8b060'; const nx = Math.max(1, Math.round((rw / T - 0.5) / 0.7)), ny = Math.max(1, Math.round((rh / T - 0.5) / 0.7));
+        for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) { const cx = rx0 + T * 0.25 + (rw - T * 0.5) * (i + 0.5) / nx, cy = ry0 + T * 0.25 + (rh - T * 0.5) * (j + 0.5) / ny, r = T * 0.12; c.beginPath(); c.moveTo(cx, cy - r); c.lineTo(cx + r, cy); c.lineTo(cx, cy + r); c.lineTo(cx - r, cy); c.closePath(); c.fill(); c.fillStyle = '#7a2a22'; c.fillRect(cx - r * 0.25, cy - r * 0.25, r * 0.5, r * 0.5); c.fillStyle = '#d8b060'; }
+        c.fillStyle = 'rgba(255,240,200,0.06)'; c.fillRect(rx0, ry0, rw, rh * 0.4);
+      } else if (!lite) { const [mx, my] = roomMid(R); c.fillStyle = '#7a2a22'; c.fillRect((mx - 0.5) * T, (my - 0.35) * T, T, T * 0.7); c.strokeStyle = '#c99a48'; c.lineWidth = Math.max(1, T * 0.05); c.strokeRect((mx - 0.42) * T, (my - 0.27) * T, T * 0.84, T * 0.54); }
+    },
+    gears(c, R, T, lite, P) {   // riveted iron plates, seams and slots; round pits where cogs turn below (RFX_LIVE turns them)
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
+      c.fillStyle = lite ? 'rgba(110,84,50,0.16)' : 'rgba(96,80,62,0.34)'; c.fillRect(x, y, w, h);
+      R.tiles.forEach(([tx, ty]) => {
+        const X = tx * T, Y = ty * T;
+        if (!lite) { const g = c.createLinearGradient(X, Y, X + T, Y + T); g.addColorStop(0, 'rgba(190,160,120,0.16)'); g.addColorStop(1, 'rgba(20,14,8,0.2)'); c.fillStyle = g; c.fillRect(X + T * 0.03, Y + T * 0.03, T * 0.94, T * 0.94); }
+        c.strokeStyle = 'rgba(16,10,6,0.65)'; c.lineWidth = Math.max(1, T * 0.03); c.strokeRect(X + T * 0.03, Y + T * 0.03, T * 0.94, T * 0.94);
+        c.fillStyle = 'rgba(30,20,12,0.7)'; [[0.12, 0.12], [0.88, 0.12], [0.12, 0.88], [0.88, 0.88]].forEach(([u, v]) => { c.beginPath(); c.arc(X + T * u + T * 0.01, Y + T * v + T * 0.01, T * 0.035, 0, Math.PI * 2); c.fill(); });
+        c.fillStyle = 'rgba(230,190,130,0.55)'; [[0.12, 0.12], [0.88, 0.12], [0.12, 0.88], [0.88, 0.88]].forEach(([u, v]) => { c.beginPath(); c.arc(X + T * u - T * 0.006, Y + T * v - T * 0.006, T * 0.018, 0, Math.PI * 2); c.fill(); });
+        if (!lite && kH(tx, ty, 601) > 0.7) { const v = kH(tx, ty, 602) > 0.5; c.fillStyle = 'rgba(6,4,2,0.8)'; if (v) c.fillRect(X + T * 0.44, Y + T * 0.2, T * 0.12, T * 0.6); else c.fillRect(X + T * 0.2, Y + T * 0.44, T * 0.6, T * 0.12); c.fillStyle = 'rgba(255,170,80,0.25)'; if (v) c.fillRect(X + T * 0.47, Y + T * 0.26, T * 0.06, T * 0.48); else c.fillRect(X + T * 0.26, Y + T * 0.47, T * 0.48, T * 0.06); }   // a slot, a glow deep down
+      });
+      P.spots.forEach(([px, py, r]) => {   // the pit: a dark round hole with a bronze collar
+        const X = px * T, Y = py * T, rr = r * T;
+        c.fillStyle = '#6e5232'; c.beginPath(); c.arc(X, Y, rr * 1.12, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = 'rgba(230,190,120,0.6)'; c.lineWidth = Math.max(1, T * 0.02); c.beginPath(); c.arc(X, Y, rr * 1.12, Math.PI * 0.9, Math.PI * 1.8); c.stroke();
+        const g = c.createRadialGradient(X, Y, rr * 0.2, X, Y, rr); g.addColorStop(0, '#1a120a'); g.addColorStop(1, '#050302'); c.fillStyle = g; c.beginPath(); c.arc(X, Y, rr, 0, Math.PI * 2); c.fill();
+        for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; c.fillStyle = '#3a2a18'; c.beginPath(); c.arc(X + Math.cos(a) * rr * 1.06, Y + Math.sin(a) * rr * 1.06, T * 0.02, 0, Math.PI * 2); c.fill(); }
+      });
+    },
+    hush(c, R, T, lite, P) {   // dark felt over the floor: a fine soft grain, seams sewn, nothing shines
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
+      c.fillStyle = lite ? 'rgba(14,16,24,0.32)' : 'rgba(18,20,30,0.55)'; c.fillRect(x, y, w, h);
+      R.tiles.forEach(([tx, ty]) => {
+        c.fillStyle = 'rgba(140,150,175,0.09)'; c.beginPath(); for (let k = 0; k < 16; k++) { const px = (tx + kH(tx, ty, 611 + k)) * T, py = (ty + kH(tx, ty, 631 + k)) * T, r = Math.max(0.6, T * 0.012); c.moveTo(px + r, py); c.arc(px, py, r, 0, Math.PI * 2); } c.fill();
+        if (kH(tx, ty, 651) > 0.6) { c.fillStyle = 'rgba(0,0,0,0.22)'; rxBlob(c, (tx + 0.5) * T, (ty + 0.5) * T, T * 0.4, T * 0.3, tx * 3 + ty * 37); c.fill(); }
+      });
+      if (!lite) { c.strokeStyle = 'rgba(120,130,155,0.22)'; c.lineWidth = Math.max(1, T * 0.015); c.setLineDash([Math.max(2, T * 0.05), Math.max(2, T * 0.04)]); c.beginPath();
+        for (let ty = R.y0; ty <= R.y1 + 1; ty += 2) { c.moveTo(x, ty * T - T * 0.5); c.lineTo(x + w, ty * T - T * 0.5); } c.stroke(); c.setLineDash([]); }   // the stitched seams of the felt
+      rxEdgeGlow(c, R, T, 'rgba(0,0,0,0.38)', 0.8, P.set);
+    },
+    ice(c, R, T, lite, P) {   // sheet ice: glossy, cracked, frozen bubbles in it, frost feathering in from the walls (1.27.5: the snow drifts are props: rx_drift)
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
+      const g = c.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, 'rgba(200,236,255,0.34)'); g.addColorStop(0.5, 'rgba(150,200,236,0.24)'); g.addColorStop(1, 'rgba(110,160,210,0.3)');
+      c.fillStyle = g; c.fillRect(x, y, w, h);
+      c.fillStyle = 'rgba(235,250,255,0.08)'; R.tiles.forEach(([tx, ty]) => { if ((tx + ty) % 2) c.fillRect(tx * T, ty * T, T, T); });
+      c.fillStyle = 'rgba(240,250,255,0.4)'; c.beginPath(); R.tiles.forEach(([tx, ty]) => { for (let k = 0; k < 3; k++) { if (kH(tx, ty, 661 + k) < 0.55) continue; const px = (tx + kH(tx, ty, 664 + k)) * T, py = (ty + kH(tx, ty, 667 + k)) * T, r = T * (0.012 + 0.02 * kH(tx, ty, 670 + k)); c.moveTo(px + r, py); c.arc(px, py, r, 0, Math.PI * 2); } }); c.fill();   // frozen bubbles
+      [['rgba(40,70,110,0.35)', 1.012], ['rgba(245,252,255,0.75)', 1]].forEach(([col, off]) => {   // cracks, each with its dark twin
+        c.strokeStyle = col; c.lineWidth = Math.max(1, T * 0.018); c.beginPath();
+        R.tiles.forEach(([tx, ty]) => { if (kH(tx, ty, 673) < (lite ? 0.75 : 0.5)) return; rxCrack(c, (tx + kH(tx, ty, 674)) * T * off, (ty + kH(tx, ty, 675)) * T * off, T, 5, tx * 23 + ty * 41, 0.13); });
+        c.stroke();
+      });
+      rxEdgeGlow(c, R, T, 'rgba(240,250,255,0.55)', 0.45, P.set);
+      c.strokeStyle = 'rgba(245,252,255,0.6)'; c.lineWidth = Math.max(1, T * 0.014); c.beginPath();   // frost feathers along the walls
+      R.tiles.forEach(([tx, ty]) => { [[0, -1], [-1, 0], [0, 1], [1, 0]].forEach(([dx, dy]) => { if (P.set.has((tx + dx) + ',' + (ty + dy))) return;
+        for (let k = 0; k < 4; k++) { const u = (k + 0.3 + 0.4 * kH(tx, ty, 680 + k + dx * 3 + dy * 5)) / 4, bx = (dx ? (dx > 0 ? tx + 1 : tx) : tx + u) * T, by = (dy ? (dy > 0 ? ty + 1 : ty) : ty + u) * T, L = T * (0.12 + 0.14 * kH(tx, ty, 690 + k)), ix = -dx * L, iy = -dy * L;
+          c.moveTo(bx, by); c.lineTo(bx + ix, by + iy); [0.35, 0.65].forEach(f => { const mx = bx + ix * f, my = by + iy * f, s = L * 0.3; c.moveTo(mx, my); c.lineTo(mx + ix * 0.25 + iy * 0.4 * (s / L), my + iy * 0.25 + ix * 0.4 * (s / L)); c.moveTo(mx, my); c.lineTo(mx + ix * 0.25 - iy * 0.4 * (s / L), my + iy * 0.25 - ix * 0.4 * (s / L)); }); } }); });
+      c.stroke();
+    }
+  };
+  // ---------- 1.27.5: the moving floors (every frame, over the cache; c = ctx in floorT, tile pixels) ----------
+  const RFX_LIVE = {
+    fog(c, R, T, t, lite) {   // thick mist drifting slowly over the floor in layers that cross each other
+      const W = R.x1 - R.x0 + 1, H = R.y1 - R.y0 + 1, spr = rxFog(), n = Math.min(8, 3 + Math.round(W * H / 5));
+      for (let k = 0; k < n; k++) {
+        const sp = (0.012 + 0.008 * (k % 3)) * (k % 2 ? 1 : -1), u = ((t * sp + kH(R.x0, R.y0, 330 + k)) % 1 + 1) % 1, cx = (R.x0 - 1 + (W + 2) * u) * T, cy = (R.y0 + H * (0.08 + 0.84 * kH(R.y0, R.x0, 340 + k)) + Math.sin(t * 0.25 + k) * 0.25) * T, rw = T * (1.2 + 0.8 * kH(k, R.x0, 350)), rh = rw * 0.7;
+        c.globalAlpha = lite ? 0.3 : 0.42; c.drawImage(spr, cx - rw, cy - rh, rw * 2, rh * 2);
+      }
+      c.globalAlpha = 1;
+    },
+    swamp(c, R, T, t, lite, P) {   // rings spreading on the pools, a bubble coming up now and then
+      P.pools.forEach(([px, py, rx, ry, sd], k) => {
+        for (let j = 0; j < 2; j++) { const p = ((t * 0.35 + j * 0.5 + kH(sd, j, 701)) % 1), qx = (px + (kH(sd, j + 2, 702) - 0.5) * rx) * T, qy = (py + (kH(sd, j + 2, 703) - 0.5) * ry) * T, r = T * rx * 0.7 * p;
+          c.strokeStyle = 'rgba(190,220,170,' + (0.45 * (1 - p)).toFixed(2) + ')'; c.lineWidth = Math.max(1, T * 0.02); c.beginPath(); c.ellipse(qx, qy, r, r * 0.8, 0, 0, Math.PI * 2); c.stroke(); }
+        const b = (t * 0.5 + kH(sd, 5, 704)) % 1; if (b < 0.25) { const qx = (px - rx * 0.2) * T, qy = (py + ry * 0.1) * T, r = T * 0.05 * (0.4 + b * 3); c.fillStyle = 'rgba(120,150,90,0.8)'; c.beginPath(); c.arc(qx, qy, r, 0, Math.PI * 2); c.fill(); c.fillStyle = 'rgba(230,250,220,0.8)'; c.beginPath(); c.arc(qx - r * 0.35, qy - r * 0.35, r * 0.3, 0, Math.PI * 2); c.fill(); }
+      });
+    },
+    grotto(c, R, T, t, lite, P) {   // drops landing in the pool and the puddles (rings), the light on the water moving
+      P.pools.forEach(([px, py, rx, ry, sd], k) => {
+        const n = k === 0 ? 3 : 1;
+        for (let j = 0; j < n; j++) { const p = (t * (0.4 + 0.1 * j) + kH(sd, j, 711)) % 1, qx = (px + (kH(sd, j + Math.floor(t * 0.4 + kH(sd, j, 711)), 712) - 0.5) * rx) * T, qy = (py + (kH(sd, j + 7, 713) - 0.5) * ry) * T, r = T * (k ? 0.14 : 0.3) * p;
+          c.strokeStyle = 'rgba(210,230,255,' + (0.7 * (1 - p)).toFixed(2) + ')'; c.lineWidth = Math.max(1, T * 0.02); c.beginPath(); c.ellipse(qx, qy, r, r * 0.85, 0, 0, Math.PI * 2); if (r > T * 0.05) c.ellipse(qx, qy, r * 0.55, r * 0.47, 0, 0, Math.PI * 2); c.stroke(); }
+        if (k === 0) { const s = 0.5 + 0.5 * Math.sin(t * 0.9); c.globalAlpha = 0.25 + 0.2 * s; c.drawImage(glowSprite('rxgrot', [[0, 'rgba(180,215,255,0.7)'], [1, 'rgba(180,215,255,0)']]), (px - rx * 0.6 + Math.sin(t * 0.5) * rx * 0.3) * T, (py - ry * 0.7) * T, rx * T * 1.2, ry * T * 1.0); c.globalAlpha = 1; }
+      });
+    },
+    crypt(c, R, T, t, lite, P) {   // the runes breathe violet; a low cold mist creeps over the slabs
+      P.spots.forEach(([px, py, r, sd], k) => { const a = 0.35 + 0.35 * Math.sin(t * 1.4 + k * 1.9), rr = r * T * 2.1; c.globalAlpha = a; c.drawImage(glowSprite('rxrune', [[0, 'rgba(180,130,255,0.55)'], [0.5, 'rgba(150,100,240,0.18)'], [1, 'rgba(150,100,240,0)']]), px * T - rr, py * T - rr, rr * 2, rr * 2);
+        c.strokeStyle = 'rgba(214,190,255,' + (0.5 * a).toFixed(2) + ')'; c.lineWidth = Math.max(1, T * 0.025); c.beginPath(); c.arc(px * T, py * T, r * T, t * 0.4 + k, t * 0.4 + k + 2.2); c.stroke(); });
+      c.globalAlpha = 1;
+      const W = R.x1 - R.x0 + 1, H = R.y1 - R.y0 + 1, spr = glowSprite('rxcmist', [[0, 'rgba(150,120,200,0.45)'], [1, 'rgba(120,90,180,0)']]);
+      for (let k = 0; k < 4; k++) { const u = ((t * 0.015 * (k % 2 ? 1 : -1) + kH(R.x0, k, 715)) % 1 + 1) % 1, cx = (R.x0 - 1 + (W + 2) * u) * T, cy = (R.y0 + H * kH(R.y0, k, 716)) * T, rw = T * 1.4; c.globalAlpha = 0.5; c.drawImage(spr, cx - rw, cy - rw * 0.6, rw * 2, rw * 1.2); }
+      c.globalAlpha = 1;
+    },
+    vault(c, R, T, t, lite) {   // a sheen sweeping over the gold, and coins winking
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T, p = (t * 0.15) % 1.6 - 0.3;
+      if (p > -0.2 && p < 1.2) { const g = c.createLinearGradient(x, y, x + w, y + h); g.addColorStop(Math.max(0, Math.min(1, p - 0.1)), 'rgba(255,230,150,0)'); g.addColorStop(Math.max(0, Math.min(1, p)), 'rgba(255,236,170,0.16)'); g.addColorStop(Math.max(0, Math.min(1, p + 0.1)), 'rgba(255,230,150,0)'); c.fillStyle = g; c.fillRect(x, y, w, h); }
+      R.tiles.forEach(([tx, ty], k) => { const q = (t * 0.6 + kH(tx, ty, 721)) % 1; if (q > 0.18 || kH(tx, ty, 521) < 0.45) return; const px = (tx + 0.15 + 0.7 * kH(tx, ty, 524)) * T - T * 0.02, py = (ty + 0.15 + 0.7 * kH(tx, ty, 527)) * T - T * 0.02, s = T * 0.12 * Math.sin(q / 0.18 * Math.PI);
+        c.strokeStyle = 'rgba(255,250,220,0.95)'; c.lineWidth = Math.max(1, T * 0.018); c.beginPath(); c.moveTo(px - s, py); c.lineTo(px + s, py); c.moveTo(px, py - s); c.lineTo(px, py + s); c.stroke(); });
+    },
+    haven(c, R, T, t, lite, P) {   // warm candlelight breathing on the floor round each candle, and over the middle of the rug
+      const spr = glowSprite('rxwarm', [[0, 'rgba(255,214,140,0.4)'], [0.5, 'rgba(255,190,110,0.12)'], [1, 'rgba(255,180,100,0)']]);
+      P.props.forEach(pp => { if (pp.t !== 'rx_candlesH' || !rfxPropOk(pp)) return; const f = 0.85 + 0.15 * Math.sin(t * 7 + pp.seed) * Math.sin(t * 4.3 + pp.seed * 2), r = T * 1.1 * f; c.drawImage(spr, pp.x * T - r, pp.y * T - r, r * 2, r * 2); });
+      { const [mx, my] = roomMid(R), r = T * Math.max(R.x1 - R.x0 + 1, R.y1 - R.y0 + 1) * (0.5 + 0.03 * Math.sin(t * 1.2)); c.globalAlpha = lite ? 0.35 : 0.55; c.drawImage(spr, mx * T - r, my * T - r, r * 2, r * 2); c.globalAlpha = 1; }
+    },
+    // 1.27.5: the gears' cogs turn in real pits now, in screen space (rxPit, from rfxSolid)
+    hush(c, R, T, t, lite) {   // a ring of sound starts, but the felt swallows it: it grows a little, breaks up and is gone
+      R.tiles.forEach(([tx, ty], k) => {
+        if (kH(tx, ty, 731) > (lite ? 0.25 : 0.4)) return;
+        const p = (t * 0.32 + kH(tx, ty, 732)) % 1, px = (tx + 0.5) * T, py = (ty + 0.5) * T, r = T * (0.12 + 0.5 * Math.sqrt(p)), a = 0.5 * (1 - p) * (1 - p);
+        c.strokeStyle = 'rgba(170,184,210,' + a.toFixed(2) + ')'; c.lineWidth = Math.max(1, T * 0.03 * (1 - p)); c.setLineDash([Math.max(1, T * 0.1 * (1 - p)), Math.max(1, T * 0.06 + T * 0.2 * p)]);
+        c.beginPath(); c.arc(px, py, r, 0, Math.PI * 2); c.stroke();
+      });
+      c.setLineDash([]);
+    },
+    ice(c, R, T, t, lite) {   // light gliding over the ice in long streaks, a glint winking on a crack
+      const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T, p = (t * 0.12) % 1.5 - 0.25;
+      if (p > -0.2 && p < 1.2) { const g = c.createLinearGradient(x, y + h, x + w, y); g.addColorStop(Math.max(0, Math.min(1, p - 0.08)), 'rgba(255,255,255,0)'); g.addColorStop(Math.max(0, Math.min(1, p)), 'rgba(240,250,255,0.2)'); g.addColorStop(Math.max(0, Math.min(1, p + 0.08)), 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(x, y, w, h); }
+      R.tiles.forEach(([tx, ty]) => { const q = (t * 0.4 + kH(tx, ty, 741)) % 1; if (q > 0.12) return; const px = (tx + kH(tx, ty, 674)) * T, py = (ty + kH(tx, ty, 675)) * T, s = T * 0.14 * Math.sin(q / 0.12 * Math.PI);
+        c.strokeStyle = 'rgba(255,255,255,0.95)'; c.lineWidth = Math.max(1, T * 0.018); c.beginPath(); c.moveTo(px - s, py); c.lineTo(px + s, py); c.moveTo(px, py - s * 0.7); c.lineTo(px, py + s * 0.7); c.stroke(); });
+    }
+  };
+  const rxGearAt = (c, cx, cy, r, n, a0, body, edge, hole) => rxGear(cx, cy, r, n, a0, body, edge, hole, c);   // rxGear on any context
+  // ---------- 1.27.5: the particles in the air (screen space; ph(k, speed) = a phase 0..1 of the clock for particle k) ----------
+  const RFX_AIR = {
+    fog(R, T, t, P, lite, ph, seed, W, H) {   // a low bank rolling just over the floor; puffs boiling up out of the vents
+      const spr = rxFog(), n = lite ? 5 : Math.min(12, 5 + Math.round(W * H / 4));
+      for (let k = 0; k < n; k++) { const p = ph(k, 0.02 + 0.006 * (k % 3)), sx = R.x0 - 0.3 + (W + 0.6) * p, sy = R.y0 + 0.3 + (H - 0.6) * kH(seed, k, 361), q = W2S(sx, sy, 0.12 + 0.3 * kH(seed, k, 365) + 0.06 * Math.sin(t * 0.5 + k)), rw = T * (0.9 + 0.6 * kH(seed, k, 362)), a = Math.sin(p * Math.PI);
+        ctx.globalAlpha = (lite ? 0.45 : 0.7) * a; ctx.drawImage(spr, q[0] - rw, q[1] - rw * 0.45, rw * 2, rw * 0.9); }
+      P.props.forEach(pp => { if (pp.t !== 'rx_vent' || !rfxPropOk(pp)) return;
+        const ms = rxMist(); for (let k = 0; k < 5; k++) { const p = ph(k + pp.seed * 3, 0.2), q = W2S(pp.x + Math.sin(p * 4 + k) * 0.12 * p, pp.y, 0.05 + p * 1.2), r = T * (0.1 + 0.36 * p); ctx.globalAlpha = (1 - p) * Math.min(1, p * 6); ctx.drawImage(ms, q[0] - r, q[1] - r, r * 2, r * 2); } });
+      for (let k = 0; k < 3; k++) { const p = ph(k + 20, 0.07), sx = R.x0 + 0.4 + (W - 0.8) * kH(seed, k, 363), sy = R.y0 + 0.4 + (H - 0.8) * kH(seed, k, 364), q = W2S(sx + Math.sin(t * 0.4 + k) * 0.2, sy, 0.3 + p * 0.9), r = T * (0.25 + 0.3 * p); ctx.globalAlpha = 0.4 * Math.sin(p * Math.PI); ctx.drawImage(spr, q[0] - r, q[1] - r * 0.7, r * 2, r * 1.4); }
+    },
+    swamp(R, T, t, P, lite, ph, seed, W, H) {   // bubbles rising off the pools and bursting, midges over the reeds, a green gas
+      P.pools.forEach(([px, py, rx, ry, sd], k) => { if (k > 5) return; const p = ph(k * 3 + 1, 0.4), bx = px + (kH(sd, 1, 751) - 0.5) * rx, by = py + (kH(sd, 2, 752) - 0.5) * ry;
+        if (p < 0.75) { const q = rxDot(bx, by, 0.02 + p * 0.22, Math.max(1.2, T * 0.035), 'rgba(170,200,130,0.7)'); ctx.fillStyle = 'rgba(240,255,230,0.8)'; ctx.fillRect(q[0] - T * 0.012, q[1] - T * 0.012, Math.max(1, T * 0.012), Math.max(1, T * 0.012)); }
+        else { const q = W2S(bx, by, 0.2), s = T * 0.09 * (p - 0.75) / 0.25; ctx.strokeStyle = 'rgba(220,240,200,' + (0.8 * (1 - (p - 0.75) / 0.25)).toFixed(2) + ')'; ctx.lineWidth = 1; ctx.beginPath(); for (let j = 0; j < 5; j++) { const a = j * 1.256; ctx.moveTo(q[0] + Math.cos(a) * s * 0.5, q[1] + Math.sin(a) * s * 0.5); ctx.lineTo(q[0] + Math.cos(a) * s, q[1] + Math.sin(a) * s); } ctx.stroke(); } });
+      let m = 0; P.props.forEach(pp => { if (pp.t !== 'rx_reeds' || m++ > 2 || !rfxPropOk(pp)) return; for (let k = 0; k < 5; k++) { const a = t * (3 + k * 0.7) + k * 2 + pp.seed; rxDot(pp.x + Math.cos(a) * 0.18, pp.y + Math.sin(a * 1.3) * 0.12, 0.6 + 0.15 * Math.sin(a * 0.8), Math.max(1, T * 0.018), 'rgba(16,20,10,0.85)'); } });
+      const spr = glowSprite('rxgas', [[0, 'rgba(160,210,100,0.5)'], [1, 'rgba(160,210,100,0)']]);
+      for (let k = 0; k < (lite ? 1 : 3); k++) { const pl = P.pools[k % Math.max(1, P.pools.length)]; if (!pl) break; const p = ph(k + 9, 0.08), q = W2S(pl[0] + Math.sin(p * 3 + k) * 0.25, pl[1], 0.1 + p * 1.0), r = T * (0.2 + 0.25 * p); ctx.globalAlpha = 0.5 * Math.sin(p * Math.PI); ctx.drawImage(spr, q[0] - r, q[1] - r, r * 2, r * 2); }
+    },
+    grotto(R, T, t, P, lite, ph, seed, W, H) {   // drops falling from the roof into the pool (their ring is RFX_LIVE), glints on the crystals, a cold breath
+      P.pools.forEach(([px, py, rx, ry, sd], k) => { if (k > 4) return; const n = k === 0 ? 3 : 1;
+        for (let j = 0; j < n; j++) { const f = ((t * (0.4 + 0.1 * j) + kH(sd, j, 711) + 0.35) % 1); if (f > 0.35) continue;   // the 0.35 before the ring: falling
+          const z = 1.9 * (1 - f / 0.35), qx = px + (kH(sd, j + Math.floor(t * (0.4 + 0.1 * j) + kH(sd, j, 711) + 0.35), 712) - 0.5) * rx, qy = py + (kH(sd, j + 7, 713) - 0.5) * ry, q = W2S(qx, qy, z);
+          ctx.fillStyle = 'rgba(200,225,255,0.9)'; ctx.beginPath(); ctx.ellipse(q[0], q[1], Math.max(1, T * 0.02), Math.max(1.5, T * 0.045), 0, 0, Math.PI * 2); ctx.fill(); } });
+      P.props.forEach(pp => { if (pp.t !== 'rx_gcrystal' || !rfxPropOk(pp)) return; const p = ph(pp.seed * 5, 0.5); if (p < 0.2) rxStar(W2S(pp.x - 0.04, pp.y, 0.3 * pp.s), T * 0.1 * Math.sin(p / 0.2 * Math.PI), 'rgba(230,240,255,0.95)'); });
+      const spr = rxMist(); for (let k = 0; k < 2; k++) { const pl = P.pools[0]; if (!pl) break; const p = ph(k + 30, 0.06), q = W2S(pl[0] + (k - 0.5) * pl[2], pl[1], 0.1 + p * 0.6), r = T * (0.3 + 0.3 * p); ctx.globalAlpha = 0.3 * Math.sin(p * Math.PI); ctx.drawImage(spr, q[0] - r, q[1] - r * 0.6, r * 2, r * 1.2); }
+    },
+    crypt(R, T, t, P, lite, ph, seed, W, H) {   // violet wisps lifting off the runes, dust drifting in the dark
+      const spr = glowSprite('rxwisp', [[0, 'rgba(230,210,255,0.95)'], [0.35, 'rgba(180,140,255,0.4)'], [1, 'rgba(160,120,255,0)']]);
+      P.spots.forEach(([px, py], k) => { for (let j = 0; j < 2; j++) { const p = ph(k * 2 + j, 0.09), q = W2S(px + Math.sin(t * 0.8 + k + j * 3) * 0.2, py, 0.1 + p * 1.4), r = T * (0.16 - 0.06 * p); ctx.globalAlpha = Math.sin(p * Math.PI) * 0.85; ctx.drawImage(spr, q[0] - r, q[1] - r, r * 2, r * 2); } });
+      ctx.globalAlpha = 1;
+      for (let k = 0; k < 6; k++) { const p = ph(k + 40, 0.04), sx = R.x0 + 0.3 + (W - 0.6) * kH(seed, k, 771), sy = R.y0 + 0.3 + (H - 0.6) * kH(seed, k, 772); rxDot(sx + Math.sin(t * 0.3 + k) * 0.15, sy, 0.2 + 1.2 * Math.sin(p * Math.PI), Math.max(1, T * 0.014), 'rgba(220,200,250,0.45)'); }
+    },
+    vault(R, T, t, P, lite, ph, seed, W, H) {   // gold dust rising and turning in the air, stars winking over the heaps
+      for (let k = 0; k < (lite ? 5 : 10); k++) { const p = ph(k, 0.06), sx = R.x0 + 0.3 + (W - 0.6) * kH(seed, k, 781) + Math.sin(t * 0.7 + k) * 0.12, sy = R.y0 + 0.3 + (H - 0.6) * kH(seed, k, 782), tw = 0.5 + 0.5 * Math.sin(t * 5 + k * 2);
+        rxDot(sx, sy, 0.1 + p * 1.5, Math.max(1, T * (0.012 + 0.012 * tw)), 'rgba(255,' + (210 + 30 * tw | 0) + ',120,' + (0.8 * Math.sin(p * Math.PI)).toFixed(2) + ')'); }
+      P.props.forEach(pp => { if ((pp.t !== 'rx_coins' && pp.t !== 'rx_chest') || !rfxPropOk(pp)) return; const p = ph(pp.seed * 7, 0.45); if (p < 0.22) { const q = W2S(pp.x + (pp.v - 1.5) * 0.04, pp.y, 0.3 * pp.s), s = T * 0.13 * Math.sin(p / 0.22 * Math.PI); ctx.drawImage(glowSprite('rxglint', [[0, 'rgba(255,240,180,0.8)'], [1, 'rgba(255,220,120,0)']]), q[0] - s * 1.5, q[1] - s * 1.5, s * 3, s * 3); rxStar(q, s, 'rgba(255,252,230,0.95)'); } });
+    },
+    haven(R, T, t, P, lite, ph, seed, W, H) {   // sparks lifting off the candles, warm dust floating slowly in the light
+      P.props.forEach(pp => { if (pp.t !== 'rx_candlesH' || !rfxPropOk(pp)) return; for (let k = 0; k < 3; k++) { const p = ph(k + pp.seed * 3, 0.35), q = W2S(pp.x + 0.05 + Math.sin(p * 6 + k) * 0.06, pp.y, 0.5 * pp.s + p * 0.9); ctx.fillStyle = 'rgba(255,' + (200 + 40 * (1 - p) | 0) + ',120,' + (0.9 * (1 - p)).toFixed(2) + ')'; ctx.fillRect(q[0], q[1], Math.max(1, T * 0.022), Math.max(1, T * 0.022)); } });
+      for (let k = 0; k < (lite ? 4 : 8); k++) { const p = ph(k + 50, 0.03), sx = R.x0 + 0.3 + (W - 0.6) * kH(seed, k, 791) + Math.sin(t * 0.25 + k) * 0.25, sy = R.y0 + 0.3 + (H - 0.6) * kH(seed, k, 792); rxDot(sx, sy, 0.3 + 1.1 * Math.sin(p * Math.PI), Math.max(1, T * 0.016), 'rgba(255,236,190,' + (0.55 * Math.sin(p * Math.PI)).toFixed(2) + ')'); }
+    },
+    gears(R, T, t, P, lite, ph, seed, W, H) {   // steam hissing out of the pipes in puffs, sparks off the cogs now and then
+      const spr = glowSprite('rxsteam', [[0, 'rgba(236,236,236,0.7)'], [0.5, 'rgba(220,220,220,0.25)'], [1, 'rgba(220,220,220,0)']]);
+      P.props.forEach(pp => { if (pp.t !== 'rx_pipe' || !rfxPropOk(pp)) return; const burst = ph(pp.seed * 3, 0.18);
+        if (burst < 0.4) for (let k = 0; k < 4; k++) { const p = ((burst / 0.4) + k * 0.25) % 1, q = W2S(pp.x + 0.12 + p * 0.35, pp.y, 0.62 * pp.s + p * 0.45), r = T * (0.07 + 0.25 * p); ctx.globalAlpha = 0.8 * (1 - p); ctx.drawImage(spr, q[0] - r, q[1] - r, r * 2, r * 2); } });
+      ctx.globalAlpha = 1;
+      P.spots.forEach(([px, py], k) => { const p = ph(k * 5 + 3, 0.5); if (p > 0.3) return; for (let j = 0; j < 4; j++) { const a = j * 1.3 + k, d = p / 0.3, q = W2S(px + Math.cos(a) * 0.2 * d, py + Math.sin(a) * 0.12 * d, 0.05 + 0.4 * Math.sin(d * Math.PI) * (0.6 + 0.4 * (j % 2))); ctx.fillStyle = 'rgba(255,' + (210 - 80 * d | 0) + ',90,' + (1 - d).toFixed(2) + ')'; ctx.fillRect(q[0], q[1], Math.max(1, T * 0.022), Math.max(1, T * 0.022)); } });
+      for (let k = 0; k < (lite ? 1 : 2); k++) { const s = P.spots[k]; if (!s) break; const p = ph(k + 60, 0.15), q = W2S(s[0] + Math.sin(p * 4) * 0.1, s[1], 0.05 + p * 0.9), r = T * (0.12 + 0.3 * p); ctx.globalAlpha = 0.45 * Math.sin(p * Math.PI); ctx.drawImage(spr, q[0] - r, q[1] - r, r * 2, r * 2); }   // warm air off the pit
+    },
+    hush(R, T, t, P, lite, ph, seed, W, H) {   // dust sinking slowly through the still air, threads of smoke from snuffed candles
+      for (let k = 0; k < (lite ? 4 : 9); k++) { const p = ph(k, 0.025), sx = R.x0 + 0.3 + (W - 0.6) * kH(seed, k, 801), sy = R.y0 + 0.3 + (H - 0.6) * kH(seed, k, 802); rxDot(sx + Math.sin(p * 3 + k) * 0.05, sy, 1.6 * (1 - p), Math.max(1, T * 0.014), 'rgba(170,182,205,' + (0.5 * Math.sin(p * Math.PI)).toFixed(2) + ')'); }
+      P.props.forEach(pp => { if (pp.t !== 'rx_snuffed' || !rfxPropOk(pp)) return; ctx.strokeStyle = 'rgba(170,176,190,0.35)'; ctx.lineWidth = Math.max(1, T * 0.02); ctx.beginPath();
+        for (let j = 0; j <= 8; j++) { const z = 0.2 * pp.s + j * 0.11, q = W2S(pp.x + Math.sin(j * 0.9 - t * 1.2 + pp.seed) * 0.04 * j / 4, pp.y, z); j ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } ctx.stroke(); });
+    },
+    ice(R, T, t, P, lite, ph, seed, W, H) {   // snow drifting down, a cold vapour lying low, the crystals glinting
+      for (let k = 0; k < (lite ? 6 : 12); k++) { const p = ph(k, 0.05), sx = R.x0 + 0.2 + (W - 0.4) * kH(seed, k, 811) + Math.sin(t * 0.9 + k * 1.7) * 0.15, sy = R.y0 + 0.2 + (H - 0.4) * kH(seed, k, 812); rxDot(sx, sy, 1.8 * (1 - p), Math.max(1, T * (0.016 + 0.01 * (k % 2))), 'rgba(245,250,255,' + (0.85 * Math.min(1, (1 - p) * 4) * Math.min(1, p * 8)).toFixed(2) + ')'); }
+      const spr = glowSprite('rxcold', [[0, 'rgba(210,236,255,0.5)'], [1, 'rgba(200,230,255,0)']]);
+      for (let k = 0; k < (lite ? 2 : 4); k++) { const p = ph(k + 70, 0.03), sx = R.x0 - 0.3 + (W + 0.6) * p, sy = R.y0 + 0.3 + (H - 0.6) * kH(seed, k, 813), q = W2S(sx, sy, 0.1), rw = T * 0.9; ctx.globalAlpha = 0.5 * Math.sin(p * Math.PI); ctx.drawImage(spr, q[0] - rw, q[1] - rw * 0.35, rw * 2, rw * 0.7); }
+      ctx.globalAlpha = 1;
+      P.props.forEach(pp => { if (pp.t !== 'rx_shard' || !rfxPropOk(pp)) return; const p = ph(pp.seed * 5, 0.4); if (p < 0.2) rxStar(W2S(pp.x - 0.03, pp.y, 0.45 * pp.s), T * 0.12 * Math.sin(p / 0.2 * Math.PI), 'rgba(255,255,255,0.95)'); });
+    }
+  };
+  // ---------- 1.27.5: solid bodies for the effects' things (every face lit by its normal: top light, south mid, east dark) ----------
+  // They draw on rc: the screen, or for a moment the picture of a prop's still part (rxKeep), so a solid prop costs one stamp a frame.
+  let rc = ctx;
+  function rxShadow(x, y, rx, ry, a) { const p = W2S(x, y, 0), T = cam.s; rc.fillStyle = 'rgba(0,0,0,' + (a || 0.45) + ')'; rc.beginPath(); rc.ellipse(p[0], p[1], rx * T, ry * T * SP, 0, 0, Math.PI * 2); rc.fill(); }
+  const rxLine = (a, b, col, w) => { rc.strokeStyle = col; rc.lineWidth = w; rc.beginPath(); rc.moveTo(a[0], a[1]); rc.lineTo(b[0], b[1]); rc.stroke(); };
+  function rxBall(cx, cy, z, r, col) {   // pBall on rc
+    const T = cam.s, p = W2S(cx, cy, z + r * 0.9), rr = T * r;
+    rc.fillStyle = col; rc.beginPath(); rc.arc(p[0], p[1], rr, 0, Math.PI * 2); rc.fill();
+    rc.fillStyle = 'rgba(0,0,0,0.28)'; rc.beginPath(); rc.arc(p[0], p[1], rr, -0.3, Math.PI * 0.85); rc.arc(p[0] - rr * 0.25, p[1] - rr * 0.25, rr * 0.85, Math.PI * 0.85, -0.3, true); rc.fill();
+    rc.fillStyle = 'rgba(255,255,255,0.32)'; rc.beginPath(); rc.arc(p[0] - rr * 0.35, p[1] - rr * 0.38, rr * 0.28, 0, Math.PI * 2); rc.fill();
+    return p;
+  }
+  function rxIso(cx, cy, w, d, h, top, south, east, z0) {   // isoBox on rc
+    z0 = z0 || 0; const x0 = cx - w / 2, x1 = cx + w / 2, y0 = cy - d / 2, y1 = cy + d / 2, z1 = z0 + h, q = (P, c) => { rc.fillStyle = c; rc.beginPath(); P.forEach((a, k) => k ? rc.lineTo(a[0], a[1]) : rc.moveTo(a[0], a[1])); rc.closePath(); rc.fill(); };
+    q([W2S(x0, y1, z0), W2S(x1, y1, z0), W2S(x1, y1, z1), W2S(x0, y1, z1)], south); q([W2S(x1, y0, z0), W2S(x1, y1, z0), W2S(x1, y1, z1), W2S(x1, y0, z1)], east); q([W2S(x0, y0, z1), W2S(x1, y0, z1), W2S(x1, y1, z1), W2S(x0, y1, z1)], top);
+  }
+  // the still part of a prop, painted once per type, variant, size, zoom step and tilt into a picture (as it looks under drawProp's
+  // scale), then stamped at its foot every frame; what moves (flames, glows, sway, turning cogs) is drawn live by the prop itself
+  const RXC = new Map(), RXH = { rx_pipe: 1.05, rx_stalag: 0.82, rx_shard: 0.72, rx_snag: 0.72, rx_tomb: 0.64, rx_lever: 0.6, rx_candlesV: 0.62, rx_candlesH: 0.62 };
+  function rxKeep(p, T, draw) {
+    const k = p.t + '|' + p.v + '|' + Math.round(p.s * 20) + '|' + Math.round(T * DPR / 3) + '|' + Math.round(SP * 200);
+    let e = RXC.get(k);
+    if (!e) {
+      const D = DPR * PROP_K, up = (RXH[p.t] || 0.56) * T, hw = 0.46 * T, dn = 0.32 * T, c = document.createElement('canvas'); c.width = Math.ceil(2 * hw * D); c.height = Math.ceil((up + dn) * D);
+      const g = c.getContext('2d'), f = W2S(p.x, p.y, 0); g.setTransform(D, 0, 0, D, D * (hw - f[0]), D * (up - f[1]));
+      rc = g; try { draw(); } finally { rc = ctx; }
+      if (RXC.size > 160) RXC.clear(); e = { c, T, hw, up, dn }; RXC.set(k, e);
+    }
+    const f = W2S(p.x, p.y, 0), sc = T / e.T; ctx.drawImage(e.c, f[0] - e.hw * sc, f[1] - e.up * sc, 2 * e.hw * sc, (e.up + e.dn) * sc);
+  }
+  const RXS = new Map();
+  function rxShade(hex, f) {   // '#rrggbb' scaled by f, cached (f in steps of 0.05)
+    const q = Math.round(f * 20), k = hex + q; let s = RXS.get(k); if (s) return s;
+    const n = parseInt(hex.slice(1, 7), 16), c = v => Math.min(255, Math.round(v * q / 20));
+    s = 'rgb(' + c(n >> 16) + ',' + c((n >> 8) & 255) + ',' + c(n & 255) + ')'; if (RXS.size > 800) RXS.clear(); RXS.set(k, s); return s;
+  }
+  let rxLift = 0;   // > 0: a clear body (ice, crystal), lit through, its shade faces less dark
+  const rxLit = (nx, ny, nz) => rxLift + (1 - rxLift) * 0.42 + (1 - rxLift) * 0.68 * Math.max(0, (-0.43 * nx + 0.3 * ny + 0.85 * nz) / (Math.hypot(nx, ny, nz) || 1));   // the light from the upper left
+  const rxVz = () => Math.SQRT2 * SP / CP;   // with (1, 1, rxVz) the way to the camera
+  function rxSolid(P, F, col, alt, two) {   // a convex body: P world points [x, y, z], F faces (index lists); a face is drawn when it looks at the camera (two: always, turned to it)
+    let cx = 0, cy = 0, cz = 0; for (let i = 0; i < P.length; i++) { cx += P[i][0]; cy += P[i][1]; cz += P[i][2]; } cx /= P.length; cy /= P.length; cz /= P.length;
+    const vz = rxVz(), S = P.map(p => W2S(p[0], p[1], p[2]));
+    for (let i = 0; i < F.length; i++) {
+      const f = F[i]; let nx = 0, ny = 0, nz = 0, mx = 0, my = 0, mz = 0;
+      for (let j = 0; j < f.length; j++) { const a = P[f[j]], b = P[f[(j + 1) % f.length]]; nx += (a[1] - b[1]) * (a[2] + b[2]); ny += (a[2] - b[2]) * (a[0] + b[0]); nz += (a[0] - b[0]) * (a[1] + b[1]); mx += a[0]; my += a[1]; mz += a[2]; }
+      if (!two && nx * (mx / f.length - cx) + ny * (my / f.length - cy) + nz * (mz / f.length - cz) < 0) { nx = -nx; ny = -ny; nz = -nz; }
+      let v = nx + ny + nz * vz; if (two && v < 0) { nx = -nx; ny = -ny; nz = -nz; v = -v; }
+      if (v <= 1e-9) continue;
+      rc.fillStyle = rxShade((alt && alt[i]) || col, rxLit(nx, ny, nz)); rc.beginPath();
+      for (let j = 0; j < f.length; j++) { const q = S[f[j]]; j ? rc.lineTo(q[0], q[1]) : rc.moveTo(q[0], q[1]); }
+      rc.closePath(); rc.fill();
+    }
+    return S;
+  }
+  // a turned body (prof [[r, z], ...] going up, n sides from angle a0, leaning lx, ly per unit of height): its sides as they face the
+  // camera, then a lid on top (cap: a colour, false for none). Drawn ring by ring from the bottom, so an overhang hides what is under it.
+  function rxLathe(cx, cy, z0, prof, n, col, a0, cap, lx, ly) {
+    const m = prof.length, R = []; let mr = 0; for (let i = 0; i < m; i++) mr = Math.max(mr, prof[i][0]);
+    const px = mr * cam.s; if (px < 2.5) n = Math.min(n, 4); else if (px < 5) n = Math.min(n, 6);   // small on screen: fewer sides
+    const vz = rxVz(), da = Math.PI * 2 / n;
+    a0 = a0 || 0; lx = lx || 0; ly = ly || 0;
+    for (let i = 0; i < m; i++) { const r = prof[i][0], z = prof[i][1], ox = cx + lx * z, oy = cy + ly * z, ring = []; for (let k = 0; k < n; k++) { const a = a0 + k * da; ring.push(W2S(ox + Math.cos(a) * r, oy + Math.sin(a) * r, z0 + z)); } R.push(ring); }
+    for (let i = 0; i < m - 1; i++) {
+      const dz = prof[i + 1][1] - prof[i][1], dr = prof[i + 1][0] - prof[i][0], A = R[i], B = R[i + 1];
+      for (let k = 0; k < n; k++) {
+        const am = a0 + (k + 0.5) * da, ca = Math.cos(am), sa = Math.sin(am);
+        if ((ca + sa) * dz - dr * vz <= 0) continue;
+        const k1 = (k + 1) % n; rc.fillStyle = rxShade(col, rxLit(ca * dz, sa * dz, -dr));
+        rc.beginPath(); rc.moveTo(A[k][0], A[k][1]); rc.lineTo(A[k1][0], A[k1][1]); rc.lineTo(B[k1][0], B[k1][1]); rc.lineTo(B[k][0], B[k][1]); rc.closePath(); rc.fill();
+      }
+    }
+    if (cap !== false && prof[m - 1][0] > 0) { const L = R[m - 1]; rc.fillStyle = cap || rxShade(col, 0.97); rc.beginPath(); L.forEach((q, k) => k ? rc.lineTo(q[0], q[1]) : rc.moveTo(q[0], q[1])); rc.closePath(); rc.fill(); }
+    return R;
+  }
+  function rxRod(a, b, r0, r1, lit, dark, cap) {   // a round rod from a to b (world [x, y, z]), r0 to r1 thick: a lit half to the left, a shaded one, a round end at b
+    const T = cam.s, A = W2S(a[0], a[1], a[2]), B = W2S(b[0], b[1], b[2]), dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1;
+    let px = -dy / L, py = dx / L; if (px > 0 || (px === 0 && py > 0)) { px = -px; py = -py; }
+    const w0 = Math.max(0.6, r0 * T), w1 = Math.max(0.4, r1 * T);
+    rc.fillStyle = dark; rc.beginPath(); rc.moveTo(A[0] + px * w0, A[1] + py * w0); rc.lineTo(B[0] + px * w1, B[1] + py * w1); rc.lineTo(B[0] - px * w1, B[1] - py * w1); rc.lineTo(A[0] - px * w0, A[1] - py * w0); rc.closePath(); rc.fill();
+    rc.fillStyle = lit; rc.beginPath(); rc.moveTo(A[0] + px * w0, A[1] + py * w0); rc.lineTo(B[0] + px * w1, B[1] + py * w1); rc.lineTo(B[0] - px * w1 * 0.15, B[1] - py * w1 * 0.15); rc.lineTo(A[0] - px * w0 * 0.15, A[1] - py * w0 * 0.15); rc.closePath(); rc.fill();
+    if (cap && w1 > 0.8) { rc.fillStyle = cap; rc.beginPath(); rc.ellipse(B[0], B[1], w1, w1 * 0.8, 0, 0, Math.PI * 2); rc.fill(); }
+    return B;
+  }
+  function rxEgg(x, y, z, rx, ry, col, sh) {   // a rounded body (screen half sizes rx, ry in tiles) centred z over the floor: shaded under the right, a gleam up left
+    const T = cam.s, p = W2S(x, y, z), a = rx * T, b = ry * T;
+    rc.fillStyle = col; rc.beginPath(); rc.ellipse(p[0], p[1], a, b, 0, 0, Math.PI * 2); rc.fill();
+    rc.fillStyle = sh || 'rgba(0,0,0,0.3)'; rc.beginPath(); rc.ellipse(p[0], p[1], a, b, 0, -0.3, Math.PI * 0.85); rc.ellipse(p[0] - a * 0.22, p[1] - b * 0.25, a * 0.86, b * 0.84, 0, Math.PI * 0.85, -0.3, true); rc.fill();
+    rc.fillStyle = 'rgba(255,255,255,0.28)'; rc.beginPath(); rc.ellipse(p[0] - a * 0.35, p[1] - b * 0.4, a * 0.26, b * 0.22, 0, 0, Math.PI * 2); rc.fill();
+    return p;
+  }
+  const rxRock = (x, y, r, h, col, seed, z0) => rxLathe(x, y, z0 || 0, [[r, 0], [r * 0.88, h * 0.5], [r * 0.42, h]], 5 + (seed & 1), col, seed * 1.7);   // a faceted lump of stone
+  const RXBF = [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]];
+  function rxBox(cx, cy, z0, w, d, h, tw, td, col, ang, alt) {   // a block (its top tw by td: narrower makes a tapered one), turned by ang
+    const c = Math.cos(ang || 0), s = Math.sin(ang || 0), P = [];
+    [[w, d, z0], [tw, td, z0 + h]].forEach(([a, b, z]) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([i, j]) => { const u = i * a / 2, v = j * b / 2; P.push([cx + u * c - v * s, cy + u * s + v * c, z]); }));
+    return rxSolid(P, RXBF, col, alt);
+  }
+  function rxHCyl(a, b, r, n, col, cap) {   // a round body lying from a to b (world [x, y, z]), r thick, n sides; its end lids lit too (cap: their colour)
+    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], L = Math.hypot(ux, uy, uz) || 1;
+    let e1 = [-uy / L, ux / L, 0]; const l1 = Math.hypot(e1[0], e1[1]); if (l1 < 1e-6) e1 = [1, 0, 0]; else e1 = [e1[0] / l1, e1[1] / l1, 0];
+    let e2 = [(uy * e1[2] - uz * e1[1]) / L, (uz * e1[0] - ux * e1[2]) / L, (ux * e1[1] - uy * e1[0]) / L]; if (e2[2] < 0) e2 = [-e2[0], -e2[1], -e2[2]];
+    const P = [], F = [], alt = [], c0 = [], c1 = [];
+    for (let e = 0; e < 2; e++) { const o = e ? b : a; for (let k = 0; k < n; k++) { const t = k * Math.PI * 2 / n, cc = Math.cos(t) * r, ss = Math.sin(t) * r; P.push([o[0] + e1[0] * cc + e2[0] * ss, o[1] + e1[1] * cc + e2[1] * ss, o[2] + e1[2] * cc + e2[2] * ss]); } }
+    for (let k = 0; k < n; k++) { const k1 = (k + 1) % n; F.push([k, k1, n + k1, n + k]); c0.push(k); c1.push(n + k); }
+    F.push(c0, c1); if (cap) { alt[n] = cap; alt[n + 1] = cap; }
+    return rxSolid(P, F, col, alt);
+  }
+  function rxPlane(ax, ay, bx, by, z0, z1) {   // faceMap on top of the transform in force (drawProp scales a prop round its foot)
+    const A = W2S(ax, ay, z1), B = W2S(bx, by, z1), C = W2S(ax, ay, z0); rc.transform(B[0] - A[0], B[1] - A[1], C[0] - A[0], C[1] - A[1], A[0], A[1]);
+  }
+  const rxWP = (F, u, d, z) => { const w = F.W(u, d); return [w[0], w[1], z]; };   // a point on a wall's frame, in the world
+  function rxXW(F, pts, d0, d1, col, alt) {   // a flat shape [[u, z], ...] (convex) standing out of a wall face from d0 to d1: a slab with its edges
+    const n = pts.length, P = [], Fc = [[], []];
+    pts.forEach(([u, z], k) => { P.push(rxWP(F, u, d0, z)); Fc[0].push(k); }); pts.forEach(([u, z], k) => { P.push(rxWP(F, u, d1, z)); Fc[1].push(n + k); });
+    for (let k = 0; k < n; k++) { const k1 = (k + 1) % n; Fc.push([k, k1, n + k1, n + k]); }
+    return rxSolid(P, Fc, col, alt);
+  }
+  const RXCA = [[-0.07, 0.03, 0.26], [0.06, -0.03, 0.4], [0.03, 0.08, 0.18]], RXCU = [[-0.07, 0.03, 0.18], [0.06, -0.03, 0.12]];
+  function rxCandles(p, T, t, wax, dish, flame, glow, unlit) {   // candles on a little dish: each one a turned stick with a dripped top, its flame (or a black wick)
+    const s = p.s, L = unlit ? RXCU : RXCA.slice(0, 2 + (p.v % 2));
+    rxKeep(p, T, () => { rxShadow(p.x, p.y, 0.18, 0.11, 0.32);
+    rxLathe(p.x, p.y, 0, [[0.15 * s, 0], [0.165 * s, 0.022], [0.15 * s, 0.032]], 10, dish, 0.2);
+    rxLathe(p.x, p.y, 0.032, [[0.1 * s, 0], [0.085 * s, 0.01]], 9, wax, 0.5, rxShade(wax, 0.92));   // the wax run together on it
+    L.forEach(([u, v, h], k) => {   // (back ones first)
+      const x = p.x + u * s, y = p.y + v * s, H = h * s, r = 0.042 * s;
+      rxLathe(x, y, 0.04, [[r, 0], [r, H], [r * 0.82, H + 0.014]], 7, wax, 0.3 + k);
+      if (T >= 24) rxRod([x - r * 0.75, y + r * 0.4, 0.04 + H], [x - r * 0.8, y + r * 0.5, 0.04 + H * 0.55], 0.012, 0.009, rxShade(wax, 1.05), rxShade(wax, 0.8), rxShade(wax, 0.95));   // a drip down its lit side
+      const a = W2S(x, y, 0.04 + H + 0.012);
+      if (unlit) rxLine(a, [a[0] + T * 0.01, a[1] - T * 0.04], '#141414', Math.max(1, T * 0.014));
+    }); });
+    if (!unlit) L.forEach(([u, v, h], k) => { const a = W2S(p.x + u * s, p.y + v * s, 0.04 + h * s + 0.012); pFlame(a[0], a[1], T * 0.12, t, p.seed + k, flame[0], flame[1], h > 0.3 ? glow : null); });   // the flames, live
+  }
+  function rxCrystal(x, y, r, h, lx, ly, col, a0, alpha) {   // a six-sided crystal with a pointed tip, leaning; a bright edge up its front
+    const A = rc.globalAlpha; if (alpha) rc.globalAlpha = A * alpha; rxLift = 0.4;
+    const R = rxLathe(x, y, 0, [[r, 0], [r * 0.92, h * 0.72], [0, h]], 6, col, a0, false, lx, ly);
+    rc.globalAlpha = A; rxLift = 0;
+    let k = 0, best = -1e9; R[0].forEach((q, i) => { if (q[1] > best) { best = q[1]; k = i; } });   // the corner nearest the camera
+    rc.strokeStyle = 'rgba(255,255,255,0.7)'; rc.lineWidth = Math.max(1, cam.s * 0.012); rc.beginPath(); rc.moveTo(R[0][k][0], R[0][k][1]); rc.lineTo(R[1][k][0], R[1][k][1]); rc.lineTo(R[2][0][0], R[2][0][1]); rc.stroke();
+  }
+  // ---------- 1.27.5: what stands in an effect room (drawProp: p.x, p.y on the floor, p.s scale, p.v variant 0..3) ----------
+  Object.assign(PROP, {
+    rx_vent(p, T) { rxKeep(p, T, () => {   // a raised ring of rough stones round a deep crack in the floor (the mist boils out of it: RFX_AIR)
+      rxShadow(p.x, p.y, 0.24, 0.15, 0.32);
+      const q = W2S(p.x, p.y, 0.005); rc.fillStyle = '#07080b'; rc.beginPath(); rc.ellipse(q[0], q[1], T * 0.13, T * 0.13 * SP, 0, 0, Math.PI * 2); rc.fill();
+      rc.fillStyle = '#2a2e36'; rc.beginPath(); rc.ellipse(q[0], q[1], T * 0.13, T * 0.13 * SP, 0, Math.PI, Math.PI * 2); rc.ellipse(q[0], q[1] + T * 0.03, T * 0.11, T * 0.1 * SP, 0, Math.PI * 2, Math.PI, true); rc.fill();   // its far wall, going down
+      rc.drawImage(rxMist(), q[0] - T * 0.14, q[1] - T * 0.1, T * 0.28, T * 0.2);
+      const st = []; for (let k = 0; k < 7; k++) { const a = k * 0.9 + p.v; st.push([Math.cos(a), Math.sin(a), 0.05 + 0.02 * ((k + p.v) % 2), k]); }
+      st.sort((a, b) => (a[0] + a[1]) - (b[0] + b[1])).forEach(([cx, cy, r, k]) => rxRock(p.x + cx * 0.17, p.y + cy * 0.17, r, r * 1.3, k % 2 ? '#646a76' : '#7a808c', k + p.v));
+    }); },
+    rx_snag(p, T) { rxKeep(p, T, () => {   // dead branches out of the floor, round and tapering, a knot of root at their foot
+      rxShadow(p.x, p.y, 0.15, 0.09, 0.32);
+      [[-0.7, 0.42], [0.15, 0.55], [0.75, 0.34]].forEach(([dx, hh], k) => { if (k === 2 && p.v % 2) return;
+        const H = hh * p.s, a = [p.x, p.y, 0], m = [p.x + dx * 0.04, p.y + dx * 0.02, H * 0.5], b = [p.x + dx * 0.14, p.y + dx * 0.04, H], r = 0.035 - 0.007 * k;
+        rxRod(a, m, r, r * 0.7, '#6a6458', '#3a362f'); rxRod(m, b, r * 0.7, r * 0.25, '#6a6458', '#3a362f', '#7a7466');
+        const tw = [(m[0] + b[0]) / 2, (m[1] + b[1]) / 2, (m[2] + b[2]) / 2]; rxRod(tw, [tw[0] + 0.1 * (dx < 0 ? -1 : 1), tw[1], tw[2] + 0.08], r * 0.4, r * 0.12, '#6a6458', '#3a362f');
+      });
+      rxRock(p.x, p.y, 0.07, 0.07, '#4e4a44', p.v);
+    }); },
+    rx_reeds(p, T, t) {   // a clump of reeds and bulrushes on a hump of mud, swaying: round stalks, folded leaves, brown heads
+      rxShadow(p.x, p.y, 0.17, 0.1, 0.32);
+      rxLathe(p.x, p.y, 0, [[0.14, 0], [0.1, 0.03], [0.04, 0.045]], 8, '#3a3018', 0.4);
+      const n = 6 + (p.v % 3);
+      for (let k = 0; k < n; k++) {
+        const u = (k / (n - 1) - 0.5), hh = (0.38 + 0.2 * ((k * 7 + p.v) % 3) / 2) * p.s, sw = Math.sin(t * 1.4 + k * 0.7 + p.seed) * 0.04;
+        const a = [p.x + u * 0.12, p.y + u * 0.03, 0.03], m = [p.x + u * 0.15 + sw * 0.3, p.y + u * 0.04, hh * 0.5], b = [p.x + u * 0.22 + sw, p.y + u * 0.05, hh];
+        const lit = k % 2 ? '#7e9e4a' : '#94b45a', dk = k % 2 ? '#4a6a2a' : '#5a7a34';
+        rxRod(a, m, 0.016, 0.012, lit, dk); rxRod(m, b, 0.012, 0.005, lit, dk);
+        if (k % 3 === 1) { const h0 = [b[0] - (b[0] - m[0]) * 0.18, b[1], b[2] - (b[2] - m[2]) * 0.18], h1 = [h0[0] - (b[0] - m[0]) * 0.35, h0[1], h0[2] - (b[2] - m[2]) * 0.35]; rxRod(h1, h0, 0.03, 0.028, '#7a5230', '#3e2412', '#6a4424'); }   // a bulrush head
+      }
+      [[-1, 0.2], [1, 0.16]].forEach(([sd, hh], k) => { const a = [p.x + sd * 0.03, p.y, 0.03], m = [p.x + sd * 0.12, p.y + 0.02, hh * 0.7 * p.s], b = [p.x + sd * 0.22, p.y + 0.03, hh * 0.55 * p.s]; rxRod(a, m, 0.026, 0.02, '#6e8e3e', '#3e5a22'); rxRod(m, b, 0.02, 0.002, '#6e8e3e', '#3e5a22'); });   // two leaves bending out
+    },
+    rx_stump(p, T) { rxKeep(p, T, () => {   // a rotten stump with bark facets and roots, moss on its cut top, a pale mushroom at its foot
+      rxShadow(p.x, p.y, 0.23, 0.14, 0.36);
+      const s = p.s, H = 0.2 * s;
+      [0.4, 2.3, 4.2].forEach((a, k) => { const c = Math.cos(a + p.v), d = Math.sin(a + p.v); rxRod([p.x + c * 0.09 * s, p.y + d * 0.09 * s, 0.06], [p.x + c * 0.22 * s, p.y + d * 0.2 * s, 0], 0.04, 0.012, '#6a4a2c', '#3a2614'); });
+      rxLathe(p.x, p.y, 0, [[0.15 * s, 0], [0.13 * s, 0.05], [0.125 * s, H]], 9, '#5e4228', p.v * 0.7, '#8a6a42');
+      const q = W2S(p.x, p.y, H), rx = T * 0.125 * s; rc.strokeStyle = '#5a4028'; rc.lineWidth = 1; rc.beginPath(); rc.ellipse(q[0], q[1], rx * 0.6, rx * 0.6 * SP, 0, 0, Math.PI * 2); rc.moveTo(q[0] + rx * 0.3, q[1]); rc.ellipse(q[0], q[1], rx * 0.3, rx * 0.3 * SP, 0, 0, Math.PI * 2); rc.stroke();
+      rc.fillStyle = 'rgba(110,150,60,0.9)'; rc.beginPath(); rc.ellipse(q[0] - rx * 0.35, q[1] + rx * 0.1 * SP, rx * 0.5, rx * 0.3 * SP, 0, 0, Math.PI * 2); rc.fill();
+      const mx = p.x + 0.17 * s, my = p.y + 0.08 * s; rxLathe(mx, my, 0, [[0.016, 0], [0.013, 0.07]], 6, '#d8ccb0', 0, false); rxLathe(mx, my, 0.06, [[0.055, 0], [0.045, 0.025], [0, 0.04]], 8, '#d8c8a6', 0.3);
+    }); },
+    rx_toad(p, T, t) {   // a fat toad on a stone: round body, legs folded at its sides, bulging eyes, its throat going
+      const th = 1 + 0.25 * Math.max(0, Math.sin(t * 3 + p.seed)), z = 0.07;
+      rxKeep(p, T, () => { rxShadow(p.x, p.y, 0.15, 0.09, 0.32); rxRock(p.x, p.y, 0.09, 0.07, '#5a5e58', p.v);
+      rxEgg(p.x - 0.07, p.y + 0.02, z + 0.03, 0.045, 0.035, '#4e6a2c'); rxEgg(p.x + 0.07, p.y - 0.02, z + 0.03, 0.045, 0.035, '#46602a');   // the folded back legs
+      rxEgg(p.x, p.y, z + 0.07, 0.1, 0.075, '#5e7a34');
+      [[-0.045, -0.02], [0.04, -0.045]].forEach(([u, v]) => { const e = rxBall(p.x + u, p.y + v, z + 0.09, 0.028, '#7a9a44'); rc.fillStyle = '#e8d860'; rc.beginPath(); rc.arc(e[0], e[1] - T * 0.008, T * 0.018, 0, Math.PI * 2); rc.fill(); rc.fillStyle = '#101008'; rc.fillRect(e[0] - T * 0.014, e[1] - T * 0.012, T * 0.028, Math.max(1, T * 0.008)); }); });
+      rxEgg(p.x + 0.02, p.y + 0.05, z + 0.03, 0.05 * th, 0.035 * th, '#c8c890', 'rgba(0,0,0,0.15)');   // the throat
+    },
+    rx_stalag(p, T) { rxKeep(p, T, () => {   // wet blue-grey stalagmites on a heap of rubble, faceted, a sheen down their lit side
+      const n = 1 + (p.v % 3); rxShadow(p.x, p.y, 0.21, 0.14, 0.36);
+      rxLathe(p.x, p.y, 0, [[0.17, 0], [0.12, 0.035], [0.05, 0.05]], 7, '#3e4a62', p.v);
+      for (let k = 0; k < n; k++) { const x = p.x + (k - (n - 1) / 2) * 0.12, y = p.y + (k % 2) * 0.06, h = (0.3 + 0.18 * ((k * 2 + p.v) % 3)) * p.s, r = 0.075 + 0.02 * ((k + p.v) % 2);
+        rxLathe(x, y, 0, [[r, 0], [r * 0.62, h * 0.45], [r * 0.3, h * 0.8], [0, h]], 7, '#5a6a8a', k * 0.9 + p.v, false);
+        rxLine(W2S(x - r * 0.55, y + r * 0.2, h * 0.1), W2S(x - r * 0.12, y, h * 0.8), 'rgba(200,225,255,0.55)', Math.max(1, T * 0.014)); }
+    }); },
+    rx_gcrystal(p, T, t) {   // a cluster of pale blue crystals out of a rock, glowing softly
+      rxShadow(p.x, p.y, 0.16, 0.1, 0.32);   // (live: under the glow)
+      const g = W2S(p.x, p.y, 0.15), pul = 0.8 + 0.2 * Math.sin(t * 1.5 + p.seed); rc.drawImage(glowSprite('rxgcry', [[0, 'rgba(140,190,255,0.5)'], [1, 'rgba(140,190,255,0)']]), g[0] - T * 0.4 * pul, g[1] - T * 0.4 * pul, T * 0.8 * pul, T * 0.8 * pul);
+      rxKeep(p, T, () => { rxRock(p.x, p.y, 0.1, 0.06, '#3e4a62', p.v); rxShards(p, '#9ec0f4', 0.3); });
+    },
+    rx_tomb(p, T) { rxKeep(p, T, () => {   // a grave slab with a rounded head on a plinth, a carved cross, cracked, moss at its foot
+      rxShadow(p.x, p.y, 0.21, 0.11, 0.4);
+      const w = 0.2 * p.s, d = 0.08, h = 0.42 * p.s, z0 = 0.05;
+      rxBox(p.x, p.y, 0, w + 0.08, d + 0.08, z0, w + 0.06, d + 0.06, '#4e4860');
+      const prof = [[-w / 2, z0], [w / 2, z0], [w / 2, h * 0.72]]; for (let k = 1; k < 6; k++) { const a = k / 6 * Math.PI; prof.push([Math.cos(a) * w / 2, h * 0.72 + Math.sin(a) * (h * 0.28)]); } prof.push([-w / 2, h * 0.72]);
+      const P = [], F = [[], []], n = prof.length; prof.forEach(([u, z], k) => { P.push([p.x + u, p.y - d / 2, z]); F[0].push(k); }); prof.forEach(([u, z], k) => { P.push([p.x + u, p.y + d / 2, z]); F[1].push(n + k); });
+      for (let k = 0; k < n; k++) { const k1 = (k + 1) % n; F.push([k, k1, n + k1, n + k]); }
+      rxSolid(P, F, '#5e566e');
+      const P1 = (u, z) => W2S(p.x - w / 2 + u * w, p.y + d / 2, z);
+      const a = P1(0.5, h * 0.82), b = P1(0.5, h * 0.35), c1 = P1(0.28, h * 0.66), c2 = P1(0.72, h * 0.66); rxLine(a, b, 'rgba(14,8,20,0.75)', Math.max(1, T * 0.025)); rxLine(c1, c2, 'rgba(14,8,20,0.75)', Math.max(1, T * 0.025));
+      rxLine(P1(0.53, h * 0.82), P1(0.53, h * 0.36), 'rgba(200,170,255,0.3)', 1);
+      if (p.v % 2) rxLine(P1(0.1, h * 0.72), P1(0.35, h * 0.5), 'rgba(10,6,14,0.7)', 1);
+      rxEgg(p.x - w * 0.25, p.y + d / 2 + 0.05, 0.05, 0.07, 0.03, '#56783e');
+    }); },
+    rx_candlesV(p, T, t) { rxCandles(p, T, t, '#ddd6e8', '#4a4458', ['rgba(245,235,255,0.95)', 'rgba(170,120,255,0.85)'], ['rxcandV', [[0, 'rgba(180,140,255,0.4)'], [1, 'rgba(180,140,255,0)']]]); },
+    rx_urn(p, T) { rxKeep(p, T, () => {   // a stone urn: a turned foot, a round belly, a neck, its lid and knob
+      rxShadow(p.x, p.y, 0.15, 0.09, 0.36);
+      const s = p.s; rxLathe(p.x, p.y, 0, [[0.075 * s, 0], [0.07 * s, 0.03 * s], [0.05 * s, 0.045 * s], [0.1 * s, 0.11 * s], [0.112 * s, 0.17 * s], [0.085 * s, 0.25 * s], [0.045 * s, 0.29 * s], [0.06 * s, 0.3 * s], [0.06 * s, 0.32 * s]], 12, '#6e7484', p.v * 0.4);
+      rc.strokeStyle = 'rgba(40,36,52,0.6)'; rc.lineWidth = Math.max(1, T * 0.012); const b = W2S(p.x, p.y, 0.17 * s); rc.beginPath(); rc.ellipse(b[0], b[1], T * 0.112 * s, T * 0.112 * s * SP, 0, 0.1, Math.PI - 0.1); rc.stroke();
+      rxBall(p.x, p.y, 0.315 * s, 0.025, '#7a8090');
+    }); },
+    rx_coins(p, T) { rxKeep(p, T, () => {   // a heap of gold coins, coins lying on it with their edges, a few rolled off, a short stack by it
+      rxShadow(p.x, p.y, 0.25, 0.15, 0.36);
+      const r = 0.17 * p.s, h = 0.17 * p.s;   // 1.27.5: its coins are solid ones (rxCoin)
+      if (p.v > 1) { rxLathe(p.x - 0.18, p.y + 0.12, 0, [[0.04, 0], [0.04, 0.07]], 8, '#d8a838', 0.3, '#ffe08a'); rc.strokeStyle = 'rgba(120,80,20,0.6)'; rc.lineWidth = 1; for (let k = 1; k < 4; k++) { const q = W2S(p.x - 0.18, p.y + 0.12, k * 0.0175); rc.beginPath(); rc.ellipse(q[0], q[1], T * 0.04, T * 0.04 * SP, 0, 0.1, Math.PI - 0.1); rc.stroke(); } }
+      rxLathe(p.x, p.y, 0, [[r, 0], [r * 0.88, h * 0.3], [r * 0.6, h * 0.66], [r * 0.25, h * 0.92], [0, h]], 11, '#e0b040', p.v);
+      for (let k = 0; k < 9; k++) { const a = k * 2.4 + p.v, d = 0.25 + 0.6 * ((k * 37 % 10) / 10), z = h * (1 - d) * 0.92; rxCoin(p.x + Math.cos(a) * r * d * 0.8, p.y + Math.sin(a) * r * d * 0.5, z - 0.006, 1, T, 0.03); }
+      [[0.2, 0.06], [-0.16, 0.14], [0.1, 0.2]].forEach(([u, v], k) => { if (k > p.v % 3) return; rxCoin(p.x + u, p.y + v, 0, 1, T, 0.04); });
+    }); },
+    rx_chest(p, T) { rxKeep(p, T, () => {   // a small iron-bound chest, its lid thrown back, gold heaped over its rim, a soft glow
+      rxShadow(p.x, p.y, 0.25, 0.14, 0.42);
+      const w = 0.3 * p.s, d = 0.2 * p.s, h = 0.16 * p.s, y0 = p.y - d / 2, ld = d * 0.95, th = 0.03;
+      const L = [0, -0.26 * ld, 0.96 * ld], N = [0, 0.96 * th, 0.26 * th], P = [];   // the lid, hinged at the back edge
+      [p.x - w / 2, p.x + w / 2].forEach(x => { const a = [x, y0, h]; P.push(a, [a[0], a[1] + L[1], a[2] + L[2]], [a[0], a[1] + L[1] + N[1], a[2] + L[2] + N[2]], [a[0], a[1] + N[1], a[2] + N[2]]); });
+      const S = rxSolid(P, [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]], '#6e4626', [0, 0, 0, 0, '#8a5a30']);
+      rxLine(S[2], S[6], '#c9a24e', Math.max(1, T * 0.018));   // its gilded edge
+      rxBox(p.x, p.y, 0, w, d, h, w, d, '#6e4626', 0, [0, '#c99a30']);   // the box, its top full of gold
+      const q = W2S(p.x, p.y, h); rc.drawImage(glowSprite('rxchest', [[0, 'rgba(255,220,120,0.6)'], [1, 'rgba(255,200,100,0)']]), q[0] - T * 0.3, q[1] - T * 0.25, T * 0.6, T * 0.5);
+      rxLathe(p.x, p.y, h, [[Math.min(w, d) * 0.48, 0], [Math.min(w, d) * 0.32, 0.035], [0, 0.055]], 9, '#e8be52', 0.2);
+      [[-0.06, 0.02, 0.03], [0.05, -0.02, 0.04], [0.01, 0.04, 0.02]].forEach(([u, v, z]) => rxCoin(p.x + u, p.y + v, h + z - 0.006, 1, T, 0.026));   // 1.27.5: solid coins on the heap
+      [-0.32, 0.32].forEach(f => rxBox(p.x + w * f, p.y + d / 2 + 0.006, 0, 0.03, 0.014, h + 0.004, 0.03, 0.014, '#8a8e96'));   // iron bands
+      rxBox(p.x, p.y + d / 2 + 0.008, h * 0.45, 0.045, 0.018, 0.05, 0.045, 0.018, '#e0c060');   // the lock
+    }); },
+    rx_bars(p, T) { rxKeep(p, T, () => {   // gold bars stacked: tapered ingots, lit tops
+      rxShadow(p.x, p.y, 0.21, 0.12, 0.36);
+      const L = [[-0.06, -0.03, 0], [0.07, 0.03, 0], [0.005, 0, 0.06]], s = p.s; L.slice(0, 2 + (p.v % 2)).forEach(([u, v, z]) => rxBox(p.x + u, p.y + v, z, 0.12 * s, 0.21 * s, 0.06, 0.09 * s, 0.17 * s, '#f0c656'));
+      const q = W2S(p.x - 0.04, p.y - 0.06, 0.12); rc.fillStyle = 'rgba(255,255,240,0.8)'; rc.fillRect(q[0], q[1], Math.max(1, T * 0.04), Math.max(1, T * 0.015));
+    }); },
+    rx_candlesH(p, T, t) { rxCandles(p, T, t, '#efe2c4', '#9a7a3a', ['rgba(255,240,190,0.95)', 'rgba(255,160,60,0.9)'], ['rxcandH', [[0, 'rgba(255,200,120,0.45)'], [1, 'rgba(255,200,120,0)']]]); },
+    rx_bedroll(p, T) { rxKeep(p, T, () => {   // a blanket rolled up and tied, lying on the floor: a round roll, its rolled end showing, two cords round it
+      rxShadow(p.x, p.y, 0.27, 0.11, 0.36);
+      const L = 0.22 * p.s, r = 0.07 * p.s, ax = p.v % 2, C = ['#4e6e92', '#86643a', '#5e7e4a', '#8e4a3c'][p.v];
+      const A = ax ? [p.x, p.y - L, r] : [p.x - L, p.y, r], B = ax ? [p.x, p.y + L, r] : [p.x + L, p.y, r];
+      rxHCyl(A, B, r, 10, C, rxShade(C, 1.15));
+      [0.3, 0.7].forEach(f => { const c = [A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f, r], e = 0.012; rxHCyl(ax ? [c[0], c[1] - e, r] : [c[0] - e, c[1], r], ax ? [c[0], c[1] + e, r] : [c[0] + e, c[1], r], r * 1.07, 10, '#5a3a20'); });
+      rc.save(); if (ax) rxPlane(B[0] - r, B[1], B[0] + r, B[1], 0, 2 * r); else rxPlane(B[0], B[1] + r, B[0], B[1] - r, 0, 2 * r);   // the rolled end
+      rc.strokeStyle = rxShade(C, 0.6); rc.lineWidth = 0.06; rc.beginPath(); for (let a = 0; a < Math.PI * 5; a += 0.3) { const rr = 0.42 * a / (Math.PI * 5), x = 0.5 + Math.cos(a) * rr, y = 0.5 + Math.sin(a) * rr; a ? rc.lineTo(x, y) : rc.moveTo(x, y); } rc.stroke(); rc.restore();
+    }); },
+    rx_jug(p, T) { rxKeep(p, T, () => {   // a turned clay jug with a handle, a cup by it
+      rxShadow(p.x, p.y, 0.16, 0.1, 0.36);
+      const s = p.s; rxLathe(p.x + 0.13, p.y + 0.05, 0, [[0.03, 0], [0.04, 0.06]], 8, '#c9b08a', 0.2, '#3a2a18');
+      rxRod([p.x + 0.07 * s, p.y, 0.18 * s], [p.x + 0.11 * s, p.y, 0.13 * s], 0.014, 0.014, '#b87244', '#6e3a1c'); rxRod([p.x + 0.11 * s, p.y, 0.13 * s], [p.x + 0.08 * s, p.y, 0.07 * s], 0.014, 0.014, '#b87244', '#6e3a1c');   // the handle
+      rxLathe(p.x, p.y, 0, [[0.06 * s, 0], [0.08 * s, 0.035 * s], [0.088 * s, 0.09 * s], [0.072 * s, 0.15 * s], [0.035 * s, 0.2 * s], [0.03 * s, 0.24 * s], [0.045 * s, 0.26 * s]], 12, '#b06a3e', 0.1);
+      const m = W2S(p.x, p.y, 0.26 * s); rc.fillStyle = '#2a1408'; rc.beginPath(); rc.ellipse(m[0], m[1], T * 0.03 * s, T * 0.03 * s * SP, 0, 0, Math.PI * 2); rc.fill();
+    }); },
+    rx_cog(p, T, t) {   // a thick cog standing on edge on an iron foot, turning on its axle, a small one meshing with it
+      rxShadow(p.x, p.y, 0.27, 0.13, 0.4);
+      const ax = p.v % 2, H = 0.55 * p.s, w = H, dir = p.v > 1 ? 1 : -1, a = t * 0.9 * dir, zc = 0.05 + H / 2;
+      rxBox(p.x, p.y, 0, ax ? 0.16 : w * 0.9, ax ? w * 0.9 : 0.16, 0.05, ax ? 0.14 : w * 0.86, ax ? w * 0.86 : 0.14, '#4a4e57');
+      const W = (d) => ax ? [p.x + d, p.y] : [p.x, p.y + d], pl = (d) => { rc.restore(); rc.save(); if (ax) rxPlane(p.x + d, p.y - w / 2, p.x + d, p.y + w / 2, 0.05, 0.05 + H); else rxPlane(p.x - w / 2, p.y + d, p.x + w / 2, p.y + d, 0.05, 0.05 + H); };
+      { const b = W(-0.06); rxBox(b[0], b[1], 0.05, 0.05, 0.05, H / 2, 0.04, 0.04, '#3a3d44'); }   // the post behind it
+      rc.save(); rc.save();
+      [['#3a2814', -0.035], ['#4e361c', -0.018], ['#624424', 0], ['#76542c', 0.014]].forEach(([c, d]) => { pl(d); rxGear(0.5, 0.5, 0.46, 12, a, c, null, null); });   // its thickness, layer on layer
+      pl(0.025); rxGear(0.5, 0.5, 0.46, 12, a, '#a87a40', '#e0b070', '#1c120a');
+      rc.fillStyle = 'rgba(255,240,200,0.18)'; rc.beginPath(); rc.arc(0.5, 0.5, 0.42, Math.PI * 1.05, Math.PI * 1.6); rc.arc(0.5, 0.5, 0.3, Math.PI * 1.6, Math.PI * 1.05, true); rc.fill();
+      [['#4a3418', 0.03], ['#5e4222', 0.045]].forEach(([c, d]) => { pl(d); rxGear(0.92, 0.82, 0.22, 8, -a * 12 / 8 + 0.2, c, null, null); });
+      pl(0.055); rxGear(0.92, 0.82, 0.22, 8, -a * 12 / 8 + 0.2, '#8a6434', '#c99a5a', '#1c120a');
+      rc.restore(); rc.restore();
+      const c0 = W(0.025), c1 = W(0.06); rxHCyl([c0[0], c0[1], zc], [c1[0], c1[1], zc], 0.035, 8, '#4a4e57', '#2a2d33');   // the end of its axle
+    },
+    rx_pipe(p, T, t) {   // a copper pipe out of the floor with flanges, an elbow and an open end; a thick valve wheel and a gauge on it (it vents steam: RFX_AIR)
+      const h = 0.62 * p.s, r = 0.05;
+      rxKeep(p, T, () => { rxShadow(p.x, p.y, 0.17, 0.1, 0.36);
+      rxLathe(p.x, p.y, 0, [[r * 1.6, 0], [r * 1.6, 0.03]], 10, '#8a5430', 0.2);
+      rxLathe(p.x, p.y, 0.03, [[r, 0], [r, h - 0.03]], 10, '#b8743e', 0.2, false);
+      rxLathe(p.x, p.y, h * 0.62, [[r * 1.35, 0], [r * 1.35, 0.025]], 10, '#8a5430', 0.2);
+      rxHCyl([p.x, p.y, h], [p.x + 0.15, p.y, h], r, 10, '#b8743e', '#1e1008');
+      rxBall(p.x, p.y, h - r * 0.95, r * 1.05, '#c07c44');
+      rxHCyl([p.x + 0.12, p.y, h], [p.x + 0.15, p.y, h], r * 1.3, 10, '#8a5430', '#1e1008');
+      { const q = W2S(p.x + 0.15, p.y, h); rc.fillStyle = '#100804'; rc.beginPath(); rc.ellipse(q[0] + 1, q[1], T * r * 0.6, T * r * 0.85, 0, 0, Math.PI * 2); rc.fill(); } });   // the dark mouth
+      const vz = h * 0.42, vr = 0.075, va = t * 0.3, gz = h * 0.82, gr = 0.05;
+      const fm = (ax0, ay0, bx0, by0, z0, z1) => { rc.restore(); rc.save(); rxPlane(ax0, ay0, bx0, by0, z0, z1); };   // a plane that keeps drawProp's scale
+      rxHCyl([p.x, p.y + r * 0.7, vz], [p.x, p.y + 0.07, vz], 0.016, 8, '#5a5e66', '#3a3d44');   // 1.27.5: the valve's stem out of the pipe
+      rc.save(); rc.save();
+      [['#4a1410', 0.046], ['#521712', 0.052], ['#5a1a14', 0.058], ['#6a1d16', 0.064], ['#741f18', 0.07], ['#7e221a', 0.075]].forEach(([c, d]) => { fm(p.x - vr, p.y + d, p.x + vr, p.y + d, vz - vr, vz + vr); rc.strokeStyle = c; rc.lineWidth = 0.17; rc.beginPath(); rc.arc(0.5, 0.5, 0.42, 0, Math.PI * 2); rc.stroke(); });   // the rim's thickness, layer on layer
+      fm(p.x - vr, p.y + 0.077, p.x + vr, p.y + 0.077, vz - vr, vz + vr); rc.lineCap = 'round';   // the spokes, round: a dark body, a lit upper edge
+      for (let k = 0; k < 3; k++) { const q = va + k * 2.09, c = Math.cos(q), sn = Math.sin(q); rc.strokeStyle = '#5e1a14'; rc.lineWidth = 0.14; rc.beginPath(); rc.moveTo(0.5 + c * 0.1, 0.5 + sn * 0.1); rc.lineTo(0.5 + c * 0.4, 0.5 + sn * 0.4); rc.stroke();
+        rc.strokeStyle = '#d0544a'; rc.lineWidth = 0.06; rc.beginPath(); rc.moveTo(0.49 + c * 0.1, 0.485 + sn * 0.1); rc.lineTo(0.49 + c * 0.4, 0.485 + sn * 0.4); rc.stroke(); }
+      rc.lineCap = 'butt';
+      fm(p.x - vr, p.y + 0.082, p.x + vr, p.y + 0.082, vz - vr, vz + vr); rc.strokeStyle = '#a8342a'; rc.lineWidth = 0.15; rc.beginPath(); rc.arc(0.5, 0.5, 0.42, 0, Math.PI * 2); rc.stroke();   // the rim's front, rounded by light and shade
+      rc.strokeStyle = '#e8786a'; rc.lineWidth = 0.05; rc.beginPath(); rc.arc(0.5, 0.5, 0.44, Math.PI * 0.95, Math.PI * 1.65); rc.stroke();
+      rc.strokeStyle = '#5a1610'; rc.lineWidth = 0.05; rc.beginPath(); rc.arc(0.5, 0.5, 0.4, Math.PI * 0.05, Math.PI * 0.7); rc.stroke();
+      rc.fillStyle = '#7a2018'; rc.beginPath(); rc.arc(0.5, 0.5, 0.15, 0, Math.PI * 2); rc.fill();   // the hub, a round boss
+      rc.fillStyle = '#d06050'; rc.beginPath(); rc.arc(0.485, 0.485, 0.11, 0, Math.PI * 2); rc.fill();
+      rc.fillStyle = '#f4b0a4'; rc.beginPath(); rc.arc(0.465, 0.46, 0.035, 0, Math.PI * 2); rc.fill();
+      [['#4a3018', 0.045], ['#6a4828', 0.06]].forEach(([c, d]) => { fm(p.x - 0.03 - gr, p.y + d, p.x - 0.03 + gr, p.y + d, gz - gr, gz + gr); rc.fillStyle = c; rc.beginPath(); rc.arc(0.5, 0.5, 0.5, 0, Math.PI * 2); rc.fill(); });
+      fm(p.x - 0.03 - gr, p.y + 0.07, p.x - 0.03 + gr, p.y + 0.07, gz - gr, gz + gr); rc.fillStyle = '#e8e0cc'; rc.beginPath(); rc.arc(0.5, 0.5, 0.4, 0, Math.PI * 2); rc.fill();
+      const na = -2.2 + 1.2 * Math.sin(t * 2 + p.seed); rc.strokeStyle = '#c02a20'; rc.lineWidth = 0.08; rc.beginPath(); rc.moveTo(0.5, 0.5); rc.lineTo(0.5 + Math.cos(na) * 0.32, 0.5 + Math.sin(na) * 0.32); rc.stroke();
+      rc.restore(); rc.restore();
+    },
+    rx_lever(p, T, t) { rxKeep(p, T, () => {   // a round lever in a slot of an iron block, a red knob on it
+      rxShadow(p.x, p.y, 0.13, 0.08, 0.32);
+      rxBox(p.x, p.y, 0, 0.15, 0.11, 0.06, 0.13, 0.09, '#4a4e57');
+      const s0 = W2S(p.x - 0.045, p.y, 0.06), s1 = W2S(p.x + 0.045, p.y, 0.06); rxLine(s0, s1, '#141518', Math.max(1.5, T * 0.025));
+      const tilt = (p.v % 2 ? 0.12 : -0.12), top = [p.x + tilt, p.y, 0.4 * p.s];
+      rxRod([p.x, p.y, 0.06], top, 0.018, 0.014, '#8a8e96', '#3a3d44');
+      rxBall(top[0], top[1], top[2] - 0.03, 0.04, '#b02a20');
+    }); },
+    rx_bale(p, T) { rxKeep(p, T, () => {   // folded bales of grey felt stacked, soft bevelled edges, tied with cord
+      rxShadow(p.x, p.y, 0.25, 0.14, 0.36);
+      const w = (0.28 - 0.04 * (p.v % 2)) * p.s, d = 0.2 * p.s, h = 0.085 * p.s, n = p.v > 1 ? 3 : 2;
+      for (let k = 0; k < n; k++) { const z = k * h, o = (k % 2 ? 0.015 : -0.01), ww = w * (1 - 0.06 * k);
+        rxBox(p.x + o, p.y - o * 0.5, z, ww, d, h * 0.5, ww, d, '#5e6678');
+        rxBox(p.x + o, p.y - o * 0.5, z + h * 0.5, ww, d, h * 0.5, ww * 0.94, d * 0.9, '#6a7286'); }
+      const H = n * h + 0.003, yS = p.y + d / 2 + 0.004, yN = p.y - d * 0.45;
+      [0.3, 0.7].forEach(f => { const x0 = p.x - w / 2 + w * f - 0.012, x1 = x0 + 0.024; rxSolid([[x0, yS, 0], [x1, yS, 0], [x1, yS, H], [x0, yS, H], [x0, yN, H], [x1, yN, H]], [[0, 1, 2, 3], [3, 2, 5, 4]], '#3a3e4a', null, true); });   // the cords over its front and top
+    }); },
+    rx_snuffed(p, T) { rxCandles(p, T, 0, '#a8a49a', '#3a3c44', null, null, true); },   // candles snuffed out, black wicks (their smoke: RFX_AIR)
+    rx_bell(p, T) { rxKeep(p, T, () => {   // a bell wrapped in a dark cloth, a cord tied round it so it cannot ring, on a low stone
+      rxShadow(p.x, p.y, 0.21, 0.12, 0.4);
+      rxBox(p.x, p.y, 0, 0.27, 0.27, 0.04, 0.25, 0.25, '#3a3c44');
+      const s = p.s, z = 0.04; rxLathe(p.x, p.y, z, [[0.15 * s, 0], [0.135 * s, 0.025 * s], [0.105 * s, 0.1 * s], [0.094 * s, 0.2 * s], [0.07 * s, 0.27 * s], [0.035 * s, 0.31 * s], [0, 0.32 * s]], 12, '#4a5064', 0.3);
+      rxLathe(p.x, p.y, z + 0.15 * s, [[0.103 * s, 0], [0.101 * s, 0.025 * s]], 12, '#8a7050', 0.3, false);
+      rxBall(p.x, p.y, z + 0.3 * s, 0.03, '#8a7050');
+    }); },
+    rx_shard(p, T) { rxKeep(p, T, () => {   // tall crystals of ice, clear, catching the light
+      rxShadow(p.x, p.y, 0.19, 0.11, 0.32);
+      rxShards(p, '#b8e2fc', 0.48);
+    }); },
+    rx_iceblock(p, T) { rxKeep(p, T, () => {   // a block of ice with an old crate frozen in it, clear faces, bright edges
+      rxShadow(p.x, p.y, 0.24, 0.14, 0.3);
+      const w = 0.3 * p.s, h = 0.3 * p.s;
+      rxIso(p.x - 0.01, p.y + 0.01, w * 0.6, w * 0.6, h * 0.6, '#7a5a3a', '#5e4630', '#4a3624', h * 0.12);
+      rc.globalAlpha *= 0.55; rxIso(p.x, p.y, w, w, h, '#e4f4ff', '#a8d4f0', '#7ab0d8'); rc.globalAlpha /= 0.55;
+      const P = (u, v, z) => W2S(p.x + u * w / 2, p.y + v * w / 2, z);
+      rc.strokeStyle = 'rgba(250,254,255,0.9)'; rc.lineWidth = Math.max(1, T * 0.015); rc.beginPath();
+      [[P(-1, 1, h), P(1, 1, h)], [P(1, 1, h), P(1, -1, h)], [P(1, 1, 0), P(1, 1, h)], [P(-1, 1, 0), P(-1, 1, h)]].forEach(([a, b]) => { rc.moveTo(a[0], a[1]); rc.lineTo(b[0], b[1]); }); rc.stroke();
+      const g = P(-0.6, 1, h * 0.8); rc.fillStyle = 'rgba(255,255,255,0.6)'; rc.fillRect(g[0], g[1], T * 0.05, Math.max(1, T * 0.015));
+    }); }
+  });
+  // ---------- 1.27.5: the small things lying on an effect's floor, solid (coins, gems, pebbles, wax, lily pads, dew, straw, a rug's edge) ----------
+  // Laid out once per room with its plan (RFX_BITS into P.bits, fixed by the tiles, back ones first), painted once per room, zoom step and
+  // tilt into a picture in screen space (rfxBitsDraw) and stamped over the floor every frame (rfxSolid, from drawRoomTypes); while the view
+  // tilts the old picture is stretched to fit, and very close up (a picture too big for a phone) only the ones on screen are drawn.
+  const rxIn = v => 0.1 + 0.8 * v;   // a spot in a tile that keeps a small thing off the walls
+  const inPool = (P, x, y, m) => P.pools.some(([px, py, rx, ry]) => ((x - px) / (rx * m)) ** 2 + ((y - py) / (ry * m)) ** 2 < 1);
+  const RFX_BITS = {
+    fog(R, P, B) { R.tiles.forEach(([tx, ty]) => { for (let k = 0; k < 5; k++) if (kH(tx, ty, 302 + k) >= 0.45) B.push(['dew', tx + rxIn(kH(tx, ty, 310 + k)), ty + rxIn(kH(tx, ty, 320 + k)), 0.011 + 0.008 * kH(tx, ty, 330 + k)]); }); },
+    swamp(R, P, B) { P.pools.forEach(([px, py, rx, ry, sd]) => { for (let k = 0; k < 7; k++) { const a = kH(sd, k, 344) * 6.28, d = 0.6 + 0.35 * kH(sd, k, 345); B.push(['weed', px + Math.cos(a) * rx * d, py + Math.sin(a) * ry * d, 0.015 + 0.02 * kH(sd, k, 346)]); }   // duckweed floating
+      if (kH(sd, 1, 347) > 0.35) B.push(['lily', px + rx * 0.3, py + ry * 0.15, 0.1, kH(sd, 2, 348) * 6.28, kH(sd, 3, 349) > 0.5]); }); },
+    grotto(R, P, B) {
+      R.tiles.forEach(([tx, ty]) => { for (let k = 0; k < 4; k++) { if (kH(tx, ty, 361 + k) < 0.5) continue; const x = tx + rxIn(kH(tx, ty, 365 + k)), y = ty + rxIn(kH(tx, ty, 369 + k)); if (!inPool(P, x, y, 1.2)) B.push(['peb', x, y, 0.022 + 0.026 * kH(tx, ty, 373 + k), Math.floor(kH(tx, ty, 377 + k) * 3)]); } });
+      const pl = P.pools[0]; if (pl) { const [px, py, rx, ry, sd] = pl, L = []; for (let j = 0; j < 9; j++) L.push([px + (kH(sd, j, 375) - 0.5) * rx * 1.6, py + (kH(sd, j, 376) - 0.5) * ry * 1.6, 0.03 + 0.04 * kH(sd, j, 377), j % 3]); L.sort((a, b) => a[0] + a[1] - b[0] - b[1]); B.push(['wet', px - 9, py - 9, px, py, rx, ry, sd, L]); }   // (drawn first: under the water)
+    },
+    crypt(R, P, B) { R.tiles.forEach(([tx, ty]) => { if (kH(tx, ty, 395) > 0.72) B.push(['wax', tx + 0.2 + 0.6 * kH(tx, ty, 396), ty + 0.2 + 0.6 * kH(tx, ty, 397), 0.065, kH(tx, ty, 398) > 0.5]); }); },
+    vault(R, P, B, lite) {
+      R.tiles.forEach(([tx, ty]) => {
+        for (let k = 0; k < (lite ? 1 : 3); k++) { if (kH(tx, ty, 521 + k) < 0.45) continue;   // a coin, a short stack, or a stack with one leaning on it
+          const x = tx + 0.15 + 0.7 * kH(tx, ty, 524 + k), y = ty + 0.15 + 0.7 * kH(tx, ty, 527 + k), q = kH(tx, ty, 535 + k);
+          B.push(q < 0.45 ? ['coin', x, y, 1, 0] : q < 0.75 ? ['coin', x, y, 2 + Math.floor(kH(tx, ty, 538 + k) * 3), 0] : ['coin', x, y, 3 + (k % 2), 1 + kH(tx, ty, 541 + k) * 5]); }
+        if (kH(tx, ty, 531) > 0.86) B.push(['gem', tx + 0.5, ty + 0.5, 0.065, Math.floor(kH(tx, ty, 532) * 3), kH(tx, ty, 533)]);
+      });
+    },
+    haven(R, P, B, lite) {
+      const W = R.x1 - R.x0 + 1, H = R.y1 - R.y0 + 1; let rug = null;
+      if (!lite && W >= 3 && H >= 3) { const ix = W >= 4 ? 1 : 0.6, iy = H >= 4 ? 1.1 : 0.7; rug = ['rug', R.x0 + ix, R.y0 + iy, W - 2 * ix, H - 2 * iy, 1]; }
+      else if (!lite) { const [mx, my] = roomMid(R); rug = ['rug', mx - 0.5, my - 0.35, 1, 0.7, 0]; }
+      if (rug) B.push(rug);
+      R.tiles.forEach(([tx, ty]) => { const n = edgeTile(R, tx, ty) ? 7 : 3; for (let k = 0; k < n; k++) { if (kH(tx, ty, 541 + k) < 0.4) continue;   // straw (none lying on the rug)
+        const x = tx + rxIn(kH(tx, ty, 550 + k)), y = ty + rxIn(kH(tx, ty, 560 + k)), L = 0.1 + 0.1 * kH(tx, ty, 580 + k); let a = kH(tx, ty, 570 + k) * 3.14;
+        if (rug && x > rug[1] - 0.05 && x < rug[1] + rug[3] + 0.05 && y > rug[2] - 0.12 && y < rug[2] + rug[4] + 0.12) continue;
+        if (!P.set.has(Math.floor(x + Math.cos(a) * L) + ',' + Math.floor(y + Math.sin(a) * L))) a += Math.PI;
+        B.push(['straw', x, y, a, L, k % 2]); } });
+    }
+  };
+  const RXPEB = ['#66728c', '#58637a', '#76829a'], RXWET = ['#4a6ca8', '#3e5e98', '#5878b2'], RXGEM = ['#d83848', '#3a8ee0', '#38b868'];
+  function rxBit(b, T) {
+    switch (b[0]) {
+      case 'dew': {   // a bead of dew: round, a dark side, a bright point, its little shadow
+        const r = b[3], p = W2S(b[1], b[2], r * 0.6), a = Math.max(0.7, r * T);
+        rc.fillStyle = 'rgba(8,12,22,0.32)'; rc.beginPath(); rc.ellipse(p[0] + a * 0.45, p[1] + a * 0.65, a, a * 0.55, 0, 0, Math.PI * 2); rc.fill();
+        rc.fillStyle = 'rgba(178,194,220,0.85)'; rc.beginPath(); rc.arc(p[0], p[1], a, 0, Math.PI * 2); rc.fill();
+        if (a >= 1.4) { rc.fillStyle = 'rgba(64,78,104,0.55)'; rc.beginPath(); rc.arc(p[0], p[1], a, -0.2, Math.PI * 0.8); rc.arc(p[0] - a * 0.22, p[1] - a * 0.26, a * 0.84, Math.PI * 0.8, -0.2, true); rc.fill(); }
+        const g = Math.max(0.7, a * 0.42); rc.fillStyle = 'rgba(250,253,255,0.95)'; rc.fillRect(p[0] - a * 0.5, p[1] - a * 0.55, g, g); break;
+      }
+      case 'peb': { const r = b[3], h = r * 0.5, w = 1.1 + 0.2 * (b[4] % 2); rxShadow(b[1] + r * 0.3, b[2] + r * 0.25, r * w, r, 0.4); rxEgg(b[1], b[2], h * 0.5, r * w, r * 0.85 * SP + h * CP * 0.5, RXPEB[b[4]], 'rgba(10,14,30,0.45)'); break; }   // a smooth flat pebble
+      case 'wet': {   // pebbles seen through the pool: dimmer, bluer, still round, a film of water over them (clipped to the water)
+        const [, , , px, py, rx, ry, sd, L] = b, m = rc.getTransform(), o = W2S(0, 0, 0), pool = () => { rc.transform(R2 * T, R2 * SP * T, -R2 * T, R2 * SP * T, o[0], o[1]); rxBlob(rc, px, py, rx, ry, sd); rc.setTransform(m); };
+        rc.save(); pool(); rc.clip();
+        L.forEach(([x, y, r, v]) => { const h = r * 0.5; rxEgg(x, y, h * 0.5, r * 1.15, r * 0.85 * SP + h * CP * 0.5, RXWET[v], 'rgba(8,16,50,0.45)'); });
+        rc.fillStyle = 'rgba(70,120,200,0.3)'; pool(); rc.fill(); rc.restore(); break;
+      }
+      case 'wax': {   // wax dripped on the slab: a domed pool of it, a drop beside, a stub of candle stuck in it now and then
+        const r = b[3], x = b[1], y = b[2]; rxShadow(x + 0.01, y + 0.01, r * 1.05, r * 0.8, 0.32);
+        rxEgg(x, y, 0.011, r, r * 0.75 * SP + 0.011 * CP, '#d2c8b2', 'rgba(50,30,60,0.32)'); rxEgg(x + 0.085, y + 0.03, 0.008, 0.024, 0.024 * SP + 0.008 * CP, '#cdc3ac', 'rgba(50,30,60,0.32)');
+        if (b[4]) rxLathe(x - 0.01, y, 0.015, [[0.022, 0], [0.022, 0.045], [0.017, 0.054]], 7, '#ddd6c4', 0.4, '#efe8d8'); break;
+      }
+      case 'weed': { const r = b[3], p = W2S(b[1], b[2], 0), q = W2S(b[1], b[2], 0.008), a = Math.max(0.8, r * T); rc.fillStyle = '#2c4418'; rc.beginPath(); rc.ellipse(p[0], p[1], a, a * SP, 0, 0, Math.PI * 2); rc.fill(); rc.fillStyle = '#8ab048'; rc.beginPath(); rc.ellipse(q[0], q[1], a, a * SP, 0, 0, Math.PI * 2); rc.fill(); if (a > 2) { rc.fillStyle = 'rgba(220,250,170,0.5)'; rc.beginPath(); rc.ellipse(q[0] - a * 0.3, q[1] - a * SP * 0.3, a * 0.35, a * SP * 0.3, 0, 0, Math.PI * 2); rc.fill(); } break; }   // a floating leaf of duckweed, its edge showing
+      case 'coin': rxCoinPile(b[1], b[2], b[3], b[4], T); break;
+      case 'gem': rxGem(b[1], b[2], b[3], RXGEM[b[4]], b[5] * 1.05); break;
+      case 'lily': rxLily(b[1], b[2], b[3], b[4], b[5], T); break;
+      case 'straw': {   // a straw lying on the boards: round, lit along its top, its shadow
+        const [, x, y, a, L, v] = b, x1 = x + Math.cos(a) * L, y1 = y + Math.sin(a) * L, r = 0.011;
+        rxLine(W2S(x + 0.012, y + 0.016, 0), W2S(x1 + 0.012, y1 + 0.016, 0), 'rgba(30,18,6,0.35)', Math.max(1, r * T * 1.8));
+        rxRod([x, y, r], [x1, y1, r], r, r * 0.8, v ? '#ecd084' : '#dcbc6a', v ? '#a8803c' : '#93702e'); break;
+      }
+      case 'rug': {   // the rug's thickness: its two near edges going down to the boards, the fringe lying on them
+        const [, x0, y0, w, h, fr] = b, x1 = x0 + w, y1 = y0 + h, d = 0.045, q = (P, c) => { rc.fillStyle = c; rc.beginPath(); P.forEach((p, k) => k ? rc.lineTo(p[0], p[1]) : rc.moveTo(p[0], p[1])); rc.closePath(); rc.fill(); };
+        q([W2S(x0, y1, 0), W2S(x1, y1, 0), W2S(x1, y1, -d), W2S(x0, y1, -d)], '#4a1812'); q([W2S(x1, y0, 0), W2S(x1, y1, 0), W2S(x1, y1, -d), W2S(x1, y0, -d)], '#300e0a'); rxLine(W2S(x0, y1, 0), W2S(x1, y1, 0), 'rgba(255,220,170,0.25)', 1);
+        if (fr) { rc.strokeStyle = '#e8d2a0'; rc.lineWidth = Math.max(1, T * 0.018); rc.beginPath(); for (let u = 0.04; u < 1; u += 0.06) { const fx = x0 + w * u; [[y0, -1, 0], [y1, 1, -d]].forEach(([yy, sg, z]) => { const a = W2S(fx, yy, z), e = W2S(fx, yy + sg * 0.08, -d); rc.moveTo(a[0], a[1]); rc.lineTo(e[0], e[1]); }); } rc.stroke(); }
+        break;
+      }
+    }
+  }
+  const RXCOIN = 0.062, RXCTH = 0.011;
+  function rxCoin(x, y, z0, n, T, rr) {   // a coin lying flat (n > 1: a stack of n): its rim round the front, its face, a raised ring, a gleam
+    const r = rr || RXCOIN, b = W2S(x, y, z0), t = W2S(x, y, z0 + RXCTH * n), a = r * T, e = a * SP;
+    if (a < 1.5) { rc.fillStyle = '#9a7020'; rc.fillRect(b[0] - a, t[1], 2 * a, b[1] - t[1] + e); rc.fillStyle = '#e8bc4c'; rc.fillRect(t[0] - a, t[1] - e, 2 * a, 2 * e); return; }
+    rc.fillStyle = '#a87c26'; rc.beginPath(); rc.moveTo(b[0] - a, t[1]); rc.lineTo(b[0] - a, b[1]); rc.ellipse(b[0], b[1], a, e, 0, Math.PI, 0, true); rc.lineTo(b[0] + a, t[1]); rc.closePath(); rc.fill();
+    rc.fillStyle = 'rgba(50,30,0,0.38)'; rc.beginPath(); rc.moveTo(b[0] + a * 0.2, t[1]); rc.lineTo(b[0] + a * 0.2, b[1] + e * 0.98); rc.ellipse(b[0], b[1], a, e, 0, Math.PI * 0.44, 0, true); rc.lineTo(b[0] + a, t[1]); rc.closePath(); rc.fill();   // its shaded right
+    if (n > 1 && a > 2.5) { rc.strokeStyle = 'rgba(70,44,6,0.75)'; rc.lineWidth = Math.max(0.6, T * 0.006); rc.beginPath(); for (let k = 1; k < n; k++) { const q = W2S(x, y, z0 + RXCTH * k); rc.moveTo(q[0] + a, q[1]); rc.ellipse(q[0], q[1], a, e, 0, 0, Math.PI); } rc.stroke(); }   // where one coin lies on the next
+    rc.fillStyle = '#e8bc4c'; rc.beginPath(); rc.ellipse(t[0], t[1], a, e, 0, 0, Math.PI * 2); rc.fill();
+    if (a > 3) { rc.strokeStyle = '#b48a30'; rc.lineWidth = Math.max(0.7, a * 0.12); rc.beginPath(); rc.ellipse(t[0], t[1], a * 0.64, e * 0.64, 0, 0, Math.PI * 2); rc.stroke(); }
+    rc.fillStyle = 'rgba(255,248,210,0.85)'; rc.beginPath(); rc.ellipse(t[0] - a * 0.38, t[1] - e * 0.36, a * 0.24, e * 0.24, 0, 0, Math.PI * 2); rc.fill();
+  }
+  function rxCoinPile(x, y, n, lean, T) {   // a coin or a short stack; lean: a coin leaning on the stack that way, one edge on the floor
+    rxShadow(x + 0.012, y + 0.01, RXCOIN * 1.12, RXCOIN * 1.05, 0.38);
+    if (!lean) { rxCoin(x, y, 0, n, T); return; }
+    const c = Math.cos(lean), s = Math.sin(lean), r = RXCOIN, sn = Math.min(0.6, RXCTH * (n + 1) / (2 * r)), cs = Math.sqrt(1 - sn * sn), d = r * cs + r * 0.45;
+    const lx = x + c * d, ly = y + s * d, zc = r * sn + RXCTH * 0.5 * cs, h = RXCTH / 2, nx = c * sn * h, ny = s * sn * h, nz = cs * h;
+    const leaner = () => { rxShadow(lx + 0.012, ly + 0.01, r * 1.05, r, 0.3); rxHCyl([lx - nx, ly - ny, zc - nz], [lx + nx, ly + ny, zc + nz], r, 12, '#a87c26', '#c89a38');
+      if (r * T < 3) return;
+      const ring = f => { rc.beginPath(); for (let k = 0; k <= 12; k++) { const q = k * Math.PI / 6, u = Math.cos(q) * r * f, v = Math.sin(q) * r * f, P = W2S(lx + nx + (-s) * u + c * cs * v, ly + ny + c * u + s * cs * v, zc + nz - sn * v); k ? rc.lineTo(P[0], P[1]) : rc.moveTo(P[0], P[1]); } };   // a ring on its upper face
+      rc.strokeStyle = '#b48a30'; rc.lineWidth = Math.max(0.7, r * T * 0.12); ring(0.64); rc.stroke();
+      const g = W2S(lx + nx - r * 0.3, ly + ny - r * 0.3, zc + nz + r * 0.25 * sn); rc.fillStyle = 'rgba(255,248,210,0.85)'; rc.beginPath(); rc.arc(g[0], g[1], Math.max(0.7, r * T * 0.2), 0, Math.PI * 2); rc.fill(); };
+    if (c + s < 0) { leaner(); rxCoin(x, y, 0, n, T); } else { rxCoin(x, y, 0, n, T); leaner(); }   // the nearer one last
+  }
+  function rxGem(x, y, r, col, a0) {   // a cut gem on the floor: a short pointed base, a crown of slanted facets, a flat table, a gleam
+    rxShadow(x + 0.012, y + 0.01, r * 1.15, r * 1.05, 0.45);
+    const h = r * 1.05, P = [[x, y, 0.002]], F = [];
+    for (let k = 0; k < 6; k++) { const a = a0 + k * Math.PI / 3; P.push([x + Math.cos(a) * r, y + Math.sin(a) * r, h * 0.36]); }
+    for (let k = 0; k < 6; k++) { const a = a0 + k * Math.PI / 3; P.push([x + Math.cos(a) * r * 0.56, y + Math.sin(a) * r * 0.56, h]); }
+    for (let k = 0; k < 6; k++) { const k1 = (k + 1) % 6; F.push([0, 1 + k, 1 + k1], [1 + k, 1 + k1, 7 + k1, 7 + k]); }
+    F.push([7, 8, 9, 10, 11, 12]);
+    rxLift = 0.25; rxSolid(P, F, col); rxLift = 0;
+    const c = W2S(x - r * 0.18, y - r * 0.12, h), T = cam.s; rc.fillStyle = 'rgba(255,255,255,0.78)'; rc.beginPath(); rc.ellipse(c[0], c[1], Math.max(0.7, r * T * 0.22), Math.max(0.6, r * T * 0.12), -0.3, 0, Math.PI * 2); rc.fill();
+  }
+  function rxLily(x, y, r, a0, fl, T) {   // a lily pad floating: a thin leaf with its notch, its edge showing, veins; now and then a flower cupped on it
+    const th = 0.014, pad = z => { const c = W2S(x, y, z); rc.beginPath(); rc.moveTo(c[0], c[1]); for (let k = 0; k <= 12; k++) { const a = a0 + 0.5 + k / 12 * 5.5, q = W2S(x + Math.cos(a) * r, y + Math.sin(a) * r, z); rc.lineTo(q[0], q[1]); } rc.closePath(); };
+    rc.fillStyle = 'rgba(4,10,6,0.4)'; rc.save(); rc.translate(T * 0.012, T * 0.016); pad(0); rc.fill(); rc.restore();   // its shadow on the water
+    rc.fillStyle = '#1e3416'; pad(0); rc.fill();
+    if (th * CP * T > 2) { rc.fillStyle = '#2a4a1c'; pad(th * 0.5); rc.fill(); }
+    rc.fillStyle = '#4e7a32'; pad(th); rc.fill();
+    const c = W2S(x, y, th); rc.strokeStyle = 'rgba(150,200,100,0.55)'; rc.lineWidth = Math.max(0.7, T * 0.008); rc.beginPath(); for (let k = 1; k < 6; k++) { const a = a0 + 0.5 + k / 6 * 5.5, q = W2S(x + Math.cos(a) * r * 0.85, y + Math.sin(a) * r * 0.85, th); rc.moveTo(c[0], c[1]); rc.lineTo(q[0], q[1]); } rc.stroke();
+    if (!fl) return;
+    const fx = x - r * 0.2, fy = y - r * 0.15, z = th;
+    for (let k = 0; k < 6; k++) { const a = k * 1.047 + 0.4, ca = Math.cos(a), sa = Math.sin(a); if (ca + sa < 0) rxRod([fx + ca * 0.012, fy + sa * 0.012, z + 0.006], [fx + ca * 0.045, fy + sa * 0.045, z + 0.03], 0.013, 0.005, '#f0c4da', '#b47496'); }   // back petals
+    rxLathe(fx, fy, z, [[0.012, 0], [0.026, 0.014], [0.03, 0.028]], 8, '#d896b8', 0.3, '#f0d468');   // the cup, its golden heart
+    for (let k = 0; k < 6; k++) { const a = k * 1.047 + 0.4, ca = Math.cos(a), sa = Math.sin(a); if (ca + sa >= 0) rxRod([fx + ca * 0.012, fy + sa * 0.012, z + 0.006], [fx + ca * 0.045, fy + sa * 0.045, z + 0.03], 0.013, 0.005, '#f0c4da', '#b47496'); }   // front petals
+  }
+  // the room's solid floor things (drawRoomTypes calls it in floorT, between the still floor and its moving part)
+  function rfxSolid(R, T, t) {
+    const P = rfxPlan(R), pits = R.rt === 'gears' && T >= 14 && P.spots.length;
+    if (!P.bits.length && !pits) return;
+    ctx.save(); screenT();
+    try {
+      if (P.bits.length) rfxBitsDraw(R, P, T);
+      if (pits) P.spots.forEach(([px, py, r, dir]) => { if (onScreen(W2S(px, py, 0), T)) rxPit(px, py, r, dir, t, T); });
+    } finally { ctx.restore(); }
+  }
+  const RSC = new Map();
+  function rfxBitsDraw(R, P, T) {
+    const C = W2S(R.x0, R.y0, 0), A = W2S(R.x1 + 1, R.y0, 0), B = W2S(R.x0, R.y1 + 1, 0), E = W2S(R.x1 + 1, R.y1 + 1, 0), m = T * 0.2;   // its corners: C top, A right, B left, E bottom
+    const x0 = B[0] - m, y0 = C[1] - T * 0.4, w = A[0] + m - x0, h = E[1] + m - y0;
+    if (w * h * DPR * DPR > 3.2e6) { P.bits.forEach(b => { if (b[0] === 'rug' || b[0] === 'wet' || onScreen(W2S(b[1], b[2], 0), T * 0.3)) rxBit(b, T); }); return; }   // too big a picture for a phone: what is on screen, live
+    const key = R.rt + '|' + (R.rk || '') + '|' + rfxBox(R), step = Math.round(T * DPR / 3), sp = Math.round(SP * 200);
+    let e = RSC.get(R.key);
+    if (!e || e.key !== key || e.step !== step || (e.sp !== sp && VIEW.t >= 1)) {   // (while the view tilts, the old picture stretched)
+      if (RSC.size > 40) RSC.clear();
+      const c = (e && e.c) || document.createElement('canvas'); c.width = Math.ceil(w * DPR); c.height = Math.ceil(h * DPR);
+      const g = c.getContext('2d'); g.setTransform(DPR, 0, 0, DPR, -x0 * DPR, -y0 * DPR);
+      rc = g; try { P.bits.forEach(b => rxBit(b, T)); } finally { rc = ctx; }
+      e = { key, step, sp, c, T, SP, dx: x0 - C[0], dy: y0 - C[1], w, h }; RSC.set(R.key, e);
+    }
+    const k = T / e.T, ky = k * SP / e.SP;
+    ctx.drawImage(e.c, C[0] + e.dx * k, C[1] + e.dy * ky, e.w * k, e.h * ky);
+  }
+  // a round pit in the gears' plates: its far wall going down into the dark, a thick cog turning deep in it (the rim hides its near part),
+  // a second one meshing under it, a raised bronze collar with bolts round the hole
+  function rxPit(px, py, r, dir, t, T) {   // (its still parts are pictures: rxStamp; only the cogs are drawn every frame)
+    const O = W2S(px, py, 0), a = r * T, e = a * SP, D = 0.26, an = t * 0.8 * dir, hc = 0.035, ao = a * 1.15, eo = ao * SP, dz = D * CP * T, k0 = 'pit' + r;
+    rxStamp(k0 + 'b', px, py, T, a + 2, e + 2, e + dz + 2, () => {   // the hole: its far wall going down, plate seams on it, its floor
+      const B = W2S(px, py, -D); rc.save(); rc.beginPath(); rc.ellipse(O[0], O[1], a, e, 0, 0, Math.PI * 2); rc.clip();
+      rc.fillStyle = '#3a2a18'; rc.fillRect(O[0] - a, O[1] - e, 2 * a, 2 * e + B[1] - O[1]);
+      rc.fillStyle = 'rgba(0,0,0,0.35)'; rc.beginPath(); rc.ellipse(O[0], (O[1] + B[1]) / 2, a, e, 0, 0, Math.PI * 2); rc.fill();
+      rc.strokeStyle = 'rgba(12,8,4,0.6)'; rc.lineWidth = Math.max(1, T * 0.012); rc.beginPath(); for (let k = 0; k < 5; k++) { const q = Math.PI * (1.02 + k * 0.24), c = Math.cos(q + 0.785) * r, s = Math.sin(q + 0.785) * r, u = W2S(px + c, py + s, 0), v = W2S(px + c, py + s, -D); rc.moveTo(u[0], u[1]); rc.lineTo(v[0], v[1]); } rc.stroke();
+      rc.fillStyle = '#0a0604'; rc.beginPath(); rc.ellipse(B[0], B[1], a, e, 0, 0, Math.PI * 2); rc.fill(); rc.restore();
+    });
+    ctx.save(); ctx.beginPath(); ctx.ellipse(O[0], O[1], a, e, 0, 0, Math.PI * 2); ctx.clip();   // the cogs, cut by the rim
+    const gear = (cx, cy, z, rr, n, ang, cols, top) => cols.forEach((col, k) => { const E = W2S(px, py, z + k * 0.07 / (cols.length - 1 || 1)), last = k === cols.length - 1; ctx.save(); ctx.transform(R2 * T, R2 * SP * T, -R2 * T, R2 * SP * T, E[0], E[1]); rxGear(cx, cy, rr, n, ang, col, last ? top[0] : null, last ? top[1] : null); ctx.restore(); });   // layer on layer: its thickness
+    gear(-r * 0.32, -r * 0.36, -D + 0.02, r * 0.5, 9, -an * 12 / 9 + 0.3, ['#2e2214', '#4a3620'], ['#7a5a32', '#0c0806']);
+    gear(0, 0, -D + 0.08, r * 0.84, 12, an, T < 30 ? ['#3e2c16', '#664a28', '#a87a40'] : ['#2e200e', '#46321a', '#664a28', '#a87a40'], ['#e0b070', '#140c06']);
+    ctx.restore();
+    rxStamp(k0 + 'f', px, py, T, ao * 1.12 + 2, e + hc * CP * T + 3, eo * 1.2 + 3, () => {   // the rim's shadow down on the cogs, the raised collar with bolts
+      const U = W2S(px, py, hc);
+      rc.save(); rc.beginPath(); rc.ellipse(O[0], O[1], a, e, 0, 0, Math.PI * 2); rc.clip(); rc.fillStyle = 'rgba(0,0,0,0.42)'; rc.beginPath(); rc.ellipse(O[0], O[1], a, e, 0, 0, Math.PI * 2); rc.ellipse(O[0] + a * 0.24, O[1] + e * 0.34, a, e, 0, 0, Math.PI * 2); rc.fill('evenodd'); rc.restore();
+      rc.fillStyle = 'rgba(0,0,0,0.3)'; rc.beginPath(); rc.ellipse(O[0] + a * 0.07, O[1] + e * 0.12, ao * 1.05, eo * 1.05, 0, 0, Math.PI * 2); rc.ellipse(O[0], O[1], a, e, 0, 0, Math.PI * 2); rc.fill('evenodd');   // its shadow on the plates
+      rc.fillStyle = '#3e2c16'; rc.beginPath(); rc.moveTo(U[0] - a, U[1]); rc.ellipse(U[0], U[1], a, e, 0, Math.PI, Math.PI * 2); rc.lineTo(O[0] + a, O[1]); rc.ellipse(O[0], O[1], a, e, 0, 0, -Math.PI, true); rc.closePath(); rc.fill();   // its far inner side
+      rc.fillStyle = '#5a4024'; rc.beginPath(); rc.moveTo(O[0] + ao, O[1]); rc.ellipse(O[0], O[1], ao, eo, 0, 0, Math.PI); rc.lineTo(U[0] - ao, U[1]); rc.ellipse(U[0], U[1], ao, eo, 0, Math.PI, 0, true); rc.closePath(); rc.fill();   // its outer side
+      rc.fillStyle = 'rgba(30,18,6,0.35)'; rc.beginPath(); rc.moveTo(O[0] + ao, O[1]); rc.ellipse(O[0], O[1], ao, eo, 0, 0, Math.PI * 0.45); rc.lineTo(U[0] + ao * 0.16, U[1] + eo * 0.99); rc.ellipse(U[0], U[1], ao, eo, 0, Math.PI * 0.45, 0, true); rc.closePath(); rc.fill();
+      rc.fillStyle = '#8e6a3e'; rc.beginPath(); rc.ellipse(U[0], U[1], ao, eo, 0, 0, Math.PI * 2); rc.ellipse(U[0], U[1], a, e, 0, 0, Math.PI * 2); rc.fill('evenodd');   // its top
+      rc.strokeStyle = 'rgba(240,200,130,0.6)'; rc.lineWidth = Math.max(1, T * 0.014); rc.beginPath(); rc.ellipse(U[0], U[1], ao, eo, 0, Math.PI * 0.95, Math.PI * 1.75); rc.stroke();
+      if (a > 9) for (let k = 0; k < 8; k++) { const q = k * Math.PI / 4 + 0.39, b = W2S(px + Math.cos(q) * r * 1.075, py + Math.sin(q) * r * 1.075, hc), s = Math.max(1, T * 0.017); rc.fillStyle = '#2e2010'; rc.beginPath(); rc.arc(b[0] + s * 0.3, b[1] + s * 0.3, s, 0, Math.PI * 2); rc.fill(); rc.fillStyle = '#b8925a'; rc.beginPath(); rc.arc(b[0] - s * 0.15, b[1] - s * 0.15, s * 0.7, 0, Math.PI * 2); rc.fill(); }   // its bolts
+    });
+  }
+  const RXPC = new Map();
+  function rxStamp(k, x, y, T, hw, up, dn, draw) {   // as rxKeep, for a still part round a floor point outside drawProp: painted once per zoom step and tilt, then stamped
+    const key = k + '|' + Math.round(T * DPR / 3) + '|' + Math.round(SP * 200); let e = RXPC.get(key);
+    if (!e) {
+      const c = document.createElement('canvas'); c.width = Math.ceil(2 * hw * DPR); c.height = Math.ceil((up + dn) * DPR);
+      const g = c.getContext('2d'), f = W2S(x, y, 0); g.setTransform(DPR, 0, 0, DPR, DPR * (hw - f[0]), DPR * (up - f[1]));
+      rc = g; try { draw(); } finally { rc = ctx; }
+      if (RXPC.size > 60) RXPC.clear(); e = { c, T, hw, up, dn }; RXPC.set(key, e);
+    }
+    const f = W2S(x, y, 0), s = T / e.T; ctx.drawImage(e.c, f[0] - e.hw * s, f[1] - e.up * s, 2 * e.hw * s, (e.up + e.dn) * s);
+  }
+  // a soft lumpy mound (snow): rings of wobbly points going up, each face lit by its slope, a lid on top
+  function rxHeap(cx, cy, rx, ry, h, col, seed) {
+    const pr = [[1, 0], [0.96, 0.2], [0.86, 0.45], [0.68, 0.7], [0.42, 0.9], [0.14, 1]], n = 18, vz = rxVz(), Q = [], p1 = kH(seed, 1, 93) * 6.28, p2 = kH(seed, 2, 93) * 6.28;
+    const wob = (a, zf) => 0.86 + 0.12 * Math.sin(a * 2 + p1 + zf) + 0.07 * Math.sin(a * 3 + p2 - zf * 2);   // smooth lumps
+    pr.forEach(([f, zf], i) => { const ring = []; for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2, w = f * wob(a, zf); ring.push([cx + Math.cos(a) * rx * w, cy + Math.sin(a) * ry * w, h * zf * (i ? 0.9 + 0.2 * Math.sin(a + p2) : 0)]); } Q.push(ring); });
+    const S = Q.map(rg => rg.map(p => W2S(p[0], p[1], p[2]))), face = (pts, f) => { rc.fillStyle = rc.strokeStyle = rxShade(col, f); rc.beginPath(); pts.forEach((q, j) => j ? rc.lineTo(q[0], q[1]) : rc.moveTo(q[0], q[1])); rc.closePath(); rc.fill(); rc.stroke(); };
+    rc.lineWidth = 0.6;
+    for (let i = 0; i < Q.length - 1; i++) for (let k = 0; k < n; k++) {
+      const k1 = (k + 1) % n, A = Q[i][k], B = Q[i][k1], C = Q[i + 1][k1], D = Q[i + 1][k], ux = C[0] - A[0], uy = C[1] - A[1], uz = C[2] - A[2], wx = D[0] - B[0], wy = D[1] - B[1], wz = D[2] - B[2];
+      let nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+      if (nx * ((A[0] + C[0]) / 2 - cx) + ny * ((A[1] + C[1]) / 2 - cy) + nz * 0.01 < 0) { nx = -nx; ny = -ny; nz = -nz; }   // outwards
+      if (nx + ny + nz * vz <= 0) continue;
+      face([S[i][k], S[i][k1], S[i + 1][k1], S[i + 1][k]], rxLit(nx, ny, nz));
+    }
+    face(S[S.length - 1], rxLit(0, 0, 1));
+    return S;
+  }
+  Object.assign(PROP, {
+    rx_drift(p, T) { rxKeep(p, T, () => {   // 1.27.5: a drift of snow heaped in a corner of the ice (it was a painted patch): a soft lumpy mound, sparkling
+      rxShadow(p.x + 0.03, p.y + 0.03, 0.27, 0.23, 0.25);
+      rxLift = 0.5; const S = rxHeap(p.x, p.y, 0.27, 0.24, 0.095, '#eaf3fb', p.v * 7 + 3); rxLift = 0;
+      rc.fillStyle = 'rgba(255,255,255,0.95)'; for (let k = 0; k < 5; k++) { const q = S[2 + (k % 3)][(k * 7 + p.v) % 18], s = Math.max(1, T * 0.014); rc.fillRect(q[0] - s / 2, q[1] - s / 2, s, s); }
+    }); }
+  });
+  function rxShards(p, col, hmax) {   // a cluster of six-sided crystals leaning out, back ones first
+    const S = [[-0.06, 0.02, 0.75, -0.25], [0.05, -0.02, 1, 0.1], [0.1, 0.06, 0.55, 0.35], [-0.02, 0.07, 0.45, -0.05]].slice(0, 2 + (p.v % 3)).sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]));
+    S.forEach(([u, v, hf, lean], k) => rxCrystal(p.x + u, p.y + v, 0.055 * p.s, hmax * hf * p.s, lean * 0.3, -lean * 0.15, col, k * 0.7 + p.v, 0.92));
+  }
+  // ---------- 1.27.5: what stands out of the walls of an effect room (F: wallFrame; u along the face, d out of it, z up) ----------
+  function rxHang(F, u, d, z, L, r, lit, dark, sw) {   // a strand hanging from the wall (weed, moss): round, tapering, bending out and swaying
+    const a = rxWP(F, u, 0.01, z), m = rxWP(F, u + (sw || 0) * 0.5, d, z - L * 0.5), b = rxWP(F, u + (sw || 0), d * 0.7, z - L);
+    rxRod(a, m, r, r * 0.75, lit, dark); rxRod(m, b, r * 0.75, r * 0.3, lit, dark);
+  }
+  function rxDrape(F, z0, z1, n, col, sw) {   // a cloth hanging in deep folds: strips zig-zagging out of the face, each lit by its slope
+    const P = []; for (let k = 0; k <= n * 2; k++) { const u = 0.04 + 0.92 * k / (n * 2), d = k % 2 ? 0.085 : 0.035; P.push([u, d + (k % 2 ? sw : 0)]); }
+    for (let k = 0; k < n * 2; k++) { const [u0, d0] = P[k], [u1, d1] = P[k + 1], b0 = z0, b1 = z0;
+      rxSolid([rxWP(F, u0, d0, z1), rxWP(F, u1, d1, z1), rxWP(F, u1, d1, b1), rxWP(F, u0, d0, b0)], [[0, 1, 2, 3]], col, null, true); }
+  }
+  const RFX_WALL3D = {
+    fog(F, h, T, t, s, lite) {   // mist pooled at the foot of the wall, rolling along it; a curtain of grey moss strands off the top now and then
+      const spr = rxFog(); for (let k = s % 2; k < 1; k++) { const u = ((t * 0.04 + s * 0.13 + k * 0.5) % 1.4) - 0.2, [wx, wy] = F.W(u, 0.18), q = W2S(wx, wy, 0.22 + 0.1 * k), r = T * (0.55 + 0.15 * k); rc.globalAlpha = 0.6; rc.drawImage(spr, q[0] - r, q[1] - r * 0.55, r * 2, r * 1.1); }
+      rc.globalAlpha = 1;
+      if (s % 3) return;
+      for (let k = 0; k < 6; k++) { const u = 0.12 + k * 0.15, L = (lite ? 0.25 : 0.4) + 0.25 * ((k * 7 + s) % 3) / 2; rxHang(F, u, 0.1, h - 0.02, L, 0.03, '#a8b0a2', '#5a6258', Math.sin(t * 0.8 + k + s) * 0.02); }
+      for (let k = 0; k < 3; k++) { const [wx, wy] = F.W(0.2 + k * 0.3, 0.04); rxEgg(wx, wy, h - 0.05, 0.08, 0.04, '#7a8476'); }   // the clumps they hang from
+    },
+    swamp(F, h, T, t, s, lite) {   // a hanging fringe of weed strands off the top, thick shelves of fungus out of the wet stone
+      for (let k = 0; k < 4; k++) { const u = 0.15 + k * 0.23 + 0.05 * (s % 3); rxHang(F, u, 0.1, h - 0.02, 0.3 + 0.15 * ((k + s) % 3), 0.034, '#7a9a44', '#34501c', 0.03); }
+      if (!lite && s % 3 === 0) [[0.3, 0.55, 0.13], [0.48, 0.42, 0.09]].forEach(([u, z, r]) => {
+        const n = 9, P = [], Fc = [[], []]; for (let k = 0; k < n; k++) { const a = k / (n - 1) * Math.PI; P.push(rxWP(F, u + Math.cos(a) * r, Math.sin(a) * r * 0.85, z)); Fc[0].push(k); }
+        for (let k = 0; k < n; k++) { const a = k / (n - 1) * Math.PI; P.push(rxWP(F, u + Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.75, z - 0.035)); Fc[1].push(n + k); }
+        for (let k = 0; k < n - 1; k++) Fc.push([k, k + 1, n + k + 1, n + k]);
+        rxSolid(P, Fc, '#8a7a50', [0, '#4a3e28']);
+      });
+    },
+    grotto(F, h, T, t, s, lite) {   // faceted stalactites of wet blue stone hanging off the top edge out of a boss of rock, a drop gathering at one
+      const n = lite ? 2 : 3;
+      for (let k = 0; k < n; k++) { const u = 0.18 + k * (0.64 / (n - 1 || 1)) + 0.04 * ((s + k) % 2), [wx, wy] = F.W(u, 0.09), L = 0.28 + 0.14 * ((k + s) % 3), r = 0.07 + 0.015 * (k % 2);
+        rxLathe(wx, wy, h - L, [[0, 0], [r * 0.45, L * 0.45], [r * 0.85, L * 0.82], [r, L]], 7, '#7a8cae', k + s, false);
+        if (k === 1 && !reduceMotion) { const p = (t * 0.5 + s * 0.1) % 1; const q = W2S(wx, wy, h - L - 0.02 - (p > 0.6 ? (p - 0.6) * 3 : 0)); rc.fillStyle = 'rgba(200,225,255,' + (p > 0.9 ? 0 : 0.9) + ')'; rc.beginPath(); rc.arc(q[0], q[1], Math.max(1, T * 0.02 * Math.min(1, p * 2)), 0, Math.PI * 2); rc.fill(); } }
+    },
+    crypt(F, h, T, t, s, lite) {   // a stone niche standing out of the wall (pillars, an arch, a sill), a candle burning violet in it; a sheet of cobweb in the corner
+      if (lite || s % 3) { const a = rxWP(F, 0, 0.01, h), b = rxWP(F, 0.32, 0.01, h), c = rxWP(F, 0, 0.01, h - 0.38), m = rxWP(F, 0.1, 0.12, h - 0.12), A = W2S(...a), B = W2S(...b), C = W2S(...c), M = W2S(...m);
+        rc.fillStyle = 'rgba(225,215,245,0.2)'; rc.beginPath(); rc.moveTo(A[0], A[1]); rc.lineTo(B[0], B[1]); rc.quadraticCurveTo(M[0], M[1], C[0], C[1]); rc.closePath(); rc.fill();
+        rc.strokeStyle = 'rgba(230,222,248,0.45)'; rc.lineWidth = 1; rc.beginPath(); [0.3, 0.6].forEach(f => { const q = [A[0] + (M[0] - A[0]) * f, A[1] + (M[1] - A[1]) * f]; rc.moveTo(A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f); rc.quadraticCurveTo(q[0], q[1], A[0] + (C[0] - A[0]) * f, A[1] + (C[1] - A[1]) * f); }); rc.moveTo(A[0], A[1]); rc.lineTo(M[0], M[1]); rc.stroke(); return; }
+      const z = Math.min(0.75, h - 0.75), zt = z + 0.42;
+      rc.save(); F.plane(0.004, z, z + 0.6); rc.fillStyle = '#0c0812'; rc.beginPath(); rc.moveTo(0.3, 1); rc.lineTo(0.3, 0.3); rc.arc(0.5, 0.3, 0.2, Math.PI, 0); rc.lineTo(0.7, 1); rc.fill(); rc.restore();   // the dark hollow
+      rxXW(F, [[0.24, z], [0.3, z], [0.3, zt], [0.24, zt]], 0, 0.09, '#5a526a');
+      for (let k = 0; k < 5; k++) { const a0 = Math.PI - k * Math.PI / 5, a1 = Math.PI - (k + 1) * Math.PI / 5, c = (a, r) => [0.5 + Math.cos(a) * r, zt + Math.sin(a) * r * 0.9]; rxXW(F, [c(a0, 0.26), c(a1, 0.26), c(a1, 0.2), c(a0, 0.2)], 0, 0.09, '#5a526a'); }
+      rxXW(F, [[0.7, z], [0.76, z], [0.76, zt], [0.7, zt]], 0, 0.09, '#5a526a');
+      F.box(0.5, 0.06, 0.56, 0.12, 0.04, z - 0.04, '#5a526a', '#463e56', '#342e42');
+      const [wx, wy] = F.W(0.5, 0.05); rxLathe(wx, wy, z, [[0.032, 0], [0.032, 0.14], [0.026, 0.152]], 7, '#ddd6e8', 0.3); const q = W2S(wx, wy, z + 0.152);
+      pFlame(q[0], q[1], T * 0.13, t, s, 'rgba(245,235,255,0.95)', 'rgba(170,120,255,0.85)', ['rxcandV', [[0, 'rgba(180,140,255,0.4)'], [1, 'rgba(180,140,255,0)']]]);
+    },
+    vault(F, h, T, t, s, lite) {   // a thick gold plate on the wall with a jewel set in it; round gilded studs along the top edge
+      for (let k = 0; k < 5; k++) { const [wx, wy] = F.W(0.1 + k * 0.2, 0.0); rxBall(wx, wy, h - 0.12, 0.026, '#c9a24e'); }
+      if (lite || s % 3) return;
+      const pts = [[0.5, 1.2], [0.78, 1.0], [0.7, 0.6], [0.5, 0.47], [0.3, 0.6], [0.22, 1.0]];
+      rxXW(F, pts, 0, 0.05, '#d8b04c');
+      const [jx, jy] = F.W(0.5, 0.05); rxEgg(jx, jy, 0.85, 0.045, 0.045, '#c03040');
+      rc.save(); F.plane(0.051, 0.35, 1.35); rc.strokeStyle = '#8a6420'; rc.lineWidth = 0.02; rc.beginPath(); rc.moveTo(0.5, 0.22); rc.lineTo(0.72, 0.38); rc.lineTo(0.66, 0.71); rc.lineTo(0.5, 0.81); rc.lineTo(0.34, 0.71); rc.lineTo(0.28, 0.38); rc.closePath(); rc.stroke();
+      rc.fillStyle = 'rgba(255,246,200,' + (0.25 + 0.2 * Math.sin(t * 2 + s)).toFixed(2) + ')'; rc.beginPath(); rc.moveTo(0.5, 0.15); rc.lineTo(0.78, 0.35); rc.lineTo(0.62, 0.38); rc.closePath(); rc.fill(); rc.restore();
+    },
+    haven(F, h, T, t, s, lite) {   // a thick cloth hanging off a rod with the sign of the sanctuary; a warm candle on an iron bracket
+      if (s % 2 === 0 && !lite) {
+        const sw = Math.sin(t * 1.1 + s) * 0.01;
+        rxXW(F, [[0.3, 1.39], [0.7, 1.39], [0.7 + sw, 0.55], [0.5 + sw, 0.42], [0.3 + sw, 0.55]], 0.025, 0.05, '#e8dcc0');
+        rc.save(); F.plane(0.051, 0.25, 1.45); rc.fillStyle = '#b8862e'; rc.fillRect(0.47, 0.18, 0.06, 0.4); rc.fillRect(0.38, 0.28, 0.24, 0.06); rc.strokeStyle = '#a07a3a'; rc.lineWidth = 0.015; rc.beginPath(); rc.moveTo(0.33, 0.08); rc.lineTo(0.67, 0.08); rc.lineTo(0.67, 0.73); rc.lineTo(0.5, 0.82); rc.lineTo(0.33, 0.73); rc.closePath(); rc.stroke(); rc.restore();
+        rxRod(rxWP(F, 0.24, 0.05, 1.41), rxWP(F, 0.76, 0.05, 1.41), 0.02, 0.02, '#7a5230', '#3a2412');
+        [0.24, 0.76].forEach(u => { const [wx, wy] = F.W(u, 0.05); rxBall(wx, wy, 1.385, 0.026, '#6a4424'); });
+        return;
+      }
+      if (s % 3) return;
+      const z = Math.min(0.95, h - 0.4);
+      rxRod(rxWP(F, 0.5, 0, z - 0.08), rxWP(F, 0.5, 0.13, z), 0.016, 0.014, '#5a5e66', '#2a2c30');
+      const [wx, wy] = F.W(0.5, 0.13); rxLathe(wx, wy, z, [[0.05, 0], [0.055, 0.02]], 8, '#6a4a2a', 0.2);
+      rxLathe(wx, wy, z + 0.02, [[0.028, 0], [0.028, 0.12], [0.022, 0.132]], 7, '#efe2c4', 0.3); const q = W2S(wx, wy, z + 0.132);
+      pFlame(q[0], q[1], T * 0.12, t, s, 'rgba(255,240,190,0.95)', 'rgba(255,160,60,0.9)', ['rxcandH', [[0, 'rgba(255,200,120,0.45)'], [1, 'rgba(255,200,120,0)']]]);
+    },
+    gears(F, h, T, t, s, lite) {   // a thick cog half out of the wall, turning; a copper pipe on brackets along the foot
+      F.box(0.5, 0.012, 1, 0.024, 0.34, 0, '#a07a48', '#7a5630', '#5a3e22');   // 1.27.5: the riveted bronze plate along the foot stands out of the face (it was painted), round rivets on it
+      for (let k = 0; k < 5; k++) { const [wx, wy] = F.W(0.1 + k * 0.2, 0.024); rxBall(wx, wy, 0.255, 0.017, '#c49a62'); }
+      if (s % 2 === 0) { [0.2, 0.8].forEach(u => F.box(u, 0.03, 0.05, 0.06, 0.08, 0.12, '#4a4e57', '#33363d', '#2a2d33')); rxHCyl(rxWP(F, -0.02, 0.06, 0.16), rxWP(F, 1.02, 0.06, 0.16), 0.045, 8, '#a8683a'); }
+      if (lite ? s % 4 : s % 2) return;
+      const dir = s % 4 ? 1 : -1, a = t * 0.7 * dir, z0 = Math.min(0.45, h - 1.0), r = lite ? 0.18 : 0.3;
+      rc.save();
+      [['#2e2010', 0.0], ['#3e2c16', 0.02], ['#52381c', 0.04], ['#664824', 0.055]].forEach(([c, d]) => { F.plane(d, z0, z0 + 1); rxGear(0.5, 0.5, r, 10, a, c, null, null); });
+      F.plane(0.07, z0, z0 + 1); rxGear(0.5, 0.5, r, 10, a, '#a87a40', '#e0b070', '#1c120a');
+      if (!lite) { [['#4a3418', 0.075], ['#5e4222', 0.085]].forEach(([c, d]) => { F.plane(d, z0, z0 + 1); rxGear(0.5 + r * 1.55, 0.5 - r * 0.7, r * 0.55, 8, -a * 10 / 8 + 0.2, c, null, null); }); F.plane(0.095, z0, z0 + 1); rxGear(0.5 + r * 1.55, 0.5 - r * 0.7, r * 0.55, 8, -a * 10 / 8 + 0.2, '#8a6434', '#c99a5a', '#1c120a'); }
+      rc.restore();
+      const zc = z0 + 0.5; rxHCyl(rxWP(F, 0.5, 0.06, zc), rxWP(F, 0.5, 0.11, zc), 0.035, 8, '#4a4e57', '#2a2d33');   // its axle
+    },
+    hush(F, h, T, t, s, lite) {   // a heavy drape hanging down the wall in deep folds under a pelmet (with a komnata: the pelmet and a short valance only)
+      const z1 = h - 0.08, z0 = lite ? h - 0.3 : 0.05;
+      if (!lite && s % 3 === 2) return;
+      rxDrape(F, z0, z1, lite ? 4 : 5, '#5a6280', 0);
+      F.box(0.5, 0.06, 0.98, 0.12, 0.08, h - 0.1, '#7a6a4a', '#5e5038', '#4a3e2c');
+    },
+    ice(F, h, T, t, s, lite) {   // a cornice of ice along the top edge, icicles of all lengths hanging off it, clear, faceted
+      F.box(0.5, 0.04, 1, 0.08, 0.05, h - 0.05, '#e8f6ff', '#b4dcf2', '#86bede');
+      const n = lite ? 3 : 5, A = rc.globalAlpha; rc.globalAlpha = A * 0.95; rxLift = 0.4;
+      for (let k = 0; k < n; k++) { const u = 0.1 + 0.8 * (k + 0.5) / n + 0.03 * ((s + k) % 3 - 1), [wx, wy] = F.W(u, 0.05), L = 0.12 + (lite ? 0.12 : 0.3) * (((k * 7 + s) % 5) / 4), r = 0.05 + 0.012 * (k % 2);
+        rxLathe(wx, wy, h - 0.05 - L, [[0, 0], [r * 0.55, L * 0.5], [r, L]], 6, '#d8f0ff', k + s, false);
+        rxLine(W2S(wx - r * 0.5, wy + r * 0.5, h - 0.06), W2S(wx, wy, h - 0.05 - L), 'rgba(255,255,255,0.75)', Math.max(1, T * 0.01)); }
+      rc.globalAlpha = A; rxLift = 0;
+      const p = (t * 0.4 + s * 0.13) % 1; if (!reduceMotion && p < 0.5) { const [wx, wy] = F.W(0.1 + 0.8 * 1.5 / n, 0.05); const q = W2S(wx, wy, h - 0.35 - p * 1.2); rc.fillStyle = 'rgba(220,240,255,0.8)'; rc.beginPath(); rc.arc(q[0], q[1], Math.max(1, T * 0.018), 0, Math.PI * 2); rc.fill(); }
+    }
+  };

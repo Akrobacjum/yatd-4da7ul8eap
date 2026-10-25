@@ -56,22 +56,36 @@
   const HEART_LV = [0, 30, 75, 135, 210, 300, 410, 540];
   const heartLvAt = k => k < HEART_LV.length ? HEART_LV[k] : HEART_LV[HEART_LV.length - 1] + 150 * (k - HEART_LV.length + 1);
   const heartRegrowLv = L => L >= 3 && L % 2 === 1;
-  const heartSlotLv = L => L === 2 || L === 4 || L === 6;
+  // 1.27.5 (brief "Serce hamuje", A; the author's run: level 4 -> 9 in one wave, 5 free cards waiting): at most 1 heart level in a
+  // cycle (the build and the wave of one number, run.wave). Satiety keeps filling; what is over the next threshold waits in the bar
+  // and gives the level at the start of the next build (heartLevelCheck in startBuild). No top level. (1.26-1.27.4: levels 2, 4, 6
+  // gave +1 deck slot, heartSlotLv; gone.)
+  const heartUpBlocked = () => !!run && run.satiety >= heartLvAt((run.heartLv || 0) + 1) - 1e-6 && run.heartUpWave === run.wave;
+  function heartLevelCheck(src) {
+    if (!run || run.heartUpWave === run.wave || !(run.satiety >= heartLvAt((run.heartLv || 0) + 1) - 1e-6)) return 0;
+    run.heartUpWave = run.wave; heartLevelUp(src); return 1;
+  }
   function satietyAdd(v, src) {
     if (!(v > 0) || !run) return 0;
     run.satiety = (run.satiety || 0) + v;
     if (fl && fl.stats) { fl.stats.satietyGain = (fl.stats.satietyGain || 0) + v; if (src) fl.stats['sat_' + src] = (fl.stats['sat_' + src] || 0) + v; }
-    let up = 0; while (run.satiety >= heartLvAt((run.heartLv || 0) + 1) - 1e-6) { heartLevelUp(src); up++; }
+    const up = heartLevelCheck(src);
+    if (!up && heartUpBlocked() && fl && fl.stats) fl.stats.heartUpBlocked = 1;
     return up;
   }
+  // 1.27.5 (brief B): a Heart's Gift card (a card of the Serce group) takes no deck slot: the deck limit counts the ordinary cards
+  // only; the gift cards sit at the end of run.deck (deckAdd), never go to the stash and are not copied by Kopista or Lustro duszy
+  const isGift = id => !!(UPG[id] && UPG[id].kind === 'card' && UPG[id].group === 'heart');
+  const deckUsed = () => run.deck.filter(id => !isGift(id)).length;
+  const deckFull = () => deckUsed() >= run.deckSize;
+  function deckAdd(id) { const g = isGift(id) ? -1 : run.deck.findIndex(isGift); if (g < 0) run.deck.push(id); else run.deck.splice(g, 0, id); }
   function heartLevelUp(src) {
     const L = run.heartLv = (run.heartLv || 0) + 1;
     run.heartLvMax = Math.max(run.heartLvMax || 0, L);
     (run.heartPicks || (run.heartPicks = [])).push({ lv: L });
-    if (heartSlotLv(L)) run.deckSize++;
     if (fl && fl.stats) fl.stats.heartUp = (fl.stats.heartUp || 0) + 1;
     if (fl && fl.phase === 'raid') { tl('hl', L); floatTile(fl.heart.x, fl.heart.y, LL('Serce: poziom ' + L + '!', 'Heart level ' + L + '!'), '#ffd27a', 17, -1.9); burst(fl.heart.x + 0.5, fl.heart.y + 0.5, '#ffd27a', 18); heartHit(); tutPop('heartLv'); }
-    else if (fl && fl.phase === 'build') queueModal({ type: 'shop', heartNow: true });   // Ofiara crossed a level: pick at once
+    else if (fl && fl.phase === 'build' && src !== 'build') queueModal({ type: 'shop', heartNow: true });   // Ofiara crossed a level: pick at once (1.27.5: not the level waiting from the wave, the build's shop shows it)
     updateTray();
   }
   // extra levels of the leader from greed. Up to 1.02 at most 3, so greed 23 was as safe as greed 4 (the author's run: 42 798
@@ -135,7 +149,7 @@
   function essMultNow() {
     if (!fl) return 1;
     let k = mods.cursedCrown * mods.heartCore;   // 1.26.1 Serce lochu
-    if (mods.resonance) k *= 1 + Math.min(0.3, 0.03 * new Set(run.deck).size);   // 1.26.1 Rezonans
+    if (mods.resonance) k *= 1 + Math.min(0.3, 0.03 * new Set(run.deck.filter(id => !isGift(id))).size);   // 1.26.1 Rezonans (1.27.5: ordinary cards only, the free gifts do not pump it)
     if (mods.lonewolf > 1 && fl.heroes.length > 1 && alive().length === 1) k *= mods.lonewolf;
     if (mods.palette > 1 && (fl.famN || 0) >= 5) k *= mods.palette;
     if (mods.minimalist > 1 && fl.elemN != null && fl.elemN <= 12) k *= mods.minimalist;
@@ -405,7 +419,7 @@
     run.deck.forEach((id, i) => { const t = id === 'copyist' ? run.deck[i + 1] : id === 'soulmirror' ? run.deck[0] : null, v = t && UPG[t]; if (v && copyOk(v)) v.apply(m); });
     return m;
   }
-  const copyOk = v => !!v && v.kind === 'card' && !v.unique && v.id !== 'copyist' && v.id !== 'soulmirror';   // 1.26
+  const copyOk = v => !!v && v.kind === 'card' && !v.unique && v.id !== 'copyist' && v.id !== 'soulmirror' && v.group !== 'heart';   // 1.26 (1.27.5: not a Heart's Gift card)
   const copyTarget = id => { const i = run.deck.indexOf(id); const t = id === 'copyist' ? run.deck[i + 1] : id === 'soulmirror' ? run.deck[0] : null; return t && copyOk(UPG[t]) ? t : null; };
   const fuseElems = u => [u.id, typeof u.req === 'string' ? u.req : null].filter(t => t && ITEMS[t] && (TRAPS[t] || MONSTERS[t]));   // 1.24: the element(s) a card names
   const fuseGroup = u => fuseElems(u).length ? 'named' : FUSE_GROUP[u.id] || 'power';   // 1.24
@@ -591,6 +605,8 @@
     if (!run.next || run.nextFor !== run.wave) { run.next = makeWave(run.wave); run.nextFor = run.wave; }   // 1.05: usually made at the end of the last wave
     if (run.builtFor !== run.wave) {
       run.builtFor = run.wave;
+      heartLevelCheck('build');   // 1.27.5 (brief A): a level waiting in the bar comes now; its gift is in the shop that opens anyway
+      if (run.deck.some(isGift)) run.deck = run.deck.filter(id => !isGift(id)).concat(run.deck.filter(isGift));   // 1.27.5 (brief B): the gift cards at the end (older saves mixed them in)
       if (run.onbNews && run.onbNews.length) { queueModal({ type: 'onb', stages: run.onbNews.slice() }); run.onbNews = []; }   // 1.24 (B): what this wave of the first run opens
       if (mods.mole && run.wave % 2 === 0 && run.moleWave !== run.wave) { run.freeDigs += mods.mole; run.moleWave = run.wave; }   // Kret: a free room every second wave
       // a breach stays until you patch it; from wave 6 the guild may dig a new one (one at a time)
@@ -947,6 +963,7 @@
     perfReset();
     fl.items.forEach(it => { it.skullOff = false; it.firstBy = null; it.knocked = null; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap); 1.20: so do who saw a pile first and whose gear a crit knocked out
     { const hp = hungerParts(run.wave); fl.needParts = hp; fl.needNow = hp ? hp.need : 0; fl.needFor = run.wave; fl.ofiara = 0; }   // 1.26: the need of this wave, frozen
+    fl.reserveAtGo = run.tut < 0 && hungerNeed(run.wave) > 0 ? Math.floor(fl.essence) : null; fl.reserveWarn = fl.reserveAtGo != null && reserveLow();   // 1.27.5 (brief E): the reserve at Release wave, and whether it was red
     { const fams = new Set(); let n = 0; fl.items.forEach(it => { if (it.temp || !(TRAPS[it.type] || MONSTERS[it.type])) return; n++; if (FAMILY_OF[it.type]) fams.add(FAMILY_OF[it.type]); }); fl.famN = fams.size; fl.elemN = n; fl.bathK = 1; fl.armyN = 0; fl.heartEchoW = 0; }
     fl.secretFound = new Set(); run.layout.edges.forEach((e, k) => { if (e.secret && e.secretKnown) fl.secretFound.add(k); }); fl.threatDirty = true;   // 1.26.1: a rumoured one is known from the start
     { const o = OMENS[run.omens && run.omens[run.wave]]; if (o) { floatTile(fl.ent.x, fl.ent.y, 'Omen: ' + o.name, '#d9b8ff', 16, -1.6); setHint('Omen: ' + o.name + '. ' + o.text); } }   // 1.26 (15)   // 1.26 Pełna paleta, Minimalista, Krwawa łaźnia
@@ -1360,7 +1377,7 @@
       checks: nChk, cpm: realMin > 0 ? Math.round(nChk / realMin * 10) / 10 : 0, frozen: ps ? ps.frozen : null, memFires: s0.memFires || 0, skullOff: s0.skullOff || 0, classes: fl.heroes.map(h => h.type), trayPauses: s0.trayPauses || 0,
       crystalEvents: crystalEvTake(), essenceAtStart: run.essAtStart != null ? Math.round(run.essAtStart) : null, essenceAtWaveStart: fl.essW0 != null ? Math.round(fl.essW0) : null,   // 1.24 (D, P0-2, P0-6)
       itemsCount: fl.itemsW0 != null ? fl.itemsW0 : fl.items.size, roomsCount: fl.roomsW0 != null ? fl.roomsW0 : run.layout.cells.size, previewOpened: run.previewN || 0, previewVis: pvTake(), fearUi: Object.assign({ card: 0, bar: 0 }, fl.fearUi || {}),   // 1.24 (D, P0-6)
-      satiety: Math.round(run.satiety || 0), satietyGain: Math.round(fl.stats.satietyGain || 0), heartLv: run.heartLv || 0, heartPick: fl.heartPick || null, regrow: fl.stats.regrow || 0, feastPts: Math.round(fl.stats.feastPts || 0), tithePts: Math.round(fl.stats.essTithe || 0), ofiara: fl.stats.ofiara || 0, revived: fl.stats.revived || 0, stealMax: Math.round((fl.stats.stealMax || 0) * 10) / 10, omen: (run.omens || {})[run.wave] || null });   // 1.26 (4.11)
+      satiety: Math.round(run.satiety || 0), satietyGain: Math.round(fl.stats.satietyGain || 0), heartLv: run.heartLv || 0, heartPick: fl.heartPick || null, heartPicks: fl.heartPicksLog || [], heartUpBlocked: (fl.stats.heartUpBlocked || heartUpBlocked()) ? 1 : 0, satietyOver: Math.max(0, Math.round((run.satiety || 0) - heartLvAt((run.heartLv || 0) + 1))), deckUsed: deckUsed(), giftCards: run.deck.length - deckUsed(), reserveAtGo: fl.reserveAtGo != null ? fl.reserveAtGo : null, reserveWarn: fl.reserveWarn ? 1 : 0,   /* 1.27.5 (LOG_VERSION 63) */ regrow: fl.stats.regrow || 0, feastPts: Math.round(fl.stats.feastPts || 0), tithePts: Math.round(fl.stats.essTithe || 0), ofiara: fl.stats.ofiara || 0, revived: fl.stats.revived || 0, stealMax: Math.round((fl.stats.stealMax || 0) * 10) / 10, omen: (run.omens || {})[run.wave] || null });   // 1.26 (4.11)
   }
   // after the wave summary: game over, or upgrades and the next build phase
   function afterSummary() {

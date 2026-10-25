@@ -40,9 +40,11 @@ ECON = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => {
   run.satiety = 0; run.heartLv = 0; run.heartLvMax = 0; run.heartPicks = []; const ds = run.deckSize;
   G.satietyAdd(G.heartLvAt(2) + 1, 'test');
   out.lv = { lv: run.heartLv, picks: run.heartPicks.length, deck: run.deckSize, ds };
-  ok(run.heartLv === 2 && run.heartPicks.length === 2, 'two heart levels, two picks waiting ' + JSON.stringify(out.lv));
-  ok(run.deckSize === ds + 1, 'level 2 gives a deck slot ' + JSON.stringify(out.lv));
-  G.startBuild(true); const hk = G.heartOffer(); out.offer = hk;
+  ok(run.heartLv === 1 && run.heartPicks.length === 1, '1.27.5: one heart level a wave, one pick waiting ' + JSON.stringify(out.lv));
+  ok(run.deckSize === ds, '1.27.5: heart levels give no deck slot ' + JSON.stringify(out.lv));
+  run.wave++; G.startBuild(true); out.lv2 = { lv: run.heartLv, picks: run.heartPicks.length, modals: G.modalKind }; ok(run.heartLv === 2 && run.heartPicks.length === 2, 'the waiting level comes with the next build ' + JSON.stringify(out.lv2));
+  while (G.modalKind) G.closeModal(); run.heartUpWave = null;
+  const hk = G.heartOffer(); out.offer = hk;
   ok(hk && hk.ids.length === 3 && hk.ids.every(id => G.UPG[id] && G.UPG[id].group === 'heart'), 'Dar serca: 3 cards of the Serce group ' + JSON.stringify(hk));
   ok(hk && !hk.ids.includes('regrow'), 'no Odrost at level 1-2');
   // level 3 with a crystal missing: Odrost among them

@@ -2392,7 +2392,7 @@
   "id": "glutton",
   "kind": "card",
   "rar": "l",
-  "group": "heart",
+  "unique": true,
   "tag": "głód +20%, Nasycenie ×2",
   "name": "Głodomór",
   "text": "Serce chce o 20% więcej, ale Danina daje 2 razy więcej Nasycenia.",
@@ -2911,7 +2911,7 @@
   "id": "heartcore",
   "kind": "card",
   "rar": "l",
-  "group": "heart",
+  "unique": true,
   "tag": "Esencja ×1,2",
   "name": "Serce lochu",
   "text": "Cała Esencja ×1,2.",
@@ -2942,15 +2942,14 @@
   "id": "resonance",
   "kind": "card",
   "rar": "l",
-  "group": "heart",
   "unique": true,
   "tag": "+3%/kartę",
   "name": "Rezonans",
-  "text": "Esencja +3% za każdą inną kartę w talii (najwyżej +30%).",
+  "text": "Esencja +3% za każdą inną zwykłą kartę w talii (karty Daru serca się nie liczą, najwyżej +30%).",
   "en": {
    "name": "Resonance",
    "tag": "+3%/card",
-   "text": "Essence +3% for each different card in your deck (max +30%)."
+   "text": "Essence +3% for each different ordinary card in your deck (Heart's Gift cards don't count, max +30%)."
   },
   "apply": "fn: m => { m.resonance = true; }"
  },
