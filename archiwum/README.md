@@ -84,3 +84,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.27.3](1.27.3.html) | 25.10 | bohaterowie nie znikają (droga do domu), sklep z kart |
 | [Prototype 1.27.4](1.27.4.html) | 25.10 | słabsza Głusza, raport długiej fali, pionowe karty sklepu |
 | [Prototype 1.27.5](1.27.5.html) | 25.10 | Serce hamuje, szybsza budowa, wszystko poza postaciami w 3D, efekty pokojów |
+| [Prototype 1.27.6](1.27.6.html) | 25.10 | opis karty w sklepie nie znika |

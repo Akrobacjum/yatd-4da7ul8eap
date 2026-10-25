@@ -1386,7 +1386,7 @@
     bard(px, b) { px(10, 18 + b, '#e6d8a8'); px(11, 17 + b, '#e6d8a8'); px(8, 14 + b, '#4a9a92'); },
     barbarian(px, b) { px(10, 9 + b, '#7a2a2a'); px(11, 9 + b, '#7a2a2a'); px(16, 7 + b, '#ffffff'); px(9, 18 + b, '#7a5a3a'); },
     goblin(px, b) { px(12, 14 + b, '#e8e0c8'); px(9, 18 + b, '#7a6040'); px(14, 15 + b, '#ffffff'); },
-    archer(px, b) { px(10, 16 + b, '#fff6e0'); px(12, 10 + b, '#d84a3a'); },
+    archer(px, b) { px(11, 14 + b, '#e8e0c8'); px(10, 8 + b, '#7a6040'); px(14, 10 + b, '#ffffff'); },   // 1.27.6: a goblin archer (a tooth, the hood's seam, a glint on the bow)
     ogre(px, b) { px(8, 7 + b, '#9a9e74'); px(11, 15 + b, '#9a9e74'); px(10, 18 + b, '#6a6e4e'); px(17, 9 + b, '#9a7a54'); },
     shaman(px, b) { px(15, 3 + b, '#d9ffd9'); px(9, 20 + b, '#6a7a52'); px(11, 23 + b, '#6a7a52'); },
     spider(px) { px(13, 18, '#ff9a8a'); px(9, 18, '#7a5a8a'); px(10, 17, '#6a5a7a'); },

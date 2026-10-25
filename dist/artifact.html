@@ -330,10 +330,14 @@ label.askno { display: flex; gap: 6px; align-items: center; font-size: 13px; col
 #tip .tg { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 #tip p { margin: 0; font-size: 14px; line-height: 1.4; color: var(--ink); }
 #tip .tw { font-size: 12.5px; color: #ff9aa6; }
-#tip .tlb { display: flex; gap: 6px; }   /* 1.24 (B, P1-4): Rani / Straszy */
+#tip .tlb, .sheettags { display: flex; flex-wrap: wrap; gap: 4px 6px; }   /* 1.24 (B, P1-4): Rani / Straszy */
 #tip .tlb span { display: inline-flex; align-items: center; gap: 5px; font: 600 11.5px var(--font-body); letter-spacing: 0.03em; padding: 1px 7px 2px; border-radius: 2px; }
 #tip .tlb span::before { content: ""; width: 6px; height: 6px; transform: rotate(45deg); background: currentColor; }
 #tip .tlb .hurt { color: #ff9a9a; border: 1px solid #6e1c27; } #tip .tlb .scare { color: var(--violet-hi); border: 1px solid var(--violet-lo); }
+/* 1.27.6: place, reach and family tags (grey, the family in its colour; no diamond) */
+.tlb span.place, .tlb span.reach, .tlb span.fam { color: var(--muted); border: 1px solid var(--line2); } .tlb span.fam { color: var(--fam, var(--muted)); border-color: color-mix(in srgb, var(--fam, #888) 45%, transparent); }
+#tip .tlb span.place::before, #tip .tlb span.reach::before, #tip .tlb span.fam::before { display: none; }
+.sheettags { margin: -2px 0 2px; } .sheettags span { display: inline-flex; align-items: center; gap: 5px; font: 600 11.5px var(--font-body); padding: 1px 7px 2px; border-radius: 2px; } .sheettags .hurt { color: #ff9a9a; border: 1px solid #6e1c27; } .sheettags .scare { color: var(--violet-hi); border: 1px solid var(--violet-lo); }
 .note.fearline { text-align: center; color: var(--muted); } .note.fearline b { color: var(--ink); font-family: var(--font-num); font-weight: 400; font-size: 14px; } .note.fearline .sc, .note.fearline .sc b { color: var(--violet-hi); }   /* 1.24 (B, P1-4) */
 @keyframes tipin { from { opacity: 0; transform: translate(-50%, 6px) scale(0.98); } to { opacity: 1; transform: translate(-50%, 0); } }
 
@@ -891,7 +895,7 @@ html.wide #coach:not(.top) { right: auto; width: min(460px, calc(100% - 16px)); 
   background-color: rgba(16, 17, 21, 0.96); border: 1px solid var(--line2); border-left: 3px solid #6b7079; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7), inset 0 1px 0 var(--edge);
   font-size: 13px; line-height: 1.32; color: var(--ink); animation: fadein 0.12s ease-out; }
 #hov b { font: 700 17px/1.05 var(--font-display); } #hov .hs { color: var(--muted); font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; } #hov .hk { color: var(--muted); font-size: 12px; }
-#hov .tlb { display: flex; gap: 5px; } #hov .tlb span { font: 600 11px var(--font-body); padding: 0 6px 1px; border-radius: 2px; } #hov .tlb .hurt { color: #ff9a9a; border: 1px solid #6e1c27; } #hov .tlb .scare { color: var(--violet-hi); border: 1px solid var(--violet-lo); }
+#hov .tlb { display: flex; flex-wrap: wrap; gap: 3px 5px; } #hov .tlb span { font: 600 11px var(--font-body); padding: 0 6px 1px; border-radius: 2px; } #hov .tlb .hurt { color: #ff9a9a; border: 1px solid #6e1c27; } #hov .tlb .scare { color: var(--violet-hi); border: 1px solid var(--violet-lo); }
 html.mouse .tray > .item[data-k]::after { content: attr(data-k); position: absolute; left: 4px; top: 2px; font: 400 11px/1 var(--font-num); color: var(--dim); }
 html.mouse.hovpt #cv { cursor: pointer; }
 html.dragging #cv, html.mouse.dragging.hovpt #cv { cursor: grabbing; }
@@ -14485,10 +14489,10 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.arc(cx - s * 0.08, cy - s * 0.03, s * 0.04, 0, Math.PI * 2); ctx.arc(cx + s * 0.08, cy - s * 0.03, s * 0.04, 0, Math.PI * 2); ctx.fill();
         if (it.anim > 0) { ctx.strokeStyle = '#d9dbe6'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.beginPath(); ctx.moveTo(cx + s * 0.2, cy + s * 0.05); ctx.lineTo(cx + s * 0.45, cy - s * 0.05); ctx.stroke(); }
         break;
-      case 'archer':
-        ctx.fillStyle = '#e8e4d8'; ctx.beginPath(); ctx.arc(cx - s * 0.04, cy - s * 0.1, s * 0.15, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#1a1424'; ctx.fillRect(cx - s * 0.12, cy - s * 0.13, s * 0.06, s * 0.06); ctx.fillRect(cx + s * 0.0, cy - s * 0.13, s * 0.06, s * 0.06);
-        ctx.strokeStyle = '#e8e4d8'; ctx.lineWidth = Math.max(1, s * 0.05); ctx.beginPath();
+      case 'archer':   // 1.27.6: a goblin head (green, ears), not a skull
+        ctx.fillStyle = '#7fae4a'; ctx.beginPath(); ctx.arc(cx - s * 0.04, cy - s * 0.1, s * 0.15, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(cx - s * 0.27, cy - s * 0.14, s * 0.1, s * 0.06); ctx.fillRect(cx + s * 0.09, cy - s * 0.14, s * 0.1, s * 0.06);
+        ctx.fillStyle = '#e8d24a'; ctx.fillRect(cx - s * 0.12, cy - s * 0.13, s * 0.06, s * 0.06); ctx.fillRect(cx + s * 0.0, cy - s * 0.13, s * 0.06, s * 0.06);
+        ctx.strokeStyle = '#5a4630'; ctx.lineWidth = Math.max(1, s * 0.05); ctx.beginPath();
         ctx.moveTo(cx - s * 0.04, cy + s * 0.05); ctx.lineTo(cx - s * 0.04, cy + s * 0.28); ctx.moveTo(cx - s * 0.16, cy + s * 0.13); ctx.lineTo(cx + s * 0.08, cy + s * 0.13); ctx.stroke();
         ctx.strokeStyle = '#a0703a'; ctx.lineWidth = Math.max(1, s * 0.045); ctx.beginPath(); ctx.arc(cx + s * 0.08, cy + s * 0.06, s * 0.22, -Math.PI / 2.4, Math.PI / 2.4); ctx.stroke();
         break;
@@ -16535,11 +16539,14 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       r(8, 10 + b, 5, 5, P.goblin[0]); r(8, 13 + b, 1, 2, P.goblin[1]); r(6, 10 + b, 2, 2, P.goblin[0]); r(13, 10 + b, 2, 2, P.goblin[0]); r(5, 9 + b, 1, 1, P.goblin[1]); r(15, 9 + b, 1, 1, P.goblin[1]);   // head and ears
       r(11, 12 + b, 1, 1, '#e8d24a');
       r(12, 16 + b, 2, 4, P.goblin[1]); r(14, 15 + b, 1, 4, P.steel[0]);
-    } else if (t === 'archer') {   // a skeleton with a bow
-      legs(P.bone[1], P.bone[1]);
-      r(8, 14 + b, 4, 7, P.bone[0]); r(8, 15 + b, 4, 1, P.dark); r(8, 17 + b, 4, 1, P.dark); r(9, 14 + b, 1, 7, P.bone[1]);   // ribs
-      r(8, 8 + b, 5, 5, P.bone[0]); r(9, 10 + b, 1, 1, P.dark); r(11, 10 + b, 1, 1, P.dark); r(9, 12 + b, 3, 1, P.bone[1]);
-      r(12, 15 + b, 2, 4, P.bone[1]);
+    } else if (t === 'archer') {   // 1.27.6 (author: the archer is a Greenskin, not a skeleton): a goblin archer in a hood with a quiver and a bow
+      r(5, 12 + b, 2, 8, '#6a4a2a'); r(5, 11 + b, 1, 1, '#d8d0b8'); r(6, 10 + b, 1, 2, '#d8d0b8');   // the quiver on his back, fletchings
+      legs(P.goblin[1], P.goblin[1]);
+      r(8, 15 + b, 5, 6, '#6a5232'); r(8, 15 + b, 1, 6, '#4a3a24'); r(8, 18 + b, 5, 1, '#3a2c1c'); r(11, 18 + b, 1, 1, P.gold[1]);   // a green-brown jerkin, a belt
+      r(8, 10 + b, 5, 5, P.goblin[0]); r(8, 13 + b, 1, 2, P.goblin[1]); r(5, 10 + b, 3, 2, P.goblin[0]); r(13, 10 + b, 3, 2, P.goblin[0]); r(4, 9 + b, 1, 1, P.goblin[1]); r(16, 9 + b, 1, 1, P.goblin[1]); r(5, 11 + b, 2, 1, P.goblin[1]); r(14, 11 + b, 2, 1, P.goblin[1]);   // head and big pointed ears
+      r(8, 9 + b, 5, 1, '#5a4630'); r(9, 8 + b, 3, 1, '#5a4630'); r(8, 9 + b, 1, 1, '#3e2f20');   // a small leather cap
+      r(9, 12 + b, 1, 1, '#e8d24a'); r(11, 12 + b, 1, 1, '#e8d24a'); r(10, 14 + b, 2, 1, P.goblin[1]);   // yellow eyes, a grin
+      r(12, 16 + b, 2, 3, P.goblin[1]);   // the arm drawing the string
       r(15, 9 + b, 1, 2, P.wood[0]); r(16, 11 + b, 1, 6, P.wood[0]); r(15, 17 + b, 1, 2, P.wood[0]); r(14, 10 + b, 1, 8, 'rgba(220,210,190,0.6)');   // the bow
     } else if (t === 'ogre') {
       legs(P.ogre[1], P.ogre[1]);
@@ -19266,7 +19273,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     bard(px, b) { px(10, 18 + b, '#e6d8a8'); px(11, 17 + b, '#e6d8a8'); px(8, 14 + b, '#4a9a92'); },
     barbarian(px, b) { px(10, 9 + b, '#7a2a2a'); px(11, 9 + b, '#7a2a2a'); px(16, 7 + b, '#ffffff'); px(9, 18 + b, '#7a5a3a'); },
     goblin(px, b) { px(12, 14 + b, '#e8e0c8'); px(9, 18 + b, '#7a6040'); px(14, 15 + b, '#ffffff'); },
-    archer(px, b) { px(10, 16 + b, '#fff6e0'); px(12, 10 + b, '#d84a3a'); },
+    archer(px, b) { px(11, 14 + b, '#e8e0c8'); px(10, 8 + b, '#7a6040'); px(14, 10 + b, '#ffffff'); },   // 1.27.6: a goblin archer (a tooth, the hood's seam, a glint on the bow)
     ogre(px, b) { px(8, 7 + b, '#9a9e74'); px(11, 15 + b, '#9a9e74'); px(10, 18 + b, '#6a6e4e'); px(17, 9 + b, '#9a7a54'); },
     shaman(px, b) { px(15, 3 + b, '#d9ffd9'); px(9, 20 + b, '#6a7a52'); px(11, 23 + b, '#6a7a52'); },
     spider(px) { px(13, 18, '#ff9a8a'); px(9, 18, '#7a5a8a'); px(10, 17, '#6a5a7a'); },
@@ -20825,7 +20832,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     powder: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="14" r="7" fill="#2b2b33" stroke="#77727f"/><path d="M15 8l3-3" stroke="#b08a5a" stroke-width="2"/><circle cx="19" cy="4" r="1.8" fill="#ff9a3c"/></svg>',
     mimic: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="9" width="18" height="11" rx="1" fill="#7a5a34"/><path d="M3 9h18l-2 3-2-3-2 3-2-3-2 3-2-3-2 3-2-3z" fill="#f1e7d3"/><circle cx="8" cy="5.5" r="1.6" fill="#ffe066"/><circle cx="16" cy="5.5" r="1.6" fill="#ffe066"/></svg>',
     goblin: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l5 2-1 3zM22 9l-5 2 1 3z" fill="#5fa84a"/><circle cx="12" cy="13" r="7" fill="#5fa84a"/><circle cx="9.5" cy="12" r="1.3" fill="#ffe066"/><circle cx="14.5" cy="12" r="1.3" fill="#ffe066"/></svg>',
-    archer: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="7" r="4" fill="#e8e4d8"/><rect x="8" y="6" width="1.6" height="1.6" fill="#1a1424"/><rect x="10.6" y="6" width="1.6" height="1.6" fill="#1a1424"/><path d="M10 11v9M6 14h8" stroke="#e8e4d8" stroke-width="1.6"/><path d="M16 5a9 9 0 0 1 0 14" fill="none" stroke="#a0703a" stroke-width="1.8"/></svg>',
+    archer: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6l3 2M16 6l-3 2" stroke="#7fae4a" stroke-width="2"/><circle cx="10" cy="7.5" r="4" fill="#7fae4a"/><path d="M6.2 6.5a4 4 0 0 1 7.6 0z" fill="#5a4630"/><rect x="8" y="7" width="1.6" height="1.6" fill="#e8d24a"/><rect x="10.6" y="7" width="1.6" height="1.6" fill="#e8d24a"/><path d="M10 12v8M6 15h8" stroke="#5a7a3a" stroke-width="1.6"/><path d="M16 5a9 9 0 0 1 0 14" fill="none" stroke="#a0703a" stroke-width="1.8"/></svg>',
     ogre: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="9" fill="#7d8a5a"/><circle cx="9" cy="11" r="1.3" fill="#ff6b6b"/><circle cx="15" cy="11" r="1.3" fill="#ff6b6b"/><path d="M8 16l1.5 3 1-3zM16 16l-1.5 3-1-3z" fill="#f1e7d3"/></svg>',
     shaman: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7l1.5-5 1.5 5zM9.5 6l1.5-5 1.5 5zM13 7l1.5-5 1.5 5z" fill="#d94a4a"/><circle cx="11" cy="14" r="6" fill="#5fa84a"/><circle cx="9" cy="13" r="1.1" fill="#ffe066"/><circle cx="13" cy="13" r="1.1" fill="#ffe066"/><path d="M20 7v15" stroke="#8a5a2b" stroke-width="1.6"/><circle cx="20" cy="5.5" r="2.2" fill="#8be38f"/></svg>',
     trapdoor: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" fill="#3a2c22" stroke="#1e1610"/><path d="M12 4v16" stroke="#1e1610" stroke-width="1.5"/><rect x="5" y="11" width="2" height="2.5" fill="#8a8496"/><rect x="17" y="11" width="2" height="2.5" fill="#8a8496"/></svg>',
@@ -21026,12 +21033,12 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const box = $('#tip'), I = ITEMS[t]; box.innerHTML = '';
     const h = el('div', 'th'); h.appendChild(el('b', null, I.name)); if (!MODES[t]) h.appendChild(el('span', null, costOf(t) + L(' Esencji', ' Essence'))); box.appendChild(h);
     if (I.tag) box.appendChild(el('div', 'tg', I.tag));
-    { const lb = effWords(t); if (lb.length) { const r = el('div', 'tlb'); lb.forEach(w => r.appendChild(el('span', w === L('Rani', 'Hurts') ? 'hurt' : 'scare', w))); box.appendChild(r); } }   // 1.24 (B, P1-4)
+    if (tagChips(t).length) box.appendChild(tagRow(t));   // 1.24 (B, P1-4) Rani / Straszy; 1.27.6: place, reach, family
     box.appendChild(el('p', null, I.desc));
     // 1.27 (UI/UX, author: details in small print): numbers and exceptions (I.more), the family, the loot price step
     { const fine = [];
       if (I.more) fine.push(I.more);
-      if (FAMILY_OF[t] && FAMILIES[FAMILY_OF[t]]) { const f = FAMILY_OF[t], lv = (run && run.famLv && run.famLv[f]) || 0; fine.push(L('Rodzina: ', 'Family: ') + FAMILIES[f].glyph + ' ' + FAMILIES[f].name + (lv ? L(', poziom ' + lv + ' (+' + 8 * lv + '% mocy)', ', level ' + lv + ' (+' + 8 * lv + '% power)') : '') + '.'); }   // 1.26
+      if (FAMILY_OF[t] && FAMILIES[FAMILY_OF[t]]) { const f = FAMILY_OF[t], lv = (run && run.famLv && run.famLv[f]) || 0; if (lv) fine.push(L('Rodzina: ', 'Family: ') + FAMILIES[f].glyph + ' ' + FAMILIES[f].name + (lv ? L(', poziom ' + lv + ' (+' + 8 * lv + '% mocy)', ', level ' + lv + ' (+' + 8 * lv + '% power)') : '') + '.'); }   // 1.26 (1.27.6: only with a level; the family is a tag now)
       if (LOOT_KIND[t]) { const n = lootCount(t); fine.push(L('Każdy kolejny taki łup jest o 15% droższy' + (n ? ' (w lochu już: ' + n + ')' : '') + '.', 'Each extra one costs 15% more' + (n ? ' (placed: ' + n + ')' : '') + '.')); }
       if (fine.length) box.appendChild(el('div', 'fine', fine.join(' '))); }
     if (run && KINDS[t] && run.unlocked.has(t) && !isOpenT(t)) box.appendChild(el('div', 'tw', L('Zablokowana. Najpierw odblokuj kartą ze sklepu: ' + KIND_INFO[KINDS[t]].items.map(x => ITEMS[x].name).join(' albo ') + '.', 'Locked. First unlock ' + KIND_INFO[KINDS[t]].items.map(x => ITEMS[x].name).join(' or ') + ' with a shop card.')));
@@ -21047,6 +21054,20 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (how !== 'hover') buzz(12);
   }
   const effWords = t => (HURTS(t) ? [L('Rani', 'Hurts')] : []).concat(SCARES(t) ? [L('Straszy', 'Scares')] : []);   // 1.24 (B, P1-4)
+  // 1.27.6 (author: more tags in the descriptions): where it goes, how far it reaches, its family, beside Rani / Straszy
+  const TAG_REACH = { far: ['archer', 'arrows', 'eyes', 'portrait', 'mirror', 'bolt'],
+    area: ['web', 'bones', 'miasma', 'oilslick', 'flood', 'musicbox', 'bell', 'powder', 'shaman', 'lich', 'siren', 'coffin', 'fire', 'pendulum', 'creak'],
+    tile: ['spikes', 'trapdoor', 'cage', 'snare', 'bait', 'gate', 'tar', 'falsedoor'] };
+  const reachOf = t => TAG_REACH.far.includes(t) ? 'far' : TAG_REACH.area.includes(t) ? 'area' : TAG_REACH.tile.includes(t) ? 'tile' : MONSTERS[t] || t === 'mimic' ? 'near' : null;
+  function tagChips(t) {   // [[text, class]]: Rani / Straszy, then the place, the reach, the family
+    const I = ITEMS[t], out = effWords(t).map(w => [w, w === L('Rani', 'Hurts') ? 'hurt' : 'scare']); if (!I) return out;
+    const place = MONSTERS[t] ? L('Potwór', 'Monster') : BUILDINGS[t] || t === 'crate' ? L('Obiekt', 'Object') : LOOT_KIND[t] || t === 'bait' ? L('Łup', 'Loot') : ({ floor: L('Podłoga', 'Floor'), wall: L('Ściana', 'Wall'), door: L('Drzwi', 'Door'), object: L('Na meblu', 'On furniture') })[I.slot];
+    if (place) out.push([place, 'place']);
+    const r = reachOf(t); if (r) out.push([({ near: L('Zwarcie', 'Melee'), far: L('Dystans', 'Ranged'), area: L('Obszar', 'Area'), tile: L('Jedno pole', 'One tile') })[r], 'reach']);
+    const f = FAMILY_OF[t] && FAMILIES[FAMILY_OF[t]]; if (f) { out.push([f.glyph + ' ' + f.name, 'fam']); out[out.length - 1].push(f.color); }
+    return out;
+  }
+  const tagRow = t => { const r = el('div', 'tlb'); tagChips(t).forEach(([w, c, col]) => { const s = el('span', c, w); if (col) s.style.setProperty('--fam', col); r.appendChild(s); }); return r; };
   function hideTip() {
     clearTimeout(tipTimer); tipTimer = 0;
     if (tipFor) { const b = $('#item-' + tipFor); if (b) b.classList.remove('holding'); tipFor = null; }
@@ -21503,7 +21524,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.27.6 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.27.7 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -21560,9 +21581,11 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.6', "What's new in Prototype 1.27.6")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.7', "What's new in Prototype 1.27.7")));
     const ul0 = el('ul', 'conseq');
-    [L('1.27.6: opis karty w sklepie już nie znika. Gdy przy pięciu ofertach i pełnej talii brakuje miejsca, karty układają się w jeden rząd przewijany w bok.', '1.27.6: the card text in the shop no longer vanishes. When five offers and a full deck leave no room, the cards line up in one row you swipe sideways.'),
+    [L('1.27.7: Łucznik to teraz goblin z łukiem i kołczanem (należy do Zielonoskórych), a nie szkielet.', '1.27.7: the Archer is now a goblin with a bow and a quiver (he is a Greenskin), not a skeleton.'),
+     L('1.27.7: opisy elementów mają więcej znaczników: gdzie stoi (Podłoga, Ściana, Drzwi, Na meblu, Potwór, Łup, Obiekt), jak daleko sięga (Zwarcie, Dystans, Obszar, Jedno pole) i rodzinę.', '1.27.7: element descriptions have more tags: where it goes (Floor, Wall, Door, On furniture, Monster, Loot, Object), its reach (Melee, Ranged, Area, One tile) and its family.'),
+     L('1.27.6: opis karty w sklepie już nie znika. Gdy przy pięciu ofertach i pełnej talii brakuje miejsca, karty układają się w jeden rząd przewijany w bok.', '1.27.6: the card text in the shop no longer vanishes. When five offers and a full deck leave no room, the cards line up in one row you swipe sideways.'),
      L('1.27.5: serce rośnie najwyżej o 1 poziom na falę. Nadmiar Nasycenia czeka w pasku i da poziom na początku następnej budowy.', '1.27.5: the heart grows at most 1 level per wave. Extra Satiety waits in the bar and gives a level when the next build starts.'),
      L('1.27.5: karty z Daru serca nie zajmują miejsc w talii (mają swój rząd Serce). Poziomy serca nie dają już miejsc w talii.', "1.27.5: Heart's Gift cards no longer take deck slots (they have their own Heart row). Heart levels no longer add deck slots."),
      L('1.27.5: Serce lochu, Rezonans i Głodomór są zwykłymi legendarnymi kartami w sklepie (każda raz na run). Żarłoczne serce trafia się w Darze najwyżej raz na run.', "1.27.5: Heart of the Dungeon, Resonance and Glutton are ordinary legendary shop cards (one of each per run). Ravenous Heart shows up in the Heart's Gift at most once a run."),
@@ -22894,6 +22917,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const T = ITEMS[it.type], lvl = it.lvl || 1, up = !!ACTIVE[it.type], tr = TRAITS[it.type], loot = isLoot(it.type);
     card.appendChild(el('div', 'sub', (BUILDINGS[it.type] ? L('Obiekt', 'Object') : MONSTERS[it.type] ? L('Potwór', 'Monster') : TRAPS[it.type] ? L('Pułapka', 'Trap') : loot ? (it.dropped ? L('Łup po bohaterze', 'Dropped by a hero') : L('Łup', 'Loot')) : 'Element') + (up ? L(' · poziom ' + lvl + ' z 3', ' · level ' + lvl + ' of 3') : '')));
     card.appendChild(el('h2', null, T.name + (lvl > 1 ? ' ' + 'I'.repeat(lvl) : '')));
+    if (tagChips(it.type).length) { const tr0 = tagRow(it.type); tr0.classList.add('sheettags'); card.appendChild(tr0); }   // 1.27.6
     if (up) {   // what it did last wave: the quickest way to see what deserves an upgrade
       const s = (it.lf === undefined ? L('Nowy: jeszcze nie walczył.', 'New: has not fought yet.') : it.lf === 0 ? L('Ostatnia fala: ani razu nie zadziałał.', 'Last wave: never fired.') :
         L('Ostatnia fala: zadziałał ' + it.lf + '×, trafienia: ' + it.lh + ', Esencja: ' + it.lp + (it.lk ? ', zabici: ' + it.lk : '') + '.', 'Last wave: fired ' + it.lf + '×, ' + it.lh + ' hits, ' + it.lp + ' Essence' + (it.lk ? ', kills: ' + it.lk : '') + '.')) + healLine(it);   // 1.24 (C, addendum 2)
@@ -23845,7 +23869,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       const it = w.it, I = ITEMS[it.type], lb = effWords(it.type);
       box.appendChild(el('b', null, I.name + ((it.lvl || 1) > 1 ? L(' · poz. ', ' · lvl ') + it.lvl : '')));
       if (I.tag) box.appendChild(el('div', 'hs', I.tag));
-      if (lb.length) { const r = el('div', 'tlb'); lb.forEach(x => r.appendChild(el('span', x === L('Rani', 'Hurts') ? 'hurt' : 'scare', x))); box.appendChild(r); }
+      if (lb.length || tagChips(it.type).length) box.appendChild(tagRow(it.type));   // 1.27.6: with place, reach, family
       const d = I.desc; box.appendChild(el('div', null, d.charAt(0).toUpperCase() + d.slice(1)));
       if (fl.phase === 'build') box.appendChild(el('div', 'hk', L('Kliknij: przenieś · dwa razy: ulepsz · prawy: zdejmij', 'Click: move · double: upgrade · right: remove')));
     } else if (w.o) {
@@ -24278,7 +24302,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   kick();   // 1.24 (C): the paced loop (p6 FP)
 
   // Hook for automated checks; no effect on normal play.
-  const yatd = { longDoc: () => longDoc(), logLong: () => logLong(), get LONG_DOCS() { return LONG_DOCS; }, homeRunTick: dt => homeRunTick(dt), tapUpgrade: it => tapUpgrade(it), upgradeAll: (it, b) => upgradeAll(it, b), sameInRoom: it => sameInRoom(it), handleTap: (x, y) => handleTap(x, y), get lastPlaced() { return lastPlaced; },   /* 1.27.4 */ deckUsed: () => deckUsed(), deckFull: () => deckFull(), deckAdd: id => deckAdd(id), isGift: id => isGift(id), heartLevelCheck: s => heartLevelCheck(s), heartUpBlocked: () => heartUpBlocked(), reserveLow: () => reserveLow(), updateAction: () => updateAction(), copyOk: v => copyOk(v),   /* 1.27.5 */ get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  const yatd = { longDoc: () => longDoc(), logLong: () => logLong(), get LONG_DOCS() { return LONG_DOCS; }, homeRunTick: dt => homeRunTick(dt), tapUpgrade: it => tapUpgrade(it), upgradeAll: (it, b) => upgradeAll(it, b), sameInRoom: it => sameInRoom(it), handleTap: (x, y) => handleTap(x, y), get lastPlaced() { return lastPlaced; },   /* 1.27.4 */ deckUsed: () => deckUsed(), deckFull: () => deckFull(), deckAdd: id => deckAdd(id), isGift: id => isGift(id), heartLevelCheck: s => heartLevelCheck(s), heartUpBlocked: () => heartUpBlocked(), reserveLow: () => reserveLow(), updateAction: () => updateAction(), copyOk: v => copyOk(v),   /* 1.27.5 */ tagChips: t => tagChips(t), get TRAPS() { return TRAPS; }, get MONSTERS() { return MONSTERS; },   /* 1.27.7 */ get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

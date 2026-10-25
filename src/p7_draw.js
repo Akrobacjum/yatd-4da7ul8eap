@@ -1435,10 +1435,10 @@
         ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.arc(cx - s * 0.08, cy - s * 0.03, s * 0.04, 0, Math.PI * 2); ctx.arc(cx + s * 0.08, cy - s * 0.03, s * 0.04, 0, Math.PI * 2); ctx.fill();
         if (it.anim > 0) { ctx.strokeStyle = '#d9dbe6'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.beginPath(); ctx.moveTo(cx + s * 0.2, cy + s * 0.05); ctx.lineTo(cx + s * 0.45, cy - s * 0.05); ctx.stroke(); }
         break;
-      case 'archer':
-        ctx.fillStyle = '#e8e4d8'; ctx.beginPath(); ctx.arc(cx - s * 0.04, cy - s * 0.1, s * 0.15, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#1a1424'; ctx.fillRect(cx - s * 0.12, cy - s * 0.13, s * 0.06, s * 0.06); ctx.fillRect(cx + s * 0.0, cy - s * 0.13, s * 0.06, s * 0.06);
-        ctx.strokeStyle = '#e8e4d8'; ctx.lineWidth = Math.max(1, s * 0.05); ctx.beginPath();
+      case 'archer':   // 1.27.6: a goblin head (green, ears), not a skull
+        ctx.fillStyle = '#7fae4a'; ctx.beginPath(); ctx.arc(cx - s * 0.04, cy - s * 0.1, s * 0.15, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(cx - s * 0.27, cy - s * 0.14, s * 0.1, s * 0.06); ctx.fillRect(cx + s * 0.09, cy - s * 0.14, s * 0.1, s * 0.06);
+        ctx.fillStyle = '#e8d24a'; ctx.fillRect(cx - s * 0.12, cy - s * 0.13, s * 0.06, s * 0.06); ctx.fillRect(cx + s * 0.0, cy - s * 0.13, s * 0.06, s * 0.06);
+        ctx.strokeStyle = '#5a4630'; ctx.lineWidth = Math.max(1, s * 0.05); ctx.beginPath();
         ctx.moveTo(cx - s * 0.04, cy + s * 0.05); ctx.lineTo(cx - s * 0.04, cy + s * 0.28); ctx.moveTo(cx - s * 0.16, cy + s * 0.13); ctx.lineTo(cx + s * 0.08, cy + s * 0.13); ctx.stroke();
         ctx.strokeStyle = '#a0703a'; ctx.lineWidth = Math.max(1, s * 0.045); ctx.beginPath(); ctx.arc(cx + s * 0.08, cy + s * 0.06, s * 0.22, -Math.PI / 2.4, Math.PI / 2.4); ctx.stroke();
         break;
@@ -3485,11 +3485,14 @@
       r(8, 10 + b, 5, 5, P.goblin[0]); r(8, 13 + b, 1, 2, P.goblin[1]); r(6, 10 + b, 2, 2, P.goblin[0]); r(13, 10 + b, 2, 2, P.goblin[0]); r(5, 9 + b, 1, 1, P.goblin[1]); r(15, 9 + b, 1, 1, P.goblin[1]);   // head and ears
       r(11, 12 + b, 1, 1, '#e8d24a');
       r(12, 16 + b, 2, 4, P.goblin[1]); r(14, 15 + b, 1, 4, P.steel[0]);
-    } else if (t === 'archer') {   // a skeleton with a bow
-      legs(P.bone[1], P.bone[1]);
-      r(8, 14 + b, 4, 7, P.bone[0]); r(8, 15 + b, 4, 1, P.dark); r(8, 17 + b, 4, 1, P.dark); r(9, 14 + b, 1, 7, P.bone[1]);   // ribs
-      r(8, 8 + b, 5, 5, P.bone[0]); r(9, 10 + b, 1, 1, P.dark); r(11, 10 + b, 1, 1, P.dark); r(9, 12 + b, 3, 1, P.bone[1]);
-      r(12, 15 + b, 2, 4, P.bone[1]);
+    } else if (t === 'archer') {   // 1.27.6 (author: the archer is a Greenskin, not a skeleton): a goblin archer in a hood with a quiver and a bow
+      r(5, 12 + b, 2, 8, '#6a4a2a'); r(5, 11 + b, 1, 1, '#d8d0b8'); r(6, 10 + b, 1, 2, '#d8d0b8');   // the quiver on his back, fletchings
+      legs(P.goblin[1], P.goblin[1]);
+      r(8, 15 + b, 5, 6, '#6a5232'); r(8, 15 + b, 1, 6, '#4a3a24'); r(8, 18 + b, 5, 1, '#3a2c1c'); r(11, 18 + b, 1, 1, P.gold[1]);   // a green-brown jerkin, a belt
+      r(8, 10 + b, 5, 5, P.goblin[0]); r(8, 13 + b, 1, 2, P.goblin[1]); r(5, 10 + b, 3, 2, P.goblin[0]); r(13, 10 + b, 3, 2, P.goblin[0]); r(4, 9 + b, 1, 1, P.goblin[1]); r(16, 9 + b, 1, 1, P.goblin[1]); r(5, 11 + b, 2, 1, P.goblin[1]); r(14, 11 + b, 2, 1, P.goblin[1]);   // head and big pointed ears
+      r(8, 9 + b, 5, 1, '#5a4630'); r(9, 8 + b, 3, 1, '#5a4630'); r(8, 9 + b, 1, 1, '#3e2f20');   // a small leather cap
+      r(9, 12 + b, 1, 1, '#e8d24a'); r(11, 12 + b, 1, 1, '#e8d24a'); r(10, 14 + b, 2, 1, P.goblin[1]);   // yellow eyes, a grin
+      r(12, 16 + b, 2, 3, P.goblin[1]);   // the arm drawing the string
       r(15, 9 + b, 1, 2, P.wood[0]); r(16, 11 + b, 1, 6, P.wood[0]); r(15, 17 + b, 1, 2, P.wood[0]); r(14, 10 + b, 1, 8, 'rgba(220,210,190,0.6)');   // the bow
     } else if (t === 'ogre') {
       legs(P.ogre[1], P.ogre[1]);

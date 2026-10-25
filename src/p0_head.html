@@ -330,10 +330,14 @@ label.askno { display: flex; gap: 6px; align-items: center; font-size: 13px; col
 #tip .tg { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 #tip p { margin: 0; font-size: 14px; line-height: 1.4; color: var(--ink); }
 #tip .tw { font-size: 12.5px; color: #ff9aa6; }
-#tip .tlb { display: flex; gap: 6px; }   /* 1.24 (B, P1-4): Rani / Straszy */
+#tip .tlb, .sheettags { display: flex; flex-wrap: wrap; gap: 4px 6px; }   /* 1.24 (B, P1-4): Rani / Straszy */
 #tip .tlb span { display: inline-flex; align-items: center; gap: 5px; font: 600 11.5px var(--font-body); letter-spacing: 0.03em; padding: 1px 7px 2px; border-radius: 2px; }
 #tip .tlb span::before { content: ""; width: 6px; height: 6px; transform: rotate(45deg); background: currentColor; }
 #tip .tlb .hurt { color: #ff9a9a; border: 1px solid #6e1c27; } #tip .tlb .scare { color: var(--violet-hi); border: 1px solid var(--violet-lo); }
+/* 1.27.6: place, reach and family tags (grey, the family in its colour; no diamond) */
+.tlb span.place, .tlb span.reach, .tlb span.fam { color: var(--muted); border: 1px solid var(--line2); } .tlb span.fam { color: var(--fam, var(--muted)); border-color: color-mix(in srgb, var(--fam, #888) 45%, transparent); }
+#tip .tlb span.place::before, #tip .tlb span.reach::before, #tip .tlb span.fam::before { display: none; }
+.sheettags { margin: -2px 0 2px; } .sheettags span { display: inline-flex; align-items: center; gap: 5px; font: 600 11.5px var(--font-body); padding: 1px 7px 2px; border-radius: 2px; } .sheettags .hurt { color: #ff9a9a; border: 1px solid #6e1c27; } .sheettags .scare { color: var(--violet-hi); border: 1px solid var(--violet-lo); }
 .note.fearline { text-align: center; color: var(--muted); } .note.fearline b { color: var(--ink); font-family: var(--font-num); font-weight: 400; font-size: 14px; } .note.fearline .sc, .note.fearline .sc b { color: var(--violet-hi); }   /* 1.24 (B, P1-4) */
 @keyframes tipin { from { opacity: 0; transform: translate(-50%, 6px) scale(0.98); } to { opacity: 1; transform: translate(-50%, 0); } }
 
@@ -891,7 +895,7 @@ html.wide #coach:not(.top) { right: auto; width: min(460px, calc(100% - 16px)); 
   background-color: rgba(16, 17, 21, 0.96); border: 1px solid var(--line2); border-left: 3px solid #6b7079; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7), inset 0 1px 0 var(--edge);
   font-size: 13px; line-height: 1.32; color: var(--ink); animation: fadein 0.12s ease-out; }
 #hov b { font: 700 17px/1.05 var(--font-display); } #hov .hs { color: var(--muted); font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; } #hov .hk { color: var(--muted); font-size: 12px; }
-#hov .tlb { display: flex; gap: 5px; } #hov .tlb span { font: 600 11px var(--font-body); padding: 0 6px 1px; border-radius: 2px; } #hov .tlb .hurt { color: #ff9a9a; border: 1px solid #6e1c27; } #hov .tlb .scare { color: var(--violet-hi); border: 1px solid var(--violet-lo); }
+#hov .tlb { display: flex; flex-wrap: wrap; gap: 3px 5px; } #hov .tlb span { font: 600 11px var(--font-body); padding: 0 6px 1px; border-radius: 2px; } #hov .tlb .hurt { color: #ff9a9a; border: 1px solid #6e1c27; } #hov .tlb .scare { color: var(--violet-hi); border: 1px solid var(--violet-lo); }
 html.mouse .tray > .item[data-k]::after { content: attr(data-k); position: absolute; left: 4px; top: 2px; font: 400 11px/1 var(--font-num); color: var(--dim); }
 html.mouse.hovpt #cv { cursor: pointer; }
 html.dragging #cv, html.mouse.dragging.hovpt #cv { cursor: grabbing; }

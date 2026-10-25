@@ -145,12 +145,12 @@
     const box = $('#tip'), I = ITEMS[t]; box.innerHTML = '';
     const h = el('div', 'th'); h.appendChild(el('b', null, I.name)); if (!MODES[t]) h.appendChild(el('span', null, costOf(t) + L(' Esencji', ' Essence'))); box.appendChild(h);
     if (I.tag) box.appendChild(el('div', 'tg', I.tag));
-    { const lb = effWords(t); if (lb.length) { const r = el('div', 'tlb'); lb.forEach(w => r.appendChild(el('span', w === L('Rani', 'Hurts') ? 'hurt' : 'scare', w))); box.appendChild(r); } }   // 1.24 (B, P1-4)
+    if (tagChips(t).length) box.appendChild(tagRow(t));   // 1.24 (B, P1-4) Rani / Straszy; 1.27.6: place, reach, family
     box.appendChild(el('p', null, I.desc));
     // 1.27 (UI/UX, author: details in small print): numbers and exceptions (I.more), the family, the loot price step
     { const fine = [];
       if (I.more) fine.push(I.more);
-      if (FAMILY_OF[t] && FAMILIES[FAMILY_OF[t]]) { const f = FAMILY_OF[t], lv = (run && run.famLv && run.famLv[f]) || 0; fine.push(L('Rodzina: ', 'Family: ') + FAMILIES[f].glyph + ' ' + FAMILIES[f].name + (lv ? L(', poziom ' + lv + ' (+' + 8 * lv + '% mocy)', ', level ' + lv + ' (+' + 8 * lv + '% power)') : '') + '.'); }   // 1.26
+      if (FAMILY_OF[t] && FAMILIES[FAMILY_OF[t]]) { const f = FAMILY_OF[t], lv = (run && run.famLv && run.famLv[f]) || 0; if (lv) fine.push(L('Rodzina: ', 'Family: ') + FAMILIES[f].glyph + ' ' + FAMILIES[f].name + (lv ? L(', poziom ' + lv + ' (+' + 8 * lv + '% mocy)', ', level ' + lv + ' (+' + 8 * lv + '% power)') : '') + '.'); }   // 1.26 (1.27.6: only with a level; the family is a tag now)
       if (LOOT_KIND[t]) { const n = lootCount(t); fine.push(L('Każdy kolejny taki łup jest o 15% droższy' + (n ? ' (w lochu już: ' + n + ')' : '') + '.', 'Each extra one costs 15% more' + (n ? ' (placed: ' + n + ')' : '') + '.')); }
       if (fine.length) box.appendChild(el('div', 'fine', fine.join(' '))); }
     if (run && KINDS[t] && run.unlocked.has(t) && !isOpenT(t)) box.appendChild(el('div', 'tw', L('Zablokowana. Najpierw odblokuj kartą ze sklepu: ' + KIND_INFO[KINDS[t]].items.map(x => ITEMS[x].name).join(' albo ') + '.', 'Locked. First unlock ' + KIND_INFO[KINDS[t]].items.map(x => ITEMS[x].name).join(' or ') + ' with a shop card.')));
@@ -166,6 +166,20 @@
     if (how !== 'hover') buzz(12);
   }
   const effWords = t => (HURTS(t) ? [L('Rani', 'Hurts')] : []).concat(SCARES(t) ? [L('Straszy', 'Scares')] : []);   // 1.24 (B, P1-4)
+  // 1.27.6 (author: more tags in the descriptions): where it goes, how far it reaches, its family, beside Rani / Straszy
+  const TAG_REACH = { far: ['archer', 'arrows', 'eyes', 'portrait', 'mirror', 'bolt'],
+    area: ['web', 'bones', 'miasma', 'oilslick', 'flood', 'musicbox', 'bell', 'powder', 'shaman', 'lich', 'siren', 'coffin', 'fire', 'pendulum', 'creak'],
+    tile: ['spikes', 'trapdoor', 'cage', 'snare', 'bait', 'gate', 'tar', 'falsedoor'] };
+  const reachOf = t => TAG_REACH.far.includes(t) ? 'far' : TAG_REACH.area.includes(t) ? 'area' : TAG_REACH.tile.includes(t) ? 'tile' : MONSTERS[t] || t === 'mimic' ? 'near' : null;
+  function tagChips(t) {   // [[text, class]]: Rani / Straszy, then the place, the reach, the family
+    const I = ITEMS[t], out = effWords(t).map(w => [w, w === L('Rani', 'Hurts') ? 'hurt' : 'scare']); if (!I) return out;
+    const place = MONSTERS[t] ? L('Potwór', 'Monster') : BUILDINGS[t] || t === 'crate' ? L('Obiekt', 'Object') : LOOT_KIND[t] || t === 'bait' ? L('Łup', 'Loot') : ({ floor: L('Podłoga', 'Floor'), wall: L('Ściana', 'Wall'), door: L('Drzwi', 'Door'), object: L('Na meblu', 'On furniture') })[I.slot];
+    if (place) out.push([place, 'place']);
+    const r = reachOf(t); if (r) out.push([({ near: L('Zwarcie', 'Melee'), far: L('Dystans', 'Ranged'), area: L('Obszar', 'Area'), tile: L('Jedno pole', 'One tile') })[r], 'reach']);
+    const f = FAMILY_OF[t] && FAMILIES[FAMILY_OF[t]]; if (f) { out.push([f.glyph + ' ' + f.name, 'fam']); out[out.length - 1].push(f.color); }
+    return out;
+  }
+  const tagRow = t => { const r = el('div', 'tlb'); tagChips(t).forEach(([w, c, col]) => { const s = el('span', c, w); if (col) s.style.setProperty('--fam', col); r.appendChild(s); }); return r; };
   function hideTip() {
     clearTimeout(tipTimer); tipTimer = 0;
     if (tipFor) { const b = $('#item-' + tipFor); if (b) b.classList.remove('holding'); tipFor = null; }
@@ -622,7 +636,7 @@
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.27.6 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.27.7 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -679,9 +693,11 @@
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.6', "What's new in Prototype 1.27.6")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.7', "What's new in Prototype 1.27.7")));
     const ul0 = el('ul', 'conseq');
-    [L('1.27.6: opis karty w sklepie już nie znika. Gdy przy pięciu ofertach i pełnej talii brakuje miejsca, karty układają się w jeden rząd przewijany w bok.', '1.27.6: the card text in the shop no longer vanishes. When five offers and a full deck leave no room, the cards line up in one row you swipe sideways.'),
+    [L('1.27.7: Łucznik to teraz goblin z łukiem i kołczanem (należy do Zielonoskórych), a nie szkielet.', '1.27.7: the Archer is now a goblin with a bow and a quiver (he is a Greenskin), not a skeleton.'),
+     L('1.27.7: opisy elementów mają więcej znaczników: gdzie stoi (Podłoga, Ściana, Drzwi, Na meblu, Potwór, Łup, Obiekt), jak daleko sięga (Zwarcie, Dystans, Obszar, Jedno pole) i rodzinę.', '1.27.7: element descriptions have more tags: where it goes (Floor, Wall, Door, On furniture, Monster, Loot, Object), its reach (Melee, Ranged, Area, One tile) and its family.'),
+     L('1.27.6: opis karty w sklepie już nie znika. Gdy przy pięciu ofertach i pełnej talii brakuje miejsca, karty układają się w jeden rząd przewijany w bok.', '1.27.6: the card text in the shop no longer vanishes. When five offers and a full deck leave no room, the cards line up in one row you swipe sideways.'),
      L('1.27.5: serce rośnie najwyżej o 1 poziom na falę. Nadmiar Nasycenia czeka w pasku i da poziom na początku następnej budowy.', '1.27.5: the heart grows at most 1 level per wave. Extra Satiety waits in the bar and gives a level when the next build starts.'),
      L('1.27.5: karty z Daru serca nie zajmują miejsc w talii (mają swój rząd Serce). Poziomy serca nie dają już miejsc w talii.', "1.27.5: Heart's Gift cards no longer take deck slots (they have their own Heart row). Heart levels no longer add deck slots."),
      L('1.27.5: Serce lochu, Rezonans i Głodomór są zwykłymi legendarnymi kartami w sklepie (każda raz na run). Żarłoczne serce trafia się w Darze najwyżej raz na run.', "1.27.5: Heart of the Dungeon, Resonance and Glutton are ordinary legendary shop cards (one of each per run). Ravenous Heart shows up in the Heart's Gift at most once a run."),
@@ -2013,6 +2029,7 @@
     const T = ITEMS[it.type], lvl = it.lvl || 1, up = !!ACTIVE[it.type], tr = TRAITS[it.type], loot = isLoot(it.type);
     card.appendChild(el('div', 'sub', (BUILDINGS[it.type] ? L('Obiekt', 'Object') : MONSTERS[it.type] ? L('Potwór', 'Monster') : TRAPS[it.type] ? L('Pułapka', 'Trap') : loot ? (it.dropped ? L('Łup po bohaterze', 'Dropped by a hero') : L('Łup', 'Loot')) : 'Element') + (up ? L(' · poziom ' + lvl + ' z 3', ' · level ' + lvl + ' of 3') : '')));
     card.appendChild(el('h2', null, T.name + (lvl > 1 ? ' ' + 'I'.repeat(lvl) : '')));
+    if (tagChips(it.type).length) { const tr0 = tagRow(it.type); tr0.classList.add('sheettags'); card.appendChild(tr0); }   // 1.27.6
     if (up) {   // what it did last wave: the quickest way to see what deserves an upgrade
       const s = (it.lf === undefined ? L('Nowy: jeszcze nie walczył.', 'New: has not fought yet.') : it.lf === 0 ? L('Ostatnia fala: ani razu nie zadziałał.', 'Last wave: never fired.') :
         L('Ostatnia fala: zadziałał ' + it.lf + '×, trafienia: ' + it.lh + ', Esencja: ' + it.lp + (it.lk ? ', zabici: ' + it.lk : '') + '.', 'Last wave: fired ' + it.lf + '×, ' + it.lh + ' hits, ' + it.lp + ' Essence' + (it.lk ? ', kills: ' + it.lk : '') + '.')) + healLine(it);   // 1.24 (C, addendum 2)
@@ -2964,7 +2981,7 @@
       const it = w.it, I = ITEMS[it.type], lb = effWords(it.type);
       box.appendChild(el('b', null, I.name + ((it.lvl || 1) > 1 ? L(' · poz. ', ' · lvl ') + it.lvl : '')));
       if (I.tag) box.appendChild(el('div', 'hs', I.tag));
-      if (lb.length) { const r = el('div', 'tlb'); lb.forEach(x => r.appendChild(el('span', x === L('Rani', 'Hurts') ? 'hurt' : 'scare', x))); box.appendChild(r); }
+      if (lb.length || tagChips(it.type).length) box.appendChild(tagRow(it.type));   // 1.27.6: with place, reach, family
       const d = I.desc; box.appendChild(el('div', null, d.charAt(0).toUpperCase() + d.slice(1)));
       if (fl.phase === 'build') box.appendChild(el('div', 'hk', L('Kliknij: przenieś · dwa razy: ulepsz · prawy: zdejmij', 'Click: move · double: upgrade · right: remove')));
     } else if (w.o) {
@@ -3397,7 +3414,7 @@
   kick();   // 1.24 (C): the paced loop (p6 FP)
 
   // Hook for automated checks; no effect on normal play.
-  const yatd = { longDoc: () => longDoc(), logLong: () => logLong(), get LONG_DOCS() { return LONG_DOCS; }, homeRunTick: dt => homeRunTick(dt), tapUpgrade: it => tapUpgrade(it), upgradeAll: (it, b) => upgradeAll(it, b), sameInRoom: it => sameInRoom(it), handleTap: (x, y) => handleTap(x, y), get lastPlaced() { return lastPlaced; },   /* 1.27.4 */ deckUsed: () => deckUsed(), deckFull: () => deckFull(), deckAdd: id => deckAdd(id), isGift: id => isGift(id), heartLevelCheck: s => heartLevelCheck(s), heartUpBlocked: () => heartUpBlocked(), reserveLow: () => reserveLow(), updateAction: () => updateAction(), copyOk: v => copyOk(v),   /* 1.27.5 */ get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  const yatd = { longDoc: () => longDoc(), logLong: () => logLong(), get LONG_DOCS() { return LONG_DOCS; }, homeRunTick: dt => homeRunTick(dt), tapUpgrade: it => tapUpgrade(it), upgradeAll: (it, b) => upgradeAll(it, b), sameInRoom: it => sameInRoom(it), handleTap: (x, y) => handleTap(x, y), get lastPlaced() { return lastPlaced; },   /* 1.27.4 */ deckUsed: () => deckUsed(), deckFull: () => deckFull(), deckAdd: id => deckAdd(id), isGift: id => isGift(id), heartLevelCheck: s => heartLevelCheck(s), heartUpBlocked: () => heartUpBlocked(), reserveLow: () => reserveLow(), updateAction: () => updateAction(), copyOk: v => copyOk(v),   /* 1.27.5 */ tagChips: t => tagChips(t), get TRAPS() { return TRAPS; }, get MONSTERS() { return MONSTERS; },   /* 1.27.7 */ get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
