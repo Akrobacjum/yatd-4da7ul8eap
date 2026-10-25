@@ -39,6 +39,7 @@
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'tab'; b.id = 'tab-' + tb.id; b.setAttribute('role', 'tab'); b.textContent = tb.label;
         b.addEventListener('click', () => {
+          if (b.classList.contains('off')) { nope(b, ''); note(tb.label + ': ' + subWhen(tb) + '.'); return; }   // 1.27.1: a tab of a later stage stays in its place, locked
           if (trayTab) trayScroll[trayTab] = tray.scrollLeft; tab = tb.id; try { localStorage.setItem('yatd-tab', tab); } catch (e) {} updateTray();
           if (tb.id === 'dungeon' && run) { const fl2 = Object.keys(FAMILIES).filter(f => run.famLv && run.famLv[f]); setHint(L('Loch: kopanie, przejścia, komnaty i klimat pokoi. Rodziny: ', 'Dungeon: digging, passages, lairs and room moods. Families: ') + (fl2.length ? fl2.map(f => FAMILIES[f].name + ' ' + run.famLv[f]).join(', ') : L('żadna nie ma jeszcze poziomu', 'none has a level yet')) + '.'); }   // 1.26
           if (tb.id === 'deck' && run) setHint(L('Talia: ' + run.deck.length + ' z ' + run.deckSize + ' kart. Stuknij kartę, żeby ją przeczytać albo sprzedać (sprzedajesz tylko między falami).', 'Deck: ' + run.deck.length + ' of ' + run.deckSize + ' cards. Tap a card to read or sell it (selling only between waves).'));
@@ -66,7 +67,7 @@
         ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, e => { if (ev === 'pointerup' && e.button === 2) return; if (tipTimer || tipFor) hideTip(); }));
         // 1.25: with a mouse the tip comes when the pointer rests on the tile, and a right click shows it at once
         b.addEventListener('pointerenter', e => { if (e.pointerType !== 'mouse' || e.buttons) return; clearTimeout(tipTimer); tipAt = [e.clientX, e.clientY]; tipTimer = setTimeout(() => { tipTimer = 0; if (b.matches(':hover')) showTip(t, b, 'hover'); }, 420); });
-        b.addEventListener('contextmenu', e => { e.preventDefault(); clearTimeout(tipTimer); tipTimer = 0; showTip(t, b, 'hover'); });
+        b.addEventListener('contextmenu', e => { e.preventDefault(); if (tipFor === t || (e.pointerType && e.pointerType !== 'mouse')) return; clearTimeout(tipTimer); tipTimer = 0; showTip(t, b, 'hover'); });   // 1.27.2: a phone's long press also fires contextmenu: the tip played its animation twice
         b.addEventListener('click', () => {
           if (tipEat) { tipEat = false; return; }   // the end of a hold is not a tap
           if (!fl || !run || (fl.phase !== 'build' && fl.phase !== 'raid')) return;
@@ -95,7 +96,8 @@
     const tabOn = tb => !tb.items.length || tb.items.some(t => onbOk(t));
     if (!tabOn(TABS.find(tb => tb.id === tab) || TABS[0])) tab = 'traps';
     const cur = TABS.find(tb => tb.id === tab) || TABS[0];
-    TABS.forEach(tb => { const tbb = $('#tab-' + tb.id); tbb.hidden = !tabOn(tb); tbb.setAttribute('aria-selected', String(tb === cur)); });
+    // 1.27.1 (author: in the tutorial the Obiekty tab vanished): a tab with nothing of this stage yet stays, dimmed with a lock, like the sub-tabs
+    TABS.forEach(tb => { const tbb = $('#tab-' + tb.id), on = tabOn(tb); tbb.hidden = false; tbb.classList.toggle('off', !on); tbb.setAttribute('aria-disabled', String(!on)); tbb.title = on ? '' : tb.label + ': ' + subWhen(tb); tbb.setAttribute('aria-selected', String(tb === cur)); });
     const cs = curSub(cur), sb = $('#subs'), view = cur.id + (cs ? '/' + cs.id : '');
     sb.classList.toggle('none', !cs);
     if (cs && sb.dataset.tab !== cur.id) {
@@ -139,6 +141,7 @@
   // Prototype 1.0: what a tile does shows while you hold it (the description no longer sits under the map for good)
   let tipTimer = 0, tipFor = null, tipEat = false, tipAt = [0, 0];
   function showTip(t, b, how) {
+    if (tipFor === t && !$('#tip').hidden) return;   // 1.27.2: already up, do not play it again
     const box = $('#tip'), I = ITEMS[t]; box.innerHTML = '';
     const h = el('div', 'th'); h.appendChild(el('b', null, I.name)); if (!MODES[t]) h.appendChild(el('span', null, costOf(t) + L(' Esencji', ' Essence'))); box.appendChild(h);
     if (I.tag) box.appendChild(el('div', 'tg', I.tag));
@@ -607,7 +610,7 @@
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.27.1 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.27.2 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -663,9 +666,10 @@
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.1', "What's new in Prototype 1.27.1")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.2', "What's new in Prototype 1.27.2")));
     const ul0 = el('ul', 'conseq');
-    [L('1.27.1: kafelki w pasku budowy mają tło w kolorze rodziny (Mechanizmy niebieskie, Ogień pomarańczowy, Nawiedzenie fioletowe...), więc łatwiej je rozróżnić.', '1.27.1: tiles in the build bar have a backdrop in their family colour (Mechanisms blue, Fire orange, Haunting violet...), so they are easier to tell apart.'),
+    [L('1.27.2: poprawki. Zakładka Obiekty nie znika w samouczku (do fali 5 jest wyszarzona z kłódką), potwory po odrodzeniu nie są już białe, a opis kafelka po przytrzymaniu palca pojawia się raz.', '1.27.2: fixes. The Objects tab no longer vanishes in the tutorial (until wave 5 it is dimmed with a lock), revived monsters are no longer white, and a tile description shows once when you hold a finger.'),
+     L('1.27.1: kafelki w pasku budowy mają tło w kolorze rodziny (Mechanizmy niebieskie, Ogień pomarańczowy, Nawiedzenie fioletowe...), więc łatwiej je rozróżnić.', '1.27.1: tiles in the build bar have a backdrop in their family colour (Mechanisms blue, Fire orange, Haunting violet...), so they are easier to tell apart.'),
      L('1.27.1: w zakładce Talia kafelek Rodziny pokazuje poziom każdej rodziny i to, co dają Runy rodów.', '1.27.1: in the Deck tab the Families tile shows each family level and what the Family Runes give.'),
      L('1.27.1: Danina napełnia złoty pasek od razu, jak głód serca, bez czekania na koniec combo.', '1.27.1: the Tithe fills the gold bar right away, like the hunger bar, without waiting for the combo to end.'),
      L('1.27.1: po kupnie Runy rodu jej miejsce w sklepie zostaje puste i nic się nie przesuwa. Równanie Esencji wysuwa się na początku fali i chowa po jej końcu, a znaczek omenu wygląda jak reszta interfejsu.', '1.27.1: after you buy a Family Rune its shop slot stays empty and nothing moves. The Essence equation slides in when a wave starts and away when it ends, and the omen badge matches the rest of the UI.'),

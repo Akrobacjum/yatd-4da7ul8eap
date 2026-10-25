@@ -4,6 +4,12 @@ Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
+## Zmiany w 1.27.2
+
+- Zakładka bez niczego z danego etapu nauki (w pierwszym runie Obiekty do fali 5) nie znika już z paska: zostaje na swoim miejscu, przygaszona (`.tab.off`, kłódka), a stuknięcie mówi, od której fali (`subWhen`). Wcześniej znikała i pojawiała się później, przesuwając zakładki.
+- Dymek kafelka: przytrzymanie palca na telefonie wywołuje też `contextmenu`; dymek pokazywał się wtedy drugi raz z animacją. `showTip` nie odtwarza się ponownie dla tego samego kafelka, a `contextmenu` z dotyku jest pomijane.
+- Potwór powalony ciosem zostawał z białym błyskiem trafienia (`m.flash` nie malał, bo `monstersTick` kończył się dla powalonych przed jego zmniejszeniem) i po odrodzeniu był biały; błysk maleje też u powalonych, a budowa go zeruje.
+
 ## Zmiany w 1.27.1
 
 - Równanie Esencji (`#h-eq`) nie znika skokiem: klasa `eq-off` zwija je (max-height, przezroczystość, przesunięcie w górę) po końcu fali i rozwija na jej początku (ok. 0,3 s; bez animacji przy `prefers-reduced-motion`). Zwinięte nie łapie stuknięć.

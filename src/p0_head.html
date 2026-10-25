@@ -358,6 +358,8 @@ label.askno { display: flex; gap: 6px; align-items: center; font-size: 13px; col
   background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; overflow: hidden; transition: color 0.15s;
 }
 .tab::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: -1px; height: 2px; background: var(--ink); transform: scaleX(0); transition: transform 0.2s ease-out; box-shadow: 0 0 8px rgba(230, 225, 214, 0.5); }
+.tab.off { opacity: 0.4; } .tab.nope { animation: nope 0.32s; }   /* 1.27.1: a later stage's tab, locked */
+.tab.off::before { content: ""; display: inline-block; width: 7px; height: 8px; margin-right: 3px; vertical-align: -1px; border: 1.5px solid currentColor; border-top-width: 3px; border-radius: 2px 2px 1px 1px; box-sizing: border-box; }
 .tab[aria-selected="true"] { color: var(--ink); background: linear-gradient(0deg, rgba(230, 225, 214, 0.07), transparent 80%); }
 .tab[aria-selected="true"]::after { transform: scaleX(1); }
 #tab-deck { color: #d4b878; }

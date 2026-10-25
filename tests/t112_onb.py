@@ -13,7 +13,7 @@ def ok(c, m):
 
 STATE = r'''() => { const G = __yatd, vis = id => { const e = document.querySelector(id); return !!e && !e.hidden && e.offsetParent !== null; };
   return { stage: G.run.stage, guided: !!G.run.guided, tutorial: G.run.tutorial, tut: G.run.tut, onb: G.onbStage(), modal: G.modalKind,
-    tabs: G.TABS.map(t => t.id).filter(id => !document.querySelector('#tab-' + id).hidden),
+    tabs: G.TABS.map(t => t.id).filter(id => { const e = document.querySelector('#tab-' + id); return !e.hidden && !e.classList.contains('off'); }),
     unl: [...G.run.unlocked], coach: vis('#coach'), coachTxt: (document.querySelector('#coach') || {}).textContent || '',
     card: (document.querySelector('#card') || {}).textContent || '' }; }'''
 

@@ -84,7 +84,7 @@ WALLS_INK = r"""(t) => { const { G } = T, p = T.tileXY(t), d = T.ink(p[0] - 30, 
 
 # ---------- 3. the tutorial in one run: the stage by wave ----------
 ONB_STATE = r"""() => { const G = __yatd, R = G.run; return { wave: R.wave, stage: R.stage, onbW: !!R.onbW, guided: !!R.guided, tut: R.tut, onb: G.onbStage(), portrait: R.unlocked.has('portrait'), crate: R.unlocked.has('crate'), fog: R.unlocked.has('r_fog'), web: R.unlocked.has('web'), mirror: R.unlocked.has('mirror'),
-  tabs: G.TABS.map(t => t.id).filter(id => !document.querySelector('#tab-' + id).hidden), modal: G.modalKind }; }"""
+  tabs: G.TABS.map(t => t.id).filter(id => { const e = document.querySelector('#tab-' + id); return !e.hidden && !e.classList.contains('off'); }), modal: G.modalKind }; }"""
 ONB_WAVE = r"""() => { const { G } = T, seen = []; const R = G.run; R.crystals = R.maxCrystals = 9;
   G.fl.essence = 99; G.startWave(); const f = G.fl; for (let i = 0; i < 60 && f.phase === 'raid'; i++) { const c = f.check; if (c && !c.result) { G.skipCheck(); G.clearCheck(); continue; } G.step(0.05); }
   if (f.phase === 'raid') G.finishWave();

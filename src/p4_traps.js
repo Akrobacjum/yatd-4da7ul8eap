@@ -819,8 +819,8 @@
     fl.items.forEach(m => {
       if (!MONSTERS[m.type]) return;
       if (m.healAcc > 0 && fl.time - m.healT0 >= 1) healFlush(m);   // 1.24 (C, addendum 2): once a second
+      if (m.flash > 0) m.flash -= dt;   // 1.27.1: before the knocked-down return (the killing blow's flash stayed and the monster stood up white)
       if (m.hp <= 0) { if (m.type === 'skeleton' && m.reAt) newMonsterTick(m, roomOf(m.x, m.y), dt); return; }   // 1.26: Składanie runs while it lies there
-      if (m.flash > 0) m.flash -= dt;
       const room = roomOf(m.x, m.y);
       if (m.type === 'shaman') fl.items.forEach(o => {
         if (MONSTERS[o.type] && o.hp > 0 && o.hp < o.max && Math.max(Math.abs(o.x - m.x), Math.abs(o.y - m.y)) <= 2 && bestHealer(o) === m) shamanHeal(m, o, 8 * dt * (t3B(m) ? 1 : 1));   // 1.24 (C, addendum 2); 1.26: only the strongest shaman in reach

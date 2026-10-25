@@ -579,7 +579,7 @@
       if (it.memRes && !it.worn && (it.disabled || it.broken)) it.memRes = null;   // 1.09: put out of use by the heroes: it asks again
       it.worn = false; it.cd = 0; it.disabled = false; it.bent = false; it.anim = 0; it.sleep = false; it.detected = false; it.rumored = false; it.uses = 0; it.seenWave = 0; it.preview = 0; it.noGreed = false; it.cursedKnown = false;
       it.jamUntil = 0; it.skipUntil = 0; it.lastFire = null; it.broken = false; it.shown = false; it.ambushUntil = 0; it.quick = false; it.alarmed = false;   // 1.26 (14.5): the decoy alarms once a wave   // wave clocks restart at 0: stale timers from last wave would jam or mute a trap; smashed buildings stand again; 1.18: Zasadzka w norze hides again, Szybki montaż's first shot is spent
-      if (MONSTERS[it.type]) { it.hp = it.max; it.gx = it.x + 0.5; it.gy = it.y + 0.5; it.foeT = 0; it.down = false; it.downR = null; it.healGot = 0; it.raised = 0; it.reN = 0; it.reAt = 0; it.rangerHit = false; it.rewound = false; }   // 1.26: per-wave counters   // 1.26 Odrodzenie: knocked down, it stands again
+      if (MONSTERS[it.type]) { it.hp = it.max; it.gx = it.x + 0.5; it.gy = it.y + 0.5; it.foeT = 0; it.down = false; it.downR = null; it.flash = 0; it.healGot = 0; it.raised = 0; it.reN = 0; it.reAt = 0; it.rangerHit = false; it.rewound = false; }   // 1.26: per-wave counters   // 1.26 Odrodzenie: knocked down, it stands again
     });
     fl.bRooms = computeBRooms();
   }

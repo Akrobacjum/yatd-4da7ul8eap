@@ -79,3 +79,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.26](1.26.html) | 25.10 | Serce zabiera: serce bierze brak z sakiewki, Danina i poziomy serca, statusy i reakcje, 20 nowych elementów, rodziny, omeny, nowe klasy |
 | [Prototype 1.26.1](1.26.1.html) | 25.10 | Ukryte przejście, brakujące zachowania 1.26, Dar serca tylko rzadkie i legendarne karty |
 | [Prototype 1.27](1.27.html) | 25.10 | angielski domyślnie z polskim w Ustawieniach, przegląd UI/UX, nowy polski tekst, karta czempiona |
+| [Prototype 1.27.1](1.27.1.html) | 25.10 | poprawki UI (równanie z animacją, kafelki w kolorach rodzin, kafelek Rodziny), Danina na bieżąco |
