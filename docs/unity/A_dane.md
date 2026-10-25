@@ -1,6 +1,6 @@
 # Załącznik A: dane wyeksportowane z prototypu
 
-Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (**od 1.26 wszystkie pliki tabel przeeksportowane na Prototype 1.26**, 95 tabel; tabele zmienione i nowe w 1.18-1.24 opisuje A.9, w 1.26 A.10; kilka stałych z `p1_config.js` nie trafia do eksportu, lista w A.0; historia: do 1.25.1 eksport był z 1.17.1, a od 1.13.1 zmieniły się `TABS` w 1.14, w 1.15 `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`, w 1.16 `GZ` i `SAY`, w 1.17 tabele kwestii `SAY`, `SOLO`, `SOLO_MUTE`, `CHAT_REPLY`, `CONVO` i `CONVO_P`, w 1.17.1 `SAY`, `SOLO`, `SOLO_MUTE`, `CONVO`, `CONVO_P` i nowa `LINE_NEEDS`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
+Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (**od 1.26 wszystkie pliki tabel przeeksportowane na Prototype 1.26**, 95 tabel; tabele zmienione i nowe w 1.18-1.24 opisuje A.9, w 1.26 A.10, w 1.26.1 A.11 (eksportu na 1.26.1 nie robiono, więc zmiany 1.26.1 są tylko w A.11); kilka stałych z `p1_config.js` nie trafia do eksportu, lista w A.0; historia: do 1.25.1 eksport był z 1.17.1, a od 1.13.1 zmieniły się `TABS` w 1.14, w 1.15 `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`, w 1.16 `GZ` i `SAY`, w 1.17 tabele kwestii `SAY`, `SOLO`, `SOLO_MUTE`, `CHAT_REPLY`, `CONVO` i `CONVO_P`, w 1.17.1 `SAY`, `SOLO`, `SOLO_MUTE`, `CONVO`, `CONVO_P` i nowa `LINE_NEEDS`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
 
 - `yatd_content_1.26.json`: wszystkie tabele w jednym pliku: `{ version: 'Prototype 1.26', source, tables: { ITEMS: ..., UPGRADES: ..., ... } }` (95 tabel; 1.17.1: 83, doszły `ACTS`, `BLEED`, `POISONT`, `FAMILIES`, `FAMILY_OF`, `OMENS`, `OMEN_WAVES`, `REACTIONS`, `REACT_K`, `RUNE_MAX`, `STATUS`, `TRAITS_B`), złożony z plików tabel poniżej (zastąpił `yatd_content_1.17.1.json`). Ten plik warto wczytać w Unity.
 - `<NAZWA>.json`: ta sama tabela osobno (wygodne do czytania i porównań).
@@ -58,7 +58,7 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 
 | Plik | Pola i znaczenie |
 |---|---|
-| `UPGRADES` (202 w eksporcie 1.26; 140 w 1.24, 113 w 1.17.1; załącznik B) | `id`; `kind`: `unlock` (odblokowanie elementu, pole `unlock`), `instant` (działa raz przy kupnie), `card` (leży w talii i działa przez `apply` na `mods`); `rar`: `c` zwykła, `r` rzadka, `l` legendarna; `name`, `text`, `tag`; `unique` (tylko jedna kopia); `req` (wymagane odblokowanie: id albo funkcja); `grows` (karta z licznikiem rosnącym w runie, np. Głodne kolce); `apply` (kod efektu). Pełna tabela: załącznik B |
+| `UPGRADES` (202 w eksporcie 1.26, 210 w kodzie 1.26.1; 140 w 1.24, 113 w 1.17.1; załącznik B) | `id`; `kind`: `unlock` (odblokowanie elementu, pole `unlock`), `instant` (działa raz przy kupnie), `card` (leży w talii i działa przez `apply` na `mods`); `rar`: `c` zwykła, `r` rzadka, `l` legendarna; `name`, `text`, `tag`; `unique` (tylko jedna kopia); `req` (wymagane odblokowanie: id albo funkcja); `grows` (karta z licznikiem rosnącym w runie, np. Głodne kolce); `apply` (kod efektu). Pełna tabela: załącznik B |
 | `RAR_NAME`, `RARITY_NAME` | nazwy rzadkości kart i łupu |
 | `DECK_SIZE` | 7 miejsc w talii |
 | `RANKS` | progi rang lochu z sumy Esencji w runie: Nora 0, Piwnica 150, Loch 400, Labirynt 1000, Twierdza grozy 2500, Legenda 6000 |
@@ -90,7 +90,7 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 | `CONVO_P` | 80 kluczy | 80 kluczy (nowe zestawy 1.19-1.23 bez wpisu: szansa domyślna 0,5) | 80 kluczy | 78 kluczy | 67 kluczy |
 | `LINE_NEEDS` | 57 tagów, 900 wpisów (899 różnych kwestii) | 57 tagów, 900 wpisów (899 różnych kwestii) | 57 tagów, 803 wpisy (802 różne kwestie) | - | - |
 
-Przyrost `SAY` po wersjach (klucze, kwestie): 1.26 +19, +126 (klucze 1.26 i podklucze: sekcja 06, 6.16.10; nowe kwestie nie mają wpisów w `LINE_NEEDS`); 1.18 +3, +14 (`bodyFound`, `lullNap`, `lullDream`); 1.19 +19, +185 (Rozłam); 1.20 +24, +164 (ekwipunek); 1.21 +25, +250 (więzi); 1.22 +19, +185 (finał); 1.23 +14, +136 (Nemezis). Listy kluczy: sekcja 06 (6.3.14, 6.10.4, 6.11.6, 6.12.9, 6.13.7, 6.14.5).
+Przyrost `SAY` po wersjach (klucze, kwestie): 1.26.1 +4, +17 (w kodzie 399 kluczy, 4250 kwestii; A.11); 1.26 +19, +126 (klucze 1.26 i podklucze: sekcja 06, 6.16.10; nowe kwestie nie mają wpisów w `LINE_NEEDS`); 1.18 +3, +14 (`bodyFound`, `lullNap`, `lullDream`); 1.19 +19, +185 (Rozłam); 1.20 +24, +164 (ekwipunek); 1.21 +25, +250 (więzi); 1.22 +19, +185 (finał); 1.23 +14, +136 (Nemezis). Listy kluczy: sekcja 06 (6.3.14, 6.10.4, 6.11.6, 6.12.9, 6.13.7, 6.14.5).
 
 `CHANGES1171.md` podaje w przybliżeniu "SAY ~3180 kwestii, SOLO 437"; policzone na eksporcie wychodzi 3173 i 434 (do porównań brać tabelę wyżej).
 
@@ -364,3 +364,53 @@ Kolumny: miejsce (`slot`), koszt w Esencji, odnowienie `cd` (s), HP / `melee` (p
 | `ST_PRIO` | `p7c_art.js` | root, burn, poison, oiled, wet, marked, seduced, bleed, slow, infected, dazed | kolejność ikonek statusów (08, 6.7a) |
 | `MON_H2` | `p7c_art.js` | skeleton 0,9, zombie 0,9, lich 1,0, imp 0,55, hound 0,62, siren 0,95, demon 1,35, sapper 0,8, warlord 1,0, rats 0,4 | wysokość figur nowych potworów (08, 6.8) |
 | paleta `HEX` | `p7c_art.js` | 32 kolory (08, 6.14a) | grafika malowana w kodzie |
+
+## A.11 Tabele, pola i stałe dodane albo zmienione w 1.26.1 (poza eksportem `data/`)
+
+Pliki w `data/` są z eksportu 1.26; poniższe trzeba przepisać z `src/` (albo przeeksportować `tools/dump.js`). Opis działania: sekcje 03 (3.15, 2.14), 05 (5.15), 06 (6.16.7, 6.16.12), 07 (7.14), 08 (6.14b) i załącznik B (B.6, B.7).
+
+### A.11.1 `p1_config.js`
+
+| Tabela | Zmiana 1.26.1 |
+|---|---|
+| `ITEMS.secret` | nowy wpis: `{ name: 'Ukryte przejście', cost: 6, slot: 'hall', tag: 'fałszywa ściana', tool: true, desc: 'Ukryte przejście (Loch): maskuje istniejące przejście między pokojami fałszywą ścianą. ...' }` (89 wpisów w `ITEMS`) |
+| `SLOT_LABEL` | + `hall: 'przejście między pokojami'` |
+| `TABS` | zakładka `dungeon` i podzakładka `dig` (Kopanie): `dig, tunnel, secret, expand, demolish` |
+| `TOOLS` | + `secret: 1` |
+| `START_UNLOCKED` | + `secret` (po `tunnel`) |
+| `ONB_ITEM` | + `secret: 3` |
+| `ITEMS.hound.desc`, `ITEMS.sapper.desc` | opisy dopisane o trop krwi ogara i chowanie się sapera |
+| `UPGRADES` | 210 wpisów: + 8 kart Serca (`heartguide`, `heartdread`, `heartgreed`, `heartpatience`, `heartgrowth` instant, `heartcore`, `secondheart`, `resonance`); `rar` z `'c'` na `'r'`: `heartcry`, `heavycrystal`, `darkforge`, `heartmem`, `stoneheart`, `kingsfeast`, `heartpulse` (B.6, B.7) |
+| `SAY` | 4 nowe klucze: `secretFound` (5 kwestii), `curiousGo` (4), `charge` (4), `superWait` (4); bez wpisów w `LINE_NEEDS` |
+
+### A.11.2 Pola stanu (kod poza `p1_config.js`)
+
+| Gdzie | Pole | Start | Znaczenie |
+|---|---|---|---|
+| `mods` (`p3_flow.js: freshMods`) | `patience` | 0 | sekundy dodane do limitu cierpliwości (Cierpliwość serca +20) |
+| `mods` | `heartCore` | 1 | mnożnik Esencji w `essMultNow` (Serce lochu ×1,2) |
+| `mods` | `secondHeart` | false | Drugie serce: pierwszy wyniesiony kryształ w runie wraca |
+| `mods` | `resonance` | false | Rezonans: Esencja ×(1 + min(0,3; 0,03 × różne karty w talii)) |
+| `run` | `secondHeartUsed` | brak | Drugie serce już zadziałało (ustawiane przy użyciu, w zapisie) |
+| krawędź `run.layout.edges` | `secret`, `secretKnown` | brak | przejście ukryte; bohaterowie wiedzą o nim z opowieści (w zapisie) |
+| drzwi `fl.doors`, korytarz `fl.rooms` | `d.secret` (klucz krawędzi), `hall.secret` | z `buildMap` | końce ukrytego przejścia |
+| `fl` | `secretFound` | `Set` z `secretKnown` w `startWave` | odkryte w tej fali |
+| bohater | `checkAt`, `curiousN`, `superRoom`, `superWait`, `superSaid`, `chargeSaid` | brak | ciekawski, przesądny, zapaleniec |
+| element (ogar) | `walking`, `hunt`, `huntCd`, `homeX`, `homeY` | brak | trop krwi, dom do powrotu |
+| strefa, chmura | `offUntil`, `keysOff`, `tilesOff` | brak | wyłączenie flaszką na 6 s |
+| `fl.stats` | `secretMade`, `secretFound`, `houndTrack`, `superWaits`, `curiousGo`, `secondHeart` | dopisywane w locie | telemetria (`LOG_VERSION` dalej 62) |
+| oś czasu | `sf`, `cx2` | | odkrycie ukrytego przejścia; kryształ wrócił dzięki Drugiemu sercu (07, 7.12.5) |
+
+### A.11.3 Stałe 1.26.1 w kodzie
+
+| Stała | Plik | Wartość | Do czego |
+|---|---|---|---|
+| szansa wykrycia ukrytego przejścia | `p5_ai.js: heroAI126` | rzut co 0,5 s: `0,5 × (0,04 + 0,14 złodziej/tropiciel + 0,03 × R.detect + 0,06 ostrożny/ciekawski + 0,15 bez drogi > 2 s)` | 06, 6.16.12 |
+| trop ogara | `p4_traps.js: houndTrack` | sprawdzenie co 1 s, cel do 9 pól w sąsiednim pokoju, ścieżka najwyżej 16 kroków, 2,6 pola/s, limit 8 s | 05, 5.15.2 |
+| osłona sapera | `p4_traps.js: monstersTick`, `p5_ai.js: sapperCovered` | walka wręcz ×0,6 przy potworze obok; kula ognia +2,5 odległości | 05, 5.15.2 |
+| przesądny | `p5_ai.js: updateHero` | czeka najwyżej 8 s | 06, 6.16.7 |
+| ciekawski | `p5_ai.js: hearFar, lookDone` | `checkAt` 12 s, najwyżej 2 na falę; `SEARCH_TRAP × 2` (max 0,95); moneta 0,3 | 06, 6.16.7 |
+| flaszka | `p5_ai.js: newClassTick` | strefa wyłączona na 6 s | 05, 5.15.3 |
+| Pożar | `p4_traps.js: reactHit` | podpalenie `max(6, 2 × pozostały czas)` | 05, 5.15.3 |
+| Dar serca | `p8b_ui.js: heartOffer` | rzadkie 70%, legendarne 30% | 03, 3.15 |
+| Rezonans | `p3_flow.js: essMultNow` | +0,03 za kartę, najwyżej +0,3 | 03, 2.14 |

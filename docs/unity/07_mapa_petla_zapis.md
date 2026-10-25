@@ -83,6 +83,8 @@ Pokój zawsze leży w kafelkach `ox+2 .. ox+6` (i analogicznie w pionie), więc 
 | `pa`, `pb` | poziomy: wiersz `y` drzwi w prawej ścianie A i w lewej ścianie B; pionowy: kolumna `x` drzwi w dolnej ścianie A i w górnej ścianie B |
 | `lvl` | rozbudowy korytarza |
 | `born` | fala powstania |
+| `secret` | 1.26.1: przejście zamaskowane narzędziem Ukryte przejście (7.14; sekcja 05, 5.15.1) |
+| `secretKnown` | 1.26.1: bohaterowie wiedzą o tym ukrytym przejściu z opowieści uciekiniera; następna fala zaczyna z nim odkrytym (7.14) |
 
 Wybór `pa`/`pb`: tylko te wiersze (kolumny), których kafelek WEWNĄTRZ pokoju przy ścianie jest wolny: bez mebla (`objAt`) i nie jest kafelkiem serca. Brak kandydata po którejkolwiek stronie: `makeEdge` zwraca `null` i nie tworzy krawędzi. Wybór losowy (`pick`).
 
@@ -224,6 +226,7 @@ Pola dopisywane w trakcie fali: `seen` (ktoś widział pokój), `rumored` (znany
 | `entrance` | `true` dla wejścia i wyłomu |
 | `breach` | `true` dla wyłomu |
 | `horiz` | orientacja (rysowanie) |
+| `secret` | 1.26.1: klucz krawędzi, gdy przejście jest ukryte (oba końce korytarza; korytarz ma `hall.secret = true`) |
 
 ### 7.4.4 Pozostałe pola mapy (zwracane przez `buildMap` i scalane w `fl`)
 
@@ -277,7 +280,8 @@ reszta: roomOf(x, y)
 ```
 blockerAt(x,y) = jest element z BUILDINGS na (x,y) i !it.broken     // rozbita budowla to gruz, przechodni (1.05)
 walkable(x,y)  = tileAt == FLOOR && !isHeart && !fl.objects.has && !blockerAt
-passable(x,y)  = FLOOR: jak walkable;  DOOR: !doorClosed(d);  reszta: false
+passable(x,y)  = FLOOR: jak walkable;  DOOR: !doorClosed(d) && !secretShut(d);  reszta: false
+secretShut(d)  = d.secret && !fl.secretFound.has(d.secret)        // 1.26.1: nieodkryte ukryte przejście jest ścianą
 ```
 Pułapki na podłodze i potwory NIE blokują `walkable`/`passable` (blokowanie przez potwory to AI, sekcja 06). Serce nigdy nie jest przechodnie.
 
@@ -540,6 +544,7 @@ W Unity: stos poleceń (Command) albo migawki stanu budowy; ta sama granica 30 i
 | `tunnel` | dla każdej komórki i kierunków w prawo i w dół: sąsiad istnieje, krawędzi brak; znacznik w połowie między środkami |
 | `expand` | każdy pokój (środek prostokąta + 0,5) i każdy korytarz (jego środkowy kafelek); niesie `lvl` |
 | `demolish` | pokoje z `canDemolishRoom` i korytarze z `canDemolishEdge` |
+| `secret` (1.26.1) | każdy korytarz z krawędzią (środkowy kafelek); przejście jeszcze nie ukryte tylko przy `secretOk` (do serca zostaje jawna droga); niesie `edge`, `has` (ukryte), `known` (`secretKnown`) (7.14) |
 | `r_*` (efekty, dawniej typy pokoi) | każdy pokój; `has` = ma już ten typ (stuknięcie zdejmie), `other` = ma inny typ (zostanie zastąpiony, napis "zamiast: ...") |
 | `k_*` (komnaty, od 1.15) | każdy pokój; `has` = ma już tę komnatę, `other` = ma inną komnatę (zastąpi ją); znacznik w kolorze i ze znakiem komnaty (05, 5.8a) |
 
@@ -554,6 +559,7 @@ dig:          run.freeDigs > 0 ? 0
               : max(0, ITEMS.dig.cost + 3 * max(0, cells.size - 7) - mods.digDiscount)   // 8, od 8. pokoju +3 za każdy
 tunnel:       max(0, ITEMS.tunnel.cost - mods.digDiscount)            // 4
 demolish:     max(0, 0) = 0
+secret:       m && m.has && !m.known ? 0 : 6                       // 1.26.1: zdjęcie maski nieznanego przejścia za darmo; maskowanie (także ponowne znanego) 6
 ```
 Ceny bazowe: `dig` 8, `tunnel` 4, `expand` 4, `demolish` 0, efekty 8 lub 10 (od 1.26 każdy 8), komnaty 12 (`KIND_COST`; od 1.26 10, zwrot 5) (`ITEMS.json`). Od 1.26 15 komnat (nowe `k_lab`, `k_graveyard`, `k_abyssgate`, sekcja 05, 5.8a).
 
@@ -571,6 +577,9 @@ demolish: forgetTiles(kafelki burzonego pokoju lub korytarza)       // UWAGA: pr
           korytarz i canDemolishEdge: back = expandRefund(edge.lvl); usuń krawędź; essence += back
           ok -> refund = rebuildDungeon()
 expand:   spec.lvl++; R.lvl = spec.lvl                               // bez przebudowy mapy, pojemność liczy się z R.lvl
+secret:   has && !known: e.secret = e.secretKnown = false                     // 1.26.1 (7.14)
+          has || secretOk(L, edge): e.secret = true, e.secretKnown = false; forgetTiles(korytarz); stats.secretMade++
+          inaczej: 'Do serca musi zostać jawna droga.'; ok -> refund = rebuildDungeon(true)
 r_*:      ten sam typ -> usuń c.rt, R.rt; essence += floor(ITEMS[t].cost / 2)
           inny lub brak -> c.rt = R.rt = typ (poprzedni typ przepada bez zwrotu)
 k_*:      ta sama komnata -> usuń c.rk, R.rk; essence += floor(12 / 2)      // od 1.15
@@ -595,7 +604,7 @@ canDemolishEdge(L, ek) = ek istnieje && allConnected(L, cells, edges bez ek)
 demolishRoom(L, k): usuń komórkę i wszystkie jej krawędzie
 expandRefund(lvl) = floor(ITEMS.expand.cost * (2^lvl - 1) / 2)     // połowa wydanych rozbudów: 0, 2, 6, 14, 30...
 ```
-Wejścia i serca nie da się zburzyć, a żadne wyburzenie nie odetnie żadnego pokoju (a więc i serca) od wejścia. Zwrot za pokój: 5 + połowa rozbud; elementy wracają przez `validateItems` (pełne `spent`); meble nic; typ pokoju nic. `expandRefund` nie uwzględnia `mods.expandCost`.
+Wejścia i serca nie da się zburzyć, a żadne wyburzenie nie odetnie żadnego pokoju (a więc i serca) od wejścia. Od 1.26.1 sprawdzenie traktuje ukryte przejścia jak zwykłe, więc wyburzenie może zostawić do serca tylko ukrytą drogę (7.14, sekcja 11). Zwrot za pokój: 5 + połowa rozbud; elementy wracają przez `validateItems` (pełne `spent`); meble nic; typ pokoju nic. `expandRefund` nie uwzględnia `mods.expandCost`.
 
 ### 7.9.5 Darmowe kopanie (Kret)
 
@@ -864,7 +873,11 @@ Jak w 7.10.8: żyją jedną falę i nie trafiają do zapisu (wyjątki zaznaczone
 | element | `branch` | 1.26: cecha poziomu 3, `'A'` albo `'B'` (zostaje i jest w zapisie) |
 | element | `down`, `downR`, `healGot` | powalony potwór, chwila powalenia (rysunek), leczenie szamanów w tej fali (zerowane w `setupFl`) |
 | element | `grow`, `baseMax` | rój szczurów: wzrost i bazowe HP (zostają między falami i w zapisie) |
-| element | `raised`, `reN`, `reAt`, `rewound`, `rangerHit`, `boltN`, `plT`, `epT`, `trackedW`, `blinkCd`, `furyUntil`, `cdUntil` | liczniki nowych potworów i pułapek; `raised`, `reN`, `reAt`, `rewound`, `rangerHit`, `boltN` nie są zerowane między falami (błąd, sekcja 05, 5.14.11), więc trafiają też do zapisu |
+| element | `raised`, `reN`, `reAt`, `rewound`, `rangerHit`, `boltN`, `plT`, `epT`, `trackedW`, `blinkCd`, `furyUntil`, `cdUntil` | liczniki nowych potworów i pułapek; w kodzie 1.26.1 `setupFl` zeruje `raised`, `reN`, `reAt`, `rewound`, `rangerHit`, ale nie `boltN` (sekcja 05, 5.14.11) |
+| `fl` | `secretFound` | 1.26.1: zbiór kluczy krawędzi z odkrytymi ukrytymi przejściami (7.14) |
+| `fl.zones`, `fl.clouds` (wpis) | `offUntil`, `keysOff`, `tilesOff` | 1.26.1: strefa wyłączona flaszką alchemika do `offUntil`, pola odłożone (sekcja 05, 5.15.3) |
+| bohater | `checkAt`, `curiousN`, `superRoom`, `superWait`, `superSaid`, `chargeSaid` | 1.26.1: ciekawski idzie do dźwięku, przesądny czeka, szarża zapaleńca |
+| element | `walking`, `hunt`, `huntCd`, `homeX`, `homeY` | 1.26.1: ogar na tropie krwi (`hunt = { id, until, path }`), dom do powrotu w `setupFl` |
 
 ---
 
@@ -967,6 +980,8 @@ deck i stash: tylko karty istniejące w UPG (1.18: także run.shop.ids: nieznane
       run zapisany w etapie nauki zachowuje etap (bez onbW); run.crystalsSeen == null -> dziennik kryształów zaczyna się teraz
 1.26: bez osobnej migracji; kod czyta nowe pola z wartością domyślną (run.satiety || 0, run.heartPicks ||= [], run.famLv ||= {} w shopRefresh),
       ale run sprzed 1.26 nie ma run.omens, więc omenOf zwraca null i taki run do końca nie dostaje omenów
+1.26.1: bez migracji; e.secret i e.secretKnown jadą w run.layout.edges (Map w zapisie), run.secondHeartUsed w run; fl.secretFound nie jest zapisywane
+      (startWave buduje je od nowa z secretKnown); krawędzie ze starego zapisu nie mają secret, czyli są jawne
 stage == 'summary': setupFl('summary'), kamera, afterSummary()       // dokończ wybory po fali, potem budowa
 inaczej:            startBuild(true); gv < 38: nowa fala (makeWave) i zapis; tutResume()
 ```
@@ -1158,6 +1173,8 @@ Kody zdarzeń:
 | `sc` | id | wypędzony strachem (`heroExit`) |
 | `ex` | id | wyszedł zwyczajnie |
 | `cx` | id | wyniósł kryształ |
+| `cx2` | id | 1.26.1: Drugie serce: kryształ wyniesiony przez niego wrócił do serca |
+| `sf` | id (albo -1), klucz krawędzi | 1.26.1: ukryte przejście odkryte (`secretFind`) |
 | `ct` | id niosącego | kradzież kryształu (`takeCrystal`) |
 | `cd` | id | upuścił kryształ ze strachu (`dropCrystal`) |
 | `cs` | id | kryształ wraca do serca (`crystalReturns`) |
@@ -1290,7 +1307,7 @@ Statystyki dopisane w 1.17 (w locie, nie ma ich w `newStats`; sekcja 06):
 
 Statystyki 1.18-1.24 (dopisywane w locie; nazwy z komentarza przy `LOG_VERSION`): 1.18 `risen`, `cellDrops`, `vaultSnaps`, `cauldron`, `stripped`, `gearLinks`, `ambushes`, `bodies`, `falseCalls`, `lullNaps`, `frames`, `wisps`, `batLost`, `iceFalls`, `tainted`, `coinGreed`; 1.19 `rifts`, `rift_<powód>`, `g2end_<powód>`, `g2Time`, `merges`, `mutinies`, `mutinyWins`, `mutinyHomes`, `sulks`; 1.20 `lootFallen`, `predecessorSeen`, `greedBody`, `cursePassed`, `bodyLoot`, `bodyLootBy`, `lootDeadObject`, `gearGiven`, `gearTrades`, `amuletGiven`, `tooHeavy`, `loadSlowT`, `lootAssign`, `lootRival`, `lootOffer`, `lootOfferTaken`, `lanternSaves`, `lanternOut`, `lanterns`, `lanternGrope`, `crowbarGate`, `crowbarCage`, `gearKnocked`, `gearBack`, `mimicAte`, `mimicSpill`, `bombCook`, `bombFriendly`, `bombHeld`, `returnGear`; 1.21 `bonds`, `bondsBy`, `bondLines`, `griefs`, `revengeVows`, `revengeFights`, `grownUp`, `noLeave`, `noLeaveSaved`, `mentorWatch`, `mentorProud`, `rivalMock`, `quarrels`, `quarrelStops`, `quarrelWins`, `quarrelSulks`, `bets`, `betsWon`, `betsLost`, `betsOff`; 1.22 `escortForms`, `escortGuards`, `guardSoaks`, `guardSoakDmg`, `handOvers`, `lastStands`, `lastStandT`, `sacrifices`, `sacrificeFired`, `youFirst`, `taps`, `tapFound`, `notThisWay`, `notThisWayMoved`, `frontLines`, `woundedBack`, `nearExit`; 1.23 `nemeses`, `nemesisNew`, `nemesisDropped`, `nemRooms`, `nemTraps`, `nemesisReply`, `nemesisWarn`, `nemesisBoast`, `nemesisRage`, `nemesisDown`, `nemesisOut`, `nemesisCrystal`, `grudgeHits`, `grudgeDone`, `bounties`, `essBounty`, `bountyTalk`, `fallenMemory`; 1.24 `exhausted`, `forcedOut`, `tdSeen`, `checkByShape` (`{kształt: {ok, crit, miss, skip, auto}}`, jedyne nowe pole w `newStats`), `calmAuto`, `unspentAsk`, `unspentGo`, `tutSpike`, `shamanHeal`. Ustawienia w dokumencie (`settings`) od 1.24 mają też `calmWaves`, `calmGap`, `okPulse`, `okSwing`.
 
-Statystyki 1.26 (dopisywane w locie): serce i ekonomia `essTithe` (Danina), `essDrained` (wypite przez kultystów), `drainBack`, `heartTook` (zabrane z sakiewki), `satietyGain`, `sat_tithe`, `sat_ofiara`, `sat_bloodflow`, `sat_omen`, `heartUp`, `heartPicks`, `regrow`, `ofiara`, `feastPts`, `reactPts`, `crownPays`, `pantryUp`, `omenFree`, `omenSat`, `revived`, `stealMax`, `lastPush`; statusy i reakcje `status` (`{status: liczba}`), `reactions` (`{reakcja: liczba}`), `reactN`; elementy `bellTolls`, `houndHunt`, `armyRisen`, `gateSplits`, `ogreThrows`, `doubleEdge`, `caltrops`, `plagueJumps`, `lichRaise`, `skelUp`, `impStole`, `sirenQuarrel`, `baits`, `dreamTries`, `lullNaps`, `runes`; bohaterowie `antidotes`, `flasks`, `tracked`, `calls`, `freed`, `lootRetreat`, `healerFirst`. Dokument runu (`runSummary`) nie ma osobnych pól 1.26 (plan 4.11 przewidywał `heartLvMax`, `regrowCount` i karty z rzędu Dar serca); są w rekordach fal i w kopii `settings`, a `run.heartLvMax`, `run.regrowCount`, `run.heartCards` tylko w zapisie gry.
+Statystyki 1.26 (dopisywane w locie): serce i ekonomia `essTithe` (Danina), `essDrained` (wypite przez kultystów), `drainBack`, `heartTook` (zabrane z sakiewki), `satietyGain`, `sat_tithe`, `sat_ofiara`, `sat_bloodflow`, `sat_omen`, `heartUp`, `heartPicks`, `regrow`, `ofiara`, `feastPts`, `reactPts`, `crownPays`, `pantryUp`, `omenFree`, `omenSat`, `revived`, `stealMax`, `lastPush`; statusy i reakcje `status` (`{status: liczba}`), `reactions` (`{reakcja: liczba}`), `reactN`; elementy `bellTolls`, `houndHunt`, `armyRisen`, `gateSplits`, `ogreThrows`, `doubleEdge`, `caltrops`, `plagueJumps`, `lichRaise`, `skelUp`, `impStole`, `sirenQuarrel`, `baits`, `dreamTries`, `lullNaps`, `runes`; bohaterowie `antidotes`, `flasks`, `tracked`, `calls`, `freed`, `lootRetreat`, `healerFirst`. Statystyki 1.26.1 (dopisywane w locie, `LOG_VERSION` dalej 62): `secretMade` (zamaskowane przejścia w budowie), `secretFound`, `houndTrack`, `superWaits`, `curiousGo`, `secondHeart`. Dokument runu (`runSummary`) nie ma osobnych pól 1.26 (plan 4.11 przewidywał `heartLvMax`, `regrowCount` i karty z rzędu Dar serca); są w rekordach fal i w kopii `settings`, a `run.heartLvMax`, `run.regrowCount`, `run.heartCards` tylko w zapisie gry.
 
 Pola dopisywane w locie (nie ma ich w `newStats`; poza tabelą wyżej): `alarms`, `altarBlocks`, `altarHeals`, `answers`, `autoFires` (odpalenia przy `ff`), `bardCalls`, `bardHeard`, `batScatter`, `breachOpen`, `broken`, `cageDeaths`, `charmSoak`, `chorus`, `comboPts`, `crystalDropped`, `cursedSeen`, `disputes`, `echoes`, `essGlut`, `essHeart` (porcja serca), `essWave` (Esencja do sakiewki), `fogGrope`, `healCalls`, `howlBlocks`, `hungerAte`, `hushLost`, `hushUnlearned`, `lootArgue`, `lootWeighed`, `memFires`, `memLost`, `naps`, `panicExits`, `panicked`, `patched`, `phobiaFear`, `prophecy`, `rage`, `rageNoPanic`, `rages`, `regroupsDoor`, `repelled`, `reroutes`, `returnersOut`, `revealed`, `revenge`, `rigged`, `rumorLoot`, `runeBlocks`, `shackleBlocks`, `shouts`, `skullOff`, `slips`, `smashedObj`, `smashes`, `songs`, `speedTime` (martwe), `traumas`, `trayPauses`, `treasureTale`, `upgrades`, `volleys`, `volleyTraps`, `wildfire`. Każde jest licznikiem albo flagą 0/1 ustawianą tam, gdzie zdarzenie zachodzi (nazwa opisuje zdarzenie; miejsca: `grep "stats.<pole>"`).
 
@@ -1340,5 +1357,28 @@ Niespójności:
 - 1.26 (naprawione po przeglądzie): w pierwszej wersji 1.26 wywołanie `tl('k', h.id, attr || kind)` w `kill` trafiło do komentarza i oś czasu nie miała zdarzeń śmierci `k`; teraz jest wołane. Pliki z tej pierwszej wersji (też `LOG_VERSION` 62) mogą nie mieć `k`, wtedy śmierci brać z `heroes[].end`/`summary.heroes[].out`.
 - 1.26: kody osi czasu użyte drugi raz: `gs` (osłona strażnika 1.22 i rozdzielenie kratą), `cl` (zdjęcie klątwy i Wezwanie po krzyk), `gh` (powrót przegłosowanego i Odwrót z łupem); rozróżnienie tylko po liczbie i rodzaju argumentów.
 - 1.26: run zapisany przed 1.26 nie ma `run.omens`, więc po wczytaniu nie dostaje omenów (7.11.3).
-- 1.26: liczniki nowych potworów (`raised`, `reN`, `reAt`, `rewound`, `rangerHit`, `boltN`) nie są zerowane w `setupFl` i trafiają do zapisu (sekcja 05, 5.14.11).
+- 1.26: liczniki nowych potworów (`raised`, `reN`, `reAt`, `rewound`, `rangerHit`, `boltN`) nie były zerowane w `setupFl`; w kodzie 1.26.1 `setupFl` zeruje wszystkie poza `boltN` (sekcja 05, 5.14.11).
+- 1.26.1: `secretOk` (do serca zostaje jawna droga) jest sprawdzane tylko przy maskowaniu przejścia; wyburzenie pokoju albo przejścia tego nie sprawdza, a droga od wyłomu nie jest liczona (7.14).
 
+## 7.14 Ukryte przejście w mapie, ścieżkach i zapisie (1.26.1; `p2_state_map.js: buildMap, secretShut, passable`; `p3_flow.js: secretOk, secretFind, startWave, finishWave`)
+
+Narzędzie (koszt, znaczniki, komunikaty): sekcja 05, 5.15.1; wykrywanie przez bohaterów: sekcja 06, 6.16.12; rysowanie: sekcja 08, 6.14b.
+
+**Model.** Ukrycie to flaga krawędzi układu (`e.secret`), nie osobny obiekt. `buildMap` buduje korytarz jak zwykle, ale oba końce (drzwi przy pokoju A i przy pokoju B) dostają `d.secret = e.key`, a korytarz `hall.secret = true`. Kafelki zostają `DOOR` i `FLOOR`, więc mapa i rozmieszczenie elementów się nie zmieniają.
+
+**Ściana dla ścieżek.** `passable` traktuje drzwi z `secretShut(d)` (ukryte i nie w `fl.secretFound`) jak ścianę, więc `bfs` (bohaterowie i trop ogara) omija takie przejście albo nie ma drogi. Bohater bez drogi nalicza `h.noPathT` (zgubienie z braku drogi jak dotąd, sekcja 06), a po 2 s bez drogi ma +0,15 do wykrycia. Po odkryciu (`secretFind`) wszyscy żywi przeplanowują (`needPlan`) i przejście do końca fali jest zwykłym przejściem.
+
+**Zasada `secretOk(L, ek)`.** Przejście wolno ukryć tylko wtedy, gdy po usunięciu tej krawędzi i wszystkich już ukrytych `layoutDist` od wejścia nadal dochodzi do serca. Gracz nie może więc zamaskować jedynej drogi do serca. Sprawdzenie działa tylko przy maskowaniu; `canDemolishEdge` i `canDemolishRoom` liczą spójność ze wszystkimi krawędziami, także ukrytymi, więc późniejsze wyburzenie może zostawić do serca tylko ukrytą drogę (sekcja 11). `secretOk` liczy też drogę tylko od `L.entrance`, a nie od wyłomu (`L.breach`, sekcja 04).
+
+**Wiedza między falami.**
+```
+startWave: fl.secretFound = new Set(klucze krawędzi z e.secret && e.secretKnown)      // znane z opowieści: odkryte od startu
+finishWave (po przychodzie): jeśli w tej fali ktoś wyszedł z lochu żywy (h.fled && !h.dead, dowolny uciekinier, także z kryształem):
+    każde przejście odkryte w tej fali (fl.secretFound), które dalej jest ukryte: e.secretKnown = true
+applyTool (secret): zdjęcie maski i ponowne maskowanie zerują secretKnown
+```
+Nie ma znaczenia, kto odkrył przejście i czy uciekinier sam przez nie szedł: wystarczy jeden żywy uciekinier w fali. Przejście, którego nikt nie odkrył, zostaje ukryte także dla kolejnych fal. Maskowanie nowego przejścia czyści z plotek kafelki korytarza (`forgetTiles`).
+
+**Zapis.** `e.secret` i `e.secretKnown` są polami krawędzi w `run.layout.edges`, więc zapisują się razem z układem (7.11.3). `fl.secretFound` nie jest zapisywane; zapis następuje w budowie, a `startWave` odtwarza zbiór z `secretKnown`. `snapshotLayout` (układ w dokumencie fali, 7.12.5) zapisuje krawędzie bez `secret`, więc z danych testowych nie da się odczytać, które przejścia były ukryte (tylko liczniki `secretMade` i `secretFound`).
+
+W Unity: `Edge.Secret`, `Edge.SecretKnown` w danych układu; `Door.SecretEdge`; zbiór odkrytych krawędzi w stanie fali; warunek przechodniości drzwi w jednym miejscu (koszt ścieżki i blokada), tak żeby pathfinding bohaterów i potworów korzystał z tej samej reguły.

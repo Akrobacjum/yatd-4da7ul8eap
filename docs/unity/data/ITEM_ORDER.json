@@ -59,6 +59,7 @@
  "fortify",
  "dig",
  "tunnel",
+ "secret",
  "expand",
  "demolish",
  "k_goblin",

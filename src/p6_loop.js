@@ -573,7 +573,7 @@
     if (fl.heartHit > 0) fl.heartHit -= dt;
     // 1.12.1: patience runs at half speed while the party talks it over or rests (longer scenes do not cut their search short)
     fl.patT = (fl.patT || 0) + dt * (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0) ? 0.5 : 1);
-    if (!fl.fearless && fl.ending === null && fl.patT >= (omenK(run.wave, 'patience') || S.waveTime)) becomeImpatient();   // 1.26 Pośpiech: 60 s
+    if (!fl.fearless && fl.ending === null && fl.patT >= (omenK(run.wave, 'patience') || S.waveTime) + (mods.patience || 0)) becomeImpatient();   // 1.26 Pośpiech: 60 s
     if (fl.ending === null && !fl.exhausted && fl.patT >= S.waveTime + 60) waveExhausted();   // 1.24: worn out, they walk out (up to 1.23 they were teleported out here)
     if (fl.ending === null && fl.patT >= S.waveTime + 150) waveForceOut();   // 1.24: the true safety net: nobody stays forever
     if (fl.ending === null && fl.queue.length === 0 && fl.heroes.length && fl.heroes.every(h => h.dead || h.fled)) fl.ending = 1.2;

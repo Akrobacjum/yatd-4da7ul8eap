@@ -593,7 +593,7 @@
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.26 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.26.1 · 10 fal i finał'));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Głodne serce zabiera z sakiewki, syte rośnie i daje karty. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
     const rec = loadRecords();
@@ -648,9 +648,13 @@
      'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
      'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
     how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.26'));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.26.1'));
     const ul2 = el('ul', 'conseq');
     [
+     '1.26.1: Ukryte przejście (zakładka Loch, 6 Esencji). Maskujesz przejście między pokojami fałszywą ścianą: bohaterowie widzą mur i idą dłuższą drogą, dopóki ktoś go nie odkryje (najczęściej złodziej i tropiciel). Odkryte jest zwykłym skrótem, a uciekinier opowie o nim następnej fali. Do serca musi zostać jawna droga.',
+     '1.26.1: brakujące zachowania. Ogar piekielny idzie za krwawiącym do sąsiedniego pokoju (i wraca na miejsce w następnej budowie). Goblin saper chowa się za innymi potworami. Przesądny nie wchodzi pierwszy do pokoju z portretem albo lustrem, Ciekawski idzie sprawdzić usłyszaną pułapkę i dokładniej przeszukuje meble, Zapaleniec szarżuje na każdego potwora.',
+     '1.26.1: Dar serca po nowemu. Karty grupy Serce są tylko w rzędzie Dar serca (nie ma ich w zwykłym sklepie, więc darmowa karta z poziomu serca nie jest już tańsza od tego, co kupisz za Esencję). W rzędzie są tylko karty rzadkie (70%) i legendarne (30%), a do grupy doszło 8 uniwersalnych kart: Wola serca, Groza serca, Złote tętno, Cierpliwość serca, Rozrost serca, Serce lochu, Drugie serce i Rezonans.',
+     '1.26.1: poprawki zasad. Wnyki rozbraja się 1,5 raza dłużej, flaszka alchemika wyłącza strefę na 6 s (potem wraca), oślepieni bohaterowie nie zapamiętują pułapek, Pożar podpala 2 razy dłużej, Wyziewy przy pierwszym kontakcie dają jeden stos trucizny, Runa rodu wydłuża też statusy swojej rodziny, karty i Strażnik wzmacniają też zdolności potworów.',
      '1.26: serce zabiera. Głodne serce po fali bierze brak z Twojej sakiewki, a kryształ pęka dopiero, gdy sakiewka nie wystarczy. Syte serce bierze Daninę (30% wypłat) w Nasycenie i rośnie poziomami. Stuknij serce u góry: zasady, z czego jest głód i co da następny poziom.',
      '1.26: Dary serca są kartami. Po każdym poziomie serca w sklepie czeka rząd Dar serca: 3 karty grupy Serce, jedna za darmo. Poziomy 2, 4 i 6 dają miejsce w talii, 3, 5 i 7 mogą odrodzić kryształ (Odrost). Ofiara w budowie: Esencja w Nasycenie 1:1.',
      '1.26: 10 nowych pułapek (wahadło, wnyki, wyziewy, plama oleju, runa piorunów, zalewnia, dzwon żałobny, fałszywe przejście, kocioł smoły, przynęta) i 10 nowych potworów (szkielet, zombie, licz, chochlik, ogar piekielny, kusicielka, demon otchłani, goblin saper, herszt, rój szczurów). Odblokujesz je kartami.',
@@ -935,7 +939,7 @@
     const locked = shuffle(UPGRADES.filter(u => u.kind === 'unlock' && !run.unlocked.has(u.unlock) && onbOk(u.unlock)));   // 1.12: nothing from a later run
     const f = 0.75 * Math.max(0, run.wave - 1), rareP = r >= 2 ? 1 : Math.min(0.6, 0.15 + 0.02 * f), legP = r >= 3 ? 1 : r >= 2 ? Math.min(0.4, 0.15 + 0.01 * f) : Math.min(0.15, 0.03 + 0.005 * f);
     const rarOk = u => u.rar === 'c' || (u.rar === 'r' && Math.random() < rareP) || (u.rar === 'l' && Math.random() < legP);   // the more famous the dungeon, the better the cards
-    const pool = UPGRADES.filter(u => u.kind !== 'unlock' && !u.heartOnly && reqOk(u) && (ONB_CARD[u.id] || 1) <= stageOf() && !(u.unique && has(u.id)) && !isFused(u.id) && rarOk(u));   // 1.26: Odrost only in the Dar serca row   // 1.24: no third copy of a fused ★ card
+    const pool = UPGRADES.filter(u => u.kind !== 'unlock' && !u.heartOnly && u.group !== 'heart' && reqOk(u) && (ONB_CARD[u.id] || 1) <= stageOf() && !(u.unique && has(u.id)) && !isFused(u.id) && rarOk(u));   // 1.26: Odrost only in the Dar serca row   // 1.24: no third copy of a fused ★ card
     const picks = [];
     if (r === 3) { const leg = shuffle(pool.filter(u => u.rar === 'l')); if (leg.length) picks.push(leg[0]); }
     if (locked.length && (r >= 2 || Math.random() < 0.5)) picks.push(locked[0]);
@@ -1003,7 +1007,7 @@
     const pool = UPGRADES.filter(u => u.group === 'heart' && !u.heartOnly && u.kind !== 'unlock' && reqOk(u) && !(u.unique && has(u.id)) && !isFused(u.id));
     const n = 3 + (mods.titheChoice || 0), ids = [];
     for (let k = 0; k < n; k++) {
-      const r = Math.random(), want = r < 0.55 ? 'c' : r < 0.9 ? 'r' : 'l';
+      const r = Math.random(), want = r < 0.7 ? 'r' : 'l';   // 1.26.1: rare 70%, legendary 30% (the Serce cards are only here)
       const left = pool.filter(u => !ids.includes(u.id)), of = left.filter(u => u.rar === want);
       const u = (of.length ? pick(of) : left.length ? pick(left) : null); if (u) ids.push(u.id);
     }
@@ -1935,7 +1939,7 @@
   }
   // v14: the full card of a hero: tap him in a wave (the game pauses), or tap a row of the party list / the next-wave list
   const TRAIT_TEXT = { greedy: 'idzie po łup mimo ryzyka', coward: 'panikuje wcześniej, śmierć towarzysza straszy go mocniej', brave: 'śmierć towarzysza zamienia w furię', careful: 'sprawdza podłogę, rzadziej wpada w pułapki',
-    superstitious: 'rekwizyty strachu i Nawiedzenie straszą go 1,4 raza mocniej, nie tknie przeklętego łupu', curious: 'widzi łup z daleka (+4 pola), jako przywódca chętniej rozgląda się po pokojach', loyal: 'zawsze ratuje uwięzionych, biegnie na wołanie o pomoc nawet przez pułapki, za przyjaciela ślubuje zemstę', hothead: 'idzie przez znane pułapki, raz na falę zamiast paniki wpada w furię, wytrzyma 10% więcej strachu' };   // 1.26
+    superstitious: 'rekwizyty strachu i Nawiedzenie straszą go 1,4 raza mocniej, nie tknie przeklętego łupu, nie wejdzie pierwszy do pokoju z portretem albo lustrem', curious: 'widzi łup z daleka (+4 pola), idzie sprawdzić usłyszaną pułapkę, 2 razy dokładniej przeszukuje meble, jako przywódca chętniej się rozgląda', loyal: 'zawsze ratuje uwięzionych, biegnie na wołanie o pomoc nawet przez pułapki, za przyjaciela ślubuje zemstę', hothead: 'szarżuje na każdego potwora w pokoju (także ogra), częściej idzie przez znane pułapki, raz na falę zamiast paniki wpada w furię, wytrzyma 10% więcej strachu' };   // 1.26
   const STATE_TEXT = { drink: 'pije Esencję z serca', walk: 'idzie', rest: 'odpoczywa', talk: 'naradza się', wait: 'czeka', boss: 'wyważa kryształ', disarm: 'rozbraja', free: 'uwalnia kogoś', fight: 'walczy', smash: 'rozbija' };
   // v15.1: a tap on the equation row: what each part means, and where this wave's Esencja came from
   function renderEsencja(card, m) {
@@ -2359,13 +2363,13 @@
     ul.appendChild(el('li', null, 'Serce je pierwsze: z każdej wypłaty w fali bierze swoje, aż się naje (czerwony pasek). Reszta jest Twoja.'));
     ul.appendChild(el('li', null, 'Fala da za mało: po fali serce zabierze brak z sakiewki' + (mods.stoneHeart ? ' (Kamienne serce: 75% braku)' : '') + '. Dopiero gdy sakiewka nie wystarczy, pęka kryształ, a serce zjada resztę sakiewki.'));
     ul.appendChild(el('li', null, 'Syte serce bierze Daninę: ' + Math.round(titheNow() * 100) + '% każdej dalszej wypłaty idzie w Nasycenie (złoty pasek), które podnosi poziom serca.'));
-    ul.appendChild(el('li', null, 'Każdy poziom: darmowa karta z rzędu Dar serca w sklepie. Poziomy 2, 4, 6: +1 miejsce w talii. Poziomy 3, 5, 7: w rzędzie może być Odrost (utracony kryształ wraca).'));
+    ul.appendChild(el('li', null, 'Każdy poziom: darmowa karta z rzędu Dar serca w sklepie (rzadka albo legendarna, karty Serca są tylko tam). Poziomy 2, 4, 6: +1 miejsce w talii. Poziomy 3, 5, 7: w rzędzie może być Odrost (utracony kryształ wraca).'));
     card.appendChild(ul);
     if (P) {
       const parts = ['tabela ' + Math.round(P.table) + (P.base !== Math.round(P.table) ? ' → ' + P.base + ' (karty, omen)' : '')];
       if (P.revive) parts.push('+' + P.revive + ' odrodzenie potworów'); if (P.demon) parts.push('+' + P.demon + ' demony'); if (P.credit) parts.push('+' + P.credit + ' kredyt krwi');
       if (P.granary) parts.push('−' + P.granary + ' spichlerz'); if (P.blood) parts.push('−' + P.blood + ' głód krwi');
-      card.appendChild(el('p', 'note', 'Głód ' + need + ': ' + parts.join(', ') + '.' + (build ? ' Masz w sakiewce ' + purse + (purse >= need ? ': pokryje cały głód.' : ': fala musi dać co najmniej ' + (need - purse) + ', inaczej pęknie kryształ.') : '')));
+      card.appendChild(el('p', 'note', 'Głód ' + need + ': ' + parts.join(', ') + '.' + (build ? (() => { const k = mods.stoneHeart ? 0.75 : 1; return ' Masz w sakiewce ' + purse + (purse >= need * k ? ': pokryje cały głód' + (k < 1 ? ' (Kamienne serce: wystarczy 75% braku).' : '.') : ': fala musi dać co najmniej ' + Math.ceil(need - purse / k) + ', inaczej pęknie kryształ.'); })() : '')));
     }
     const sb = el('div', 'satbar'); const si = el('i'); si.style.width = (100 * clamp((sat - s0) / Math.max(1, s1 - s0), 0, 1)).toFixed(1) + '%'; sb.appendChild(si); sb.appendChild(el('span', null, 'Nasycenie ' + sat + ' / ' + s1 + ' do poziomu ' + (L + 1)));
     card.appendChild(sb);
@@ -3172,7 +3176,7 @@
   kick();   // 1.24 (C): the paced loop (p6 FP)
 
   // Hook for automated checks; no effect on normal play.
-  const yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, partyPool, essMultNow, copyTarget, hurtMonster, statusList, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  const yatd = { get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,

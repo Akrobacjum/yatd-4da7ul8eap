@@ -170,6 +170,7 @@
   "items": [
    "dig",
    "tunnel",
+   "secret",
    "expand",
    "demolish",
    "k_goblin",
@@ -204,6 +205,7 @@
     "items": [
      "dig",
      "tunnel",
+     "secret",
      "expand",
      "demolish"
     ]

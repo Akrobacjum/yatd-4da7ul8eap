@@ -1307,11 +1307,11 @@ Zachowaj zachowanie z kodu, chyba że autor zdecyduje inaczej; każdą z tych rz
 18. **Draśnięcia z przerwy (1.24)** liczą się do `bt(typ).ok` jak trafione checki, więc karta elementu i statystyka "draśnięcia" w falach 1-2 obejmują też odpalenia bez stuknięcia (`calmAuto` rozdziela je tylko w danych testowych).
 19. **Połączona karta "named" a potwory (1.24)**: `lvlPow` potwora z `fuseLv` to stosunek `LVL_MON` poziomu wyższego do obecnego (poziom 1: ×1,5; 2: ×1,467; 3: ×1,467), a bez połączenia potwór ma moc 1 (rośnie przez HP i siłę). Mnożnik działa w `fireRaw` (zdolność), a `monDmg` (ciosy w walce) go nie używa.
 20. **Budowle 1.26** (naprawione po przeglądzie): w pierwszej wersji 1.26 dodatki Runy, Ołtarza, Kwasu, Zasłony i Kamienia wyjca były tylko w opisach; teraz kod je liczy (5.5.2). Kwas +10% i Ołtarz/wyjec +10% mnożą się z resztą kroków `damage` i `addFear`, więc w testach zgodności liczyć je w tej kolejności.
-21. **Czaszka nie zna Runy rodu i omenu (1.26)**: `predictedDmg` mnoży tylko `lvlPow` i `pactPower` (i `trapBoost` dla pułapek), bez `famK`, `kindPow`, `omenPow`, Krwawego księżyca i reakcji, więc przy rodzinie na wysokim poziomie zabija bez pytania częściej, niż prognoza mówi.
-22. **Pożar (1.26)**: plan mówi "podpalenie 2 razy dłużej", kod ustawia podpalonemu `burnUntil = max(burnUntil, teraz + 6)` w następnym kroku (stałe 6 s), a sąsiadów Oblanych podpala na 4 s.
+21. **Czaszka nie zna Runy rodu i omenu (1.26)**: `predictedDmg` mnoży tylko `lvlPow` i `pactPower` (i `trapBoost`, od 1.26.1 także dla potworów), bez `famK`, `kindPow`, `omenPow`, Krwawego księżyca i reakcji, więc przy rodzinie na wysokim poziomie zabija bez pytania częściej, niż prognoza mówi.
+22. **Pożar (naprawione w 1.26.1)**: plan mówi "podpalenie 2 razy dłużej"; od 1.26.1 kod ustawia w następnym kroku `burnUntil = teraz + max(6, 2 × pozostały czas)`, w 1.26 było stałe 6 s. Sąsiadów Oblanych dalej podpala na 4 s.
 23. **Kościany pancerz (szkielet B, 1.26)**: plan "kłute ×0,6", kod zmniejsza ×0,6 każde obrażenie od kogoś innego niż mag (także obuchowe barbarzyńcy i flaszkę alchemika).
 24. **Szaman: zdolność a "nie sumuje się" (1.26)**: wybór najsilniejszego szamana (`bestHealer`) dotyczy tylko leczenia biernego; Wielkie leczenie z checku leczy od każdego szamana (ograniczone tylko limitem `healGot` = max HP na falę).
-25. **Runa rodu a czas statusów (1.26)**: plan "+8% mocy (rany, strach, czas statusów)"; czasy z `setStatus` są stałe, rosną tylko te, które kod liczy od `pw` (np. sieć pająka).
+25. **Runa rodu a czas statusów (naprawione w 1.26.1)**: plan "+8% mocy (rany, strach, czas statusów)"; od 1.26.1 `setStatus` mnoży czas przez `famK` źródła (bez unieruchomienia), w 1.26 czasy były stałe.
 
 ---
 
@@ -1396,7 +1396,7 @@ Statusy to flagi z czasem na bohaterze (bez osobnych obiektów); `setStatus(h, k
 | `seduced` | Uwiedziony | `seduceUntil`, `seducer` | idzie do kusicielki (`intent 'seduced'`, bez omijania niebezpieczeństw); po końcu 30 strachu, 4 s samotności (`cutUntil`), 6 s odporności; paladyn i bohater z przepowiedni odporni |
 | `dazed` | Oszołomiony | `dazedUntil` (+`slowUntil`) | po upadku z zapadni: spowolniony 3 s |
 
-Oczyszczanie: kapłan (gasi i tamuje krwawienie), alchemik (antidotum, sekcja 04, 4.3a), Mokry gasi Podpalonego, Wezwanie po krzyk zdejmuje unieruchomienie i uwiedzenie (sekcja 06, 6.16). Oślepienie (`blindUntil`, z Pary i Łzawiących wyziewów) blokuje tylko wykrywanie pułapek (`scanTraps`); Kokon (sieć B, `noItemUntil`) blokuje mikstury, talizman, amulet i buty przez 4 s.
+Oczyszczanie: kapłan (gasi i tamuje krwawienie), alchemik (antidotum, sekcja 04, 4.3a), Mokry gasi Podpalonego, Wezwanie po krzyk zdejmuje unieruchomienie i uwiedzenie (sekcja 06, 6.16). Oślepienie (`blindUntil`, z Pary i Łzawiących wyziewów) blokuje wykrywanie pułapek (`scanTraps`), a od 1.26.1 także naukę: oślepiony nie jest świadkiem odpalenia pułapki (`witnesses` w `fireRaw`), więc nie uczy drużyny jej rodzaju i nie krzyczy o niej; Kokon (sieć B, `noItemUntil`) blokuje mikstury, talizman, amulet i buty przez 4 s.
 
 ### 5.14.2 Reakcje (`REACTIONS`, `REACT_K = 1,6`)
 
@@ -1405,7 +1405,7 @@ Oczyszczanie: kapłan (gasi i tamuje krwawienie), alchemik (antidotum, sekcja 04
 | Reakcja | Warunek | Skutek |
 |---|---|---|
 | (woda) | ogień trafia Mokrego | trafienie ×0,5 i podpalenie gaśnie; bez reakcji |
-| Pożar `blaze` | ogień (także tyknięcie podpalenia) trafia Oblanego | olej znika, trafienie ×1,6, w następnym kroku podpalenie do 6 s; każdy inny Oblany w 1,5 pola traci olej i płonie 4 s |
+| Pożar `blaze` | ogień (także tyknięcie podpalenia) trafia Oblanego | olej znika, trafienie ×1,6, w następnym kroku podpalenie `burnUntil = teraz + max(6, 2 × pozostały czas podpalenia)` (od 1.26.1; w 1.26 stałe 6 s); każdy inny Oblany w 1,5 pola traci olej i płonie 4 s |
 | Detonacja `detonate` | ogień trafia Zatrutego z ≥ 2 stosami | stosy znikają; każdy w 3×3 (≤ 1,5 pola, także on) dostaje `6 × S.dmg × stosy × toxicDet` trucizny jako `react` |
 | Porażenie `shock` | porażenie trafia Mokrego | woda znika, ×1,6, ogłuszenie 0,5 s (`stunUntil`); każdy inny Mokry w pokoju (z Przewodnictwem także Spowolniony) traci wodę, 0,5 s ogłuszenia i `amt × 0,6` porażenia jako `react` |
 | Para `steam` | Zalewnia trafia Podpalonego | gasi; chmura ≤ 1,5 pola: 12 strachu (`steam`) i oślepienie 3 s |
@@ -1438,7 +1438,7 @@ Ulepszenie z poziomu 2 elementu z `TRAITS_B` otwiera okno wyboru (`renderBranch`
 | mimic | Pożeracz | Zachłanny: podnoszący łup w promieniu 1 dostaje ugryzienie z mocą 2 |
 | eyes | Wszystkowidzące | Wzrok bazyliszka: przestraszony Spowolniony 2 s |
 | bones | Kostnica (5×5) | Grzechot: atrybut strachu `rattle` (fobia hałasu), nowicjusze ×2 |
-| mirror | Krzywe zwierciadło | Odbicie: następny strach ×1,2 przez 8 s (raz) |
+| mirror | Krzywe zwierciadło | Odbicie: następny strach ×1,2 przez 8 s (raz); od 1.26.1 tylko strach co najmniej 3 (`amt >= 3`), więc drobne tyknięcia strachu go nie zużywają |
 | creak | Trzask | Skrzyp nocy: 7,5 × pw strachu w sąsiednich pokojach |
 | coffin | Pogrzebany żywcem | Wieko: najbliższy Unieruchomiony 2 s |
 | musicbox | Kołysanka śmierci (8 s) | Usypianka: ranny < 60% zasypia 3 s |
@@ -1453,7 +1453,7 @@ Ulepszenie z poziomu 2 elementu z `TRAITS_B` otwiera okno wyboru (`renderBranch`
 | pendulum | Podwójne: drugi zamach 50% po 0,6 s | Ścięcie: krytyk (wynik checku `basePw >= mods.critPw`, nie moc po mnożnikach) = krwawienie 4 s |
 | snare | Zębate: krwawienie 3 s | Łańcuch: najbliższy sojusznik w 3 polach Unieruchomiony 2 s |
 | miasma | Gęste: chmura 8 s | Łzawiące: w chmurze bez wykrywania pułapek |
-| oilslick | Łatwopalna: Oblany zapala się od każdego trafienia pułapki (15%) (w kodzie nie działa, 5.14.11) | Śliska: poślizg 50% |
+| oilslick | Łatwopalna: Oblany przez tę plamę (`h.oilA`) przy każdym trafieniu pułapki ma 15% szansy na podpalenie 3 s (`damage`, napis "Zapłon!"; w kodzie 1.26.1 działa, wcześniejsza wersja tej specyfikacji podawała, że nie) | Śliska: poślizg 50% |
 | bolt | Burza: przeskok na suchych (50%, ×0,6, najwyżej 3 trafienia) | Przeciążenie: co 3. odpalenie ogłusza cel 2 s |
 | flood | Topiel: strefa spowolnienia na 12 s | Lodowata woda: uspokajanie ×0,5 przez 8 s |
 | bell | Requiem: +0,5 Grozy za każdego, kto usłyszy dzwon | Namaszczenie: skill check leczy wszystkie potwory w lochu o 20% |
@@ -1477,8 +1477,8 @@ Wartości przy `pw = 1`, `D = 0,7`. Wszystkie odblokowuje karta `u-<id>` (cena 7
 | Typ | Nazwa | Slot, koszt, cd | Obszar | Działanie | Rodzina, komnata | Kształt |
 |---|---|---|---|---|---|---|
 | `pendulum` | Wahadło | ściana, 4, 4 s | pas 3 pól szerokości i 4 w głąb od ściany | `45*D` = 31,5 kłute każdemu ×cpow; ×1,5 trzymanym (jak kolce) | Mechanizmy, Zbrojownia | swing |
-| `snare` | Wnyki | podłoga, 3, 8 s | pole | pierwszy na polu: `25*D` = 17,5 kłute + Unieruchomiony 5 s (draśnięcie, wynik checku `basePw < 1`: 3,5 s); kwestia `snare` | Mechanizmy, Więzienie | pulse |
-| `miasma` | Wyziewy | podłoga, 5, 7 s | 3×3 | trafieni: +1 stos trucizny, `10*pw` strachu ×cpow; chmura (`fl.clouds`) 5 s: wejście +1 stos i 10 strachu (raz na chmurę), potem +1 stos co 1,5 s | Alchemia, Laboratorium | spiral |
+| `snare` | Wnyki | podłoga, 3, 8 s | pole | pierwszy na polu: `25*D` = 17,5 kłute + Unieruchomiony 5 s (draśnięcie, wynik checku `basePw < 1`: 3,5 s); kwestia `snare`; od 1.26.1 rozbrajanie ×1,5 (jak strzały, ogień i proch) | Mechanizmy, Więzienie | pulse |
+| `miasma` | Wyziewy | podłoga, 5, 7 s | 3×3 | trafieni: +1 stos trucizny, `10*pw` strachu ×cpow; chmura (`fl.clouds`) 5 s: wejście +1 stos i 10 strachu (raz na chmurę), potem +1 stos co 1,5 s; od 1.26.1 trafieni przy odpaleniu są od razu w `seen` chmury (bez drugiego stosu za "wejście"), a ich zegar `cloudT` startuje od 0 | Alchemia, Laboratorium | spiral |
 | `oilslick` | Plama oleju | podłoga, 4, 6 s | 3×3 | Oblany 8 s, Spowolniony 1,5 s | Ogień, Kuźnia | ring |
 | `bolt` | Runa piorunów | ściana, 5, 4 s | pola pokoju przed ścianą do 3 | najbliższy: `22*D` = 15,4 porażenia; każdy inny Mokry w pokoju też dostaje piorun | Alchemia, Laboratorium | double |
 | `flood` | Zalewnia | podłoga, 4, 10 s | cały pokój | Mokry 8 s, Spowolniony 2 s, `6*pw` strachu; podpalony: Para | Alchemia, Laboratorium | pulse |
@@ -1497,10 +1497,10 @@ Wszystkie nowe pułapki poza dzwonem i przynętą są w `DISARMABLE`. Obszar wah
 | `zombie` | Zombie | 5, 170, 8 trucizna, 5 s | `15*D*power` + 2 stosy trucizny jednemu obok | Zaraza: walczący z nim +1 stos zarazy co 1,5 s | Nieumarli, Cmentarz | swing |
 | `lich` | Licz | 9, 120, 4 obuchowe, 6 s | `25*D*power` + Spowolniony 2 s każdemu do 2 pól w pokoju | aura 8 strachu/s do 2 pól w pokoju; raz (B: 2 razy) podnosi powalonego (nie unoszącego się, nie `temp`) potwora swojego pokoju z 50% HP | Nieumarli, Cmentarz | double |
 | `imp` | Chochlik | 3, 40, 0 (unosi się), 6 s | Zwędzenie: cel z przedmiotami (losowy) 20 × pw strachu, zabiera przedmiot i upuszcza go na losowym polu innego pokoju (nie pokoju serca) jako łup | aura 4/s do 1,6; po trafieniu 50% unik teleportem (odnowienie 2 s) | Demony, Wrota otchłani | double |
-| `hound` | Ogar piekielny | 5, 90, 28 ogień, 5 s | Pogoń: najbardziej przestraszony w pokoju `30*D*power × houndK` | uciekający i panikujący dostają od niego ×2 (Piekielna sfora ×3); zabicie takiego w walce daje też Grozę ucieczki | Demony, Wrota otchłani | swing |
+| `hound` | Ogar piekielny | 5, 90, 28 ogień, 5 s | Pogoń: najbardziej przestraszony w pokoju `30*D*power × houndK` | uciekający i panikujący dostają od niego ×2 (Piekielna sfora ×3); zabicie takiego w walce daje też Grozę ucieczki; od 1.26.1 trop krwi (`houndTrack`, 5.15.2) | Demony, Wrota otchłani | swing |
 | `siren` | Kusicielka | 6, 60, 0 (unosi się), 9 s | Zew: najmniej odważny w zasięgu 4 (nie paladyn, nie boss) Uwiedziony 4 s; przerywa to kapłan, paladyn albo śpiewający bard w jej pokoju ("Zew przerwany") | aura 5/s do 2 | Demony, Wrota otchłani | double |
 | `demon` | Demon otchłani | 10, 420, 28 ogień (wszystkim walczącym), 6 s | Pożoga: `40*D*power × demonK` każdemu w pokoju + podpalenie 3 s | aura 6/s do 2,5; Apetyt: dopóki stoi w lochu (nie `temp`), głód każdej fali +2 (Pakt z otchłanią +1) | Demony, Wrota otchłani | swing |
-| `sapper` | Goblin saper | 5, 80, 8 kłute, 8 s | Kolczatki: do 3 wolnych pól obok bohaterów w obszarze, najwyżej 9 kolczatek tego sapera w fali; wejście: `15*S.dmg*pw` kłute i Spowolniony 1,5 s (`hazardsTick`) | - | Zielonoskórzy, Goblinia nora | bar |
+| `sapper` | Goblin saper | 5, 80, 8 kłute, 8 s | Kolczatki: do 3 wolnych pól obok bohaterów w obszarze, najwyżej 9 kolczatek tego sapera w fali; wejście: `15*S.dmg*pw` kłute i Spowolniony 1,5 s (`hazardsTick`) | od 1.26.1 chowa się za innymi potworami (5.15.2) | Zielonoskórzy, Goblinia nora | bar |
 | `warlord` | Herszt goblinów | 7, 160, 14 obuchowe, 5 s | Okrzyk: `30*D*power` i `15*pw` strachu każdemu w pokoju | zielonoskórzy (goblin, szaman, saper, herszt, łucznik, ogr) w jego pokoju ×1,5 (`warlordK`); po powaleniu goblina w jego pokoju szał 6 s (×1,5 więcej) | Zielonoskórzy, Goblinia nora | swing |
 | `rats` | Rój szczurów | 3, 35, 6 kłute (wszystkim walczącym), 4 s | Zalew: `8*D*power × ratsK` każdemu w pokoju | Rośnie: po fali bez powalenia `grow` +1 (najwyżej 3), HP i obrażenia ×(1 + 0,8 × grow); powalony wraca do 0 | Bestie, Gniazdo | pulse |
 
@@ -1545,7 +1545,7 @@ Powalony potwór nie odpala, nie walczy i nie leczy się (wszędzie `hp > 0`), r
 | `demons` | Demony | imp, hound, siren, demon | ⛧ `#ff7a5a` |
 | `treasure` | Skarby | loot, lpotion, loot2, loot3, lcursed, bait | ◆ `#f2b94b` |
 
-Poziom rodziny `run.famLv[f]` (0-5, Runa rodu w sklepie, sekcja 03, 3.16): `famK(t) = 1 + 0,08 × poziom` mnoży moc pułapek i zdolności (`fireRaw`), ciosy potworów (`monDmg`), dzwon żałobny i przynętę; Skarby: chciwość z widzianego łupu. `cdOf` -4% na poziom. Rodziny liczą się też w Pełnej palecie (`fl.famN`), stylu gildii "holy" (nieumarli i demony) i Przesądnym (Nawiedzenie). Rodzina (`FAMILY_OF`) nie jest tym samym co komnata (`KIND_OF`): np. łucznik jest w rodzinie Zielonoskórych, a w komnacie Kaplica czaszek.
+Poziom rodziny `run.famLv[f]` (0-5, Runa rodu w sklepie, sekcja 03, 3.16): `famK(t) = 1 + 0,08 × poziom` mnoży moc pułapek i zdolności (`fireRaw`), ciosy potworów (`monDmg`), dzwon żałobny i przynętę; Skarby: chciwość z widzianego łupu; od 1.26.1 także czas statusów nakładanych przez element rodziny (`setStatus`, bez unieruchomienia, 5.15.3). `cdOf` -4% na poziom. Rodziny liczą się też w Pełnej palecie (`fl.famN`), stylu gildii "holy" (nieumarli i demony) i Przesądnym (Nawiedzenie). Rodzina (`FAMILY_OF`) nie jest tym samym co komnata (`KIND_OF`): np. łucznik jest w rodzinie Zielonoskórych, a w komnacie Kaplica czaszek.
 
 ### 5.14.9 Zmiany liczb istniejących elementów (plan 6.1-6.5)
 
@@ -1571,7 +1571,7 @@ Poziom rodziny `run.famLv[f]` (0-5, Runa rodu w sklepie, sekcja 03, 3.16): `famK
 | Komnata | 12 (zwrot 6) | 10 (zwrot 5) |
 | `MON_FACTOR`, `DMG_FACTOR.monster` | 0,4 | 0,8 |
 
-Tooltip łupu w pasku budowy dalej mówi "+25% ceny" za każdy kolejny (`showTip`), choć `LOOT_STEP` to 1,15 (5.14.11).
+Tooltip łupu w pasku budowy (`showTip`) mówi "+15% ceny" za każdy kolejny, zgodnie z `LOOT_STEP` 1,15 (w pierwszej wersji 1.26 było "+25%").
 
 ### 5.14.10 Karty statusów i rodzin (1.26, efekty w kodzie)
 
@@ -1587,16 +1587,86 @@ Tooltip łupu w pasku budowy dalej mówi "+25% ceny" za każdy kolejny (`showTip
 | Pakt z otchłanią (`abyssPact`) | `hungerParts`, `monDmg` | Apetyt +1 zamiast +2, demony (cała rodzina) ×1,2 w walce |
 | Podwójne ostrze (`doubleEdge`) | `fireRaw` (kolce) | drugi cios 50% Unieruchomionym i Spowolnionym |
 | Echo serca (`heartEcho`) | `fireRaw` | pierwsza pułapka po nasyceniu odpala dwa razy |
-| Puls serca, Ostatni oddech, Strażnik | `heartK`, `monDmg`, `startWave` | sekcja 03, 3.9 |
+| Puls serca, Ostatni oddech, Strażnik | `heartK`, `monDmg`, `startWave`; od 1.26.1 też `trapBoost` dla potworów | sekcja 03, 3.9; od 1.26.1 wzmacniają także zdolności potworów odpalane checkiem (5.15.3) |
 
 ### 5.14.11 Różnice wobec planu w tej sekcji (do decyzji autora)
 
-- Plama oleju A (Łatwopalna): `h.oilA` jest zapisywane, ale nic go nie czyta, więc cecha nic nie robi.
-- Wnyki: opis "rozbrajanie trwa 1,5 raza dłużej" nie ma pokrycia (czas rozbrajania liczy tylko strzały, ogień i proch ×1,5). Otwarte (sekcja 11).
-- Ogar: "idzie za Krwawiącym do sąsiedniego pokoju" nie jest zaimplementowane (otwarte, sekcja 11); Polowanie (×2 w walce, Groza ucieczki przy zabójstwie walką albo zdolnością) działa.
-- Goblin saper "trzyma się za innymi potworami" nie jest zaimplementowany (otwarte, sekcja 11).
-- Oślepienie (Para, Łzawiące, Wyziewy B) blokuje wykrywanie, ale nie naukę pułapek (plan: "brak wykrywania i nauki"; otwarte, sekcja 11).
-- Liczniki potworów nie są zerowane między falami (`setupFl` zeruje tylko `hp`, `down`, `healGot` i stare pola): `m.raised` (licz podnosi raz na run, Armia 2 razy), `m.reN` (szkielet składa się raz na run, Legion 2 razy, a premia Kości niezłomnych zostaje na stałe po pierwszym złożeniu), `m.reAt` (szkielet powalony tuż przed końcem fali w następnej fali w chwili `reAt` dostaje `hp = 50% max`, nawet z pełnym HP), `it.rewound` (Zwijacz raz na run), `m.rangerHit` (pierwszy strzał tropiciela w latającego, z dodatkową sekundą obrażeń, raz na run na potwora), `it.boltN` (licznik Przeciążenia). Plan i opisy mówią "na falę".
-- Wyziewy: trafieni przy odpaleniu dostają stos i strach, a potem jeszcze raz przy "wejściu" do świeżej chmury w tym samym kroku (`c.seen` startuje puste).
+Zrobione w 1.26.1 (szczegóły w 5.15): Plama oleju A działa (15% na podpalenie przy trafieniu pułapki), Wnyki rozbraja się ×1,5, ogar idzie za Krwawiącym do sąsiedniego pokoju, goblin saper chowa się za innymi potworami, oślepiony nie uczy się pułapek, Wyziewy nie dają drugiego stosu przy odpaleniu, Pożar i Runa rodu wydłużają statusy. W kodzie 1.26.1 `setupFl` zeruje też liczniki potworów `m.raised`, `m.reN`, `m.reAt`, `m.rangerHit` i `it.rewound` (licz podnosi, szkielet się składa i Zwijacz działa raz na falę), a tooltip łupu mówi "+15% ceny".
+
+Zostaje:
+- `it.boltN` (licznik Przeciążenia runy piorunów B) nie jest zerowany między falami, więc co trzecie odpalenie liczy się przez cały run, a nie od początku fali.
 - Krwawy księżyc mnoży obrażenia potworów także w ich zdolnościach (`omenPow` w `fireRaw`), plan mówił ogólnie "potwory +30% obrażeń", więc zgodne; czaszka tego nie liczy (5.11, punkt 21).
-- Tooltip łupu "+25% ceny" przy `LOOT_STEP` 1,15.
+
+## 5.15 Prototype 1.26.1: Ukryte przejście, brakujące zachowania potworów, poprawki zasad (`p1_config.js: ITEMS.secret, TABS, TOOLS, START_UNLOCKED, ONB_ITEM`; `p3_flow.js: toolCost, toolMarkers, secretOk, applyTool, secretFind`; `p2_state_map.js: secretShut, passable`; `p4_traps.js: houndTrack, trapBoost, setStatus, reactHit, hazardsTick`; `p5_ai.js: heroAI126, sapperCovered, newClassTick`)
+
+Lista zmian 1.26.1 opisana w kodzie komentarzami "1.26.1". Wykrywanie ukrytego przejścia przez bohaterów: sekcja 06, 6.16.12; mapa, ścieżki i zapis: sekcja 07, 7.14; rysowanie: sekcja 08, 6.14b.
+
+### 5.15.1 Ukryte przejście (narzędzie)
+
+| Pole | Wartość |
+|---|---|
+| `ITEMS.secret` | `name 'Ukryte przejście'`, `cost 6`, `slot 'hall'` (`SLOT_LABEL.hall` = "przejście między pokojami"), `tag 'fałszywa ściana'`, `tool: true` |
+| Gdzie w pasku | zakładka Loch, podzakładka Kopanie, po Tunelu (`dig, tunnel, secret, expand, demolish`) |
+| Dostępność | w `START_UNLOCKED` (bez karty odblokowania), w `TOOLS`; `ONB_ITEM.secret = 3`, czyli od 3. etapu nauki |
+
+Działanie: narzędzie oznacza istniejące przejście między dwoma pokojami (krawędź `L.edges`, klucz `edgeKey(a, b)`) jako fałszywą ścianę: `e.secret = true`. Przy budowie lochu z układu oba końce korytarza (drzwi przy pokoju A i przy pokoju B) dostają `d.secret = e.key`, a korytarz `hall.secret = true`. Dla bohaterów (i dla ścieżek potworów) takie drzwi są ścianą, dopóki ktoś ich nie odkryje (sekcja 07, 7.14).
+
+```
+toolCost('secret', m) = m.has && !m.known ? 0 : 6              // zdjęcie maski nieznanego przejścia za darmo, bez zwrotu
+toolMarkers('secret'): każdy korytarz (R.kind === 'hall') z krawędzią w układzie;
+    przejście jeszcze nie ukryte tylko wtedy, gdy secretOk(L, R.key); znacznik na środkowym polu korytarza
+    { tool, edge, has: e.secret, known: e.secret && e.secretKnown }
+secretOk(L, ek): krawędzie bez ek i bez innych ukrytych; layoutDist(wejście, te krawędzie) dochodzi do serca
+applyTool (secret):
+    has && !known: e.secret = false, e.secretKnown = false; "Maska zdjęta: zwykłe przejście."
+    has || secretOk: e.secret = true, e.secretKnown = false; forgetTiles(pola korytarza); stats.secretMade++;
+                     "Ukryte przejście: bohaterowie widzą tu ścianę, dopóki go nie odkryją."
+    inaczej: "Do serca musi zostać jawna droga."
+    po zmianie rebuildDungeon(true)
+```
+- Ponowne maskowanie przejścia, o którym bohaterowie wiedzą z plotek (`secretKnown`, 07, 7.14), kosztuje 6 i kasuje tę wiedzę.
+- `forgetTiles` usuwa pola korytarza z plotek (`run.rumor.tiles`), jak przy kopaniu: następna drużyna nie zna tego korytarza z opowieści.
+- `secretOk` jest sprawdzane tylko przy maskowaniu. Zasypanie przejścia albo pokoju (`canDemolishEdge`, `canDemolishRoom`) sprawdza tylko spójność lochu i nie patrzy na ukryte przejścia, więc później da się zostawić do serca wyłącznie ukrytą drogę (sekcja 11).
+- Odkryte przejście jest w tej fali zwykłym przejściem; w następnej znowu jest ukryte, chyba że ktoś o nim opowiedział (07, 7.14).
+
+### 5.15.2 Potwory: ogar, saper, szkielet
+
+**Ogar piekielny: trop krwi** (`houndTrack(m, room, dt)`, z `newMonsterTick` dla żywego ogara, co krok):
+```
+jeśli m.walking:
+    stop, gdy cel martwy, wyszedł, zniknął, fl.time > hunt.until albo ścieżka pusta (m.walking = false, gx, gy na środek pola)
+    ruch po ścieżce 2,6 pola/s (m.gx, m.gy); na końcu ścieżki (odroczone do następnego kroku):
+        jeśli ogar dalej stoi na swoim polu w fl.items, a pole docelowe jest wolne i przechodnie:
+            pierwszy raz w fali zapamiętaj dom (homeX, homeY); przenieś ogara na pole docelowe; threatDirty
+            stats.houndTrack++, napis "Ogar na tropie!"
+    return
+co 1 s (m.huntCd):
+    nikt żywy w pokoju ogara
+    cel = pierwszy żywy Krwawiący w sąsiednim pokoju (nbrRooms), w odległości <= 9 pól od ogara
+    pola docelowe: 8 pól wokół celu, w jego pokoju, przechodnie, bez elementu, slot podłogi
+    BFS z pola ogara (noDanger); najbliższe pole docelowe; brak albo dalej niż 16 kroków: nic
+    m.walking = true; m.hunt = { id celu, until: fl.time + 8, path }; napis "Ogar węszy krew!"
+```
+W trakcie biegu ogar logicznie stoi na starym polu (`m.x, m.y`), a rysuje się w `gx, gy` (sekcja 08). Zostaje w nowym miejscu do końca fali; `setupFl` w następnej budowie odstawia go na `homeX, homeY` (gdy to pole jest wolne) i kasuje `homeX`, `walking`, `hunt`.
+
+**Goblin saper: chowa się za innymi potworami**:
+- walka wręcz (`monstersTick`): gdy na polu obok sapera (odległość Czebyszewa <= 1) stoi inny żywy, nie powalony potwór, który nie jest saperem, obrażenia zadane saperowi w walce ×0,6;
+- `sapperCovered(m)`: w pokoju sapera jest inny żywy, nie powalony potwór, który nie jest saperem. Wtedy mag celuje kulą ognia w sapera tak, jakby był 2,5 pola dalej (wybiera go na końcu), a tropiciel w ogóle do niego nie strzela (6.16.3 w sekcji 06). Od 1.26.1 tropiciel nie strzela też do powalonych potworów.
+
+**Szkielet**: Składanie działa także wtedy, gdy szkielet leży (`monsterTick` przy `hp <= 0` woła dla niego `newMonsterTick`, 5.14.6).
+
+### 5.15.3 Poprawki zasad
+
+| Co | 1.26 | 1.26.1 (kod) |
+|---|---|---|
+| Wnyki: rozbrajanie | ×1 | ×1,5 jak strzały, ogień i proch (`disarmJob`, `grudgeJob`: `h.timer`) |
+| Flaszka alchemika na strefę albo chmurę | kończy ją od razu (`until = teraz`) | wyłącza ją na 6 s (`z.offUntil = teraz + 6`, pola i klucze odłożone do `keysOff`, `tilesOff`, strefa pusta); `hazardsTick` przywraca ją po 6 s, jeśli dalej trwa; alchemik nie celuje w strefę już wyłączoną |
+| Oślepienie (Para, Łzawiące wyziewy) | blokuje wykrywanie | blokuje też naukę: oślepieni nie są świadkami odpalenia (`witnesses` w `fireRaw`) |
+| Pożar | podpalenie stałe 6 s | `burnUntil = teraz + max(6, 2 × pozostały czas podpalenia)` |
+| Wyziewy, pierwszy kontakt | trafieni przy odpaleniu dostawali drugi stos za "wejście" do chmury | trafieni są od razu w `seen` chmury, `cloudT = 0`: jeden stos przy odpaleniu, kolejny po 1,5 s w chmurze |
+| Runa rodu a statusy | czas stały | `setStatus` mnoży czas przez `famK(typ źródła)`, gdy źródło jest elementem (`ITEMS`), poza unieruchomieniem (`root`, dalej limit 5 s) |
+| Karty i Strażnik a zdolności potworów | `trapBoost` = 1 dla potworów | `trapBoost(potwór) = kataK × heartK × (Strażnik w pokoju serca ? 1 + warden : 1)`: Pamiętnik kata, Puls serca, Ostatni oddech i Strażnik mnożą też moc zdolności odpalanej checkiem (`fireRaw`); walka wręcz (`monDmg`) miała je już w 1.26 |
+| Plama oleju A | opis: nie działa | Oblany przez plamę z cechą A (`h.oilA`) przy trafieniu pułapki: 15% na podpalenie 3 s (`damage`, "Zapłon!") |
+| Lustro B (Odbicie) | zużywał je każdy strach | tylko strach co najmniej 3 (`amt >= 3` w `addFear`) |
+
+Podsumowanie fali (część serca `min(need, fl.fed)`, "dla Ciebie" bez Daniny) i `FUSE_INT`: sekcja 03 (1.9, 3.13).

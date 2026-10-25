@@ -410,6 +410,12 @@
       P.rect(x - 14, y - 22, 2, 22, C.st3).rect(x + 12, y - 22, 2, 22, C.st3);
       P.after(() => { P.path([x - 8, y - 9, x + 6, y - 9], C.goldHi, 1.4); P.poly([x + 6, y - 12, x + 10, y - 9, x + 6, y - 6], C.goldHi); P.path([x + 8, y - 15, x - 6, y - 15], C.goldHi, 1.4); P.poly([x - 6, y - 18, x - 10, y - 15, x - 6, y - 12], C.goldHi); });
     };
+    EL.secret = (P, x, y) => {   // 1.26.1 Ukryte przejście: a stretch of wall with one block a little out of line and a violet seam
+      P.rect(x - 16, y - 24, 32, 24, C.st2);
+      for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) P.rect(x - 16 + k * 8 + (r % 2) * 4, y - 24 + r * 6, 7, 5, (r + k) % 3 ? C.st3 : C.st1);
+      P.rect(x - 5, y - 18, 10, 12, C.st4).rect(x - 5, y - 18, 10, 1, C.st1);
+      P.after(() => { P.g.save(); P.g.setLineDash([2, 2]); P.g.strokeStyle = 'rgba(190,160,255,0.95)'; P.g.lineWidth = 1; P.g.strokeRect(x - 5.5, y - 18.5, 11, 13); P.g.restore(); P.txt('?', x + 10, y - 20, '#d9c4ff', 11); });
+    };
     EL.expand = (P, x, y) => {
       P.after(() => { P.g.setLineDash([2, 2]); P.g.strokeStyle = C.gold; P.g.lineWidth = 1; P.g.strokeRect(x - 14.5, y - 21.5, 29, 20); P.g.setLineDash([]); P.path([x - 4, y - 11, x + 22, y - 11], C.goldHi, 1.6); P.poly([x + 21, y - 15, x + 27, y - 11, x + 21, y - 7], C.goldHi); P.txt('+1', x - 8, y - 12, C.goldHi, 9); });
     };
@@ -994,9 +1000,10 @@
       skulls: '@skull|grow', execdiary: '@book|skull', risinglegend: '@star|grow|greed', pantry: '@sack|grow|ess',
       copyist: '@mirror2|loop', soulmirror: 'mirror|loop', doubleedge: 'spikes|x2', sharedmech: '@gear|chain', chainreact: '@bolt|chain', heartecho: '@heartEcho|loop|heart',
       tarsulfur: 'tar|fire', conduct: 'bolt|chain', toxicfume: 'miasma|up', plague: 'zombie|drop', hellpack: 'hound|x2', bonesunbroken: 'skeleton|loop', undyingarmy: 'skeleton|skull', abysspact: 'demon|scroll',
-      goldendream: 'loot|moon|greed', croesus: '@crown|coin|greed'
+      goldendream: 'loot|moon|greed', croesus: '@crown|coin|greed',
+      heartguide: '@pulse|up|heart', heartdread: '@skull|up|heart', heartgreed: '@crown|coin|heart', heartpatience: '@hourglass|time|heart', heartgrowth: '@heartAltar|plus|heart', heartcore: '@heartEcho|x2|heart', secondheart: '@crystal|loop|heart', resonance: '@book|chain|heart'
     };
-    const HEART_IDS = new Set(['regrow', 'heartcry', 'heavycrystal', 'heartroom', 'warden', 'darkforge', 'darklore', 'heartmem', 'tithe', 'stoneheart', 'bloodcredit', 'glutton', 'bloodflow', 'kingsfeast', 'lastbreath', 'heartpulse']);
+    const HEART_IDS = new Set(['regrow', 'heartcry', 'heavycrystal', 'heartroom', 'warden', 'darkforge', 'darklore', 'heartmem', 'tithe', 'stoneheart', 'bloodcredit', 'glutton', 'bloodflow', 'kingsfeast', 'lastbreath', 'heartpulse', 'heartguide', 'heartdread', 'heartgreed', 'heartpatience', 'heartgrowth', 'heartcore', 'secondheart', 'resonance']);
     ART.NEW_CARDS = Object.keys(T_).filter(id => !UPG[id]);
     ART.isHeart = id => HEART_IDS.has(id) || !!(UPG[id] && UPG[id].group === 'heart');
     const STAGE = { arrows: 'wall', fire: 'wall', portrait: 'wall', eyes: 'wall', mirror: 'wall', pendulum: 'wall', bolt: 'wall', gate: 'door', creak: 'door', falsedoor: 'door', tar: 'door' };

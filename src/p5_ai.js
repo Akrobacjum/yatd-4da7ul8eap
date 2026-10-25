@@ -1568,7 +1568,7 @@
       const g = nearestOf(b, disarmSpots(it).map(t => t[1] * WW + t[0]));
       if (g < 0) return null;
       if (b.dist[g] === 0) {
-        h.state = 'disarm'; h.timer = (it.type === 'arrows' || it.type === 'fire' || it.type === 'powder' ? 1.5 : 1.0) * mods.disarm * h.R.disarm * (isRt(h.room, 'swamp') ? 1.5 : 1);
+        h.state = 'disarm'; h.timer = (it.type === 'arrows' || it.type === 'fire' || it.type === 'powder' || it.type === 'snare' ? 1.5 : 1.0) * mods.disarm * h.R.disarm * (isRt(h.room, 'swamp') ? 1.5 : 1);
         h.dur = h.timer; h.item = it; h.disarmT = it; h.path = []; return { intent: 'disarm', goal: -1 };
       }
       return { intent: 'disarm', goal: g };
@@ -2351,7 +2351,7 @@
   }
   // how much a hero wants to look at a thing (lower = more): a greedy one or a thief goes for furniture, a priest for the dead,
   // a mage for mirrors and odd walls, a barbarian for weapons and fire, a bard for statues and the gallery
-  const LOOK_LIKE = { greedy: { obj: 2.5 }, thief: { obj: 1.5 }, priest: { coffin: 2.5, bones: 2.5, ossuary: 2.5, haunt: 1.5 }, mage: { mirror: 2, eyes: 2, haunt: 1.5 },
+  const LOOK_LIKE = { curious: { obj: 2.5, portrait: 1, mirror: 1 }, greedy: { obj: 2.5 }, thief: { obj: 1.5 }, priest: { coffin: 2.5, bones: 2.5, ossuary: 2.5, haunt: 1.5 }, mage: { mirror: 2, eyes: 2, haunt: 1.5 },
     barbarian: { armory: 2.5, forge: 2.5, ogre: 1.5 }, bard: { statue: 2, gallery: 2.5, nursery: 1.5, portrait: 1.5 }, warrior: { armory: 2, statue: 1 } };
   const lookPref = (h, s) => { const a = LOOK_LIKE[h.trait] || {}, b = LOOK_LIKE[h.type] || {}; return (a[s.kind] || 0) + (a[s.sub] || 0) + (b[s.kind] || 0) + (b[s.sub] || 0) - (s.kind === 'wall' ? 1.5 : 0); };
   function lookRoll(L, r) {
@@ -2433,12 +2433,12 @@
     if (lk.kind !== 'obj') return;
     const it = lk.it;
     // 1.18 Zastawione szuflady: in a Graciarnia what sits on the furniture goes off (1 + copies) times as often, at most 95%
-    const pT = it ? (mods.drawers && rkOf(roomOf(lk.x, lk.y)) === 'junk' ? Math.min(0.95, SEARCH_TRAP[it.type] * (1 + mods.drawers)) : SEARCH_TRAP[it.type]) : 0;
+    const pT = it ? Math.min(0.95, (mods.drawers && rkOf(roomOf(lk.x, lk.y)) === 'junk' ? Math.min(0.95, SEARCH_TRAP[it.type] * (1 + mods.drawers)) : SEARCH_TRAP[it.type]) * (h.trait === 'curious' ? 2 : 1)) : 0;   // 1.26.1 Ciekawski: searches twice as hard
     if (it && fl.items.get(key(it.x, it.y)) === it && !it.disabled && !it.detected && it.cd <= 0 && Math.random() < pT) {
       fl.stats.lookTraps = (fl.stats.lookTraps || 0) + 1; tl('lt', h.id, it.type, it.x, it.y); fire(it, 1); return;
     }
     if (!SEARCH_GOLD[lk.sub]) return;
-    if (Math.random() < (h.trait === 'greedy' || h.type === 'thief' ? 0.3 : 0.18) * (1 + mods.coins)) {   // 1.18: Podrzucone grosze x2
+    if (Math.random() < (h.trait === 'greedy' || h.trait === 'curious' || h.type === 'thief' ? 0.3 : 0.18) * (1 + mods.coins)) {   // 1.18: Podrzucone grosze x2
       h.gold = (h.gold || 0) + 1; sawAdd(h, ['gold']); fl.stats.goldFound = (fl.stats.goldFound || 0) + 1; floatHero(h, '+1 złota', '#f2c94c', 12, -0.7);
       if (mods.coins) {   // 1.18 Podrzucone grosze: the coin pulls like Monety seen (noticeLoot's formula, fading the same way)
         const g = LOOT_GREED.gold[0] * mods.greedMult * (1 + mods.goldDust) / (1 + 0.15 * fl.stats.lootSeen);
@@ -2471,6 +2471,10 @@
     fl.stats.heard = (fl.stats.heard || 0) + 1; tl('hs', h.id, it.type);
     if (v || Math.random() < 0.65) P.queueSay.push({ id: h.id, text: v ? nameFill(pick(SAY.hearScream), v) : pick(SAY.hearSound), at: fl.time + 0.3, prio: 2, late: 2.5 });
     alive().forEach(o => { if (!o.lost && !panicking(o) && !caged(o) && (o === h || earshot(o, h))) { lookAt(o, it.x, it.y); o.glanceT = 2.5; } });
+    // 1.26.1 Ciekawski: one who heard it goes to see what it was (twice a wave at most), alone if need be
+    if (r >= 0) alive().forEach(o => { if (o.trait !== 'curious' || o === Lh || o.lost || panicking(o) || caged(o) || exiting(o) || o.callFor || (o.curiousN || 0) >= 2 || !(o === h || earshot(o, h))) return;
+      o.curiousN = (o.curiousN || 0) + 1; o.checkAt = { room: r, until: fl.time + 12 }; o.needPlan = true; fl.stats.curiousGo = (fl.stats.curiousGo || 0) + 1;
+      P.queueSay.push({ id: o.id, text: pick(SAY.curiousGo), at: fl.time + 0.6, prio: 2, late: 2.5 }); });
   }
   // 1.18 Zepsute mikstury: a potion from your loot (pickup marks it) heals half and scares the one who drinks it (10% of his courage a copy)
   function taintedSip(h, pot) {
@@ -2666,6 +2670,8 @@
       noDanger = true;
       if (tIdx(h) === h.sac.goal || B().dist[h.sac.goal] < 0) { h.intent = 'sacrifice'; h.lootKey = null; h.path = []; h.state = 'wait'; h.timer = 0.4; return; }
       intent = 'sacrifice'; goal = h.sac.goal;
+    } else if (h.checkAt && !exiting(h) && !panicking(h) && fl.time < h.checkAt.until && h.room !== h.checkAt.room && fl.rooms[h.checkAt.room]) {   // 1.26.1 Ciekawski: to the sound
+      intent = 'curious'; goal = nearestOf(B(), fl.rooms[h.checkAt.room].tiles.filter(t => walkable(t[0], t[1])).map(t => t[1] * WW + t[0]));
     } else if (h.callFor && !exiting(h) && byId(h.callFor) && callNeeds(byId(h.callFor))) {   // 1.26 Wezwanie po krzyk: he runs to the one calling, through the traps
       const t = byId(h.callFor); intent = 'call'; noDanger = true; goal = nearestOf(B(), [t.ty * WW + t.tx].concat(DIRS.map(d => (t.ty + d[1]) * WW + t.tx + d[0]).filter(i => i >= 0 && i < WW * WH && walkable(i % WW, (i / WW) | 0))));
     } else if (h.type === 'cultist' && !exiting(h) && !fl.exhausted) {   // 1.26 Kultysta: the heart, by the shortest way he knows, around fights
@@ -2745,6 +2751,12 @@
         let hm = null, hd = 1e9;
         fl.items.forEach(m => { if ((m.type === 'shaman' || m.type === 'lich') && m.hp > 0 && roomOf(m.x, m.y) === h.room && fl.known[m.y * WW + m.x] && !hiddenAmbush(m)) { const d = B().dist[m.y * WW + m.x]; if (d > 0 && d < hd) { hd = d; hm = m; } } });
         if (hm) { job = { intent: 'fight', goal: hm.y * WW + hm.x }; if (!fl.party.healerSaid) { fl.party.healerSaid = true; say(h, pick(SAY.healerFirst), 3); fl.stats.healerFirst = (fl.stats.healerFirst || 0) + 1; } }
+      }
+      // 1.26.1 Zapaleniec: charges any monster he knows of in his room (an ogre too)
+      if (!job && !backing && h.trait === 'hothead' && !exiting(h) && !panicking(h) && h.room >= 0) {
+        let hm = null, hd = 1e9;
+        fl.items.forEach(m => { if (MONSTERS[m.type] && !DRIFT[m.type] && m.hp > 0 && !m.down && roomOf(m.x, m.y) === h.room && fl.known[m.y * WW + m.x] && !hiddenAmbush(m)) { const d = B().dist[m.y * WW + m.x]; if (d > 0 && d < hd) { hd = d; hm = m; } } });
+        if (hm) { job = { intent: 'fight', goal: hm.y * WW + hm.x }; if (!h.chargeSaid) { h.chargeSaid = true; say(h, pick(SAY.charge), 3); } }
       }
       if (!job && !backing && h.type === 'warrior' && h.front && h.front.hp > 0 && fl.items.get(key(h.front.x, h.front.y)) === h.front && roomOf(h.front.x, h.front.y) === h.room && B().dist[h.front.y * WW + h.front.x] > 0) job = { intent: 'fight', goal: h.front.y * WW + h.front.x };
       // 1.22: sent first into a room they fear ("ty pierwszy"): a step or two into it
@@ -2912,7 +2924,7 @@
     h.disarmT = tBest;
     if (!tBest) return null;
     if (tCost <= 0 && b.dist[tSpot] === 0) {
-      h.state = 'disarm'; h.timer = (tBest.type === 'arrows' || tBest.type === 'fire' || tBest.type === 'powder' ? 1.5 : 1.0) * mods.disarm * h.R.disarm * (isRt(h.room, 'swamp') ? 1.5 : 1);   // knee-deep in a swamp it takes longer
+      h.state = 'disarm'; h.timer = (tBest.type === 'arrows' || tBest.type === 'fire' || tBest.type === 'powder' || tBest.type === 'snare' ? 1.5 : 1.0) * mods.disarm * h.R.disarm * (isRt(h.room, 'swamp') ? 1.5 : 1);   // knee-deep in a swamp it takes longer
       h.dur = h.timer; h.item = tBest; h.path = []; say(h, pick(SAY.disarm), 3);
       return { intent: 'disarm', goal: -1 };
     }
@@ -3106,7 +3118,7 @@
       if (!MONSTERS[m.type] || m.hp <= 0 || roomOf(m.x, m.y) !== h.room) return;
       if (m.type === 'shade' || (m.type === 'ghost' && mods.ghostPriestOnly)) return;   // only a priest touches a shade
       const mx = DRIFT[m.type] ? m.gx : m.x + 0.5, my = DRIFT[m.type] ? m.gy : m.y + 0.5;
-      const d = Math.hypot(mx - p.x, my - p.y) - (m.type === 'shaman' || m.type === 'lich' ? 3 : 0);   // 1.26 Najpierw uzdrowiciel
+      const d = Math.hypot(mx - p.x, my - p.y) - (m.type === 'shaman' || m.type === 'lich' ? 3 : 0) + (m.type === 'sapper' && sapperCovered(m) ? 2.5 : 0);   // 1.26 Najpierw uzdrowiciel; 1.26.1: a covered saper last
       if (d < bd) { bd = d; target = m; }
     });
     if (!target) { h.cast = 0.5; return; }
@@ -3252,6 +3264,8 @@
   }
   function inZone(x, y) { const k = key(x, y); return fl.zones.some(z => z.keys.has(k)); }
   // 1.26 (14.1): the paladin's holy aura, the ranger's tracking and shots, the alchemist's antidote and flask
+  const superRoom = r => [...fl.items.values()].some(it => (it.type === 'portrait' || it.type === 'mirror') && !it.disabled && slotRoom(it.type, it.x, it.y) === r);   // 1.26.1 Przesądny
+  const sapperCovered = m => [...fl.items.values()].some(o => o !== m && MONSTERS[o.type] && o.type !== 'sapper' && o.hp > 0 && !o.down && roomOf(o.x, o.y) === roomOf(m.x, m.y));   // 1.26.1
   function newClassTick(h, dt) {
     if (h.dead || h.gone || panicking(h) || caged(h)) return;
     const p = heroPos(h);
@@ -3261,7 +3275,7 @@
       h.trackT = (h.trackT || 0) - dt;
       if (h.trackT <= 0) { h.trackT = 1; nbrRooms(h.room).concat([h.room]).forEach(r => fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && roomOf(m.x, m.y) === r && !fl.known[m.y * WW + m.x] && m.trackedW !== run.wave) { m.trackedW = run.wave; fl.threatDirty = true; fl.stats.tracked = (fl.stats.tracked || 0) + 1; } })); }   // tracking: the monsters next door are known
       if (h.state !== 'fight' && !exiting(h)) {   // a shot at a monster within 4 tiles of his room, without walking into a fight
-        let t = null, bd = 4.01; fl.items.forEach(m => { if (!MONSTERS[m.type] || m.hp <= 0 || roomOf(m.x, m.y) !== h.room || hiddenAmbush(m)) return; const d = Math.hypot((m.gx || m.x + 0.5) - p.x, (m.gy || m.y + 0.5) - p.y); if (d < bd) { bd = d; t = m; } });
+        let t = null, bd = 4.01; fl.items.forEach(m => { if (!MONSTERS[m.type] || m.hp <= 0 || m.down || roomOf(m.x, m.y) !== h.room || hiddenAmbush(m) || (m.type === 'sapper' && sapperCovered(m))) return; const d = Math.hypot((m.gx || m.x + 0.5) - p.x, (m.gy || m.y + 0.5) - p.y); if (d < bd) { bd = d; t = m; } });
         if (t) { const first = DRIFT[t.type] && !t.rangerHit; t.rangerHit = true; hurtMonster(t, 12 * h.R.dps * (dt + (first ? 1 : 0)), h); h.shotT = (h.shotT || 0) - dt; if (h.shotT <= 0) { h.shotT = 1.2; fxLine(p.x, p.y, t.gx || t.x + 0.5, t.gy || t.y + 0.5, 0.2, '220,200,150'); } }
       }
     } else if (h.type === 'alchemist') {
@@ -3271,9 +3285,10 @@
         if (near.length) { h.antT = 10; near.forEach(o => { ['burn', 'bleed', 'poison', 'oiled', 'wet', 'slow'].forEach(k => clearStatus(o, k)); o.hp = Math.min(o.max, o.hp + 0.08 * o.max); heroFx('heal', o, { col: '#e070b0' }); }); say(h, pick(SAY.antidote), 3); fl.stats.antidotes = (fl.stats.antidotes || 0) + 1; floatHero(h, 'Antidotum', '#e070b0', 13, -0.8); }
       }
       if (h.flaskT <= 0) {
-        const cl = (fl.clouds || []).find(c => c.tiles.some(t => Math.hypot(t[0] - h.tx, t[1] - h.ty) <= 3)), zn = fl.zones.find(z => z.src && z.tiles.some(t => Math.hypot(t[0] - h.tx, t[1] - h.ty) <= 3));
+        const cl = (fl.clouds || []).find(c => !c.offUntil && c.tiles.some(t => Math.hypot(t[0] - h.tx, t[1] - h.ty) <= 3)), zn = fl.zones.find(z => z.src && !z.offUntil && z.tiles.some(t => Math.hypot(t[0] - h.tx, t[1] - h.ty) <= 3));
         let m = null, bd = 4.01; fl.items.forEach(o => { if (!MONSTERS[o.type] || o.hp <= 0 || roomOf(o.x, o.y) !== h.room) return; const d = Math.hypot((o.gx || o.x + 0.5) - p.x, (o.gy || o.y + 0.5) - p.y); if (d < bd) { bd = d; m = o; } });
-        if (cl || zn) { h.flaskT = 12; if (cl) cl.until = fl.time; if (zn) zn.until = fl.time; floatHero(h, 'Flaszka: zneutralizowane', '#e070b0', 12, -0.8); fl.stats.flasks = (fl.stats.flasks || 0) + 1; }
+        if (cl || zn) { h.flaskT = 12; [cl, zn].forEach(z => { if (z && !z.offUntil) { z.offUntil = fl.time + 6; z.keysOff = z.keys; z.tilesOff = z.tiles; z.keys = new Set(); z.tiles = []; } });   // 1.26.1: neutralized for 6 s, then it comes back (if it still lasts)
+          floatHero(h, 'Flaszka: zneutralizowane', '#e070b0', 12, -0.8); fl.stats.flasks = (fl.stats.flasks || 0) + 1; }
         else if (m) { h.flaskT = 12; hurtMonster(m, 60 * h.R.pow, h); burst(m.gx || m.x + 0.5, m.gy || m.y + 0.5, '#ff9a3c', 10); floatHero(h, 'Flaszka!', '#e070b0', 12, -0.8); fl.stats.flasks = (fl.stats.flasks || 0) + 1; }
       }
     }
@@ -3283,6 +3298,7 @@
   function heroAI126(h, dt) {
     h.ai126T = (h.ai126T || 0) - dt; if (h.ai126T > 0) return; h.ai126T = 0.5;
     if (h.callFor && !callNeeds(byId(h.callFor))) { h.callFor = null; h.needPlan = true; }
+    if (h.checkAt && (h.room === h.checkAt.room || fl.time > h.checkAt.until)) { h.checkAt = null; h.needPlan = true; }   // 1.26.1: he has seen it (or gave up)
     // a call for help: the nearest loyal one or paladin runs, through traps
     if (callNeeds(h) && !h.called && !h.boss) {
       const r = alive().filter(o => o !== h && (o.trait === 'loyal' || o.type === 'paladin') && !o.callFor && !exiting(o) && !panicking(o) && !caged(o) && !callNeeds(o) && hdist(o, h) <= 10).sort((a, b) => hdist(a, h) - hdist(b, h))[0];
@@ -3290,6 +3306,13 @@
     }
     if (!callNeeds(h)) h.called = false;
     if (h.callFor) { const t = byId(h.callFor); if (t && hdist(h, t) <= 1.2) { clearStatus(t, 'root'); if (statusOn(t, 'seduced')) { clearStatus(t, 'seduced'); } floatHero(t, 'Uwolnion' + (t.female ? 'a' : 'y'), '#ffe9a8', 12, -0.7); fl.stats.freed = (fl.stats.freed || 0) + 1; h.callFor = null; h.needPlan = true; } }
+    // 1.26.1 Ukryte przejście: one standing by the fake wall may notice it (a thief or a ranger best, the careful and the curious,
+    // a veteran's eye, and one who is stuck and has no way on)
+    if (!h.lost || h.noPathT > 2) fl.doors.forEach(d => {
+      if (!d.secret || (fl.secretFound && fl.secretFound.has(d.secret)) || Math.max(Math.abs(d.x - h.tx), Math.abs(d.y - h.ty)) > 1 || panicking(h) || caged(h)) return;
+      const p = 0.04 + (h.type === 'thief' || h.type === 'ranger' ? 0.14 : 0) + 0.03 * Math.max(0, h.R.detect || 0) + (h.trait === 'careful' || h.trait === 'curious' ? 0.06 : 0) + ((h.noPathT || 0) > 2 ? 0.15 : 0) + (h.inv.some(x => x.type === 'stick') ? 0.08 : 0);
+      if (Math.random() < 0.5 * p) secretFind(d.secret, h);   // a check every 0,5 s: a thief by it about 17% a second, an ordinary hero 4%
+    });
     // Odwrót z łupem: 2+ rare things and under 40% HP: he takes them home alone
     if (!h.goHome && !exiting(h) && !h.boss && h.type !== 'cultist' && h.hp < 0.4 * h.max && h.inv.filter(x => x.r >= 2 && (x.src === 'loot' || x.src === 'relic')).length >= 2 && fl.party && h !== leader()) {
       h.goHome = true; h.split = false; h.needPlan = true; if (h.state === 'rest' || h.state === 'talk') h.state = 'walk';
@@ -3459,6 +3482,15 @@
       if (h.inv.length) {
         if (dng > 1.5 && !fl.fearless && !exiting(h)) useCharm(h, 'danger');
         if (exiting(h) || (h.lost && h.rank >= 1) || (dng > 1 && h.rank >= 1 && !fl.fearless)) useBoots(h, exiting(h) ? 'out' : 'dash');
+      }
+      // 1.26.1 Przesądny: he does not go first into a room with a portrait or a mirror; he waits for someone to go in (8 s at most)
+      if (h.trait === 'superstitious' && !exiting(h) && !panicking(h) && !h.lost && !h.callFor) {
+        const nr = roomOf(n[0], n[1]);
+        if (nr >= 0 && nr !== h.room && fl.rooms[nr] && fl.rooms[nr].kind === 'room' && superRoom(nr) && !alive().some(o => o !== h && o.room === nr) && alive().some(o => o !== h && !o.lost && !caged(o))) {
+          if (h.superRoom !== nr) { h.superRoom = nr; h.superWait = 0; }
+          h.superWait += dt;
+          if (h.superWait < 8) { if (!h.superSaid) { h.superSaid = true; say(h, pick(SAY.superWait), 2); fl.stats.superWaits = (fl.stats.superWaits || 0) + 1; } return; }
+        }
       }
       // 1.12.1: one hero a tile; passing each other is fine
       const o = heroBlock(h, n[0], n[1]);

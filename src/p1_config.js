@@ -58,7 +58,7 @@
   // Points are the measure of HOW WELL a run went (surviving the waves is the measure of success): the rank at the end.
   const RANKS = [[0, 'Nora'], [150, 'Piwnica'], [400, 'Loch'], [1000, 'Labirynt'], [2500, 'Twierdza grozy'], [6000, 'Legenda']];   // v15: Esencja harvested in the run
   const rankOf = pts => { let i = 0; RANKS.forEach((r, k) => { if (pts >= r[0]) i = k; }); return { i, name: RANKS[i][1], next: RANKS[i + 1] || null }; };
-  const SLOT_LABEL = { floor: 'podłoga', wall: 'ściana', door: 'drzwi', object: 'mebel', dig: 'skała przy lochu', tunnel: 'dwa sąsiednie pokoje', demolish: 'pokój albo przejście', expand: 'pokój albo korytarz', roomtype: 'cały pokój', roomkind: 'cały pokój' };
+  const SLOT_LABEL = { floor: 'podłoga', wall: 'ściana', door: 'drzwi', object: 'mebel', dig: 'skała przy lochu', tunnel: 'dwa sąsiednie pokoje', hall: 'przejście między pokojami', demolish: 'pokój albo przejście', expand: 'pokój albo korytarz', roomtype: 'cały pokój', roomkind: 'cały pokój' };
   const ITEMS = {
     spikes: { name: 'Kolce', cost: 4, slot: 'floor', tag: 'szybkie', cd: 1.5, desc: 'Kolce (podłoga, kłute): jedno pole, szybkie odnowienie. +50%, gdy bohater stoi: walczy, czeka, w sieci albo w klatce. Najlepsze tuż za drzwiami.' },
     web: { name: 'Sieć', cost: 3, slot: 'floor', tag: 'spowalnia', cd: 7, desc: 'Sieć (podłoga): spowalnia w kwadracie 3×3 na 3 s, a bohater w sieci dostaje +30% obrażeń. Mag potrafi ją rozproszyć.' },
@@ -102,10 +102,10 @@
     zombie: { name: 'Zombie', cost: 5, slot: 'floor', cd: 5, hp: 170, melee: 8, tag: 'zaraza', desc: 'Zombie (potwór, trucizna): powolny tank. Walczący z nim co 1,5 s łapie stos Zarazy; Zarażony, który zginie, wstaje jako Twój zombie (Powstanie). Skill check: Ugryzienie (+2 stosy trucizny).' },
     lich: { name: 'Licz', cost: 9, slot: 'floor', cd: 6, hp: 120, melee: 4, tag: 'wskrzesza', desc: 'Licz (potwór): raz na falę podnosi powalonego potwora w swoim pokoju (50% życia), straszy wszystkich do 2 pól. Skill check: Lodowy dotyk (rani i spowalnia).' },
     imp: { name: 'Chochlik', cost: 3, slot: 'floor', cd: 6, hp: 40, melee: 0, tag: 'kradnie', desc: 'Chochlik (latający): krąży i straszy. Skill check: Zwędzenie: zabiera bohaterowi przedmiot i upuszcza go w innym pokoju jako łup (chciwość), +20 strachu. Trafiony czasem się teleportuje.' },
-    hound: { name: 'Ogar piekielny', cost: 5, slot: 'floor', cd: 5, hp: 90, melee: 28, tag: 'poluje', desc: 'Ogar piekielny (potwór, ogień): uciekający i spanikowani dostają od niego 2 razy więcej; zabicie uciekiniera daje Grozę i za śmierć, i za ucieczkę. Skill check: Pogoń za najbardziej przestraszonym.' },
+    hound: { name: 'Ogar piekielny', cost: 5, slot: 'floor', cd: 5, hp: 90, melee: 28, tag: 'poluje', desc: 'Ogar piekielny (potwór, ogień): uciekający i spanikowani dostają od niego 2 razy więcej; zabicie uciekiniera daje Grozę i za śmierć, i za ucieczkę. Skill check: Pogoń za najbardziej przestraszonym. Gdy w jego pokoju nikogo nie ma, idzie za krwawiącym do sąsiedniego pokoju.' },
     siren: { name: 'Kusicielka', cost: 6, slot: 'floor', cd: 9, hp: 60, melee: 0, tag: 'uwodzi', desc: 'Kusicielka (latająca): straszy wokół. Skill check: Zew: najmniej odważny w promieniu 4 idzie do niej 4 s (Uwiedziony), odłącza się, potem 30 strachu. Kapłan, paladyn i pieśń barda przerywają zew.' },
     demon: { name: 'Demon otchłani', cost: 10, slot: 'floor', cd: 6, hp: 420, melee: 28, tag: 'głód +2', desc: 'Demon otchłani (potwór, ogień): ogromny, bije wszystkich walczących, straszy wokół. Dopóki stoi w lochu, głód każdej fali +2 (Apetyt demona). Skill check: Pożoga w całym pokoju.' },
-    sapper: { name: 'Goblin saper', cost: 5, slot: 'floor', cd: 8, hp: 80, melee: 8, tag: 'kolczatki', desc: 'Goblin saper (potwór): skill check: Kolczatki: 3 pola przy bohaterach stają się pułapką do końca fali (rani i spowalnia, najwyżej 3 zestawy).' },
+    sapper: { name: 'Goblin saper', cost: 5, slot: 'floor', cd: 8, hp: 80, melee: 8, tag: 'kolczatki', desc: 'Goblin saper (potwór): skill check: Kolczatki: 3 pola przy bohaterach stają się pułapką do końca fali (rani i spowalnia, najwyżej 3 zestawy). Chowa się za innymi potworami: gdy stoi przy nich, bohaterowie zadają mu 40% mniej, a mag i tropiciel biorą go na cel na końcu.' },
     warlord: { name: 'Herszt goblinów', cost: 7, slot: 'floor', cd: 5, hp: 160, melee: 14, tag: 'zielonoskórzy ×1,5', desc: 'Herszt goblinów (potwór, obuchowe): zielonoskórzy w jego pokoju biją 1,5 raza mocniej; gdy goblin padnie przy nim, reszta wpada w szał (+50% na 6 s). Skill check: Okrzyk (rani i straszy cały pokój).' },
     rats: { name: 'Rój szczurów', cost: 3, slot: 'floor', cd: 4, hp: 35, melee: 6, tag: 'rośnie', desc: 'Rój szczurów (potwór, kłute): bije wszystkich walczących. Każda fala przeżyta bez powalenia: +80% życia i siły (najwyżej 3 razy). Powalony wraca do bazowej siły. Skill check: Zalew całego pokoju.' },
     loot: { name: 'Monety', cost: 3, slot: 'floor', tag: 'chciwość', cd: 0, rarity: 1, desc: 'Monety (łup): widać je dopiero z pokoju. Tanio i mocno podbijają chciwość, kuszą chciwych i złodziei. Połowa chciwości zostaje do końca runu.' },
@@ -126,6 +126,7 @@
     move: { name: 'Przenieś', cost: 0, slot: null, tag: 'za darmo', mode: true, desc: 'Przenieś: stuknij element, potem nowe miejsce. Za darmo, poziom zostaje. Tak przestawisz pułapki znane z plotek.' },
     dig: { name: 'Nowy pokój', cost: 8, slot: 'dig', tag: 'kopanie', tool: true, desc: 'Nowy pokój: stuknij plus przy krawędzi lochu. Nowego pokoju nie znają plotki, więc bohaterowie muszą go odkryć.' },
     tunnel: { name: 'Przejście', cost: 4, slot: 'tunnel', tag: 'pętla', tool: true, desc: 'Przejście między dwoma sąsiednimi pokojami. Więcej dróg to więcej wyborów i więcej błędów bohaterów.' },
+    secret: { name: 'Ukryte przejście', cost: 6, slot: 'hall', tag: 'fałszywa ściana', tool: true, desc: 'Ukryte przejście (Loch): maskuje istniejące przejście między pokojami fałszywą ścianą. Bohaterowie widzą tam mur i idą dłuższą drogą, dopóki ktoś go nie odkryje (najczęściej złodziej albo tropiciel, ostrożni i ciekawscy, i ci, którzy utknęli). Odkryte jest zwykłym skrótem do końca fali, a jeśli ktoś, kto je znał, wyjdzie z lochu, następna fala zna je od startu (możesz zamaskować je od nowa). Do serca musi zostać jawna droga. Zdjęcie maski nic nie kosztuje.' },   // 1.26.1
     expand: { name: 'Rozbuduj', cost: 4, slot: 'expand', tag: '+1 miejsce', tool: true, desc: 'Rozbuduj pokój albo korytarz: +1 miejsce na element. Każda kolejna rozbudowa tego miejsca kosztuje 2 razy więcej.' },
     demolish: { name: 'Wyburz', cost: 0, slot: 'demolish', tag: 'zwrot', tool: true, desc: 'Wyburz pokój albo przejście. Elementy wracają jako Esencja, pokój zwraca jeszcze 5. Serca nie odetniesz od wejścia.' },
     // room types: a whole room gets a character (one type per room, tap it again with the same type to take it off for half back)
@@ -157,15 +158,15 @@
     { id: 'object', label: 'Obiekty', items: ['crate', 'rune', 'altar', 'decoy', 'acid', 'howl', 'shackles', 'veil', 'fortify'] },
     // 1.15 (author: split what you do to the dungeon into rooms, kinds and effects): Kopanie (the rooms themselves), Komnaty
     // (what a room is for: one family of traps or monsters works better there), Efekty (what the room does to the heroes)
-    { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'expand', 'demolish', 'k_goblin', 'k_spider', 'k_ogre', 'k_haunt', 'k_bats', 'k_ossuary', 'k_armory', 'k_forge', 'k_prison', 'k_junk', 'k_gallery', 'k_nursery', 'k_lab', 'k_graveyard', 'k_abyssgate',
+    { id: 'dungeon', label: 'Loch', items: ['dig', 'tunnel', 'secret', 'expand', 'demolish', 'k_goblin', 'k_spider', 'k_ogre', 'k_haunt', 'k_bats', 'k_ossuary', 'k_armory', 'k_forge', 'k_prison', 'k_junk', 'k_gallery', 'k_nursery', 'k_lab', 'k_graveyard', 'k_abyssgate',
       'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'],   // no Przenieś (a tap moves), no Ulepsz (a double tap upgrades)
-      subs: [{ id: 'dig', label: 'Kopanie', items: ['dig', 'tunnel', 'expand', 'demolish'] },
+      subs: [{ id: 'dig', label: 'Kopanie', items: ['dig', 'tunnel', 'secret', 'expand', 'demolish'] },
              { id: 'kind', label: 'Komnaty', items: ['k_goblin', 'k_spider', 'k_ogre', 'k_haunt', 'k_bats', 'k_ossuary', 'k_armory', 'k_forge', 'k_prison', 'k_junk', 'k_gallery', 'k_nursery', 'k_lab', 'k_graveyard', 'k_abyssgate'] },
              { id: 'effect', label: 'Efekty', items: ['r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'] }] },
     { id: 'deck', label: 'Talia', items: [] }
   ];
   const ITEM_ORDER = TABS.flatMap(t => t.items).concat(['upgrade']);   // Ulepsz stays as a mode the code knows, with no tile in any tab
-  const START_UNLOCKED = ['spikes', 'trapdoor', 'arrows', 'portrait', 'eyes', 'bones', 'gate', 'crate', 'powder', 'goblin', 'archer', 'loot', 'lpotion', 'loot2', 'loot3', 'lcursed', 'dig', 'tunnel', 'expand', 'demolish', 'rune', 'altar', 'decoy', 'acid', 'veil', 'fortify', 'howl', 'shackles', 'upgrade', 'move',
+  const START_UNLOCKED = ['spikes', 'trapdoor', 'arrows', 'portrait', 'eyes', 'bones', 'gate', 'crate', 'powder', 'goblin', 'archer', 'loot', 'lpotion', 'loot2', 'loot3', 'lcursed', 'dig', 'tunnel', 'secret', 'expand', 'demolish', 'rune', 'altar', 'decoy', 'acid', 'veil', 'fortify', 'howl', 'shackles', 'upgrade', 'move',
     'r_fog', 'r_swamp', 'r_grotto', 'r_crypt', 'r_vault', 'r_haven', 'r_gears', 'r_hush', 'r_ice'];
   // 1.12 (author: the tutorial spread over a few runs): the first runs open the game step by step. Run 1 is the core
   // (what wounds: traps and monsters; loot, digging, the shop and the deck, the heart), run 2 adds what scares, run 3
@@ -176,7 +177,7 @@
   const ONB_FULL = 4;
   // (both of the author's winning runs leaned on monsters: the kill run on the ogre, the archer and the goblin, so the wounding
   // monsters stay in run 1; a run 1 of traps only would be another game)
-  const ONB_ITEM = { ghost: 2, shade: 2, bats: 2, portrait: 2, eyes: 2, bones: 2, mirror: 2, creak: 2, coffin: 2, musicbox: 2,
+  const ONB_ITEM = { secret: 3, ghost: 2, shade: 2, bats: 2, portrait: 2, eyes: 2, bones: 2, mirror: 2, creak: 2, coffin: 2, musicbox: 2,
     oilslick: 2, tar: 2, bell: 2, falsedoor: 2, bait: 2, imp: 2, siren: 2, hound: 2, rats: 2, skeleton: 2, zombie: 2,   // 1.26 (8.2): Wahadło and Wnyki from stage 1, the rest from stage 2-3
     miasma: 3, flood: 3, bolt: 3, lich: 3, demon: 3, sapper: 3, warlord: 3,
     crate: 3, rune: 3, altar: 3, decoy: 3, acid: 3, howl: 3, shackles: 3, veil: 3, fortify: 3,
@@ -224,7 +225,7 @@
     crypt: { name: 'Krypta', item: 'r_crypt', glyph: '✝', color: '#c9b6e8' }, vault: { name: 'Sezam', item: 'r_vault', glyph: '◆', color: '#ffd27a' },
     haven: { name: 'Sanktuarium', item: 'r_haven', glyph: '✚', color: '#f3e2b0' }, gears: { name: 'Zębatki', item: 'r_gears', glyph: '⚙', color: '#d6a86a' },
     hush: { name: 'Głusza', item: 'r_hush', glyph: '◌', color: '#9aa6bb' }, ice: { name: 'Lodownia', item: 'r_ice', glyph: '❄', color: '#bfe6ff' } };
-  const TOOLS = { dig: 1, tunnel: 1, expand: 1, demolish: 1, r_fog: 1, r_swamp: 1, r_grotto: 1, r_crypt: 1, r_vault: 1, r_haven: 1, r_gears: 1, r_hush: 1, r_ice: 1 };
+  const TOOLS = { dig: 1, tunnel: 1, secret: 1, expand: 1, demolish: 1, r_fog: 1, r_swamp: 1, r_grotto: 1, r_crypt: 1, r_vault: 1, r_haven: 1, r_gears: 1, r_hush: 1, r_ice: 1 };
   const MODES = { upgrade: 1, move: 1 };   // tray buttons that change what a tap on the map does (no cost of their own)
   const ACTIVE = Object.assign({}, TRAPS, MONSTERS);   // everything that can fire
   // Loot comes in kinds the player picks: coins (pure greed), a potion (a lure for the wounded), gear, a relic, a cursed treasure.
@@ -751,21 +752,21 @@
     { id: 'tainted', kind: 'card', rar: 'c', tag: 'mikstury zepsute', name: 'Zepsute mikstury', text: 'Mikstury z Twojego łupu są zepsute: wypita leczy o połowę słabiej i straszy pijącego (10% odwagi).', apply: m => { m.tainted += 1; } },
     { id: 'rhythm', kind: 'card', rar: 'c', tag: 'combo +1 s', name: 'Rytm lochu', text: 'Okno combo trwa 1 s dłużej (4 s zamiast 3).', apply: m => { m.rhythm += 1; } },
     // 1.26 (4.6) the Serce group: the old Heart Gifts that did something no card did, plus the new heart cards (13.2). They come in the
-    // "Dar serca" row of the shop after a heart level (Odrost only there) and among the ordinary offers too (not Odrost).
+    // "Dar serca" row of the shop after a heart level. 1.26.1: the Serce group is only there (not among the ordinary offers), rare/legendary only.
     { id: 'regrow', kind: 'instant', rar: 'r', group: 'heart', heartOnly: true, name: 'Odrost', text: 'Od razu: serce odrasta jeden utracony kryształ (do maksimum).', apply: () => { if (run.crystals < run.maxCrystals) { run.crystals += 1; run.regrowCount = (run.regrowCount || 0) + 1; if (fl && fl.stats) fl.stats.regrow = (fl.stats.regrow || 0) + 1; } } },
-    { id: 'heartcry', kind: 'card', rar: 'c', group: 'heart', tag: 'krzyk 10%/s', name: 'Krzyk serca', text: 'Serce krzyczy głośniej: kradnący przy sercu tracą 10% odwagi na sekundę zamiast 6%.', apply: m => { m.heartCry += 0.04; } },
-    { id: 'heavycrystal', kind: 'card', rar: 'c', group: 'heart', tag: 'kradzież +1,5 s', name: 'Ciężki kryształ', text: 'Wyrwanie kryształu trwa o 1,5 s dłużej.', apply: m => { m.heavyCrystal += 1; } },
+    { id: 'heartcry', kind: 'card', rar: 'r', group: 'heart', tag: 'krzyk 10%/s', name: 'Krzyk serca', text: 'Serce krzyczy głośniej: kradnący przy sercu tracą 10% odwagi na sekundę zamiast 6%.', apply: m => { m.heartCry += 0.04; } },
+    { id: 'heavycrystal', kind: 'card', rar: 'r', group: 'heart', tag: 'kradzież +1,5 s', name: 'Ciężki kryształ', text: 'Wyrwanie kryształu trwa o 1,5 s dłużej.', apply: m => { m.heavyCrystal += 1; } },
     { id: 'heartroom', kind: 'card', rar: 'r', group: 'heart', unique: true, tag: 'pokój serca +1', name: 'Komora serca', text: 'Pokój serca mieści o 1 element więcej.', apply: m => { m.heartRoom += 1; } },
     { id: 'warden', kind: 'card', rar: 'r', group: 'heart', tag: 'potwory przy sercu +30%', name: 'Strażnik', text: 'Potwory w pokoju serca mają +30% HP i biją o 30% mocniej.', apply: m => { m.warden += 0.3; } },
-    { id: 'darkforge', kind: 'card', rar: 'c', group: 'heart', tag: 'ulepszenia -25%', name: 'Kuźnia ciemności', text: 'Ulepszenia pułapek i potworów kosztują o 25% mniej.', apply: m => { m.upgDisc = Math.min(0.6, m.upgDisc + 0.25); } },
+    { id: 'darkforge', kind: 'card', rar: 'r', group: 'heart', tag: 'ulepszenia -25%', name: 'Kuźnia ciemności', text: 'Ulepszenia pułapek i potworów kosztują o 25% mniej.', apply: m => { m.upgDisc = Math.min(0.6, m.upgDisc + 0.25); } },
     { id: 'darklore', kind: 'card', rar: 'r', group: 'heart', unique: true, tag: 'sklep +1 karta', name: 'Wiedza mroku', text: 'Sklep pokazuje o 1 kartę więcej.', apply: m => { m.shopPlus += 1; } },
-    { id: 'heartmem', kind: 'card', rar: 'c', group: 'heart', unique: true, tag: 'pamięć zostaje', name: 'Pamięć serca', text: 'Ulepszenie nie kasuje zapamiętanego wyniku skill checku.', apply: m => { m.heartMem = true; } },
+    { id: 'heartmem', kind: 'card', rar: 'r', group: 'heart', unique: true, tag: 'pamięć zostaje', name: 'Pamięć serca', text: 'Ulepszenie nie kasuje zapamiętanego wyniku skill checku.', apply: m => { m.heartMem = true; } },
     { id: 'tithe', kind: 'card', rar: 'r', group: 'heart', tag: 'Danina 45%', name: 'Dziesięcina', text: 'Danina rośnie z 30% do 45% (szybsze poziomy serca), a w rzędzie Dar serca wybierasz z 4 kart zamiast z 3.', apply: m => { m.titheAdd += 0.15; m.titheChoice += 1; } },
-    { id: 'stoneheart', kind: 'card', rar: 'c', group: 'heart', tag: 'brak -25%', name: 'Kamienne serce', text: 'Po fali serce potrzebuje z sakiewki tylko 75% braku: jeśli tyle masz, jest syte. Nasycenie rośnie za to o 25% wolniej.', apply: m => { m.stoneHeart = true; m.satietyK *= 0.75; } },
+    { id: 'stoneheart', kind: 'card', rar: 'r', group: 'heart', tag: 'brak -25%', name: 'Kamienne serce', text: 'Po fali serce potrzebuje z sakiewki tylko 75% braku: jeśli tyle masz, jest syte. Nasycenie rośnie za to o 25% wolniej.', apply: m => { m.stoneHeart = true; m.satietyK *= 0.75; } },
     { id: 'bloodcredit', kind: 'card', rar: 'r', group: 'heart', unique: true, tag: 'raz: dług zamiast kryształu', name: 'Kredyt krwi', text: 'Raz na run: gdy po fali sakiewka nie pokryje głodu, zamiast pęknięcia kryształu brakująca reszta ×2 dopisze się do głodu następnej fali (sakiewka zostaje).', apply: m => { m.bloodCredit = true; } },
     { id: 'glutton', kind: 'card', rar: 'l', group: 'heart', tag: 'głód +20%, Nasycenie ×2', name: 'Głodomór', text: 'Serce chce o 20% więcej, ale Danina daje 2 razy więcej Nasycenia (Ofiara bez zmian).', apply: m => { m.hungerK *= 1.2; m.satietyK *= 2; } },
     { id: 'bloodflow', kind: 'card', rar: 'r', group: 'heart', tag: 'combo 5+: +3 Nasycenia', name: 'Krwiobieg', text: 'Każda wypłata combo ×2 lub więcej (5 różnych pułapek z rzędu) daje sercu +3 Nasycenia ponad Daninę.', apply: m => { m.bloodflow += 3; } },
-    { id: 'kingsfeast', kind: 'card', rar: 'c', group: 'heart', tag: 'Uczta ×1,5', name: 'Uczta królów', text: 'Uczta (bohater zabity przez potwora karmi serce) daje o 50% więcej.', apply: m => { m.feastK *= 1.5; } },
+    { id: 'kingsfeast', kind: 'card', rar: 'r', group: 'heart', tag: 'Uczta ×1,5', name: 'Uczta królów', text: 'Uczta (bohater zabity przez potwora karmi serce) daje o 50% więcej.', apply: m => { m.feastK *= 1.5; } },
     { id: 'lastbreath', kind: 'card', rar: 'r', group: 'heart', tag: 'pusta sakiewka: +25%', name: 'Ostatni oddech', text: 'Gdy po rozliczeniu głodu sakiewka jest pusta, w następnej fali pułapki i potwory działają o 25% mocniej.', apply: m => { m.lastBreath += 0.25; } },
     // 1.26 (13.2) Mnożniki Esencji: rare, conditional, they break the game in pairs (like Balatro's xMult)
     { id: 'fearcrown', kind: 'card', rar: 'l', tag: 'ucieczka: łańcuch ×1,5', name: 'Koronacja strachu', text: 'Łańcuch, w którym ktoś uciekł ze strachu, wypłaca 1,5 raza więcej Esencji.', apply: m => { m.fearCrown *= 1.5; } },
@@ -798,7 +799,16 @@
     // chciwość
     { id: 'goldendream', kind: 'card', rar: 'r', unique: true, tag: 'łup przy sercu ×1,5', name: 'Złoty sen', text: 'Łup w pokoju serca i w pokojach obok kusi 1,5 raza mocniej, ale nie da się go podnieść: bohater próbuje 3 s i odchodzi.', apply: m => { m.goldenDream = true; } },
     { id: 'croesus', kind: 'card', rar: 'l', unique: true, tag: 'chciwość²', name: 'Krezus', text: 'Chciwość liczy się w Esencji do kwadratu (×2 daje ×4), ale poziomy bohaterów z chciwości rosną 1,5 raza szybciej.', apply: m => { m.croesus = true; } },
-    { id: 'heartpulse', kind: 'card', rar: 'c', group: 'heart', tag: 'syte: przy sercu +30%', name: 'Puls serca', text: 'Gdy serce jest syte, pułapki i potwory w pokoju serca działają o 30% mocniej.', apply: m => { m.heartPulse += 0.3; } },
+    // 1.26.1 (author): Dar serca only (not in the shop), rare and legendary, useful to most builds
+    { id: 'heartguide', kind: 'card', rar: 'r', group: 'heart', tag: 'wszystko +10%', name: 'Wola serca', text: 'Wszystkie pułapki i potwory działają o 10% mocniej.', apply: m => { m.pactPower *= 1.1; } },
+    { id: 'heartdread', kind: 'card', rar: 'r', group: 'heart', tag: 'strach +15%', name: 'Groza serca', text: 'Każdy strach w lochu jest o 15% silniejszy.', apply: m => { m.fearMult *= 1.15; } },
+    { id: 'heartgreed', kind: 'card', rar: 'r', group: 'heart', tag: 'chciwość +0,3', name: 'Złote tętno', text: 'Każda fala zaczyna się z chciwością większą o 0,3.', apply: m => { m.greedStart += 0.3; } },
+    { id: 'heartpatience', kind: 'card', rar: 'r', group: 'heart', tag: 'cierpliwość +20 s', name: 'Cierpliwość serca', text: 'Bohaterowie zostają w lochu o 20 s dłużej, zanim skończy się im cierpliwość (więcej czasu na Esencję).', apply: m => { m.patience += 20; } },
+    { id: 'heartgrowth', kind: 'instant', rar: 'r', group: 'heart', name: 'Rozrost serca', text: 'Od razu: talia ma na stałe o 1 miejsce więcej.', apply: () => { run.deckSize += 1; } },
+    { id: 'heartcore', kind: 'card', rar: 'l', group: 'heart', tag: 'Esencja ×1,2', name: 'Serce lochu', text: 'Cała Esencja ×1,2.', apply: m => { m.heartCore *= 1.2; } },
+    { id: 'secondheart', kind: 'card', rar: 'l', group: 'heart', unique: true, tag: 'raz: kryształ wraca', name: 'Drugie serce', text: 'Raz na run: kryształ wyniesiony z lochu przez złodzieja wraca do serca.', apply: m => { m.secondHeart = true; } },
+    { id: 'resonance', kind: 'card', rar: 'l', group: 'heart', unique: true, tag: '+3%/kartę', name: 'Rezonans', text: 'Esencja +3% za każdą inną kartę w talii (najwyżej +30%).', apply: m => { m.resonance = true; } },
+    { id: 'heartpulse', kind: 'card', rar: 'r', group: 'heart', tag: 'syte: przy sercu +30%', name: 'Puls serca', text: 'Gdy serce jest syte, pułapki i potwory w pokoju serca działają o 30% mocniej.', apply: m => { m.heartPulse += 0.3; } },
   ];
   const UPG = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
   const RAR_NAME = { c: 'zwykła', r: 'rzadka', l: 'legendarna' }, RAR_COLOR = { c: '#c9c2d8', r: '#6fb7ff', l: '#ff8a3c' }, RAR_SELL = { c: 2, r: 4, l: 6 };
@@ -923,6 +933,10 @@
     cleanse: ['Gaszę ogień!', 'Gaszę! Już!', 'Zgaśnij!', 'Płomienie, precz!', 'Ogień, odstąp!', 'Już, już, zgaszone!'],
     barrier: ['Bariera!', 'Osłona dla wszystkich!', 'Tarcza światła!', 'Niech światło nas osłoni!', 'Święty krąg!', 'Bogowie, okryjcie nas!'],
     // 1.26
+    curiousGo: ['Co to było? Sprawdzę!', 'Słyszeliście? Idę zobaczyć.', 'Zaraz wracam, tylko zerknę.', 'Ciekawe, co tam trzasnęło...'],
+    charge: ['Na niego!', 'Ha! Chodź tu, bestio!', 'Nie czekam, biję!', 'Za mną! Albo i beze mnie!'],
+    superWait: ['Nie wejdę tam pierwszy. Ten obraz patrzy.', 'Lustro... Niech ktoś inny wejdzie przodem.', 'Złe miejsce. Idźcie pierwsi.', 'Nie lubię tych oczu na ścianie.'],
+    secretFound: ['Ta ściana jest pusta w środku!', 'Ukryte przejście! Wiedziałem!', 'Hej, tu jest przejście!', 'Fałszywy mur! Tędy!', 'Słyszycie? Tu dudni pusto.'],
     help: ['Pomocy! Tutaj!', 'Niech ktoś mnie stąd wyciągnie!', 'Ratunku, nie mogę się ruszyć!', 'Hej! Tutaj, szybko!'],
     lootHome: ['Mam swoje. Wracam.', 'Dość. Zabieram to i znikam.', 'Żywy i bogaty, to mi wystarczy.', 'Wy sobie szukajcie, ja wracam.'],
     snare: ['Noga! Coś mnie trzyma!', 'Sidła! Nie mogę się ruszyć!', 'Pomóżcie, utknąłem!', 'Przeklęte wnyki!'],

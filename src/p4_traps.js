@@ -97,7 +97,7 @@
   const heartFed = () => { if (!mods.heartbeat) return false; const n = hungerNeed(run.wave); return n > 0 && fl.fed >= n; };   // Bijące serce (1.01: the heart is fed in this wave)   // Bijące serce (v15: you hold enough to feed the heart)
   const heartFedNow = () => { const n = hungerNeed(run.wave); return n > 0 && fl.fed >= n - 1e-6; };   // 1.26
   const heartK = it => (mods.heartPulse && heartFedNow() && slotRoom(it.type, it.x, it.y) === fl.heart.room ? 1 + mods.heartPulse : 1) * (mods.lastBreath && run.lastBreathW === run.wave ? 1 + mods.lastBreath : 1);   // 1.26 Puls serca, Ostatni oddech
-  const trapBoost = it => !TRAPS[it.type] ? 1 : kataK(it.type) * heartK(it) * (heartFed() ? 1 + mods.heartbeat : 1) * (calmReady(it) ? 1 + mods.calmStorm : 1) * (1 + mods.bloodRite * fl.stats.kills) * (1 + 0.01 * Math.floor((run.stacks.tempered || 0) / 4) * mods.tempered);
+  const trapBoost = it => MONSTERS[it.type] ? kataK(it.type) * heartK(it) * (mods.warden && roomOf(it.x, it.y) === fl.heart.room ? 1 + mods.warden : 1) : !TRAPS[it.type] ? 1 : kataK(it.type) * heartK(it) * (heartFed() ? 1 + mods.heartbeat : 1) * (calmReady(it) ? 1 + mods.calmStorm : 1) * (1 + mods.bloodRite * fl.stats.kills) * (1 + 0.01 * Math.floor((run.stacks.tempered || 0) / 4) * mods.tempered);
   const lvlAt = (T, L) => L < T.length ? T[L] : T[T.length - 1] * Math.pow(T[T.length - 1] / T[T.length - 2], L - T.length + 1);   // 1.24: past level 3 the last step again
   const lvlPow = it => { const f = (mods.fuseLv && mods.fuseLv[it.type]) || 0, L = it.lvl || 1; return TRAPS[it.type] ? lvlAt(LVL_POW, L + f) : f ? lvlAt(LVL_MON, L + f) / LVL_MON[L] : 1; };   // monsters grow through HP and power instead; 1.24: a fused ★ card for it: one level more
   // Setting a hero on fire; with Pożoga the flames jump to the heroes right next to him (one hop).
@@ -176,7 +176,7 @@
     if (TRAPS[it.type]) hearFar(it, list);   // 1.17: heard from another room
     if (TRAPS[it.type]) {
       const rooms = new Set(area.map(t => roomOf(t[0], t[1])));
-      const witnesses = alive().filter(h => rooms.has(h.room));
+      const witnesses = alive().filter(h => rooms.has(h.room) && !(fl.time < (h.blindUntil || -1)));   // 1.26.1: blinded (Para, Łzawiące wyziewy) see nothing, learn nothing
       if (witnesses.length) {
         if (!it.detected) say(list[0] || witnesses[0], pickS(SAY.trap[it.type] || SAY.trapGeneric), 3, 1.4, 'loud');   // 1.10: a shout, over anyone
         const p = Math.max(...witnesses.map(h => h.R.learn));
@@ -425,7 +425,8 @@
       case 'miasma': {
         it.cd = cdBase; it.anim = 0.5;
         const dur = t3(it) ? 8 : 5;
-        (fl.clouds || (fl.clouds = [])).push({ keys, tiles: area, until: fl.time + dur, src: it, kind: 'miasma', tear: t3B(it), seen: new Set() });
+        (fl.clouds || (fl.clouds = [])).push({ keys, tiles: area, until: fl.time + dur, src: it, kind: 'miasma', tear: t3B(it), seen: new Set(list.map(h => h.id)) });   // 1.26.1: the ones caught now are already in it
+        list.forEach(h => { h.cloudT = 0; });
         fxTiles(area, '150,200,90', 0.6);
         list.forEach(h => { setStatus(h, 'poison', 1, 'miasma'); addFear(h, 10 * pw * cpow, 'miasma'); hit++; });
         break;
@@ -858,6 +859,7 @@
       }
       let dmgIn = 0;
       fighters.forEach(h => { dmgIn += h.T.dps * h.R.dps * (h.type === 'warrior' ? 1.4 : 1) * (h.type === 'paladin' && (FAMILY_OF[m.type] === 'undead' || FAMILY_OF[m.type] === 'demons') ? 1.5 : 1) * (raging(h) ? 1.5 : 1) * vowK(h) * nemK(h, m) * (1 + 0.25 * gearR(h, 'weapon') * itemPow(h)) * dt; });   // a weapon from your loot cuts monsters down faster; 1.05: so does fury; 1.21: a vow; 1.23: a grudge
+      if (m.type === 'sapper' && [...fl.items.values()].some(o => o !== m && MONSTERS[o.type] && o.hp > 0 && !o.down && o.type !== 'sapper' && Math.max(Math.abs(o.x - m.x), Math.abs(o.y - m.y)) <= 1)) dmgIn *= 0.6;   // 1.26.1: the saper keeps behind the others
       hurtMonster(m, dmgIn, fighters[0]);
     });
   }
@@ -885,6 +887,7 @@
     const t = fl.time, sh = inB('shackles', h.room) ? 1 : 0;   // Okowy (6.4): a hold lasts 1 s longer here
     if (h.boss === 'final' && (k === 'root' || k === 'seduced')) return false;   // the hero of the prophecy cannot be held
     if (k === 'seduced' && h.type === 'paladin') return false;   // 1.26: the paladin's oath is deaf to the siren
+    { const st = typeof src === 'string' ? src : src && src.type; if (st && ITEMS[st] && k !== 'root') dur *= famK(st); }   // 1.26.1: a Runa rodu lengthens its family's statuses (+8% a level; the hold keeps its 5 s cap)
     switch (k) {
       case 'slow': h.slowUntil = Math.max(h.slowUntil, t + dur + sh); break;
       case 'dazed': h.dazedUntil = Math.max(h.dazedUntil || -1, t + dur); h.slowUntil = Math.max(h.slowUntil, t + dur); break;
@@ -950,7 +953,7 @@
       if (t < (h.wetUntil || -1)) { if (t < h.burnUntil) h.burnUntil = t; return amt * 0.5; }   // water: half, and the fire goes out
       if (t < (h.oilUntil || -1)) {   // Pożar
         h.oilUntil = -1; amt *= REACT_K;
-        const p = heroPos(h); setTimeoutGame(() => { if (!h.dead) h.burnUntil = Math.max(h.burnUntil, fl.time + 6); });
+        const p = heroPos(h); setTimeoutGame(() => { if (!h.dead) h.burnUntil = fl.time + Math.max(6, 2 * Math.max(0, h.burnUntil - fl.time)); });   // 1.26.1: twice as long (at least 6 s)
         reaction(h, 'blaze');
         alive().forEach(o => { if (o === h || !(fl.time < (o.oilUntil || -1))) return; const q = heroPos(o); if (Math.hypot(q.x - p.x, q.y - p.y) <= 1.5) { o.oilUntil = -1; ignite(o, 'fire', 4); floatHero(o, 'Pożar!', '#ff7a2a', 13, -0.6); } });
         return amt;
@@ -1009,7 +1012,40 @@
     if (!mods.plagueAir) return; fl.plagueT = (fl.plagueT || 0) + dt; if (fl.plagueT < 3) return; fl.plagueT = 0;
     const sick = alive().filter(h => h.plague > 0); sick.forEach(h => alive().forEach(o => { if (o !== h && hdist(o, h) <= 1.5 && setStatus(o, 'infected', 1, 'plague')) fl.stats.plagueJumps = (fl.stats.plagueJumps || 0) + 1; }));
   }
+  // 1.26.1 Ogar: with nobody in its room it smells a bleeding hero in a room next door and runs to him (a short way, 8 s at most);
+  // it stays there for the wave and goes back home in the next build (setupFl)
+  function houndTrack(m, room, dt) {
+    if (m.walking) {
+      const H = m.hunt, tg = H && byId(H.id), stop = () => { m.walking = false; m.hunt = null; m.gx = m.x + 0.5; m.gy = m.y + 0.5; };
+      if (!tg || tg.dead || tg.fled || tg.gone || fl.time > H.until || !H.path.length) { stop(); return; }
+      const w = H.path[0], tx = w[0] + 0.5, ty = w[1] + 0.5, dx = tx - m.gx, dy = ty - m.gy, d = Math.hypot(dx, dy), sp = 2.6 * dt;
+      if (d <= sp) { m.gx = tx; m.gy = ty; H.path.shift(); } else { m.gx += dx / d * sp; m.gy += dy / d * sp; }
+      if (!H.path.length) {
+        const fx = w[0], fy = w[1];
+        setTimeoutGame(() => {
+          if (fl.items.get(key(m.x, m.y)) !== m || fl.items.has(key(fx, fy)) || !walkable(fx, fy)) { stop(); return; }
+          if (m.homeX == null) { m.homeX = m.x; m.homeY = m.y; }
+          fl.items.delete(key(m.x, m.y)); m.x = fx; m.y = fy; fl.items.set(key(fx, fy), m); stop(); fl.threatDirty = true;
+          fl.stats.houndTrack = (fl.stats.houndTrack || 0) + 1; floatTile(fx, fy, 'Ogar na tropie!', '#ff7a5a', 13, -0.9);
+        });
+      }
+      return;
+    }
+    if ((m.huntCd || 0) > fl.time) return; m.huntCd = fl.time + 1;
+    if (alive().some(h => h.room === room && !h.gone)) return;
+    const nb = nbrRooms(room), tg = alive().find(h => statusOn(h, 'bleed') && !h.gone && h.room !== room && nb.includes(h.room) && Math.hypot(h.tx - m.x, h.ty - m.y) <= 9);
+    if (!tg) return;
+    const c = DIRS8.map(d => [tg.tx + d[0], tg.ty + d[1]]).filter(t => roomOf(t[0], t[1]) === tg.room && walkable(t[0], t[1]) && !fl.items.has(key(t[0], t[1])) && slotOf(t[0], t[1]) === 'floor');
+    if (!c.length) return;
+    const b = bfs(m.x, m.y, { noDanger: true }); let best = -1, bd = 1e9;
+    c.forEach(t => { const i = t[1] * WW + t[0]; if (b.dist[i] > 0 && b.dist[i] < bd) { bd = b.dist[i]; best = i; } });
+    if (best < 0 || bd > 16) return;
+    const path = pathFrom(b, best); if (!path.length) return;
+    m.walking = true; m.gx = m.x + 0.5; m.gy = m.y + 0.5; m.hunt = { id: tg.id, until: fl.time + 8, path };
+    floatTile(m.x, m.y, 'Ogar węszy krew!', '#ff7a5a', 13, -0.9);
+  }
   function newMonsterTick(m, room, dt) {
+    if (m.type === 'hound') houndTrack(m, room, dt);
     if (m.type === 'zombie') {   // Zaraza: a stack of plague every 1,5 s on whoever fights it
       m.plT = (m.plT || 0) + dt;
       if (m.plT >= 1.5) { m.plT = 0; fl.heroes.forEach(h => { if (!h.dead && !h.fled && h.state === 'fight' && h.foe === m) setStatus(h, 'infected', 1, 'zombie'); }); }
@@ -1040,6 +1076,7 @@
   }
   // Wyziewy clouds, Kolczatki and the false door's lost time, every step (from step)
   function hazardsTick(dt) {
+    [fl.zones, fl.clouds || []].forEach(L => L.forEach(z => { if (z.offUntil && fl.time >= z.offUntil) { z.offUntil = 0; z.keys = z.keysOff; z.tiles = z.tilesOff; } }));   // 1.26.1: a neutralized zone comes back
     if (fl.clouds && fl.clouds.length) {
       fl.clouds = fl.clouds.filter(c => c.until > fl.time);
       fl.clouds.forEach(c => alive().forEach(h => {

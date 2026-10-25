@@ -65,7 +65,7 @@ APPLY = r"""() => { const { G } = T, fails = [], out = { fields: {} }; const ok 
     ok(u.name && u.tag && u.text && !/[–—]/.test(u.text + u.name + u.tag), id + ': name, tag, text, plain hyphens');
   });
   out.n = Object.keys(RAR).length;
-  ok(G.UPGRADES.filter(u => u.kind === 'card').length === 94 + 28 + 15 + 26, 'card count ' + G.UPGRADES.filter(u => u.kind === 'card').length);
+  ok(G.UPGRADES.filter(u => u.kind === 'card').length === 94 + 28 + 15 + 26 + 7, 'card count ' + G.UPGRADES.filter(u => u.kind === 'card').length);
   // the deck path: two copies stack, every field set
   T.fresh(5); T.deck(Object.keys(RAR).concat(['lure', 'wisps']));
   ok(G.mods.drawers === 1 && G.mods.lure === 2 && G.mods.wisps === 2 && G.mods.risen === true && G.mods.rhythm === 1, 'deck applies, copies stack');

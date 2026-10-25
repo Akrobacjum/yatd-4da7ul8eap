@@ -1,6 +1,6 @@
 # Załącznik C: mapa kodu prototypu
 
-Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 1.26 na końcu tabel z "(1.26)", a nowy plik `p7c_art.js` ma własną sekcję; funkcje 1.18-1.24 na końcu tabeli każdego pliku, z wersją, w której powstały, w nawiasie; zmiany w istniejących dopisane po średniku z numerem wersji) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
+Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26.1; funkcje 1.26 na końcu tabel z "(1.26)", funkcje 1.26.1 za nimi z "(1.26.1)", a nowy plik `p7c_art.js` ma własną sekcję; funkcje 1.18-1.24 na końcu tabeli każdego pliku, z wersją, w której powstały, w nawiasie; zmiany w istniejących dopisane po średniku z numerem wersji) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
 
 ## p1_config.js (dane i stałe)
 
@@ -73,7 +73,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `demolishRoom` |  |
 | `hexToRgb` |  |
 | `tint` |  |
-| `buildMap` | Tile map from the layout. Deterministic: the same layout always gives the same tiles. |
+| `buildMap` | Tile map from the layout. Deterministic: the same layout always gives the same tiles.; 1.26.1: krawędź z `e.secret` daje drzwiom obu końców `d.secret` i korytarzowi `hall.secret` |
 | `tileAt` |  |
 | `isHeart` |  |
 | `doorClosed` |  |
@@ -93,7 +93,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `roomTilesNear` |  |
 | `areaOf` |  |
 | `areaOfRaw` |  |
-| `passable` |  |
+| `passable` | 1.26.1: drzwi nieodkrytego ukrytego przejścia (`secretShut`) są ścianą |
 | `bfs` | Dijkstra. Heroes only walk where they know the way (known), and pay extra for danger they know about (avoid = how much they care). |
 | `pathFrom` |  |
 | `shortestPath` | the true shortest way in (used by the tutorial and the test bots) |
@@ -107,6 +107,8 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `doorAlong` | (1.26) drzwi w ścianie wzdłuż osi x |
 | `t3B` | (1.26) element ma cechę B poziomu 3 (`it.branch === 'B'`, poziom 3) |
 | `t3b` | (1.26) wariant `t3B` dla typu i pokoju |
+| `secretShut` | (1.26.1) drzwi ukrytego przejścia, którego nikt jeszcze nie odkrył (`d.secret` i nie w `fl.secretFound`); stała strzałkowa |
+
 
 ## p3_flow.js (run, fala, ekonomia, bohaterowie, obrażenia, strach, rozmowy)
 
@@ -161,7 +163,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `lookAt` |  |
 | `say` | 1.17.1: in a raid, after the SOLO swap, fitLine(h, text, pool) (p5_ai.js): a line about a thing he has not seen is replaced from its pool or dropped (returns true); sayHook (tests); stats.sawTalk for saw:* lines. |
 | `sayTick` | the lines waiting for their turn: the most important first, the oldest among equals |
-| `freshMods` |  |
+| `freshMods` | 1.26.1: `patience`, `heartCore`, `secondHeart`, `resonance` |
 | `recomputeMods` | The deck decides the mods: start from scratch and lay every card on top (two copies = applied twice). Selling a card really removes it. |
 | `roomCount` | Point multipliers from cards that look at the dungeon as it stands right now. Rozległość lochu: a bigger dungeon is a louder legend, +3% points for every room over 5. |
 | `sizeMult` |  |
@@ -176,7 +178,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `startTrapSpot` |  |
 | `seedStartTraps` |  |
 | `freshParty` | 1.17: council, councilMore, look, lookCd, sound, soundCd |
-| `setupFl` | A fresh wave state around the dungeon as it stands (used by the build phase, and by a run resumed after a wave summary). |
+| `setupFl` | A fresh wave state around the dungeon as it stands (used by the build phase, and by a run resumed after a wave summary).; 1.26.1: ogar wraca na `homeX, homeY` |
 | `startBuild` |  |
 | `waveHint` |  |
 | `rumorView` | what the next wave has heard about the dungeon (shown in the build phase) |
@@ -201,14 +203,14 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `waveName` |  |
 | `makeWave` | Each wave is new people: the first ones are rookies, then they keep getting better. Every 5th wave a boss leads them.; 1.26: omen fali (`omenOf`: `extra`, `lvAdd`, `hunters`, `gear`, `force` po gildii, Pielgrzymka), `partyPool`, Krezus, Przeklęta korona, Mgła wojny (`fog`) |
 | `greedStartNow` |  |
-| `startWave` | 1.26: `fl.needNow` i `fl.needParts` (`hungerParts`), liczba rodzin `fl.famN` (Pełna paleta), napis i podpowiedź omenu przy wejściu, Strażnik (+30% HP potworów w pokoju serca) |
+| `startWave` | 1.26: `fl.needNow` i `fl.needParts` (`hungerParts`), liczba rodzin `fl.famN` (Pełna paleta), napis i podpowiedź omenu przy wejściu, Strażnik (+30% HP potworów w pokoju serca); 1.26.1: `fl.secretFound` z przejść `secretKnown` |
 | `applyRumors` |  |
 | `spawnHero` | 1.17.1: saw: new Set() (hero memory of this wave). |
 | `regroupAtDoor` | The first ones ran out screaming before everyone was in: those still outside go in as a new group, a little shaken. |
 | `becomeImpatient` | Patience runs out. 1.17 (author: after 2 minutes not a rigid retreat or charge): P.council opens when the heart is known to the party (heartP) or the extra 30 s is still unused, and the party votes (p5_ai.js: councilThink); otherwise goHome. Only the hero of the prophecy never goes home: the prophecy shows the way and the party storms the heart. |
 | `goHome` | 1.17: the old end of patience: everyone goes home (fl.fearless, P.plan leave, P.council cleared, tl ip 0, the leader says leave, the hint); also the council's home result and its fallbacks |
-| `heroExit` | A hero walks out of the dungeon. With a crystal it is your loss; scared out of his wits it is your win. Either way, he talks. |
-| `finishWave` |  |
+| `heroExit` | A hero walks out of the dungeon. With a crystal it is your loss; scared out of his wits it is your win. Either way, he talks.; 1.26.1: Drugie serce oddaje pierwszy wyniesiony kryształ (`run.secondHeartUsed`, oś czasu `cx2`) |
+| `finishWave` | 1.26.1: odkryte ukryte przejścia stają się `secretKnown`, gdy ktoś wyszedł żywy |
 | `collectReturners` | Głód serca: the wave's score feeds the heart. Short: the reserve pays first, then a crystal. Surplus: the reserve (at most 2 needs); a full reserve grows a lost crystal back.; 1.26: kultysta nie zostaje powracającym |
 | `feedHeart` | Prototype 1.01: the heart has been eating its share of this wave's Esencja all along (essIn). When the wave ends it is either fed, or it eats what it got and a crystal. Crystals do not grow back by themselves (1.05:...; 1.26: niedobór z sakiewki (Kamienne serce 75%), raz na run Kredyt krwi, inaczej kryształ i pusta sakiewka; `fl.hunger` z `tookPurse`, `tithe`, `satiety`, `heartLv` |
 | `roundStats` |  |
@@ -221,10 +223,10 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `quitRun` | Quitting mid-run still logs everything so far, including the unfinished wave. |
 | `cellCenter` |  |
 | `expandRefund` | half of what the expansions cost |
-| `toolCost` |  |
-| `toolMarkers` |  |
+| `toolCost` | 1.26.1: `secret` 6, zdjęcie maski nieznanego przejścia 0 |
+| `toolMarkers` | 1.26.1: `secret` na środku korytarzy (jawne tylko przy `secretOk`) |
 | `forgetTiles` |  |
-| `applyTool` |  |
+| `applyTool` | 1.26.1: `secret` maskuje albo zdejmuje maskę (`secretOk`, `forgetTiles`, `rebuildDungeon(true)`) |
 | `typeMult` | v14: damage types, bodies, phobias, traumas |
 | `revealPhys` |  |
 | `phobiaOn` |  |
@@ -240,7 +242,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `fearResist` | Fear: the second currency of the dungeon. Every bit of it scores; past a hero's courage he runs for the exit. 1.17: the boss bonus (x0.85) only with a boss he is with (sees or hears him) |
 | `startRage` | 1.05: fury, one mechanic for everyone (it used to be a brave one's answer to a death): +25% speed, half the fear, hits monsters harder. The barbarian lives in it: a death, a hard hit or panic makes him rage (panic... |
 | `raging` |  |
-| `addFear` | 1.26: Ołtarz i Kamień wyjec +10% w pokoju, Naznaczony ×1,3, przesądny ×1,4, zapaleniec (limit ×1,1, furia zamiast paniki), omen `fearK` |
+| `addFear` | 1.26: Ołtarz i Kamień wyjec +10% w pokoju, Naznaczony ×1,3, przesądny ×1,4, zapaleniec (limit ×1,1, furia zamiast paniki), omen `fearK`; 1.26.1: Odbicie lustra B tylko przy strachu >= 3 |
 | `dropCrystal` |  |
 | `startFlee` | 1.17: the champion's cry only when he perceives the one who bolts, and steadies those who hear it; half of us run counts the leader's group (groupOf); fleeShout only when the leader perceives him |
 | `partyFlee` | 1.17: reaches whoever hears the leader's cry (canHearShout, h.plan flee); a caged one and the champion are not marked fleeing; the others learn when they rejoin |
@@ -309,7 +311,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `satietyAdd` | (1.26) Esencja w Nasycenie (`run.satiety`), sprawdza nowy poziom |
 | `heartLevelUp` | (1.26) nowy poziom serca: `run.heartPicks` (Dar serca), `deckSize + 1` na 2/4/6; w fali napis i karta `heartLv`, w budowie (Ofiara) od razu sklep z rzędem Dar serca |
 | `greedE` | (1.26) Krezus: chciwość w Esencji do kwadratu |
-| `essMultNow` | (1.26) mnożnik Esencji z kart 1.26 w tej chwili (Koronacja strachu, Krwawa łaźnia, Samotny wilk, Pełna paleta, Minimalista, Przeklęta korona, Kolekcja czaszek) |
+| `essMultNow` | (1.26) mnożnik Esencji z kart 1.26 w tej chwili (Koronacja strachu, Krwawa łaźnia, Samotny wilk, Pełna paleta, Minimalista, Przeklęta korona, Kolekcja czaszek); 1.26.1: Serce lochu (`mods.heartCore`) i Rezonans |
 | `kataK` | (1.26) Pamiętnik kata: moc rodzaju z `run.kata` |
 | `feastIn` | (1.26) Uczta: `0,8 × poziom × feastK` Esencji przez `essIn`, liczona w wyniku fali |
 | `copyOk` | (1.26) czy kartę można skopiować (zwykła, nie unikalna, nie kopiująca) |
@@ -319,6 +321,9 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `killHooks` | (1.26) co uruchamia śmierć: Dzwon, Powstanie, Polowanie ogara, Nieśmiertelna armia, Głód krwi, Grabież herszta |
 | `riseZombie` | (1.26) Powstanie: Zarażony wstaje jako zombie do końca fali (najwyżej 2; Armia: szkielet) |
 | `dreamLoot` | (1.26) Złoty sen: łup w pokoju serca albo obok |
+| `secretFind` | (1.26.1) Ukryte przejście odkryte: do `fl.secretFound`, drzwi znane, napis, kwestia `secretFound`, wszyscy przeplanowują |
+| `secretOk` | (1.26.1) przejście wolno ukryć tylko, gdy wejście dalej dochodzi do serca przez jawne przejścia (`layoutDist`) |
+
 
 ## p4_traps.js (odpalanie pułapek i potworów)
 
@@ -332,14 +337,14 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `cdOf` |  |
 | `calmReady` | Card boosts on a trap's power: Cisza przed burzą (idle 20 s or not fired yet this wave) and Krwawy rytuał (kills this wave). |
 | `heartFed` | Bijące serce (1.01: the heart is fed in this wave) // Bijące serce (v15: you hold enough to feed the heart) |
-| `trapBoost` |  |
+| `trapBoost` | 1.26.1: dla potworów `kataK × heartK × Strażnik` (zdolności z checku) |
 | `lvlPow` | monsters grow through HP and power instead |
 | `ignite` | Setting a hero on fire; with Pożoga the flames jump to the heroes right next to him (one hop). |
 | `rigged` | Mechanizm samobójczy: the trap being taken apart fires in the face of whoever is doing it. |
 | `decoyAlarm` | Wabik: taking it apart rings the alarm and every ready trap in its room goes off at once. 1.17.1: sawItem(it, [w], ['decoy']) (everyone who sees the room, plus the one who set it off); bDecoy inside sayNow(['decoy']). |
 | `fire` | 1.05: while a trap fires, the wounds and the fright it causes are remembered by each hero (what he will tell in the tavern) 1.17.1: fireRaw runs inside sayNow(itemTags(it, true)): what went off is the thing of the moment. |
 | `feltBy` |  |
-| `fireRaw` | 1.17: fl.lastTrapRoom; hearFar for TRAPS; the shout from SAY.trap lists (pickS, else trapGeneric); the ambush counter only for traps on the leader's group; a priest's failed blessing says blessHit 1.17.1: sawItem(it, list) before hearFar: those hit and those who see the spot.; 1.26: moc ×`famK` ×`omenPow`, Wspólny mechanizm, nowe pułapki (Wahadło, Wnyki, Wyziewy, Plama oleju, Runa piorunów, Zalewnia, Dzwon, Fałszywe przejście, Kocioł smoły) i zdolności nowych potworów, cechy B (`t3B`) |
+| `fireRaw` | 1.17: fl.lastTrapRoom; hearFar for TRAPS; the shout from SAY.trap lists (pickS, else trapGeneric); the ambush counter only for traps on the leader's group; a priest's failed blessing says blessHit 1.17.1: sawItem(it, list) before hearFar: those hit and those who see the spot.; 1.26: moc ×`famK` ×`omenPow`, Wspólny mechanizm, nowe pułapki (Wahadło, Wnyki, Wyziewy, Plama oleju, Runa piorunów, Zalewnia, Dzwon, Fałszywe przejście, Kocioł smoły) i zdolności nowych potworów, cechy B (`t3B`); 1.26.1: oślepieni nie są świadkami (nauka pułapki); Wyziewy: trafieni od razu w `seen` chmury |
 | `fall` | Trapdoor: down into the dark, out somewhere else a few seconds later, alone and shaken. A hero falls through a given trapdoor once per wave: after that he knows where the edge is and steps around it. |
 | `landFallen` |  |
 | `cageHero` | Cage: stuck for a while, taking extra damage. The party decides whether to come back for him. 1.17: h.cagedAt (the leader notices a silent cage after 20 s) |
@@ -349,7 +354,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `monDmg` |  |
 | `driftTarget` |  |
 | `driftTick` | 1.17.1: a ghost, shade or bats close enough to act on him: sawAdd(itemTags(m)). |
-| `monstersTick` | 1.17.1: a spider web on the one it binds: sawAdd(['web', 'spider', 'monster']).; 1.26: `monDmg` (Pamiętnik kata, Kości niezłomne, Pakt, Strażnik, omen), `newMonsterTick`, powalony szkielet składa się dalej (`hp <= 0` i `reAt`) |
+| `monstersTick` | 1.17.1: a spider web on the one it binds: sawAdd(['web', 'spider', 'monster']).; 1.26: `monDmg` (Pamiętnik kata, Kości niezłomne, Pakt, Strażnik, omen), `newMonsterTick`, powalony szkielet składa się dalej (`hp <= 0` i `reAt`); 1.26.1: saper z potworem obok dostaje w walce ×0,6 |
 | `hiddenAmbush` | (1.18) 1.18 Zasadzka w norze: goblins and shamans in their Goblinia nora sit hidden: no danger on the map (rebuildThreat), nobody walks round them or picks a fight with them, until one strikes or a hero runs into it... |
 | `showAmbush` | (1.18) odsłania goblina/szamana z zasadzki (napis "Zasadzka!", 1 s ciosów ×2) |
 | `skullK` | (1.18) 1.18 Mur z czaszek: kości, trumny and archers in a Kaplica czaszek, +5% for every hero killed in a Kaplica this run (at most +50%) |
@@ -371,12 +376,12 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `statusOn` | (1.26) czy bohater ma status |
 | `statusList` | (1.26) aktywne statusy w kolejności `STATUS` |
 | `rooted` | (1.26) Unieruchomiony (albo oszołomiony) |
-| `setStatus` | (1.26) nakłada status (czas albo stosy; źródło do statystyk; Okowy +1 s) |
+| `setStatus` | (1.26) nakłada status (czas albo stosy; źródło do statystyk; Okowy +1 s); 1.26.1: czas ×`famK` źródła (Runa rodu), poza unieruchomieniem |
 | `clearStatus` | (1.26) zdejmuje status |
 | `statusTick` | (1.26) tyknięcia: krwawienie, trucizna i zaraza, strach z płomieni, poślizg na oleju, koniec uwiedzenia |
 | `seduceEnd` | (1.26) koniec uwiedzenia: strach 30, daleko od drużyny |
 | `reaction` | (1.26) reakcja: napis, +0,3 Grozy × głębokość (raz na bohatera), krok combo (raz na odpalenie) |
-| `reactHit` | (1.26) ogień i porażenie spotykają status (wołane z `damageRaw`, zwraca kwotę) |
+| `reactHit` | (1.26) ogień i porażenie spotykają status (wołane z `damageRaw`, zwraca kwotę); 1.26.1: Pożar podpala na `max(6, 2 × pozostały czas)` |
 | `gameLaterRun` | (1.26) odroczone zdarzenia w czasie gry (`setTimeoutGame`) |
 | `famLv` | (1.26) poziom rodziny elementu |
 | `famK` | (1.26) Runa rodu: `1 + 0,08 × poziom` |
@@ -387,10 +392,12 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `ratsK` | (1.26) urośnięty rój szczurów |
 | `impSteal` | (1.26) chochlik kradnie przedmiot i rzuca go jako łup w innym pokoju |
 | `plagueAirTick` | (1.26) Morowe powietrze: co 3 s zaraza przeskakuje |
-| `newMonsterTick` | (1.26) zachowanie nowych potworów co krok (szkielet, zombie, licz, ogar, kusicielka, demon, saper, herszt, szczury) |
+| `newMonsterTick` | (1.26) zachowanie nowych potworów co krok (szkielet, zombie, licz, ogar, kusicielka, demon, saper, herszt, szczury); 1.26.1: ogar woła `houndTrack` |
 | `monsterDown` | (1.26) powalenie potwora: Składanie, Gnijące mięso, `m.down` (Odrodzenie), karta `revive` |
-| `hazardsTick` | (1.26) chmury Wyziewów, Kolczatki, zgubienie z Fałszywego przejścia co krok |
+| `hazardsTick` | (1.26) chmury Wyziewów, Kolczatki, zgubienie z Fałszywego przejścia co krok; 1.26.1: przywraca strefy i chmury wyłączone flaszką (`offUntil`) |
 | `baitBite` | (1.26) Przynęta: Unieruchomiony 3 s i rana, sąsiedzi się boją, przynęta zostaje |
+| `houndTrack` | (1.26.1) Ogar: gdy w jego pokoju nikogo nie ma, biegnie do krwawiącego w sąsiednim pokoju (ścieżka do 16 kroków, 8 s), zostaje tam do końca fali |
+
 
 ## p5_ai.js (AI bohaterów)
 
@@ -478,8 +485,8 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `lookThink` | 1.17: the looking-around runs: ends when all are done, after 10 s, or at once on a trap there, a sound, a wound, a panic, a new plan; lookEnd, lookCd 18 s |
 | `lookJob` | 1.17: planHero: walk up to the thing, look at it, search it; null when there is nothing (left) to do |
 | `lookArrive` | 1.17: he stands at the thing: what he says (lookObj, lookProp, lookKind, lookWall) |
-| `lookDone` | 1.17: done looking: furniture searched may set off the trap on it (SEARCH_TRAP) or give a coin (SEARCH_GOLD: 0.3 greedy and thief, else 0.18); lookFind or lookNothing 1.17.1: a coin found: sawAdd(['gold']). |
-| `hearFar` | 1.17: a trap goes off where none of them can see it: the nearest calm one within 12 tiles hears it, may say so (hearSound, hearScream), and P.sound steers the leader if he heard it too; soundCd 10 s; 1.26: nie słychać pułapek z pokoju z Zasłoną |
+| `lookDone` | 1.17: done looking: furniture searched may set off the trap on it (SEARCH_TRAP) or give a coin (SEARCH_GOLD: 0.3 greedy and thief, else 0.18); lookFind or lookNothing 1.17.1: a coin found: sawAdd(['gold']).; 1.26.1: ciekawski: element na meblu ×2, moneta 0,3 |
+| `hearFar` | 1.17: a trap goes off where none of them can see it: the nearest calm one within 12 tiles hears it, may say so (hearSound, hearScream), and P.sound steers the leader if he heard it too; soundCd 10 s; 1.26: nie słychać pułapek z pokoju z Zasłoną; 1.26.1: ciekawski dostaje `checkAt` (najwyżej 2 na falę, `SAY.curiousGo`) |
 | `powerReady` |  |
 | `usePower` |  |
 | `useCharm` | Talisman: a 3 s ward against trap damage (25% at the first level, +5% a level, at most 40%). A few uses a wave. Rookies switch it on after a hard hit, veterans also right before a trap they know about. |
@@ -495,15 +502,15 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `loadFound` | 1.14: the traps you discover stay discovered between runs (this browser's collection, `yatd-found`). |
 | `saveFound` |  |
 | `pickTab` | 1.14: to a tab, and to the sub that holds a tile (the guide points at a tile). |
-| `planHero` | One hero decides what to do next and finds a path there (only through tiles the party knows). 1.17: reads planOf(h) and exiting(h); job 13 look (lookJob); the leader's search for a lost one ends with searchFail; the priest walks to a caller whose path costs at most 20 (healFor); regroup ignores those going out 1.17.1: the warrior's fight and avoid lines inside sayNow(itemTags(monster)) with sawAdd.; 1.26: Najpierw uzdrowiciel, Wezwanie po krzyk, kultysta do serca (`intent cult`), zapaleniec `avoid` ×0,7 |
+| `planHero` | One hero decides what to do next and finds a path there (only through tiles the party knows). 1.17: reads planOf(h) and exiting(h); job 13 look (lookJob); the leader's search for a lost one ends with searchFail; the priest walks to a caller whose path costs at most 20 (healFor); regroup ignores those going out 1.17.1: the warrior's fight and avoid lines inside sayNow(itemTags(monster)) with sawAdd.; 1.26: Najpierw uzdrowiciel, Wezwanie po krzyk, kultysta do serca (`intent cult`), zapaleniec `avoid` ×0,7; 1.26.1: `intent 'curious'`, szarża zapaleńca (`SAY.charge`) |
 | `partyWay` | 1.13.4: where the party is going: the leader's path while someone else leads and walks it, else the route to the party's goal (detour, heart in an assault, explore target). Not the hero's own path. |
-| `disarmJob` | The thief deals with known traps that still sit on the leader's way. Rookies are slow and sometimes set them off. |
+| `disarmJob` | The thief deals with known traps that still sit on the leader's way. Rookies are slow and sometimes set them off.; 1.26.1: Wnyki rozbrajane ×1,5 |
 | `smashJob` | 1.05: the barbarian's axe: counter-buildings in his room (always worth it to him) and wooden furniture close by (further when raging). A smashed building does nothing for the rest of the wave and stops blocking; a... 1.17.1: smashB inside sayNow([building type]). |
 | `smashDone` |  |
 | `blessJob` | An experienced priest lifts the curse from a known portrait near their way. 1.17.1: bAltar inside sayNow(['altar']). |
 | `bombJob` | Anyone with a bomb throws it at a known trap blocking the leader's way, from up to 3 tiles. |
 | `bardTick` | Priest heals, puts out fires, raises a barrier and burns ghosts with holy light; mage burns monsters and clears webs. 1.05: the bard. A call when someone is lost (they walk to the music), and a song when spirits sag... 1.17.1: bHowl inside sayNow(['howl']). |
-| `heroAbilities` | 1.17: no spells or prayers while panicking or fleeing; the priest lifts a friend's curse first, then his own (curseSelf) 1.17.1: cleansing a bleeding hero says SAY.staunch inside sayNow(['spikes', 'blood']), a burning one SAY.cleanse inside sayNow(['fire']); bAltar inside sayNow(['altar']). |
+| `heroAbilities` | 1.17: no spells or prayers while panicking or fleeing; the priest lifts a friend's curse first, then his own (curseSelf) 1.17.1: cleansing a bleeding hero says SAY.staunch inside sayNow(['spikes', 'blood']), a burning one SAY.cleanse inside sayNow(['fire']); bAltar inside sayNow(['altar']).; 1.26.1: kula ognia omija osłoniętego sapera (+2,5) |
 | `glance` | 1.10: standing, a hero looks around now and then: at a friend, at loot they saw, at a trap they know, or just away |
 | `slipChance` |  |
 | `heroTile` |  |
@@ -515,7 +522,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `onEnter` | 1.17: the leader in a new room without a detour: P.lookAsk (lookRoll 0.9 s later) 1.17.1: sawRoom(h, r) on a room change; the first one into a komnata room says SAY.rkEnter[k_rk] (fl.rkSaid, stats.rkEnter). |
 | `inZone` |  |
 | `scanTraps` |  |
-| `updateHero` | 1.17: a lifted curse says blessDone; the warrior leading raises his shield with shieldLead; 1.26: `statusTick`, potem `heroAI126` i `newClassTick` |
+| `updateHero` | 1.17: a lifted curse says blessDone; the warrior leading raises his shield with shieldLead; 1.26: `statusTick`, potem `heroAI126` i `newClassTick`; 1.26.1: przesądny czeka przed pokojem z portretem albo lustrem (`superRoom`, do 8 s) |
 | `shoutRange` | (1.18) 1.18: Grube mury: a shout carries 8 steps instead of 14; Niosące się echo: a shout from a Grota carries 2 times as far (3 times with a second copy), with Grube mury 16 |
 | `inG2` | (1.19) 1.19 Rozłam (author: "plan rozbudowy bohaterów: rozłam"): the party can break in two. A second group (P.g2: its leader, its members, its own plan and goal) explores on its own and joins the rest again when they meet;... |
 | `g2Leader` | (1.19) przywódca drugiej grupy, nowy gdy obecny odpadnie (plan regroup) |
@@ -600,7 +607,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `nemesisThink` | (1.23) every party tick (partyThink, after finalThink) |
 | `bountyTalk` | (1.23) rozmowa o nagrodzie za głowę Nemezis |
 | `nemGrudgeLook` | (1.23) he sees his grudge (in his room): the line once, the trap known (and, if he cannot deal with it, twice as dangerous for the party's paths), then planHero's grudgeJob for 25 s |
-| `grudgeJob` | (1.23) planHero: go for the grudge. A trap: a thief takes it apart (the disarm state), a barbarian smashes it (the smash state); others leave it be (it is marked). A monster: a fight job, whatever his class (not a drifting... |
+| `grudgeJob` | (1.23) planHero: go for the grudge. A trap: a thief takes it apart (the disarm state), a barbarian smashes it (the smash state); others leave it be (it is marked). A monster: a fight job, whatever his class (not a drifting...; 1.26.1: Wnyki rozbrajane ×1,5 |
 | `nemGrudgeDone` | (1.23) updateHero: his grudge trap taken apart or smashed |
 | `nemWarn` | (1.23) the party is about to walk into a room he remembers with a trap in it (the leader's next 5 steps): he warns them, once a room |
 | `nemBefore` | (1.23) fire() (p4): a trap he knew goes off next to him and misses him |
@@ -613,9 +620,12 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `fogRoll` | (1.20) 1.20 Latarnia: the fog's roll on one a step away from the leader; a lit lantern within 2 tiles cuts it to 30% (lanternSaves) |
 | `framesWake` | (1.18) 1.18 Spojrzenie z ramy: in a Galeria, the portrait, eyes or mirror he looks at wakes up: if it is ready (and they do not know it), it goes off on him by itself with 1,5 times the power (+0,5 a copy) |
 | `taintedSip` | (1.18) 1.18 Zepsute mikstury: a potion from your loot (pickup marks it) heals half and scares the one who drinks it (10% of his courage a copy) |
-| `newClassTick` | (1.26) aura paladyna, tropienie i strzały tropiciela, antidotum i flaszka alchemika |
+| `newClassTick` | (1.26) aura paladyna, tropienie i strzały tropiciela, antidotum i flaszka alchemika; 1.26.1: flaszka wyłącza strefę na 6 s; tropiciel nie strzela do osłoniętego sapera ani powalonych |
 | `callNeeds` | (1.26) kto woła o pomoc (wnyki, uwiedzenie); Odwrót z łupem |
-| `heroAI126` | (1.26) Najpierw uzdrowiciel, Wezwanie po krzyk, Odwrót z łupem, Lęk przed zgrają, kultysta |
+| `heroAI126` | (1.26) Najpierw uzdrowiciel, Wezwanie po krzyk, Odwrót z łupem, Lęk przed zgrają, kultysta; 1.26.1: koniec `checkAt` ciekawskiego, wykrywanie ukrytego przejścia (`secretFind`) |
+| `superRoom` | (1.26.1) pokój z niewyłączonym portretem albo lustrem (Przesądny); stała strzałkowa |
+| `sapperCovered` | (1.26.1) w pokoju sapera stoi inny żywy, nie powalony potwór (nie saper); stała strzałkowa |
+
 
 ## p6_loop.js (krok symulacji, checki, kamera, muzyka)
 
@@ -765,8 +775,8 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `flatItem` |  |
 | `cageShut` |  |
 | `fogged` | in a wave, what the heroes have not seen is dimmed (the fog), standing things too |
-| `drawWorld` |  |
-| `itemAnchor` | where to put signs for an item: over a standing thing, on a wall trap's picture, at the middle of a floor trap |
+| `drawWorld` | 1.26.1: drzwi z `d.secret` w liście brył (rodzaj 6, `drawSecret`) |
+| `itemAnchor` | where to put signs for an item: over a standing thing, on a wall trap's picture, at the middle of a floor trap; 1.26.1: ogar na tropie (`it.walking`) w `gx, gy` na wysokości 0,55 |
 | `wallSpot` | a wall trap's spot: the middle of its face towards the room (a full wall), or just in front of a cut wall |
 | `drawTiles` | 1.03: g = the context to draw on (a cached chunk) |
 | `tileBucket` |  |
@@ -789,7 +799,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `drawHeartLabel` |  |
 | `drawCorpse` | Standing traps, buildings, loot and monsters. Until each has its own drawing, the old picture stands up on its tile. |
 | `popK` | 1.09: something just placed, moved or upgraded pops (a little too big, then its size) |
-| `drawItemUp` |  |
+| `drawItemUp` | 1.26.1: ogar na tropie w `gx, gy` |
 | `monH` |  |
 | `signText` | upright signs: a text with a dark rim at a point of the screen |
 | `drawRoomTypeNames` |  |
@@ -874,7 +884,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `drawRumorTiles` | Build phase: what the next wave already knows from rumours (tinted floor, an eye on known traps, a hollow eye on false ones). |
 | `eyeIcon` |  |
 | `drawRumorEyes` | 1.07: over the trap, upright |
-| `drawToolMarkers` |  |
+| `drawToolMarkers` | 1.26.1: znaczniki Ukrytego przejścia "?" i "×" |
 | `drawBreachMark` | Build phase: where the next wave will tunnel in. |
 | `drawTutTarget` |  |
 | `drawFF` |  |
@@ -892,6 +902,8 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26; funkcje 
 | `drawAfx` | (1.24) rysuje trwające animacje (w fali) |
 | `fitTxt` | (1.24) tekst ucięty z wielokropkiem do szerokości |
 | `drawPreview` | (1.24) następna drużyna u góry mapy w budowie (chipy i dwie linie); 1.26: plakietka omenu pod podglądem, przy Mgle wojny ramka "w mgle" zamiast podglądu |
+| `drawSecret` | (1.26.1) Ukryte przejście: blok kamienia nad drzwiami z fioletowym konturem i "?", póki nikt go nie odkrył; potem gruz |
+
 
 ## p7c_art.js (1.26: grafika malowana w kodzie)
 
@@ -902,7 +914,7 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `ART.pic` | malarz: proste kształty na małym canvasie w pikselach obrazka (światło, cień, plamki, figura gry, napis) |
 | `ART.quantize` | przyciąga obrazek do palety 32 kolorów z ditheringiem 4×4, alfa 0 albo 1 |
 | `ART.keep`, `ART.url` | obrazek malowany raz: canvas dla mapy, data URL dla strony |
-| `ART.EL` | malarze elementów (kafelki i karty) |
+| `ART.EL` | malarze elementów (kafelki i karty); 1.26.1: `EL.secret` (mur z wysuniętym blokiem, fioletowa ramka i "?"); ilustracje 8 nowych kart Serca w mapie kart i w `HEART_IDS` |
 | `ART.ROOMS` | efekty pokoi i komnaty jako małe pokoje |
 | `paintTile`, `ART.tile`, `ART.tileCanvas` | scenka kafelka paska 72×36 |
 | `ART.has` | czy element ma scenkę |
@@ -992,7 +1004,7 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `leaveFullscreen` |  |
 | `restart` | the start card again, in place |
 | `webStartRow` |  |
-| `renderStart` | 1.17: the version label and the Co nowego entries 1.17.1: label Prototype 1.17.1, 3 new entries.; 1.26: "Prototype 1.26", nowe zdanie wstępu, 22 akapity Jak grać, 11 wpisów 1.26 w Co nowego |
+| `renderStart` | 1.17: the version label and the Co nowego entries 1.17.1: label Prototype 1.17.1, 3 new entries.; 1.26: "Prototype 1.26", nowe zdanie wstępu, 22 akapity Jak grać, 11 wpisów 1.26 w Co nowego; 1.26.1: "Prototype 1.26.1", 4 wpisy "Co nowego" |
 | `renderMenu` | The menu (the button bottom left): back to the game, settings, save and leave, download, end the run. |
 | `settingsBack` |  |
 | `sliderRow` |  |
@@ -1000,7 +1012,7 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `renderSettings` | Player settings: what a player of the finished game would see. |
 | `renderTests` | Test sliders: the balance knobs for testing, kept apart from the player's settings. |
 | `reqOk` | Three cards to choose from. Rarity follows the source: a wave gives mostly common cards (a rare one now and then), a points threshold opens all rare cards, a boss guarantees a legendary. New traps and monsters come... |
-| `upgradePicks` |  |
+| `upgradePicks` | 1.26.1: bez kart grupy Serce |
 | `stashCap` |  |
 | `priceOf` | 1.26: 5 / 9 / 14, odblokowanie 7 |
 | `sellOf` |  |
@@ -1169,12 +1181,12 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `tutWayOnly` | (1.24) 1.24 (B, P1-5: a tester's spikes never fired in the guide): the guide's spikes go on the heroes' way (from a quarter of it on, like the ring), so a hero steps on them in wave 1 (and tutSpikeSure makes them go off) |
 | `runeRoll` | (1.26) Runa rodu w sklepie: rodzina z wagą 3, gdy jej element stoi w lochu (inaczej 1), nigdy na poziomie 5 |
 | `runeBuy` | (1.26) kupno runy: `run.famLv[f] += 1` |
-| `heartOffer` | (1.26) rząd Dar serca: najstarszy czekający poziom z `run.heartPicks` (3 karty, z Dziesięciną 4; Odrost na poziomach nieparzystych, gdy brakuje kryształu) |
+| `heartOffer` | (1.26) rząd Dar serca: najstarszy czekający poziom z `run.heartPicks` (3 karty, z Dziesięciną 4; Odrost na poziomach nieparzystych, gdy brakuje kryształu); 1.26.1: rzadkość r 70% / l 30% (komentarz nad funkcją dalej podaje 55/35/10) |
 | `heartTake` | (1.26) weź kartę z rzędu Dar serca (talia, schowek, ★ albo Odrost) |
 | `heartLines` | (1.26) część serca w podsumowaniu fali |
 | `genIcon` | (1.26) ikona dla kafelka bez rysunku: kolor i znak rodziny albo pierwsza litera |
 | `branchTrait` | (1.26) cecha poziomu 3 elementu (A albo B) |
 | `renderBranch` | (1.26) okno wyboru cechy A/B przy ulepszeniu na 3. poziom |
-| `renderHeart` | (1.26) karta serca: głód i jego części, sakiewka, Nasycenie, poziomy, Ofiara |
+| `renderHeart` | (1.26) karta serca: głód i jego części, sakiewka, Nasycenie, poziomy, Ofiara; 1.26.1: tekst poziomów (rzadka albo legendarna) i Kamienne serce w notce głodu |
 | `omenBox` | (1.26) ramka omenu: obrazek, nazwa, zasada, nagroda albo koszt |
 

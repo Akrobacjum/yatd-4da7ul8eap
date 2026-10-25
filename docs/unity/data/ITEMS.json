@@ -344,7 +344,7 @@
   "hp": 90,
   "melee": 28,
   "tag": "poluje",
-  "desc": "Ogar piekielny (potwór, ogień): uciekający i spanikowani dostają od niego 2 razy więcej; zabicie uciekiniera daje Grozę i za śmierć, i za ucieczkę. Skill check: Pogoń za najbardziej przestraszonym."
+  "desc": "Ogar piekielny (potwór, ogień): uciekający i spanikowani dostają od niego 2 razy więcej; zabicie uciekiniera daje Grozę i za śmierć, i za ucieczkę. Skill check: Pogoń za najbardziej przestraszonym. Gdy w jego pokoju nikogo nie ma, idzie za krwawiącym do sąsiedniego pokoju."
  },
  "siren": {
   "name": "Kusicielka",
@@ -374,7 +374,7 @@
   "hp": 80,
   "melee": 8,
   "tag": "kolczatki",
-  "desc": "Goblin saper (potwór): skill check: Kolczatki: 3 pola przy bohaterach stają się pułapką do końca fali (rani i spowalnia, najwyżej 3 zestawy)."
+  "desc": "Goblin saper (potwór): skill check: Kolczatki: 3 pola przy bohaterach stają się pułapką do końca fali (rani i spowalnia, najwyżej 3 zestawy). Chowa się za innymi potworami: gdy stoi przy nich, bohaterowie zadają mu 40% mniej, a mag i tropiciel biorą go na cel na końcu."
  },
  "warlord": {
   "name": "Herszt goblinów",
@@ -536,6 +536,14 @@
   "tag": "pętla",
   "tool": true,
   "desc": "Przejście między dwoma sąsiednimi pokojami. Więcej dróg to więcej wyborów i więcej błędów bohaterów."
+ },
+ "secret": {
+  "name": "Ukryte przejście",
+  "cost": 6,
+  "slot": "hall",
+  "tag": "fałszywa ściana",
+  "tool": true,
+  "desc": "Ukryte przejście (Loch): maskuje istniejące przejście między pokojami fałszywą ścianą. Bohaterowie widzą tam mur i idą dłuższą drogą, dopóki ktoś go nie odkryje (najczęściej złodziej albo tropiciel, ostrożni i ciekawscy, i ci, którzy utknęli). Odkryte jest zwykłym skrótem do końca fali, a jeśli ktoś, kto je znał, wyjdzie z lochu, następna fala zna je od startu (możesz zamaskować je od nowa). Do serca musi zostać jawna droga. Zdjęcie maski nic nie kosztuje."
  },
  "expand": {
   "name": "Rozbuduj",

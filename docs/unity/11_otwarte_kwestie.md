@@ -41,8 +41,11 @@ Lista rzeczy, o które trzeba zapytać autora albo które trzeba świadomie rozs
 | **Limit zapadni (1.24)** | najwyżej 2 upadki na falę (elita i poz. 12+: 1), koszt 6 | ocenić, czy zapadnia nie stała się za słaba w lochach strachu |
 | **Kalibracja ekonomii 1.26** | liczby planu "Serce zabiera" (tabela głodu `HUNGER_T`, Danina 30%, progi poziomów 30/75/135/210/300/410/540, Ofiara do 40, start 25, dochód 6, ceny 5/9/14, tańsze elementy, `GZ.scare` 4, `MON_FACTOR` 0,8) są wpisane tak, jak zaprojektowano; boty dymne (`e126/bot`) są słabsze od modelu z planu (dominuje kradzież kryształu), więc nie dały podstaw do zmian; odtworzeń `replay_talk.py` na 1.26 nie liczono | kalibrować na danych z testów z ludźmi (`LOG_VERSION` 62): `waves.summary` `satiety`, `satietyGain`, `heartLv`, `heartPick`, `regrow`, `feastPts`, `tithePts`, `ofiara`, `revived`, `stealMax`, `omen`, `hunger` (`tookPurse`, `bankrupt`), `stats` `essTithe`, `essDrained`, `drainBack`, `heartTook`; policzyć nowy wzorzec odtworzeń (sekcja 09) |
 | **Omen w pierwszym runie bez przewodnika (1.26)** | `omenOf` wyklucza tylko `run.tutorial`, więc run w etapach nauki bez przewodnika dostaje omen w fali 3 | czy omeny mają czekać do pełnej gry (plan: "pierwszy run z przewodnikiem bez omenów") |
-| **Zachowania z planu 1.26, których nie ma w kodzie** | przesądny nie czeka przed pokojem z portretem albo lustrem; ciekawski nie sprawdza usłyszanych pułapek i nie przeszukuje mebli częściej; zapaleniec nie szarżuje i nie ma 30% przejścia przez znaną pułapkę; Wnyki nie wydłużają rozbrajania ×1,5; ogar nie idzie za Krwawiącym do sąsiedniego pokoju; saper nie trzyma się za innymi potworami; flaszka alchemika kończy strefę na dobre (plan: na 6 s); Wyziewy B (oślepienie) blokują wykrywanie, ale nie naukę pułapek; Plama oleju A (`h.oilA`) nic nie robi; Runa rodu nie wydłuża czasów statusów | dopisać w prototypie albo zmienić opisy (sekcje 04, 4.2; 05, 5.14.11; 06, 6.16.11) |
-| **Cechy B i plan w szczegółach (1.26)** | Pożar ustawia stałe 6 s podpalenia (plan: 2 razy dłużej), Kościany pancerz zmniejsza każde obrażenie poza magiem (plan: kłute), Wielkie leczenie szamana z checku nie wybiera najsilniejszego, Wspólny mechanizm nie sprawdza rodziny, Mgła wojny losuje zgubienie co krok (zależne od tempa klatek) | do decyzji autora (sekcja 05, 5.11 i 5.14.11; sekcja 03, rozdz. 6) |
+| **Zachowania z planu 1.26 (od 1.26.1 prawie wszystkie w kodzie)** | zostały dwie różnice: zapaleniec nie ma osobnych 30% przejścia przez znaną pułapkę (tylko `avoid` ×0,7, a `TRAIT_TEXT` mówi "częściej"); ciekawski sprawdza usłyszaną pułapkę najwyżej 2 razy na falę i nie jako przywódca (plan: "każdą") | zostawić czy dopisać (sekcje 04, 4.2; 06, 6.16.7, 6.16.11) |
+| **Cechy B i plan w szczegółach (1.26)** | Kościany pancerz zmniejsza każde obrażenie poza magiem (plan: kłute), Wielkie leczenie szamana z checku nie wybiera najsilniejszego, Wspólny mechanizm nie sprawdza rodziny, Mgła wojny losuje zgubienie co krok (zależne od tempa klatek) | do decyzji autora (sekcja 05, 5.11 i 5.14.11; sekcja 03, rozdz. 6) |
+| **Ukryte przejście (1.26.1)** | narzędzie za 6 Esencji maskuje przejście; wykrycie przy drzwiach ok. 4%/s u zwykłego bohatera i ok. 17%/s u złodzieja i tropiciela, a uciekinier zdradza odkryte przejście następnej fali (sekcja 06, 6.16.12; 07, 7.14); liczb nie kalibrowano na grach | ocenić w playteście (`stats.secretMade`, `secretFound`, oś czasu `sf`): czy przejście nie jest za mocne przeciw drużynom bez złodzieja i tropiciela |
+| **Dar serca tylko rzadki i legendarny (1.26.1)** | karty Serca wyszły ze zwykłego sklepu, rząd losuje r 70% / l 30%, doszło 8 uniwersalnych kart (decyzja autora 25.10, wariant 1; sekcja 03, 3.15); siły nowych kart (np. Serce lochu ×1,2, Rezonans do +30%, Wola serca +10%) nie sprawdzano na danych | kalibrować na telemetrii (`run.heartCards`, `fl.heartPick`, `stats.heartPicks`) |
+| **Grupy ★ nowych kart Serca (1.26.1)** | 8 nowych kart nie ma w `FUSE_GROUP`, więc Groza serca (strach) i Serce lochu (Esencja) łączą się jako `power` (+10% mocy) | przypisać grupy `fear` i `ess` czy zostawić (załącznik B, B.3) |
 | Jedno pole na bohatera (1.12.1) | przeciśnięcia (mijanie po czekaniu) zdarzają się ok. 2-3 razy na falę (test `t1121_tiles`); dwóch stojących na jednym polu w ok. 0,2-0,3% klatek (głównie krótkie zatory w korytarzach) | ocenić z autorem, czy wygląda naturalnie; w Unity można dodać rezerwację pól, jeśli zatory będą widoczne |
 
 ## 11.2 Błędy i niespójności w prototypie (zgłoszone przy pisaniu sekcji)
@@ -70,8 +73,9 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | Status runu (naprawione w 1.24) | dwa runy miały `active` z `won: true`; od 1.24 jedna reguła statusu |
 | Tekst połączonej karty (1.24) | zawsze "2,5 kopii", choć grupy `power` i `hero` działają jak 2,75 i 3,125 |
 | `applyFrac` (1.24) | ułamek kopii rozpoznaje "mnożenie" po równym stosunku dwóch kopii; pola stałe albo nieliniowe zostają po całych kopiach |
-| "Dla Ciebie" w podsumowaniu (1.26) | `renderWave` liczy część serca jako `min(need, fl.fed - tookPurse)`, a `feedHeart` nie dodaje zapłaty z sakiewki do `fl.fed`: w fali z niedoborem rachunek pokazuje "♥" za małe i "dla Ciebie +tookPurse" zamiast +0 (Danina jest już odejmowana); kafelek Esencji dobry (sekcja 03, rozdz. 6, pkt 20) |
-| Liczniki potworów 1.26 | `m.raised`, `m.reN`, `m.reAt`, `it.rewound`, `m.rangerHit`, `it.boltN` nie są zerowane w `setupFl` i idą do zapisu: licz podnosi raz na run, szkielet składa się raz na run (premia Kości niezłomnych zostaje), Zwijacz raz na run; `reAt` z poprzedniej fali może ściąć szkieletowi HP do 50% (sekcja 05, 5.14.11) |
+| Licznik `it.boltN` (1.26) | nie jest zerowany w `setupFl` i idzie do zapisu: Przeciążenie runy piorunów (B) liczy co trzecie odpalenie przez cały run; pozostałe liczniki potworów (`raised`, `reN`, `reAt`, `rewound`, `rangerHit`) `setupFl` w kodzie 1.26.1 zeruje (sekcja 05, 5.14.11) |
+| Tekst Drugiego serca (1.26.1) | karta mówi "kryształ wyniesiony z lochu przez złodzieja", a `heroExit` oddaje kryształ wyniesiony przez dowolnego bohatera (pierwszy w runie) |
+| Komentarz nad `heartOffer` (1.26.1) | dalej podaje rzadkość 55 / 35 / 10%, a kod losuje r 70% / l 30% |
 | Stary zapis bez omenów (1.26) | run zapisany przed 1.26 nie ma `run.omens`, więc po wczytaniu nie dostaje omenów |
 | Uczta ze zdolności (naprawione po przeglądzie 1.26) | zabójstwo zdolnością potwora z checku dawało źródło pułapki: bez Uczty, Łupieżcy, Polowania, Armii, Głodu krwi i Pamiętnika kata; teraz `h.killer = fl.firing` |
 | Kody osi czasu (1.26) | `tl('k')` w pierwszej wersji 1.26 w komentarzu (naprawione); `gs`, `cl`, `gh` użyte drugi raz z innym znaczeniem (sekcja 07, 7.13) |
@@ -88,7 +92,6 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | Od fali 15 | limit 6 bohaterów pochłania dodatkowe miejsce bossa |
 | Więź mistrza bez pary (1.21-1.24) | rzut na mistrza bez pary daje przyjaciół, więc przyjaciół jest więcej niż w tabeli |
 | Klasy przy omenach (1.26) | Oblężenie przy braku klas dobiera z `PARTY` i może powtórzyć klasę; wymuszona klasa omenu (po gildii) może zająć miejsce specjalisty gildii w małej drużynie |
-| Opis zapaleńca (1.26) | `TRAIT_TEXT` "idzie przez znane pułapki" obiecuje więcej niż `avoid` ×0,7 |
 | Komentarze 1.21-1.24 | nad `makeBonds`, `betThink`, `bondHurt`, `handThink` stoją liczby sprzed 1.24 (kod: 75%/45%, zakład 50% HP i 85%, drwina 8%/80%/12 s, przekazanie 50%/2,5 pola); komentarz etapów przy `ONB_FULL` mówi o czterech runach |
 
 ### Pułapki, walka, checki (sekcja 05)
@@ -98,7 +101,6 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | Wabik alarmuje raz na run (naprawione w 1.26) | do 1.25.1 pole `alarmed` nie było kasowane między falami; od 1.26 `setupFl` je kasuje |
 | Czaszka bez rodziny i omenu (1.26) | `predictedDmg` nie liczy `famK`, `kindPow`, `omenPow` ani reakcji, więc przy rodzinie na wysokim poziomie zabija bez pytania częściej |
 | Budowle 1.26 (naprawione po przeglądzie) | w pierwszej wersji 1.26 dodatki Runy, Ołtarza, Kwasu, Zasłony i Kamienia wyjca były tylko w opisach; teraz działają (sekcja 05, 5.5.2) |
-| Wyziewy (1.26) | trafieni przy odpaleniu dostają stos drugi raz przy "wejściu" do świeżej chmury w tym samym kroku |
 | Prognoza czaszki | nie uwzględnia combo, `typeMult` ani uniku; dla ducha i nietoperzy mnoży przez `it.power`, więc zawyża |
 | Część strachu bez combo | sieć, zapadnia, klatka, krata, Grzmot ogra i kołysanka nie mają `cpow`, choć 1.12 mówi, że combo wzmacnia też strach |
 | Bonus "w sieci" | `webbed` patrzy tylko na `slowUntil`, więc +30% dostaje każdy spowolniony (zawiasy, trumna, goblin) |
@@ -123,6 +125,8 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | Zapis runu | trzyma też dokumenty fal z danych testowych i może przekroczyć limit `localStorage` bez komunikatu |
 | Dane testowe | bohater, który wyniósł kryształ, ma w podsumowaniu fali `'left'`; kod `tr` oznacza i traumę, i spadek w zapadnię; od 1.22-1.23 kod `fm` oznacza i szyk w walce, i pamięć poległych; statystyki zaokrąglane do całości; liczniki z budowy trafiają do następnej fali; nowe pola 1.20-1.24 część A przy `LOG_VERSION` 58 (od części D 59) |
 | Komentarz o rozbudowie | mówi 3/6/12/24, a przy koszcie 4 jest 4/8/16/32; zwrot za rozbudowę pomija modyfikator kart |
+| Jawna droga do serca (1.26.1) | `secretOk` sprawdza ją tylko przy maskowaniu przejścia i tylko od `L.entrance`; późniejsze wyburzenie przejścia albo pokoju (`canDemolishEdge`, `canDemolishRoom`) i droga od wyłomu tego nie sprawdzają, więc do serca może zostać tylko ukryta droga (sekcja 07, 7.14) |
+| Ukryte przejścia w danych testowych (1.26.1) | `snapshotLayout` zapisuje krawędzie bez `secret`, więc z dokumentu fali nie widać, które przejścia były ukryte |
 
 ### AI bohaterów i rozmowy (sekcja 06, pełna lista w 6.8)
 
@@ -175,8 +179,6 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | Podpowiedzi 1.19-1.24 przez `setHint` | rozłam, "nie zostawię", wyczerpanie, liczba sekund "jeszcze chwila": niewidoczne (martwe `setHint`), zostają napisy nad bohaterami |
 | Pasek strachu przy podzielonym ekranie (1.24) | stuknięcie może trafić w niewidoczny pasek z drugiej połówki (sekcja 08, rozdział 10 #18) |
 | Podpowiedzi 1.26 przez `setHint` | poziomy rodzin w zakładce Loch i omen na starcie fali niewidoczne (widać tylko napis nad wejściem), choć "Jak grać" odsyła do zakładki Loch |
-| Dymek łupu (1.26) | dalej "+25% ceny", a `LOOT_STEP` = 1,15 |
-| Karta serca (1.26) | "fala musi dać co najmniej N-P" bez Kamiennego serca (75%) |
 
 Poprawione już w 1.12.1: brak polskich nazw części źródeł strachu ("heart" na karcie bohatera), podwójne "Poziom N" przy ulepszeniu, "Jeszcze raz" pomijające etapy nauki, wieści o fali i komunikaty sklepu.
 
@@ -203,6 +205,7 @@ Poprawione już w 1.12.1: brak polskich nazw części źródeł strachu ("heart"
 | `ART.family` (herby rodzin, 1.26) | gotowe w `p7c_art.js`, nieużywane w UI |
 | `omenK` z kluczami `tithe`, `feast`, `heartCry`; `mods.reactGz` (1.26) | żaden omen ani karta ich nie ustawia (zawsze wartość domyślna) |
 | mnożnik `(t3B(m) ? 1 : 1)` u szamana (1.26) | nic nie robi |
+| premia +0,08 do wykrycia ukrytego przejścia za przedmiot `stick` (1.26.1, `heroAI126`) | takiego przedmiotu nie ma w grze (`GEAR_POOL`, `HITEMS`), więc składnik jest zawsze 0 |
 | `onLootRival`, `P.lootRivals`, `P.gifts`, `P.lootedDead` (1.20) | haki dla 1.21-1.22; `onLootRival` dalej wołane dla dwóch chciwych, ale nic poza statystyką z niego nie korzysta |
 
 ## 11.4 Uwagi do przenoszenia

@@ -76,3 +76,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.24](1.24.html) | 24.10 | złote karty z duplikatów, zapadnie, trudniejszy start, wyjście wyczerpanych, częstsze wydarzenia, dane z playtestów, UI bez ramki, samouczek w jednym runie, animacje, wydajność |
 | [Prototype 1.25](1.25.html) | 24.10 | telefon, tablet i komputer: większy interfejs, panel budowy po prawej, mysz, touchpad i klawiatura |
 | [Prototype 1.25.1](1.25.1.html) | 24.10 | łagodniejsze fale 1-4 (połowa drogi do v58), podpowiedź zakupów, telemetria widoczności podglądu |
+| [Prototype 1.26](1.26.html) | 25.10 | Serce zabiera: serce bierze brak z sakiewki, Danina i poziomy serca, statusy i reakcje, 20 nowych elementów, rodziny, omeny, nowe klasy |

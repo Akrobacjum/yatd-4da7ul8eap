@@ -5,6 +5,7 @@
  "object": "mebel",
  "dig": "skała przy lochu",
  "tunnel": "dwa sąsiednie pokoje",
+ "hall": "przejście między pokojami",
  "demolish": "pokój albo przejście",
  "expand": "pokój albo korytarz",
  "roomtype": "cały pokój",

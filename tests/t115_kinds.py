@@ -14,7 +14,7 @@ JS = r'''() => { const G = __yatd, out = {}, fails = []; const ok = (c, m) => { 
   // the Loch tab: three sub-tabs, 12 komnaty in the middle one
   const loch = G.TABS.find(t => t.id === 'dungeon');
   out.subs = loch.subs.map(s => s.id + ':' + s.label + ':' + s.items.length);
-  ok(out.subs.join() === 'dig:Kopanie:4,kind:Komnaty:15,effect:Efekty:' + loch.subs[2].items.length && loch.subs[2].items.every(t => t.startsWith('r_')), 'Loch = Kopanie (4) / Komnaty (15) / Efekty (r_*)');
+  ok(out.subs.join() === 'dig:Kopanie:5,kind:Komnaty:15,effect:Efekty:' + loch.subs[2].items.length && loch.subs[2].items.every(t => t.startsWith('r_')), 'Loch = Kopanie (5, z Ukrytym przejściem) / Komnaty (15) / Efekty (r_*)');
   ok(Object.keys(G.KIND_INFO).length === 15, '15 komnaty (1.26: Laboratorium, Cmentarz, Wrota otchłani)');
   Object.values(G.KIND_INFO).forEach(K => K.items.forEach(t => ok(G.KIND_OF[t] === Object.keys(G.KIND_INFO).find(k => G.KIND_INFO[k] === K), t + ' belongs to its komnata')));
   const ALL = 'spikes web trapdoor cage arrows fire portrait gate powder mimic eyes bones mirror creak coffin musicbox goblin archer spider ogre shaman ghost shade bats pendulum snare miasma oilslick bolt flood bell falsedoor tar skeleton zombie lich imp hound siren demon sapper warlord rats'.split(' ');

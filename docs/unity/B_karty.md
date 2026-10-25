@@ -1,6 +1,8 @@
 # Załącznik B: karty (UPGRADES) i ich efekty w kodzie
 
-Wygenerowane z `src/p1_config.js` (Prototype 1.26; do 1.24 tabela główna, karty 1.26 w B.4, zmiany 1.26 w B.5; do 1.17.1: 1.12.1). Kolumna "efekt w kodzie" to dosłowna treść funkcji `apply` (dla kart `card` działa na obiekcie `mods`, `m` = mods; dla `instant` działa raz na `run`/`fl`). W Unity każdą kartę zapisz jako dane (id, nazwa, opis, rzadkość, unikalna, wymaganie, etap nauki, grupa łączenia) plus listę operacji na modyfikatorach (np. `spikeDmg *= 1.5`), a nie jako kod. Znaczenie pól `mods` i miejsca, gdzie kod je czyta: sekcja 03 (3.9), dla kart 1.18 także sekcje 05 (5.13) i 06 (6.3.14).
+Wygenerowane z `src/p1_config.js` (Prototype 1.26.1; do 1.24 tabela główna, karty 1.26 w B.4, zmiany 1.26 w B.5, karty 1.26.1 w B.6, zmiany 1.26.1 w B.7; do 1.17.1: 1.12.1). Kolumna "efekt w kodzie" to dosłowna treść funkcji `apply` (dla kart `card` działa na obiekcie `mods`, `m` = mods; dla `instant` działa raz na `run`/`fl`). W Unity każdą kartę zapisz jako dane (id, nazwa, opis, rzadkość, unikalna, wymaganie, etap nauki, grupa łączenia) plus listę operacji na modyfikatorach (np. `spikeDmg *= 1.5`), a nie jako kod. Znaczenie pól `mods` i miejsca, gdzie kod je czyta: sekcja 03 (3.9), dla kart 1.18 także sekcje 05 (5.13) i 06 (6.3.14).
+
+**Od 1.26.1: 210 wpisów** (+8): 170 do talii (zwykłe 69, rzadkie 83, legendarne 18; +7 nowych kart Serca, a 7 zwykłych kart Serca stało się rzadkimi), 34 odblokowania, 6 jednorazowych (zwykła 1, rzadkie 3, legendarne 2; +1: Rozrost serca). Grupa Serce: 25 wpisów, 22 karty do talii oraz `crystal`, `regrow` i `heartgrowth`; od 1.26.1 wypada wyłącznie w rzędzie Dar serca (rzadkie 70%, legendarne 30%, sekcja 03, 3.15).
 
 **Od 1.26: 202 wpisy** (140 -> 202, +62): 163 do talii (zwykłe 76, rzadkie 72, legendarne 15; +41), 34 odblokowania (+20: 9 nowych pułapek, łup Przynęta i 10 nowych potworów), 5 jednorazowych (zwykła 1, rzadkie 2, legendarne 2; +1: Odrost). Grupa Serce (`group: 'heart'`, rząd Dar serca, sekcja 03, 3.15): 15 kart do talii oraz `crystal` i `regrow`. Ceny od 1.26: zwykła 5, rzadka 9, legendarna 14, odblokowanie 7 (`SHOP_PRICE`, `priceOf`). Do 1.25.1: 140 kart (1.18: 113 -> 140): 122 do talii (zwykłe 63, rzadkie 52, legendarne 7), 14 odblokowań, 4 jednorazowe. W 1.18 doszło 28 kart (24 "MUST" z propozycji i `badnews`, `coins`, `tainted`, `rhythm`), a usunięta została `u-portrait` (portret jest w `START_UNLOCKED`, karta nigdy nie mogła wypaść). Nie zrobione z propozycji: `challenge`, `contagion`, `spite`, `scouthunt`.
 
@@ -215,9 +217,11 @@ Od 1.24 druga kopia nie leży już obok pierwszej: łączy się w kartę ★, kt
 
 Od 1.26 (163 karty do talii; grupa liczona przez `fuseGroup`, także dla kart `unique`, które się nie łączą): `named` 20 (5 `unique`: arrows, spider, ghost, conduct, hellpack; nowe: doubleedge, bonesunbroken, conduct, hellpack), `power` 71 (25 `unique`; nowe: heartcry, heavycrystal, warden, bloodflow, lastbreath, heartpulse, fearcrown, bloodbath, lonewolf, palette, minimalist, cursedcrown, skulls, execdiary, risinglegend, pantry, chainreact, tarsulfur, toxicfume, abysspact oraz `unique` heartroom, darklore, heartmem, bloodcredit, copyist, soulmirror, sharedmech, heartecho, plague, undyingarmy, goldendream, croesus), `fear` 21, `hero` 16, `ess` 19 (nowe w `FUSE_GROUP`: darkforge, tithe, stoneheart, glutton, kingsfeast), `greed` 10, `shop` 6. Karty `unique` razem: 30 (14 nowych).
 
+Od 1.26.1 (170 kart do talii): `power` 78 (+7: heartguide, heartdread, heartgreed, heartpatience, heartcore oraz `unique` secondheart, resonance), reszta bez zmian; karty `unique` razem: 32. Nowe karty Serca nie są w `FUSE_GROUP`, więc Groza serca (strach) i Serce lochu (Esencja) łączą się jako `power` (+10% mocy), a nie `fear` albo `ess`; do potwierdzenia przy wdrożeniu, jak przypisanie grup w 1.24 (sekcja 11).
+
 ## B.4 Karty dodane w 1.26
 
-Kolumny jak w tabeli głównej, plus "grupa / uwagi": `heart` = grupa Serce (wypada też w rzędzie Dar serca), "rośnie" = `grows` (licznik `run.stacks`, sekcja 03, 3.1), "tylko Dar serca" = `heartOnly`. Etap 1 przy kartach 1.26 oznacza brak wpisu w `ONB_CARD` (wypadają od początku, jeśli spełniają `req`); odblokowania mają etap z `ONB_ITEM` (Wahadło i Wnyki 1, reszta 2-3). Kopista i Lustro duszy mają pustą `apply`: kopiują w `buildMods` (sekcja 03, 3.8). Mechanika nowych kart: sekcje 03 (3.9, 3.15) i 05 (5.14.10).
+Kolumny jak w tabeli głównej, plus "grupa / uwagi": `heart` = grupa Serce (w 1.26 wypadała też w zwykłej ofercie, od 1.26.1 tylko w rzędzie Dar serca), "rośnie" = `grows` (licznik `run.stacks`, sekcja 03, 3.1), "tylko Dar serca" = `heartOnly`. Etap 1 przy kartach 1.26 oznacza brak wpisu w `ONB_CARD` (wypadają od początku, jeśli spełniają `req`); odblokowania mają etap z `ONB_ITEM` (Wahadło i Wnyki 1, reszta 2-3). Kopista i Lustro duszy mają pustą `apply`: kopiują w `buildMods` (sekcja 03, 3.8). Mechanika nowych kart: sekcje 03 (3.9, 3.15) i 05 (5.14.10).
 
 | id | nazwa | opis w grze | rodzaj | rzadkość | unikalna | wymaga | etap | ★ | grupa / uwagi | efekt w kodzie |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -242,19 +246,19 @@ Kolumny jak w tabeli głównej, plus "grupa / uwagi": `heart` = grupa Serce (wyp
 | `u-warlord` | Nowy potwór: Herszt goblinów | Zielonoskórzy przy nim biją 1,5 raza mocniej. | unlock | zwykła |  |  | 3 |  |  | `unlock: warlord` |
 | `u-rats` | Nowy potwór: Rój szczurów | Tani rój, który rośnie z każdą przeżytą falą. | unlock | zwykła |  |  | 2 |  |  | `unlock: rats` |
 | `regrow` | Odrost | Od razu: serce odrasta jeden utracony kryształ (do maksimum). | instant | rzadka |  |  | 1 |  | `heart`, tylko Dar serca | `() => { if (run.crystals < run.maxCrystals) { run.crystals += 1; run.regrowCount = (run.regrowCount \|\| 0) + 1; if (fl && fl.stats) fl.stats.regrow = (fl.stats.regrow \|\| 0) + 1; } }` |
-| `heartcry` | Krzyk serca | Serce krzyczy głośniej: kradnący przy sercu tracą 10% odwagi na sekundę zamiast 6%. | card | zwykła |  |  | 1 | power | `heart` | `m => { m.heartCry += 0.04; }` |
-| `heavycrystal` | Ciężki kryształ | Wyrwanie kryształu trwa o 1,5 s dłużej. | card | zwykła |  |  | 1 | power | `heart` | `m => { m.heavyCrystal += 1; }` |
+| `heartcry` | Krzyk serca | Serce krzyczy głośniej: kradnący przy sercu tracą 10% odwagi na sekundę zamiast 6%. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.heartCry += 0.04; }` |
+| `heavycrystal` | Ciężki kryształ | Wyrwanie kryształu trwa o 1,5 s dłużej. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.heavyCrystal += 1; }` |
 | `heartroom` | Komora serca | Pokój serca mieści o 1 element więcej. | card | rzadka | tak |  | 1 | - | `heart` | `m => { m.heartRoom += 1; }` |
 | `warden` | Strażnik | Potwory w pokoju serca mają +30% HP i biją o 30% mocniej. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.warden += 0.3; }` |
-| `darkforge` | Kuźnia ciemności | Ulepszenia pułapek i potworów kosztują o 25% mniej. | card | zwykła |  |  | 1 | ess | `heart` | `m => { m.upgDisc = Math.min(0.6, m.upgDisc + 0.25); }` |
+| `darkforge` | Kuźnia ciemności | Ulepszenia pułapek i potworów kosztują o 25% mniej. | card | rzadka |  |  | 1 | ess | `heart` | `m => { m.upgDisc = Math.min(0.6, m.upgDisc + 0.25); }` |
 | `darklore` | Wiedza mroku | Sklep pokazuje o 1 kartę więcej. | card | rzadka | tak |  | 1 | - | `heart` | `m => { m.shopPlus += 1; }` |
-| `heartmem` | Pamięć serca | Ulepszenie nie kasuje zapamiętanego wyniku skill checku. | card | zwykła | tak |  | 1 | - | `heart` | `m => { m.heartMem = true; }` |
+| `heartmem` | Pamięć serca | Ulepszenie nie kasuje zapamiętanego wyniku skill checku. | card | rzadka | tak |  | 1 | - | `heart` | `m => { m.heartMem = true; }` |
 | `tithe` | Dziesięcina | Danina rośnie z 30% do 45% (szybsze poziomy serca), a w rzędzie Dar serca wybierasz z 4 kart zamiast z 3. | card | rzadka |  |  | 1 | ess | `heart` | `m => { m.titheAdd += 0.15; m.titheChoice += 1; }` |
-| `stoneheart` | Kamienne serce | Po fali serce potrzebuje z sakiewki tylko 75% braku: jeśli tyle masz, jest syte. Nasycenie rośnie za to o 25% wolniej. | card | zwykła |  |  | 1 | ess | `heart` | `m => { m.stoneHeart = true; m.satietyK *= 0.75; }` |
+| `stoneheart` | Kamienne serce | Po fali serce potrzebuje z sakiewki tylko 75% braku: jeśli tyle masz, jest syte. Nasycenie rośnie za to o 25% wolniej. | card | rzadka |  |  | 1 | ess | `heart` | `m => { m.stoneHeart = true; m.satietyK *= 0.75; }` |
 | `bloodcredit` | Kredyt krwi | Raz na run: gdy po fali sakiewka nie pokryje głodu, zamiast pęknięcia kryształu brakująca reszta ×2 dopisze się do głodu następnej fali (sakiewka zostaje). | card | rzadka | tak |  | 1 | - | `heart` | `m => { m.bloodCredit = true; }` |
 | `glutton` | Głodomór | Serce chce o 20% więcej, ale Danina daje 2 razy więcej Nasycenia (Ofiara bez zmian). | card | legendarna |  |  | 1 | ess | `heart` | `m => { m.hungerK *= 1.2; m.satietyK *= 2; }` |
 | `bloodflow` | Krwiobieg | Każda wypłata combo ×2 lub więcej (5 różnych pułapek z rzędu) daje sercu +3 Nasycenia ponad Daninę. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.bloodflow += 3; }` |
-| `kingsfeast` | Uczta królów | Uczta (bohater zabity przez potwora karmi serce) daje o 50% więcej. | card | zwykła |  |  | 1 | ess | `heart` | `m => { m.feastK *= 1.5; }` |
+| `kingsfeast` | Uczta królów | Uczta (bohater zabity przez potwora karmi serce) daje o 50% więcej. | card | rzadka |  |  | 1 | ess | `heart` | `m => { m.feastK *= 1.5; }` |
 | `lastbreath` | Ostatni oddech | Gdy po rozliczeniu głodu sakiewka jest pusta, w następnej fali pułapki i potwory działają o 25% mocniej. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.lastBreath += 0.25; }` |
 | `fearcrown` | Koronacja strachu | Łańcuch, w którym ktoś uciekł ze strachu, wypłaca 1,5 raza więcej Esencji. | card | legendarna |  |  | 1 | power |  | `m => { m.fearCrown *= 1.5; }` |
 | `bloodbath` | Krwawa łaźnia | Każde zabójstwo w pokoju serca mnoży Esencję ×1,1 do końca fali (najwyżej ×2). | card | legendarna |  |  | 1 | power |  | `m => { m.bloodbath += 1; }` |
@@ -282,7 +286,7 @@ Kolumny jak w tabeli głównej, plus "grupa / uwagi": `heart` = grupa Serce (wyp
 | `abysspact` | Pakt z otchłanią | Apetyt demona otchłani o połowę mniejszy (+1 do głodu zamiast +2), a demony (chochlik, ogar, kusicielka, demon) biją o 20% mocniej. | card | rzadka |  | `() => ['imp', 'hound', 'siren', 'demon'].some(t => run.unlocked.has(t))` | 1 | power |  | `m => { m.abyssPact += 1; }` |
 | `goldendream` | Złoty sen | Łup w pokoju serca i w pokojach obok kusi 1,5 raza mocniej, ale nie da się go podnieść: bohater próbuje 3 s i odchodzi. | card | rzadka | tak |  | 1 | - |  | `m => { m.goldenDream = true; }` |
 | `croesus` | Krezus | Chciwość liczy się w Esencji do kwadratu (×2 daje ×4), ale poziomy bohaterów z chciwości rosną 1,5 raza szybciej. | card | legendarna | tak |  | 1 | - |  | `m => { m.croesus = true; }` |
-| `heartpulse` | Puls serca | Gdy serce jest syte, pułapki i potwory w pokoju serca działają o 30% mocniej. | card | zwykła |  |  | 1 | power | `heart` | `m => { m.heartPulse += 0.3; }` |
+| `heartpulse` | Puls serca | Gdy serce jest syte, pułapki i potwory w pokoju serca działają o 30% mocniej. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.heartPulse += 0.3; }` |
 
 ## B.5 Karty zmienione w 1.26
 
@@ -290,7 +294,7 @@ Wartości w tabeli głównej są już z 1.26; poprzednie (1.25.1) tutaj.
 
 | Karta | Do 1.25.1 | Od 1.26 |
 |---|---|---|
-| `crystal` Żarłoczne serce | rzadka | legendarna, grupa Serce (wypada też w rzędzie Dar serca) |
+| `crystal` Żarłoczne serce | rzadka | legendarna, grupa Serce (w 1.26 w zwykłej ofercie i w rzędzie Dar serca, od 1.26.1 tylko w rzędzie) |
 | `infusion` Zastrzyk Esencji | +20 Esencji | +15 Esencji |
 | `monster` Weterani | opis bez dopisku | dopisek "bonus zostaje, gdy wstaną po powaleniu" (Odrodzenie) |
 | `income` Mroczny dochód | +4 Esencji po fali | +3 |
@@ -302,3 +306,28 @@ Wartości w tabeli głównej są już z 1.26; poprzednie (1.25.1) tutaj.
 | `arsenal` Pełen arsenał | 4 typy obrażeń z 4 | 4 z 5 (doszło porażenie) |
 | `wager` Zakład z sercem | serce chce o 30% więcej | o 20% |
 | `gluttony` Obżarstwo | "Esencja z fali wpada o 25% większa" | to samo, ale liczone po Daninie (tylko część do sakiewki) |
+
+## B.6 Karty dodane w 1.26.1
+
+Wszystkie z grupy Serce (`group: 'heart'`), bez `req` i bez wpisu w `ONB_CARD` (etap 1); wypadają tylko w rzędzie Dar serca (sekcja 03, 3.15). Decyzja autora (25.10): karty Dar serca mają być rzadkie albo legendarne i przydatne w większości buildów. Kolumny jak w B.4.
+
+| id | nazwa | opis w grze | rodzaj | rzadkość | unikalna | wymaga | etap | ★ | grupa / uwagi | efekt w kodzie |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `heartguide` | Wola serca | Wszystkie pułapki i potwory działają o 10% mocniej. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.pactPower *= 1.1; }` |
+| `heartdread` | Groza serca | Każdy strach w lochu jest o 15% silniejszy. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.fearMult *= 1.15; }` |
+| `heartgreed` | Złote tętno | Każda fala zaczyna się z chciwością większą o 0,3. | card | rzadka |  |  | 1 | power | `heart` | `m => { m.greedStart += 0.3; }` |
+| `heartpatience` | Cierpliwość serca | Bohaterowie zostają w lochu o 20 s dłużej, zanim skończy się im cierpliwość (więcej czasu na Esencję). | card | rzadka |  |  | 1 | power | `heart`; `mods.patience` dodawane do limitu cierpliwości w `p6_loop.js: step` | `m => { m.patience += 20; }` |
+| `heartgrowth` | Rozrost serca | Od razu: talia ma na stałe o 1 miejsce więcej. | instant | rzadka |  |  | 1 |  | `heart` | `() => { run.deckSize += 1; }` |
+| `heartcore` | Serce lochu | Cała Esencja ×1,2. | card | legendarna |  |  | 1 | power | `heart`; mnożnik w `essMultNow` | `m => { m.heartCore *= 1.2; }` |
+| `secondheart` | Drugie serce | Raz na run: kryształ wyniesiony z lochu przez złodzieja wraca do serca. | card | legendarna | tak |  | 1 | - | `heart`; `heroExit`, `run.secondHeartUsed`, `stats.secondHeart` (działa na każdego, kto wynosi kryształ, nie tylko złodzieja) | `m => { m.secondHeart = true; }` |
+| `resonance` | Rezonans | Esencja +3% za każdą inną kartę w talii (najwyżej +30%). | card | legendarna | tak |  | 1 | - | `heart`; `essMultNow`: `1 + min(0,3; 0,03 × liczba różnych id w run.deck)` (schowek się nie liczy) | `m => { m.resonance = true; }` |
+
+Ilustracje kart (`p7c_art.js`): heartguide `@pulse|up|heart`, heartdread `@skull|up|heart`, heartgreed `@crown|coin|heart`, heartpatience `@hourglass|time|heart`, heartgrowth `@heartAltar|plus|heart`, heartcore `@heartEcho|x2|heart`, secondheart `@crystal|loop|heart`, resonance `@book|chain|heart`; wszystkie w `HEART_IDS` (złota ramka).
+
+## B.7 Karty zmienione w 1.26.1
+
+| Karta | 1.26 | Od 1.26.1 |
+|---|---|---|
+| `heartcry` Krzyk serca, `heavycrystal` Ciężki kryształ, `darkforge` Kuźnia ciemności, `heartmem` Pamięć serca, `stoneheart` Kamienne serce, `kingsfeast` Uczta królów, `heartpulse` Puls serca | zwykła | rzadka (efekt bez zmian) |
+| cała grupa Serce (także `crystal`) | zwykła oferta sklepu i darmowe karty za falę oraz rząd Dar serca (55/35/10%) | tylko rząd Dar serca, rzadkie 70%, legendarne 30% (`upgradePicks` pomija `group === 'heart'`) |
+| `warden` Strażnik, `heartpulse` Puls serca, `lastbreath` Ostatni oddech, `execdiary` Pamiętnik kata | mnożyły walkę wręcz potworów i moc pułapek | mnożą też zdolności potworów odpalane checkiem (`trapBoost`, sekcja 05, 5.15.3) |

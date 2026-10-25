@@ -371,6 +371,31 @@
   "Święty krąg!",
   "Bogowie, okryjcie nas!"
  ],
+ "curiousGo": [
+  "Co to było? Sprawdzę!",
+  "Słyszeliście? Idę zobaczyć.",
+  "Zaraz wracam, tylko zerknę.",
+  "Ciekawe, co tam trzasnęło..."
+ ],
+ "charge": [
+  "Na niego!",
+  "Ha! Chodź tu, bestio!",
+  "Nie czekam, biję!",
+  "Za mną! Albo i beze mnie!"
+ ],
+ "superWait": [
+  "Nie wejdę tam pierwszy. Ten obraz patrzy.",
+  "Lustro... Niech ktoś inny wejdzie przodem.",
+  "Złe miejsce. Idźcie pierwsi.",
+  "Nie lubię tych oczu na ścianie."
+ ],
+ "secretFound": [
+  "Ta ściana jest pusta w środku!",
+  "Ukryte przejście! Wiedziałem!",
+  "Hej, tu jest przejście!",
+  "Fałszywy mur! Tędy!",
+  "Słyszycie? Tu dudni pusto."
+ ],
  "help": [
   "Pomocy! Tutaj!",
   "Niech ktoś mnie stąd wyciągnie!",

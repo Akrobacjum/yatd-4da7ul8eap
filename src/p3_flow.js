@@ -121,7 +121,8 @@
   const greedE = g => mods.croesus && g > 1 ? g * g : g;   // Krezus: greed squared in the Esencja
   function essMultNow() {
     if (!fl) return 1;
-    let k = mods.cursedCrown;
+    let k = mods.cursedCrown * mods.heartCore;   // 1.26.1 Serce lochu
+    if (mods.resonance) k *= 1 + Math.min(0.3, 0.03 * new Set(run.deck).size);   // 1.26.1 Rezonans
     if (mods.lonewolf > 1 && fl.heroes.length > 1 && alive().length === 1) k *= mods.lonewolf;
     if (mods.palette > 1 && (fl.famN || 0) >= 5) k *= mods.palette;
     if (mods.minimalist > 1 && fl.elemN != null && fl.elemN <= 12) k *= mods.minimalist;
@@ -130,6 +131,16 @@
     return k;
   }
   const kataK = t => mods.execDiary && run.kata && run.kata[t] ? 1 + run.kata[t] : 1;   // Pamiętnik kata
+  // 1.26.1 Ukryte przejście found: an ordinary way from now on (this wave), everyone in earshot knows it
+  function secretFind(ek, h) {
+    if (!fl.secretFound) fl.secretFound = new Set(); if (fl.secretFound.has(ek)) return false;
+    fl.secretFound.add(ek); fl.stats.secretFound = (fl.stats.secretFound || 0) + 1; tl('sf', h ? h.id : -1, ek);
+    const R = fl.rooms.find(r => r.key === ek);
+    if (R) { R.doors.forEach(d => { fl.known[d.y * WW + d.x] = 1; floatTile(d.x, d.y, 'Ukryte przejście!', '#c9a8ff', 15, -1.1); burst(d.x + 0.5, d.y + 0.5, '#b9a3e0', 10); }); }
+    if (h) say(h, pick(SAY.secretFound), 3, null, 'loud');
+    fl.threatDirty = true; fl.knowDirty = true; alive().forEach(o => { o.needPlan = true; });
+    return true;
+  }
   function heartFull(need) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Serce syte!', '#ff9aa4', 16, -1.4); }
   // the chain ends: a trap chain when the combo clock runs out, a chain without a trap after 1,2 s without Groza (at most 4 s)
   function chainTick() {
@@ -357,7 +368,7 @@
       gearlink: 0, blackice: 0, badnews: 0, coins: 0, tainted: 0, rhythm: 0,
       // 1.26: the heart (4.6, 13.2) and the rest of the new cards (13.2)
       heartCry: 0, heavyCrystal: 0, heartRoom: 0, warden: 0, upgDisc: 0, shopPlus: 0, heartMem: false, titheAdd: 0, titheChoice: 0, stoneHeart: false, satietyK: 1, bloodCredit: false,
-      bloodflow: 0, feastK: 1, lastBreath: 0, heartPulse: 0,
+      bloodflow: 0, feastK: 1, lastBreath: 0, heartPulse: 0, patience: 0, heartCore: 1, secondHeart: false, resonance: false,
       fearCrown: 1, bloodbath: 0, lonewolf: 1, palette: 1, minimalist: 1, cursedCrown: 1, crownLv: 0, skulls: 0, execDiary: 0, risingLegend: 0, pantry: 0,
       doubleEdge: 0, sharedMech: false, chainReact: 0, heartEcho: false, tarSulfur: 0, conduct: false, toxicCap: 0, toxicDet: 1, plagueAir: false, hellPack: false,
       bonesUp: 0, undyingArmy: false, abyssPact: 0, goldenDream: false, croesus: false, reactGz: 0,
@@ -543,6 +554,11 @@
       party: freshParty(), stats: newStats(), disarmKeys: null
     });
     fl.items.forEach((it, k) => { if (it.temp) fl.items.delete(k); });   // 1.18 Wstający umarli: a risen ghost lasts its wave only (no refund)
+    [...fl.items.values()].forEach(it => {   // 1.26.1: a hound that followed blood goes back to its own place
+      if (it.homeX == null) return; const k0 = key(it.x, it.y), k1 = key(it.homeX, it.homeY);
+      if (k0 !== k1 && !fl.items.has(k1)) { fl.items.delete(k0); it.x = it.homeX; it.y = it.homeY; fl.items.set(k1, it); }
+      it.homeX = it.homeY = null; it.walking = false; it.hunt = null;
+    });
     validateItems(true);
     fl.items.forEach(it => {   // between waves everything is repaired and re-armed; monsters lick their wounds
       if (it.memRes && !it.worn && (it.disabled || it.broken)) it.memRes = null;   // 1.09: put out of use by the heroes: it asks again
@@ -916,6 +932,7 @@
     fl.items.forEach(it => { it.skullOff = false; it.firstBy = null; it.knocked = null; });   // a let-go skull belongs to a wave (1.09: the answer itself stays with the trap); 1.20: so do who saw a pile first and whose gear a crit knocked out
     { const hp = hungerParts(run.wave); fl.needParts = hp; fl.needNow = hp ? hp.need : 0; fl.needFor = run.wave; fl.ofiara = 0; }   // 1.26: the need of this wave, frozen
     { const fams = new Set(); let n = 0; fl.items.forEach(it => { if (it.temp || !(TRAPS[it.type] || MONSTERS[it.type])) return; n++; if (FAMILY_OF[it.type]) fams.add(FAMILY_OF[it.type]); }); fl.famN = fams.size; fl.elemN = n; fl.bathK = 1; fl.armyN = 0; fl.heartEchoW = 0; }
+    fl.secretFound = new Set(); run.layout.edges.forEach((e, k) => { if (e.secret && e.secretKnown) fl.secretFound.add(k); }); fl.threatDirty = true;   // 1.26.1: a rumoured one is known from the start
     { const o = OMENS[run.omens && run.omens[run.wave]]; if (o) { floatTile(fl.ent.x, fl.ent.y, 'Omen: ' + o.name, '#d9b8ff', 16, -1.6); setHint('Omen: ' + o.name + '. ' + o.text); } }   // 1.26 (15)   // 1.26 Pełna paleta, Minimalista, Krwawa łaźnia
     fl.phase = 'raid'; fl.time = 0; fl.patT = 0; fl.spawnTimer = 0; fl.gateOpen = false; fl.threatDirty = true; fl.bRooms = computeBRooms(); fl.bSaid = new Set(); fl.quietT = 0; fl.autoFFTime = 0;
     fl.queue = run.next.slice();
@@ -1120,10 +1137,15 @@
     if (h.nemesis) { fl.stats.nemesisOut = (fl.stats.nemesisOut || 0) + 1; if (h.crystal) fl.stats.nemesisCrystal = (fl.stats.nemesisCrystal || 0) + 1; tl('no', h.id, h.crystal ? 1 : 0); }   // 1.23: he got away (he comes back)
     const P = fl.party;
     if (h.crystal) {
+      if (mods.secondHeart && !run.secondHeartUsed) {   // 1.26.1 Drugie serce: once a run the crystal comes back
+        run.secondHeartUsed = true; h.crystal = false; h.carriedOut = false; if (P.carrierId === h.id) P.carrierId = -1; fl.stats.secondHeart = 1;
+        floatTile(fl.heart.x, fl.heart.y, 'Drugie serce: kryształ wraca!', '#ffd27a', 16, -1.4); burst(fl.heart.x + 0.5, fl.heart.y + 0.5, '#ffd27a', 16); tl('cx2', h.id);
+      } else {
       const c0 = run.crystals; h.crystal = false; h.carriedOut = true; fl.crystalLost = true; run.crystals = Math.max(0, run.crystals - 1); fl.stats.crystalLost++;
       crystalEv(run.crystals - c0, 'stolen', h.type + ' ' + h.lvl);   // 1.24 (D, P0-2)
       floatTile(fl.ent.x, fl.ent.y, 'Kryształ stracony!', '#ff6b6b', 18, -0.6); shake = Math.max(shake, 0.3); tl('cx', h.id); buzz([90, 60, 90]);
       if (P.carrierId === h.id) P.carrierId = -1;
+      }
     } else if (h.fleeing) {
       const pts = addPts(GZ.scare * (h.boss ? 2 : 1) * mods.scareMult, 'scarePts', h); fl.stats.scared++; tl('sc', h.id);
       if (mods.fearHarvest) gainEssence(null, mods.fearHarvest, 'essFear');   // Żniwa strachu
@@ -1198,6 +1220,7 @@
     { const o = OMENS[run.omens && run.omens[run.wave]]; if (o && o.free) { run.freePicks = (run.freePicks || 0) + o.free; fl.stats.omenFree = o.free; } if (o && o.satiety) { satietyAdd(o.satiety, 'omen'); fl.stats.omenSat = o.satiety; } }   // 1.26 (15): the omen's reward
     run.essence = fl.essence + income;   // Prototype 1.01: no purse limit
     fl.essence = run.essence;
+    { const got = fl.heroes.some(h => h.fled && !h.dead); (fl.secretFound || new Set()).forEach(k => { const e = run.layout.edges.get(k); if (e && e.secret && got) e.secretKnown = true; }); }   // 1.26.1: one who got out tells of it
     collectReturners();
     recordWave(rr, rt);
     run.total += run.waves[run.waves.length - 1].score;   // 1.24 (D, P0-4): the wave's recorded (rounded) score, so total = the sum of the waves (was fl.score: 5724 against 5722)
@@ -1361,6 +1384,7 @@
     if (ROOMTYPES[t] || KINDS[t]) return m && m.has ? 0 : ITEMS[t].cost;   // taking a room type (1.15: or a komnata) off costs nothing (half comes back)
     if (t === 'expand') return Math.ceil(ITEMS.expand.cost * Math.pow(2, m ? m.lvl : 0) * mods.expandCost);   // 3, 6, 12, 24...: stacking one room gets expensive fast
     if (t === 'dig' && run.freeDigs > 0) return 0;   // Kret
+    if (t === 'secret') return m && m.has && !m.known ? 0 : ITEMS.secret.cost;   // 1.26.1: taking the mask off is free; masking again a known one costs
     return Math.max(0, ITEMS[t].cost + (t === 'dig' ? 3 * Math.max(0, run.layout.cells.size - 7) : 0) - (t === 'dig' || t === 'tunnel' ? mods.digDiscount : 0));
   }
   function toolMarkers(tool) {
@@ -1379,6 +1403,13 @@
         const [ax, ay] = cellCenter(c.cx, c.cy);
         out.push({ tool, a: k, b: k2, x: ax + d[0] * CELL / 2, y: ay + d[1] * CELL / 2 });
       }));
+    } else if (tool === 'secret') {   // 1.26.1 Ukryte przejście: every passage between rooms, if the heart keeps an open way in
+      fl.rooms.forEach(R => {
+        if (R.kind !== 'hall' || !R.tiles.length) return; const e = L.edges.get(R.key); if (!e) return;
+        const t = R.tiles[Math.floor(R.tiles.length / 2)], has = !!e.secret, known = has && !!e.secretKnown;
+        if (!has && !secretOk(L, R.key)) return;
+        out.push({ tool, edge: R.key, has, known, x: t[0] + 0.5, y: t[1] + 0.5 });
+      });
     } else if (tool === 'expand') {
       fl.rooms.forEach(R => {
         if (R.kind === 'room') out.push({ tool, room: R.key, lvl: R.lvl || 0, x: (R.x0 + R.x1) / 2 + 0.5, y: (R.y0 + R.y1) / 2 + 0.5 });
@@ -1398,6 +1429,11 @@
     }
     return out;
   }
+  // 1.26.1: a passage may be hidden only if the entrance still reaches the heart through open ones
+  function secretOk(L, ek) {
+    const edges = new Map(); L.edges.forEach((e, k) => { if (k !== ek && !e.secret) edges.set(k, e); });
+    return layoutDist({ entrance: L.entrance, cells: L.cells, edges }).has(L.heartKey);
+  }
   function forgetTiles(tiles) { tiles.forEach(t => { run.rumor.tiles.delete(t[1] * WW + t[0]); }); }
   function applyTool(m) {
     const L = run.layout, cost = toolCost(m.tool, m);
@@ -1414,6 +1450,12 @@
         if (R) forgetTiles(R.tiles); if (H) forgetTiles(H.tiles);
         msg = 'Nowy pokój wykopany. Następna fala nic o nim nie wie.';
       }
+    } else if (m.tool === 'secret') {   // 1.26.1
+      const e = L.edges.get(m.edge), H = fl.rooms.find(r => r.key === m.edge);
+      if (e && m.has && !m.known) { e.secret = false; e.secretKnown = false; ok = true; msg = 'Maska zdjęta: zwykłe przejście.'; }
+      else if (e && (m.has || secretOk(L, m.edge))) { e.secret = true; e.secretKnown = false; ok = true; if (H) forgetTiles(H.tiles); msg = 'Ukryte przejście: bohaterowie widzą tu ścianę, dopóki go nie odkryją.'; fl.stats.secretMade = (fl.stats.secretMade || 0) + 1; }
+      else msg = 'Do serca musi zostać jawna droga.';
+      if (ok) refund = rebuildDungeon(true);
     } else if (m.tool === 'tunnel') {
       ok = addPassage(L, m.a, m.b);
       if (ok) { refund = rebuildDungeon(); const H = fl.rooms.find(r => r.key === edgeKey(m.a, m.b)); if (H) forgetTiles(H.tiles); msg = 'Nowe przejście. Więcej dróg, więcej błędów.'; }
@@ -1647,7 +1689,7 @@
     if (inB('altar', h.room)) amt *= 1.1; if (inB('howl', h.room)) amt *= 1.1;   // 1.26 (6.4): Ołtarz and Kamień wyjec: +10% fear in their room
     if (raging(h)) amt *= 0.5;   // 1.05: fury dulls fear
     if (fl.time < (h.markUntil || -1)) amt *= 1.3;   // 1.26 Naznaczony
-    if (fl.time < (h.reflectUntil || -1) && attr !== 'mirror') { amt *= 1.2; h.reflectUntil = -1; }   // 1.26 Lustro B: Odbicie (once)
+    if (fl.time < (h.reflectUntil || -1) && attr !== 'mirror' && amt >= 3) { amt *= 1.2; h.reflectUntil = -1; }   // 1.26 Lustro B: Odbicie (once, on a real scare; 1.26.1: not on a trickle)
     if (mods.deepsleep && attr && ACTIVE[attr] && h.state === 'rest' && isRt(h.room, 'haven')) amt *= 1 + mods.deepsleep;   // 1.18 Sen bez przebudzenia: from your traps and monsters, not his own nightmares
     amt *= phobiaMult(h, attr, src, dtp);   // v14: phobias (x2) and this wave's traumas (x1,5)
     if (attr) h.fearBy[attr] = (h.fearBy[attr] || 0) + amt; else if (src) h.fearBy[src] = (h.fearBy[src] || 0) + amt;

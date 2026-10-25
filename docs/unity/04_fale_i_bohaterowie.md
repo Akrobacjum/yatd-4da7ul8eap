@@ -493,11 +493,14 @@ Wszystkie skutki w kodzie:
 | | wartość łupu ×0.6, kwestia `lootCareful` przy rezygnacji | `p5_ai.js: lootDecision` |
 | | na naradzie mówi `argueCareful`; przy wejściu 40% na kwestię `cautious`; odpowiada na "chciwe" kwestie | `p5_ai.js: chooseTarget`, `p3_flow.js: spawnHero` |
 | | 1.17: jako przywódca wybiera bliższe cele (odległość ×1,15, mało przypadku), omija pułapkę usłyszaną zza ściany, chętnie pozwala zwiedzać (0,5); na naradzie dom +0,4 | `p5_ai.js: chooseTarget, lookRoll, councilVote` |
+| | 1.26.1: +0,06 do wykrycia ukrytego przejścia | `p5_ai.js: heroAI126` (sekcja 06, 6.16.12) |
 | superstitious (przesądny/a, 1.26) | strach od rekwizytów strachu (`SCARE`) i elementów rodziny Nawiedzenie ×1.4 | `p3_flow.js: fearResist` |
 | | nie bierze przeklętego łupu (ani przeklętego przedmiotu) | `p5_ai.js: lootDecision` |
+| | 1.26.1: nie wchodzi pierwszy do pokoju z portretem albo lustrem, czeka do 8 s, aż ktoś wejdzie (`SAY.superWait`) | `p5_ai.js: updateHero, superRoom` (sekcja 06, 6.16.7) |
 | | kwestie `chat_superstitious` | `p5_ai.js` |
 | curious (ciekawski/a, 1.26) | zasięg widzenia łupu +4 pola | `p5_ai.js: lootSeen` |
 | | jako przywódca chętniej zwiedza pokój: bazowa szansa rozglądania 0,7 (po przeglądzie 1.26; inni 0,15-0,55, bez charakteru 0,4) | `p5_ai.js: lookRoll` |
+| | 1.26.1: idzie sprawdzić usłyszaną pułapkę (najwyżej 2 razy na falę, nie jako przywódca, `SAY.curiousGo`); element na przeszukanym meblu odpala 2 razy częściej, moneta jak u chciwego (0,3); woli oglądać meble; +0,06 do wykrycia ukrytego przejścia | `p5_ai.js: hearFar, planHero, lookDone, heroAI126` (sekcja 06, 6.16.7, 6.16.12) |
 | | kwestie `chat_curious` | `p5_ai.js` |
 | loyal (lojalny/a, 1.26) | drużyna z lojalnym zawsze ratuje uwięzionego (decyzja ratunku = tak) | `p5_ai.js: rescueThink` (wywołanie w drużynie) |
 | | biegnie na wołanie o pomoc (Wezwanie po krzyk, do 10 pól), z `avoid` ×0.3, i uwalnia unieruchomionego albo uwiedzionego | `p5_ai.js: heroAI126, planHero` |
@@ -506,9 +509,10 @@ Wszystkie skutki w kodzie:
 | hothead (zapaleniec, 1.26) | `avoid` ×0.7 przy planowaniu ścieżki | `p5_ai.js: planHero` |
 | | limit strachu ×1.1 | `p3_flow.js: addFear` |
 | | raz na falę zamiast paniki wpada w furię (`startRage(h, 'panic')`, strach -25% limitu, `stats.rageNoPanic`) | `p3_flow.js: addFear` |
+| | 1.26.1: szarżuje na najbliższego znanego, nie unoszącego się potwora w swoim pokoju (także ogra), `SAY.charge` | `p5_ai.js: planHero` (sekcja 06, 6.16.7) |
 | | kwestie `chat_hothead` | `p5_ai.js` |
 
-Uwaga: tekst "sprawdza podłogę" nie ma pokrycia w kodzie dla charakteru (spowolnienie na nieznanych polach daje `R.caution`, zależne tylko od poziomu >= 6). Plan 1.26 dawał nowym cechom więcej zachowań, których kod nie ma (otwarte, sekcja 11): przesądny nie wchodzi pierwszy do pokoju z portretem albo lustrem (czeka); ciekawski sprawdza każdą usłyszaną pułapkę i dwa razy częściej przeszukuje meble; zapaleniec szarżuje na każdego potwora i w 30% idzie przez znaną pułapkę (kod: tylko `avoid` ×0.7). Częstsze rozglądanie ciekawskiego i zemsta lojalnego są w kodzie od poprawki po przeglądzie. `TRAIT_TEXT` zapaleńca ("idzie przez znane pułapki") opisuje więcej, niż kod robi.
+Uwaga: tekst "sprawdza podłogę" nie ma pokrycia w kodzie dla charakteru (spowolnienie na nieznanych polach daje `R.caution`, zależne tylko od poziomu >= 6). Zachowania nowych cech z planu 1.26 są w kodzie od 1.26.1 (przesądny czeka, ciekawski sprawdza dźwięk i przeszukuje meble, zapaleniec szarżuje; wiersze wyżej). Zostaje różnica: zapaleniec nie ma osobnych 30% przejścia przez znaną pułapkę (kod: tylko `avoid` ×0.7), a ciekawski sprawdza dźwięk najwyżej 2 razy na falę. Od 1.26.1 `TRAIT_TEXT` zapaleńca mówi "częściej idzie przez znane pułapki", co odpowiada kodowi. Częstsze rozglądanie ciekawskiego i zemsta lojalnego są w kodzie od poprawki po przeglądzie 1.26.
 
 ### 4.3 Klasa: dane, odporności, umiejętności
 
@@ -1155,7 +1159,7 @@ W fali 3 nie ma Elity, Saperów ani Pielgrzymki (`minW: 6`). W fali bez końca o
 16. **Przedmiot gildii** ma zawsze 1 użycie niezależnie od mocy; dołożony do istniejącej mocy daje +1 użycie i ewentualnie wyższą moc (bez sprawdzenia, czy to "ten sam" przedmiot).
 17. **`fearResist`**: mnożnik 0.85 bossa działa także na samego bossa (do 1.16 brak warunku `o !== h`; od 1.17 jest to zapisane wprost: `o === h || canSee(h, o) || canHear(h, o)`, a dla reszty działa tylko, gdy są z nim).
 18. **`phobiaSight`** nie sprawdza `hp` potwora, więc martwy pająk/duch w pokoju (element zostaje w `fl.items` z `hp <= 0`) też wywoła szok fobii. Od 1.26 dotyczy to każdego powalonego potwora (Odrodzenie zostawia go w `fl.items` do końca fali). Prawdopodobnie błąd; w Unity pomijać powalone potwory.
-25. **Nowe cechy 1.26 mają mniej zachowań, niż mówi plan** (4.2) i niż sugeruje `TRAIT_TEXT` zapaleńca; braki przesądnego i ciekawskiego są na liście otwartych w sekcji 11.
+25. **Nowe cechy 1.26** (naprawione w 1.26.1): zachowania przesądnego, ciekawskiego i zapaleńca z planu są w kodzie (4.2, sekcja 06, 6.16.7); bez osobnych 30% przejścia zapaleńca przez znaną pułapkę.
 26. **Omeny w runie bez samouczka, ale w etapie nauki (1.26)**: `omenOf` sprawdza tylko `run.tutorial`, więc pierwszy run bez przewodnika (przewodnik już ukończony, etapy z falami) dostaje omen w fali 3, choć plan mówił "pierwszy run z przewodnikiem: bez omenów".
 27. **Klasy przy omenach (1.26)**: w Oblężeniu, gdy klas w puli brakuje, `makeWave` dobiera losową z `PARTY` i może powtórzyć klasę. Po poprawce wymuszenie klas omenu idzie po gildii, więc omen ma pierwszeństwo: w małej drużynie (np. 3 osoby i Saperzy przed falą 6) wymuszona klasa może zająć miejsce specjalisty gildii.
 19. **Fale >= 15**: limit `waveSize <= 6` sprawia, że boss nie dochodzi jako dodatkowy bohater (zastępuje zwykłego).

@@ -1471,7 +1471,7 @@
  {
   "id": "heartcry",
   "kind": "card",
-  "rar": "c",
+  "rar": "r",
   "group": "heart",
   "tag": "krzyk 10%/s",
   "name": "Krzyk serca",
@@ -1481,7 +1481,7 @@
  {
   "id": "heavycrystal",
   "kind": "card",
-  "rar": "c",
+  "rar": "r",
   "group": "heart",
   "tag": "kradzież +1,5 s",
   "name": "Ciężki kryształ",
@@ -1512,7 +1512,7 @@
  {
   "id": "darkforge",
   "kind": "card",
-  "rar": "c",
+  "rar": "r",
   "group": "heart",
   "tag": "ulepszenia -25%",
   "name": "Kuźnia ciemności",
@@ -1533,7 +1533,7 @@
  {
   "id": "heartmem",
   "kind": "card",
-  "rar": "c",
+  "rar": "r",
   "group": "heart",
   "unique": true,
   "tag": "pamięć zostaje",
@@ -1554,7 +1554,7 @@
  {
   "id": "stoneheart",
   "kind": "card",
-  "rar": "c",
+  "rar": "r",
   "group": "heart",
   "tag": "brak -25%",
   "name": "Kamienne serce",
@@ -1595,7 +1595,7 @@
  {
   "id": "kingsfeast",
   "kind": "card",
-  "rar": "c",
+  "rar": "r",
   "group": "heart",
   "tag": "Uczta ×1,5",
   "name": "Uczta królów",
@@ -1869,9 +1869,90 @@
   "apply": "fn: m => { m.croesus = true; }"
  },
  {
+  "id": "heartguide",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "tag": "wszystko +10%",
+  "name": "Wola serca",
+  "text": "Wszystkie pułapki i potwory działają o 10% mocniej.",
+  "apply": "fn: m => { m.pactPower *= 1.1; }"
+ },
+ {
+  "id": "heartdread",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "tag": "strach +15%",
+  "name": "Groza serca",
+  "text": "Każdy strach w lochu jest o 15% silniejszy.",
+  "apply": "fn: m => { m.fearMult *= 1.15; }"
+ },
+ {
+  "id": "heartgreed",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "tag": "chciwość +0,3",
+  "name": "Złote tętno",
+  "text": "Każda fala zaczyna się z chciwością większą o 0,3.",
+  "apply": "fn: m => { m.greedStart += 0.3; }"
+ },
+ {
+  "id": "heartpatience",
+  "kind": "card",
+  "rar": "r",
+  "group": "heart",
+  "tag": "cierpliwość +20 s",
+  "name": "Cierpliwość serca",
+  "text": "Bohaterowie zostają w lochu o 20 s dłużej, zanim skończy się im cierpliwość (więcej czasu na Esencję).",
+  "apply": "fn: m => { m.patience += 20; }"
+ },
+ {
+  "id": "heartgrowth",
+  "kind": "instant",
+  "rar": "r",
+  "group": "heart",
+  "name": "Rozrost serca",
+  "text": "Od razu: talia ma na stałe o 1 miejsce więcej.",
+  "apply": "fn: () => { run.deckSize += 1; }"
+ },
+ {
+  "id": "heartcore",
+  "kind": "card",
+  "rar": "l",
+  "group": "heart",
+  "tag": "Esencja ×1,2",
+  "name": "Serce lochu",
+  "text": "Cała Esencja ×1,2.",
+  "apply": "fn: m => { m.heartCore *= 1.2; }"
+ },
+ {
+  "id": "secondheart",
+  "kind": "card",
+  "rar": "l",
+  "group": "heart",
+  "unique": true,
+  "tag": "raz: kryształ wraca",
+  "name": "Drugie serce",
+  "text": "Raz na run: kryształ wyniesiony z lochu przez złodzieja wraca do serca.",
+  "apply": "fn: m => { m.secondHeart = true; }"
+ },
+ {
+  "id": "resonance",
+  "kind": "card",
+  "rar": "l",
+  "group": "heart",
+  "unique": true,
+  "tag": "+3%/kartę",
+  "name": "Rezonans",
+  "text": "Esencja +3% za każdą inną kartę w talii (najwyżej +30%).",
+  "apply": "fn: m => { m.resonance = true; }"
+ },
+ {
   "id": "heartpulse",
   "kind": "card",
-  "rar": "c",
+  "rar": "r",
   "group": "heart",
   "tag": "syte: przy sercu +30%",
   "name": "Puls serca",

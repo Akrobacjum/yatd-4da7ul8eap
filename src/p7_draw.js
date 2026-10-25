@@ -195,6 +195,23 @@
     ctx.setTransform(DPR * (B[0] - A[0]), DPR * (B[1] - A[1]), DPR * (C[0] - A[0]), DPR * (C[1] - A[1]), DPR * (A[0] + OX), DPR * (A[1] + OY));   // 1.24 (B): + OX, OY
   }
   // A box standing on the floor: footprint centred on (cx, cy), w along x, d along y, h high, from z0. Colours: top, south, east.
+  // 1.26.1 Ukryte przejście: a block of stone over the doorway while nobody has found it (with a faint mark for you: a violet seam
+  // and a "?"), a heap of broken stone once they have
+  function drawSecret(d, T) {
+    const found = fl.secretFound && fl.secretFound.has(d.secret), cx = d.x + 0.5, cy = d.y + 0.5;
+    if (found) {
+      [[-0.22, 0.12, 0.13], [0.18, -0.1, 0.11], [0.05, 0.2, 0.09], [-0.1, -0.18, 0.08]].forEach(([ox, oy, r]) => isoBox(cx + ox, cy + oy, r * 2, r * 2, r * 1.4, '#5a5e66', '#3a3d44', '#2e3036'));
+      return;
+    }
+    let h = 0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(q => { h = Math.max(h, wallH(d.x + q[0], d.y + q[1])); }); h = h || 1;
+    isoBox(cx, cy, 1, 1, h, '#4a4e57', '#33363d', '#2a2d33');
+    const a = W2S(cx - 0.3, cy + 0.5, h * 0.75), b = W2S(cx - 0.05, cy + 0.5, h * 0.45), c = W2S(cx + 0.15, cy + 0.5, h * 0.2);
+    ctx.strokeStyle = 'rgba(20,18,24,0.7)'; ctx.lineWidth = Math.max(1, T * 0.02); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
+    const p0 = W2S(cx - 0.5, cy + 0.5, 0), p1 = W2S(cx + 0.5, cy + 0.5, 0), p2 = W2S(cx + 0.5, cy + 0.5, h), p3 = W2S(cx - 0.5, cy + 0.5, h);
+    ctx.save(); ctx.setLineDash([Math.max(2, T * 0.06), Math.max(2, T * 0.05)]); ctx.strokeStyle = 'rgba(185,150,255,' + (fl.phase === 'build' ? 0.85 : 0.45) + ')'; ctx.lineWidth = Math.max(1, T * 0.03);
+    ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.lineTo(p3[0], p3[1]); ctx.closePath(); ctx.stroke(); ctx.restore();
+    if (T >= 12) { const m = W2S(cx, cy + 0.5, h * 0.5); ctx.fillStyle = 'rgba(205,180,255,' + (fl.phase === 'build' ? 0.95 : 0.55) + ')'; ctx.font = '700 ' + Math.max(9, Math.round(T * 0.38)) + 'px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', m[0], m[1]); }
+  }
   function isoBox(cx, cy, w, d, h, top, south, east, z0) {
     z0 = z0 || 0;
     const x0 = cx - w / 2, x1 = cx + w / 2, y0 = cy - d / 2, y1 = cy + d / 2, z1 = z0 + h;
@@ -918,8 +935,9 @@
     SO.push([fl.heart.x + fl.heart.y + 1, 2, null, fl.heart.x + 0.5, fl.heart.y + 0.5, 1.7]);
     fl.heroes.forEach(h => { if ((!h.dead && !h.fled && !h.gone) || heroOut(h)) { const p = heroPos(h); SO.push([p.x + p.y, 3, h, p.x, p.y, 1.35]); } });
     fl.fx.forEach(f => { if (f.kind === 'corpse') SO.push([f.x + f.y, 4, f, f.x, f.y, 1.2]); });   // 1.09: a monster falling
+    fl.doors.forEach(d => { if (d.secret && seen(d.x, d.y)) SO.push([d.x + d.y + 1, 6, d, d.x + 0.5, d.y + 0.5, 1.1]); });   // 1.26.1 Ukryte przejście
     SO.sort((a, b) => a[0] - b[0]);
-    const drawSO = e => { if (e[1] === 0) drawObjectIso(e[2], T); else if (e[1] === 1) drawItemUp(e[2], T); else if (e[1] === 2) drawHeartIso(T); else if (e[1] === 4) drawCorpse(e[2], T); else if (e[1] === 5) drawProp(e[2], T); else drawHero(e[2], T); };
+    const drawSO = e => { if (e[1] === 0) drawObjectIso(e[2], T); else if (e[1] === 1) drawItemUp(e[2], T); else if (e[1] === 2) drawHeartIso(T); else if (e[1] === 4) drawCorpse(e[2], T); else if (e[1] === 5) drawProp(e[2], T); else if (e[1] === 6) drawSecret(e[2], T); else drawHero(e[2], T); };
     // what a standing wall in front of it covers goes between the walls, in depth order; the rest after all of them
     let wi = 0; const later = [];
     const wallsTo = d => { const s0 = wi; while (wi < WL.length && WL[wi].d <= d) wi++; if (wi > s0) drawWallRun(WL, s0, wi, T); };
@@ -947,7 +965,7 @@
   }
   // where to put signs for an item: over a standing thing, on a wall trap's picture, at the middle of a floor trap
   function itemAnchor(it) {
-    if (DRIFT[it.type] && it.gx !== undefined) return W2S(it.gx, it.gy, 0.75);
+    if ((DRIFT[it.type] || it.walking) && it.gx !== undefined) return W2S(it.gx, it.gy, it.walking ? 0.55 : 0.75);   // 1.26.1: a hound on the trail
     if (WALL_ITEM[it.type]) { const w = wallSpot(it); return W2S(w.x, w.y, w.z); }
     return W2S(it.x + 0.5, it.y + 0.5, flatItem(it) ? 0.05 : 0.55);
   }
@@ -1544,7 +1562,7 @@
   const popK = it => { const t = (realNow - (it.popR || -9)) / 0.34; return t >= 1 || t < 0 || reduceMotion ? 1 : 0.55 + 0.45 * easeOutBack(t); };
   function drawItemUp(it, T) {
     if (MONSTERS[it.type] && it.down) { drawDowned(it, T); return; }   // 1.26 Odrodzenie: knocked down until the next build
-    const gh = DRIFT[it.type] && it.gx !== undefined, bx = gh ? it.gx : it.x + 0.5, by = gh ? it.gy : it.y + 0.5;
+    const gh = (DRIFT[it.type] || it.walking) && it.gx !== undefined, bx = gh ? it.gx : it.x + 0.5, by = gh ? it.gy : it.y + 0.5;   // 1.26.1: a hound on the trail
     const a = fogged(clamp(Math.floor(bx), 0, WW - 1), clamp(Math.floor(by), 0, WH - 1)) ? 0.55 : 1;
     ctx.save(); ctx.globalAlpha = a;
     { const k = popK(it); if (k !== 1) { const f = W2S(bx, by, 0); ctx.translate(f[0], f[1]); ctx.scale(k, k); ctx.translate(-f[0], -f[1]); } }
@@ -3975,7 +3993,7 @@
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#1a1424'; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = '#1a1424'; ctx.font = numFont(r * 1.1, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(RI ? (m.has ? '×' : RI.glyph) : m.tool === 'dig' ? '+' : m.tool === 'tunnel' ? '↔' : m.tool === 'expand' ? '▲' : '×', x, y + 1);
+      ctx.fillText(RI ? (m.has ? '×' : RI.glyph) : m.tool === 'dig' ? '+' : m.tool === 'tunnel' ? '↔' : m.tool === 'secret' ? (m.has && !m.known ? '×' : '?') : m.tool === 'expand' ? '▲' : '×', x, y + 1);
       if (RI && m.other && T >= 12) {   // it already has another character: this replaces it
         const on = (rt ? RT_INFO : KIND_INFO)[m.other].name;
         ctx.font = numFont(Math.max(9, r * 0.55), true); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,11,13,0.9)';

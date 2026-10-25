@@ -291,6 +291,7 @@
         for (let y = gy; y <= B.y0 - 2; y++) put(xb, y);
         dA = addDoor(xa, A.y1 + 1, A.id, hall.id, false); dB = addDoor(xb, B.y0 - 1, B.id, hall.id, false);
       }
+      if (e.secret) { dA.secret = dB.secret = e.key; hall.secret = true; }   // 1.26.1 Ukryte przejście: both ends look like a wall to the heroes
       A.doors.push(dA); B.doors.push(dB); hall.doors.push(dA, dB);
       hall.color = tint(hall.dist / maxD, true);
       rooms.push(hall);
@@ -445,10 +446,11 @@
     }
     return out;
   }
+  const secretShut = d => !!d && !!d.secret && !(fl.secretFound && fl.secretFound.has(d.secret));   // 1.26.1: a hidden passage nobody has found yet
   function passable(x, y) {
     const t = tileAt(x, y);
     if (t === FLOOR) return !isHeart(x, y) && !fl.objects.has(key(x, y)) && !blockerAt(x, y);
-    if (t === DOOR) { const d = fl.doors.get(key(x, y)); return !d || !doorClosed(d); }
+    if (t === DOOR) { const d = fl.doors.get(key(x, y)); return !d || (!doorClosed(d) && !secretShut(d)); }
     return false;
   }
   // Dijkstra. Heroes only walk where they know the way (known), and pay extra for danger they know about (avoid = how much they care).
