@@ -4,6 +4,11 @@ Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
+## Zmiany w 1.27.6
+
+- **Opis karty w sklepie nie znika** (autor: przy 5 ofertach w dwóch rzędach, pełnej talii i rzędzie Serce opis karty miał 0 px; panel `.cdetail` dostawał resztę wysokości, a `.tx` miała `min-height: 0`). Teraz `.cdetail .tx` ma `min-height: 46px` (ok. 3 linie przy 11 px), a `renderShop` po ułożeniu sprawdza wysokość tekstu: gdy wyszłoby mniej niż 64 px, oferty przechodzą w jeden rząd tych samych kart przewijany w bok (klasa `tight` na `.offers.cards`, zapamiętana w `m.tight` do zamknięcia sklepu; karta szeroka na ok. 1/3,3 rzędu, więc czwarta wystaje i widać, że jest więcej). Test `t1276_shopdesc` (5 rozmiarów ekranu, 4 i 5 ofert, pełna talia z 3 kartami Daru).
+- W Unity: panel opisu z minimalną wysokością; gdy siatka ofert nie zostawia mu miejsca, oferty w jednym przewijanym rzędzie.
+
 ## Zmiany w 1.27.5
 
 - **Szybsza budowa** (plan rebalansu 6.7, oba usprawnienia): w opisie elementu przycisk "Ulepsz wszystkie w pokoju" (`#sheet-upgrade-all`, "N × → poziom L · koszt"), gdy w tym samym pokoju stoją co najmniej 2 elementy tego typu na tym samym poziomie (`sameInRoom`); jedno cofnięcie na całość, łączny koszt (`upgradeAllCost`), przy poziomie 2 -> 3 z cechami A/B okno gałęzi z łącznym kosztem i podpisem "× N" (ta sama gałąź dla wszystkich); `stats.upgradeAll`. Drugie usprawnienie: dwa stuknięcia w wolne pole (w `DOUBLE_TAP_MS`, bez wybranego elementu) stawiają jeszcze raz ostatnio postawiony element (`lastPlaced`, `stats.repeatPlace`); linia w "Jak grać".

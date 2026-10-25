@@ -622,7 +622,7 @@
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.27.5 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.27.6 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -679,9 +679,10 @@
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.5', "What's new in Prototype 1.27.5")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.6', "What's new in Prototype 1.27.6")));
     const ul0 = el('ul', 'conseq');
-    [L('1.27.5: serce rośnie najwyżej o 1 poziom na falę. Nadmiar Nasycenia czeka w pasku i da poziom na początku następnej budowy.', '1.27.5: the heart grows at most 1 level per wave. Extra Satiety waits in the bar and gives a level when the next build starts.'),
+    [L('1.27.6: opis karty w sklepie już nie znika. Gdy przy pięciu ofertach i pełnej talii brakuje miejsca, karty układają się w jeden rząd przewijany w bok.', '1.27.6: the card text in the shop no longer vanishes. When five offers and a full deck leave no room, the cards line up in one row you swipe sideways.'),
+     L('1.27.5: serce rośnie najwyżej o 1 poziom na falę. Nadmiar Nasycenia czeka w pasku i da poziom na początku następnej budowy.', '1.27.5: the heart grows at most 1 level per wave. Extra Satiety waits in the bar and gives a level when the next build starts.'),
      L('1.27.5: karty z Daru serca nie zajmują miejsc w talii (mają swój rząd Serce). Poziomy serca nie dają już miejsc w talii.', "1.27.5: Heart's Gift cards no longer take deck slots (they have their own Heart row). Heart levels no longer add deck slots."),
      L('1.27.5: Serce lochu, Rezonans i Głodomór są zwykłymi legendarnymi kartami w sklepie (każda raz na run). Żarłoczne serce trafia się w Darze najwyżej raz na run.', "1.27.5: Heart of the Dungeon, Resonance and Glutton are ordinary legendary shop cards (one of each per run). Ravenous Heart shows up in the Heart's Gift at most once a run."),
      L('1.27.5: przycisk Wypuść falę pokazuje głód serca i Twój zapas. Czerwony napis: zapasu prawie nie ma, a słabsza fala może kosztować kryształ.', '1.27.5: the Release wave button shows the heart\'s hunger and your reserve. Red text: almost no reserve, and a weaker wave may cost a crystal.'),
@@ -1566,7 +1567,8 @@
         b.classList.add('rune'); b.style.setProperty('--fam', F.color);
       }
     }
-    og.classList.add('n' + og.children.length); og.addEventListener('scroll', () => { m.cardsX = og.scrollLeft; }, { passive: true });   // a short phone scrolls the row: it keeps its place over a re-render   // four (the Heart's Gift with Dziesięcina): one row of four; five or six: two rows of three
+    og.classList.add('n' + og.children.length); if (m.tight) og.classList.add('tight');   // 1.27.6: see below
+    og.addEventListener('scroll', () => { m.cardsX = og.scrollLeft; }, { passive: true });   // a short phone scrolls the row: it keeps its place over a re-render   // four (the Heart's Gift with Dziesięcina): one row of four; five or six: two rows of three
     stage.appendChild(og);
     // the picked card: its whole text and its button
     const dt = el('div', 'cdetail'); dt.id = 'shop-detail'; const P = m.pick;
@@ -1655,7 +1657,10 @@
     foot.appendChild(done);
     if (m.msg) { foot.appendChild(el('div', 'shopmsg', m.msg)); m.msg = ''; }   // what just happened: a message over the big button (1.12.1: in the shop itself, the top hint is gone)
     { const row = card.querySelector('.offers.cards'); if (row && m.cardsX) row.scrollLeft = m.cardsX; }
-    requestAnimationFrame(() => { card.querySelectorAll('.sheet, .cdetail').forEach(fitText); card.querySelectorAll('.slot:not(.empty)').forEach(fitSlot); });
+    requestAnimationFrame(() => {
+      // 1.27.6 (author: the descriptions vanished): two rows of cards over a full deck left the text no room; then one row that scrolls
+      { const tx = card.querySelector('#shop-detail .tx'), row = card.querySelector('.offers.cards'); if (tx && row && !m.tight && tx.clientHeight < 64) { m.tight = true; row.classList.add('tight'); } }
+      card.querySelectorAll('.sheet, .cdetail').forEach(fitText); card.querySelectorAll('.slot:not(.empty)').forEach(fitSlot); });
   }
   // Prototype 1.0: the whole text has to fit its box, nothing is cut. The letters shrink step by step down to a readable minimum;
   // a long name shrinks too. The tile says data-fit="no" if even that is not enough (the tests look for it).

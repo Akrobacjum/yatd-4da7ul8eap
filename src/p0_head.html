@@ -700,7 +700,7 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 .cdetail .ok { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .cdetail.rar-r .ok { color: #7aa6d6; } .cdetail.rar-l .ok { color: var(--ember); } .cdetail.unlock .ok { color: #c2b0ff; }
 .cdetail b { font: 700 20px/1.1 var(--font-display); }
-.cdetail .tx { font-size: 14px; color: var(--ink); line-height: 1.38; flex: 1 1 auto; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; }   /* the longest texts: smaller letters first (fitText), then a scroll, never cut */
+.cdetail .tx { font-size: 14px; color: var(--ink); line-height: 1.38; flex: 1 1 auto; min-height: 46px; overflow: hidden auto; overscroll-behavior: contain; }   /* the longest texts: smaller letters first (fitText), then a scroll, never cut */
 .cdetail .tx.empty { color: var(--muted); display: grid; place-items: center; text-align: center; }
 .cdetail .tx .fine { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); line-height: 1.3; }
 .cdetail .fit { font-style: normal; font-weight: 700; } .cdetail .fit.good { color: #9fd7a0; } .cdetail .fit.bad { color: #e0a0a6; } .cdetail .fit.fz { color: #f2c94c; }
@@ -714,6 +714,10 @@ details summary { cursor: pointer; color: var(--gold); font-size: 14px; margin-b
 /* a short phone: all the cards in one row, smaller (still upright cards), so the text under them keeps its room */
 @media (max-height: 760px) { .shopstage > .offers.cards { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; padding: 4px 2px 6px; margin: -4px -2px -6px; }
   .shopstage > .offers.cards::-webkit-scrollbar { display: none; } .offer.ccard { flex: 0 0 86px; scroll-snap-align: start; } .offer.ccard .cardart { display: block; } .cdetail b { font-size: 18px; } }   /* a short phone: one row of upright cards that scrolls sideways, like the build tray */   /* a short phone: name and price only, the text stays roomy */
+/* 1.27.6 (author: the card text vanished with 5 offers in two rows over a full deck with the Serce row): when the text would get
+   under ~4 lines, the offers go to one row of the same cards that scrolls sideways (the rest are a swipe away) (class tight, set in renderShop) */
+.shopstage > .offers.cards.tight { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; padding: 4px 2px 6px; margin: -4px -2px -6px; }
+.shopstage > .offers.cards.tight::-webkit-scrollbar { display: none; } .offers.cards.tight .offer.ccard { flex: 0 0 calc((100% - 18px) / 3.3); scroll-snap-align: start; }   /* the 4th card peeks in: more to swipe */ .offers.cards.tight .offer.ccard .cardart { display: block; }
 /* a card from the deck or the stash, opened over the offers (the rest of the screen stays put) */
 .sheet {
   position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 10px;
