@@ -926,6 +926,7 @@ W Unity: ustawienia gracza w `PlayerPrefs` (albo w małym pliku JSON) z polem we
 | `yatd-player` | 1.24: `{name, id}`: identyfikator gracza dla imienia (inne imię = nowy id) | `playerIdNow` (`p2_state_map.js`) |
 | `yatd-name-asked` | 1.24: `'name'` albo `'skipped'`: wersja WWW już pytała o imię | `withName`, `renderName` |
 | `yatd-noask-ess` | 1.24: `'1'` = "Nie pytaj więcej" o niewydaną Esencję | `askUnspent`, `renderUnspent` |
+| `yatd-lang` | 1.27: `'en'` albo `'pl'`; brak albo inna wartość = `window.YATD_LANG_DEFAULT` (strona testowa: `'pl'`) albo `'en'` | `p1_config.js: LANG` (przy starcie strony) / wiersz języka w `renderSettings` (zapis, w budowie `saveRun('build')`, przeładowanie) |
 
 Poza `localStorage`: Service Worker strony WWW trzyma pamięć podręczną `yatd-v1` (Cache Storage, tylko prototyp). Wszystkie odczyty i zapisy są w `try/catch` (brak pamięci nie psuje gry).
 
@@ -949,6 +950,8 @@ clearSave: w endRun (koniec runu każdym sposobem)
 ```
 W zapisie jest cały obiekt `run` (od 1.18 także `run.restock`, od 1.21 `run.next[].bond`, od 1.23 `run.fallen` i `run.returners[].nemesis`, `run.next[].nemesis`, od 1.24 `run.fused`, `onbW`, `onbNews`, dziennik kryształów, `activeSec`, `sessions`, `playerId`, `essAtStart`; od 1.26 `satiety`, `heartLv`, `heartLvMax`, `heartPicks`, `heartCards`, `famLv`, `runes`, `regrowCount`, `ofiaraW`, `ofiaraN`, `revive`, `credit`, `creditUsed`, `bloodHunger`, `omens`, `kata`, `lastBreathW`, `stacks.skulls/risinglegend/pantry`, `shop.rune`, `next[].fog`; pola elementów: od 1.20 `item.fromNm` i brzuch mimika `belly`, które `prim` w `saveRun` przepuszcza jawnie): układ lochu (`layout` z `Map` komórek i krawędzi), elementy, plotki (`rumor.tiles`, `rumor.traps`, `rumor.loot`), talia, schowek, sklep, następna fala (`next`), powracający, liczniki, `waveDocs` (bez osi czasu), `waveStart`, `memSpots`, stan samouczka itd. Stanu fali (`fl`) w zapisie nie ma: po wczytaniu mapa i stan fali są budowane od nowa.
 
+**Język w zapisie (1.27)**: zapis nie ma pola języka. Kilka pól to gotowe napisy złożone w chwili powstania, więc po zmianie języka zostają w starym: tytuł Nemezis (`run.returners[].nemesis.title`, `run.next[].nemesis.title`), tekst gildii (`run.guild.text`), powód końca runu (`run.reason`). Imiona bohaterów (`nm`, trzy przypadki) są polskie w obu językach. Reszta to id i liczby, które UI tłumaczy przy wyświetleniu. W Unity zapisywać id i parametry zamiast tekstu (sekcja 02, 2.10; sekcja 11).
+
 Kiedy zapisuje:
 | Moment | Wywołanie |
 |---|---|
@@ -958,7 +961,8 @@ Kiedy zapisuje:
 | tuż przed falą (`startWave`) | `saveRun('build')` |
 | koniec fali, jeśli zostały kryształy (`finishWave`) | `saveRun('summary')` |
 | wylosowanie darmowych kart po fali | `saveRunSoonSummary()`: po 300 ms, tylko w fazie `summary` |
-| menu "Zapisz i wyjdź" (w budowie), ekran fali "Zapisz i wyjdź" | `saveRun('build')` / `saveRun('summary')` |
+| menu "Zapisz i wyjdź" (w budowie), ekran fali "Zapisz i wyjdź" (od 1.27 "Wyjdź") | `saveRun('build')` / `saveRun('summary')` |
+| zmiana języka w Ustawieniach (1.27), tylko w budowie i gdy są kryształy | `saveRun('build')`, potem przeładowanie strony |
 
 W trakcie fali nic się nie zapisuje: zamknięcie karty w fali wraca do budowy przed tą falą (zapis z `startWave`). Narzędzia lochu i skrzynia nie wywołują zapisu od razu (7.13).
 
@@ -1012,7 +1016,7 @@ W Unity: zapis JSON w `Application.persistentDataPath` (zapis atomowy: plik tymc
 - `yatd-player` (1.24): `playerIdNow()` tworzy `{name, id: 'p' + czas36 + losowe}` przy pierwszym użyciu imienia (albo pominięciu pytania) i trzyma go dla tego imienia; inne imię na tym urządzeniu (także powrót do wcześniejszego) = nowy id. `run.playerId` w `newRun`; dokument runu i ankieta niosą `playerIdNow()`.
 - Pytanie o imię (1.24, tylko wersja WWW): przed pierwszym nowym runem, gdy imię jest puste i `yatd-name-asked` nie jest ustawione, okno "Jak masz na imię?" (`#name-ask`, "Graj" `#name-ok`, "Pomiń" `#name-skip`; Pomiń zapamiętane). Przyciski startu wołają `withName(go)`. Strona testowa (nie WWW) nigdy nie pyta.
 - `yatd-coach = '1'`: przewodnik pierwszego runu skończony (`tutEnd`).
-- `yatd-name`: imię z pola "Kto testuje", wysyłane w logu jako `player` (max 40 znaków).
+- `yatd-name`: imię z pola "Kto testuje" (od 1.27 "Imię testera (opcjonalnie)" pod zwiniętym "Dla testerów" na ekranie startowym), wysyłane w logu jako `player` (max 40 znaków).
 - `deviceId` (`yatd-device`): `Date.now().toString(36) + Math.random().toString(36).slice(2, 8)`, tworzony przy pierwszym uruchomieniu; bez pamięci: `'nostore'`.
 - `run.id`: `Date.now().toString(36) + Math.random().toString(36).slice(2, 6)`.
 
@@ -1317,7 +1321,7 @@ W Unity: stały, typowany słownik statystyk (np. `enum StatId`) zamiast pól do
 
 - Pokazywana przed ekranem końca pierwszego zakończonego runu na urządzeniu, gdy `WEB` i `yatd-survey` jest puste (`openModal`), oraz z menu, dopóki stan != `'done'`.
 - Pytania `SURVEY`: `fun` (1-5), `clear`, `best`, `worst`, `again` + pole tekstowe (max 1000 znaków); wszystkie opcjonalne.
-- "Wyślij": `yatd-survey = 'done'`; dokument do kolekcji `survey`, id `deviceId + '_' + (runId || 'menu')`: `{version, device, runId, at, player, answers, text, run: {result, waves, total, tutorial, minutes} | null}`. "Pomiń": `'skipped'` (jeśli puste).
+- "Wyślij": `yatd-survey = 'done'`; dokument do kolekcji `survey`, id `deviceId + '_' + (runId || 'menu')`: `{version, device, runId, at, player, answers, text, run: {result, waves, total, tutorial, minutes} | null}`; od 1.24 także `playerId`, od 1.27 `lang` (`'en'`/`'pl'`), a `answers` mają zawsze wartość polską (po angielsku przyciski pokazują `SURVEY[].oe`, ale zapisują wartość z `o`), żeby wyniki obu języków były w jednym zbiorze. "Pomiń": `'skipped'` (jeśli puste).
 
 ### 7.12.9 "Pobierz wyniki" (`p8b_ui.js: downloadRun, getDownloads, copyFallback`)
 

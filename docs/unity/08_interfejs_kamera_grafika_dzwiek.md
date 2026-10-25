@@ -1,8 +1,30 @@
 # 08. Interfejs, sterowanie, kamera, grafika, dźwięk i samouczek
 
-Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 1.26.1 (`LOG_VERSION = 62`, w 1.26.1 bez zmiany; niżej). Od 1.26 dochodzi plik `src/p7c_art.js` (ilustracje i nowa grafika rysowana w kodzie). Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
+Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 1.27 (`LOG_VERSION = 62`, w 1.26.1 i 1.27 bez zmiany; niżej). Od 1.26 dochodzi plik `src/p7c_art.js` (ilustracje i nowa grafika rysowana w kodzie), od 1.27 `src/p1e_en.js` (angielskie kwestie bohaterów; języki: sekcja 02, 2.10). Od 1.27 interfejs jest domyślnie po angielsku; napisy cytowane w tej sekcji są polskie (wersja, którą widzą testy), a ich angielskie odpowiedniki stoją w kodzie obok, w parach `L('pl', 'en')`. Pliki: `src/p0_head.html` (CSS), `src/p0b_body.html` (DOM), `src/p6_loop.js` (kamera, skill check, muzyka, efekty dźwiękowe, haptyka), `src/p7_draw.js` (rysowanie na canvasie), `src/p8a_icons.js` (ikony SVG), `src/p8b_ui.js` (HUD, ekrany, wejście, sklep, zapis, samouczek).
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
+
+## Zmiany w 1.27 (skrót)
+
+Przegląd UI/UX ekran po ekranie i drugi język (plan "Prototype 1.27 - przegląd UI/UX, czytelność i język", 25.10.2026). Zasada autora: UI nie mówi wszystkiego naraz; ogólne rzeczy mają być dostępne i zrozumiałe, szczegóły drobnym drukiem, a opis nie tłumaczy mechanik z innych miejsc. Stąd trzy warstwy informacji, których trzyma się każdy ekran (także w Unity):
+
+| Warstwa | Gdzie | Co tam jest |
+|---|---|---|
+| 1. Rzut oka | HUD, mapa, kafelki | liczba, ikona, jedno słowo; tylko to, co zmienia decyzję teraz |
+| 2. Stuknięcie | dymek kafelka, karta bohatera, karta serca | nazwa, jedno zdanie "co to robi", koszt |
+| 3. Szczegóły | drobny druk pod spodem, "Szczegóły", "Jak grać" | liczby, wyjątki, skill check, rodzina |
+
+- **Kategorie budowania** (2.5): podzakładki mówią czasownikiem, co element robi bohaterom. Pułapki: Ranią / Trzymają / Osłabiają / Straszą; Potwory: Walczą / Wspierają / Straszą; Loch: Kopanie / Komnaty / Klimat (dawne Efekty). "Mrok" i "Statusy" zniknęły. Id podzakładek: `dmg`, `hold`, `weak`, `fear` i `dmg`, `sup`, `fear`.
+- **Dymek kafelka** (2.5): nazwa, koszt, tag, słowa Rani / Straszy, opis jednym zdaniem (`desc`), a pod nim drobny druk (`.fine`): `more` (miejsce, typ obrażeń, liczby, kto jest odporny, skill check), "Rodzina: X" (z poziomem) i krok ceny łupu. Linia rodziny nie tłumaczy już Runy rodu. Ten sam `more` jest pod opisem na karcie elementu (3.15).
+- **HUD** (2.2, 2.3): równanie Groza × Chciwość × Combo = Esencja jest widoczne tylko w fali; wiersza rangi nie ma (ranga jest w Szczegółach podsumowania, na ekranie końca runu i w rekordzie na starcie); koszt na kafelku poprzedza kropla Esencji zamiast rombu podobnego do kryształu.
+- **Mapa** (6.13): etykieta pokoju w budowie: głębia "×N" i kropki miejsc (● zajęte, ○ wolne), gdy pojemność jest najwyżej 6.
+- **Start** (3.3): 2 zdania wstępu, pole imienia testera zwinięte pod "Dla testerów", Jak grać w 7 krótkich działach, Co nowego tylko 1.27 (starsze pod "Starsze wersje", tylko po polsku).
+- **Podsumowanie fali** (3.8): "Groza N × chciwość K = E", "o włos: złodziej był X s od kryształu" tylko poniżej 3 s, "+N dochodu po fali", przyciski Szczegóły / Wyjdź / Zakończ run, główny "Dalej: sklep"; notka o zapisie wyników tylko w Szczegółach, "Pobierz wyniki" tylko w Menu z podpisem "dla testerów".
+- **Sklep** (3.9): nagłówek "Esencji · 1 darmowa karta" albo "darmowe karty: N"; schowek "karty tu nie działają". **Karta serca** (3.22): podtytuł "Serce · poziom N" bez dopisku; rozbicie głodu tylko, gdy ma coś poza podstawą.
+- **Wieści z karczmy i boss** (3.19a, 3.8): czempion i bohater z przepowiedni mają kartę jak omen (`bossBox`) w wieściach i w panelu następnej drużyny po fali; wieści otwierają się same w budowie fali z bossem (jak przy omenie, nie w samouczku); `waveHint` nie mówi już o bossie i omenie, a o głodzie mówi z zasadą sakiewki.
+- **Samouczek i karty zasad** (8.3a, 8.4): teksty przepisane, krótsze, zwykle jedna myśl na krok.
+- **Język** (3.6, sekcja 02, 2.10): "Język / Language" na górze Ustawień (English / Polski), zmiana przeładowuje grę; Menu > Ustawienia ma podpis "język, dźwięk, wibracje, skill checki".
+- **Polski tekst** całego UI i danych przepisany krócej i naturalniej (nazwy elementów i kart bez zmian); testy z napisami poprawione.
 
 ## Zmiany w 1.26.1 (skrót)
 
@@ -196,8 +218,10 @@ Warstwy (z-index): świeca/winieta 1, baner 2, coach 3, `#fx` 6, `#tip` 8, overl
 | 1 prawo | `#h-cry` | ◆ za każdy kryształ w sercu, ◇ za utracony | ◈ zamiast jednego ◆, gdy złodziej niesie kryształ | 15 px, `--rose`, odstęp 2 px, poświata |
 | 2 | `#h-pips` / `#h-barwrap` + `#h-time` | 10 pipsów runu + "budowa" | pasek czasu (`fl.patT / S.waveTime`, od 1.12.1 czas cierpliwości, w scenkach płynie wolniej; mosiądz) + pozostały czas m:ss, "pauza", "szturm!" / "odwrót" (gdy `fl.fearless`; "szturm!" przy `fl.storm`), od 1.17 "narada" (gdy trwa narada na końcu cierpliwości, `fl.party.council`); po "jeszcze chwila" znów czas (30 s) | pips 7 px wysokości, odstęp 3 px; pasek 6 px; czas Jersey 14 px |
 | 3 | `#h-hrow`: ♥ `#h-heart` z poziomem `#h-hlv` (od 1.26), pasek `#h-hfill`, linia Nasycenia `#h-sfill` (od 1.26), `#h-hlabel` | etykieta "serce chce N z fali" albo "serce głodne od fali 2"; od 1.26 "serce chce N · zapas X" (albo "⚠ N · zapas X"), bez głodu "serce poz. L" | "serce X/N" → "serce syte"; od 1.26 po nasyceniu "syte · Danina 30% → poz. L+1" | pasek 9 px; patrz stany niżej; od 1.26 klikalny (`role="button"`, kursor rączki) |
-| 4 | `#h-eq` (równanie) | Groza 0 × Chciwość start × Combo 1 = +0 | żywe wartości serii combo | patrz 2.3 |
-| 5 | `#h-rankrow` | "Ranga · Następna za N" albo "ranga: Legenda" | ukryty (równanie potrzebuje miejsca) | 12,5 px muted |
+| 4 | `#h-eq` (równanie) | do 1.26.1: Groza 0 × Chciwość start × Combo 1 = +0; od 1.27 ukryte | żywe wartości serii combo | patrz 2.3 |
+| 5 | `#h-rankrow` | do 1.26.1: "Ranga · Następna za N" albo "ranga: Legenda"; od 1.27 zawsze ukryty | ukryty (równanie potrzebuje miejsca) | 12,5 px muted |
+
+**1.27**: równanie jest tylko w fali (`eq.hidden = !raid`; w budowie pokazywało same zera), a wiersz rangi jest ukryty zawsze (`#h-rankrow`). `updateHud` dalej wpisuje tekst rangi do `#h-rank` (martwe, rozdz. 10). Rangę gracz widzi w Szczegółach podsumowania (Co dalej: "Ranga runu: X (E Esencji, następna: Y od P)."), na ekranie końca runu i w rekordzie na starcie. W Unity: w budowie HUD ma tylko rzędy 1-3.
 
 **Pipsy** (`renderPips`): 10 na dziesiątkę fal; zielony `#4d7a3a` = fala utrzymana, krwisty `--blood` = stracony kryształ (skradziony albo zjedzony), mosiądz z pulsowaniem 1,6 s = następna fala, romb `--ember` 5 px nad pipsem co 5 fal (boss).
 
@@ -224,7 +248,7 @@ Wypełnienie paska = `fl.fed / need` (animacja szerokości 0,25 s). Od 1.16.1 `f
 
 ### 2.3 Równanie Groza × Chciwość × Combo = Esencja (`updateHud`, `p0_head.html: .eqrow`)
 
-Rząd wyśrodkowany, odstęp 4 px. Pięć pudełek (`.eq`): etykieta 9 px wersalikami muted, wartość Jersey 15 px; minimalna szerokość 48 px, padding 2/7/3 px; operatory `×`, `=` 13 px `--dim`. Kolory wartości: Groza `--violet-hi`, Chciwość `--gold-hi`, Combo i Żyła `--ice`, Esencja `--ess` w pudełku z tłem `#231215` i ramką `#6e1c27`. Przy ≤380 px: odstęp 2 px, min. 44 px, wartość 14 px, etykieta 8,5 px.
+Od 1.27 rząd jest widoczny tylko w fali (w budowie i na ekranach między falami ukryty); opis "poza falą" niżej dotyczy wersji do 1.26.1. Rząd wyśrodkowany, odstęp 4 px. Pięć pudełek (`.eq`): etykieta 9 px wersalikami muted, wartość Jersey 15 px; minimalna szerokość 48 px, padding 2/7/3 px; operatory `×`, `=` 13 px `--dim`. Kolory wartości: Groza `--violet-hi`, Chciwość `--gold-hi`, Combo i Żyła `--ice`, Esencja `--ess` w pudełku z tłem `#231215` i ramką `#6e1c27`. Przy ≤380 px: odstęp 2 px, min. 44 px, wartość 14 px, etykieta 8,5 px.
 
 | Pudełko | Wartość | Uwagi |
 |---|---|---|
@@ -267,6 +291,23 @@ Zasady: start fali zawsze zwija (`p3_flow.js: startWave`); start budowy rozwija 
 
 **Podzakładki** (1.14, `#subs`, `TABS[].subs`, `p8b_ui.js: subsOn`, `curSub`, `pickTab`): rząd pod zakładkami, wysokość 24 px (odstęp siatki 6 px, `margin-top: -1px`). Pułapki i Potwory mają dwie: **Rany** (`dmg`) i **Strach** (`fear`); w Ranach są też pułapki, które zatrzymują, rozdzielają i spowalniają (Sieć, Zapadnia, Klatka, Krata). Przycisk `.sub`: prostokąt z rogami `--r` jak kafelek, 12 px, 600, odstęp 0 14 px, tło `--panel`, ramka `--line`, tekst muted; wybrany: `--ink`, ramka i wewnętrzna obwódka `--gold`, tło `--panel3`. Pasek pokazuje kafelki tylko wybranej podzakładki. Wybór jest zapamiętany dla każdej zakładki (`yatd-sub`, JSON `{traps: 'fear', ...}`), a przewinięcie paska dla pary zakładka/podzakładka. Od 1.15.1 rząd jest pokazany zawsze, gdy zakładka ma podzakładki i choć jedna ma coś z obecnego etapu nauki (decyzja autora: w pierwszym runie nie było czego przełączać, bo rząd znikał; w 1.14 był chowany, gdy tylko jedna podzakładka miała kafelki). Podzakładka bez niczego z tego etapu (`subsOn`) ma klasę `off`: krycie 0,5 i kłódka 10 px (`LOCK`), `aria-disabled`, dymek "X: od N. runu nauki" (`subStage` = najmniejsze `ONB_ITEM` jej kafelków); stuknięcie nic nie przełącza, tylko trzęsie przyciskiem i na 1,5 s zmienia jego napis na "X: od N. runu" (`nope`). Przykład etapu 1: Pułapki = Rany + wyszarzony Strach (od 2. runu), Loch = Kopanie + wyszarzone Komnaty i Efekty (od 3. runu). Na zakładkach bez podzakładek rząd zostaje pusty (`visibility: hidden`), żeby mapa nie zmieniała wysokości przy przełączaniu. Przewodnik, który wskazuje kafelek, przełącza na jego podzakładkę (`pickTab('traps', 'spikes')`). Od 1.15 zakładka **Loch** ma trzy podzakładki: **Kopanie** (`dig`: kopanie, tunel, poszerzanie, burzenie), **Komnaty** (`kind`: 12 komnat, sekcja 05, 5.8a) i **Efekty** (`effect`: dawne typy pokoi `r_*`). Nazwy są robocze (autor podał "pomieszczenia", "rodzaj", "efekt"); zmiana to tylko `label` w `TABS`. Od 1.26 Pułapki mają trzy podzakładki: **Rany** (`dmg`: dawne + wahadło, wnyki), **Statusy** (`stat`: plama oleju, kocioł smoły, wyziewy, zalewnia, runa piorunów) i **Strach** (`fear`: dawne + dzwon żałobny, fałszywe przejście); Potwory: **Rany** (`dmg`: + saper, herszt, rój szczurów), **Mrok** (`dark`: szkielet, zombie, licz, ogar, demon) i **Strach** (`fear`: + chochlik, kusicielka); Łup + Przynęta; Komnaty: 15. Stuknięcie zakładki Loch wołałoby podpowiedź z poziomami rodzin ("Rodziny: Mechanizmy 2, ..."), ale `setHint` nic nie robi (rozdz. 10, punkt 1), więc tego tekstu nie widać.
 
+**Od 1.27** (decyzja autora: kategoria ma odpowiadać na pytanie "co ma zrobić bohaterom?", czasownikiem; "Mrok" mówił, czym potwór jest, a "Statusy" to słowo z gier) podzakładki są takie (wygląd i zachowanie rzędu bez zmian; tekst przycisku 12 px, więc po polsku dłuższe nazwy też się mieszczą):
+
+| Zakładka | Podzakładka (`id`, po angielsku) | Elementy |
+|---|---|---|
+| Pułapki | **Ranią** (`dmg`, Hurt) | kolce, strzały, zapadnia, ogień, proch, mimik, wahadło, runa piorunów |
+| | **Trzymają** (`hold`, Hold) | sieć, klatka, krata, wnyki |
+| | **Osłabiają** (`weak`, Weaken) | plama oleju, kocioł smoły, wyziewy, zalewnia |
+| | **Straszą** (`fear`, Scare) | portret, oczy, kości, lustro, zawiasy, trumna, pozytywka, dzwon żałobny, fałszywe przejście |
+| Potwory | **Walczą** (`dmg`, Fight) | goblin, ogr, pająk, rój szczurów, szkielet, zombie, ogar piekielny, demon otchłani |
+| | **Wspierają** (`sup`, Support) | łucznik, szaman, goblin saper, herszt goblinów, licz |
+| | **Straszą** (`fear`, Scare) | duch, cień, nietoperze, chochlik, kusicielka |
+| Loch | **Kopanie** (`dig`, Dig) | kopanie, tunel, ukryte przejście, poszerzanie, burzenie |
+| | **Komnaty** (`kind`, Lairs) | 15 komnat |
+| | **Klimat** (`effect`, Mood) | 9 efektów pokoi `r_*` (dawniej podzakładka Efekty) |
+
+Id `stat` (Statusy) i `dark` (Mrok) zniknęły, a `hold`, `weak` i `sup` są nowe. Zapamiętany wybór podzakładki (`yatd-sub`) ze starym id nie pasuje do żadnej, więc `curSub` bierze pierwszą dostępną. Rodzina elementu (Nieumarli, Demony...) jest tylko w drobnym druku dymka.
+
 **Pasek kafelków** (`#tray`): jeden rząd przewijany w bok, wysokość 64 px, odstęp 6 px, przyciąganie do początku kafelka (`scroll-snap: x proximity`), bez paska przewijania. Na krawędziach, za którymi jest jeszcze coś, maska zanikania 28 px (`trayFade`). Zmiana zakładki "rozdaje" kafelki: każdy wjeżdża z dołu (10 px, skala 0,94 → 1) w 0,24 s z opóźnieniem 24 ms × indeks (do 9), klasa zdejmowana po 700 ms.
 
 **Anatomia kafelka** (`.item`, 74×60 px, `updateTray`):
@@ -274,7 +315,7 @@ Zasady: start fali zawsze zwija (`p3_flow.js: startWave`); start budowy rozwija 
 | Część | Wygląd | Uwagi |
 |---|---|---|
 | ikona | SVG 22×22 z `ICONS[typ]` (`p8a_icons.js`, 65 ikon; od 1.15 także 12 komnat) z cieniem 1 px | lewa górna część rzędu `.top` |
-| koszt | Jersey 12 px `--ess`, poprzedzony czerwonym rombem 6 px z poświatą | `costOf` (sekcja 03); tryby bez kosztu |
+| koszt | Jersey 12 px `--ess`, poprzedzony czerwonym rombem 6 px z poświatą; od 1.27 kroplą Esencji 6 px (kwadrat obrócony o -45° z trzema zaokrąglonymi rogami, `border-radius: 50% 0 50% 50%`, ta sama poświata), żeby koszt nie wyglądał jak kryształ ◆ | `costOf` (sekcja 03); tryby bez kosztu |
 | nazwa | 12,5 px; nazwy od 9 znaków 11 px (`longnm`) | `ITEMS[t].name` |
 | tag | 10,5 px muted; dla łupu kolor `LOOT_COLOR`, dla efektów kolor `RT_INFO`, dla komnat kolor `KIND_INFO` | `ITEMS[t].tag` |
 | kłódka | 11 px w prawym górnym rogu, `--dim` | gdy nieodblokowany |
@@ -289,6 +330,8 @@ Od 1.26 kafelki z rysunkiem (`ART.has(t)`, klasa `.art`) wyglądają inaczej: u 
 **Zakładka Talia** (`renderDeckTiles`, kafelki 100 px, `.dslot`, górna ramka 3 px w kolorze rzadkości): najpierw kafelek **Sklep** (mosiądz; podpis "wróć do sklepu", "gratis: N" z pulsującą złotą obwódką, gdy są darmowe karty, albo "między falami"; w fali ukryty), potem po jednym kafelku na każde miejsce talii (tag = `u.tag` albo "rośnie: N", nazwa w 2 liniach; od 1.26 nad nimi pasek obrazka karty 26 px, `ART.cardImg`, klasa `hasart`; puste "wolne miejsce" przerywane); od 1.26 kafelek Sklep przy czekającym Darze serca pisze "♥ Dar serca" (+ liczba darmowych kart) złotym tekstem (`heartgift`), potem miejsca schowka (przerywane, 80% krycia, tag "schowek"; w fali ukryte). Stuknięcie karty otwiera okno karty (w fali pauzuje), stuknięcie schowka otwiera sklep.
 
 **Podpowiedź kafelka** (`#tip`, `showTip`): przytrzymanie kafelka 380 ms (bez ruchu > 10 px) pokazuje płytę nad szufladą (dolna krawędź 6 px nad szufladą, szer. `min(440px, 100% - 32px)`, tło `#16181c`, górna ramka 2 px `#6b7079`, wjazd 0,16 s): nazwa Grenze 22 px + "N Esencji" w `--ess`, tag 11 px wersalikami, opis 14 px (`ITEMS[t].desc`), dla łupu "Każdy kolejny taki łup w lochu: +25% ceny (leży już: n, bazowo c)." (od 1.26 tekst nieaktualny, cena rośnie o 15%), od 1.26 dla elementu z rodziną "Rodzina: <znak> <nazwa> (poziom L: +8L% mocy)" albo "(Runa rodu ze sklepu ją wzmocni)", dla zablokowanego czerwone "Zablokowany: odblokujesz go kartą ze sklepu.". Od 1.24 pod opisem słowa z małym rombem: "Rani" (`.hurt`) i/lub "Straszy" (`.scare`) (`effWords`: Straszy dla pułapek straszących i unoszących się potworów, Rani dla raniących, nietoperze oba; także na kartach odblokowania); licznik pokazań `tutFlags.tipN` (krok przewodnika `hold`). Wibracja 12 ms. Puszczenie chowa podpowiedź, a koniec przytrzymania nie liczy się jako stuknięcie (`tipEat`). Zrzut: `03_tile_tip.png`.
+
+**Dymek od 1.27** (warstwa 2 i 3, plan rozdz. 4): kolejność to nazwa + "N Esencji", tag, słowa Rani / Straszy (po angielsku Hurts / Scares), opis `ITEMS[t].desc` (jedno zdanie: co element robi), a pod nim drobny druk `.fine` (12 px, interlinia 1,35, `--muted`, odstęp 6 px) złożony z kawałków po spacji: `ITEMS[t].more` (miejsce, zasięg, liczby, typ obrażeń, kto jest odporny, skill check), "Rodzina: <glif> <nazwa>." albo z poziomem "Rodzina: <glif> <nazwa>, poziom L (+8L% mocy)." (bez dawnego "(Runa rodu ze sklepu ją wzmocni)") i dla łupu "Każdy kolejny taki łup jest o 15% droższy (w lochu już: n)." (tekst zgodny z regułą 15% z 1.26). Pod spodem jak dotąd czerwone "Zablokowany. Odblokuje go karta ze sklepu, na stałe." albo przy komnacie "Zablokowana. Najpierw odblokuj kartą ze sklepu: X albo Y.". Przykład, Sieć: opis "Oplata bohaterów, więc są wolniejsi i dostają więcej obrażeń.", drobny druk "Podłoga. Kwadrat 3×3, 3 s, +30% obrażeń. Mag potrafi ją rozproszyć. Rodzina: ...". W Unity: dwa pola tekstu w tabeli `Items` (`desc`, `more`), drobny druk jako osobny akapit z mniejszą czcionką.
 
 ### 2.6 Pasek akcji (`.actions`, `updateAction`)
 
@@ -371,6 +414,8 @@ Prośba autora (24.10): prototyp ma działać na telefonie, tablecie i komputerz
 
 ### 3.3 Start (`renderStart`, zrzut `01_start.png`)
 
+**Stan 1.27** (plan UI/UX: gracz ma zrozumieć, o co chodzi i jak zacząć, bez żargonu, zanim cokolwiek zobaczył): od góry podtytuł "Prototype 1.27 · 10 fal i finał", h1 "You are the dungeon", wstęp w 2 zdaniach ("Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal."), rekord (jak dotąd, z rangą), zwinięte `<details>` **"Dla testerów"** (`#start-testers`) z polem "Imię testera (opcjonalnie)" (otwarte, gdy imię jest już wpisane), przyciski (bez zmian w logice), wiersz web, **Jak grać** (`#start-how`) w 7 działach z nagłówkiem (`h3.howh`) i 1-3 krótkimi punktami: **Cel** (kryształy z serca, 10 fal i bohater z przepowiedni), **Budowa** (pasek, przytrzymanie kafelka, stuknięcie / dwa stuknięcia / przytrzymanie elementu, liczba przy pokoju to głębia, kropki to wolne miejsca), **Esencja** (Groza × Chciwość × Combo; skąd combo i chciwość), **Serce** (od fali 2 je pierwsze, brak z zapasu, potem kryształ; najedzone rośnie i daje karty; stuknij serce u góry), **Fala** (skill check, przytrzymanie przyspiesza, stuknij bohatera), **Karty** (darmowa karta po fali, sklep, talia do końca runu), **Z czasem** (straszenie, omeny, gildia, budowle i komnaty dochodzą z falami, gra powie o nich, gdy się pojawią). **"Co nowego w Prototype 1.27"** (`#start-new`) ma 5 wpisów 1.27 (język, nowe podzakładki, opis jednym zdaniem z drobnym drukiem, karta czempiona i bohatera z przepowiedni, spokojniejszy ekran); wpisy 1.26.1 i starsze są zwinięte pod "Starsze wersje" (`details.older`) i tylko po polsku (po angielsku ich nie ma). Nowe style: `#start-how .howh`, `details.testers`, `details.older`. W Unity: Jak grać i Co nowego jako teksty w tabeli `UI`; "Dla testerów" tylko w buildzie testowym.
+
 **Stan 1.26.1**: podtytuł "Prototype 1.26.1 · 10 fal i finał", lista "Co nowego w Prototype 1.26.1" ma na górze 4 wpisy 1.26.1 (przed wpisami 1.26): Ukryte przejście (zakładka Loch, 6 Esencji, odkrywają je najczęściej złodziej i tropiciel, uciekinier opowie o nim następnej fali, do serca musi zostać jawna droga); brakujące zachowania (ogar idzie za krwawiącym, saper chowa się za potworami, przesądny, ciekawski, zapaleniec); Dar serca po nowemu (karty Serca tylko w rzędzie Dar serca, rzadkie 70% i legendarne 30%, 8 nowych kart); poprawki zasad (Wnyki, flaszka, oślepienie, Pożar, Wyziewy, Runa rodu, karty i Strażnik a zdolności potworów). Opisy charakterów (`TRAIT_TEXT`, karta bohatera): przesądny "... nie wejdzie pierwszy do pokoju z portretem albo lustrem", ciekawski "widzi łup z daleka (+4 pola), idzie sprawdzić usłyszaną pułapkę, 2 razy dokładniej przeszukuje meble, jako przywódca chętniej się rozgląda", zapaleniec "szarżuje na każdego potwora w pokoju (także ogra), częściej idzie przez znane pułapki, raz na falę zamiast paniki wpada w furię, wytrzyma 10% więcej strachu".
 
 **Stan 1.26**: podtytuł "Prototype 1.26 · 10 fal i finał"; akapit wstępu ma nowe zdanie "Głodne serce zabiera z sakiewki, syte rośnie i daje karty."; **Jak grać** ma 22 akapity, w tym nowe: 10 klas bohaterów po figurkach, statusy (ikonki nad bohaterem), rodziny i Runa rodu (+8% mocy i -4% odnowienia na poziom, do 5), odradzanie potworów, omeny fal 3, 6 i 8, wybór A/B na 3. poziomie, przepisany akapit o sercu (sakiewka, Danina, Nasycenie, Dar serca, Ofiara); **"Co nowego w Prototype 1.26"** ma 190 wpisów, na początku 11 wpisów 1.26 (serce zabiera, Dary serca są kartami, 10 pułapek i 10 potworów, statusy i reakcje, rodziny i komnaty, A/B, odradzanie i Uczta, nowi bohaterowie i cechy, omeny, 34 karty, nowa ekonomia i grafika). Reszta opisu niżej jest historyczna.
@@ -395,6 +440,8 @@ Podtytuł "Run s z 4 · nauka", tytuł "Nowe: nazwa", lista `ONB_STAGES[s].news`
 
 Otwiera ☰; w trwającej fali najpierw pauza, a zamknięcie wznawia. Podtytuł "Fala N/10 · Esencja E" (albo "Menu"). Przyciski: "Wróć do gry" (główny); "Ustawienia" ("dźwięk, wibracje, pasek elementów, skill checki") → Ustawienia z powrotem do Menu; [tylko prototyp] "Ankieta", "Pełny ekran"/"Wyjdź z pełnego ekranu"; w trwającym runie "Zapisz i wyjdź" (podpis w fali "wrócisz do budowy przed tą falą", inaczej "wrócisz w tym miejscu") → start; gdy jest choć jedna fala: [tylko prototyp] "Pobierz wyniki" i "Zakończ run" (pierwsze stuknięcie zmienia napis na "Na pewno? Stuknij jeszcze raz", drugie → `quitRun`). Pod spodem notka stanu logów (tylko prototyp).
 
+**1.27**: podpis "Ustawienia" to "język, dźwięk, wibracje, skill checki"; "Pobierz wyniki" ma podpis "dla testerów: plik z przebiegiem runu" i jest jedynym miejscem pobierania w trakcie runu (przycisk zniknął z podsumowania fali, 3.8); "Zapisz i wyjdź" w budowie "wrócisz w to samo miejsce", "Zakończ run" z podpisem "zapisze dotychczasowy przebieg".
+
 ### 3.6 Ustawienia (`renderSettings`, `p1_config.js: GAME_SETTINGS`)
 
 Działają od razu i zapisują się (`yatd12-settings`; w Unity PlayerPrefs). Przycisk "Gotowe" wraca do startu albo Menu.
@@ -412,6 +459,10 @@ Działają od razu i zapisują się (`yatd12-settings`; w Unity PlayerPrefs). Pr
 | `topPad` | Odstęp od góry ekranu | 0-48 / 4 | 0 | "+N px" / "auto" (tylko prototyp) |
 
 Suwak: etykieta muted 13,5 px + wartość Jersey po prawej, kolor akcentu `--gold`; przełącznik 20×20.
+
+**1.27, język**: pierwszy wiersz karty to `.langrow` (flex, odstęp 12 px): napis "Język / Language" (w obu językach naraz, żeby gracz znalazł go bez znajomości bieżącego) i przełącznik `.seg` `#lang-seg` (min. 170 px, przyciski 14 px) z dwoma przyciskami "English" i "Polski" (`data-lang`; bieżący ma klasę `on`). Stuknięcie innego języka zapisuje `localStorage['yatd-lang']`, w budowie przy żywym runie zapisuje run (`saveRun('build')`) i przeładowuje stronę. W trakcie fali run nie jest zapisywany, więc po przeładowaniu wraca do budowy przed tą falą (jak po zamknięciu karty, sekcja 07). W Unity: przełączenie locale bez przeładowania (sekcja 02, 2.10).
+
+**1.27, etykiety** (krótsze): "Wibracje (Android)", "Jeden skill check na kilka pułapek naraz", "Dziel ekran, gdy drużyna się rozdzieli", "Przyspieszaj, gdy nic się nie dzieje (1 = wyłączone)", "Przyspieszenie po przytrzymaniu palca", "Odstęp od góry (gdy aparat albo róg ucina ekran)"; notka "Ustawienia działają od razu i zapisują się w tej przeglądarce.".
 
 ### 3.7 Ustawienia testowe (`renderTests`, tylko prototyp)
 
@@ -445,6 +496,16 @@ Widok **Szczegóły**: panel "Skąd Esencja" (prawy dopisek "Groza G × średnio
 - Szczegóły, Co dalej: przy głodzie "Serce chciało N Esencji, fala dała X, z sakiewki wzięło Y: za mało, pękł kryształ."
 - Panel następnej drużyny: ramka omenu następnej fali (`omenBox`) pod nagłówkiem; przy Mgle wojny (o ile nie ma karty Anatomia ofiar, `mods.revealAll`) nagłówek "Fala N: k bohaterów w mgle", a każdy wiersz to krążek "?", "???" " ktoś w mgle" i "Omen Mgła wojny: klasa, poziom i sprzęt nieznane do startu fali." (klasa `.np.fog`, bez stuknięcia w kartę bohatera).
 
+**Zmiany 1.27 w podsumowaniu** (plan UI/UX: ile zarobiłem, co zjadło serce, co dalej; reszta w Szczegółach):
+
+- Tytuły: "Zwycięstwo!" / "Kryształ skradziony" / "Głód rozbił kryształ" / "Serce sięgnęło do zapasu" / "Fala odparta". Kafelki: "masz Esencji", serce z podpisem "serce syte" / "pękł kryształ" / "kredyt krwi" / "wzięło N", "kryształy", "zabici · wystr.".
+- Rozliczenie nazywa mnożnik: "Groza G × chciwość m = E"; serce "♥ -N", "♥ -X i -Y z zapasu" albo "♥ za mało: -X -Y z zapasu · kryształ"; ostatnia część "dla Ciebie +Y" z dopiskiem (`small`) "+P dochodu po fali" zamiast "(+P po fali)".
+- W `heartLines` linia o kradzieży mówi "o włos: złodziej był X s od kryształu" (X bez zbędnych zer) i pojawia się tylko, gdy do końca kradzieży zostało mniej niż 3 s (wcześniej przy każdym postępie od 30%: "bohaterowie byli S s od kradzieży"); pasek sakiewki "♥ Serce wzięło X z zapasu (p0 → p1)" albo "♥ Serce zjadło cały zapas (p0) i kryształ".
+- Panel następnej drużyny: pod ramką omenu (jeśli jest) karta bossa `bossBox`, gdy w następnej fali jest czempion albo bohater z przepowiedni (opis karty w 3.19a); "☠ Imię Tytuł wraca po raz N." (po angielsku liczebnik porządkowy, `ordEn`).
+- Stopka: główny przycisk "Dalej: sklep" (bez numeru fali; "Dalej", gdy nie ma kryształów), podpis "darmowe karty: k[, w tym legendarna]"; przy zwycięstwie "Graj dalej" ("fale bez końca") i "Zakończ run" ("jako zwycięstwo"). Rząd małych przycisków: "Szczegóły" / "‹ Wróć", "Wyjdź" (zapisuje run i wraca na start, `title` "Zapisz run i wróć do menu"; było "Zapisz i wyjdź") i "Zakończ run" (dwa stuknięcia, "Na pewno?"). "Pobierz wyniki" zniknął stąd (jest w Menu, 3.5).
+- Notka o zapisie wyników ("Zapisuję falę...", potem stan logów i "Run zapisany w tej przeglądarce.") jest tylko w widoku Szczegóły (dla testerów).
+- Szczegóły, Co dalej: ostatni punkt "Ranga runu: X (E Esencji, następna: Y od P)." (jedno z miejsc, gdzie widać rangę, odkąd nie ma jej w HUD); punkt o fali "Fala N: poziom ok. L, prowadzi czempion / bohater z przepowiedni.".
+
 ### 3.9 Sklep (`renderShop`, zrzut `08_shop.png`)
 
 Otwiera się na początku każdej budowy od fali 2 (po podsumowaniu) i z kafelka Sklep w Talii (tylko w budowie). Zasady zakupów, cen, schowka i odświeżania: sekcja 03.
@@ -464,6 +525,13 @@ Komunikaty po akcji (`m.msg`: "W talii: X.", "Za mało Esencji…", "Nowa oferta
 - **Rząd Dar serca** (`heartOffer()`): gdy czeka poziom serca (`run.heartPicks`), a gracz nie wybrał "Później" i nie ma otwartego arkusza karty, rząd zajmuje miejsce ofert (`.offers.heartrow`). Nagłówek `#heart-head` (czerwono-brązowe tło, złota ramka): "♥ Dar serca · poziom L" i "Serce urosło (Danina albo Ofiara): weź jedną kartę za darmo." (+ "Czeka jeszcze N.", + "Odrost odda utracony kryształ."). Pod nim 3 (z Dziesięciną 4) oferty `#heart-offer-i` (od 1.26.1 tylko rzadkie i legendarne, a karty grupy Serce są wyłącznie tutaj, sekcja 03, 3.15) jak zwykłe (ilustracja, linia rodzaju, przy Odroście "kryształ · od razu", nazwa, opis, dopasowanie, "Połączy się w ★"), przycisk "Weź za darmo" (`#heart-take-i`). Komunikaty: "Dar serca: X w talii.", "Odrost: kryształ wraca do serca.", "X: do schowka (talia pełna).", "X: połączona w ★.", "Talia i schowek są pełne: sprzedaj albo odłóż kartę.". Na dole "Później (sklep)" (`#heart-later`) pokazuje zwykły sklep; wtedy w stopce jest mały przycisk "♥ Dar serca czeka (N)" (`#heart-back`), który wraca do rzędu. Podpis przycisku "Do budowy fali N" wylicza "darmowe karty: k · Dar serca: N poczekają".
 - **Runa rodu** (`#shop-rune`, `.runerow`, pod ofertami, nie w widoku Daru serca): ikona runy 24 px (`ART.rune(f)`), "<glif> Runa rodu: <rodzina>" w kolorze rodziny i "poz. L → L+1 (max 5)"; druga linia "jej elementy +8% mocy i -4% odnowienia" (dla Skarbów "łup podbija chciwość o 8% mocniej") z 4 nazwami elementów rodziny i "Działa od razu, nie zajmuje talii."; przycisk "Kup za N" / wyłączone "Za mało (N)" (`#rune-buy`). Komunikat "Runa rodu: X na poziomie L.".
 - Kafelek Sklep w Talii ma w budowie dopisek "♥ Dar serca" (+ " + k" darmowych), gdy czeka poziom serca (rozdz. 2.5).
+
+**Sklep w 1.27** (plan UI/UX: od razu widać, ile jest darmowych kart):
+
+- Podpis dużej liczby w nagłówku: "Esencji · 1 darmowa karta" albo "Esencji · darmowe karty: N" (było "darmowe: k"); bez darmowych "Esencji". Przyciski ofert jak dotąd ("Weź za darmo" / "Kup za p Esencji" / "Za mało (p)").
+- Panel talii: prawy dopisek "schowek s/pojemność · karty tu nie działają" (było "(nie działa)"); arkusz karty ze schowka "w schowku, nie działa · rzadkość".
+- Rząd Dar serca: nagłówek "♥ Dar serca · poziom L" i "Serce urosło. Weź jedną kartę za darmo." (+ "Czeka jeszcze N.", + "Odrost oddaje utracony kryształ.").
+- Stopka: "Do budowy fali N" z podpisem "darmowe karty: k · Dar serca: N poczekają" albo "sklep otworzysz w zakładce Talia".
 
 **Połączone karty ★ (1.24)**: oferta karty, którą już masz, ma w linii rodzaju "połączy się w ★" i pod opisem "Połączy się w ★: <cecha>" (klasa `.fuse`, `.fz`); zakup daje komunikat "...: połączona w ★ (jedno miejsce)."; slot talii i schowka połączonej karty ma złotą ramkę (`.fused`) i nazwę z "★ " (`cardName`); arkusz karty złoty, "Sprzedaj +s" z ceną dwóch kart (`sellFor`). Nazwy kart w Unity: ten sam przedrostek "★ ". Linia rodzaju odblokowania od 1.24 ma też słowa "rani" / "straszy" (`kindShort`, `effWords`).
 
@@ -501,6 +569,8 @@ Element (sub "Pułapka · poziom l z 3"), co zrobił w ostatniej fali, opis, moc
 
 **1.26**: dalej nic nie otwiera typu `item`, ale treść jest uzupełniona: przy elemencie na 3. poziomie "Cecha A/B: nazwa (opis)." (`branchTrait`), poniżej 3. poziomu "Poziom 3 dodaje cechę do wyboru: A ... albo B ...", podpis ulepszenia z 2 na 3 "cecha A albo B", a przycisk otwiera okno wyboru cechy (3.23). Rodzina elementu jest w dymku kafelka paska (rozdz. 2.5: "Rodzina: <glif> <nazwa> (poziom L: +8L% mocy)" albo "(Runa rodu ze sklepu ją wzmocni)").
 
+**1.27**: w zwijanym "Opis" pod jednozdaniowym `desc` stoi `more` jako notka (drobny druk), potem moc i pokój jak dotąd.
+
 ### 3.16 Karta talii (`renderCard`)
 
 Z zakładki Talia. "Rzadkość karta · talia d z s", nazwa w kolorze `RAR_COLOR`, opis, kopie, licznik rosnący. W budowie: "Do schowka" ("nie działa, czeka" / "schowek pełny"), "Sprzedaj" (dwa stuknięcia), "Zamknij"; w fali tylko notka "Karty sprzedajesz tylko między falami." i "Zamknij" (otwarcie w fali pauzuje).
@@ -527,6 +597,10 @@ Stuknięcie w "Fala X/10" w budowie (`#h-wave`) otwiera kartę: podtytuł "Wieś
 
 **1.26**: gdy w tej fali jest omen (`run.omens[run.wave]`), na początku karty stoi ramka omenu (`omenBox`: ilustracja 96×48 z `ART.omen`, "Omen: <nazwa>", opis, zielone "Nagroda: ...", czerwone "Za to ..." albo "Bez nagrody: zmienia, co działa."), a za pierwszym razem w tej przeglądarce (`yatd-pops`, klucz `omenNews`) notka "Omen to zasada specjalna tej jednej fali (fale 3, 6 i 8). Omen, który utrudnia falę, daje nagrodę; ten, który ją ułatwia, podnosi głód serca. Buduj pod niego.". `waveHint()` dopisuje "OMEN NAZWA: opis. Nagroda: .... Za to ...."; przy Mgle wojny cała wieść to "Fala: N bohaterów w MGLE WOJNY: nie wiadomo, kto przyjdzie ani jak silny." (+ głód i omen).
 
+**1.27, karta bossa** (decyzja autora 25.10: czempion i bohater z przepowiedni dostają kartę jak omen na ekranach między falami; `p8b_ui.js: bossBox(e)`, CSS `.omenbox.bossbox`): ramka jak `omenBox`, ale brązowo-pomarańczowa (ramka `#8a5a2a`, gradient `rgba(90,50,20,0.45)` → `rgba(24,18,14,0.6)`, nazwa `#ffcf9a`). Po lewej pole 64×48 z poświatą i ikoną klasy 40 px (`classIconSvg`, `#ffb07a` dla czempiona; dla bohatera z przepowiedni `#ffd27a` i jaśniejsza poświata, klasa `fin`). Po prawej: "Czempion: Imię" / "Bohaterka z przepowiedni: Imię" (`BOSS_NAME` w formie płci), linia "Klasa, poziom L." i co robi (czempion: "Prowadzi drużynę i nie ucieka z resztą. Gdy ktoś wpada w panikę, jego/jej okrzyk dodaje innym odwagi."; bohater z przepowiedni: "Zna drogę do serca i prowadzi drużynę prosto do niego. Ranny/Ranna do połowy wpada w szał, a kto idzie obok, boi się mniej.") oraz zielona linia: "Nagroda: po fali legendarna karta w ofercie." albo "Przetrwaj tę falę, a run jest wygrany.". Karta stoi w wieściach z karczmy pod ramką omenu (gdy `run.nextFor === run.wave` i w `run.next` jest boss) i w panelu następnej drużyny podsumowania (3.8).
+
+**1.27, otwieranie i tekst**: wieści otwierają się same raz na początku budowy fali z omenem **albo z bossem** (`p3_flow.js: startBuild`, `queueModal({type: 'news', omen: true})`; nie po wczytaniu i nie w samouczku). `waveHint()` nie ma już zdań o bossie ani o omenie (mają swoje karty): "Fala N: k bohaterów, poziom a-b.", przy głodzie "Serce chce N Esencji z tej fali. Gdy fala da mniej, brak weźmie z zapasu, a gdy i tego zabraknie, pęknie kryształ.", wyłom, gildia, plotki, a w fali 1 "Stawiaj elementy z paska. Każdy pokój mieści kilka (kropki przy pokoju). Nowe pokoje kopiesz w zakładce Loch.". Notka o omenie za pierwszym razem: "Omen to specjalna zasada tylko tej fali. Trudniejszy omen daje nagrodę, łatwiejszy podnosi głód serca. Buduj pod niego.".
+
 ### 3.20a Okna dodane w 1.24 (`renderUnspent`, `renderName`, `renderOnb`)
 
 - **"Masz X Esencji"** (`unspent`, 3.21): podtytuł "Przed falą N", tekst "Rozpocząć falę mimo to? Niewydana Esencja nie broni lochu. Najtańszy element: <nazwa> (<koszt>)." (+ "Uwaga na głód: serce chce N Esencji z tej fali."), pole "Nie pytaj więcej", przyciski "Buduj dalej" i "Wypuść falę mimo to" (`#unspent-go`). Reguła: sekcja 03, 3.14.
@@ -550,6 +624,8 @@ Otwiera stuknięcie (albo Enter) wiersza serca `#h-hrow` w HUD; w trwającej fal
 - Notka "Poziom L+1: karta Dar serca[, +1 miejsce w talii][, może być Odrost]." (+ "Dar serca czeka w sklepie: N.").
 - Tylko w budowie: złoty przycisk "Ofiaruj sercu min(10, limit)" z podpisem "Esencja z sakiewki w Nasycenie 1:1 (do 40 na przerwę, użyte U)" / "limit tej przerwy wykorzystany" / "brak Esencji" (`#heart-ofiara`), a gdy limit jest większy niż 10, drugi "Ofiaruj L" "cały limit" (`#heart-ofiara-all`). Po Ofierze karta otwiera się od nowa (chyba że pod spodem był sklep); gdy Ofiara przekroczy próg poziomu, `heartLevelUp` od razu kolejkuje sklep z rzędem Dar serca (`{type: 'shop', heartNow: true}`). Zasady Ofiary: sekcja 03, 2.14.
 - "Zamknij".
+
+**1.27**: podtytuł zawsze "Serce · poziom L" (bez dopisku przy poziomie 0). Notka ze składnikami głodu zaczyna się od "podstawa B" i jest pokazana tylko, gdy głód ma coś poza podstawą ("Głód N: podstawa B, +R powalone potwory, +D demony, +K Kredyt krwi, −S Spichlerz dusz, −G głód krwi."); bez dodatków notka ma tylko zdanie o sakiewce ("W sakiewce masz P: wystarczy na cały głód." albo "...: fala musi dać co najmniej X, inaczej pęknie kryształ."). 4 punkty zasad zostają (plan proponował 3), przepisane krócej: "Serce je pierwsze: z wypłat w fali bierze swoje, aż się naje (czerwony pasek). Reszta jest Twoja." i dalej sakiewka, Danina, poziomy. Przyciski "Ofiaruj sercu N" i "Zamknij" bez zmian.
 
 W Unity: osobny panel nad HUD; liczby (głód i jego części, Nasycenie, poziom) z `Core/Economy`, przycisk Ofiary woła tę samą funkcję co prototyp (`ofiara(n)`).
 
@@ -960,7 +1036,7 @@ Logika (strefy, czasy, kształt dla typu, czaszka): sekcja 05. Zrzut: `05_wave_c
 | narzędzie (Loch) | krążki r `max(10, 0,42T)`: złote (`+` kopanie, `↔` przejście, `▲` rozbudowa z ceną pod spodem), czerwone (wyburz, zdejmij typ), w kolorze typu pokoju z glifem, szare gdy za drogo; "zamiast: X". 1.26.1 Ukryte przejście: na środkowym kafelku korytarza; jawne przejście złoty (szary, gdy za drogo) krążek z "?"; ukryte czerwony krążek z "×" (zdejmij maskę, za darmo), a ukryte, o którym bohaterowie wiedzą (`known`), czerwony z "?" (zamaskuj ponownie za 6) | `drawToolMarkers` |
 | wyłom | pulsujący czerwony pierścień + "WYŁOM" i "stuknij: załataj (20)" (od 1.26 15); po otwarciu arkusza przez 4 s 2 fale pierścieni co 1,2 s (r 0,8 → 3) | `drawBreachMark`, `drawBreachLabel` |
 | cel samouczka | pulsujący złoty pierścień r 0,6 ± 0,1 | `drawTutTarget` |
-| etykieta pokoju | "×1,7" (mnożnik głębokości) przy przednim prawym rogu pokoju, w budowie także "zajęte/pojemność" (czerwone `#ff9a9a` gdy pełny); pokoje skrajne `rgba(255,170,140,0.95)` | `drawRoomLabels` |
+| etykieta pokoju | "×1,7" (mnożnik głębokości) przy przednim prawym rogu pokoju, w budowie także "zajęte/pojemność" (czerwone `#ff9a9a` gdy pełny); od 1.27 przy pojemności najwyżej 6 zamiast liczb kropki: ● za każde zajęte miejsce, ○ za wolne (np. "×1,7  ●●○"), powyżej 6 dalej "n/pojemność"; pokoje skrajne `rgba(255,170,140,0.95)`; po angielsku "×1.7" | `drawRoomLabels` |
 
 ### 6.13a Podgląd następnej fali w budowie (1.24, P1-1; `p7_draw.js: drawPreview, PV, fitTxt`)
 
@@ -1162,6 +1238,8 @@ Mechanika: `tutTick` sprawdza `done` co klatkę (krok z `next` czeka na przycisk
 | 15 | dig | 3 budowa | mówi o kopaniu (zakładka Loch) | "Dalej" (do 1.23: wykop pokój) |
 | 16 | end | 3 budowa | "Ten run odsłoni resztę gry z falami: teraz straszenie, od fali 5 gildię z budowlami i typy pokoi, od fali 7 ciała i fobie bohaterów, powracających i wyłom. Kolejne runy to od razu cała gra." | "Gramy!" |
 
+**1.27**: teksty kroków przepisane krócej, zwykle jedna myśl na krok (kroki, kolejność i warunki zakończenia bez zmian). Przykłady: intro "To Twój loch. Bohaterowie przyjdą falami, żeby ukraść kryształy z serca (ostatni pokój). Dwie pułapki już stoją, ale to za mało."; spikes "Wybierz Kolce na pasku na dole."; novice "Nadchodzą nowicjusze. Każda rana daje Grozę, a linia u góry zamienia Grozę w Esencję." (wskazuje równanie, które od 1.27 jest widoczne tylko w fali, a ten krok jest w fali); deck bez zdania o łączeniu w ★; end "To koniec samouczka. Resztę gry poznasz w tym runie, fala po fali. Powodzenia!". Kilka kroków dalej ma liczbę (koszt ulepszenia, Esencja do wydania w `spend`).
+
 Usunięty krok `arrows` (postaw strzały na ścianie). Decyzja o przytrzymaniu: "przytrzymaj palec na kafelku" dotyczy kafelka paska (już otwierał opis po 380 ms bez ruchu, `showTip`); na mapie przytrzymanie ma swoje zadania (budowa: zdjęcie po 0,55 s, fala: przyspieszenie po 0,28 s), więc osobne przytrzymanie "informacyjne" na mapie by z nimi walczyło. W pierwszej fali kolce przewodnika kłują przynajmniej raz (sekcja 05, 5.9.12). Dziennik: `tut.stepIds` i `tut.stepTimes` (sekundy na każdym kroku) w dokumencie runu (sekcja 07).
 
 ### 8.4 Karty ważnych chwil (`TUT_POP`, `tutPop`)
@@ -1184,6 +1262,8 @@ Krótka karta w coachu u góry mapy (klasy `top pop`: lewa krawędź `--gold-hi`
 | revive (1.26) | pierwszy powalony potwór (nie tymczasowy, `monsterDown`) | wstanie w następnej budowie, +1 głodu za każdego |
 | cultist (1.26) | kultysta zaczyna pić przy sercu (`p5_ai.js`, `fl.cultShown`) | nie kradnie, pije Esencję serca; zabij albo dokarm |
 | omen (1.26) | **nigdzie nie wołane** (martwy wpis; omen wyjaśnia wieść z karczmy, 3.19a) | zasada specjalna fali |
+
+**1.27**: treść kart przepisana (zawsze okrzyk i 2-3 krótkie zdania, bez list; kolumna "Treść" wyżej to skrót dawnych tekstów). Przykłady: check "Skill check! Stuknij w mapę, gdy koralik wjedzie w obwódkę. Pełne pole to krytyk. Pułapka zapamięta wynik na kolejne fale."; status "Status! Ikonka nad bohaterem to stan, np. Spowolniony albo Podpalony. Co nakłada pułapka, zobaczysz w jej opisie."; reaction "Reakcja! Status i pasujące obrażenia dały coś mocniejszego, np. olej i ogień to Pożar. Reakcja daje Grozę i krok combo." (bez listy czterech reakcji); heartLv bez liczb poziomów. Liczby zostały w heartCry (kradzież trwa 5 s) i revive (+1 Esencji głodu).
 
 Od 1.26 karty z `TUT_NEW` (wszystkie nowe wyżej) pokazują się w **każdym** runie, nie tylko w nauce (warunek `run.guided || samouczek || TUT_NEW[id]`), raz w tej przeglądarce (`yatd-pops`).
 
@@ -1208,6 +1288,7 @@ Run z samouczkiem zapisuje się jak każdy. Po wczytaniu: liczniki "postaw więc
 | `yatd-name`, `yatd-device`, `yatd-survey` | tylko prototyp |
 | `yatd-player`, `yatd-name-asked` | 1.24: identyfikator gracza dla imienia, pytanie o imię już było (wersja WWW) |
 | `yatd-noask-ess` | 1.24: "Nie pytaj więcej" o niewydaną Esencję |
+| `yatd-lang` | 1.27: `'en'` albo `'pl'`, wybór języka w Ustawieniach (brak = angielski); w Unity locale gracza w `PlayerPrefs` |
 
 ## 9. Tylko prototyp: odpowiedniki w Unity
 
@@ -1247,8 +1328,10 @@ Run z samouczkiem zapisuje się jak każdy. Po wczytaniu: liczniki "postaw więc
 17. **`setHint('Bohaterowie są wyczerpani: wychodzą.')`** i inne podpowiedzi 1.19-1.24 (rozłam, "nie zostawię", narada z rozłamem, "jeszcze chwila" z liczbą sekund) trafiają do martwego `setHint`; widać tylko napisy nad bohaterami.
 18. **Pasek strachu przy podzielonym ekranie** (1.24): `drawWorld` rysuje bohaterów w każdej połówce (z maską połówki, a przycinanie obejmuje cały ekran), a `fearBar` zapisuje prostokąt także dla paska zakrytego maską; `FEARR` zbiera prostokąty obu połówek, a `fearBarAt` bierze ostatnio narysowany, więc stuknięcie w widoczny pasek może trafić w niewidoczny pasek innego bohatera z drugiej połówki (możliwe, nie sprawdzone w teście). W Unity sprawdzać trafienie w obrębie połówki.
 19. **Nowe podpowiedzi 1.26 też idą do martwego `setHint`**: podpowiedź zakładki Loch z poziomami rodzin ("Rodziny: Ogień 2, ..."), wieść o omenie na starcie fali (`setHint('Omen: ...')`; widać tylko napis nad wejściem), komunikaty po ulepszeniu z cechą A/B, po sprzedaży i odłożeniu karty. Poziomy rodzin widać więc tylko w dymku kafelka ("Rodzina: ... (poziom L: +8L% mocy)"), choć "Jak grać" mówi "Poziomy rodzin widać w zakładce Loch".
-20. **Dymek łupu nadal mówi "+25% ceny"** za kolejny taki sam łup, a od 1.26 `LOOT_STEP = 1,15` (sekcja 07).
+20. **Dymek łupu nadal mówi "+25% ceny"** za kolejny taki sam łup, a od 1.26 `LOOT_STEP = 1,15` (sekcja 07). Naprawione w 1.27: "Każdy kolejny taki łup jest o 15% droższy" (2.5).
 21. **Karta `omen` z `TUT_POP` jest martwa**: tekst jest w `TUT_POP` i w `TUT_NEW`, ale nic nie woła `tutPop('omen')` (wyjaśnienie omenu daje tylko wieść z karczmy otwierana na starcie budowy fali z omenem, 3.19a).
 22. **Martwy CSS `.hungerrow.take`** (1.26, animacja serca przy zabieraniu): nic nie dodaje klasy `take` do wiersza serca.
 23. **Rachunek "dla Ciebie" w podsumowaniu (1.26)**: część serca liczona jako `min(need, fl.fed - tookPurse)`, choć `feedHeart` nie dodaje zapłaty z sakiewki do `fl.fed`; w fali z niedoborem "♥ -X" jest za małe, a "dla Ciebie" pokazuje `+tookPurse` zamiast +0 (sekcja 03, rozdz. 6, pkt 20). Kafelek "masz Esencji" jest dobry.
 24. **Karta serca nie liczy Kamiennego serca w zapasie** (naprawione w 1.26.1, 3.22): zdanie "fala musi dać co najmniej N-P, inaczej pęknie kryształ" bierze pełny głód, choć z Kamiennym sercem sakiewka płaci tylko 75% braku (punkt "Fala da za mało" w tej samej karcie mówi o 75%).
+25. **Martwy tekst rangi w HUD** (1.27): `#h-rankrow` jest zawsze ukryty, ale `updateHud` dalej składa i wpisuje tekst rangi do `#h-rank`. W Unity wiersza nie robić.
+26. **Napisy z runu w starym języku** (1.27): tytuł Nemezis, tekst gildii i powód końca runu są zapisane w runie jako gotowy tekst, więc po zmianie języka zostają w poprzednim (sekcja 11).

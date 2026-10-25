@@ -9,7 +9,7 @@ Lista rzeczy, o które trzeba zapytać autora albo które trzeba świadomie rozs
 | Meta i monetyzacja | sekcja 10 | cały projekt metagry, walut i miejsc reklam |
 | Nazwy | "Esencja" robocza; "Dusze" zderzają się z duszą zabitego bohatera | nazwy ostateczne |
 | Infamia (poziomy trudności po wygranej) | planowana | czy i kiedy |
-| Wersja angielska | brak | kiedy (teksty mają znaczniki płci i przypadków, załącznik A.5) |
+| Wersja angielska | od 1.27 w prototypie: angielski domyślnie, polski w Ustawieniach (sekcja 02, 2.10) | czy telefon z polskim językiem systemu ma startować po polsku (prototyp tego nie sprawdza); kto i jak poprawia angielskie teksty przed wydaniem (dziś to tłumaczenie robocze ze słownikiem 1.27) |
 | Dane testowe w Unity | prototyp wysyła na Dysk Google przez Apps Script | zostać przy tym w testach zamkniętych czy od razu Unity Analytics |
 | Grafika | autor robi grafikę sam (Affinity, Spine, Figma na jego komputerze) | styl ostateczny, kolejność assetów; do tego czasu bryły i sprite'y zastępcze |
 | Przytrzymanie palca a czaszka | przy przytrzymaniu checków nie ma, więc zabójczy cios pada bez pytania (`p6_loop.js: checkTick`, gałąź `ff`), choć zasada mówi "czaszka pyta zawsze" | zostawić (opis "Jak grać" mówi, że przy przytrzymaniu checków nie ma) czy pytać mimo przyspieszenia |
@@ -46,6 +46,8 @@ Lista rzeczy, o które trzeba zapytać autora albo które trzeba świadomie rozs
 | **Ukryte przejście (1.26.1)** | narzędzie za 6 Esencji maskuje przejście; wykrycie przy drzwiach ok. 4%/s u zwykłego bohatera i ok. 17%/s u złodzieja i tropiciela, a uciekinier zdradza odkryte przejście następnej fali (sekcja 06, 6.16.12; 07, 7.14); liczb nie kalibrowano na grach | ocenić w playteście (`stats.secretMade`, `secretFound`, oś czasu `sf`): czy przejście nie jest za mocne przeciw drużynom bez złodzieja i tropiciela |
 | **Dar serca tylko rzadki i legendarny (1.26.1)** | karty Serca wyszły ze zwykłego sklepu, rząd losuje r 70% / l 30%, doszło 8 uniwersalnych kart (decyzja autora 25.10, wariant 1; sekcja 03, 3.15); siły nowych kart (np. Serce lochu ×1,2, Rezonans do +30%, Wola serca +10%) nie sprawdzano na danych | kalibrować na telemetrii (`run.heartCards`, `fl.heartPick`, `stats.heartPicks`) |
 | **Grupy ★ nowych kart Serca (1.26.1)** | 8 nowych kart nie ma w `FUSE_GROUP`, więc Groza serca (strach) i Serce lochu (Esencja) łączą się jako `power` (+10% mocy) | przypisać grupy `fear` i `ess` czy zostawić (załącznik B, B.3) |
+| **Ranga poza HUD (1.27)** | wiersz rangi zniknął z HUD; ranga jest w Szczegółach podsumowania, na ekranie końca runu i w rekordzie na starcie (plan 1.27 odkłada decyzję) | czy ranga ma wrócić do HUD w innej formie, czy zostać tylko na ekranach podsumowania |
+| **Plan 1.27, rzeczy odłożone** | kropla Esencji tylko na kafelkach, w reszcie UI słowo "Esencja"; samouczek dalej 16 kroków; układ panelu bocznego na dużym ekranie nie był przeglądany po tłumaczeniu (polskie teksty są dłuższe) | zakres na kolejną wersję albo od razu w Unity |
 | Jedno pole na bohatera (1.12.1) | przeciśnięcia (mijanie po czekaniu) zdarzają się ok. 2-3 razy na falę (test `t1121_tiles`); dwóch stojących na jednym polu w ok. 0,2-0,3% klatek (głównie krótkie zatory w korytarzach) | ocenić z autorem, czy wygląda naturalnie; w Unity można dodać rezerwację pól, jeśli zatory będą widoczne |
 
 ## 11.2 Błędy i niespójności w prototypie (zgłoszone przy pisaniu sekcji)
@@ -179,6 +181,11 @@ Szczegóły i miejsca w kodzie są w podanych sekcjach.
 | Podpowiedzi 1.19-1.24 przez `setHint` | rozłam, "nie zostawię", wyczerpanie, liczba sekund "jeszcze chwila": niewidoczne (martwe `setHint`), zostają napisy nad bohaterami |
 | Pasek strachu przy podzielonym ekranie (1.24) | stuknięcie może trafić w niewidoczny pasek z drugiej połówki (sekcja 08, rozdział 10 #18) |
 | Podpowiedzi 1.26 przez `setHint` | poziomy rodzin w zakładce Loch i omen na starcie fali niewidoczne (widać tylko napis nad wejściem), choć "Jak grać" odsyła do zakładki Loch |
+| Napisy zapisane w runie (1.27) | tytuł Nemezis (`nemesis.title`), tekst gildii (`run.guild.text`) i powód końca runu (`run.reason`) są składane w chwili powstania i zapisywane jako tekst; po zmianie języka w trakcie runu zostają w starym języku (np. polski przydomek Nemezis w angielskiej grze). W Unity zapisywać id i parametry (sekcja 02, 2.10; sekcja 07, 7.11.3) |
+| Zmiana języka w fali (1.27) | przeładowanie strony w trakcie fali nie zapisuje runu, więc fala przepada i gra wraca do budowy przed nią (jak po zamknięciu karty); w podsumowaniu wraca do zapisu z końca fali. W Unity zmiana locale bez przeładowania, więc problem znika |
+| Kwestie kluczowane polskim tekstem (1.27) | `DLG_EN`, `CHAT_REPLY` i `LINE_NEEDS` łączą się z kwestią przez dokładny polski tekst, a `lineKey` i `lineTags` szukają po tekście; poprawka polskiej kwestii bez poprawki tych kluczy cicho zostawia ją po polsku w angielskiej grze albo urywa odpowiedzi i tagi. W Unity kwestie dostają id (sekcja 02, 2.10, punkt 4) |
+| Ekrany tylko po polsku albo częściowo (1.27) | starsze wpisy "Co nowego" (sprzed 1.27) są tylko po polsku i po angielsku ich nie widać; ankieta zapisuje polskie wartości odpowiedzi (celowo); okno "Ustawienia testowe" ma teksty w obu językach, ale jest nieosiągalne (sekcja 08, 3.7); imiona bohaterów są polskie w obu językach (decyzja autora) |
+| Testy tylko po polsku (1.27) | strona testowa ustawia `YATD_LANG_DEFAULT = 'pl'`, więc testy automatyczne nie sprawdzają wersji angielskiej (długość napisów, brakujące `en`, kwestie bez tłumaczenia) |
 
 Poprawione już w 1.12.1: brak polskich nazw części źródeł strachu ("heart" na karcie bohatera), podwójne "Poziom N" przy ulepszeniu, "Jeszcze raz" pomijające etapy nauki, wieści o fali i komunikaty sklepu.
 
@@ -199,6 +206,7 @@ Poprawione już w 1.12.1: brak polskich nazw części źródeł strachu ("heart"
 | `rollItem` bez puli, warunek wieku łupu `> 3` w `applyRumors`, gałąź z prorokiem w `becomeImpatient`, `tl('cb')`, gałąź 70% pętli w generatorze startowym | nieosiągalne |
 | `regroupAtDoor` | praktycznie nieosiągalne (wszyscy są w środku po 1,5 s, a brama otwiera się po 1,8 s; niepewne) |
 | `statsTable` (`p8b_ui.js`) | nigdzie niewołana; razem z wierszami dopisanymi w 1.16 i 1.17 (sekcja 08, rozdział 10) |
+| Wiersz rangi w HUD (1.27) | `#h-rankrow` zawsze ukryty, a `updateHud` dalej wpisuje tekst rangi do `#h-rank` |
 | Obsługa łączenia w martwym oknie wyboru (`takeCard`, `renderReplace`, 1.24) | okno `upgrade` dalej nieosiągalne |
 | `TUT_POP.omen` (1.26) | tekst jest, ale nic nie woła `tutPop('omen')` |
 | CSS `.hungerrow.take` (1.26) | klasa `take` nigdzie nie jest dodawana |

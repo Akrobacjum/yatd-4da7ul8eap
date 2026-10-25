@@ -35,7 +35,7 @@ Pola `data/ITEMS.json` używane w tej sekcji:
 - `slot`: gdzie stoi (`floor`, `wall`, `door`, `object` = na meblu). Decyduje o `slotRoom` i o obszarze.
 - `cd`: bazowe odnowienie w sekundach czasu gry. Dla potworów to odnowienie ich zdolności ze skill checku. `powder` ma `cd: 0` (jednorazowy).
 - `hp`: bazowe HP potwora. `melee`: obrażenia na sekundę, które potwór zadaje, gdy ktoś z nim walczy (wręcz).
-- `tag`, `desc`, `name`: teksty UI. `desc` opisuje działanie, ale tam, gdzie różni się od kodu, wiąże kod (lista niespójności w 5.11).
+- `tag`, `desc`, `name`: teksty UI. `desc` opisuje działanie, ale tam, gdzie różni się od kodu, wiąże kod (lista niespójności w 5.11). Od 1.27 `desc` to jedno zdanie (co element robi), a liczby, miejsce, typ obrażeń, odporności i skill check są w nowym polu `more` (drobny druk dymka, sekcja 08, 2.5); obok jest `en: { name, tag, desc, more }`. Teksty przepisano bez zmiany zasad, więc liczby w tej sekcji nadal są z kodu; cytowane w niej dawne opisy mogą się różnić od napisów 1.27.
 - `build: true` (skrzynia i budowle): stawiane tylko między falami. `rarity`: łup.
 
 ### 5.1.2 Pola obiektu `it` (element na mapie)

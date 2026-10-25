@@ -280,6 +280,8 @@ Okno `'wave'` (`p8b_ui.js: renderWave`), dane ekonomiczne:
 
 Przyciski: "Dalej: sklep przed falą N+1" (podpis: liczba darmowych kart = `pendingUpgrades.length + freePicks`, "(legendarna w ofercie)" gdy nagroda z bossa) -> `closeModal(); afterSummary()`. "Zapisz i wyjdź" (gdy kryształy > 0 i nie wygrana). "Zakończ run" (dwa stuknięcia) -> `endRun('Run zakończony przez gracza po fali N.', 'quit')`. Przy wygranej: "Graj dalej" (`run.victoryDone = true; afterSummary()`) i "Zakończ: zwycięstwo" (`endRun('Loch przetrwał wszystkie 10 fal.', 'win')`). "Pobierz wyniki": tylko prototyp (w Unity brak).
 
+Od 1.27 te same dane mają nowe napisy (sekcja 08, 3.8): tytuły "Głód rozbił kryształ" i "Serce sięgnęło do zapasu", rachunek "Groza G × chciwość m = E", "dla Ciebie +Y" z dopiskiem "+P dochodu po fali", linia o kradzieży "o włos: złodziej był X s od kryształu" tylko, gdy do kradzieży zostało mniej niż 3 s (`(1 - stealMax) × stealNeed() < 3`; próg 30% postępu bez zmian), przyciski "Dalej: sklep", "Szczegóły", "Wyjdź" (zapis jak dawne "Zapisz i wyjdź"), "Zakończ run"; przy wygranej "Zakończ run" z podpisem "jako zwycięstwo". "Pobierz wyniki" jest tylko w Menu. Zasady i liczby bez zmian.
+
 Kolejka okien (`p8b_ui.js: queueModal`, `closeModal`, `openModal`): jedno okno naraz; `queueModal` dokleja do kolejki FIFO, gdy coś jest otwarte. `closeModal` otwiera następne z kolejki, a gdy kolejka pusta i `run.afterModals` istnieje, wywołuje je (jednorazowo).
 
 `afterSummary()` (`p3_flow.js: afterSummary`):

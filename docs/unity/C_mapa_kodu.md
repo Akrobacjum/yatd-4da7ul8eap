@@ -1,11 +1,17 @@
 # Załącznik C: mapa kodu prototypu
 
-Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26.1; funkcje 1.26 na końcu tabel z "(1.26)", funkcje 1.26.1 za nimi z "(1.26.1)", a nowy plik `p7c_art.js` ma własną sekcję; funkcje 1.18-1.24 na końcu tabeli każdego pliku, z wersją, w której powstały, w nawiasie; zmiany w istniejących dopisane po średniku z numerem wersji) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
+Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.27; funkcje 1.26 na końcu tabel z "(1.26)", funkcje 1.26.1 za nimi z "(1.26.1)", funkcje 1.27 z "(1.27)", a nowe pliki `p7c_art.js` i `p1e_en.js` mają własne sekcje; funkcje 1.18-1.24 na końcu tabeli każdego pliku, z wersją, w której powstały, w nawiasie; zmiany w istniejących dopisane po średniku z numerem wersji) z pierwszym zdaniem komentarza, który je poprzedza (komentarze w kodzie są po angielsku). Służy do szybkiego znalezienia miejsca w kodzie, na które powołuje się specyfikacja (`plik.js: funkcja`). Numery linii pominięte, bo się zmieniają; szukaj po nazwie.
 
 ## p1_config.js (dane i stałe)
 
 | funkcja | komentarz przed nią |
 |---|---|
+| `LANG` | (1.27) język: `localStorage['yatd-lang']` (`'en'`/`'pl'`), inaczej `window.YATD_LANG_DEFAULT` (strona testowa i `tools/dump.js`: `'pl'`) albo `'en'`; ustawia też `document.documentElement.lang` |
+| `PL` | (1.27) `LANG === 'pl'` |
+| `L` | (1.27) a text in both languages, side by side in the code: `L(pl, en)` daje polski przy `PL` albo gdy `en` brak; działa też na całych tablicach i słownikach (`L([...], [...])`) |
+| `LL` | (1.27) to samo co `L`, dla funkcji, w których lokalne `L` (zwykle przywódca) zasłania pomocnika |
+| `dec` | (1.27) decimal comma in Polish, point in English (używają jej `f1`, `x1`, `x2`, `fmtE`, `fmt2`, `fmtG`) |
+| `enDeep` | (1.27) po angielsku przepisuje pola z `en: {...}` obiektu na jego pola (rekurencyjnie do głębokości 5, bez `Set` i `Map`); po polsku nic nie robi |
 | `f1` |  |
 | `rankOf` |  |
 | `comboHp` |  |
@@ -24,8 +30,8 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26.1; funkcj
 | `gtext` |  |
 | `pick` |  |
 | `pickS` | 1.17: a line or a list of lines (`SAY.trap[kind]` is a list of 3 since 1.17) |
-| `nameGen` | 1.17: {g} = genitive (bez Wandy, głos Borysa): a man's is his accusative, a woman's comes from her name (-ki/-gi/-li/-ii, else -y) |
-| `nameFill` | 1.17: also {g} (nameGen); each marker is replaced once |
+| `nameGen` | 1.17: {g} = genitive (bez Wandy, głos Borysa): a man's is his accusative, a woman's comes from her name (-ki/-gi/-li/-ii, else -y); 1.27: po angielsku mianownik (`h.nm[0]`) |
+| `nameFill` | 1.17: also {g} (nameGen); each marker is replaced once; 1.27: po angielsku `{n}`, `{a}`, `{v}`, `{g}` dają mianownik, wszystkie wystąpienia |
 | `onbWaveStage` | (1.24) etap nauki z numeru fali pierwszego runu (ONB_WAVE) |
 | `SCARES` | (1.24) 1.24 (B, P1-4: new players did not see that scaring pays): what an element does to a hero, as a word on its description |
 | `HURTS` | (1.24) czy element rani (słowo "Rani" w opisie) |
@@ -33,6 +39,16 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26.1; funkcj
 | `hasRk` | (1.18) 1.18: a card of a komnata or a room effect is offered only while that komnata or effect is in the dungeon (its req), so the 21 new ones do not water down the pool: a dungeon has 2-4 of them at a time |
 | `partyPool` | (1.26) pula klas fali: fale 1-3 `CLASSIC`, od 4 + paladyn i tropiciel, od 6 + alchemik; kultysta tylko z Pielgrzymką |
 | `runePrice` | (1.26) cena Runy rodu: `5 + poziom` |
+
+## p1e_en.js (1.27: angielski)
+
+Plik części po `p1_config.js` (sekcja 02, 2.10; załącznik A, A.12.4).
+
+| funkcja | komentarz przed nią |
+|---|---|
+| `DLG_EN` | Hero lines: one map Polish -> English, so the same line in SAY, CONVO, SOLO, LINE_NEEDS and CHAT_REPLY gets the same English and the lookups by text (lineKey, lineTags, CHAT_REPLY) keep working. A line missing here stays Polish. (6368 kwestii) |
+| `EN_TABLES` | lista tabel danych z polami `en`, na których po angielsku działa `enDeep` |
+| blok `if (!PL)`: `trL`, `deepL`, `META_K` | po angielsku przepisuje w miejscu `SAY`, `CONVO`, `SOLO`, `LINE_NEEDS` (bez pól meta `b`, `bt`, `at`, `ac`, `br`, `bv`), przenosi `CHAT_REPLY` pod angielskie klucze, woła `enDeep` na `EN_TABLES()` |
 
 ## p2_state_map.js (ustawienia, stan, mapa, obszary)
 
@@ -179,8 +195,8 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26.1; funkcj
 | `seedStartTraps` |  |
 | `freshParty` | 1.17: council, councilMore, look, lookCd, sound, soundCd |
 | `setupFl` | A fresh wave state around the dungeon as it stands (used by the build phase, and by a run resumed after a wave summary).; 1.26.1: ogar wraca na `homeX, homeY` |
-| `startBuild` |  |
-| `waveHint` |  |
+| `startBuild` | 1.27: wieści z karczmy otwierają się same także w fali z bossem (czempion, bohater z przepowiedni), nie po wczytaniu i nie w samouczku |
+| `waveHint` | 1.27: bez zdań o bossie i omenie (mają karty `bossBox`, `omenBox`); głód z zasadą sakiewki; w fali 1 zdanie o kropkach przy pokoju |
 | `rumorView` | what the next wave has heard about the dungeon (shown in the build phase) |
 | `rebuildDungeon` | After a change to the layout (between waves): rebuild the tiles, drop and refund whatever lost its place. |
 | `validateItems` |  |
@@ -457,6 +473,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26.1; funkcj
 | `talkAs` | 1.05: the same, but each line has its speaker (null: anyone in the party); 1.17: lines are matched to their keys by LINE_RX (lineKey) |
 | `lineKey` | 1.17: lines with a name ({n}, {a}, {v}, {g}) and gender forms are matched by regex patterns built once (LINE_RX), so CONVO starts after them too |
 | `convoAfter` |  |
+| `convoFill` | 1.27: płeć `{A:m\|f}` i imiona `{An}` `{Aa}` `{Av}` osób rozmowy; po angielsku imię zawsze w mianowniku |
 | `convoStart` | 1.17: another exchange nearby also counts while the queue is worked through (P.queueCur without done entries and P.sayingQ) 1.17.1: an exchange only if A fits all A lines (lineOk); B and C chosen among those who fit theirs. |
 | `huddleUp` | 1.12.1: when the party stops to talk it over, the ones further off come up to the leader (to a free tile at most 2 steps from him) and everyone turns to him: a huddle, not a freeze |
 | `talkLen` |  |
@@ -826,7 +843,7 @@ Spis funkcji z `src/` (Prototype 1.13, nowe funkcje dopisywane do 1.26.1; funkcj
 | `hpBar` |  |
 | `heartPath` |  |
 | `crystalShape` |  |
-| `drawRoomLabels` | 1.07: the depth multiplier (and in building, the room's load) by the room's front corner, upright |
+| `drawRoomLabels` | 1.07: the depth multiplier (and in building, the room's load) by the room's front corner, upright; 1.27: zajętość jako kropki ● / ○ przy pojemności do 6 |
 | `drawFog` | What the heroes have not seen yet is dimmed: you see everything, they do not. |
 | `slotRoom` | Every room holds only so many traps and monsters (corridors 1, rooms 2-3 by size, +1 per expansion): to build more, dig or expand. |
 | `roomCap` |  |
@@ -952,7 +969,7 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `upgCost` | 1.26: Kuźnia ciemności (`upgDisc`) |
 | `trayFade` |  |
 | `updateTray` |  |
-| `showTip` |  |
+| `showTip` | 1.27: opis jednym zdaniem i drobny druk `.fine`: `more`, rodzina (z poziomem, bez Runy rodu), krok ceny łupu 15% |
 | `hideTip` |  |
 | `renderDeckTiles` | The deck tab: one tile per slot, filled or empty. Rebuilt only when the deck changes. |
 | `actLabel` |  |
@@ -967,7 +984,7 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `setText` |  |
 | `mmss` |  |
 | `fmtK` |  |
-| `updateHud` | 1.17: narada on the clock during a council |
+| `updateHud` | 1.17: narada on the clock during a council; 1.27: równanie `#h-eq` tylko w fali, `#h-rankrow` zawsze ukryty (tekst rangi dalej wpisywany do `#h-rank`) |
 | `fmtG` | small Groza with two decimals |
 | `renderPips` | Ten pips for the run between waves: green = held, red = a crystal lost, gold = the next wave; a diamond marks a boss. |
 | `setHint` | 1.12 (author: the message box at the top of the map goes, all of it): what it explained is in the onboarding cards (Nowe w tym runie), in the tile tips (hold a tile) and on the screens; what a tap did wrong is said... |
@@ -996,7 +1013,7 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `deviceId` |  |
 | `surveyState` | The survey after the first finished run (web version only). This phone remembers that it was answered or skipped, so it never comes back on its own; the menu still offers it until it is answered. |
 | `setSurveyState` |  |
-| `renderSurvey` |  |
+| `renderSurvey` | 1.27: po angielsku odpowiedzi z `SURVEY[].oe`, zapis polskiej wartości i pola `lang` |
 | `standalone` |  |
 | `isIOS` |  |
 | `isFull` |  |
@@ -1004,12 +1021,12 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `leaveFullscreen` |  |
 | `restart` | the start card again, in place |
 | `webStartRow` |  |
-| `renderStart` | 1.17: the version label and the Co nowego entries 1.17.1: label Prototype 1.17.1, 3 new entries.; 1.26: "Prototype 1.26", nowe zdanie wstępu, 22 akapity Jak grać, 11 wpisów 1.26 w Co nowego; 1.26.1: "Prototype 1.26.1", 4 wpisy "Co nowego" |
-| `renderMenu` | The menu (the button bottom left): back to the game, settings, save and leave, download, end the run. |
+| `renderStart` | 1.17: the version label and the Co nowego entries 1.17.1: label Prototype 1.17.1, 3 new entries.; 1.26: "Prototype 1.26", nowe zdanie wstępu, 22 akapity Jak grać, 11 wpisów 1.26 w Co nowego; 1.26.1: "Prototype 1.26.1", 4 wpisy "Co nowego"; 1.27: "Prototype 1.27", wstęp w 2 zdaniach, pole imienia w `details` "Dla testerów" (`#start-testers`), Jak grać w 7 działach (Cel, Budowa, Esencja, Serce, Fala, Karty, Z czasem; `h3.howh`), Co nowego: 5 wpisów 1.27, starsze pod "Starsze wersje" (`details.older`, tylko po polsku) |
+| `renderMenu` | The menu (the button bottom left): back to the game, settings, save and leave, download, end the run.; 1.27: "Pobierz wyniki" z podpisem "dla testerów", Ustawienia z językiem w podpisie |
 | `settingsBack` |  |
 | `sliderRow` |  |
 | `applyLook` | 1.02: settings that change the page itself (the extra gap at the top of the screen) |
-| `renderSettings` | Player settings: what a player of the finished game would see. |
+| `renderSettings` | Player settings: what a player of the finished game would see.; 1.27: pierwszy wiersz `.langrow` "Język / Language" z `#lang-seg` (English / Polski): zapis `yatd-lang`, w budowie `saveRun('build')`, `location.reload()` |
 | `renderTests` | Test sliders: the balance knobs for testing, kept apart from the player's settings. |
 | `reqOk` | Three cards to choose from. Rarity follows the source: a wave gives mostly common cards (a rare one now and then), a points threshold opens all rare cards, a boss guarantees a legendary. New traps and monsters come... |
 | `upgradePicks` | 1.26.1: bez kart grupy Serce |
@@ -1035,11 +1052,11 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `weakOf` | what a hero entry is weak to: class and (when known) body; the strongest first |
 | `nextRow` | one row of the next party: icon, name, class and level, character; what the class does; gear; weaknesses and what is known |
 | `waveFun` | 2-3 curiosities of the wave: the favourite trap is the usual first, the rest by lot (kept while the screen is open); 1.17: Zwiedzali (2+ looks) and Narada |
-| `renderWave` | 1.17.1: Liczby cell for sawTalk / lineSwap / lineDrop.; 1.26: tytuły głodu, kafelek serca, `heartLines`, część "Danina" w rozliczeniu, omen i Mgła wojny w panelu następnej drużyny |
+| `renderWave` | 1.17.1: Liczby cell for sawTalk / lineSwap / lineDrop.; 1.26: tytuły głodu, kafelek serca, `heartLines`, część "Danina" w rozliczeniu, omen i Mgła wojny w panelu następnej drużyny; 1.27: "Groza × chciwość", "+N dochodu po fali", `bossBox` w panelu następnej drużyny, przyciski Szczegóły / Wyjdź / Zakończ run (bez "Pobierz wyniki"), "Dalej: sklep", notka o zapisie tylko w Szczegółach |
 | `waveDetails` | Szczegóły: where the Esencja came from, then four views in one box (what comes next, the heroes, the elements, the numbers) |
 | `cardFit` |  |
 | `kindShort` |  |
-| `renderShop` | 1.26: rząd Dar serca (`heartOffer`, `heartTake`), Runa rodu (`runeBuy`), ilustracje kart |
+| `renderShop` | 1.26: rząd Dar serca (`heartOffer`, `heartTake`), Runa rodu (`runeBuy`), ilustracje kart; 1.27: "1 darmowa karta" / "darmowe karty: N" w nagłówku, schowek "karty tu nie działają" |
 | `fitSlot` | Prototype 1.0: the whole text has to fit its box, nothing is cut. The letters shrink step by step down to a readable minimum; a long name shrinks too. The tile says data-fit="no" if even that is not enough (the tests... |
 | `fitText` |  |
 | `renderEnd` |  |
@@ -1067,7 +1084,7 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `itemAt` | the element under (or right next to) a tap, any kind |
 | `tapUpgrade` | 1.26: z poziomu 2 na 3 otwiera `renderBranch`, gdy element ma `TRAITS_B` |
 | `tapMove` |  |
-| `renderItem` |  |
+| `renderItem` | 1.27: `more` pod opisem |
 | `renderEsencja` | v15.1: a tap on the equation row: what each part means, and where this wave's Esencja came from |
 | `renderHero` | 1.17: Teraz statuses wraca sam do domu and rozgląda się 1.17.1: Ta fala: Widział(a) w tej fali (sawNames). |
 | `renderHungerTip` | v14: the first hungry wave explains itself once |
@@ -1139,7 +1156,7 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `coachDone` |  |
 | `onbDone` |  |
 | `startGuided` | a run of the first ones: the guide with the first (once: a first run left in the middle starts again without it), a card with what is new for the others |
-| `renderNews` | 1.26: ramka omenu na początku i jednorazowa notka o omenach |
+| `renderNews` | 1.26: ramka omenu na początku i jednorazowa notka o omenach; 1.27: pod omenem karta bossa (`bossBox`), gdy w tej fali jest czempion albo bohater z przepowiedni |
 | `renderOnb` |  |
 | `tutStart` |  |
 | `tutLogOf` | 1.05: how far the tutorial got (logged with the run): the furthest step, the steps skipped, how it ended |
@@ -1183,10 +1200,12 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `runeBuy` | (1.26) kupno runy: `run.famLv[f] += 1` |
 | `heartOffer` | (1.26) rząd Dar serca: najstarszy czekający poziom z `run.heartPicks` (3 karty, z Dziesięciną 4; Odrost na poziomach nieparzystych, gdy brakuje kryształu); 1.26.1: rzadkość r 70% / l 30% (komentarz nad funkcją dalej podaje 55/35/10) |
 | `heartTake` | (1.26) weź kartę z rzędu Dar serca (talia, schowek, ★ albo Odrost) |
-| `heartLines` | (1.26) część serca w podsumowaniu fali |
+| `heartLines` | (1.26) część serca w podsumowaniu fali; 1.27: "o włos: złodziej był X s od kryształu" tylko poniżej 3 s |
 | `genIcon` | (1.26) ikona dla kafelka bez rysunku: kolor i znak rodziny albo pierwsza litera |
 | `branchTrait` | (1.26) cecha poziomu 3 elementu (A albo B) |
 | `renderBranch` | (1.26) okno wyboru cechy A/B przy ulepszeniu na 3. poziom |
-| `renderHeart` | (1.26) karta serca: głód i jego części, sakiewka, Nasycenie, poziomy, Ofiara; 1.26.1: tekst poziomów (rzadka albo legendarna) i Kamienne serce w notce głodu |
+| `renderHeart` | (1.26) karta serca: głód i jego części, sakiewka, Nasycenie, poziomy, Ofiara; 1.26.1: tekst poziomów (rzadka albo legendarna) i Kamienne serce w notce głodu; 1.27: podtytuł "Serce · poziom L", rozbicie głodu tylko, gdy ma coś poza podstawą |
 | `omenBox` | (1.26) ramka omenu: obrazek, nazwa, zasada, nagroda albo koszt |
+| `bossBox` | (1.27) the champion and the hero of the prophecy get a card like an omen on the screens between waves: ikona klasy, tytuł i imię, klasa i poziom, co robi, nagroda albo "Przetrwaj tę falę, a run jest wygrany." |
+| `ordEn` | (1.27) liczebnik porządkowy po angielsku (2nd, 3rd), w zdaniu o powrocie Nemezis |
 

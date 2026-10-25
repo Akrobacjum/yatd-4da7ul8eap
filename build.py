@@ -6,7 +6,7 @@
 import json, os, re
 
 R = os.path.dirname(os.path.abspath(__file__)) + '/'
-PARTS = ['p0_head.html', 'p0b_body.html', 'p1_config.js', 'p2_state_map.js', 'p3_flow.js', 'p4_traps.js',
+PARTS = ['p0_head.html', 'p0b_body.html', 'p1_config.js', 'p1e_en.js', 'p2_state_map.js', 'p3_flow.js', 'p4_traps.js',
          'p5_ai.js', 'p6_loop.js', 'p7_draw.js', 'p7c_art.js', 'p8a_icons.js', 'p8b_ui.js']
 src = ''.join(open(R + 'src/' + p, encoding='utf-8').read() for p in PARTS)
 os.makedirs(R + 'dist', exist_ok=True)

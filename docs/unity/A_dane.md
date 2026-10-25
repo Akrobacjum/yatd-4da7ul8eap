@@ -1,8 +1,8 @@
 # Załącznik A: dane wyeksportowane z prototypu
 
-Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (**od 1.26 wszystkie pliki tabel przeeksportowane na Prototype 1.26**, 95 tabel; tabele zmienione i nowe w 1.18-1.24 opisuje A.9, w 1.26 A.10, w 1.26.1 A.11 (eksportu na 1.26.1 nie robiono, więc zmiany 1.26.1 są tylko w A.11); kilka stałych z `p1_config.js` nie trafia do eksportu, lista w A.0; historia: do 1.25.1 eksport był z 1.17.1, a od 1.13.1 zmieniły się `TABS` w 1.14, w 1.15 `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`, w 1.16 `GZ` i `SAY`, w 1.17 tabele kwestii `SAY`, `SOLO`, `SOLO_MUTE`, `CHAT_REPLY`, `CONVO` i `CONVO_P`, w 1.17.1 `SAY`, `SOLO`, `SOLO_MUTE`, `CONVO`, `CONVO_P` i nowa `LINE_NEEDS`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
+Katalog `data/` to dosłowny eksport tabel z `src/p1_config.js` (**wszystkie pliki tabel przeeksportowane na Prototype 1.26.1**, 95 tabel; w 1.27 eksportu nie powtarzano, A.12; tabele zmienione i nowe w 1.18-1.24 opisuje A.9, w 1.26 A.10, w 1.26.1 A.11, w 1.27 A.12 (teksty, języki, nowe id podzakładek); kilka stałych z `p1_config.js` nie trafia do eksportu, lista w A.0; historia: do 1.25.1 eksport był z 1.17.1, a od 1.13.1 zmieniły się `TABS` w 1.14, w 1.15 `ITEMS`, `ITEM_ORDER`, `START_UNLOCKED`, `ONB_ITEM`, `TOOLS`, `SLOT_LABEL` i nowe `KIND_INFO`, `KINDS`, `KIND_OF`, `KIND_POW`, `KIND_COST`, w 1.16 `GZ` i `SAY`, w 1.17 tabele kwestii `SAY`, `SOLO`, `SOLO_MUTE`, `CHAT_REPLY`, `CONVO` i `CONVO_P`, w 1.17.1 `SAY`, `SOLO`, `SOLO_MUTE`, `CONVO`, `CONVO_P` i nowa `LINE_NEEDS`), zrobiony skryptem `tools/dump.js` (node wykonuje plik konfiguracji i zapisuje każdą tabelę jako JSON). Funkcje w tabelach są zapisane jako tekst z prefiksem `fn: `, zbiory (`Set`) jako tablice. Nic nie było przepisywane ręcznie.
 
-- `yatd_content_1.26.json`: wszystkie tabele w jednym pliku: `{ version: 'Prototype 1.26', source, tables: { ITEMS: ..., UPGRADES: ..., ... } }` (95 tabel; 1.17.1: 83, doszły `ACTS`, `BLEED`, `POISONT`, `FAMILIES`, `FAMILY_OF`, `OMENS`, `OMEN_WAVES`, `REACTIONS`, `REACT_K`, `RUNE_MAX`, `STATUS`, `TRAITS_B`), złożony z plików tabel poniżej (zastąpił `yatd_content_1.17.1.json`). Ten plik warto wczytać w Unity.
+- `yatd_content_1.26.1.json` (wcześniej `yatd_content_1.26.json`): wszystkie tabele w jednym pliku: `{ version: 'Prototype 1.26.1', source, tables: { ITEMS: ..., UPGRADES: ..., ... } }` (95 tabel; 1.17.1: 83, doszły `ACTS`, `BLEED`, `POISONT`, `FAMILIES`, `FAMILY_OF`, `OMENS`, `OMEN_WAVES`, `REACTIONS`, `REACT_K`, `RUNE_MAX`, `STATUS`, `TRAITS_B`), złożony z plików tabel poniżej (zastąpił `yatd_content_1.17.1.json`). Ten plik warto wczytać w Unity.
 - `<NAZWA>.json`: ta sama tabela osobno (wygodne do czytania i porównań).
 - `levelStats_1_30.json`: wynik `levelStats(L)` dla poziomów 1-30 (zaokrąglone do 4 miejsc).
 - `golden_1.13.1.json`: wartości policzone przez działający prototyp do testów (sekcja 09).
@@ -18,7 +18,7 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 | Plik | Kształt | Pola i znaczenie |
 |---|---|---|
 | `ITEMS` | słownik `id -> element` (65; od 1.15 także 12 komnat `k_*`) | `name` nazwa; `cost` koszt w Esencji; `slot` miejsce: `floor`, `wall`, `door`, `object`, `roomtype`, od 1.15 `roomkind` (opis w `SLOT_LABEL`); `tag` krótka cecha pod nazwą kafelka; `desc` opis po przytrzymaniu; `cd` odnowienie w s; `hp`, `melee` dla potworów; `build: true` budowla-kontra (tylko między falami, w pokoju, jedna na pokój); `tool: true` narzędzie lochu (kopanie, typy pokoi); `rt` typ pokoju nadawany przez narzędzie; `rarity` dla łupu (1-3: zasięg widzenia); `mode` dla trybów (Ulepsz, Przenieś) |
-| `TABS` | lista zakładek paska | `id`, `label`, `items` (kolejność kafelków), od 1.14 opcjonalnie `subs`: lista `{id, label, items}` (Pułapki i Potwory: `dmg` Rany, `fear` Strach; od 1.15 Loch: `dig` Kopanie, `kind` Komnaty, `effect` Efekty; 08). `ITEM_ORDER` = wszystkie kafelki po kolei |
+| `TABS` | lista zakładek paska | `id`, `label`, `items` (kolejność kafelków), od 1.14 opcjonalnie `subs`: lista `{id, label, items}` (Pułapki i Potwory: `dmg` Rany, `fear` Strach; od 1.15 Loch: `dig` Kopanie, `kind` Komnaty, `effect` Efekty; od 1.27 Pułapki `dmg` Ranią, `hold` Trzymają, `weak` Osłabiają, `fear` Straszą, Potwory `dmg` Walczą, `sup` Wspierają, `fear` Straszą, Loch `effect` Klimat, A.12; 08). `ITEM_ORDER` = wszystkie kafelki po kolei |
 | `START_UNLOCKED` | lista id | elementy dostępne od startu runu (reszta przez karty "Nowa pułapka/potwór"; od 1.14 odkryte zostają na stałe, 03 3.8) |
 | `TRAPS`, `MONSTERS`, `SCARE`, `CURSED`, `DRIFT`, `BUILDINGS`, `TOOLS`, `MODES`, `DISARMABLE`, `SMASHABLE_OBJ` | zbiory `id -> 1` | przynależność: pułapka, potwór, tylko straszy, przeklęte (kapłan zdejmuje), potwór dryfujący za bohaterami, budowla, narzędzie, tryb, da się rozbroić, barbarzyńca rozbija |
 | `LOOKS_TRAP` | funkcja | co bohaterowie biorą za pułapkę (pułapki i Wabik) |
@@ -58,7 +58,7 @@ Znaczenie i użycie każdej wartości opisują sekcje 03-08; poniżej skrót pó
 
 | Plik | Pola i znaczenie |
 |---|---|
-| `UPGRADES` (202 w eksporcie 1.26, 210 w kodzie 1.26.1; 140 w 1.24, 113 w 1.17.1; załącznik B) | `id`; `kind`: `unlock` (odblokowanie elementu, pole `unlock`), `instant` (działa raz przy kupnie), `card` (leży w talii i działa przez `apply` na `mods`); `rar`: `c` zwykła, `r` rzadka, `l` legendarna; `name`, `text`, `tag`; `unique` (tylko jedna kopia); `req` (wymagane odblokowanie: id albo funkcja); `grows` (karta z licznikiem rosnącym w runie, np. Głodne kolce); `apply` (kod efektu). Pełna tabela: załącznik B |
+| `UPGRADES` (210 w eksporcie 1.26.1 i w kodzie 1.27, 202 w 1.26; 140 w 1.24, 113 w 1.17.1; załącznik B) | `id`; `kind`: `unlock` (odblokowanie elementu, pole `unlock`), `instant` (działa raz przy kupnie), `card` (leży w talii i działa przez `apply` na `mods`); `rar`: `c` zwykła, `r` rzadka, `l` legendarna; `name`, `text`, `tag`; `unique` (tylko jedna kopia); `req` (wymagane odblokowanie: id albo funkcja); `grows` (karta z licznikiem rosnącym w runie, np. Głodne kolce); `apply` (kod efektu). Pełna tabela: załącznik B |
 | `RAR_NAME`, `RARITY_NAME` | nazwy rzadkości kart i łupu |
 | `DECK_SIZE` | 7 miejsc w talii |
 | `RANKS` | progi rang lochu z sumy Esencji w runie: Nora 0, Piwnica 150, Loch 400, Labirynt 1000, Twierdza grozy 2500, Legenda 6000 |
@@ -127,7 +127,7 @@ Znaczniki w tekstach (trzeba je obsłużyć w lokalizacji):
 - od 1.17 `{g}` imię w dopełniaczu (`p1_config.js: nameGen`: mężczyzna = jego biernik, kobieta = mianownik z końcówką `-ia` -> `-ii`, `-ka`/`-ga`/`-la` -> `-ki`/`-gi`/`-li`, inne `-a` -> `-y`); używają go `leaveLost` i `hearScream` (5 kwestii w `SAY`), w `SOLO` i `CONVO` go nie ma. Jak pozostałe znaczniki imion, `nameFill` podmienia tylko pierwsze wystąpienie w kwestii.
 - w `CONVO` (od 1.13): `{A:męska|żeńska}`, `{B:...}`, `{C:...}` forma zależna od płci innej osoby rozmowy, `{An}` `{Aa}` `{Av}` (i tak samo B, C) jej imię w trzech przypadkach (`p5_ai.js: convoFill`); `{męska|żeńska}` bez litery to nadal płeć mówiącego.
 
-Polszczyzna gry odmienia imiona i formy płci; przy tłumaczeniu na angielski większość znaczników znika, ale klucze muszą zostać te same.
+Polszczyzna gry odmienia imiona i formy płci; przy tłumaczeniu na angielski większość znaczników znika, ale klucze muszą zostać te same. Od 1.27 (A.12) angielskie kwestie są w `DLG_EN` (`p1e_en.js`): zostaje w nich `{n}` (także tam, gdzie polski ma `{a}`, `{v}` albo `{g}`) i przełącznik płci tylko tam, gdzie angielski go potrzebuje (he/she); po angielsku `nameFill`, `nameGen` i `convoFill` wstawiają zawsze mianownik.
 
 ## A.6 Wartości wzorcowe (`golden_1.13.1.json`)
 
@@ -367,7 +367,7 @@ Kolumny: miejsce (`slot`), koszt w Esencji, odnowienie `cd` (s), HP / `melee` (p
 
 ## A.11 Tabele, pola i stałe dodane albo zmienione w 1.26.1 (poza eksportem `data/`)
 
-Pliki w `data/` są z eksportu 1.26; poniższe trzeba przepisać z `src/` (albo przeeksportować `tools/dump.js`). Opis działania: sekcje 03 (3.15, 2.14), 05 (5.15), 06 (6.16.7, 6.16.12), 07 (7.14), 08 (6.14b) i załącznik B (B.6, B.7).
+Tabele z A.11.1 są już w eksporcie 1.26.1 w `data/` (`yatd_content_1.26.1.json`, `UPGRADES` 210 wpisów); pola stanu i stałe z A.11.2 i A.11.3 trzeba przepisać z `src/`. Opis działania: sekcje 03 (3.15, 2.14), 05 (5.15), 06 (6.16.7, 6.16.12), 07 (7.14), 08 (6.14b) i załącznik B (B.6, B.7).
 
 ### A.11.1 `p1_config.js`
 
@@ -414,3 +414,50 @@ Pliki w `data/` są z eksportu 1.26; poniższe trzeba przepisać z `src/` (albo 
 | Pożar | `p4_traps.js: reactHit` | podpalenie `max(6, 2 × pozostały czas)` | 05, 5.15.3 |
 | Dar serca | `p8b_ui.js: heartOffer` | rzadkie 70%, legendarne 30% | 03, 3.15 |
 | Rezonans | `p3_flow.js: essMultNow` | +0,03 za kartę, najwyżej +0,3 | 03, 2.14 |
+
+## A.12 Teksty i języki w 1.27 (eksport `data/` bez zmian)
+
+W 1.27 nie zmieniła się żadna liczba ani zasada; zmieniły się teksty (polski przepisany krócej, angielski dodany) i id podzakładek w `TABS`. Pliki w `data/` są dalej z eksportu 1.26.1, więc mają dawne polskie teksty, dawne podzakładki i nie mają pól `en` ani `more`. Do tekstów 1.27 trzeba przeeksportować tabele (`tools/dump.js` na `src/p1_config.js` 1.27) albo czytać `src/`. Mechanizm języków i zalecenia dla Unity: sekcja 02, 2.10.
+
+### A.12.1 Eksport zostaje polski
+
+`tools/dump.js` od 1.27 wykonuje `p1_config.js` z `window.YATD_LANG_DEFAULT = 'pl'` i pustym `localStorage`, więc `LANG = 'pl'`, `L()` zwraca tekst polski, a `enDeep` nic nie robi. Skutki dla eksportu 1.27:
+
+- obiekty z polem `en` mają je w JSON jako podobiekt obok pól polskich (np. `ITEMS.web = { name: 'Sieć', ..., desc, more, en: { name: 'Web', tag, desc, more } }`); to wystarczy do wypełnienia obu kolumn tabel lokalizacji;
+- tabele zbudowane parą `L([...], [...])` albo `L({...}, {...})` eksportują się tylko po polsku (lista niżej); angielskie wersje są tylko w `src/` (albo w drugim przebiegu skryptu z `'en'`, którego dziś nie ma);
+- `DLG_EN` nie jest w eksporcie: leży w `src/p1e_en.js` (jeden literał obiektu, JSON), a `dump.js` czyta tylko `p1_config.js`;
+- komnaty `ITEMS.k_*` są budowane w kodzie z `KIND_INFO` (`name: L(K.name, K.en.name)`, `tag: L(...)`), więc w eksporcie mają tylko polski; angielski jest w `KIND_INFO[].en`.
+
+### A.12.2 Pola `en` i `more` (`p1_config.js`)
+
+| Tabela | Co doszło w 1.27 |
+|---|---|
+| `ITEMS` | `more` w każdym z 89 wpisów (drobny druk: miejsce, zasięg, liczby, typ obrażeń, odporności, skill check); `desc` skrócony do jednego zdania; `en: { name, tag, desc, more }` w 74 wpisach (bez 15 komnat `k_*`, A.12.1) |
+| `UPGRADES` | `en: { name, text, tag }` we wszystkich 210 kartach |
+| `TABS` | `en: { label }` w zakładkach i podzakładkach; nowe `subs` (A.12.3) |
+| `KIND_INFO`, `RT_INFO`, `FAMILIES`, `STATUS`, `REACTIONS`, `HERO_TRAITS`, `PHOBIAS`, `PHYS`, `HEROES`, `TIERS`, `HITEMS`, `OMENS`, `ONB_STAGES`, `GAME_SETTINGS`, `SLIDERS` | `en: {...}` z tymi samymi nazwami pól co polskie (`name`, `tag`, `desc`, `short`, `text`, `label`, `reward`, `cost`, `news`...) we wszystkich wpisach |
+| `RANKS` (nazwy), `SLOT_LABEL`, `RARITY_NAME`, `RAR_NAME`, `DMG_TYPES`, `CLASS_RES_TEXT`, `CLASS_SKILL`, `BOSS_NAME`, `TRAITS` i `TRAITS_B` (każdy wpis) | para `L(polski, angielski)` zamiast pola `en` (eksport: tylko polski) |
+| `ADJ` | formy przymiotników rzadkości tylko po polsku (`PL ? {...} : ...`) |
+| nowe na początku pliku | `LANG`, `PL`, `L`, `LL`, `dec`, `enDeep` (sekcja 02, 2.10; załącznik C) |
+
+Poza `p1_config.js` w parach `L` są też m.in. `NEM_TITLE` (`p5_ai.js`), `TRAIT_TEXT`, `TUT`, `TUT_POP`, `SURVEY` (`p8b_ui.js`; ankieta pokazuje `oe`, a zapisuje polskie `o`).
+
+### A.12.3 `TABS.subs` (zmiana id)
+
+| Zakładka | 1.26.1 | 1.27 |
+|---|---|---|
+| `traps` | `dmg` Rany, `stat` Statusy, `fear` Strach | `dmg` Ranią (spikes, arrows, trapdoor, fire, powder, mimic, pendulum, bolt), `hold` Trzymają (web, cage, gate, snare), `weak` Osłabiają (oilslick, tar, miasma, flood), `fear` Straszą (portrait, eyes, bones, mirror, creak, coffin, musicbox, bell, falsedoor) |
+| `monster` | `dmg` Rany, `dark` Mrok, `fear` Strach | `dmg` Walczą (goblin, ogre, spider, rats, skeleton, zombie, hound, demon), `sup` Wspierają (archer, shaman, sapper, warlord, lich), `fear` Straszą (ghost, shade, bats, imp, siren) |
+| `dungeon` | `dig` Kopanie, `kind` Komnaty, `effect` Efekty | id bez zmian; `effect` ma etykietę Klimat (ang. Mood), `kind` po angielsku Lairs |
+
+Kolejność kafelków w `items` zakładek bez zmian. Zapamiętany wybór ze starym id (`stat`, `dark`) przepada (sekcja 08, 2.5).
+
+### A.12.4 `p1e_en.js` i `DLG_EN`
+
+Nowy plik części, w budowie zaraz po `p1_config.js` (`build.py: PARTS`). Zawiera:
+
+- `DLG_EN`: obiekt "polska kwestia -> angielska", 6368 kluczy: wszystkie różne kwestie z `SAY`, `CONVO`, `SOLO`, `LINE_NEEDS` i `CHAT_REPLY` (także klucze `CHAT_REPLY`). Klucz to surowy tekst polski ze znacznikami (`{em|am}`, `{g}`...), przed ich rozwinięciem;
+- `EN_TABLES()`: lista tabel, na których po angielsku działa `enDeep` (`ITEMS`, `TABS`, `UPGRADES`, `TRAITS`, `TRAITS_B`, `KIND_INFO`, `FAMILIES`, `HERO_TRAITS`, `STATUS`, `REACTIONS`, `PHOBIAS`, `HEROES`, `OMENS`, `RT_INFO`, `TOOLS`, `MODES`, `GAME_SETTINGS`, `SLIDERS`, `HITEMS`, `DMG_TYPES`, `TIERS`, `ONB_STAGES`, `ROOMTYPES`, `BUILDINGS`, `PHYS`);
+- blok `if (!PL)`: przepisuje w miejscu kwestie `SAY`, `CONVO`, `SOLO`, `LINE_NEEDS` (z pominięciem pól meta `CONVO`: `b`, `bt`, `at`, `ac`, `br`, `bv`), przenosi `CHAT_REPLY` pod angielskie klucze i woła `enDeep` na tabelach z `EN_TABLES()`. Kwestia bez wpisu w `DLG_EN` zostaje po polsku.
+
+Po polsku plik tylko definiuje `DLG_EN` i `EN_TABLES` (nic nie zmienia). Rozmiary tabel kwestii (A.5) są w 1.27 te same co w 1.26.1 (`SAY` 399 kluczy i 4250 kwestii, `SOLO` 84 i 517, `LINE_NEEDS` 57 tagów i 900 wpisów); 16 polskich kwestii ma poprawiony tekst (gramatyka, forma płci), a stara wersja nie została w żadnej z tabel kwestii (także w `LINE_NEEDS` i kluczach `CHAT_REPLY`). Wszystkie kwestie mają wpis w `DLG_EN` (poza tabelą zostają tylko litery mówiących i id klas z `CONVO` oraz "...").
