@@ -186,6 +186,7 @@
     $('#tip').hidden = true;
   }
   // The deck tab: one tile per slot, filled or empty. Rebuilt only when the deck changes.
+  const trayDnD = { tray: true, blocked: () => modalOpen, slots: () => [...$('#tray').querySelectorAll('.dslot[data-ck]')], done: () => { $('#tray').dataset.deck = ''; updateTray(); } };   // 1.27.8
   function renderDeckTiles(show) {
     const tray = $('#tray'), k = show ? run.deck.join(',') + '|' + (run.fused || []).join(',') + '|' + run.deckSize + '|' + JSON.stringify(run.stacks || {}) + '|' + (run.stash || []).join(',') + '|' + (run.freePicks || 0) + '|' + (run.heartPicks || []).length + '|' + (fl ? fl.phase : '') + '|' + JSON.stringify(run.famLv || {}) : '';
     if (tray.dataset.deck === k) return;
@@ -219,7 +220,9 @@
         b.querySelector('.dtag').textContent = gift ? L('♥ Serce', '♥ Heart') : u.grows ? L('rośnie: ', 'grows: ') + (run.stacks[u.id] || 0) : u.tag; b.querySelector('.dnm').textContent = cardName(u.id);
         b.setAttribute('aria-label', u.name + ', ' + RAR_NAME[u.rar] + L(' karta. ', ' card. ') + u.text);
         b.addEventListener('click', () => { if (!modalOpen && run) { if (fl && fl.phase === 'raid' && !paused) setPaused(true); openModal({ type: 'card', idx: i }); } });
-      } else { b.innerHTML = '<span class="dnm">' + L('wolne miejsce', 'free slot') + '</span>'; b.disabled = true; }
+        if (u.id === 'copyist' || u.id === 'soulmirror') { const t = copyTarget(u.id); b.querySelector('.dtag').textContent = t ? L('kopiuje: ', 'copies: ') + cardName(t) : L('nic nie kopiuje', 'copies nothing'); }   // 1.27.8: what it copies, right on the tile
+        cardGestures(b, 'd', i, trayDnD);   // 1.27.8: drag to move, hold to sell
+      } else { b.innerHTML = '<span class="dnm">' + L('wolne miejsce', 'free slot') + '</span>'; b.disabled = true; b.dataset.ck = 'd'; b.dataset.ci = -1; }   // 1.27.8: a drop target
       tray.appendChild(b);
     }
     if (!raidNow) for (let i = 0; i < stashCap(); i++) {   // the stash: inactive cards waiting for their turn (hidden during a wave)
@@ -227,9 +230,79 @@
       b.type = 'button'; b.className = 'item dslot stash ' + (u ? 'rar-' + u.rar : 'empty');
       b.innerHTML = '<span class="dtag"></span><span class="dnm"></span>';
       b.querySelector('.dtag').textContent = L('schowek', 'stash'); b.querySelector('.dnm').textContent = u ? cardName(u.id) : L('pusto', 'empty');   // 1.24: ★
-      if (u) b.addEventListener('click', () => { if (!modalOpen && fl && fl.phase === 'build') openModal({ type: 'shop' }); }); else b.disabled = true;
+      if (u) { b.addEventListener('click', () => { if (!modalOpen && fl && fl.phase === 'build') openModal({ type: 'shop' }); }); cardGestures(b, 's', i, trayDnD); } else { b.disabled = true; b.dataset.ck = 's'; b.dataset.ci = -1; }   // 1.27.8
       tray.appendChild(b);
     }
+  }
+  // 1.27.8 (author: rearrange the deck to choose what Kopista copies, and move / sell cards like the objects on the map): a card in the
+  // deck or the stash (between waves) is dragged to a new place (another deck slot = the order, a stash slot = to the stash, and back;
+  // onto a card = they swap), and held still to sell it (a red bar fills, CARD_HOLD s). A plain tap still opens the card.
+  const CARD_HOLD = 0.8;
+  function moveCard(fk, fi, tk, ti) {
+    if (!run || !fl || fl.phase !== 'build') return false;
+    const ordN = deckUsed(); run.stash = run.stash || [];
+    if (fk === 'd') {
+      const id = run.deck[fi]; if (!id || isGift(id)) return false;   // a Heart's Gift card stays where it is (no slot, no order)
+      if (tk === 'd') { const to = ti < 0 || ti >= ordN || isGift(run.deck[ti]) ? ordN - 1 : ti; if (to === fi) return false; run.deck.splice(fi, 1); run.deck.splice(to, 0, id); }
+      else { const sid = ti >= 0 ? run.stash[ti] : null; if (sid) { run.deck[fi] = sid; run.stash[ti] = id; } else { if (run.stash.length >= stashCap()) return false; run.deck.splice(fi, 1); run.stash.push(id); } }
+    } else {
+      const id = run.stash[fi]; if (!id) return false;
+      if (tk === 's') { if (ti === fi) return false; run.stash.splice(fi, 1); run.stash.splice(ti < 0 ? run.stash.length : Math.min(ti, run.stash.length), 0, id); }
+      else { const did = ti >= 0 ? run.deck[ti] : null; if (did && !isGift(did)) { run.deck[ti] = id; run.stash[fi] = did; } else { if (deckFull()) return false; run.stash.splice(fi, 1); deckAdd(id); const j = run.deck.indexOf(id), to = ti >= 0 && ti < deckUsed() ? ti : -1; if (to >= 0 && to !== j) { run.deck.splice(j, 1); run.deck.splice(to, 0, id); } } }
+    }
+    fl.stats.cardDrags = (fl.stats.cardDrags || 0) + 1;
+    recomputeMods(); updateTray(); saveRunSoon(); return true;
+  }
+  function holdSellCard(k, i) {
+    if (!run || !fl || fl.phase !== 'build') return 0;
+    const g = k === 'd' ? sellCard(i) : sellStash(i); if (g) { fl.stats.cardHoldSells = (fl.stats.cardHoldSells || 0) + 1; updateTray(); saveRunSoon(); } return g;
+  }
+  // pointer handling for one card tile b (k 'd' / 's', index i); opt.tray: in the build tray (a sideways swipe scrolls it, so a
+  // drag starts when the finger goes up first); opt.done(msg): after a move or a sale; opt.slots(): the drop targets
+  function cardGestures(b, k, i, opt) {
+    b.dataset.ck = k; b.dataset.ci = i;
+    b.addEventListener('pointerdown', e => {
+      if (e.button > 0 || !fl || fl.phase !== 'build' || (opt.blocked && opt.blocked())) return;
+      const arr = k === 'd' ? run.deck : run.stash, id = arr[i]; if (!id) return;
+      const sx = e.clientX, sy = e.clientY, pid = e.pointerId; let drag = null, held = false, tgt = null;
+      const canDrag = !(k === 'd' && isGift(id));
+      b.classList.add('pressing');
+      const holdT = setTimeout(() => { if (drag) return; b.classList.remove('pressing'); b.classList.add('sellhold'); b.style.setProperty('--hold', CARD_HOLD + 's'); }, 160);
+      const sellT = setTimeout(() => { if (drag) return; held = true; b._eat = true; cleanup(); const u = UPG[id], g = holdSellCard(k, i); buzz(25); opt.done(g ? L('Sprzedane: ', 'Sold: ') + u.name + ' (+' + g + L(' Esencji).', ' Essence).') : ''); }, (0.16 + CARD_HOLD) * 1000);
+      const over = (x, y) => { const el0 = document.elementFromPoint(x, y), s = el0 && el0.closest('[data-ck]'); return s && opt.slots().includes(s) ? s : null; };
+      const move = ev => {
+        if (ev.pointerId !== pid || held) return;
+        const dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (!drag) {
+          if (Math.hypot(dx, dy) < 9) return;
+          clearTimeout(holdT); clearTimeout(sellT); b.classList.remove('pressing', 'sellhold');
+          if (!canDrag || (opt.tray && Math.abs(dx) > Math.abs(dy) * 1.2 && -dy < 9)) { stop(); return; }   // the tray: a sideways swipe scrolls
+          drag = el('div', 'cardghost ' + [...b.classList].filter(c => /^rar-|fused|giftcard/.test(c)).join(' '), UPG[id] ? cardName(id) : '');
+          document.body.appendChild(drag); b.classList.add('dragging'); try { b.setPointerCapture(pid); } catch (er) {}
+        }
+        ev.preventDefault();
+        drag.style.left = (ev.clientX / UIZ) + 'px'; drag.style.top = (ev.clientY / UIZ) + 'px';
+        const t = over(ev.clientX, ev.clientY); if (t !== tgt) { if (tgt) tgt.classList.remove('droptarget'); tgt = t; if (tgt && tgt !== b) tgt.classList.add('droptarget'); }
+        if (opt.tray) { const tr = b.parentElement, r = tr.getBoundingClientRect(); if (ev.clientX < r.left + 30) tr.scrollLeft -= 8; else if (ev.clientX > r.right - 30) tr.scrollLeft += 8; }
+      };
+      const up = ev => {
+        if (ev.pointerId !== pid) return;
+        const was = drag, t = tgt; stop();
+        if (held) return;
+        if (was) {
+          b._eat = true; setTimeout(() => { b._eat = false; }, 400);
+          if (t && t !== b) { const tk = t.dataset.ck, ti = +t.dataset.ci, u = UPG[id];
+            const ok = moveCard(k, i, tk, ti); buzz(ok ? 12 : 20);
+            opt.done(ok ? (k !== tk ? u.name + (tk === 's' ? L(': w schowku.', ': to the stash.') : L(': w talii.', ': into the deck.')) : '') : (tk === 'd' && deckFull() ? L('Talia pełna: upuść kartę na inną, żeby je zamienić.', 'The deck is full: drop it on a card to swap them.') : L('Schowek pełny.', 'The stash is full.')));
+          }
+        }
+      };
+      const cleanup = () => { clearTimeout(holdT); clearTimeout(sellT); b.classList.remove('pressing', 'sellhold', 'dragging'); if (drag) drag.remove(); drag = null; if (tgt) tgt.classList.remove('droptarget'); };
+      const stop = () => { cleanup(); removeEventListener('pointermove', move, true); removeEventListener('pointerup', up, true); removeEventListener('pointercancel', up, true); };
+      addEventListener('pointermove', move, { capture: true, passive: false }); addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+    });
+    b.addEventListener('click', e => { if (b._eat) { e.stopImmediatePropagation(); e.preventDefault(); b._eat = false; } }, true);
+    b.addEventListener('contextmenu', e => e.preventDefault());
   }
   function actLabel(b, main, sub) {
     const k = main + '|' + (sub || '');
@@ -636,7 +709,7 @@
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.27.7 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.27.8 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -676,6 +749,7 @@
        L('Między falami stawiasz elementy z paska budowy. Przytrzymaj kafelek, żeby zobaczyć, co robi.', 'Between waves you place elements from the build bar. Hold a tile to see what it does.'),
        L('Postawiony element: stuknij, żeby przenieść, stuknij dwa razy, żeby ulepszyć, przytrzymaj, żeby sprzedać.', 'A placed element: tap to move it, double-tap to upgrade it, hold to sell it.'),
        L('Szybciej: dwa stuknięcia w wolne miejsce stawiają jeszcze raz ostatni element, a w karcie elementu "Ulepsz wszystkie w pokoju" ulepsza wszystkie takie same naraz.', 'Faster: double-tap a free spot to place your last element again, and "Upgrade all in this room" in an element\'s card upgrades all the same ones at once.'),
+       L('Karty w talii i schowku (w sklepie albo w zakładce Talia, między falami): przeciągnij kartę na inne miejsce, żeby zmienić kolejność (Kopista kopiuje kartę po prawej) albo przenieść ją do schowka i z powrotem; upuszczona na inną kartę zamienia się z nią. Przytrzymaj kartę, żeby ją sprzedać.', 'Cards in the deck and the stash (in the shop or the Deck tab, between waves): drag a card to another place to change the order (Copyist copies the card to its right) or to move it to the stash and back; dropped on another card, they swap. Hold a card to sell it.'),
        L('Liczba przy pokoju to głębia: im bliżej serca, tym więcej dostajesz za bohaterów. Kropki to wolne miejsca.', 'The number by a room is its depth: the closer to the heart, the more the heroes are worth. Dots are free slots.')]],
      [L('Esencja', 'Essence'), [
        L('Rany i strach dają Grozę. Groza × Chciwość × Combo to Esencja, za którą budujesz.', 'Wounds and fear give Dread. Dread × Greed × Combo is Essence, which you build with.'),
@@ -693,9 +767,10 @@
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.7', "What's new in Prototype 1.27.7")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.8', "What's new in Prototype 1.27.8")));
     const ul0 = el('ul', 'conseq');
-    [L('1.27.7: Łucznik to teraz goblin z łukiem i kołczanem (należy do Zielonoskórych), a nie szkielet.', '1.27.7: the Archer is now a goblin with a bow and a quiver (he is a Greenskin), not a skeleton.'),
+    [L('1.27.8: karty w talii i schowku przeciągasz jak obiekty: na inne miejsce (kolejność, np. co kopiuje Kopista), do schowka i z powrotem, na inną kartę, żeby je zamienić. Przytrzymanie sprzedaje kartę. Kafelek Kopisty mówi, co kopiuje.', '1.27.8: you drag deck and stash cards like objects: to another place (the order, e.g. what Copyist copies), to the stash and back, onto another card to swap them. Holding a card sells it. Copyist\'s tile says what it copies.'),
+     L('1.27.7: Łucznik to teraz goblin z łukiem i kołczanem (należy do Zielonoskórych), a nie szkielet.', '1.27.7: the Archer is now a goblin with a bow and a quiver (he is a Greenskin), not a skeleton.'),
      L('1.27.7: opisy elementów mają więcej znaczników: gdzie stoi (Podłoga, Ściana, Drzwi, Na meblu, Potwór, Łup, Obiekt), jak daleko sięga (Zwarcie, Dystans, Obszar, Jedno pole) i rodzinę.', '1.27.7: element descriptions have more tags: where it goes (Floor, Wall, Door, On furniture, Monster, Loot, Object), its reach (Melee, Ranged, Area, One tile) and its family.'),
      L('1.27.6: opis karty w sklepie już nie znika. Gdy przy pięciu ofertach i pełnej talii brakuje miejsca, karty układają się w jeden rząd przewijany w bok.', '1.27.6: the card text in the shop no longer vanishes. When five offers and a full deck leave no room, the cards line up in one row you swipe sideways.'),
      L('1.27.5: serce rośnie najwyżej o 1 poziom na falę. Nadmiar Nasycenia czeka w pasku i da poziom na początku następnej budowy.', '1.27.5: the heart grows at most 1 level per wave. Extra Satiety waits in the bar and gives a level when the next build starts.'),
@@ -1520,6 +1595,7 @@
     const build = fl && fl.phase === 'build';
     run.stash = run.stash || [];
     const free = run.freePicks > 0, rerender = () => { card.classList.remove('enter'); card.innerHTML = ''; renderShop(card, m); };
+    if (build && !UI.cardDragTip && run.deck.length >= 2 && !m.msg) { UI.cardDragTip = 1; saveUI(); m.msg = L('Talia: przeciągnij kartę, żeby ją przestawić albo schować. Przytrzymaj, żeby sprzedać.', 'Deck: drag a card to move it or stash it. Hold it to sell it.'); }   // 1.27.8: once
     scrHead(card, L('Przed falą ', 'Before wave ') + run.wave, L('Sklep', 'Shop'), String(Math.floor(fl.essence)), free ? L(run.freePicks === 1 ? 'Esencji · 1 darmowa karta' : 'Esencji · darmowe karty: ' + run.freePicks, 'Essence · ' + run.freePicks + (run.freePicks === 1 ? ' free card' : ' free cards')) : L('Esencji', 'Essence'));
     if (!build) { card.appendChild(el('p', 'note', L('Sklep działa między falami.', 'The shop opens between waves.'))); card.appendChild(btn('primary', L('Zamknij', 'Close'), null, closeModal)); return; }
     // 1.15.1 (author: the tutorial's tip in the shop was gone at once, before it could be read): a card over the top of the shop
@@ -1656,9 +1732,11 @@
     // the deck and the stash: every slot has its place, empty ones too
     const dk = panel(body, L('Talia ', 'Deck ') + deckUsed() + '/' + run.deckSize + (run.deck.length > deckUsed() ? L(' · ♥ Serce ', ' · ♥ Heart ') + (run.deck.length - deckUsed()) : ''), L('schowek ', 'stash ') + run.stash.length + '/' + stashCap() + L(' · karty tu nie działają', ' · cards here are inactive'), 'deckp');
     const g = el('div', 'slots');
+    const shopDnD = { slots: () => [...g.querySelectorAll('.slot[data-ck]')], done: msg => { m.sel = null; if (msg) m.msg = msg; rerender(); } };   // 1.27.8
     const slot = (u, k, i, empty) => {
       const b = el('button', 'slot' + (k === 's' ? ' st' : '') + (u ? ' rar-' + u.rar : ' empty') + (u && isFused(u.id) ? ' fused' : '') + (sel && sel.k === k && sel.i === i ? ' sel' : ''), u ? cardName(u.id) : empty); b.type = 'button';   // 1.24: ★
-      if (u) b.addEventListener('click', () => { m.sel = sel && sel.k === k && sel.i === i ? null : { k, i }; rerender(); }); else b.disabled = true;
+      if (u) { b.addEventListener('click', () => { m.sel = sel && sel.k === k && sel.i === i ? null : { k, i }; rerender(); }); cardGestures(b, k, i, shopDnD); } else { b.disabled = true; b.dataset.ck = k; b.dataset.ci = -1; }   // 1.27.8: drag to move, hold to sell
+      if (u && (u.id === 'copyist' || u.id === 'soulmirror') && k === 'd') { const t = copyTarget(u.id); b.title = t ? L('kopiuje: ', 'copies: ') + cardName(t) : L('nic nie kopiuje', 'copies nothing'); b.appendChild(el('small', 'cpy', t ? '→ ' + cardName(t) : L('→ nic', '→ nothing'))); }
       g.appendChild(b);
     };
     { const ordI = run.deck.map((id, i) => i).filter(i => !isGift(run.deck[i])), giftI = run.deck.map((id, i) => i).filter(i => isGift(run.deck[i]));   // 1.27.5: the slots, then the gift cards

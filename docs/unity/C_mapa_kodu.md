@@ -1227,6 +1227,9 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `runeBuy` | (1.26) kupno runy: `run.famLv[f] += 1` |
 | `heartOffer` | (1.26) rząd Dar serca: najstarszy czekający poziom z `run.heartPicks` (3 karty, z Dziesięciną 4; Odrost na poziomach nieparzystych, gdy brakuje kryształu); 1.26.1: rzadkość r 70% / l 30% (komentarz nad funkcją dalej podaje 55/35/10) |
 | `heartTake` | (1.26) weź kartę z rzędu Dar serca (talia, schowek, ★ albo Odrost); 1.27.5: karta Daru zawsze do talii, każdy wybór w `fl.heartPicksLog` |
+| `moveCard` | (1.27.8) przenosi kartę między miejscami talii i schowka (kolejność, do schowka i z powrotem, zamiana), tylko w budowie; karty Daru stoją |
+| `holdSellCard` | (1.27.8) sprzedaż karty po przytrzymaniu |
+| `cardGestures` | (1.27.8) gesty kafelka karty: przeciągnięcie (duch, cel upuszczenia), przytrzymanie ze sprzedażą, stuknięcie dalej otwiera kartę |
 | `tagChips` | (1.27.7) znaczniki elementu: Rani / Straszy, miejsce, zasięg (`reachOf`, `TAG_REACH`), rodzina; `tagRow` robi z nich rząd `.tlb` |
 | `reserveLow` | (1.27.5) czerwony napis na przycisku Wypuść falę: `hungerRisk() > 0` i zapas < 20% głodu (od fali 2, bez samouczka) |
 | `sameInRoom` | (1.27.5) elementy tego samego typu i poziomu w tym samym pokoju co `it` |

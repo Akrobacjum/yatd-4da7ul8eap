@@ -4,6 +4,16 @@ Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
+## Zmiany w 1.27.8
+
+- **Karty przeciągane i przytrzymywane jak obiekty** (autor: przestawianie kart, żeby wybrać, co kopiuje Kopista; bez stukania w kartę, żeby ją przenieść, sprzedać albo przełożyć). Dotyczy kart w talii i schowku w panelu talii sklepu (`.slots .slot`) i w zakładce Talia paska (`.dslot`), tylko w budowie (`cardGestures(b, k, i, opt)`, `moveCard(fk, fi, tk, ti)`, `holdSellCard(k, i)` w `p8b_ui.js`):
+  - Przeciągnięcie (ruch powyżej 9 px): karta zostaje przygaszona (`.dragging`), nad palcem idzie jej nazwa (`.cardghost`), miejsce pod palcem ma przerywaną złotą ramkę (`.droptarget`). Upuszczenie: na inne miejsce w talii = nowa kolejność (zwykłe karty, przed kartami Daru; puste miejsce = na koniec zwykłych); na pusty schowek = do schowka; z schowka na puste miejsce talii = do talii (na to miejsce), przy pełnej talii komunikat; na inną kartę (talia ↔ schowek) = zamiana. Karty Daru nie przesuwają się (bez miejsca i bez kolejności). W pasku przeciąganie zaczyna się ruchem w górę (ruch w bok przewija pasek, `touch-action: pan-x`), a przy krawędzi pasek sam się przewija.
+  - Przytrzymanie bez ruchu: po 0,16 s czerwony pasek wypełnia kartę przez `CARD_HOLD` = 0,8 s (`.sellhold`, animacja `sellfill`), potem karta jest sprzedana (`sellCard`/`sellStash`, cena jak dotąd), w sklepie komunikat "Sprzedane: X (+N Esencji)."
+  - Zwykłe stuknięcie dalej otwiera kartę (arkusz z przyciskami Do schowka / Sprzedaj / ◀ ▶ zostaje jako druga droga); kliknięcie po przeciągnięciu albo sprzedaży jest pomijane.
+  - Kafelek Kopisty i Lustra duszy w pasku ma w linii znacznika "kopiuje: X" albo "nic nie kopiuje", a w panelu sklepu pod nazwą "→ X". Raz w przeglądarce sklep mówi "Talia: przeciągnij kartę, żeby ją przestawić albo schować. Przytrzymaj, żeby sprzedać." (`UI.cardDragTip`); linia w "Jak grać".
+  - Statystyki fali `cardDrags`, `cardHoldSells`. Test `t1278_carddrag` (kolejność i Kopista, do schowka, zamiana, karta Daru stoi, przytrzymanie sprzedaje, stuknięcie otwiera kartę, przeciąganie w pasku).
+  - W Unity: ten sam gest dla kart (drag & drop między miejscami talii i schowka, długie przytrzymanie z paskiem = sprzedaż).
+
 ## Zmiany w 1.27.7
 
 - **Łucznik jest goblinem** (autor: należy do Zielonoskórych, a wyglądał jak szkielet): figura (`sprite`, `t === 'archer'`) to goblin z dużymi szpiczastymi uszami, żółtymi oczami, skórzaną czapeczką, brązowym kaftanem z pasem, kołczanem z lotkami na plecach i łukiem; `FIG_DETAIL.archer`, mała ikona SVG (`ICONS.archer`: zielona głowa z uszami i czapką) i rysunek zastępczy w `drawItemTop` (zielona głowa z uszami) tak samo. Karta i kafelek biorą figurę, więc zmieniły się same. Komnata Kaplica czaszek dalej odblokowuje łucznika (bez zmian w grze).
