@@ -173,6 +173,16 @@ details.testers > summary, details.older > summary { font-size: 13px; color: var
 .bossbox .bossimg.fin { background: radial-gradient(circle at 50% 45%, rgba(255, 210, 122, 0.45), transparent 70%); }
 .bossbox .bossic { width: 40px; height: 40px; filter: drop-shadow(0 2px 2px #000); }
 .bossbox .omentx b { color: #ffcf9a; }
+.runerow.done { border-style: dashed; opacity: 0.6; grid-template-columns: 1fr; min-height: 58px; }   /* 1.27.1: a bought rune leaves its slot */
+.tray > .item.fam, .item.art.fam { border-bottom: 2px solid var(--fam) !important; }   /* 1.27.1: the family colour under the tile */
+.item.dslot.famtile { border-top-color: #a08ce8; } .item.dslot.famtile .dtag { color: #c9b8ff; }
+.famlist { display: grid; gap: 6px; max-height: 56vh; overflow: auto; }
+.famrow { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: rgba(20, 21, 25, 0.7); opacity: 0.75; }
+.famrow.on { opacity: 1; border-color: var(--line2); }
+.famrow .runeimg, .famrow .fg { width: 28px; height: 28px; flex: none; image-rendering: pixelated; display: grid; place-items: center; font-size: 18px; }
+.famrow .ft { display: grid; gap: 2px; min-width: 0; font-size: 12.5px; } .famrow .fh { display: flex; justify-content: space-between; gap: 8px; align-items: center; } .famrow .fh b { font-size: 14px; }
+.famrow .fe { color: var(--ink); } .famrow .fi { color: var(--muted); font-size: 11.5px; }
+.famrow .fpips { display: inline-flex; gap: 3px; } .famrow .fpips i { width: 8px; height: 8px; transform: rotate(45deg); border: 1px solid var(--line2); } .famrow .fpips i.f { background: var(--gold); border-color: var(--gold); }
 .runerow .runeimg { width: 24px; height: 24px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px; }
 .np.fog { opacity: 0.8; } .np.fog .npi { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: #9a93a8; }
 .runerow .rn { font-size: 13px; } .runerow .rn small { color: var(--muted); } .runerow .rt { grid-column: 1; font-size: 11.5px; color: var(--muted); line-height: 1.25; } .runerow .buy { grid-column: 2; grid-row: 1 / span 2; }
@@ -215,7 +225,10 @@ label.askno { display: flex; gap: 6px; align-items: center; font-size: 13px; col
 @keyframes curpip { 50% { box-shadow: 0 0 2px rgba(196, 160, 82, 0.3); } }
 .pips i.boss::after { content: ""; position: absolute; left: 50%; top: -4px; width: 5px; height: 5px; margin-left: -2.5px; transform: rotate(45deg); background: var(--ember); }
 /* the HUD equation, like Balatro: Groza x Chciwość x Combo = Esencja (the last burst of events; dim when nothing happens) */
-.eqrow { justify-content: center; gap: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.eqrow { justify-content: center; gap: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; max-height: 60px; transition: max-height 0.32s ease, opacity 0.26s ease, transform 0.32s cubic-bezier(.2,.8,.3,1.2), margin-top 0.32s ease; }
+.eqrow.eq-off { max-height: 0; opacity: 0; transform: translateY(-12px) scale(0.96); margin-top: -5px; pointer-events: none !important; transition: max-height 0.3s ease 0.05s, opacity 0.2s ease, transform 0.3s ease, margin-top 0.3s ease 0.05s; }   /* 1.27.1: slides out after a wave, in when one starts */
+.eqrow.eq-off > * { pointer-events: none !important; }
+@media (prefers-reduced-motion: reduce) { .eqrow, .eqrow.eq-off { transition: none; } }
 .eqrow > * { overflow: visible !important; }
 .eqrow .eq {
   display: inline-flex; flex-direction: column; align-items: center; padding: 2px 7px 3px; border-radius: var(--r);

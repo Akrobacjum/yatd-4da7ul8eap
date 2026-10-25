@@ -173,6 +173,16 @@ details.testers > summary, details.older > summary { font-size: 13px; color: var
 .bossbox .bossimg.fin { background: radial-gradient(circle at 50% 45%, rgba(255, 210, 122, 0.45), transparent 70%); }
 .bossbox .bossic { width: 40px; height: 40px; filter: drop-shadow(0 2px 2px #000); }
 .bossbox .omentx b { color: #ffcf9a; }
+.runerow.done { border-style: dashed; opacity: 0.6; grid-template-columns: 1fr; min-height: 58px; }   /* 1.27.1: a bought rune leaves its slot */
+.tray > .item.fam, .item.art.fam { border-bottom: 2px solid var(--fam) !important; }   /* 1.27.1: the family colour under the tile */
+.item.dslot.famtile { border-top-color: #a08ce8; } .item.dslot.famtile .dtag { color: #c9b8ff; }
+.famlist { display: grid; gap: 6px; max-height: 56vh; overflow: auto; }
+.famrow { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: rgba(20, 21, 25, 0.7); opacity: 0.75; }
+.famrow.on { opacity: 1; border-color: var(--line2); }
+.famrow .runeimg, .famrow .fg { width: 28px; height: 28px; flex: none; image-rendering: pixelated; display: grid; place-items: center; font-size: 18px; }
+.famrow .ft { display: grid; gap: 2px; min-width: 0; font-size: 12.5px; } .famrow .fh { display: flex; justify-content: space-between; gap: 8px; align-items: center; } .famrow .fh b { font-size: 14px; }
+.famrow .fe { color: var(--ink); } .famrow .fi { color: var(--muted); font-size: 11.5px; }
+.famrow .fpips { display: inline-flex; gap: 3px; } .famrow .fpips i { width: 8px; height: 8px; transform: rotate(45deg); border: 1px solid var(--line2); } .famrow .fpips i.f { background: var(--gold); border-color: var(--gold); }
 .runerow .runeimg { width: 24px; height: 24px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px; }
 .np.fog { opacity: 0.8; } .np.fog .npi { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: #9a93a8; }
 .runerow .rn { font-size: 13px; } .runerow .rn small { color: var(--muted); } .runerow .rt { grid-column: 1; font-size: 11.5px; color: var(--muted); line-height: 1.25; } .runerow .buy { grid-column: 2; grid-row: 1 / span 2; }
@@ -215,7 +225,10 @@ label.askno { display: flex; gap: 6px; align-items: center; font-size: 13px; col
 @keyframes curpip { 50% { box-shadow: 0 0 2px rgba(196, 160, 82, 0.3); } }
 .pips i.boss::after { content: ""; position: absolute; left: 50%; top: -4px; width: 5px; height: 5px; margin-left: -2.5px; transform: rotate(45deg); background: var(--ember); }
 /* the HUD equation, like Balatro: Groza x Chciwość x Combo = Esencja (the last burst of events; dim when nothing happens) */
-.eqrow { justify-content: center; gap: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.eqrow { justify-content: center; gap: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; max-height: 60px; transition: max-height 0.32s ease, opacity 0.26s ease, transform 0.32s cubic-bezier(.2,.8,.3,1.2), margin-top 0.32s ease; }
+.eqrow.eq-off { max-height: 0; opacity: 0; transform: translateY(-12px) scale(0.96); margin-top: -5px; pointer-events: none !important; transition: max-height 0.3s ease 0.05s, opacity 0.2s ease, transform 0.3s ease, margin-top 0.3s ease 0.05s; }   /* 1.27.1: slides out after a wave, in when one starts */
+.eqrow.eq-off > * { pointer-events: none !important; }
+@media (prefers-reduced-motion: reduce) { .eqrow, .eqrow.eq-off { transition: none; } }
 .eqrow > * { overflow: visible !important; }
 .eqrow .eq {
   display: inline-flex; flex-direction: column; align-items: center; padding: 2px 7px 3px; border-radius: var(--r);
@@ -873,7 +886,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     </div>
     <div class="hud-row barrow"><div class="bar" id="h-barwrap"><i id="h-bar"></i></div><div class="pips" id="h-pips" hidden aria-label="Postęp runu"></div><div class="num" id="h-time">budowa</div></div>
     <div class="hud-row hungerrow" id="h-hrow" role="button" tabindex="0" aria-label="Serce: głód, Danina, poziom i Ofiara" title="Serce: stuknij, żeby zobaczyć głód, Nasycenie i Ofiarę"><span class="heart" id="h-heart">♥<sub id="h-hlv"></sub></span><div class="hbar"><i id="h-hfill"></i><em id="h-sfill"></em><b id="h-hmark"></b></div><span class="num" id="h-hlabel">serce</span></div>
-    <div class="hud-row eqrow idle" id="h-eq" role="button" tabindex="0" aria-label="Skąd Esencja: Groza razy Chciwość razy Combo">
+    <div class="hud-row eqrow idle eq-off" id="h-eq" role="button" tabindex="0" aria-label="Skąd Esencja: Groza razy Chciwość razy Combo">
       <span class="eq" id="eq-g"><i>Groza</i><b>0</b></span><span class="op">×</span><span class="eq" id="eq-c"><i>Chciwość</i><b>1</b></span><span class="op">×</span><span class="eq" id="eq-k"><i>Combo</i><b>1</b></span><span class="op" id="eq-rop" hidden>×</span><span class="eq" id="eq-r" hidden><i>Żyła</i><b>1</b></span><span class="op">=</span><span class="eq res" id="eq-e"><i>Esencja</i><b>+0</b></span>
     </div>
     <div class="hud-row small" id="h-rankrow">
@@ -5228,13 +5241,26 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   // same as before: the payout is never less than what the chain was worth as it went (greed and combo only go up in a chain).
   function heartLive(e, C) {
     const need = hungerNeed(run.wave);
-    if (!(e > 0) || !(need > 0) || fl.fed >= need || fl.phase !== 'raid') return;
-    const take = Math.min(e, need - fl.fed);
-    fl.fed += take; C.fedLive = (C.fedLive || 0) + take; fl.score += take; fl.stats.essHeart = (fl.stats.essHeart || 0) + take;
-    fl.heartOrb = (fl.heartOrb || 0) + take;
-    const full = fl.fed >= need - 1e-6;
-    if (fl.heartOrb >= 0.6 || full) { gainEssence('eq', 0, 'essWave', fl.heartOrb); fl.heartOrb = 0; }   // red orbs from the equation to the heart, a few, not one per event
-    if (full) heartFull(need);
+    if (!(e > 0) || !(need > 0) || fl.phase !== 'raid') return;
+    let left = e;
+    if (fl.fed < need) {
+      const take = Math.min(e, need - fl.fed); left -= take;
+      fl.fed += take; C.fedLive = (C.fedLive || 0) + take; fl.score += take; fl.stats.essHeart = (fl.stats.essHeart || 0) + take;
+      fl.heartOrb = (fl.heartOrb || 0) + take;
+      const full = fl.fed >= need - 1e-6;
+      if (fl.heartOrb >= 0.6 || full) { gainEssence('eq', 0, 'essWave', fl.heartOrb); fl.heartOrb = 0; }   // red orbs from the equation to the heart, a few, not one per event
+      if (full) heartFull(need);
+    }
+    // 1.27.1 (author: the Danina bar should fill like the hunger bar, not wait for the combo to end): the fed heart takes its
+    // Danina from every event as it comes; the payout at the chain's end only adds what the combo made on top (essIn, tithed)
+    if (left > 1e-9 && fl.fed >= need - 1e-6) {
+      const t = left * titheNow(); if (!(t > 0)) return;
+      C.titheLive = (C.titheLive || 0) + t; fl.score += t; fl.stats.essTithe = (fl.stats.essTithe || 0) + t;
+      satietyAdd(t * (mods.satietyK || 1), 'tithe');
+      fl.titheOrb = (fl.titheOrb || 0) + t;
+      if (fl.titheOrb >= 0.6) { gainEssence('eq', 0, 'essWave', fl.titheOrb); fl.titheOrb = 0; }
+      if (fl.time - (fl.titheFloatT || -9) > 2.5) { fl.titheFloatT = fl.time; floatTile(fl.heart.x, fl.heart.y, L('Danina +', 'Tithe +') + fmtE(Math.max(t, 0.1)), '#ffd27a', 13, -1.3); }
+    }
   }
   // 1.26 (13.2): the Esencja multipliers of this moment (they multiply each other; nothing caps them, like Balatro's xMult)
   const greedE = g => mods.croesus && g > 1 ? g * g : g;   // Krezus: greed squared in the Esencja
@@ -5275,18 +5301,20 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (crown > 1) { fl.stats.crownPays = (fl.stats.crownPays || 0) + 1; floatTile(fl.heart.x, fl.heart.y, L('Koronacja strachu ×', 'Coronation of Fear ×') + fmt2(crown), '#ffd27a', 13, -1.6); }
     fl.stats.comboPts = (fl.stats.comboPts || 0) + Math.max(0, e - C.prov);
     const pre = Math.min(e, C.fedLive || 0);   // 1.16.1: the heart's share it already ate as the chain went
-    fl.score += e - pre;
+    const tLive = Math.min(Math.max(0, e - pre), C.titheLive || 0);   // 1.27.1: the Danina it already took as the chain went
+    fl.score += e - pre - tLive;
     fl.lastPay = { g: C.g, greed: C.greed, cm: C.cm, e, t: fl.time, n: ++payN };
     if (C.cm > 1 || e >= 1) tl('cp', Math.round(C.g * 100) / 100, Math.round(C.cm * 100) / 100, Math.round(e * 10) / 10);
-    essIn(e - pre, C.who);
+    essIn(e - pre, C.who, tLive);
     if (mods.bloodflow && C.cm >= 2 - 1e-9 && hungerNeed(run.wave) > 0 && fl.fed >= hungerNeed(run.wave) - 1e-6) satietyAdd(mods.bloodflow, 'bloodflow');   // 1.26 Krwiobieg
     if (e >= 1) tutPop('pay');
     return e;
   }
   // Esencja comes in: the hungry heart takes its share first, the rest goes to the purse (Obżarstwo: x1,25 once it is fed)
   // 1.26: the fed heart takes its Danina first (it goes to Nasycenie), Obżarstwo only grows what goes to the purse
-  function essIn(e, who) {
+  function essIn(e, who, tithed) {
     if (!(e > 0)) return;
+    tithed = tithed || 0;   // 1.27.1: Danina already taken live from this chain (heartLive)
     const need = hungerNeed(run.wave);
     let heart = 0, tithe = 0;
     if (need > 0 && fl.fed < need) {
@@ -5295,7 +5323,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     }
     let rest = e - heart;
     if (rest > 0 && need > 0 && fl.fed >= need - 1e-6) {
-      tithe = rest * titheNow(); rest -= tithe;
+      tithe = Math.max(0, rest * titheNow() - tithed); rest -= tithe + Math.min(tithed, rest);
       if (tithe > 0) { fl.stats.essTithe = (fl.stats.essTithe || 0) + tithe; satietyAdd(tithe * (mods.satietyK || 1), 'tithe'); if (fl.time - (fl.titheFloatT || -9) > 2.5) { fl.titheFloatT = fl.time; floatTile(fl.heart.x, fl.heart.y, L('Danina +', 'Tithe +') + fmtE(tithe), '#ffd27a', 13, -1.3); } }
       if (mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
     }
@@ -16732,7 +16760,13 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (!list.length) { uiRects.list = null; return; }
     // 1.26 (15): the omen of this wave: Mgła wojny hides the party, any other shows as a badge under the preview
     const omId = run.omens && run.omens[run.wave], om = omId && OMENS[omId];
-    const omBadge = y => { if (!om) return; const t = 'Omen: ' + om.name; ctx.font = '700 10px "Alegreya Sans", system-ui, sans-serif'; const bw = Math.ceil(ctx.measureText(t).width) + 16; ctx.fillStyle = 'rgba(70,36,96,0.88)'; rr(6, y, bw, 18, 6); ctx.fill(); ctx.strokeStyle = '#a97ad6'; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = '#e6d2ff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, 6 + bw / 2, y + 9.5); };
+    // 1.27.1 (author: the omen badge did not match the UI): the preview's own dark slab, a violet edge, a small caps label
+    const omBadge = y => { if (!om) return; const F1 = '600 9px "Alegreya Sans", system-ui, sans-serif', F2 = '600 11px "Alegreya Sans", system-ui, sans-serif', lab = 'OMEN';
+      ctx.font = F1; const lw = ctx.measureText(lab).width + 3; ctx.font = F2; const nw = ctx.measureText(om.name).width, bw = Math.ceil(10 + lw + 6 + nw + 9), bh = 19;
+      ctx.fillStyle = 'rgba(10,11,13,0.82)'; rr(6, y, bw, bh, 3); ctx.fill(); ctx.fillStyle = '#a08ce8'; ctx.fillRect(6, y + 3, 2, bh - 6);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = F1; ctx.fillStyle = '#8e939a';
+      try { ctx.letterSpacing = '1px'; } catch (e) {} ctx.fillText(lab, 13, y + bh / 2 + 0.5); try { ctx.letterSpacing = '0px'; } catch (e) {}
+      ctx.font = F2; ctx.fillStyle = '#d9ccff'; ctx.fillText(om.name, 13 + lw + 6, y + bh / 2 + 0.5); };
     if (list.some(e => e.fog) && !mods.revealAll) {
       uiRects.list = null; const w = 196, h = 36;
       ctx.fillStyle = 'rgba(10,11,13,0.8)'; rr(6, 6, w, h, 4); ctx.fill(); ctx.strokeStyle = '#a97ad6'; ctx.lineWidth = 1; ctx.stroke();
@@ -17110,6 +17144,10 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       P.after = fn => { const m = P.g.getTransform(); posts.push(() => { P.g.save(); P.g.setTransform(m); fn(); P.g.restore(); }); return P; };
       const tx = kind === 'none' ? 36 : stage(P, kind, o);
       if (kind !== 'none') { P.rect(0, 0, W, H, 'rgba(9,9,12,0.18)'); P.glow(36, kind === 'wall' ? 15 : 22, 24, '#8a9ab8', 0.1); }
+      if (o.tint && kind !== 'none') {   // 1.27.1 (author: the tiles all looked grey): the family's colour soaks the stone and glows behind the thing
+        const hx = (h, a) => 'rgba(' + parseInt(h.slice(1, 3), 16) + ',' + parseInt(h.slice(3, 5), 16) + ',' + parseInt(h.slice(5, 7), 16) + ',' + a + ')';
+        P.rect(0, 0, W, H, hx(o.tint[0], 0.62)); P.glow(36, kind === 'wall' ? 15 : 24, 30, o.tint[1], 0.42);
+      }
       draw(P, o);
       const lx = o.lx !== undefined ? o.lx : (tx < 36 ? 16 : 56), ly = o.ly !== undefined ? o.ly : 10;
       P.light(lx, ly, o.lr || 58, o.warm);
@@ -17406,12 +17444,18 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const STAGE_OF = { spikes: 'floor', web: 'floor', trapdoor: 'floor', cage: 'floor', bones: 'floor', coffin: 'floor', arrows: 'wall', fire: 'wall', portrait: 'wall', eyes: 'wall', mirror: 'wall',
       gate: 'door', creak: 'door', ogre: 'cave', k_ogre: 'cave', k_bats: 'dark', dig: 'cave', r_hush: 'dark', r_grotto: 'cave', k_spider: 'dark', shade: 'dark', tunnel: 'floor',
       pendulum: 'wall', bolt: 'wall', falsedoor: 'door', tar: 'door', snare: 'floor', miasma: 'floor', oilslick: 'floor', flood: 'floor', bell: 'floor', bait: 'floor', demon: 'cave', hound: 'cave', lich: 'dark', siren: 'dark', imp: 'cave', rats: 'floor' };
+    // 1.27.1: a backdrop colour per family (dark base, glow), and for the objects; dungeon tools and rooms keep their stone
+    const FAM_TINT = { mech: ['#33475a', '#a9d4da'], fire: ['#4d3220', '#ffb35c'], alch: ['#2e4420', '#9cc27e'], haunt: ['#2c2048', '#a08ce8'], undead: ['#16171c', '#9cc27e'],
+      beast: ['#2a1b12', '#b08850'], green: ['#2e4420', '#5c8c3a'], demons: ['#460a10', '#cc3640'], treasure: ['#4d3220', '#f0d890'] };
+    const OBJ_TINT = ['#2a1b12', '#c4a052'];
+    const tintOf = t => FAM_TINT[FAMILY_OF[t]] || (BUILDINGS[t] || t === 'crate' ? OBJ_TINT : null);
+    ART.tintOf = tintOf;
     function paintTile(type) {
       if (ROOMS[type]) return scene('tile:' + type, STAGE_OF[type] || 'floor', P => ROOMS[type](P), { warm: type === 'r_ice' || type === 'r_hush' ? 0.05 : undefined });
       const f = EL[type]; if (!f) return null;
       const I = ITEMS[type], st = STAGE_OF[type] || (I && SLOT_STAGE[I.slot]) || 'floor';
       const wallish = st === 'wall', doorish = st === 'door', k = TILE_K[type] || 1, ax = 36, ay = wallish ? 15 : doorish ? 29 : FLOOR_Y;
-      return scene('tile:' + type, st, P => { if (k !== 1) { P.g.save(); P.g.translate(ax, ay); P.g.scale(k, k); P.g.translate(-ax, -ay); } f(P, ax, ay); if (k !== 1) P.g.restore(); }, {});
+      return scene('tile:' + type, st, P => { if (k !== 1) { P.g.save(); P.g.translate(ax, ay); P.g.scale(k, k); P.g.translate(-ax, -ay); } f(P, ax, ay); if (k !== 1) P.g.restore(); }, { tint: tintOf(type) });
     }
     ART.tile = type => ART.url('tile:' + type, () => paintTile(type));
     ART.tileCanvas = type => ART.keep('tile:' + type, () => paintTile(type));
@@ -18590,6 +18634,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         if (ART.has(t)) { b.classList.add('art'); b.innerHTML = '<span class="scene"><img alt="" draggable="false"><span class="cost"></span></span><span class="nm"></span><span class="sl"></span>'; }   // 1.26: a painted scene (its picture comes when the tile is first shown)
         else b.innerHTML = '<span class="top">' + (ICONS[t] || genIcon(t)) + '<span class="cost"></span></span><span class="nm"></span><span class="sl"></span>';
         b.querySelector('.nm').textContent = ITEMS[t].name;
+        { const tn = ART.tintOf && ART.tintOf(t); if (tn) { b.style.setProperty('--fam', tn[1]); b.classList.add('fam'); } }   // 1.27.1: the family colour on the tile
         if (ITEMS[t].name.length >= 9) b.classList.add('longnm');
         b.querySelector('.sl').textContent = ITEMS[t].tag;
         if (LOOT_COLOR[t]) b.querySelector('.sl').style.color = LOOT_COLOR[t];
@@ -18708,7 +18753,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   }
   // The deck tab: one tile per slot, filled or empty. Rebuilt only when the deck changes.
   function renderDeckTiles(show) {
-    const tray = $('#tray'), k = show ? run.deck.join(',') + '|' + (run.fused || []).join(',') + '|' + run.deckSize + '|' + JSON.stringify(run.stacks || {}) + '|' + (run.stash || []).join(',') + '|' + (run.freePicks || 0) + '|' + (run.heartPicks || []).length + '|' + (fl ? fl.phase : '') : '';
+    const tray = $('#tray'), k = show ? run.deck.join(',') + '|' + (run.fused || []).join(',') + '|' + run.deckSize + '|' + JSON.stringify(run.stacks || {}) + '|' + (run.stash || []).join(',') + '|' + (run.freePicks || 0) + '|' + (run.heartPicks || []).length + '|' + (fl ? fl.phase : '') + '|' + JSON.stringify(run.famLv || {}) : '';
     if (tray.dataset.deck === k) return;
     tray.dataset.deck = k;
     tray.querySelectorAll('.dslot').forEach(e => e.remove());
@@ -18720,6 +18765,13 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       b.innerHTML = '<span class="dtag"></span><span class="dnm">' + L('Sklep', 'Shop') + '</span>';
       b.querySelector('.dtag').textContent = !build ? L('między falami', 'between waves') : hp ? L('♥ Dar serca', "♥ Heart's Gift") + (run.freePicks > 0 ? ' + ' + run.freePicks : '') : run.freePicks > 0 ? L('gratis: ', 'free: ') + run.freePicks : L('wróć do sklepu', 'back to shop');
       b.disabled = !build; b.addEventListener('click', () => { if (!modalOpen && build) openModal({ type: 'shop' }); });
+      tray.appendChild(b); }
+    { // 1.27.1 (author): the families' levels (what the Family Runes do) are one tap away in the Deck tab
+      const lv = run.famLv || {}, tot = Object.keys(FAMILIES).reduce((s, f) => s + Math.min(RUNE_MAX, lv[f] || 0), 0), b = document.createElement('button');
+      b.type = 'button'; b.className = 'item dslot famtile'; b.id = 'tile-families';
+      b.innerHTML = '<span class="dtag"></span><span class="dnm">' + L('Rodziny', 'Families') + '</span>';
+      b.querySelector('.dtag').textContent = tot ? L('runy: ', 'runes: ') + tot : L('bez run', 'no runes');
+      b.addEventListener('click', () => { if (!modalOpen && run) { const un = fl && fl.phase === 'raid' && !paused; if (un) setPaused(true); openModal({ type: 'families', unpause: un }); } });
       tray.appendChild(b); }
     for (let i = 0; i < run.deckSize; i++) {
       const u = UPG[run.deck[i]], b = document.createElement('button');
@@ -18864,7 +18916,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const eqE = C ? '+' + fmtE(gNow * C.greed * C.cm * mods.regen * S.essK) : PY ? '+' + fmtE(PY.e) : '+0';   // 1.16.1: × S.essK, as the payout (the box showed ~10% less, then jumped)
     const txt = [eqG, eqC, eqK, eqE, C ? 1 : PY ? 2 : 0, wait ? 1 : 0, raid ? 1 : 0, mods.regen].join('|');
     const eq = $('#h-eq');
-    if (hudCache.eqOn !== raid) { hudCache.eqOn = raid; eq.hidden = !raid; $('#h-rankrow').hidden = true; }   // 1.27 (UI/UX): the equation is a wave thing; in the build it showed zeros
+    if (hudCache.eqOn !== raid) { hudCache.eqOn = raid; eq.hidden = false; eq.classList.toggle('eq-off', !raid); eq.setAttribute('aria-hidden', String(!raid)); eq.tabIndex = raid ? 0 : -1; $('#h-rankrow').hidden = true; }   // 1.27 (UI/UX): the equation is a wave thing; in the build it showed zeros. 1.27.1 (author): it slides in and out
     if (!eq.dataset.hook) { eq.dataset.hook = '1'; const open = () => { if (!run || !fl || modalOpen) return; const un = fl.phase === 'raid' && !paused; if (un) setPaused(true); openModal({ type: 'esencja', unpause: un }); };
       eq.addEventListener('click', open); eq.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }); }
     if (hudCache.mult !== txt) {
@@ -19022,7 +19074,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const card = $('#card'); card.innerHTML = ''; const scr = m.type === 'shop' || m.type === 'wave' || m.type === 'end', top = m.type === 'breach'; card.className = 'card enter' + (scr ? ' screen' : '') + (top ? ' topsheet' : '');
     card.scrollTop = 0; $('#overlay').classList.toggle('screenbg', scr); $('#overlay').classList.toggle('top', top);   // 1.01: the breach sheet sits at the top, the map stays in view
     clearTimeout(openModal.t); openModal.t = setTimeout(() => card.classList.remove('enter'), 900);   // the entrance plays once, not on every tap inside
-    ({ start: renderStart, menu: renderMenu, settings: renderSettings, tests: renderTests, upgrade: renderUpgrade, wave: renderWave, over: renderOver, name: renderName, unspent: renderUnspent, end: renderEnd, survey: renderSurvey, victory: renderVictory, card: renderCard, item: renderItem, breach: renderBreach, hungerTip: renderHungerTip, onb: renderOnb, news: renderNews, shop: renderShop, hero: renderHero, esencja: renderEsencja, keys: renderKeys, heart: renderHeart, branch: renderBranch })[m.type](card, m);
+    ({ start: renderStart, menu: renderMenu, settings: renderSettings, tests: renderTests, upgrade: renderUpgrade, wave: renderWave, over: renderOver, name: renderName, unspent: renderUnspent, end: renderEnd, survey: renderSurvey, victory: renderVictory, card: renderCard, families: renderFamilies, item: renderItem, breach: renderBreach, hungerTip: renderHungerTip, onb: renderOnb, news: renderNews, shop: renderShop, hero: renderHero, esencja: renderEsencja, keys: renderKeys, heart: renderHeart, branch: renderBranch })[m.type](card, m);
     $('#overlay').hidden = false;
   }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -19138,7 +19190,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.27 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.27.1 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -19194,9 +19246,13 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27', "What's new in Prototype 1.27")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.1', "What's new in Prototype 1.27.1")));
     const ul0 = el('ul', 'conseq');
-    [L('Gra jest teraz po angielsku, a polski wybierzesz w Ustawieniach. Polskie teksty są przepisane: krótsze i prostsze.', 'The game is now in English; Polish is in the Settings. The Polish texts were rewritten to be shorter and plainer.'),
+    [L('1.27.1: kafelki w pasku budowy mają tło w kolorze rodziny (Mechanizmy niebieskie, Ogień pomarańczowy, Nawiedzenie fioletowe...), więc łatwiej je rozróżnić.', '1.27.1: tiles in the build bar have a backdrop in their family colour (Mechanisms blue, Fire orange, Haunting violet...), so they are easier to tell apart.'),
+     L('1.27.1: w zakładce Talia kafelek Rodziny pokazuje poziom każdej rodziny i to, co dają Runy rodów.', '1.27.1: in the Deck tab the Families tile shows each family level and what the Family Runes give.'),
+     L('1.27.1: Danina napełnia złoty pasek od razu, jak głód serca, bez czekania na koniec combo.', '1.27.1: the Tithe fills the gold bar right away, like the hunger bar, without waiting for the combo to end.'),
+     L('1.27.1: po kupnie Runy rodu jej miejsce w sklepie zostaje puste i nic się nie przesuwa. Równanie Esencji wysuwa się na początku fali i chowa po jej końcu, a znaczek omenu wygląda jak reszta interfejsu.', '1.27.1: after you buy a Family Rune its shop slot stays empty and nothing moves. The Essence equation slides in when a wave starts and away when it ends, and the omen badge matches the rest of the UI.'),
+     L('Gra jest teraz po angielsku, a polski wybierzesz w Ustawieniach. Polskie teksty są przepisane: krótsze i prostsze.', 'The game is now in English; Polish is in the Settings. The Polish texts were rewritten to be shorter and plainer.'),
      L('Pasek budowy po nowemu: pułapki dzielą się na Ranią, Trzymają, Osłabiają i Straszą, potwory na Walczą, Wspierają i Straszą.', 'A new build bar: traps are split into Hurt, Bind, Weaken and Scare, monsters into Fight, Support and Scare.'),
      L('Opis elementu mówi jednym zdaniem, co robi, a liczby i wyjątki są drobnym drukiem pod spodem.', "An element's description says what it does in one sentence, with the numbers and exceptions in small print below."),
      L('Czempion i bohater z przepowiedni mają swoją kartę w wieściach z karczmy i na ekranie po fali, jak omeny: kto to, co robi i co dostaniesz.', 'The champion and the hero of the prophecy get their own card in the tavern news and on the summary screen, like omens: who they are, what they do and what you get.'),
@@ -19545,7 +19601,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   function runeBuy() {
     const f = run.shop && run.shop.rune; if (!f || !fl || fl.phase !== 'build') return 'no';
     const lv = run.famLv[f] || 0, c = runePrice(lv); if (fl.essence < c) return 'ess';
-    fl.essence -= c; run.famLv[f] = lv + 1; run.shop.rune = null; (run.runes = run.runes || []).push(f); fl.stats.runes = (fl.stats.runes || 0) + 1;
+    fl.essence -= c; run.famLv[f] = lv + 1; run.shop.rune = null; run.shop.runeDone = f;   // 1.27.1: its slot stays, empty (run.runes = run.runes || []).push(f); fl.stats.runes = (fl.stats.runes || 0) + 1;
     run.essence = fl.essence; fl.threatDirty = true; updateTray(); saveRunSoon(); return 'ok';
   }
   function shopRefresh(fresh) {
@@ -19602,7 +19658,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (!fl || fl.phase !== 'build') return false;
     if (ad) { if (run.shop.ad) return false; run.shop.ad = true; }
     else { const c = rerollCost(); if (fl.essence < c) return false; fl.essence -= c; run.shop.rerolls++; }
-    run.shop.ids = shopRoll(); run.shop.rune = runeRoll(); run.essence = fl.essence; updateTray(); saveRunSoon(); return true;
+    run.shop.ids = shopRoll(); run.shop.rune = runeRoll(); run.shop.runeDone = null; run.essence = fl.essence; updateTray(); saveRunSoon(); return true;
   }
   function toStash(i) {
     if (run.stash.length >= stashCap() || !run.deck[i]) return false;
@@ -20086,8 +20142,13 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       rb.appendChild(nm);
       rb.appendChild(el('span', 'rt', (f === 'treasure' ? L('łup podbija chciwość o 8% mocniej', 'loot raises greed 8% more') : L('elementy rodziny: +8% mocy, -4% odnowienia', 'family elements: +8% power, -4% cooldown')) + ' (' + F.items.filter(t => ITEMS[t]).map(t => ITEMS[t].name).slice(0, 4).join(', ') + (F.items.length > 4 ? '...' : '') + L('). Działa od razu, bez miejsca w talii.', '). Works at once, takes no deck slot.')));
       const b = el('button', 'buy', fl.essence < c ? L('Za mało (', 'Not enough (') + c + ')' : L('Kup za ', 'Buy for ') + c); b.type = 'button'; b.id = 'rune-buy'; b.disabled = fl.essence < c;
-      b.addEventListener('click', () => { const r = runeBuy(); m.msg = r === 'ok' ? L('Runa rodu: ' + F.name + ', poziom ' + (lv + 1) + '.', 'Family Rune: ' + F.name + ', level ' + (lv + 1) + '.') : L('Za mało Esencji.', 'Not enough Essence.'); rerender(); });
+      b.addEventListener('click', () => { m.runeH = rb.offsetHeight; const r = runeBuy(); m.msg = r === 'ok' ? L('Runa rodu: ' + F.name + ', poziom ' + (lv + 1) + '.', 'Family Rune: ' + F.name + ', level ' + (lv + 1) + '.') : L('Za mało Esencji.', 'Not enough Essence.'); rerender(); });
       rb.appendChild(b); body.appendChild(rb);
+    } else if (!heartView && run.shop.runeDone && FAMILIES[run.shop.runeDone]) {   // 1.27.1 (author): after the buy the slot stays, empty, so nothing else moves
+      const F = FAMILIES[run.shop.runeDone], rb = el('div', 'runerow done'); rb.id = 'shop-rune'; if (m.runeH) rb.style.height = m.runeH + 'px';
+      rb.appendChild(el('span', 'rn', L('Kupione: ', 'Bought: ') + F.glyph + ' ' + F.name + L(', poziom ', ', level ') + (run.famLv[run.shop.runeDone] || 0)));
+      rb.appendChild(el('span', 'rt', L('Następna Runa rodu w kolejnym sklepie.', 'The next Family Rune comes with the next shop.')));
+      body.appendChild(rb);
     }
     // refresh, refresh for an ad: two buttons that are always there (1.05, author: crystals are no longer bought back for Esencja)
     const acts = el('div', 'acts');
@@ -20932,6 +20993,25 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   }
   // 1.26: the heart's card (a tap on the heart's row): this wave's hunger and where it comes from, the purse, the Danina and the
   // Nasycenie to the next level, what the levels give, and the Ofiara (in the build)
+  // 1.27.1 (author): every family, its level from the Family Runes and what that does in the game
+  function renderFamilies(card, m) {
+    card.appendChild(el('div', 'sub', L('Talia · rodziny', 'Deck · families')));
+    card.appendChild(el('h2', null, L('Rodziny i Runy rodów', 'Families and Family Runes')));
+    card.appendChild(el('p', 'note', L('Każdy element należy do jednej rodziny. Runa rodu ze sklepu podnosi poziom rodziny (najwyżej ' + RUNE_MAX + ') i działa od razu na wszystkie jej elementy.', 'Every element belongs to one family. A Family Rune from the shop raises the family level (up to ' + RUNE_MAX + ') and works at once on all its elements.')));
+    const lv = run.famLv || {}, placed = {}; if (fl && fl.items) fl.items.forEach(it => { const f = FAMILY_OF[it.type]; if (f) placed[f] = (placed[f] || 0) + 1; });
+    const list = el('div', 'famlist');
+    Object.keys(FAMILIES).sort((a, b) => (lv[b] || 0) - (lv[a] || 0) || (placed[b] || 0) - (placed[a] || 0)).forEach(f => {
+      const F = FAMILIES[f], n = Math.min(RUNE_MAX, lv[f] || 0), row = el('div', 'famrow' + (n ? ' on' : ''));
+      { const ru = ART.rune && ART.rune(f); if (ru) { const im = el('img', 'runeimg'); im.src = ru; im.alt = ''; row.appendChild(im); } else row.appendChild(el('span', 'fg', F.glyph)); }
+      const tx = el('div', 'ft'), hd = el('div', 'fh'); hd.innerHTML = '<b style="color:' + F.color + '">' + F.glyph + ' ' + F.name + '</b>';
+      const pips = el('span', 'fpips'); for (let i = 1; i <= RUNE_MAX; i++) pips.appendChild(el('i', i <= n ? 'f' : '')); hd.appendChild(pips); tx.appendChild(hd);
+      tx.appendChild(el('span', 'fe', !n ? L('Poziom 0: bez premii.', 'Level 0: no bonus.') : f === 'treasure' ? L('Poziom ' + n + ': łup podbija Chciwość o ' + 8 * n + '% mocniej.', 'Level ' + n + ': loot raises Greed ' + 8 * n + '% more.') : L('Poziom ' + n + ': +' + 8 * n + '% mocy, -' + 4 * n + '% odnowienia, statusy o ' + 8 * n + '% dłużej.', 'Level ' + n + ': +' + 8 * n + '% power, -' + 4 * n + '% cooldown, statuses last ' + 8 * n + '% longer.')));
+      tx.appendChild(el('span', 'fi', F.items.filter(t => ITEMS[t]).map(t => ITEMS[t].name).join(', ') + (placed[f] ? L(' · w lochu: ', ' · in the dungeon: ') + placed[f] : '')));
+      row.appendChild(tx); list.appendChild(row);
+    });
+    card.appendChild(list);
+    card.appendChild(btn('primary', L('Zamknij', 'Close'), null, () => { closeModal(); if (m.unpause) setPaused(false); }));
+  }
   function renderHeart(card, m) {
     const hl = run.heartLv || 0, s0 = heartLvAt(hl), s1 = heartLvAt(hl + 1), sat = Math.floor(run.satiety || 0), build = fl.phase === 'build';
     const n = build ? run.wave : fl.phase === 'summary' ? run.wave + 1 : run.wave, P = hungerParts(n), need = hungerNeed(n), purse = Math.floor(fl.essence);

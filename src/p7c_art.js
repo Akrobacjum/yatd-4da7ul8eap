@@ -178,6 +178,10 @@
       P.after = fn => { const m = P.g.getTransform(); posts.push(() => { P.g.save(); P.g.setTransform(m); fn(); P.g.restore(); }); return P; };
       const tx = kind === 'none' ? 36 : stage(P, kind, o);
       if (kind !== 'none') { P.rect(0, 0, W, H, 'rgba(9,9,12,0.18)'); P.glow(36, kind === 'wall' ? 15 : 22, 24, '#8a9ab8', 0.1); }
+      if (o.tint && kind !== 'none') {   // 1.27.1 (author: the tiles all looked grey): the family's colour soaks the stone and glows behind the thing
+        const hx = (h, a) => 'rgba(' + parseInt(h.slice(1, 3), 16) + ',' + parseInt(h.slice(3, 5), 16) + ',' + parseInt(h.slice(5, 7), 16) + ',' + a + ')';
+        P.rect(0, 0, W, H, hx(o.tint[0], 0.62)); P.glow(36, kind === 'wall' ? 15 : 24, 30, o.tint[1], 0.42);
+      }
       draw(P, o);
       const lx = o.lx !== undefined ? o.lx : (tx < 36 ? 16 : 56), ly = o.ly !== undefined ? o.ly : 10;
       P.light(lx, ly, o.lr || 58, o.warm);
@@ -474,12 +478,18 @@
     const STAGE_OF = { spikes: 'floor', web: 'floor', trapdoor: 'floor', cage: 'floor', bones: 'floor', coffin: 'floor', arrows: 'wall', fire: 'wall', portrait: 'wall', eyes: 'wall', mirror: 'wall',
       gate: 'door', creak: 'door', ogre: 'cave', k_ogre: 'cave', k_bats: 'dark', dig: 'cave', r_hush: 'dark', r_grotto: 'cave', k_spider: 'dark', shade: 'dark', tunnel: 'floor',
       pendulum: 'wall', bolt: 'wall', falsedoor: 'door', tar: 'door', snare: 'floor', miasma: 'floor', oilslick: 'floor', flood: 'floor', bell: 'floor', bait: 'floor', demon: 'cave', hound: 'cave', lich: 'dark', siren: 'dark', imp: 'cave', rats: 'floor' };
+    // 1.27.1: a backdrop colour per family (dark base, glow), and for the objects; dungeon tools and rooms keep their stone
+    const FAM_TINT = { mech: ['#33475a', '#a9d4da'], fire: ['#4d3220', '#ffb35c'], alch: ['#2e4420', '#9cc27e'], haunt: ['#2c2048', '#a08ce8'], undead: ['#16171c', '#9cc27e'],
+      beast: ['#2a1b12', '#b08850'], green: ['#2e4420', '#5c8c3a'], demons: ['#460a10', '#cc3640'], treasure: ['#4d3220', '#f0d890'] };
+    const OBJ_TINT = ['#2a1b12', '#c4a052'];
+    const tintOf = t => FAM_TINT[FAMILY_OF[t]] || (BUILDINGS[t] || t === 'crate' ? OBJ_TINT : null);
+    ART.tintOf = tintOf;
     function paintTile(type) {
       if (ROOMS[type]) return scene('tile:' + type, STAGE_OF[type] || 'floor', P => ROOMS[type](P), { warm: type === 'r_ice' || type === 'r_hush' ? 0.05 : undefined });
       const f = EL[type]; if (!f) return null;
       const I = ITEMS[type], st = STAGE_OF[type] || (I && SLOT_STAGE[I.slot]) || 'floor';
       const wallish = st === 'wall', doorish = st === 'door', k = TILE_K[type] || 1, ax = 36, ay = wallish ? 15 : doorish ? 29 : FLOOR_Y;
-      return scene('tile:' + type, st, P => { if (k !== 1) { P.g.save(); P.g.translate(ax, ay); P.g.scale(k, k); P.g.translate(-ax, -ay); } f(P, ax, ay); if (k !== 1) P.g.restore(); }, {});
+      return scene('tile:' + type, st, P => { if (k !== 1) { P.g.save(); P.g.translate(ax, ay); P.g.scale(k, k); P.g.translate(-ax, -ay); } f(P, ax, ay); if (k !== 1) P.g.restore(); }, { tint: tintOf(type) });
     }
     ART.tile = type => ART.url('tile:' + type, () => paintTile(type));
     ART.tileCanvas = type => ART.keep('tile:' + type, () => paintTile(type));

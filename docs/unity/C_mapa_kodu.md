@@ -1204,6 +1204,8 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `genIcon` | (1.26) ikona dla kafelka bez rysunku: kolor i znak rodziny albo pierwsza litera |
 | `branchTrait` | (1.26) cecha poziomu 3 elementu (A albo B) |
 | `renderBranch` | (1.26) okno wyboru cechy A/B przy ulepszeniu na 3. poziom |
+| `renderFamilies` | (1.27.1) karta `families` z kafelka Rodziny w zakładce Talia: poziomy rodzin z Run rodów i ich skutek |
+| `ART.tintOf` | (1.27.1, `p7c_art.js`) kolor tła kafelka elementu według rodziny (`FAM_TINT`) albo obiektu; `scene(..., { tint })` |
 | `renderHeart` | (1.26) karta serca: głód i jego części, sakiewka, Nasycenie, poziomy, Ofiara; 1.26.1: tekst poziomów (rzadka albo legendarna) i Kamienne serce w notce głodu; 1.27: podtytuł "Serce · poziom L", rozbicie głodu tylko, gdy ma coś poza podstawą |
 | `omenBox` | (1.26) ramka omenu: obrazek, nazwa, zasada, nagroda albo koszt |
 | `bossBox` | (1.27) the champion and the hero of the prophecy get a card like an omen on the screens between waves: ikona klasy, tytuł i imię, klasa i poziom, co robi, nagroda albo "Przetrwaj tę falę, a run jest wygrany." |

@@ -109,13 +109,26 @@
   // same as before: the payout is never less than what the chain was worth as it went (greed and combo only go up in a chain).
   function heartLive(e, C) {
     const need = hungerNeed(run.wave);
-    if (!(e > 0) || !(need > 0) || fl.fed >= need || fl.phase !== 'raid') return;
-    const take = Math.min(e, need - fl.fed);
-    fl.fed += take; C.fedLive = (C.fedLive || 0) + take; fl.score += take; fl.stats.essHeart = (fl.stats.essHeart || 0) + take;
-    fl.heartOrb = (fl.heartOrb || 0) + take;
-    const full = fl.fed >= need - 1e-6;
-    if (fl.heartOrb >= 0.6 || full) { gainEssence('eq', 0, 'essWave', fl.heartOrb); fl.heartOrb = 0; }   // red orbs from the equation to the heart, a few, not one per event
-    if (full) heartFull(need);
+    if (!(e > 0) || !(need > 0) || fl.phase !== 'raid') return;
+    let left = e;
+    if (fl.fed < need) {
+      const take = Math.min(e, need - fl.fed); left -= take;
+      fl.fed += take; C.fedLive = (C.fedLive || 0) + take; fl.score += take; fl.stats.essHeart = (fl.stats.essHeart || 0) + take;
+      fl.heartOrb = (fl.heartOrb || 0) + take;
+      const full = fl.fed >= need - 1e-6;
+      if (fl.heartOrb >= 0.6 || full) { gainEssence('eq', 0, 'essWave', fl.heartOrb); fl.heartOrb = 0; }   // red orbs from the equation to the heart, a few, not one per event
+      if (full) heartFull(need);
+    }
+    // 1.27.1 (author: the Danina bar should fill like the hunger bar, not wait for the combo to end): the fed heart takes its
+    // Danina from every event as it comes; the payout at the chain's end only adds what the combo made on top (essIn, tithed)
+    if (left > 1e-9 && fl.fed >= need - 1e-6) {
+      const t = left * titheNow(); if (!(t > 0)) return;
+      C.titheLive = (C.titheLive || 0) + t; fl.score += t; fl.stats.essTithe = (fl.stats.essTithe || 0) + t;
+      satietyAdd(t * (mods.satietyK || 1), 'tithe');
+      fl.titheOrb = (fl.titheOrb || 0) + t;
+      if (fl.titheOrb >= 0.6) { gainEssence('eq', 0, 'essWave', fl.titheOrb); fl.titheOrb = 0; }
+      if (fl.time - (fl.titheFloatT || -9) > 2.5) { fl.titheFloatT = fl.time; floatTile(fl.heart.x, fl.heart.y, L('Danina +', 'Tithe +') + fmtE(Math.max(t, 0.1)), '#ffd27a', 13, -1.3); }
+    }
   }
   // 1.26 (13.2): the Esencja multipliers of this moment (they multiply each other; nothing caps them, like Balatro's xMult)
   const greedE = g => mods.croesus && g > 1 ? g * g : g;   // Krezus: greed squared in the Esencja
@@ -156,18 +169,20 @@
     if (crown > 1) { fl.stats.crownPays = (fl.stats.crownPays || 0) + 1; floatTile(fl.heart.x, fl.heart.y, L('Koronacja strachu ×', 'Coronation of Fear ×') + fmt2(crown), '#ffd27a', 13, -1.6); }
     fl.stats.comboPts = (fl.stats.comboPts || 0) + Math.max(0, e - C.prov);
     const pre = Math.min(e, C.fedLive || 0);   // 1.16.1: the heart's share it already ate as the chain went
-    fl.score += e - pre;
+    const tLive = Math.min(Math.max(0, e - pre), C.titheLive || 0);   // 1.27.1: the Danina it already took as the chain went
+    fl.score += e - pre - tLive;
     fl.lastPay = { g: C.g, greed: C.greed, cm: C.cm, e, t: fl.time, n: ++payN };
     if (C.cm > 1 || e >= 1) tl('cp', Math.round(C.g * 100) / 100, Math.round(C.cm * 100) / 100, Math.round(e * 10) / 10);
-    essIn(e - pre, C.who);
+    essIn(e - pre, C.who, tLive);
     if (mods.bloodflow && C.cm >= 2 - 1e-9 && hungerNeed(run.wave) > 0 && fl.fed >= hungerNeed(run.wave) - 1e-6) satietyAdd(mods.bloodflow, 'bloodflow');   // 1.26 Krwiobieg
     if (e >= 1) tutPop('pay');
     return e;
   }
   // Esencja comes in: the hungry heart takes its share first, the rest goes to the purse (Obżarstwo: x1,25 once it is fed)
   // 1.26: the fed heart takes its Danina first (it goes to Nasycenie), Obżarstwo only grows what goes to the purse
-  function essIn(e, who) {
+  function essIn(e, who, tithed) {
     if (!(e > 0)) return;
+    tithed = tithed || 0;   // 1.27.1: Danina already taken live from this chain (heartLive)
     const need = hungerNeed(run.wave);
     let heart = 0, tithe = 0;
     if (need > 0 && fl.fed < need) {
@@ -176,7 +191,7 @@
     }
     let rest = e - heart;
     if (rest > 0 && need > 0 && fl.fed >= need - 1e-6) {
-      tithe = rest * titheNow(); rest -= tithe;
+      tithe = Math.max(0, rest * titheNow() - tithed); rest -= tithe + Math.min(tithed, rest);
       if (tithe > 0) { fl.stats.essTithe = (fl.stats.essTithe || 0) + tithe; satietyAdd(tithe * (mods.satietyK || 1), 'tithe'); if (fl.time - (fl.titheFloatT || -9) > 2.5) { fl.titheFloatT = fl.time; floatTile(fl.heart.x, fl.heart.y, L('Danina +', 'Tithe +') + fmtE(tithe), '#ffd27a', 13, -1.3); } }
       if (mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
     }

@@ -365,6 +365,7 @@ Groza zbiera się w serii (fl.chain) tak długo, jak trwa combo
 wypłata serii:  E = C.g × greedE(C.greed) × C.cm × mods.regen × S.essK × C.mx × (Koronacja strachu);  pre = min(E, C.fedLive)
 fl.score += E - pre
 essIn(E - pre):  najpierw serce bierze do potrzeby hungerNeed(fala); syte bierze Daninę (30%) w Nasycenie; reszta -> sakiewka (fl.essence)
+1.27.1 Danina na bieżąco: `heartLive` po nasyceniu serca bierze z każdego zdarzenia combo `titheNow()` jego wartości do Nasycenia od razu (`C.titheLive`, `satietyAdd`, `fl.score`, `essTithe`), tak jak głód; przy wypłacie łańcucha `payChain` odejmuje to, co już wzięto (`essIn(e - pre, who, tLive)`: dopłata Daniny = max(0, reszta × titheNow - tLive)), więc sumy są takie jak wcześniej, tylko złoty pasek rośnie w trakcie combo.
 1.26 Uczta: bohater zabity przez potwora: e = 0,8 × poziom do fl.score i przez essIn (serce, Danina, sakiewka)
 po fali:   feedHeart: brak serca z sakiewki (bankructwo = kryształ); przychód (stały + karty) -> sakiewka
 ```

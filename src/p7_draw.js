@@ -3833,7 +3833,13 @@
     if (!list.length) { uiRects.list = null; return; }
     // 1.26 (15): the omen of this wave: Mgła wojny hides the party, any other shows as a badge under the preview
     const omId = run.omens && run.omens[run.wave], om = omId && OMENS[omId];
-    const omBadge = y => { if (!om) return; const t = 'Omen: ' + om.name; ctx.font = '700 10px "Alegreya Sans", system-ui, sans-serif'; const bw = Math.ceil(ctx.measureText(t).width) + 16; ctx.fillStyle = 'rgba(70,36,96,0.88)'; rr(6, y, bw, 18, 6); ctx.fill(); ctx.strokeStyle = '#a97ad6'; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = '#e6d2ff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, 6 + bw / 2, y + 9.5); };
+    // 1.27.1 (author: the omen badge did not match the UI): the preview's own dark slab, a violet edge, a small caps label
+    const omBadge = y => { if (!om) return; const F1 = '600 9px "Alegreya Sans", system-ui, sans-serif', F2 = '600 11px "Alegreya Sans", system-ui, sans-serif', lab = 'OMEN';
+      ctx.font = F1; const lw = ctx.measureText(lab).width + 3; ctx.font = F2; const nw = ctx.measureText(om.name).width, bw = Math.ceil(10 + lw + 6 + nw + 9), bh = 19;
+      ctx.fillStyle = 'rgba(10,11,13,0.82)'; rr(6, y, bw, bh, 3); ctx.fill(); ctx.fillStyle = '#a08ce8'; ctx.fillRect(6, y + 3, 2, bh - 6);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = F1; ctx.fillStyle = '#8e939a';
+      try { ctx.letterSpacing = '1px'; } catch (e) {} ctx.fillText(lab, 13, y + bh / 2 + 0.5); try { ctx.letterSpacing = '0px'; } catch (e) {}
+      ctx.font = F2; ctx.fillStyle = '#d9ccff'; ctx.fillText(om.name, 13 + lw + 6, y + bh / 2 + 0.5); };
     if (list.some(e => e.fog) && !mods.revealAll) {
       uiRects.list = null; const w = 196, h = 36;
       ctx.fillStyle = 'rgba(10,11,13,0.8)'; rr(6, 6, w, h, 4); ctx.fill(); ctx.strokeStyle = '#a97ad6'; ctx.lineWidth = 1; ctx.stroke();

@@ -53,7 +53,7 @@ FRAME = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => 
   ok(/linear-gradient/.test(hb) && /linear-gradient/.test(db), 'a soft gradient under the top and the bottom bars');
   ok(getComputedStyle(document.querySelector('.hud')).backgroundColor === 'rgba(0, 0, 0, 0)', 'the HUD has no panel');
   const eq = document.querySelector('#h-eq').getBoundingClientRect(), hud = document.querySelector('.hud').getBoundingClientRect();
-  const blank = document.elementFromPoint(hud.right - 4, eq.top + eq.height / 2);
+  const blank = document.elementFromPoint(hud.right - 4, eq.height > 4 ? eq.top + eq.height / 2 : document.querySelector('#h-hrow').getBoundingClientRect().bottom + 10);   // 1.27.1: in the build the equation is folded away
   out.blank = blank && (blank.id || blank.className);
   ok(blank && blank.id === 'cv', 'a tap between the HUD pieces reaches the map: ' + out.blank);
   const hit = sel => { const e = document.querySelector(sel); if (!e || e.hidden) return 'missing'; const r = e.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return t && (t === e || e.contains(t)) ? 'ok' : (t ? (t.id || t.className) : 'none'); };

@@ -4,6 +4,15 @@ Wersja źródłowa: Prototype 1.15.1 (`LOG_VERSION = 58`), z uzupełnieniami do 
 
 Autor jest bardzo zadowolony z wyglądu, odczucia i dźwięku prototypu ("fenomenalna robota"). Wersja Unity ma być **wierną kopią prezentacji**: te same kolory, rozmiary, czasy animacji, dźwięki i zachowanie gestów. Ta sekcja opisuje wyłącznie prezentację i interakcję. Zasady gry są gdzie indziej: przebieg runu, ekonomia, sklep (sekcja 03), generowanie bohaterów (sekcja 04), pułapki, obrażenia, strach i logika skill checku (sekcja 05), AI bohaterów i reguły mówienia (sekcja 06), mapa, reguły stawiania, pętla gry i zapis (sekcja 07).
 
+## Zmiany w 1.27.1
+
+- Równanie Esencji (`#h-eq`) nie znika skokiem: klasa `eq-off` zwija je (max-height, przezroczystość, przesunięcie w górę) po końcu fali i rozwija na jej początku (ok. 0,3 s; bez animacji przy `prefers-reduced-motion`). Zwinięte nie łapie stuknięć.
+- Kafelki paska budowy: tło sceny w kolorze rodziny (`ART.tintOf`, `FAM_TINT` w `p7c_art.js`: Mechanizmy niebieskie, Ogień pomarańczowy, Alchemia i Zielonoskórzy zielone, Nawiedzenie fioletowe, Nieumarli ciemne z zielonkawym blaskiem, Bestie brązowe, Demony krwiste, Skarby złote; obiekty brązowo-złote; narzędzia Lochu i komnaty bez zmian) i dolna krawędź kafelka w tym kolorze (`--fam`).
+- Sklep: po kupnie Runy rodu jej wiersz zostaje jako pusty, przerywany wiersz tej samej wysokości ("Kupione: X, poziom N"), więc reszta sklepu się nie przesuwa (`run.shop.runeDone`; odświeżenie oferty go czyści).
+- Zakładka Talia: kafelek Rodziny (`#tile-families`, po kafelku Sklep, także w fali) otwiera kartę `families` (`renderFamilies`): każda rodzina z runą, poziomem (romby 0-5), skutkiem poziomu (+8% mocy, -4% odnowienia, statusy +8% na poziom; Skarby: łup +8% Chciwości), elementami i liczbą jej elementów w lochu.
+- Znaczek omenu pod podglądem drużyny ma styl podglądu (ciemna płyta, fioletowa krawędź, mały napis OMEN), zamiast fioletowej pigułki.
+- Danina na bieżąco: patrz 03 (`heartLive`).
+
 ## Zmiany w 1.27 (skrót)
 
 Przegląd UI/UX ekran po ekranie i drugi język (plan "Prototype 1.27 - przegląd UI/UX, czytelność i język", 25.10.2026). Zasada autora: UI nie mówi wszystkiego naraz; ogólne rzeczy mają być dostępne i zrozumiałe, szczegóły drobnym drukiem, a opis nie tłumaczy mechanik z innych miejsc. Stąd trzy warstwy informacji, których trzyma się każdy ekran (także w Unity):
