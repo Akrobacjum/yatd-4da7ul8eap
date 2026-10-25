@@ -1550,8 +1550,8 @@
     if (T < 14) return;
     const p = W2S(fl.heart.x + 0.5, fl.heart.y + 0.5, 0);
     ctx.font = numFont(Math.max(9, T * 0.22), true); ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,11,13,0.85)'; ctx.strokeText('SERCE', p[0], p[1] + T * 0.18);
-    ctx.fillStyle = 'rgba(255,214,170,0.9)'; ctx.fillText('SERCE', p[0], p[1] + T * 0.18);
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,11,13,0.85)'; ctx.strokeText(L('SERCE', 'HEART'), p[0], p[1] + T * 0.18);
+    ctx.fillStyle = 'rgba(255,214,170,0.9)'; ctx.fillText(L('SERCE', 'HEART'), p[0], p[1] + T * 0.18);
   }
   // Standing traps, buildings, loot and monsters. Until each has its own drawing, the old picture stands up on its tile.
   function drawCorpse(f, T) {   // 1.09: a monster's last moment: it tips over and fades
@@ -1603,14 +1603,14 @@
   function drawBreachLabel(T) {
     if (T < 12) return;
     const b = fl.breach, p = W2S(b.x + 0.5, b.y + 0.5, 0);
-    signText('WYŁOM', p[0], p[1] - T * 0.75, numFont(Math.max(10, T * 0.26), true), '#ff8a8a', 'center', 'bottom');
-    signText('stuknij: załataj (' + BREACH_PATCH + ')', p[0], p[1] + T * 0.6, numFont(Math.max(9, T * 0.2), true), fl.essence >= BREACH_PATCH ? '#f2b94b' : '#9a90aa', 'center', 'top');
+    signText(L('WYŁOM', 'BREACH'), p[0], p[1] - T * 0.75, numFont(Math.max(10, T * 0.26), true), '#ff8a8a', 'center', 'bottom');
+    signText(L('stuknij: załataj (', 'tap: patch (') + BREACH_PATCH + ')', p[0], p[1] + T * 0.6, numFont(Math.max(9, T * 0.2), true), fl.essence >= BREACH_PATCH ? '#f2b94b' : '#9a90aa', 'center', 'top');
   }
   function drawHoldLabel(T) {
     if (!holdInfo || fl.phase !== 'build') return;
     const k = clamp((realNow - holdInfo.t0) / holdInfo.dur, 0, 1); if (k < 0.15) return;
     const p = W2S(holdInfo.x + 0.5, holdInfo.y + 0.5, 0);
-    signText('zdejmij', p[0], p[1] - T * 0.75, numFont(Math.max(10, T * 0.3), true), '#ffd0d0', 'center', 'bottom');
+    signText(L('zdejmij', 'remove'), p[0], p[1] - T * 0.75, numFont(Math.max(10, T * 0.3), true), '#ffd0d0', 'center', 'bottom');
   }
   // what an upgrade costs, over each thing that can be upgraded (with Ulepsz picked, or over the thing in hand)
   function costTag(it, T) {
@@ -2513,8 +2513,8 @@
     fl.rooms.forEach(r => {
       if (r.kind !== 'room') return;
       const m = depthMult(r.id), p = W2S(r.x1 + 0.85, r.y1 + 0.85, 0);
-      let t = '×' + m.toFixed(1).replace('.', ','), col = isEdgeRoom(r.id) ? 'rgba(255,170,140,0.95)' : 'rgba(255,214,170,0.85)';
-      if (loads) { const full = loads[r.id] >= roomCap(r); t += '  ' + loads[r.id] + '/' + roomCap(r); if (full) col = '#ff9a9a'; }
+      let t = '×' + dec(m.toFixed(1)), col = isEdgeRoom(r.id) ? 'rgba(255,170,140,0.95)' : 'rgba(255,214,170,0.85)';
+      if (loads) { const cap = roomCap(r), n = Math.min(loads[r.id], cap), full = loads[r.id] >= cap; t += '  ' + (cap <= 6 ? '●'.repeat(n) + '○'.repeat(cap - n) : n + '/' + cap); if (full) col = '#ff9a9a'; }   // 1.27: free places as dots
       signText(t, p[0], p[1], font, col, 'right', 'bottom');
     });
   }
@@ -3598,10 +3598,10 @@
       const lv = list.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), boss = list.find(e => e.boss), heal = list.filter(e => HEALER[e.type]), tr = [];
       list.forEach(e => { if (e.trait && HERO_TRAITS[e.trait]) { const t = HERO_TRAITS[e.trait].name[e.female ? 1 : 0]; if (!tr.includes(t)) tr.push(t); } });
       const bits = [];
-      if (boss) bits.push((boss.boss === 'final' ? 'z przepowiedni' : 'czempion') + ' (poz. ' + boss.lvl + ')');   // the boss first: it was cut off behind long healer names
+      if (boss) bits.push((boss.boss === 'final' ? L('z przepowiedni', 'prophesied') : L('czempion', 'champion')) + L(' (poz. ', ' (lvl ') + boss.lvl + ')');   // the boss first: it was cut off behind long healer names
       if (heal.length) bits.push('✚ ' + heal.map(e => HEROES[e.type].name[e.female ? 1 : 0].toLowerCase()).join(', '));   // the healers (their chips have the green cross too)
       if (tr.length) bits.push(tr.join(', '));
-      const t1 = waveName() + ': ' + n + (n === 1 ? ' bohater' : ' bohaterów') + ', poz. ' + (lo === hi ? lo : lo + '-' + hi), t2 = bits.join(' · ');
+      const t1 = waveName() + ': ' + n + L(n === 1 ? ' bohater' : ' bohaterów', n === 1 ? ' hero' : ' heroes') + L(', poz. ', ', lvl ') + (lo === hi ? lo : lo + '-' + hi), t2 = bits.join(' · ');
       ctx.font = F1; const m1 = ctx.measureText(t1).width; ctx.font = F2; const m2 = t2 ? ctx.measureText(t2).width : 0;
       const chips = pad * 2 + n * cwid, room = cw - 12;
       PV.side = chips + m1 + 26 <= room;   // the words beside the chips (as low as the old chip row), or under them on a narrow view
@@ -3728,12 +3728,12 @@
     const legend = run.checkHints >= 0 && fl.stats.checks <= 3, coach = $('#coach');
     const coachB = coach && !coach.hidden && coach.classList.contains('top') ? (coach.getBoundingClientRect().bottom - stage.getBoundingClientRect().top) / UIZ : 0;   // 1.25: the coach is zoomed too
     const CHIPS_B = 36;   // the party chips: 6 px from the top, 30 px tall (drawChips)
-    const label = { crit: 'Krytyk!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }[c.result];
+    const label = L({ crit: 'Krytyk!', ok: 'Draśnięcie', miss: 'Pudło', skip: 'Odpuszczone' }, { crit: 'Crit!', ok: 'Graze', miss: 'Miss', skip: 'Skipped' })[c.result];
     const labelCol = { crit: CK.zone, ok: '#b9b3a6', miss: CK.ash, skip: CK.ash }[c.result];
     const prep = !c.result && realNow < c.t0;
     const nm = ITEMS[it.type].name + (all.length > 1 ? ' + ' + (all.length - 1) : '');
-    const head = prep ? 'Uwaga: ' + (all.length > 1 ? 'seria (' + all.length + ')' : ITEMS[it.type].name.toLowerCase()) + '!' : nm + (label ? ': ' : ': stuknij!');
-    const LEG = 'obwódka: draśnięcie · pełne pole: krytyk (najmocniej) · ☠ zabije';
+    const head = prep ? L('Uwaga: ', 'Get ready: ') + (all.length > 1 ? L('seria (', 'volley (') + all.length + ')' : ITEMS[it.type].name.toLowerCase()) + '!' : nm + (label ? ': ' : L(': stuknij!', ': tap!'));
+    const LEG = L('obwódka: draśnięcie · wypełniona strefa: krytyk · ☠ zabija', 'outline: graze · filled zone: crit · ☠ kills');
     const TF = '700 17px "Grenze Gotisch", Georgia, serif', SF = w8 => w8 + ' 11px "Alegreya Sans", system-ui, sans-serif';
     const title = (x, y, align, maxW) => {   // the gothic title; a result gets its own colour after the name
       ctx.font = TF; ctx.textBaseline = 'middle';
@@ -3838,14 +3838,14 @@
       uiRects.list = null; const w = 196, h = 36;
       ctx.fillStyle = 'rgba(10,11,13,0.8)'; rr(6, 6, w, h, 4); ctx.fill(); ctx.strokeStyle = '#a97ad6'; ctx.lineWidth = 1; ctx.stroke();
       ctx.fillStyle = '#c9c2d8'; ctx.font = '600 11px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText(waveName() + ': ' + list.length + ' bohaterów w mgle', 12, 17);
-      ctx.fillStyle = '#e6d2ff'; ctx.font = '600 10px "Alegreya Sans", system-ui, sans-serif'; ctx.fillText('Omen: Mgła wojny (klasy i poziomy ukryte)', 12, 32, w - 12);
+      ctx.fillText(waveName() + ': ' + list.length + L(' bohaterów we mgle', ' heroes in the fog'), 12, 17);
+      ctx.fillStyle = '#e6d2ff'; ctx.font = '600 10px "Alegreya Sans", system-ui, sans-serif'; ctx.fillText(L('Omen: Mgła wojny (klasy i poziomy ukryte)', 'Omen: Fog of War (classes, levels hidden)'), 12, 32, w - 12);
       return;
     }
     if (!UI.listOpen) {
       const hh = drawPreview(list);   // 1.24 (B, P1-1): who comes, without a tap
       omBadge(6 + hh + 4 + (fl.breach ? 22 : 0));
-      if (fl.breach) { const fresh = run.layout.breach && run.layout.breach.fresh, bw = fresh ? 62 : 76; ctx.fillStyle = 'rgba(120,20,30,0.85)'; rr(6, 6 + hh + 4, bw, 18, 6); ctx.fill(); ctx.fillStyle = '#ffd0d0'; ctx.font = numFont(10, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(fresh ? 'WYŁOM!' : 'WYŁOM otwarty', 6 + bw / 2, 6 + hh + 13); }
+      if (fl.breach) { const fresh = run.layout.breach && run.layout.breach.fresh, bt = fresh ? L('WYŁOM!', 'BREACH!') : L('WYŁOM otwarty', 'BREACH open'); ctx.font = numFont(10, true); const bw = Math.max(fresh ? 62 : 76, Math.ceil(ctx.measureText(bt).width) + 14); ctx.fillStyle = 'rgba(120,20,30,0.85)'; rr(6, 6 + hh + 4, bw, 18, 6); ctx.fill(); ctx.fillStyle = '#ffd0d0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(bt, 6 + bw / 2, 6 + hh + 13); }
       return;
     }
     const nem = list.filter(e => e.nemesis), w = 200, rowH = 15, h = list.length * rowH + 22 + (fl.breach ? rowH : 0) + nem.length * rowH;   // 1.23: a row for each bounty
@@ -3853,7 +3853,7 @@
     uiRects.rows = list.map((e, k) => ({ y0: 26 + k * rowH - 7, y1: 26 + (k + 1) * rowH - 7, ref: { entry: e } }));
     ctx.fillStyle = 'rgba(10,11,13,0.78)'; rr(6, 6, w, h, 3); ctx.fill();
     ctx.fillStyle = '#8e939a'; ctx.font = '600 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(waveName() + (bossOf(run.wave) ? (bossOf(run.wave) === 'final' ? ' · FINAŁ' : ' · boss') : '') + (om ? ' · omen: ' + om.name.toLowerCase() : '') + ':', 12, 15);
+    ctx.fillText(waveName() + (bossOf(run.wave) ? (bossOf(run.wave) === 'final' ? L(' · FINAŁ', ' · FINAL') : ' · boss') : '') + (om ? ' · omen: ' + om.name.toLowerCase() : '') + ':', 12, 15);
     ctx.textAlign = 'right'; ctx.fillText('▴', 6 + w - 6, 15); ctx.textAlign = 'left';
     list.forEach((e, k) => {
       const y = 26 + k * rowH, T0 = HEROES[e.type], R0 = levelStats(e.lvl);
@@ -3861,10 +3861,10 @@
       ctx.strokeStyle = R0.color; ctx.lineWidth = 1.6; ctx.stroke();
       drawClassIcon(e.type, 16, y, 9.5, '#1a1424');
       ctx.fillStyle = e.nemesis ? '#ffd27a' : R0.color; ctx.font = '600 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left';   // 1.23: a Nemezis in gold, a skull and his title
-      ctx.fillText((e.nemesis ? '☠ ' : '') + nemName(e) + ' · poz. ' + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][e.female ? 1 : 0] : R0.name[e.female ? 1 : 0]).toLowerCase() + (e.returning ? ' · wraca' : e.hunter ? ' · łowca' : e.recruit ? ' · rekrut' : '') + (e.bond && list[e.bond.with] ? ' · ' + bondLabel(e.bond, list[e.bond.with]).toLowerCase() : '') + (e.phobia && ((e.known || []).includes('phobia') || mods.revealAll) ? ' · boi się: ' + PHOBIAS[e.phobia].name : ''), 25, y, w - 24);   // 1.21: the bond
+      ctx.fillText((e.nemesis ? '☠ ' : '') + nemName(e) + L(' · poz. ', ' · lvl ') + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][e.female ? 1 : 0] : R0.name[e.female ? 1 : 0]).toLowerCase() + (e.returning ? L(' · wraca', ' · returning') : e.hunter ? L(' · łowca', ' · hunter') : e.recruit ? L(' · rekrut', ' · recruit') : '') + (e.bond && list[e.bond.with] ? ' · ' + bondLabel(e.bond, list[e.bond.with]).toLowerCase() : '') + (e.phobia && ((e.known || []).includes('phobia') || mods.revealAll) ? L(' · boi się: ', ' · fears: ') + PHOBIAS[e.phobia].name : ''), 25, y, w - 24);   // 1.21: the bond
     });
-    if (fl.breach) { ctx.fillStyle = '#ff8a8a'; ctx.font = '700 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText(run.layout.breach && run.layout.breach.fresh ? 'Wejdą przez wyłom! (czerwony znacznik)' : 'Wyłom otwarty: wybiorą wejście', 12, 26 + list.length * rowH, w - 16); }
-    nem.forEach((e, k) => { ctx.fillStyle = '#ffd27a'; ctx.font = '700 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText('Nagroda za głowę: ' + bountyOf(e) + ' Esencji (' + e.nm[0] + ')', 12, 26 + (list.length + (fl.breach ? 1 : 0) + k) * rowH, w - 16); });   // 1.23
+    if (fl.breach) { ctx.fillStyle = '#ff8a8a'; ctx.font = '700 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText(run.layout.breach && run.layout.breach.fresh ? L('Wejdą przez wyłom! (czerwony znacznik)', 'They come in through the breach! (red mark)') : L('Wyłom otwarty: sami wybiorą wejście', 'Breach open: they pick the way in'), 12, 26 + list.length * rowH, w - 16); }
+    nem.forEach((e, k) => { ctx.fillStyle = '#ffd27a'; ctx.font = '700 10px "Alegreya Sans", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText(L('Nagroda za głowę: ', 'Bounty: ') + bountyOf(e) + L(' Esencji (', ' Essence (') + e.nm[0] + ')', 12, 26 + (list.length + (fl.breach ? 1 : 0) + k) * rowH, w - 16); });   // 1.23
   }
   function drawOffscreen(T) {
     uiRects.list = null;
@@ -3954,7 +3954,7 @@
   function drawPause() {   // 1.07: the open build tray is the pause: a small plate at the top says how to play on
     if (!paused || !fl || fl.phase !== 'raid') return;
     if (tutPopNow) return;   // 1.04: a tutorial card says it (and the check under it stays clear)
-    const t = trayIsOpen() ? 'Pauza · ▼ Budowa: gramy dalej' : 'Pauza';
+    const t = trayIsOpen() ? L('Pauza · ▼ Budowa: gramy dalej', 'Paused · ▼ Build: play on') : L('Pauza', 'Paused');
     ctx.font = '600 12px "Alegreya Sans", system-ui, sans-serif';
     const w = ctx.measureText(t).width + 22, x0 = (cw - w) / 2, y0 = 8;
     ctx.fillStyle = 'rgba(16,17,20,0.88)'; rr(x0, y0, w, 24, 3); ctx.fill();
@@ -3997,7 +3997,7 @@
       if (RI && m.other && T >= 12) {   // it already has another character: this replaces it
         const on = (rt ? RT_INFO : KIND_INFO)[m.other].name;
         ctx.font = numFont(Math.max(9, r * 0.55), true); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,11,13,0.9)';
-        ctx.strokeText('zamiast: ' + on, x, y + r + Math.max(7, r * 0.55)); ctx.fillStyle = '#c9c2d8'; ctx.fillText('zamiast: ' + on, x, y + r + Math.max(7, r * 0.55));
+        ctx.strokeText(L('zamiast: ', 'replaces: ') + on, x, y + r + Math.max(7, r * 0.55)); ctx.fillStyle = '#c9c2d8'; ctx.fillText(L('zamiast: ', 'replaces: ') + on, x, y + r + Math.max(7, r * 0.55));
       }
       if (m.tool === 'expand') {
         ctx.font = numFont(Math.max(10, r * 0.75), true); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,11,13,0.9)';
@@ -4023,11 +4023,11 @@
     if (fl && fl.phase === 'raid' && !paused && !ff && !modalOpen && autoFFOn()) {   // auto fast-forward while nothing happens
       ctx.fillStyle = 'rgba(16,17,20,0.7)'; rr(cw / 2 - 46, 8, 92, 22, 3); ctx.fill();
       ctx.fillStyle = '#b9a4ff'; ctx.font = numFont(12, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('▶▶ ×' + String(S.autoFF).replace('.', ',') + ' spokój', cw / 2, 19);
+      ctx.fillText('▶▶ ×' + dec(S.autoFF) + L(' spokój', ' calm'), cw / 2, 19);
       return;
     }
     if (!ff || !fl || fl.phase !== 'raid' || paused) return;
     ctx.fillStyle = 'rgba(16,17,20,0.85)'; rr(cw / 2 - 38, 8, 76, 24, 3); ctx.fill();
     ctx.fillStyle = '#f2b94b'; ctx.font = numFont(14, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('▶▶ ×' + String(S.ffSpeed).replace('.', ','), cw / 2, 20);
+    ctx.fillText('▶▶ ×' + dec(S.ffSpeed), cw / 2, 20);
   }

@@ -4,55 +4,103 @@
    "chciwy",
    "chciwa"
   ],
-  "w": 1
+  "w": 1,
+  "en": {
+   "name": [
+    "greedy",
+    "greedy"
+   ]
+  }
  },
  "coward": {
   "name": [
    "tchórzliwy",
    "tchórzliwa"
   ],
-  "w": 1
+  "w": 1,
+  "en": {
+   "name": [
+    "cowardly",
+    "cowardly"
+   ]
+  }
  },
  "brave": {
   "name": [
    "bohaterski",
    "bohaterska"
   ],
-  "w": 1
+  "w": 1,
+  "en": {
+   "name": [
+    "brave",
+    "brave"
+   ]
+  }
  },
  "careful": {
   "name": [
    "ostrożny",
    "ostrożna"
   ],
-  "w": 1
+  "w": 1,
+  "en": {
+   "name": [
+    "careful",
+    "careful"
+   ]
+  }
  },
  "superstitious": {
   "name": [
    "przesądny",
    "przesądna"
   ],
-  "w": 1
+  "w": 1,
+  "en": {
+   "name": [
+    "superstitious",
+    "superstitious"
+   ]
+  }
  },
  "curious": {
   "name": [
    "ciekawski",
    "ciekawska"
   ],
-  "w": 1
+  "w": 1,
+  "en": {
+   "name": [
+    "curious",
+    "curious"
+   ]
+  }
  },
  "loyal": {
   "name": [
    "lojalny",
    "lojalna"
   ],
-  "w": 1
+  "w": 1,
+  "en": {
+   "name": [
+    "loyal",
+    "loyal"
+   ]
+  }
  },
  "hothead": {
   "name": [
    "zapaleniec",
    "zapaleniec"
   ],
-  "w": 1
+  "w": 1,
+  "en": {
+   "name": [
+    "hothead",
+    "hothead"
+   ]
+  }
  }
 }

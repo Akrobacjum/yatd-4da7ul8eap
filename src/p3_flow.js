@@ -70,7 +70,7 @@
     (run.heartPicks || (run.heartPicks = [])).push({ lv: L });
     if (heartSlotLv(L)) run.deckSize++;
     if (fl && fl.stats) fl.stats.heartUp = (fl.stats.heartUp || 0) + 1;
-    if (fl && fl.phase === 'raid') { tl('hl', L); floatTile(fl.heart.x, fl.heart.y, 'Serce rośnie! Poziom ' + L, '#ffd27a', 17, -1.9); burst(fl.heart.x + 0.5, fl.heart.y + 0.5, '#ffd27a', 18); heartHit(); tutPop('heartLv'); }
+    if (fl && fl.phase === 'raid') { tl('hl', L); floatTile(fl.heart.x, fl.heart.y, LL('Serce: poziom ' + L + '!', 'Heart level ' + L + '!'), '#ffd27a', 17, -1.9); burst(fl.heart.x + 0.5, fl.heart.y + 0.5, '#ffd27a', 18); heartHit(); tutPop('heartLv'); }
     else if (fl && fl.phase === 'build') queueModal({ type: 'shop', heartNow: true });   // Ofiara crossed a level: pick at once
     updateTray();
   }
@@ -136,12 +136,12 @@
     if (!fl.secretFound) fl.secretFound = new Set(); if (fl.secretFound.has(ek)) return false;
     fl.secretFound.add(ek); fl.stats.secretFound = (fl.stats.secretFound || 0) + 1; tl('sf', h ? h.id : -1, ek);
     const R = fl.rooms.find(r => r.key === ek);
-    if (R) { R.doors.forEach(d => { fl.known[d.y * WW + d.x] = 1; floatTile(d.x, d.y, 'Ukryte przejście!', '#c9a8ff', 15, -1.1); burst(d.x + 0.5, d.y + 0.5, '#b9a3e0', 10); }); }
+    if (R) { R.doors.forEach(d => { fl.known[d.y * WW + d.x] = 1; floatTile(d.x, d.y, L('Ukryte przejście!', 'Secret passage!'), '#c9a8ff', 15, -1.1); burst(d.x + 0.5, d.y + 0.5, '#b9a3e0', 10); }); }
     if (h) say(h, pick(SAY.secretFound), 3, null, 'loud');
     fl.threatDirty = true; fl.knowDirty = true; alive().forEach(o => { o.needPlan = true; });
     return true;
   }
-  function heartFull(need) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, 'Serce syte!', '#ff9aa4', 16, -1.4); }
+  function heartFull(need) { fl.fed = need; fl.fedAt = fl.time; tl('hg', 'full', need); floatTile(fl.heart.x, fl.heart.y, L('Serce syte!', 'Heart full!'), '#ff9aa4', 16, -1.4); }
   // the chain ends: a trap chain when the combo clock runs out, a chain without a trap after 1,2 s without Groza (at most 4 s)
   function chainTick() {
     const C = fl.chain; if (!C) return;
@@ -153,7 +153,7 @@
     fl.chain = null;
     const crown = C.fled && mods.fearCrown > 1 ? mods.fearCrown : 1;
     const e = C.g * greedE(C.greed) * C.cm * mods.regen * S.essK * (C.mx || 1) * crown;   // 1.26: the multipliers, Koronacja strachu
-    if (crown > 1) { fl.stats.crownPays = (fl.stats.crownPays || 0) + 1; floatTile(fl.heart.x, fl.heart.y, 'Koronacja strachu ×' + fmt2(crown), '#ffd27a', 13, -1.6); }
+    if (crown > 1) { fl.stats.crownPays = (fl.stats.crownPays || 0) + 1; floatTile(fl.heart.x, fl.heart.y, L('Koronacja strachu ×', 'Coronation of Fear ×') + fmt2(crown), '#ffd27a', 13, -1.6); }
     fl.stats.comboPts = (fl.stats.comboPts || 0) + Math.max(0, e - C.prov);
     const pre = Math.min(e, C.fedLive || 0);   // 1.16.1: the heart's share it already ate as the chain went
     fl.score += e - pre;
@@ -177,7 +177,7 @@
     let rest = e - heart;
     if (rest > 0 && need > 0 && fl.fed >= need - 1e-6) {
       tithe = rest * titheNow(); rest -= tithe;
-      if (tithe > 0) { fl.stats.essTithe = (fl.stats.essTithe || 0) + tithe; satietyAdd(tithe * (mods.satietyK || 1), 'tithe'); if (fl.time - (fl.titheFloatT || -9) > 2.5) { fl.titheFloatT = fl.time; floatTile(fl.heart.x, fl.heart.y, 'Danina +' + fmtE(tithe), '#ffd27a', 13, -1.3); } }
+      if (tithe > 0) { fl.stats.essTithe = (fl.stats.essTithe || 0) + tithe; satietyAdd(tithe * (mods.satietyK || 1), 'tithe'); if (fl.time - (fl.titheFloatT || -9) > 2.5) { fl.titheFloatT = fl.time; floatTile(fl.heart.x, fl.heart.y, L('Danina +', 'Tithe +') + fmtE(tithe), '#ffd27a', 13, -1.3); } }
       if (mods.storeK > 1) { const x = rest * (mods.storeK - 1); rest += x; fl.stats.essGlut = (fl.stats.essGlut || 0) + x; }
     }
     fl.stats.essHeart = (fl.stats.essHeart || 0) + heart;
@@ -190,7 +190,7 @@
     if (!(e > 0) || !fl || fl.phase !== 'raid') return 0;
     fl.score += e; fl.stats.feastPts = (fl.stats.feastPts || 0) + e;
     essIn(e, null);
-    const p = heroPos(h); addFloat(p.x, p.y - 0.3, 'Uczta +' + fmtE(e), '#ff9aa4', 14, -0.9);
+    const p = heroPos(h); addFloat(p.x, p.y - 0.3, L('Uczta +', 'Feast +') + fmtE(e), '#ff9aa4', 14, -0.9);
     return e;
   }
   function setGreed(v) { fl.greed = v; }
@@ -239,7 +239,7 @@
   const heroName = h => h.nm[0] + (h.nemesis ? ' ' + h.nemesis.title : '');   // 1.23: a Nemezis' title after his name
   const rankName = h => h.boss ? BOSS_NAME[h.boss][h.female ? 1 : 0] : h.R.name[h.female ? 1 : 0];
   const traitName = h => h.trait ? HERO_TRAITS[h.trait].name[h.female ? 1 : 0] : '';
-  const lvlLabel = h => 'poz. ' + h.lvl + ' ' + rankName(h).toLowerCase() + (h.trait ? ', ' + traitName(h) : '');
+  const lvlLabel = h => L('poz. ', 'lvl ') + h.lvl + ' ' + rankName(h).toLowerCase() + (h.trait ? ', ' + traitName(h) : '');
   // timeline of the wave for the test log: [time, code, ...data]
   function tl(code, ...a) { if (fl && fl.tl && fl.phase === 'raid' && fl.tl.ev.length < 8000) fl.tl.ev.push([Math.round(fl.time * 10) / 10, code].concat(a)); }
   const className = h => h.T.name[h.female ? 1 : 0];
@@ -395,7 +395,7 @@
   const fuseElems = u => [u.id, typeof u.req === 'string' ? u.req : null].filter(t => t && ITEMS[t] && (TRAPS[t] || MONSTERS[t]));   // 1.24: the element(s) a card names
   const fuseGroup = u => fuseElems(u).length ? 'named' : FUSE_GROUP[u.id] || 'power';   // 1.24
   const fusePow = u => FUSE_POW * (FUSE_K[fuseGroup(u)] || 1);   // 1.24: 2,5, 2,75 (power) or 3,125 (hero)
-  const fuseText = u => '★ Połączona: działa jak ' + fmt2(FUSE_POW).replace(/,?0+$/, '') + ' kopii, ' + FUSE_TEXT[fuseGroup(u)](fuseElems(u).map(t => ITEMS[t].name).join(' i ')) + '.';   // 1.24: the property line
+  const fuseText = u => L('★ Połączona: działa jak ', '★ Fused: works like ') + fmt2(FUSE_POW).replace(/[.,]?0+$/, '') + L(' kopii, ', ' copies, ') + FUSE_TEXT[fuseGroup(u)](fuseElems(u).map(t => ITEMS[t].name).join(L(' i ', ' and '))) + '.';   // 1.24: the property line
   // a card laid on p times, p fractional: the whole copies, then the share f of one more copy, field by field: a field the copies
   // multiplied (the same ratio twice) grows by that ratio to the power f, one they added to by f of the step
   function applyFrac(u, m, p) {
@@ -437,11 +437,11 @@
   function greedBonusParts() {
     let n = 0; const types = new Set();
     if (fl) fl.items.forEach(it => { if (ACTIVE[it.type] && !it.temp && !(MONSTERS[it.type] && it.hp <= 0)) { types.add(it.type); n++; } });   // 1.18: not a risen ghost (temp)
-    const parts = [['rozległość lochu', SIZE_BONUS * Math.max(0, (fl ? roomCount() : 0) - 5)], ['Szklane serce', mods.glass], ['Kolekcjoner', mods.collector * types.size],
-      ['Skąpiec', mods.miser * Math.max(0, 15 - n)], ['Zła sława', mods.crystalPts * Math.max(0, run.crystals)], ['karty', mods.greedFlat],
-      ['Pozłacane pułapki', mods.gilded * (fl ? [...fl.items.values()].filter(it => ACTIVE[it.type] && !it.temp && (it.lvl || 1) >= 2).length : 0)],
-      ['schowek', mods.stashGreed * ((run.stash || []).length)], ['powracający', mods.returnGreed * ((run.next || []).filter(e => e.returning).length)],
-      ['opowieści o skarbach', run.greedNext || 0]];   // v15.1: the scared ones told the tavern about the gold they saw (this wave only)
+    const parts = [[L('rozległość lochu', 'dungeon size'), SIZE_BONUS * Math.max(0, (fl ? roomCount() : 0) - 5)], [L('Szklane serce', 'Glass Heart'), mods.glass], [L('Kolekcjoner', 'Collector'), mods.collector * types.size],
+      [L('Skąpiec', 'Miser'), mods.miser * Math.max(0, 15 - n)], [L('Zła sława', 'Infamy'), mods.crystalPts * Math.max(0, run.crystals)], [L('karty', 'cards'), mods.greedFlat],
+      [L('Pozłacane pułapki', 'Gilded Traps'), mods.gilded * (fl ? [...fl.items.values()].filter(it => ACTIVE[it.type] && !it.temp && (it.lvl || 1) >= 2).length : 0)],
+      [L('schowek', 'stash'), mods.stashGreed * ((run.stash || []).length)], [L('powracający', 'returning heroes'), mods.returnGreed * ((run.next || []).filter(e => e.returning).length)],
+      [L('opowieści o skarbach', 'treasure tales'), run.greedNext || 0]];   // v15.1: the scared ones told the tavern about the gold they saw (this wave only)
     return parts.filter(p => Math.abs(p[1]) > 0.001);
   }
   const greedBonusNow = () => greedBonusParts().reduce((a, p) => a + p[1], 0);
@@ -533,7 +533,7 @@
       bt(type).placed++; n++;
     });
     run.essence = fl.essence; updateTray(); updateAction();
-    if (n && run.tut < 0) setHint(waveHint() + ' Loch postawił ' + (n === 1 ? 'pułapkę' : n + ' pułapki') + ' blisko serca (za darmo): dostaw więcej. Stuknij element, żeby go przenieść; przytrzymaj, żeby zdjąć.');
+    if (n && run.tut < 0) setHint(waveHint() + L(' Loch dał Ci ' + (n === 1 ? 'darmową pułapkę' : n + ' darmowe pułapki') + ' przy sercu. Dostaw więcej. Stuknij element, żeby go przenieść, przytrzymaj, żeby zdjąć.', ' The dungeon gave you ' + (n === 1 ? 'a free trap' : n + ' free traps') + ' near the heart. Add more. Tap an element to move it, hold to remove it.'));
     saveRun('build');
   }
   function freshParty() {
@@ -581,7 +581,7 @@
       // a breach stays until you patch it; from wave 6 the guild may dig a new one (one at a time)
       if (!run.layout.breach && run.wave >= 6 && run.tut < 0 && Math.random() < BREACH_P && planBreach()) { rebuildDungeon(true); run.breachNew = run.wave; }
       if (run.layout.breach && !fl.breach) delete run.layout.breach;   // its wall is gone (dug over, demolished): nothing left to come through
-      if (run.omens && OMENS[run.omens[run.wave]] && !resume) queueModal({ type: 'news', omen: true });   // 1.26 (15): a wave with an omen shows the tavern's news (the omen box) once
+      if (((run.omens && OMENS[run.omens[run.wave]]) || (run.next || []).some(e => e.boss)) && !resume && !run.tutorial) queueModal({ type: 'news', omen: true });   // 1.27: a boss wave too (the champion's or the prophecy's card)   // 1.26 (15): a wave with an omen shows the tavern's news (the omen box) once
     }
     fl.cardMult = cardMultNow();
     if (run.essAtStartW !== run.wave) { run.essAtStartW = run.wave; run.essAtStart = fl.essence; run.previewN = 0; run.pv = null; }   // 1.24 (D, P0-6): essenceAtStart, previewOpened (a resumed build keeps them)
@@ -610,14 +610,14 @@
   function waveHint() {
     const list = run.next, lv = list.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), boss = list.find(e => e.boss);
     const rt = rumorView();
-    if (list.some(e => e.fog)) return waveName() + ': ' + list.length + ' bohaterów w MGLE WOJNY: nie wiadomo, kto przyjdzie ani jak silny. ' + (hungerNeed(run.wave) ? 'GŁÓD: serce weźmie pierwsze ' + hungerNeed(run.wave) + ' Esencji z tej fali. ' : '') + 'OMEN MGŁA WOJNY: ' + OMENS.warfog.text + ' Nagroda: ' + OMENS.warfog.reward + '.';   // 1.26
-    return waveName() + ': ' + list.length + ' bohaterów, poziom ' + (lo === hi ? lo : lo + '-' + hi) + (boss ? ', prowadzi ' + BOSS_NAME[boss.boss][boss.female ? 1 : 0] + ' (poz. ' + boss.lvl + ')' : '') + '. ' +
-      (hungerNeed(run.wave) ? 'GŁÓD: serce weźmie pierwsze ' + hungerNeed(run.wave) + ' Esencji z tej fali; fala da mniej, to zje kryształ. Trzymaj bohaterów w lochu. ' : '') +
-      (fl.breach ? (run.layout.breach && run.layout.breach.fresh ? 'WYŁOM: gildia przebiła tunel do Twojego pokoju (czerwony znacznik) i tę falę wpuści tamtędy. ' : 'WYŁOM wciąż otwarty: bohaterowie wybiorą, czy wejść nim, czy drzwiami. ') + 'Stuknij wyłom, żeby go załatać (' + BREACH_PATCH + ' Esencji). ' : '') +
-      (run.omens && OMENS[run.omens[run.wave]] ? 'OMEN ' + OMENS[run.omens[run.wave]].name.toUpperCase() + ': ' + OMENS[run.omens[run.wave]].text + (OMENS[run.omens[run.wave]].reward ? ' Nagroda: ' + OMENS[run.omens[run.wave]].reward + '.' : '') + (OMENS[run.omens[run.wave]].cost ? ' Za to ' + OMENS[run.omens[run.wave]].cost + '.' : '') + ' ' : '') +
-      (run.guild ? 'GILDIA: ' + run.guild.text + ' ' : '') +
-      (rt.traps || rt.rooms ? 'Plotki: znają ' + rt.rooms + ' pokoi i ' + rt.traps + ' pułapek (oko na mapie).' : 'Nic o Tobie nie wiedzą.') +
-      (run.wave === 1 ? ' Stawiaj elementy z paska; każdy pokój mieści kilka (licznik w rogu), w zakładce Loch kopiesz nowe.' : '');
+    const need = hungerNeed(run.wave);
+    if (list.some(e => e.fog)) return waveName() + L(': ' + list.length + ' bohaterów we mgle wojny. Nie wiesz, kto przyjdzie ani jak są silni. ', ': ' + list.length + ' heroes in the Fog of War. You cannot see who is coming or how strong they are. ') + (need ? L('Serce chce ' + need + ' Esencji z tej fali.', 'The heart wants ' + need + ' Essence from this wave.') : '');   // 1.26
+    return waveName() + L(': ' + list.length + ' bohaterów, poziom ', ': ' + list.length + ' heroes, level ') + (lo === hi ? lo : lo + '-' + hi) + '. ' +   // 1.27: the champion and the omen have their own cards above
+      (need ? L('Serce chce ' + need + ' Esencji z tej fali. Gdy fala da mniej, brak weźmie z sakiewki, a gdy i tego zabraknie, pęknie kryształ. ', 'The heart wants ' + need + ' Essence from this wave. If the wave brings less, it takes the rest from your purse, and if that runs out, a crystal breaks. ') : '') +
+      (fl.breach ? (run.layout.breach && run.layout.breach.fresh ? L('Wyłom: gildia przekopała się do Twojego pokoju (czerwony znak) i tędy wpuści tę falę. ', 'Breach: the guild has dug into one of your rooms (red mark) and sends this wave through it. ') : L('Wyłom wciąż jest otwarty: bohaterowie wejdą nim albo drzwiami. ', 'The breach is still open: the heroes pick it or the door. ')) + L('Stuknij wyłom, żeby go załatać (' + BREACH_PATCH + ' Esencji). ', 'Tap the breach to patch it (' + BREACH_PATCH + ' Essence). ') : '') +
+      (run.guild ? L('Gildia ', 'The guild ') + run.guild.text + ' ' : '') +
+      (rt.traps || rt.rooms ? L('Z plotek znają: ', 'From rumours they know ') + [rt.rooms ? nWord(rt.rooms, 'pokój', 'pokoje', 'pokoi', 'room', 'rooms') : '', rt.traps ? nWord(rt.traps, 'pułapkę', 'pułapki', 'pułapek', 'trap', 'traps') : ''].filter(Boolean).join(L(' i ', ' and ')) + L(' (oczy na mapie).', ' (eye icons on the map).') : L('Nic o Tobie nie wiedzą.', 'They know nothing about you.')) +
+      (run.wave === 1 ? L(' Stawiaj elementy z paska. Każdy pokój mieści kilka (kropki przy pokoju). Nowe pokoje kopiesz w zakładce Loch.', ' Place elements from the bar. Each room holds a few (dots by the room). Dig new rooms in the Dungeon tab.') : '');
   }
   // what the next wave has heard about the dungeon (shown in the build phase)
   function rumorView() {
@@ -642,7 +642,7 @@
       if (BUILDINGS[it.type] ? blockerOk(it.x, it.y) : slotOf(it.x, it.y) === ITEMS[it.type].slot) return;   // Prototype 1.0: a building in the way of a door (an older save) goes back as Esencja
       fl.items.delete(key(it.x, it.y)); refund += it.spent || ITEMS[it.type].cost;
     });
-    if (refund) { fl.essence += refund; if (!silent) floatTile(fl.ent.x, fl.ent.y + 1, '+' + refund + ' Esencji', '#ff7a86', 15); }
+    if (refund) { fl.essence += refund; if (!silent) floatTile(fl.ent.x, fl.ent.y + 1, '+' + refund + L(' Esencji', ' Essence'), '#ff7a86', 15); }
     return refund;
   }
   // Breaches: from wave 6, on random waves (35%), the guild tunnels into a deep room, preferring rooms close to the heart that the
@@ -677,8 +677,8 @@
   // Patching the breach: between waves, a tap on it (see the breach sheet).
   function patchBreach() {
     if (!fl || fl.phase !== 'build' || !run.layout.breach) return false;
-    if (fl.essence < BREACH_PATCH) { note('Za mało Esencji (' + BREACH_PATCH + ')', fl.breach.x, fl.breach.y); return false; }
-    pushUndo('łatanie wyłomu');
+    if (fl.essence < BREACH_PATCH) { note(L('Za mało Esencji (' + BREACH_PATCH + ')', 'Not enough Essence (' + BREACH_PATCH + ')'), fl.breach.x, fl.breach.y); return false; }
+    pushUndo(L('łatanie wyłomu', 'breach patch'));
     delete run.layout.breach; fl.essence -= BREACH_PATCH; fl.stats.patched = (fl.stats.patched || 0) + 1;
     rebuildDungeon(true); fl.threatDirty = true;
     updateTray(); setHint(waveHint()); saveRunSoon();
@@ -751,18 +751,18 @@
     run.layout.cells.forEach(c => (c.objs || []).forEach(o => { if (o[2] === 'crate' && o[3]) blocks++; }));   // crates you built
     const lostShare = (st.lostPts + st.lonePts) / Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts + st.lostPts + st.lonePts);
     const opts = [
-      { kind: 'fear', sc: fearShare > 0.55 ? fearShare : 0, text: 'wie, że straszysz: przysyła kapłana z amuletem (od fali 6 amulet ma każdy). Kontra: Ołtarz (zakładka Obiekty).' },
-      { kind: 'kill', sc: killShare >= 0.5 ? killShare : 0, text: 'wie, że zabijasz: przysyła wojownika z talizmanem (od fali 6 talizman ma każdy). Kontra: Kwas (zakładka Obiekty).' },
+      { kind: 'fear', sc: fearShare > 0.55 ? fearShare : 0, text: L('wie, że straszysz, i przysyła kapłana z amuletem (od fali 6 amulet ma każdy). Kontra: Ołtarz (zakładka Obiekty).', 'knows you scare, so it sends a priest with an amulet (from wave 6, everyone has one). Counter: Altar (Objects tab).') },
+      { kind: 'kill', sc: killShare >= 0.5 ? killShare : 0, text: L('wie, że zabijasz, i przysyła wojownika z talizmanem (od fali 6 talizman ma każdy). Kontra: Kwas (zakładka Obiekty).', 'knows you kill, so it sends a warrior with a charm (from wave 6, everyone has one). Counter: Acid (Objects tab).') },
       // a clear style (fear or kills) wins over a plain count of traps or monsters: counts top out at 0.8
-      { kind: 'traps', sc: traps >= 12 ? 0.5 + 0.3 * Math.min(1, (traps - 12) / 20) : 0, text: 'słyszała o masie pułapek: przysyła złodzieja. Kontra: Wabik (zakładka Obiekty).' },
-      { kind: 'monsters', sc: mons >= 4 ? 0.5 + 0.3 * Math.min(1, (mons - 4) / 6) : 0, text: 'słyszała o potworach: przysyła maga. Kontra: Runa (zakładka Obiekty).' },
+      { kind: 'traps', sc: traps >= 12 ? 0.5 + 0.3 * Math.min(1, (traps - 12) / 20) : 0, text: L('słyszała o masie pułapek i przysyła złodzieja. Kontra: Wabik (zakładka Obiekty).', 'has heard of your many traps, so it sends a thief. Counter: Decoy (Objects tab).') },
+      { kind: 'monsters', sc: mons >= 4 ? 0.5 + 0.3 * Math.min(1, (mons - 4) / 6) : 0, text: L('słyszała o potworach i przysyła maga. Kontra: Runa (zakładka Obiekty).', 'has heard of your monsters, so it sends a mage. Counter: Rune (Objects tab).') },
       // 1.05: a dungeon where people get lost and wander alone gets a bard; one walled with crates and buildings gets a barbarian
-      { kind: 'lost', sc: (st.gotLost >= 2 || lostShare >= 0.15) ? 0.5 + Math.min(0.3, lostShare) : 0, text: 'słyszała, że w Twoim lochu ludzie błądzą i giną samotnie: przysyła barda. Kontra: Kamień wyjec (zakładka Obiekty).' },
-      { kind: 'block', sc: blocks >= 5 || (st.reroutes || 0) >= 2 ? 0.5 + 0.3 * Math.min(1, Math.max(blocks - 5, 2 * ((st.reroutes || 0) - 2)) / 6) : 0, text: 'słyszała o zastawionych przejściach: przysyła barbarzyńcę. Kontra: Okowy (zakładka Obiekty).' },
+      { kind: 'lost', sc: (st.gotLost >= 2 || lostShare >= 0.15) ? 0.5 + Math.min(0.3, lostShare) : 0, text: L('słyszała, że w Twoim lochu ludzie błądzą i giną samotnie, i przysyła barda. Kontra: Kamień wyjec (zakładka Obiekty).', 'has heard that people get lost and die alone in your dungeon, so it sends a bard. Counter: Howling Stone (Objects tab).') },
+      { kind: 'block', sc: blocks >= 5 || (st.reroutes || 0) >= 2 ? 0.5 + 0.3 * Math.min(1, Math.max(blocks - 5, 2 * ((st.reroutes || 0) - 2)) / 6) : 0, text: L('słyszała o zastawionych przejściach i przysyła barbarzyńcę. Kontra: Okowy (zakładka Obiekty).', 'has heard of your blocked passages, so it sends a barbarian. Counter: Shackles (Objects tab).') },
       // 1.26 (5.6): the new styles (their specialist only from the waves his class comes in)
-      { kind: 'reactions', sc: n >= 6 && (st.reactPts || 0) >= 0.4 * Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts) ? 0.85 : 0, text: 'słyszała o płonących i zatrutych: przysyła alchemika z antidotum. Kontra: Laboratorium, Zalewnia.' },
-      { kind: 'holy', sc: n >= 4 && holyN >= 4 ? 0.6 + 0.2 * Math.min(1, (holyN - 4) / 6) : 0, text: 'słyszała o nieumarłych i demonach: przysyła paladyna. Kontra: Ołtarz (osłabia przysięgę), Kusicielka.' },
-      { kind: 'flyers', sc: n >= 4 && flyN >= 3 ? 0.6 + 0.2 * Math.min(1, (flyN - 3) / 5) : 0, text: 'słyszała o latających potworach: przysyła tropiciela. Kontra: Zasłona, Mgła.' }
+      { kind: 'reactions', sc: n >= 6 && (st.reactPts || 0) >= 0.4 * Math.max(1, st.fearPts + st.scarePts + st.dmgPts + st.killPts) ? 0.85 : 0, text: L('słyszała o płonących i zatrutych i przysyła alchemika z antidotum. Kontra: Laboratorium, Zalewnia.', 'has heard of the burnt and the poisoned, so it sends an alchemist with an antidote. Counter: Laboratory, Floodgate.') },
+      { kind: 'holy', sc: n >= 4 && holyN >= 4 ? 0.6 + 0.2 * Math.min(1, (holyN - 4) / 6) : 0, text: L('słyszała o nieumarłych i demonach i przysyła paladyna. Kontra: Ołtarz (osłabia przysięgę), Kusicielka.', 'has heard of your undead and demons, so it sends a paladin. Counter: Altar (weakens the oath), Temptress.') },
+      { kind: 'flyers', sc: n >= 4 && flyN >= 3 ? 0.6 + 0.2 * Math.min(1, (flyN - 3) / 5) : 0, text: L('słyszała o latających potworach i przysyła tropiciela. Kontra: Zasłona, Mgła.', 'has heard of your flying monsters, so it sends a ranger. Counter: Veil, Fog.') }
     ].filter(o => o.sc > 0).sort((a, b) => b.sc - a.sc);
     return opts[0] || null;
   }
@@ -810,7 +810,7 @@
   const earlyHpK = n => Math.max(hpK0(n), atW(hpK0, earlyW(n)));   // 1.24: never below its own (wave 4: the old wave 5 has less bonus)
   const waveBase = n => atW(waveBase0, earlyW(n));   // 1.24
   const bossOf = n => n % 5 === 0 ? (n % 10 === 0 ? 'final' : 'champion') : null;
-  const waveName = () => 'Fala ' + run.wave + (run.wave <= RUN_WAVES ? '/' + RUN_WAVES : '');
+  const waveName = () => L('Fala ', 'Wave ') + run.wave + (run.wave <= RUN_WAVES ? '/' + RUN_WAVES : '');
   // Each wave is new people: the first ones are rookies, then they keep getting better. Every 5th wave a boss leads them.
   function makeWave(n) {
     const om = OMENS[omenOf(n)] || {};   // 1.26 (15)
@@ -913,7 +913,8 @@
     }
   }
   // what the other one is to him, by the other's gender: "Przyjaciel: Borys", "Rywalka: Wanda", "Mistrz: ..." (his mentor), "Uczeń: ..."
-  const BOND_NOUN = { friend: ['Przyjaciel', 'Przyjaciółka'], sibling: ['Brat', 'Siostra'], rival: ['Rywal', 'Rywalka'], mentor: ['Mistrz', 'Mistrzyni'], apprentice: ['Uczeń', 'Uczennica'] };
+  const BOND_NOUN = L({ friend: ['Przyjaciel', 'Przyjaciółka'], sibling: ['Brat', 'Siostra'], rival: ['Rywal', 'Rywalka'], mentor: ['Mistrz', 'Mistrzyni'], apprentice: ['Uczeń', 'Uczennica'] },
+    { friend: ['Friend', 'Friend'], sibling: ['Brother', 'Sister'], rival: ['Rival', 'Rival'], mentor: ['Mentor', 'Mentor'], apprentice: ['Apprentice', 'Apprentice'] });
   const bondLabel = (b, o) => BOND_NOUN[b.type === 'mentor' ? (b.role === 'mentor' ? 'apprentice' : 'mentor') : b.type][o.female ? 1 : 0] + ': ' + o.nm[0];
   // the other one of an entry's pair: the hero in the dungeon, or his entry in the party list (before the wave, or not in yet)
   function bondMate(e, live) {
@@ -947,9 +948,9 @@
     fl.items.forEach(m => { if (MONSTERS[m.type] && m.hp > 0 && isRt(roomOf(m.x, m.y), 'crypt')) m.hp = Math.round(m.max * 1.25); });   // Krypta: +25% HP for this wave
     selected = null; movingKey = null; movingObj = null; holdInfo = null; cam.manualUntil = 0; ff = false; clearUndo(); setTrayOpen(false); updateTray(); updateAction();   // 1.05: in the tutorial too; 1.07: always (an open tray is the pause); 1.09 (author): back after 1.08 (his complaint was the button's width)
     { const bossE = fl.queue.find(e => e.boss), n = fl.queue.length;   // Prototype 1.0: a banner over the map says who is coming
-      showBanner('Fala ' + run.wave, (bossE ? 'prowadzi ich ' + (bossE.boss === 'final' ? 'bohater z przepowiedni' : 'czempion') : n === 1 ? '1 bohater' : n + ' bohaterów') +
-        (fl.spawnAt === 'breach' ? ' · wchodzą przez wyłom!' : fl.breach ? ' · wchodzą drzwiami' : ''));
-      if (run.wave === 1 && run.tut < 0) setHint(PC() ? 'Kamera śledzi drużynę. Przytrzymaj F (albo przycisk myszy na mapie), żeby przyspieszyć. Skill check odpalasz kliknięciem w mapę albo spacją.' : 'Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check odpalasz stuknięciem w mapę.'); }
+      showBanner(L('Fala ', 'Wave ') + run.wave, (bossE ? (bossE.boss === 'final' ? L('prowadzi ich bohater z przepowiedni', 'led by the hero of the prophecy') : L('prowadzi ich czempion', 'led by a champion')) : n === 1 ? L('1 bohater', '1 hero') : n + L(' bohaterów', ' heroes')) +
+        (fl.spawnAt === 'breach' ? L(' · wchodzą przez wyłom!', ' · coming through the breach!') : fl.breach ? L(' · wchodzą drzwiami', ' · coming through the door') : ''));
+      if (run.wave === 1 && run.tut < 0) setHint(PC() ? L('Kamera śledzi drużynę. Przytrzymaj F albo przycisk myszy na mapie, żeby przyspieszyć. Skill check: kliknij mapę albo naciśnij spację.', 'The camera follows the party. Hold F or the mouse button on the map to speed up. Skill check: click the map or press Space.') : L('Kamera śledzi drużynę. Przytrzymaj palec na mapie, żeby przyspieszyć. Skill check: stuknij mapę.', 'The camera follows the party. Hold the map to speed up. Skill check: tap the map.')); }
     fl.tl = { ev: [], smp: [], smpT: 0 };
     fl.essW0 = fl.essence; fl.itemsW0 = fl.items.size; fl.roomsW0 = run.layout.cells.size;   // 1.24 (D, P0-6): essenceAtWaveStart, itemsCount, roomsCount
     run.waveStart = snapshotLayout();
@@ -1064,7 +1065,7 @@
     if (!prophet) {
       if (L && (heartP() || !P.councilMore)) {
         P.council = { stage: 'wait', t0: fl.time }; fl.stats.councils = (fl.stats.councils || 0) + 1;
-        setHint('Bohaterom kończy się cierpliwość: naradzają się, co dalej.');
+        setHint(LL('Bohaterom kończy się cierpliwość. Naradzają się, co dalej.', 'The heroes are running out of patience. They talk over what to do.'));
         return;
       }
       goHome(L);
@@ -1080,7 +1081,7 @@
     tl('ip', fl.heartKnown ? 1 : 0);
     if (fl.heartKnown) { P.plan = 'assault'; alive().forEach(h => { if (h.state === 'rest' || h.state === 'talk') h.state = 'walk'; h.needPlan = true; }); if (L) say(L, pick(SAY.impatient), 3); }
     else { P.plan = 'leave'; alive().forEach(h => { h.needPlan = true; if (h.state === 'rest' || h.state === 'talk') h.state = 'walk'; }); if (L) say(L, pick(SAY.leave), 3); }
-    setHint(fl.heartKnown ? 'Bohaterom skończyła się cierpliwość: szturmują serce i mniej uważają na pułapki.' : 'Bohaterom skończyła się cierpliwość: nie znaleźli serca i wracają do domu.');
+    setHint(fl.heartKnown ? LL('Bohaterom skończyła się cierpliwość. Szturmują serce i mniej uważają na pułapki.', 'The heroes are out of patience. They storm the heart and care less about traps.') : LL('Bohaterom skończyła się cierpliwość. Nie znaleźli serca i wracają do domu.', 'The heroes are out of patience. They never found the heart and go home.'));
   }
   // the old end of patience: everyone goes home
   function goHome(L) {
@@ -1088,7 +1089,7 @@
     fl.fearless = true; fl.storm = false; tl('ip', 0); P.plan = 'leave'; P.council = null;
     alive().forEach(h => { h.needPlan = true; if (h.state === 'rest' || h.state === 'talk') h.state = 'walk'; });
     if (L) say(L, pick(SAY.leave), 3);
-    setHint('Bohaterom skończyła się cierpliwość: odwrót, wracają do domu.');
+    setHint(LL('Bohaterom skończyła się cierpliwość. Wracają do domu.', 'The heroes are out of patience. They go home.'));
   }
   // 1.24 (author: at the end of a raid the heroes sometimes vanished and the wave ended at random): up to 1.23 everyone still
   // inside 60 s after the end of patience was teleported out (councils, storms, second groups, sulkers and last stands made that
@@ -1112,10 +1113,10 @@
       h.split = false; h.wanderUntil = -1; h.vowUntil = 0; h.vowOn = null; h.lootKey = null; h.needPlan = true;
       if (h.lost) { h.lost = false; h.hearUntil = -1; h.noPathT = 0; h.sepT = 0; h.sepRolled = false; if (!h.gone) reveal(h); }
       if (h.state === 'rest' || h.state === 'talk' || h.state === 'wait' || h.state === 'boss') h.state = 'walk';
-      if (!h.gone) floatHero(h, 'Wyczerpan' + (h.female ? 'a' : 'y'), '#c9c2d8', 12, -0.9);
+      if (!h.gone) floatHero(h, LL(h.female ? 'Wyczerpana' : 'Wyczerpany', 'Exhausted'), '#c9c2d8', 12, -0.9);
     });
     if (L) say(L, pick(SAY.leave), 3);
-    setHint('Bohaterowie są wyczerpani: wychodzą.');
+    setHint(LL('Bohaterowie są wyczerpani i wychodzą.', 'The heroes are worn out and leave.'));
   }
   // 1.24: the true safety net (a hero stuck somewhere): 150 s after the end of patience the ones still inside run out where they
   // stand, with a float and the fade; a crystal one of them carries goes back to the heart (stats.forcedOut, timeline 'fo')
@@ -1123,8 +1124,8 @@
     const P = fl.party;
     fl.heroes.forEach(h => {
       if (h.dead || h.fled) return;
-      if (h.crystal) { h.crystal = false; if (P.carrierId === h.id) P.carrierId = -1; fl.stats.crystalSaved++; floatTile(fl.heart.x, fl.heart.y, 'Kryształ wraca!', '#ff7a86', 15, -1); crystalEv(0, 'saved', 'forcedOut'); }   // 1.24 (D): logged
-      h.gone = false; floatHero(h, 'Ucieka', '#c9c2d8', 13, -0.9);
+      if (h.crystal) { h.crystal = false; if (P.carrierId === h.id) P.carrierId = -1; fl.stats.crystalSaved++; floatTile(fl.heart.x, fl.heart.y, L('Kryształ wraca!', 'Crystal back!'), '#ff7a86', 15, -1); crystalEv(0, 'saved', 'forcedOut'); }   // 1.24 (D): logged
+      h.gone = false; floatHero(h, L('Ucieka', 'Flees'), '#c9c2d8', 13, -0.9);
       fl.stats.forcedOut = (fl.stats.forcedOut || 0) + 1; tl('fo', h.id, h.tx, h.ty, h.state);   // 1.24
       heroExit(h);
     });
@@ -1139,22 +1140,22 @@
     if (h.crystal) {
       if (mods.secondHeart && !run.secondHeartUsed) {   // 1.26.1 Drugie serce: once a run the crystal comes back
         run.secondHeartUsed = true; h.crystal = false; h.carriedOut = false; if (P.carrierId === h.id) P.carrierId = -1; fl.stats.secondHeart = 1;
-        floatTile(fl.heart.x, fl.heart.y, 'Drugie serce: kryształ wraca!', '#ffd27a', 16, -1.4); burst(fl.heart.x + 0.5, fl.heart.y + 0.5, '#ffd27a', 16); tl('cx2', h.id);
+        floatTile(fl.heart.x, fl.heart.y, L('Drugie serce: kryształ wraca!', 'Second Heart: crystal back!'), '#ffd27a', 16, -1.4); burst(fl.heart.x + 0.5, fl.heart.y + 0.5, '#ffd27a', 16); tl('cx2', h.id);
       } else {
       const c0 = run.crystals; h.crystal = false; h.carriedOut = true; fl.crystalLost = true; run.crystals = Math.max(0, run.crystals - 1); fl.stats.crystalLost++;
       crystalEv(run.crystals - c0, 'stolen', h.type + ' ' + h.lvl);   // 1.24 (D, P0-2)
-      floatTile(fl.ent.x, fl.ent.y, 'Kryształ stracony!', '#ff6b6b', 18, -0.6); shake = Math.max(shake, 0.3); tl('cx', h.id); buzz([90, 60, 90]);
+      floatTile(fl.ent.x, fl.ent.y, L('Kryształ stracony!', 'Crystal lost!'), '#ff6b6b', 18, -0.6); shake = Math.max(shake, 0.3); tl('cx', h.id); buzz([90, 60, 90]);
       if (P.carrierId === h.id) P.carrierId = -1;
       }
     } else if (h.fleeing) {
       const pts = addPts(GZ.scare * (h.boss ? 2 : 1) * mods.scareMult, 'scarePts', h); fl.stats.scared++; tl('sc', h.id);
       if (mods.fearHarvest) gainEssence(null, mods.fearHarvest, 'essFear');   // Żniwa strachu
       if (mods.chronicle) run.stacks.chronicle = (run.stacks.chronicle || 0) + 1;   // Kronika grozy
-      floatTile(fl.ent.x, fl.ent.y, (h.female ? 'Uciekła' : 'Uciekł') + ' z krzykiem! +' + fmtE(pts) + ' Esencji', '#ff7a86', 16, -0.4);
+      floatTile(fl.ent.x, fl.ent.y, L((h.female ? 'Uciekła' : 'Uciekł') + ' z krzykiem! +', 'Fled screaming! +') + fmtE(pts), '#ff7a86', 16, -0.4);
       // v15.1: scared out of his wits, he still tells the tavern about the treasure he saw: the next wave starts greedier
       if (fl.stats.lootSeen > 0) {
         const cur = fl.stats.treasureTale || 0, got = Math.min(TALE_PER * Math.min(TALE_LOOT, fl.stats.lootSeen), TALE_CAP - cur);
-        if (got > 0.001) { fl.stats.treasureTale = cur + got; floatTile(fl.ent.x, fl.ent.y, 'Opowie o skarbach: chciwość +' + fmt2(got) + ' w następnej fali', '#f2b94b', 13, -1.3); }
+        if (got > 0.001) { fl.stats.treasureTale = cur + got; floatTile(fl.ent.x, fl.ent.y, L('Opowieść o skarbach: Chciwość +', 'Treasure tale: Greed +') + fmt2(got), '#f2b94b', 13, -1.3); }
       }
     } else { fl.stats.left++; tl('ex', h.id); }
     if (h.loot) run.rumor.gold += 0.05 * h.loot + 0.02 * (h.gold || 0);   // gold carried out of the dungeon makes the next wave greedier
@@ -1245,11 +1246,11 @@
       const topFear = Object.entries(h.fearBy || {}).sort((a, b) => b[1] - a[1])[0], topDmg = Object.entries(h.dmgBy || {}).sort((a, b) => b[1] - a[1])[0];
       if (h.fleeing && topFear && !phobia) {   // what scared him away becomes a phobia
         const k = PHOBIA_OF_ATTR[topFear[0]] || (topFear[0] === 'death' ? 'blood' : DMG_OF[topFear[0]] === 'fire' ? 'fire' : null);
-        if (k) { phobia = k; scar = 'fobia: ' + PHOBIAS[k].name + ', ' + (h.female ? 'wyniosła' : 'wyniósł') + ' ją z Twojego lochu'; }
+        if (k) { phobia = k; scar = L('fobia: ' + PHOBIAS[k].name + ', z Twojego lochu', 'phobia of ' + PHOBIAS[k].name + ', from your dungeon'); }
       }
-      if (!scar && topDmg && topDmg[1] > 0.3 * h.max) { phys = SCAR_RES[topDmg[0]]; scar = PHYS[phys].name[h.female ? 1 : 0] + ' po ranach z Twojego lochu'; }   // the wound that nearly killed him hardened him
+      if (!scar && topDmg && topDmg[1] > 0.3 * h.max) { phys = SCAR_RES[topDmg[0]]; scar = PHYS[phys].name[h.female ? 1 : 0] + L(' od ran w Twoim lochu', ', from wounds in your dungeon'); }   // the wound that nearly killed him hardened him
       const e = { nm: h.nm, female: h.female, type: h.type, lvl: h.lvl, back: run.wave + 2 + (Math.random() < 0.5 ? 1 : 0), phys, phobia, trait: h.trait,
-        scar: scar || (h.nemesis && h.entry && h.entry.scar) || 'pamięta Twój loch', times: ((h.entry && h.entry.times) || 0) + 1, crystal: !!h.carriedOut,   // 1.23: a Nemezis keeps his old scar
+        scar: scar || (h.nemesis && h.entry && h.entry.scar) || L('pamięta Twój loch', 'remembers your dungeon'), times: ((h.entry && h.entry.times) || 0) + 1, crystal: !!h.carriedOut,   // 1.23: a Nemezis keeps his old scar
         // 1.20 (hook for 1.23): the best two things he took from your dungeon come back with him, and one who got lost brings a lantern
         gear: h.inv.filter(x => ['loot', 'relic', 'body', 'trophy'].includes(x.src)).sort((a, b) => b.r - a.r).slice(0, 2).map(x => ({ type: x.type, r: x.r, src: x.src, wave: x.wave || run.wave,
           ownerNm: x.ownerNm, ownerFem: x.ownerFem, wasRelic: x.src === 'relic' || !!x.wasRelic, charges: powerCharges(x.type, x.r) })), wasLost: !!h.lostEver, goldOut: h.gold || 0 };
@@ -1276,18 +1277,18 @@
     fl.essence -= pay; h.tookPurse = Math.round(pay * 10) / 10; fl.stats.heartTook = pay;
     if (pay >= want - 1e-6) {
       h.fed = true; tl('hg', 'took', Math.round(pay));
-      floatTile(fl.heart.x, fl.heart.y, 'Serce zabrało ' + fmtE(pay) + ' z zapasów', '#ff9aa4', 16, -1.2);
+      floatTile(fl.heart.x, fl.heart.y, L('Serce zabrało ' + fmtE(pay) + ' z sakiewki', 'Heart took ' + fmtE(pay) + ' from purse'), '#ff9aa4', 16, -1.2);
       return;
     }
     if (mods.bloodCredit && !run.creditUsed) {   // Kredyt krwi
       run.creditUsed = true; run.credit = { w: run.wave + 1, n: Math.round((want - pay) * 2) }; h.fed = true; h.credit = run.credit.n; tl('hg', 'credit', run.credit.n);
-      floatTile(fl.heart.x, fl.heart.y, 'Kredyt krwi: +' + run.credit.n + ' głodu w następnej fali', '#ff9aa4', 15, -1.2);
+      floatTile(fl.heart.x, fl.heart.y, L('Kredyt krwi: +' + run.credit.n + ' głodu', 'Blood Credit: +' + run.credit.n + ' Hunger'), '#ff9aa4', 15, -1.2);
       return;
     }
     const c0 = run.crystals; run.crystals = Math.max(0, run.crystals - 1); h.ate = true; h.bankrupt = true; h.lostPurse = Math.round(fl.essence); fl.essence = 0;
     fl.stats.hungerAte = 1; tl('hg', 'ate', Math.round(want - pay));
     crystalEv(run.crystals - c0, 'hunger', Math.round(fl.fed) + '+' + Math.round(pay) + '/' + need);   // 1.24 (D, P0-2)
-    floatTile(fl.heart.x, fl.heart.y, 'Głód pękł kryształ!', '#ff6b6b', 18, -1.2); shake = Math.max(shake, 0.25); buzz([90, 60, 90]);
+    floatTile(fl.heart.x, fl.heart.y, L('Głód rozbija kryształ!', 'Hunger cracks a crystal!'), '#ff6b6b', 18, -1.2); shake = Math.max(shake, 0.25); buzz([90, 60, 90]);
   }
   // 1.26 Ofiara (4.10): in the build, Esencja from the purse straight into Nasycenie, 1:1, at most 40 a break between waves
   const OFIARA_MAX = 40;
@@ -1296,7 +1297,7 @@
     n = Math.floor(Math.min(n, ofiaraLeft())); if (!(n > 0)) return 0;
     if (run.ofiaraW !== run.wave) { run.ofiaraW = run.wave; run.ofiaraN = 0; }
     run.ofiaraN += n; fl.essence -= n; run.essence = fl.essence; fl.stats.ofiara = (fl.stats.ofiara || 0) + n;
-    floatTile(fl.heart.x, fl.heart.y, 'Ofiara +' + n + ' Nasycenia', '#ffd27a', 15, -1.3); burst(fl.heart.x + 0.5, fl.heart.y + 0.5, '#ffd27a', 10);
+    floatTile(fl.heart.x, fl.heart.y, L('Ofiara +' + n + ' Nasycenia', 'Offering +' + n + ' Satiety'), '#ffd27a', 15, -1.3); burst(fl.heart.x + 0.5, fl.heart.y + 0.5, '#ffd27a', 10);
     satietyAdd(n, 'ofiara');
     updateTray(); saveRunSoon();
     return n;
@@ -1327,7 +1328,7 @@
     const r = rankOf(total);
     while ((run.rankIdx || 0) < r.i) {
       run.rankIdx = (run.rankIdx || 0) + 1;
-      if (fl.phase === 'raid') { floatTile(fl.heart.x, fl.heart.y, 'Nowa ranga: ' + RANKS[run.rankIdx][1] + '!', '#cbb0ff', 16, -1.6); tl('rk', run.rankIdx); }
+      if (fl.phase === 'raid') { floatTile(fl.heart.x, fl.heart.y, L('Nowa ranga: ', 'New rank: ') + RANKS[run.rankIdx][1] + '!', '#cbb0ff', 16, -1.6); tl('rk', run.rankIdx); }
     }
   }
   function recordWave(rr, rt, partial) {
@@ -1374,7 +1375,7 @@
       fl.check = null; run.raidSec += fl.time;
       recordWave(0, 0, true); run.total += run.waves[run.waves.length - 1].score; logWave(true);   // 1.24 (D, P0-4)
     }
-    endRun('Run przerwany przez gracza.', 'quit');
+    endRun(L('Przerwałeś run.', 'You quit the run.'), 'quit');
   }
 
   /* ================= building tools: dig, passage, demolish ================= */
@@ -1437,8 +1438,8 @@
   function forgetTiles(tiles) { tiles.forEach(t => { run.rumor.tiles.delete(t[1] * WW + t[0]); }); }
   function applyTool(m) {
     const L = run.layout, cost = toolCost(m.tool, m);
-    if (fl.phase !== 'build') { note('Tylko między falami'); return false; }
-    if (fl.essence < cost) { note('Za mało Esencji (' + cost + ')'); return false; }
+    if (fl.phase !== 'build') { note(LL('Tylko między falami', 'Only between waves')); return false; }
+    if (fl.essence < cost) { note(LL('Za mało Esencji (' + cost + ')', 'Not enough Essence (' + cost + ')')); return false; }
     pushUndo(ITEMS[m.tool].name.toLowerCase());
     let ok = false, refund = 0, msg = '';
     if (m.tool === 'dig') {
@@ -1448,55 +1449,56 @@
         refund = rebuildDungeon();
         const R = fl.rooms.find(r => r.key === cellKey(m.tx, m.ty)), H = fl.rooms.find(r => r.key === edgeKey(m.from, cellKey(m.tx, m.ty)));
         if (R) forgetTiles(R.tiles); if (H) forgetTiles(H.tiles);
-        msg = 'Nowy pokój wykopany. Następna fala nic o nim nie wie.';
+        msg = LL('Nowy pokój gotowy. Następna fala nic o nim nie wie.', 'New room dug. The next wave knows nothing about it.');
       }
     } else if (m.tool === 'secret') {   // 1.26.1
       const e = L.edges.get(m.edge), H = fl.rooms.find(r => r.key === m.edge);
-      if (e && m.has && !m.known) { e.secret = false; e.secretKnown = false; ok = true; msg = 'Maska zdjęta: zwykłe przejście.'; }
-      else if (e && (m.has || secretOk(L, m.edge))) { e.secret = true; e.secretKnown = false; ok = true; if (H) forgetTiles(H.tiles); msg = 'Ukryte przejście: bohaterowie widzą tu ścianę, dopóki go nie odkryją.'; fl.stats.secretMade = (fl.stats.secretMade || 0) + 1; }
-      else msg = 'Do serca musi zostać jawna droga.';
+      if (e && m.has && !m.known) { e.secret = false; e.secretKnown = false; ok = true; msg = LL('Przejście znów jest zwykłe.', 'The passage is ordinary again.'); }
+      else if (e && (m.has || secretOk(L, m.edge))) { e.secret = true; e.secretKnown = false; ok = true; if (H) forgetTiles(H.tiles); msg = LL('Ukryte przejście: bohaterowie widzą tu ścianę, dopóki go nie odkryją.', 'Secret Passage: the heroes see a wall here until they find it.'); fl.stats.secretMade = (fl.stats.secretMade || 0) + 1; }
+      else msg = LL('Do serca musi prowadzić jawna droga.', 'An open way to the heart must remain.');
       if (ok) refund = rebuildDungeon(true);
     } else if (m.tool === 'tunnel') {
       ok = addPassage(L, m.a, m.b);
-      if (ok) { refund = rebuildDungeon(); const H = fl.rooms.find(r => r.key === edgeKey(m.a, m.b)); if (H) forgetTiles(H.tiles); msg = 'Nowe przejście. Więcej dróg, więcej błędów.'; }
+      if (ok) { refund = rebuildDungeon(); const H = fl.rooms.find(r => r.key === edgeKey(m.a, m.b)); if (H) forgetTiles(H.tiles); msg = LL('Nowe przejście. Więcej dróg, więcej błądzenia.', 'New passage. More ways, more wrong turns.'); }
     } else if (m.tool === 'demolish') {
       const R = fl.rooms.find(r => r.key === (m.room || m.edge));
       if (R) forgetTiles(R.tiles);
       if (m.room && canDemolishRoom(L, m.room)) {
         fl.rooms.filter(r => r.kind === 'hall' && (r.key.split('|').includes(m.room))).forEach(hh => forgetTiles(hh.tiles));
         const back = 5 + expandRefund((L.cells.get(m.room) || {}).lvl || 0);
-        demolishRoom(L, m.room); ok = true; fl.essence += back; msg = 'Pokój zasypany (+' + back + ' Esencji).';
-      } else if (m.edge && canDemolishEdge(L, m.edge)) { const back = expandRefund((L.edges.get(m.edge) || {}).lvl || 0); L.edges.delete(m.edge); fl.essence += back; ok = true; msg = 'Przejście zasypane' + (back ? ' (+' + back + ' Esencji).' : '.'); }
+        demolishRoom(L, m.room); ok = true; fl.essence += back; msg = LL('Pokój zasypany (+' + back + ' Esencji).', 'Room filled in (+' + back + ' Essence).');
+      } else if (m.edge && canDemolishEdge(L, m.edge)) { const back = expandRefund((L.edges.get(m.edge) || {}).lvl || 0); L.edges.delete(m.edge); fl.essence += back; ok = true; msg = LL('Przejście zasypane' + (back ? ' (+' + back + ' Esencji).' : '.'), 'Passage filled in' + (back ? ' (+' + back + ' Essence).' : '.')); }
       if (ok) refund = rebuildDungeon();
     } else if (m.tool === 'expand') {
       const spec = m.room ? L.cells.get(m.room) : L.edges.get(m.edge), R = fl.rooms.find(r => r.key === (m.room || m.edge));
-      if (spec && R) { spec.lvl = (spec.lvl || 0) + 1; R.lvl = spec.lvl; ok = true; msg = (m.room ? 'Pokój' : 'Korytarz') + ' rozbudowany: mieści teraz ' + roomCap(R) + ' elementy.'; }
+      if (spec && R) { spec.lvl = (spec.lvl || 0) + 1; R.lvl = spec.lvl; ok = true; msg = LL((m.room ? 'Pokój' : 'Korytarz') + ' powiększony: mieści teraz ' + roomCap(R) + ' elementy.', (m.room ? 'Room' : 'Corridor') + ' expanded: it now holds ' + roomCap(R) + ' elements.'); }
     } else if (ROOMTYPES[m.tool]) {
       const c = L.cells.get(m.room), R = fl.rooms.find(r => r.key === m.room), rt = ROOMTYPES[m.tool];
       if (c && R) {
         ok = true;
-        if (c.rt === rt) { delete c.rt; R.rt = null; const back = Math.floor(ITEMS[m.tool].cost / 2); fl.essence += back; msg = 'Pokój znów zwykły (+' + back + ' Esencji).'; }
-        else { const was = c.rt; c.rt = rt; R.rt = rt; msg = 'Pokój: ' + RT_INFO[rt].name + (was ? ' (zamiast: ' + RT_INFO[was].name + ')' : '') + '. ' + ITEMS[m.tool].desc.split(': ').slice(1).join(': ').replace(/ Stuknij znacznik pokoju\.$/, ''); }
+        if (c.rt === rt) { delete c.rt; R.rt = null; const back = Math.floor(ITEMS[m.tool].cost / 2); fl.essence += back; msg = LL('Pokój znów jest zwykły (+' + back + ' Esencji).', 'The room is plain again (+' + back + ' Essence).'); }
+        else { const was = c.rt; c.rt = rt; R.rt = rt; msg = LL('Pokój: ', 'Room: ') + RT_INFO[rt].name + (was ? LL(' (zamiast: ', ' (replaces ') + RT_INFO[was].name + ')' : '') + '. ' + ITEMS[m.tool].desc; }
       }
     } else if (KINDS[m.tool]) {
       const c = L.cells.get(m.room), R = fl.rooms.find(r => r.key === m.room), k = KINDS[m.tool], K = KIND_INFO[k];
       if (c && R) {
         ok = true;
-        if (c.rk === k) { delete c.rk; R.rk = null; const back = Math.floor(ITEMS[m.tool].cost / 2); fl.essence += back; msg = 'Pokój bez komnaty (+' + back + ' Esencji).'; }
+        if (c.rk === k) { delete c.rk; R.rk = null; const back = Math.floor(ITEMS[m.tool].cost / 2); fl.essence += back; msg = LL('Pokój bez komnaty (+' + back + ' Esencji).', 'Room without a lair (+' + back + ' Essence).'); }
         else {
           const was = c.rk; c.rk = k; R.rk = k;
           const mine = [...fl.items.values()].filter(it => KIND_OF[it.type] === k && servedRooms(it.type, it.x, it.y).includes(R.id)).length;
-          msg = 'Komnata: ' + K.name + (was ? ' (zamiast: ' + KIND_INFO[was].name + ')' : '') + '. ' + ITEMS[m.tool].desc.split(' w tym pokoju ')[0].split(': ').slice(1).join(': ') + ' w tym pokoju ' + (K.items.length > 1 ? 'mają' : 'ma') + ' cechę 3. poziomu' + (mine ? ' (działa już na ' + mine + ')' : ', postaw je tutaj') + '.';
+          msg = LL('Komnata: ' + K.name + (was ? ' (zamiast: ' + KIND_INFO[was].name + ')' : '') + '. Jej elementy w tym pokoju dostają cechę 3. poziomu' + (mine ? ' (działa już na ' + mine + ')' : ', więc stawiaj je tutaj') + '.',
+            'Lair: ' + K.name + (was ? ' (replaces ' + KIND_INFO[was].name + ')' : '') + '. Its elements in this room get their level 3 trait' + (mine ? ' (already on ' + mine + ')' : ', so place them here') + '.');
         }
         fl.threatDirty = true;
       }
     }
-    if (!ok) { undoStack.pop(); updateUndoBtn(); note('Tu się nie da'); return false; }
+    if (!ok) { undoStack.pop(); updateUndoBtn(); note(LL('Nie tutaj', 'Not here')); return false; }
     fl.essence -= cost;
     fl.stats.built++; bt(m.tool).placed++; bt(m.tool).spent += cost;
     run.next = run.next || makeWave(run.wave);
     updateTray();
-    setHint(msg + (refund ? ' Elementy, które straciły miejsce, wróciły jako ' + refund + ' Esencji.' : ''));
+    setHint(msg + (refund ? LL(' Elementy bez miejsca wróciły jako ' + refund + ' Esencji.', ' Elements that lost their spot gave back ' + refund + ' Essence.') : ''));
     if (run.tut >= 0) tutEvent('tool');
     return true;
   }
@@ -1513,7 +1515,7 @@
     if (!P || !P.res[dtp] || h.known.has('phys')) return;
     h.known.add('phys'); if (h.entry) h.entry.known = [...h.known]; fl.stats.revealed = (fl.stats.revealed || 0) + 1; tl('rv', h.id, 'phys');
     say(h, pick(P.res[dtp] > 1 ? SAY.weakHit[dtp] : SAY.resistHit[dtp]), 3, 1.8, 'loud');
-    floatHero(h, (P.res[dtp] > 1 ? 'Słabość: ' : 'Odporność: ') + DMG_TYPES[dtp], P.res[dtp] > 1 ? '#ffb35c' : '#9fc6ff', 13, -1.0);
+    floatHero(h, (P.res[dtp] > 1 ? L('Słabość: ', 'Weak: ') : L('Odporność: ', 'Resists: ')) + DMG_TYPES[dtp], P.res[dtp] > 1 ? '#ffb35c' : '#9fc6ff', 13, -1.0);
     tutPop('body');
   }
   function phobiaOn(h, attr, src, dtp) {
@@ -1525,7 +1527,7 @@
   function revealPhobia(h) {
     if (h.known.has('phobia')) return;
     h.known.add('phobia'); if (h.entry) h.entry.known = [...h.known]; fl.stats.revealed = (fl.stats.revealed || 0) + 1; tl('rv', h.id, 'phobia');
-    say(h, pick(SAY.phobia[h.phobia]), 4, 2.2); floatHero(h, 'Fobia: ' + PHOBIAS[h.phobia].name, '#c3b2ff', 13, -1.1);
+    say(h, pick(SAY.phobia[h.phobia]), 4, 2.2); floatHero(h, L('Fobia: ', 'Phobia: ') + PHOBIAS[h.phobia].name, '#c3b2ff', 13, -1.1);
     tutPop('phobia');
   }
   function phobiaMult(h, attr, src, dtp) {
@@ -1577,7 +1579,7 @@
     if (tkey) {
       // self-defence first: the thief may dodge a single hit, a talisman's ward (a power the hero switches on) soaks part of it
       if (h.type === 'thief' && (tkey === 'spikes' || tkey === 'arrows') && !held(h) && fl.time > h.dodgeCd && Math.random() < h.R.dodge) {
-        h.dodgeCd = fl.time + 3; fl.stats.dodges++; say(h, pick(SAY.dodge), 2, null, 'loud'); floatHero(h, 'Unik', '#c9f0b0', 14, -0.6); heroFx('dodge', h); return;   // 1.24 (B): an afterimage
+        h.dodgeCd = fl.time + 3; fl.stats.dodges++; say(h, pick(SAY.dodge), 2, null, 'loud'); floatHero(h, L('Unik', 'Dodge'), '#c9f0b0', 14, -0.6); heroFx('dodge', h); return;   // 1.24 (B): an afterimage
       }
       if (fl.time < h.wardUntil && !(tkey === 'arrows' && t3(src))) {   // piercing arrows go through; acid corrodes the ward
         amt *= 1 - h.wardK * (inB('acid', h.room) ? 0.5 : 1); fl.stats.charmSoak = (fl.stats.charmSoak || 0) + 1;
@@ -1589,7 +1591,7 @@
     } else if (caged(h)) amt *= 1.5;
     if (h.cursed && kind !== 'heart') amt *= 1.3;   // a cursed treasure: everything hurts more
     if ((kind === 'trap' || kind === 'monster') && inB('acid', h.room)) amt *= 1.1;   // 1.26 (6.4): Kwas +10%
-    if (kind === 'trap' && h.oilA && fl.time < (h.oilUntil || -1) && Math.random() < 0.15 && setStatus(h, 'burn', 3, 'oilslick')) floatHero(h, 'Zapłon!', '#ff9a3c', 12, -0.7);   // 1.26 Plama oleju A: Łatwopalna
+    if (kind === 'trap' && h.oilA && fl.time < (h.oilUntil || -1) && Math.random() < 0.15 && setStatus(h, 'burn', 3, 'oilslick')) floatHero(h, L('Zapłon!', 'Ignited!'), '#ff9a3c', 12, -0.7);   // 1.26 Plama oleju A: Łatwopalna
     if (fl.time < (h.hexUntil || -1) && kind !== 'heart') amt *= 1.2;   // 1.26 Szaman B: Klątwa
     if (mods.deepsleep && (kind === 'trap' || kind === 'monster') && h.state === 'rest' && isRt(h.room, 'haven')) amt *= 1 + mods.deepsleep;   // 1.18 Sen bez przebudzenia
     // v14: the damage type against the hero's class, body and scars (a weakness shows the first time it bites)
@@ -1622,7 +1624,7 @@
     if (h.boss === 'final' && !h.raged && h.hp < 0.5 * h.max) {   // the hero of the prophecy, half dead, gets back up angrier
       h.raged = true; h.hp = Math.min(h.max, h.hp + 0.2 * h.max); h.shield = Math.max(h.shield, 0.2 * h.max); fl.stats.rage = 1;
       alive().forEach(o => { if (o !== h && canHearShout(o, h)) o.fear = Math.max(0, o.fear - 0.2 * o.courage); });   // 1.17: those who hear him
-      say(h, pick(SAY.finalRage), 4, 2.4); floatHero(h, 'Gniew!', '#ff6b6b', 16, -1); shake = Math.max(shake, 0.25);
+      say(h, pick(SAY.finalRage), 4, 2.4); floatHero(h, L('Gniew!', 'Rage!'), '#ff6b6b', 16, -1); shake = Math.max(shake, 0.25);
     }
     if (dtp && real > 0) {
       h.dmgBy[dtp] = (h.dmgBy[dtp] || 0) + real;
@@ -1637,12 +1639,12 @@
     let pts = real / gmax * GZ.dmg * DMG_FACTOR[kind] * depthMult(h.room) * lootMult(h);   // v15: Groza against his max HP (gear-laden heroes bleed more); the combo is applied in addPts
     if (pts > 0 && h.hp < 0.3 * h.max && (kind === 'trap' || kind === 'loot' || kind === 'burn')) {
       fl.stats.edgePts += pts * 0.5; pts *= 1.5;
-      if (fl.time - h.edgeAt > 1.5) { h.edgeAt = fl.time; floatHero(h, 'Na skraju!', '#ff9a3c', 15, -0.9); }
+      if (fl.time - h.edgeAt > 1.5) { h.edgeAt = fl.time; floatHero(h, L('Na skraju!', 'On the edge!'), '#ff9a3c', 15, -0.9); }
     }
     if (pts > 0) {
       const gz = pts; pts = addPts(pts, null, h);
       if (attr) { const b = bt(attr); if (kind === 'monster') b.passivePts += pts; else b.pts += pts; }
-      if (kind === 'trap' || kind === 'loot') { fl.stats.dmgPts += pts; h.accG = Math.max(0, (h.accG || 0) - gz); floatHero(h, '+' + fmtG(gz) + (h.alone ? (h.female ? ' sama!' : ' sam!') : ''), h.alone ? '#e6dcff' : '#c3b2ff', 16); }   // 1.01: Groza over the hero; the Esencja comes when the combo ends
+      if (kind === 'trap' || kind === 'loot') { fl.stats.dmgPts += pts; h.accG = Math.max(0, (h.accG || 0) - gz); floatHero(h, '+' + fmtG(gz) + (h.alone ? L(h.female ? ' sama!' : ' sam!', ' alone!') : ''), h.alone ? '#e6dcff' : '#c3b2ff', 16); }   // 1.01: Groza over the hero; the Esencja comes when the combo ends
       else if (kind === 'burn') { fl.stats.dmgPts += pts; h.acc += pts; }
       else { fl.stats.dmgPts += pts; h.acc += pts; }
     }
@@ -1677,7 +1679,7 @@
     const barb = h.type === 'barbarian';
     h.rageUntil = fl.time + (barb ? 8 : 6); h.rageCd = fl.time + (barb ? 14 : 20); fl.stats.rages = (fl.stats.rages || 0) + 1; tl('rg2', h.id, why);
     say(h, why === 'vow' && dead ? bondText(h, 'revengeVow', dead) : why === 'death' && dead ? nameFill(pick(SAY.revenge), dead) : why === 'panic' ? pick(SAY.rageNoPanic) : pick(SAY.rage), 4, 2.2);   // 1.21: vow
-    floatHero(h, 'Furia!', '#ff9a9a', 13, -0.8); heroFx('rage', h);   // 1.24 (B): a red aura
+    floatHero(h, L('Furia!', 'Fury!'), '#ff9a9a', 13, -0.8); heroFx('rage', h);   // 1.24 (B): a red aura
     return true;
   }
   const raging = h => fl.time < h.rageUntil && !inB('shackles', h.room);
@@ -1717,7 +1719,7 @@
   const nemHold = h => !!h.nemesis && h.hp > 0.15 * h.max;   // 1.23: a Nemezis does not panic or flee by fear while above 15% HP
   function dropCrystal(h) {
     fl.stats.crystalDropped = (fl.stats.crystalDropped || 0) + 1; tl('cd', h.id);
-    say(h, pick(SAY.crystalFear), 4, 2.2); floatHero(h, 'Rzuca kryształ!', '#ff9ab0', 15, -1);
+    say(h, pick(SAY.crystalFear), 4, 2.2); floatHero(h, L('Rzuca kryształ!', 'Drops the crystal!'), '#ff9ab0', 15, -1);
     crystalReturns(h);
     if (!h.fleeing) startFlee(h);
   }
@@ -1728,13 +1730,13 @@
     if (mods.fleeShock) alive().forEach(o => { if (o !== h && !o.fleeing && canHearShout(o, h)) addFear(o, mods.fleeShock * o.courage, null, 'screams'); });   // Krzyki w ścianach (1.18: who hears his shout, as for every other shout since 1.17)
     if (h.state === 'rest' || h.state === 'talk' || h.state === 'wait' || h.state === 'boss' || h.state === 'disarm' || h.state === 'free' || h.state === 'loot') { h.state = 'walk'; h.item = null; h.lootIt = null; }   // 1.20: loot
     say(h, pick(h.trait === 'coward' ? SAY.cowardRun : SAY.flee), 4, 2);
-    floatHero(h, 'Ucieka!', '#c3b2ff', 14, -0.8);
+    floatHero(h, LL('Ucieka!', 'Flees!'), '#c3b2ff', 14, -0.8);
     // the champion will not have it: a battle cry steadies everyone else (once every 15 s)
     // 1.17: only when he sees or hears the one who bolts; his cry steadies those who hear it
     const ch = fl.heroes.find(o => o.boss === 'champion' && o !== h && !o.dead && !o.fled && !o.gone && !o.fleeing && !caged(o) && perceives(o, h, true));
     if (ch && fl.time > (ch.shoutCd || 0)) {
       ch.shoutCd = fl.time + 25; fl.stats.shouts = (fl.stats.shouts || 0) + 1;
-      say(ch, pick(SAY.champShout), 4, 2.2); floatHero(ch, 'Okrzyk!', '#ffd27a', 15, -0.9);
+      say(ch, pick(SAY.champShout), 4, 2.2); floatHero(ch, LL('Okrzyk!', 'War cry!'), '#ffd27a', 15, -0.9);
       alive().forEach(o => { if (o !== h && !o.fleeing && canHearShout(o, ch)) o.fear = Math.max(0, o.fear - 0.25 * o.courage); });
     }
     const P = fl.party, L = leader(), crew = L ? groupOf(L) : alive();   // 1.17: "half of us run" counts the leader's group
@@ -1765,7 +1767,7 @@
     const P = fl.party;
     h.crystal = false; P.carrierId = -1; fl.stats.crystalSaved++; tl('cs', h.id); crystalEv(0, 'saved', h.type);   // 1.24 (D, P0-2)
     const cp = addPts(GZ.crystal, 'crystalPts');
-    floatTile(fl.heart.x, fl.heart.y, 'Kryształ wraca! +' + fmtE(cp) + ' Esencji', '#ff7a86', 17, -1);
+    floatTile(fl.heart.x, fl.heart.y, LL('Kryształ wraca! +', 'Crystal back! +') + fmtE(cp), '#ff7a86', 17, -1);
     // 1.17: only those who see it or hear the cry shout and turn back; the decision is the leader's group's, and the others learn
     // of it when they rejoin (h.plan; meanwhile they walk on towards the exit, thinking the crystal is ahead of them)
     const L = leader(), crew = L ? groupOf(L) : alive();
@@ -1785,9 +1787,9 @@
     burst(p.x, p.y, '#d8434f', 16);
     const crypt = isRt(h.room, 'crypt');
     const pts = addPts(GZ.kill * (h.boss ? 2 : 1) * (h.type === 'cultist' ? 1.5 : 1) * (omenK(run.wave, 'killK') || 1) * mods.soulMult * (crypt ? 1.5 : 1), 'killPts', h); tl('k', h.id, attr || kind);   // v15: a death is Groza like everything else (Żniwiarz x2, Krypta x1,5)
-    if (h.type === 'cultist' && h.drank > 0) { const back = 0.5 * h.drank, need = hungerNeed(run.wave); fl.fed = Math.min(need, fl.fed + back); fl.stats.drainBack = (fl.stats.drainBack || 0) + back; floatTile(fl.heart.x, fl.heart.y, 'Serce odzyskuje ' + fmtE(back), '#ff9aa4', 14, -1.2); if (fl.fed >= need - 1e-6) heartFull(need); }   // 1.26: half of what he drank comes back tl('k', h.id, attr || kind);   // v15: a death is Groza like everything else (Żniwiarz x2, Krypta x1,5)
+    if (h.type === 'cultist' && h.drank > 0) { const back = 0.5 * h.drank, need = hungerNeed(run.wave); fl.fed = Math.min(need, fl.fed + back); fl.stats.drainBack = (fl.stats.drainBack || 0) + back; floatTile(fl.heart.x, fl.heart.y, L('Serce odzyskuje ', 'Heart regains ') + fmtE(back), '#ff9aa4', 14, -1.2); if (fl.fed >= need - 1e-6) heartFull(need); }   // 1.26: half of what he drank comes back tl('k', h.id, attr || kind);   // v15: a death is Groza like everything else (Żniwiarz x2, Krypta x1,5)
     fl.stats.souls++;
-    if (mods.bloodbath && h.room === fl.heart.room) { fl.bathK = Math.min(2, (fl.bathK || 1) * Math.pow(1.1, mods.bloodbath)); floatTile(fl.heart.x, fl.heart.y, 'Krwawa łaźnia ×' + fmt2(fl.bathK), '#ff7a86', 13, -1.7); }   // 1.26
+    if (mods.bloodbath && h.room === fl.heart.room) { fl.bathK = Math.min(2, (fl.bathK || 1) * Math.pow(1.1, mods.bloodbath)); floatTile(fl.heart.x, fl.heart.y, L('Krwawa łaźnia ×', 'Bloodbath ×') + fmt2(fl.bathK), '#ff7a86', 13, -1.7); }   // 1.26
     if (mods.skulls) run.stacks.skulls = Math.min(20, (run.stacks.skulls || 0) + 1);   // 1.26 Kolekcja czaszek
     { const kt = h.killer ? h.killer.type : attr; if (mods.execDiary && kt && ITEMS[kt]) { run.kata = run.kata || {}; run.kata[kt] = Math.min(0.3, (run.kata[kt] || 0) + 0.02 * mods.execDiary); } }   // 1.26 Pamiętnik kata
     if (mods.granary) run.stacks.granary = Math.min(40, (run.stacks.granary || 0) + 1);   // Spichlerz dusz: the heart wants 1 less for good (1.01; 1.26: at most 40 a run)
@@ -1795,7 +1797,7 @@
     killHooks(h, kind);   // 1.26: the bell, Powstanie, the hound's hunt, Głód krwi, Grabież
     if (attr === 'spikes' && mods.hunger) run.stacks.hunger = (run.stacks.hunger || 0) + 1;   // Głodne kolce
     if (mods.skullwall && rkOf(h.room) === 'ossuary') run.stacks.skullwall = (run.stacks.skullwall || 0) + 1;   // 1.18 Mur z czaszek
-    addFloat(p.x, p.y - 0.1, 'Śmierć +' + fmtE(pts) + ' Esencji', '#ff7a86', 15, -0.4);
+    addFloat(p.x, p.y - 0.1, L('Śmierć +', 'Death +') + fmtE(pts), '#ff7a86', 15, -0.4);
     const P = fl.party;
     if (h.nemesis) nemesisKilled(h, p);   // 1.23: the bounty on his head is paid
     rememberFallen(h);   // 1.23: the tavern will know where he died
@@ -1804,7 +1806,7 @@
     if (mods.cauldron && rkOf(h.room) === 'ogre' && (h.inv.length || h.gold > 0)) {
       const n = Math.min(8, 2 * h.inv.length + (h.gold || 0)) * mods.cauldron;
       h.inv = []; h.gold = 0; gainEssence(null, n, 'essDrop'); fl.stats.cauldron = (fl.stats.cauldron || 0) + n; tl('cn2', h.id, n);
-      addFloat(p.x, p.y - 0.5, 'Kocioł +' + n + ' Esencji', '#ff7a86', 14, -0.6);
+      addFloat(p.x, p.y - 0.5, L('Kocioł +', 'Cauldron +') + n, '#ff7a86', 14, -0.6);
     }
     // his gear and his purse spill out as loot around the body: the exact items, free for the next one who dares (no Esencja back for these)
     // 1.20: the piles know whose body they are (it.body, fromNm): the others see the dead one's things, not a relic (dropItem)
@@ -1845,7 +1847,7 @@
       const f0 = o.fear;
       addFear(o, base * (o.trait === 'coward' ? 1.5 : 1), null, 'death');
       fl.stats.deathFear += Math.max(0, o.fear - f0);
-      if (near && o.fear - f0 >= 8) floatHero(o, 'Groza', '#c3b2ff', 12, -1.0);
+      if (near && o.fear - f0 >= 8) floatHero(o, L('Groza', 'Dread'), '#c3b2ff', 12, -1.0);
     });
     if (P.leaderId === h.id) P.leaderId = -1;
     if (P.scoutId === h.id) P.scoutId = -1;
@@ -1861,7 +1863,7 @@
     if (nb) {   // Dzwon żałobny: everyone alive hears the death (fobia hałasu); A Requiem: +0,5 Groza a hearer
       const req = [...fl.items.values()].some(b => b.type === 'bell' && !b.disabled && t3(b));
       alive().forEach(o => { addFear(o, 24 * nb * famK('bell'), 'bell'); if (req) addPts(0.5, 'fearPts', o); });
-      const b = [...fl.items.values()].find(q => q.type === 'bell' && !q.disabled); if (b) { b.anim = 0.8; floatTile(b.x, b.y, 'Dzwon żałobny!', '#c9d4b0', 14, -1); }
+      const b = [...fl.items.values()].find(q => q.type === 'bell' && !q.disabled); if (b) { b.anim = 0.8; floatTile(b.x, b.y, L('Dzwon żałobny!', 'Funeral Bell!'), '#c9d4b0', 14, -1); }
       fl.stats.bellTolls = (fl.stats.bellTolls || 0) + 1;
     }
     if ((h.plague || 0) > 0 && (fl.risenZ || 0) < 2) riseZombie(h);   // Powstanie
@@ -1879,7 +1881,7 @@
     const t = free.reduce((a, q) => Math.hypot(q[0] + 0.5 - p.x, q[1] + 0.5 - p.y) < Math.hypot(a[0] + 0.5 - p.x, a[1] + 0.5 - p.y) ? q : a, free[0]);
     const z = { type: tp || 'zombie', x: t[0], y: t[1], cd: 1, anim: 0, disabled: false, hp: tp ? 90 : 120, max: tp ? 90 : 120, power: 1, shot: 0.5, flash: 0, preview: 0, gx: t[0] + 0.5, gy: t[1] + 0.5, lvl: 1, spent: 0, temp: true };
     fl.items.set(key(t[0], t[1]), z); if (!tp) fl.risenZ = (fl.risenZ || 0) + 1; fl.threatDirty = true;
-    reaction(h, 'rise'); floatTile(t[0], t[1], 'Wstaje jako zombie!', '#a8c86a', 15, -0.9);
+    reaction(h, 'rise'); floatTile(t[0], t[1], L('Wstaje jako zombie!', 'Rises as a zombie!'), '#a8c86a', 15, -0.9);
     return z;
   }
   function riseGhost(h) {
@@ -1890,7 +1892,7 @@
     const t = free.reduce((a, q) => Math.hypot(q[0] + 0.5 - p.x, q[1] + 0.5 - p.y) < Math.hypot(a[0] + 0.5 - p.x, a[1] + 0.5 - p.y) ? q : a, free[0]);
     const hp = ITEMS.ghost.hp, g = { type: 'ghost', x: t[0], y: t[1], cd: 1, anim: 0, disabled: false, hp, max: hp, power: 1, shot: 0.5, flash: 0, preview: 0, gx: p.x, gy: p.y, lvl: 1, spent: 0, temp: true };
     fl.items.set(key(t[0], t[1]), g); fl.risen = (fl.risen || 0) + 1; fl.stats.risen = (fl.stats.risen || 0) + 1; fl.threatDirty = true; tl('rs', h.id, t[0], t[1]);
-    floatTile(t[0], t[1], 'Wstaje jako duch!', '#dfe6ff', 15, -0.9); burst(p.x, p.y, '#dfe6ff', 14);
+    floatTile(t[0], t[1], L('Wstaje jako duch!', 'Rises as a ghost!'), '#dfe6ff', 15, -0.9); burst(p.x, p.y, '#dfe6ff', 14);
     return g;
   }
 
@@ -1985,7 +1987,7 @@
       const old = h.inv.splice(low, 1)[0]; dropItem(h, old, 0, true);
       fl.stats.swaps++; tl('sw', h.id, old.type + old.r, item.type + item.r);
       if (!quiet) { say(h, pick(SAY.swap), 2); floatHero(h, itemLabel(old) + ' → ' + itemLabel(item), '#c3b2ff', 12, -0.7); }
-    } else { if (heavy(null)) return false; if (!quiet) say(h, 'Mam ' + itemAcc(item) + '!', item.r >= 2 ? 3 : 2); }
+    } else { if (heavy(null)) return false; if (!quiet) say(h, L('Mam ' + itemAcc(item) + '!', 'Got ' + itemAcc(item) + '!'), item.r >= 2 ? 3 : 2); }
     h.inv.push(item); fl.stats.itemsGot++;
     return true;
   }
@@ -2003,7 +2005,7 @@
       LOOT_GREED[kind][0] * mods.greedMult * (isRt(roomOf(it.x, it.y), 'vault') ? 2 : 1) * (kind === 'gold' ? 1 + mods.goldDust : 1) * (kind === 'relic' && mods.reliquary ? 1.5 : 1) / (1 + 0.15 * fl.stats.lootSeen);
     const dg = addGreed(g * famK(it.type) * (dreamLoot(it) ? 1.5 : 1)); greedOrbs(it.x, it.y, dg); fl.stats.lootSeen++; tl('ls', it.x, it.y, r);   // 1.26: Runa rodu (Skarby)
     if (body) fl.stats.greedBody = (fl.stats.greedBody || 0) + dg;
-    floatTile(it.x, it.y, 'Chciwość ×' + fmt2(fl.greed), '#f2b94b', 14, -0.6, 'greed');
+    floatTile(it.x, it.y, L('Chciwość ×', 'Greed ×') + fmt2(fl.greed), '#f2b94b', 14, -0.6, 'greed');
     if (!by) return;
     sawAdd(by, itemTags(it));   // 1.17.1
     const dead = { nm: it.fromNm, female: it.fromFem };
@@ -2026,7 +2028,7 @@
     const kind = LOOT_KIND[it.type], r = ITEMS[it.type].rarity || 1, k = key(it.x, it.y);
     if (lootBanned(h, it)) return false;   // 1.21: the loser of a quarrel over it (or everyone, when the leader stopped it) for 10 s
     if (it.type === 'bait') { noticeLoot(it, h); baitBite(h, it); return false; }   // 1.26 Przynęta: it bites, it stays
-    if (dreamLoot(it)) { noticeLoot(it, h); h.lootMemo.set(k, { go: false, t: fl.time + 120 }); h.state = 'wait'; h.timer = 3; h.path = []; floatTile(it.x, it.y, 'Złoty sen: nie da się podnieść', '#f2b94b', 12, -0.6); fl.stats.dreamTries = (fl.stats.dreamTries || 0) + 1; return false; }   // 1.26 Złoty sen
+    if (dreamLoot(it)) { noticeLoot(it, h); h.lootMemo.set(k, { go: false, t: fl.time + 120 }); h.state = 'wait'; h.timer = 3; h.path = []; floatTile(it.x, it.y, L('Złoty sen: nie do ruszenia', 'Golden Dream: stuck'), '#f2b94b', 12, -0.6); fl.stats.dreamTries = (fl.stats.dreamTries || 0) + 1; return false; }   // 1.26 Złoty sen
     // 1.20: a body's things: he kneels and goes through them (updateHero: the 'loot' state, then bodyLoot), not while running or
     // in a panic, and not again over a body he found nothing on
     if (it.body != null) {
@@ -2064,13 +2066,13 @@
     greedOrbs(it.x, it.y, addGreed(kg[1] * mods.greedMult * mods.pickGreed / (1 + 0.15 * fl.stats.loot))); tl('lp', h.id, r, kind);
     if (!it.dropped) { const keep = 0.5 * kg[0] * mods.greedMult / (1 + 0.5 * run.greedKeep); run.greedKeep += keep; fl.stats.greedKept = (fl.stats.greedKept || 0) + keep; }   // part of its pull stays for good
     const pts = addPts(GZ.loot * r * depthMult(roomOf(it.x, it.y)), 'lootPts', h); fl.stats.loot++;
-    floatTile(it.x, it.y, '+' + fmtE(pts) + ' łup', '#ff7a86', 16);
+    floatTile(it.x, it.y, '+' + fmtE(pts) + L(' łup', ' loot'), '#ff7a86', 16);
     sawAdd(h, itemTags(it));
     if (kind === 'gold') { const n = Math.max(1, it.gold || 1); h.gold += n; fl.stats.goldPicked += n; sayNow(['gold'], () => say(h, pick(h.gold >= 3 ? SAY.goldHeavy : SAY.gold), 2)); }
     if (kind === 'cursed') curse(h, item);
     else if (item && item.cursed) { curse(h, null); fl.stats.cursePassed = (fl.stats.cursePassed || 0) + 1; }   // 1.20: a cursed item curses the next one who takes it
     if (mods.lootTrap > 0) damage(h, mods.lootTrap * r, LOOTTRAP);
-    fl.items.forEach(mm => { if (mm.type === 'mimic' && t3B(mm) && !mm.disabled && mm.cd <= 0 && Math.max(Math.abs(mm.x - it.x), Math.abs(mm.y - it.y)) <= 1 && !h.dead) { floatTile(mm.x, mm.y, 'Zachłanny!', '#d8434f', 14, -1); fire(mm, 2, { lock: [h] }); } });   // 1.26 Mimik B: Zachłanny
+    fl.items.forEach(mm => { if (mm.type === 'mimic' && t3B(mm) && !mm.disabled && mm.cd <= 0 && Math.max(Math.abs(mm.x - it.x), Math.abs(mm.y - it.y)) <= 1 && !h.dead) { floatTile(mm.x, mm.y, L('Zachłanny!', 'Grasping!'), '#d8434f', 14, -1); fire(mm, 2, { lock: [h] }); } });   // 1.26 Mimik B: Zachłanny
     if (kind === 'relic' && !it.dropped) gainEssence(null, 4, 'essDrop');
     vaultSnap(it, h);   // 1.18 Zatrzask sezamu
     updateTray();   // 1.03: the price of that loot drops again
@@ -2084,7 +2086,7 @@
     if (!mods.vaultsnap || fl.phase !== 'raid' || r < 0 || !isRt(r, 'vault')) return 0;
     const at = fl.snapAt || (fl.snapAt = {}); if (fl.time - (at[r] == null ? -99 : at[r]) < 6) return 0;
     at[r] = fl.time; let n = 0;
-    floatTile(it.x, it.y, 'Zatrzask!', '#ffd27a', 16, -1); shake = Math.max(shake, 0.12);
+    floatTile(it.x, it.y, L('Zatrzask!', 'Snap!'), '#ffd27a', 16, -1); shake = Math.max(shake, 0.12);
     fl.items.forEach(o => { if (TRAPS[o.type] && slotRoom(o.type, o.x, o.y) === r && !o.disabled && o.cd <= 0 && fire(o, 1)) n++; });
     fl.stats.vaultSnaps = (fl.stats.vaultSnaps || 0) + 1; tl('vs', h.id, r, n);
     return n;
@@ -2106,13 +2108,13 @@
       fl.items.delete(key(o.x, o.y)); h.loot++;
       greedOrbs(o.x, o.y, addGreed(LOOT_GREED.body[1] * mods.greedMult * mods.pickGreed / (1 + 0.15 * fl.stats.loot)));
       const pts = addPts(GZ.loot * 2 * depthMult(roomOf(o.x, o.y)), 'lootPts', h); fl.stats.loot++;
-      floatTile(o.x, o.y, '+' + fmtE(pts) + ' łup', '#ff7a86', 16);
+      floatTile(o.x, o.y, '+' + fmtE(pts) + L(' łup', ' loot'), '#ff7a86', 16);
     });
     // what he left there he has looked at: he does not come back to kneel over it (60 s)
     piles.concat([it]).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o) h.lootMemo.set(key(o.x, o.y), { go: false, t: fl.time + 60, body: true }); });
     if (got.length) {
       quarrelWon(h, key(it.x, it.y));   // 1.21
-      sawAdd(h, ['gear']); floatHero(h, 'Zabiera rzeczy ' + nameGen(from), '#c9c2b8', 12, -0.7);
+      sawAdd(h, ['gear']); floatHero(h, L('Zabiera rzeczy ' + nameGen(from), 'Loots ' + nameGen(from)), '#c9c2b8', 12, -0.7);
       if (mods.lootTrap > 0) damage(h, mods.lootTrap * 2, LOOTTRAP);
       vaultSnap(it, h); updateTray(); replanAll();
     }
@@ -2127,7 +2129,7 @@
     damage(h, 40 * S.dmg * k, BURN);
     near.forEach(o => damage(o, 20 * S.dmg * k, BURN));
     scared.forEach(o => addFear(o, 10, null, 'blast'));
-    burst(p.x, p.y, '#ffb35c', 16); shake = Math.max(shake, 0.15); floatHero(h, 'Bomba w plecaku!', '#ffb35c', 14, -0.9);
+    burst(p.x, p.y, '#ffb35c', 16); shake = Math.max(shake, 0.15); floatHero(h, L('Bomba w plecaku!', 'Bomb in the pack!'), '#ffb35c', 14, -0.9);
     fl.stats.bombCook = (fl.stats.bombCook || 0) + 1; tl('bx', h.id);
   }
   // 1.20: the item he gets with a curse carries it (item.cursed): it curses whoever takes it after him (pickup, bodyLoot)
@@ -2135,6 +2137,6 @@
     if (item) item.cursed = true;
     h.cursed = true; fl.stats.cursed++; tl('cu', h.id);
     if (item) giveItem(h, item, true);   // he keeps the (cursed) gear if he has room
-    sawAdd(h, ['cursed']); sayNow(['cursed', 'gear'], () => say(h, pick(SAY.cursedPick), 3, 2.2)); floatHero(h, 'Klątwa!', '#b48cff', 15, -0.8);
+    sawAdd(h, ['cursed']); sayNow(['cursed', 'gear'], () => say(h, pick(SAY.cursedPick), 3, 2.2)); floatHero(h, L('Klątwa!', 'Cursed!'), '#b48cff', 15, -0.8);
     const p = heroPos(h); burst(p.x, p.y, '#b48cff', 12);
   }

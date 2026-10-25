@@ -67,3 +67,19 @@
     r_ice: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="18" rx="2" fill="#1f3442"/><path d="M12 6v12M6.8 9l10.4 6M6.8 15l10.4-6" stroke="#bfe6ff" stroke-width="1.8" stroke-linecap="round"/><path d="M4 19l5-2" stroke="#e8f7ff" stroke-width="1.2" stroke-linecap="round"/></svg>',
     r_vault: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="18" rx="2" fill="#3a2e16"/><path d="M12 5l3 5-3 5-3-5z" fill="#ffd27a"/><circle cx="7" cy="17" r="2" fill="#f2b94b"/><circle cx="12" cy="18" r="2" fill="#f2b94b"/><circle cx="17" cy="17" r="2" fill="#f2b94b"/></svg>',
   };
+  // 1.27: the words in the static HTML (p0b_body.html) in the current language. Some are never rewritten by the code (the
+  // equation's Groza, Żyła and Esencja, the aria-labels, the crystal title); the rest only show until the first HUD update.
+  try {
+    const STATIC_TXT = [
+      ['#h-wave', 'textContent', 'Fala 1', 'Wave 1'], ['#h-time', 'textContent', 'budowa', 'build'], ['#h-hlabel', 'textContent', 'serce', 'heart'],
+      ['#h-cry', 'title', 'Kryształy w sercu', 'Crystals in your heart'], ['#h-pips', 'aria-label', 'Postęp runu', 'Run progress'],
+      ['#h-hrow', 'aria-label', 'Serce: głód, Danina, poziom i Ofiara', 'Heart: Hunger, Tithe, level and Offering'],
+      ['#h-hrow', 'title', 'Serce: stuknij, żeby zobaczyć głód, Nasycenie i Ofiarę', 'Heart: tap to see Hunger, Satiety and Offering'],
+      ['#h-eq', 'aria-label', 'Skąd się bierze Esencja: Groza razy Chciwość razy Combo', 'Where Essence comes from: Dread times Greed times Combo'],
+      ['#eq-g i', 'textContent', 'Groza', 'Dread'], ['#eq-c i', 'textContent', 'Chciwość', 'Greed'], ['#eq-k i', 'textContent', 'Combo', 'Combo'],
+      ['#eq-r i', 'textContent', 'Żyła', 'Vein'], ['#eq-e i', 'textContent', 'Esencja', 'Essence'],
+      ['#cv', 'aria-label', 'Mapa lochu', 'Dungeon map'], ['#tray-label', 'textContent', '▼ Budowa', '▼ Build'],
+      ['#btn-settings', 'aria-label', 'Menu', 'Menu'], ['#btn-undo', 'aria-label', 'Cofnij', 'Undo'], ['#btn-action', 'textContent', 'Wypuść falę', 'Release wave'],
+    ];
+    STATIC_TXT.forEach(([sel, attr, pl, en]) => { const e = document.querySelector(sel); if (!e) return; if (attr === 'textContent') e.textContent = L(pl, en); else e.setAttribute(attr, L(pl, en)); });
+  } catch (e) {}

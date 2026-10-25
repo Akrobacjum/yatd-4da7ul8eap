@@ -79,7 +79,7 @@ APPLY = r"""() => { const { G } = T, fails = [], out = { fields: {} }; const ok 
   ok(/nietoperze/.test(tx('sharp')), 'sharp: bats');
   ok(/12 s/.test(tx('maze')), 'maze: 12 s');
   ok(/łupu/.test(tx('deaf')), 'deaf: loot stories');
-  ok(/3\. poziomu/.test(tx('portrait')), 'portrait: the level 3 trait');
+  ok(/3\. poziomu|Całunem grozy/.test(tx('portrait')), 'portrait: the level 3 trait');
   ok(/słyszą/.test(tx('screams')), 'screams: who hears it');
   ok(/\+50%/.test(tx('quickarm')), 'quickarm: +50%');
   ok(/2 s dłużej/.test(tx('spider')), 'spider: 2 s longer');

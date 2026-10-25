@@ -2,6 +2,9 @@
  {
   "k": "waveTime",
   "label": "Cierpliwość fali (s)",
+  "en": {
+   "label": "Wave patience (s)"
+  },
   "min": 60,
   "max": 300,
   "step": 10
@@ -9,6 +12,9 @@
  {
   "k": "scale",
   "label": "Tempo wzrostu fal",
+  "en": {
+   "label": "Wave growth rate"
+  },
   "min": 0.5,
   "max": 2,
   "step": 0.1,
@@ -17,14 +23,20 @@
  {
   "k": "dmg",
   "label": "Siła Twoich pułapek",
+  "en": {
+   "label": "Trap strength"
+  },
   "min": 0.3,
   "max": 1.5,
   "step": 0.05,
-  "fmt": "fn: v => '×' + v.toFixed(2).replace('.', ',')"
+  "fmt": "fn: v => '×' + dec(v.toFixed(2))"
  },
  {
   "k": "monDmg",
   "label": "Siła potworów",
+  "en": {
+   "label": "Monster strength"
+  },
   "min": 0.3,
   "max": 2,
   "step": 0.1,
@@ -33,6 +45,9 @@
  {
   "k": "heroHp",
   "label": "HP bohaterów (%)",
+  "en": {
+   "label": "Hero HP (%)"
+  },
   "min": 50,
   "max": 200,
   "step": 10
@@ -40,14 +55,20 @@
  {
   "k": "earlyHp",
   "label": "Dodatkowe HP w falach 2-6 (1 = jak w grze, 0 = bez, 2 = podwójne)",
+  "en": {
+   "label": "Extra HP in waves 2-6 (1 = normal, 0 = none, 2 = double)"
+  },
   "min": 0,
   "max": 3,
   "step": 0.25,
-  "fmt": "fn: v => '×' + v.toFixed(2).replace('.', ',')"
+  "fmt": "fn: v => '×' + dec(v.toFixed(2))"
  },
  {
   "k": "heroSpeed",
   "label": "Szybkość bohaterów (%)",
+  "en": {
+   "label": "Hero speed (%)"
+  },
   "min": 50,
   "max": 200,
   "step": 10
@@ -55,6 +76,9 @@
  {
   "k": "essence",
   "label": "Esencja na start",
+  "en": {
+   "label": "Starting Essence"
+  },
   "min": 0,
   "max": 60,
   "step": 1
@@ -62,6 +86,9 @@
  {
   "k": "waveIncome",
   "label": "Esencja po każdej fali",
+  "en": {
+   "label": "Essence after each wave"
+  },
   "min": 0,
   "max": 30,
   "step": 1
@@ -69,30 +96,42 @@
  {
   "k": "regenBase",
   "label": "Odnawianie w trakcie fali (na 10 s)",
+  "en": {
+   "label": "Regen during a wave (per 10 s)"
+  },
   "min": 0,
   "max": 6,
   "step": 0.1,
-  "fmt": "fn: v => v.toFixed(1).replace('.', ',')"
+  "fmt": "fn: v => dec(v.toFixed(1))"
  },
  {
   "k": "fearRate",
   "label": "Esencja z ran i strachu",
+  "en": {
+   "label": "Essence from wounds and fear"
+  },
   "min": 0,
   "max": 6,
   "step": 0.5,
-  "fmt": "fn: v => v.toFixed(1).replace('.', ',')"
+  "fmt": "fn: v => dec(v.toFixed(1))"
  },
  {
   "k": "hungerK",
   "label": "Głód serca (× tabela 1.26; 0 = bez głodu)",
+  "en": {
+   "label": "Heart Hunger (× the 1.26 table; 0 = none)"
+  },
   "min": 0,
   "max": 2,
   "step": 0.04,
-  "fmt": "fn: v => '×' + v.toFixed(2).replace('.', ',')"
+  "fmt": "fn: v => '×' + dec(v.toFixed(2))"
  },
  {
   "k": "tithe",
   "label": "Danina: część wypłat dla sytego serca",
+  "en": {
+   "label": "Tithe: share of payouts for a full heart"
+  },
   "min": 0,
   "max": 0.6,
   "step": 0.05,
@@ -101,14 +140,20 @@
  {
   "k": "greedW",
   "label": "Chciwość: poziomy przywódcy za każde +1 chciwości",
+  "en": {
+   "label": "Greed: leader levels per +1 Greed"
+  },
   "min": 0,
   "max": 3,
   "step": 0.1,
-  "fmt": "fn: v => v.toFixed(1).replace('.', ',')"
+  "fmt": "fn: v => dec(v.toFixed(1))"
  },
  {
   "k": "crystals",
   "label": "Kryształy w sercu (od nowego runu)",
+  "en": {
+   "label": "Crystals in the heart (from the next run)"
+  },
   "min": 1,
   "max": 6,
   "step": 1
@@ -116,6 +161,9 @@
  {
   "k": "deckSize",
   "label": "Miejsca w talii (od nowego runu)",
+  "en": {
+   "label": "Deck slots (from the next run)"
+  },
   "min": 3,
   "max": 12,
   "step": 1
@@ -123,30 +171,42 @@
  {
   "k": "comboWin",
   "label": "Okno combo (s)",
+  "en": {
+   "label": "Combo window (s)"
+  },
   "min": 1,
   "max": 6,
   "step": 0.5,
-  "fmt": "fn: v => v.toFixed(1).replace('.', ',')"
+  "fmt": "fn: v => dec(v.toFixed(1))"
  },
  {
   "k": "comboQuiet",
   "label": "Zegar combo w ciszy (×)",
+  "en": {
+   "label": "Combo timer when quiet (×)"
+  },
   "min": 0,
   "max": 1,
   "step": 0.05,
-  "fmt": "fn: v => v.toFixed(1).replace('.', ',')"
+  "fmt": "fn: v => dec(v.toFixed(1))"
  },
  {
   "k": "essK",
   "label": "Mnożnik Esencji z Grozy (×)",
+  "en": {
+   "label": "Essence per Dread (×)"
+  },
   "min": 0.5,
   "max": 2,
   "step": 0.05,
-  "fmt": "fn: v => v.toFixed(1).replace('.', ',')"
+  "fmt": "fn: v => dec(v.toFixed(1))"
  },
  {
   "k": "thrBase",
   "label": "Pierwszy próg karty (pkt)",
+  "en": {
+   "label": "First card threshold (pts)"
+  },
   "min": 500,
   "max": 5000,
   "step": 100
@@ -154,6 +214,9 @@
  {
   "k": "depthMax",
   "label": "Mnożnik pokoju z sercem",
+  "en": {
+   "label": "Heart room multiplier"
+  },
   "min": 1,
   "max": 5,
   "step": 0.1,

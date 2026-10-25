@@ -5,7 +5,7 @@
  ],
  "web": [
   "Kwaśna sieć",
-  "bohater w tej sieci dostaje +60% obrażeń od pułapek zamiast +30%"
+  "bohater w sieci dostaje +60% obrażeń od pułapek zamiast +30%"
  ],
  "trapdoor": [
   "Bezdenny szyb",
@@ -61,7 +61,7 @@
  ],
  "ghost": [
   "Wycie",
-  "straszy z dalszej odległości"
+  "straszy z większej odległości"
  ],
  "eyes": [
   "Wszystkowidzące",
@@ -93,11 +93,11 @@
  ],
  "bats": [
   "Chmara",
-  "rój sięga 3 pól i płoszy częściej"
+  "rój sięga 3 pól i częściej płoszy"
  ],
  "pendulum": [
   "Podwójne",
-  "drugi zamach (50% mocy) po 0,6 s"
+  "drugi zamach z 50% mocy po 0,6 s"
  ],
  "snare": [
   "Zębate",
@@ -105,15 +105,15 @@
  ],
  "miasma": [
   "Gęste",
-  "chmura trzyma się 8 s"
+  "chmura utrzymuje się 8 s"
  ],
  "oilslick": [
   "Łatwopalna",
-  "Oblany zapala się od każdego trafienia pułapki (15%)"
+  "15% szans, że Oblany zapali się od trafienia pułapki"
  ],
  "bolt": [
   "Burza",
-  "piorun przeskakuje też na 2 suchych (50%)"
+  "piorun przeskakuje też na 2 suchych, na każdego z szansą 50%"
  ],
  "flood": [
   "Topiel",
@@ -149,11 +149,11 @@
  ],
  "hound": [
   "Sfora",
-  "każdy inny ogar w lochu +25%"
+  "+25% za każdego innego ogara w lochu"
  ],
  "siren": [
   "Pocałunek",
-  "odwaga uwiedzionego -20% do końca fali"
+  "uwiedziony traci 20% odwagi do końca fali"
  ],
  "demon": [
   "Pan otchłani",

@@ -48,7 +48,7 @@
   const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const key = (x, y) => x + ',' + y;
-  const fmt2 = v => v.toFixed(2).replace('.', ',');
+  const fmt2 = v => dec(v.toFixed(2));
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function saveSettings() { try { localStorage.setItem('yatd12-settings', JSON.stringify(S)); } catch (e) {} }
 

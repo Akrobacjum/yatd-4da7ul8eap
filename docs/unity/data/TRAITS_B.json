@@ -25,7 +25,7 @@
  ],
  "portrait": [
   "Oczy śledzą",
-  "przestraszony jest Naznaczony na 8 s (każdy strach ×1,3)"
+  "przestraszony jest Naznaczony na 8 s: każdy strach ×1,3"
  ],
  "gate": [
   "Gilotyna",
@@ -61,7 +61,7 @@
  ],
  "musicbox": [
   "Usypianka",
-  "ranny (poniżej 60% HP) zasypia na 3 s, w każdym pokoju"
+  "ranny poniżej 60% życia zasypia na 3 s, w każdym pokoju"
  ],
  "goblin": [
   "Łupieżca",
@@ -77,11 +77,11 @@
  ],
  "ogre": [
   "Rzut",
-  "wyrzuca bohatera do sąsiedniego pokoju: samotność, często zgubienie"
+  "wyrzuca bohatera do sąsiedniego pokoju, gdzie jest sam i często się gubi"
  ],
  "shaman": [
   "Klątwa",
-  "skill check przeklina bohatera na 8 s: uspokaja się 2 razy wolniej, dostaje +20% obrażeń"
+  "skill check przeklina bohatera na 8 s: uspokaja się 2 razy wolniej i dostaje +20% obrażeń"
  ],
  "ghost": [
   "Nawiedzenie",
@@ -89,7 +89,7 @@
  ],
  "shade": [
   "Szept",
-  "odwaga celu -15% do końca fali"
+  "cel traci 15% odwagi do końca fali"
  ],
  "bats": [
   "Wampiry",
@@ -109,7 +109,7 @@
  ],
  "oilslick": [
   "Śliska",
-  "poślizg w połowie kroków"
+  "poślizg co drugi krok"
  ],
  "bolt": [
   "Przeciążenie",
@@ -129,15 +129,15 @@
  ],
  "tar": [
   "Smoła",
-  "spowolnienie na 6 s"
+  "spowolnienie trwa 6 s"
  ],
  "skeleton": [
   "Kościany pancerz",
-  "kłute rani go o 40% słabiej"
+  "obrażenia kłute ranią go o 40% słabiej"
  ],
  "zombie": [
   "Gnijące mięso",
-  "powalony wybucha: 3 stosy trucizny walczącym"
+  "powalony wybucha: 3 stosy trucizny dla walczących"
  ],
  "lich": [
   "Armia",
@@ -153,11 +153,11 @@
  ],
  "siren": [
   "Zazdrość",
-  "uwiedzenie wywołuje kłótnię (morale -0,1)"
+  "uwiedzenie wywołuje kłótnię: morale -0,1"
  ],
  "demon": [
   "Głód krwi",
-  "każde jego zabójstwo -3 do głodu następnej fali"
+  "każde jego zabójstwo to -3 do głodu następnej fali"
  ],
  "sapper": [
   "Zwijacz",

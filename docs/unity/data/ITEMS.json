@@ -5,7 +5,14 @@
   "slot": "floor",
   "tag": "szybkie",
   "cd": 1.5,
-  "desc": "Kolce (podłoga, kłute): jedno pole, szybkie odnowienie. +50%, gdy bohater stoi: walczy, czeka, w sieci albo w klatce. Najlepsze tuż za drzwiami."
+  "desc": "Ranią każdego, kto na nie wejdzie, i szybko się odnawiają.",
+  "more": "Podłoga, kłute. Jedno pole. +50% obrażeń, gdy bohater stoi: walczy, czeka, jest w sieci albo w klatce. Najlepsze tuż za drzwiami.",
+  "en": {
+   "name": "Spikes",
+   "tag": "fast",
+   "desc": "They stab whoever steps on them and reset quickly.",
+   "more": "Floor, pierce. One tile. +50% damage when the hero stands still: fighting, waiting, in a web or a cage. Best right behind a door."
+  }
  },
  "web": {
   "name": "Sieć",
@@ -13,7 +20,14 @@
   "slot": "floor",
   "tag": "spowalnia",
   "cd": 7,
-  "desc": "Sieć (podłoga): spowalnia w kwadracie 3×3 na 3 s, a bohater w sieci dostaje +30% obrażeń. Mag potrafi ją rozproszyć."
+  "desc": "Oplata bohaterów, więc są wolniejsi i dostają więcej obrażeń.",
+  "more": "Podłoga. Kwadrat 3×3, 3 s, +30% obrażeń. Mag potrafi ją rozproszyć.",
+  "en": {
+   "name": "Web",
+   "tag": "slows",
+   "desc": "Entangles heroes, so they slow down and take more damage.",
+   "more": "Floor. 3×3 area, 3 s, +30% damage. A mage can dispel it."
+  }
  },
  "trapdoor": {
   "name": "Zapadnia",
@@ -21,7 +35,14 @@
   "slot": "floor",
   "tag": "rozdziela",
   "cd": 8,
-  "desc": "Zapadnia (podłoga, obuchowe): bohater spada pod loch i po chwili wychodzi sam w innym pokoju, często zgubiony i oszołomiony (Spowolniony 3 s). Najwyżej 2 upadki bohatera na falę (elita i poz. 12+: 1), potem widzi zapadnie. Złodziej ją rozbroi."
+  "desc": "Bohater spada pod podłogę i wychodzi sam w innym pokoju.",
+  "more": "Podłoga, obuchowe. Wychodzi po chwili, często zgubiony i oszołomiony (Spowolniony 3 s). Najwyżej 2 upadki na bohatera w fali (elita i poziom 12+: 1), potem widzi zapadnie. Złodziej ją rozbraja.",
+  "en": {
+   "name": "Trapdoor",
+   "tag": "splits",
+   "desc": "Drops a hero through the floor; they climb out alone in another room.",
+   "more": "Floor, blunt. They come out after a moment, often lost and dazed (Slowed 3 s). At most 2 falls per hero per wave (elites and level 12+: 1), then they spot trapdoors. A thief can disarm it."
+  }
  },
  "cage": {
   "name": "Klatka",
@@ -29,7 +50,14 @@
   "slot": "floor",
   "tag": "więzi",
   "cd": 10,
-  "desc": "Klatka (podłoga): więzi bohatera na 6 s, uwięziony dostaje +50% obrażeń. Jeśli drużyna go nie uwolni, umiera w klatce (boss wyłamie kraty)."
+  "desc": "Zamyka bohatera w klatce, w której zginie, jeśli drużyna go nie uwolni.",
+  "more": "Podłoga. 6 s, uwięziony dostaje +50% obrażeń. Boss wyłamuje kraty.",
+  "en": {
+   "name": "Cage",
+   "tag": "locks up",
+   "desc": "Locks a hero in a cage where they die unless the party frees them.",
+   "more": "Floor. 6 s, the caged hero takes +50% damage. A boss breaks the bars."
+  }
  },
  "arrows": {
   "name": "Strzały",
@@ -37,7 +65,14 @@
   "slot": "wall",
   "tag": "linia",
   "cd": 3,
-  "desc": "Strzały (ściana, kłute): strzała leci przez cały pokój w linii prostej i trafia każdego. Mebel ją zatrzymuje."
+  "desc": "Strzała przelatuje przez cały pokój i trafia każdego na swojej drodze.",
+  "more": "Ściana, kłute. Mebel zatrzymuje strzałę.",
+  "en": {
+   "name": "Arrows",
+   "tag": "line",
+   "desc": "An arrow flies across the whole room and hits everyone in its path.",
+   "more": "Wall, pierce. Furniture stops the arrow."
+  }
  },
  "fire": {
   "name": "Ogień",
@@ -45,7 +80,14 @@
   "slot": "wall",
   "tag": "podpala",
   "cd": 5,
-  "desc": "Ogień (ściana, ogień): płomień 2×3 przed ścianą i podpalenie na 3 s. Podpalonego nie leczy odpoczynek, kapłan musi go ugasić."
+  "desc": "Zieje płomieniem i podpala bohaterów.",
+  "more": "Ściana, ogień. Płomień 2×3 przed ścianą, podpalenie 3 s. Podpalonego nie leczy odpoczynek, musi go ugasić kapłan.",
+  "en": {
+   "name": "Fire",
+   "tag": "burns",
+   "desc": "Breathes flame and sets heroes on fire.",
+   "more": "Wall, fire. 2×3 flame in front of the wall, burning for 3 s. Resting does not heal a burning hero, a priest has to put them out."
+  }
  },
  "portrait": {
   "name": "Portret",
@@ -53,7 +95,14 @@
   "slot": "wall",
   "tag": "strach",
   "cd": 6,
-  "desc": "Portret (ściana): nie rani, tylko straszy wszystkich w zasięgu 4 pól. Doświadczony kapłan potrafi go odczynić."
+  "desc": "Straszy wszystkich w pobliżu, ale nie rani.",
+  "more": "Ściana. Zasięg 4 pola. Doświadczony kapłan potrafi go odczynić.",
+  "en": {
+   "name": "Portrait",
+   "tag": "fear",
+   "desc": "Scares everyone nearby, but deals no damage.",
+   "more": "Wall. Range 4 tiles. A seasoned priest can cleanse it."
+  }
  },
  "gate": {
   "name": "Krata",
@@ -61,7 +110,14 @@
   "slot": "door",
   "tag": "rozdziela",
   "cd": 8,
-  "desc": "Krata (drzwi, obuchowe): zamyka przejście na 6 s i rozdziela drużynę. Odcięci są przez 6 s samotni (strach i Groza samotności), szukają innej drogi albo się gubią. Odnawia się 8 s po otwarciu, 3 zamknięcia na falę."
+  "desc": "Zamyka przejście i odcina część drużyny.",
+  "more": "Drzwi, obuchowe. Zamknięta 6 s. Odcięci są przez 6 s samotni (strach i Groza samotności), szukają innej drogi albo się gubią. Odnawia się 8 s po otwarciu, 3 zamknięcia na falę.",
+  "en": {
+   "name": "Portcullis",
+   "tag": "splits",
+   "desc": "Slams a doorway shut and cuts the party in two.",
+   "more": "Door, blunt. Closed for 6 s. Those cut off are alone for 6 s (fear and Dread from being alone), look for another way or get lost. Resets 8 s after opening, 3 closings per wave."
+  }
  },
  "crate": {
   "name": "Skrzynia",
@@ -69,7 +125,14 @@
   "slot": "floor",
   "tag": "blokuje",
   "build": true,
-  "desc": "Skrzynia (podłoga pokoju, między falami): blokuje przejście i jest meblem pod proch, mimika albo pozytywkę. Przytrzymanie w budowie zwraca Esencję."
+  "desc": "Zastawia przejście i służy jako mebel pod proch, mimika albo pozytywkę.",
+  "more": "Podłoga pokoju, tylko między falami. Przytrzymaj ją w budowie, żeby odzyskać Esencję.",
+  "en": {
+   "name": "Crate",
+   "tag": "blocks",
+   "desc": "Blocks the way and works as furniture for Gunpowder, a Mimic or a Music Box.",
+   "more": "Room floor, between waves only. Hold it while building to get your Essence back."
+  }
  },
  "powder": {
   "name": "Proch",
@@ -77,7 +140,14 @@
   "slot": "object",
   "tag": "wybuch",
   "cd": 0,
-  "desc": "Proch (mebel, ogień): wybuch 3×3, mebel znika i otwiera nowe przejście. Jednorazowy."
+  "desc": "Wybucha razem z meblem, rani wszystkich obok i otwiera nowe przejście.",
+  "more": "Na meblu, ogień. Wybuch 3×3. Jednorazowy.",
+  "en": {
+   "name": "Gunpowder",
+   "tag": "blast",
+   "desc": "Blows up with the furniture, hurting everyone nearby and opening a new way through.",
+   "more": "On furniture, fire. 3×3 blast. Single use."
+  }
  },
  "mimic": {
   "name": "Mimik",
@@ -85,7 +155,14 @@
   "slot": "object",
   "tag": "gryzie",
   "cd": 4,
-  "desc": "Mimik (mebel, kłute): mebel gryzie wszystkich dookoła. Złodziej go nie rozbroi."
+  "desc": "Mebel ożywa i gryzie wszystkich dookoła.",
+  "more": "Na meblu, kłute. Złodziej go nie rozbroi.",
+  "en": {
+   "name": "Mimic",
+   "tag": "bites",
+   "desc": "The furniture comes alive and bites everyone around it.",
+   "more": "On furniture, pierce. A thief cannot disarm it."
+  }
  },
  "goblin": {
   "name": "Goblin",
@@ -95,7 +172,14 @@
   "hp": 140,
   "melee": 16,
   "tag": "blokuje",
-  "desc": "Goblin (potwór, kłute): blokuje przejście i mocno bije tego, kto z nim walczy. Powalony wstaje w następnej budowie (+1 do głodu). Skill check: Dźgnięcie."
+  "desc": "Zastawia przejście i mocno bije każdego, kto z nim walczy.",
+  "more": "Potwór, kłute. Powalony wstaje w następnej budowie (+1 do głodu). Skill check: Dźgnięcie.",
+  "en": {
+   "name": "Goblin",
+   "tag": "blocks",
+   "desc": "Blocks the way and hits hard whoever fights it.",
+   "more": "Monster, pierce. When knocked down, it gets up at the next build (+1 Hunger). Skill check: Stab."
+  }
  },
  "archer": {
   "name": "Łucznik",
@@ -105,7 +189,14 @@
   "hp": 50,
   "melee": 4,
   "tag": "strzela",
-  "desc": "Łucznik (potwór, kłute): sam strzela do bohaterów w swoim pokoju (zasięg 4). Powalony wstaje w następnej budowie (+1 do głodu). Skill check: Salwa."
+  "desc": "Sam strzela do bohaterów w swoim pokoju.",
+  "more": "Potwór, kłute. Zasięg 4. Powalony wstaje w następnej budowie (+1 do głodu). Skill check: Salwa.",
+  "en": {
+   "name": "Archer",
+   "tag": "shoots",
+   "desc": "Shoots the heroes in its room on its own.",
+   "more": "Monster, pierce. Range 4. When knocked down, it gets up at the next build (+1 Hunger). Skill check: Volley."
+  }
  },
  "spider": {
   "name": "Pająk",
@@ -115,7 +206,14 @@
   "hp": 90,
   "melee": 12,
   "tag": "oplata",
-  "desc": "Pająk (potwór, trucizna): blokuje przejście, gryzie i oplata siecią. Skill check: Oplątanie 3×3 z ugryzieniem."
+  "desc": "Zastawia przejście, gryzie i oplata bohaterów siecią.",
+  "more": "Potwór, trucizna. Skill check: Oplątanie, sieć 3×3 z ugryzieniem.",
+  "en": {
+   "name": "Spider",
+   "tag": "webs",
+   "desc": "Blocks the way, bites and wraps heroes in web.",
+   "more": "Monster, poison. Skill check: Entangle, a 3×3 web with a bite."
+  }
  },
  "ogre": {
   "name": "Ogr",
@@ -125,7 +223,14 @@
   "hp": 240,
   "melee": 18,
   "tag": "tank",
-  "desc": "Ogr (potwór, obuchowe): bardzo dużo życia, bije wszystkich, którzy z nim walczą. Skill check: Uderzenie 3×3."
+  "desc": "Ma mnóstwo życia i bije wszystkich, którzy z nim walczą.",
+  "more": "Potwór, obuchowe. Skill check: Uderzenie 3×3.",
+  "en": {
+   "name": "Ogre",
+   "tag": "tank",
+   "desc": "Has loads of health and hits everyone who fights it.",
+   "more": "Monster, blunt. Skill check: Slam, 3×3."
+  }
  },
  "shaman": {
   "name": "Szaman",
@@ -135,7 +240,14 @@
   "hp": 60,
   "melee": 3,
   "tag": "leczy",
-  "desc": "Szaman (potwór): leczy potwory w promieniu 2 pól (leczenie od kilku szamanów się nie sumuje; razem najwyżej 100% życia potwora na falę). Skill check: Wielkie leczenie wszystkich potworów w pokoju."
+  "desc": "Leczy potwory obok siebie.",
+  "more": "Potwór. Promień 2 pól. Leczenie kilku szamanów się nie sumuje, razem najwyżej 100% życia potwora na falę. Skill check: Wielkie leczenie wszystkich potworów w pokoju.",
+  "en": {
+   "name": "Shaman",
+   "tag": "heals",
+   "desc": "Heals the monsters near him.",
+   "more": "Monster. Radius 2 tiles. Several shamans do not stack, at most 100% of a monster's health per wave in total. Skill check: Great Heal for every monster in the room."
+  }
  },
  "ghost": {
   "name": "Duch",
@@ -145,7 +257,14 @@
   "hp": 60,
   "melee": 5,
   "tag": "straszy",
-  "desc": "Duch (potwór): krąży przy bohaterach i straszy, nie blokuje przejścia. Ranią go tylko kapłan i mag. Skill check: Wrzask."
+  "desc": "Krąży wokół bohaterów i straszy, ale nie blokuje przejścia.",
+  "more": "Potwór. Ranić go mogą tylko kapłan i mag. Skill check: Wrzask.",
+  "en": {
+   "name": "Ghost",
+   "tag": "scares",
+   "desc": "Floats around heroes and scares them, but does not block the way.",
+   "more": "Monster. Only a priest or a mage can hurt it. Skill check: Shriek."
+  }
  },
  "eyes": {
   "name": "Oczy",
@@ -153,7 +272,14 @@
   "slot": "wall",
   "tag": "samotni ×2",
   "cd": 3,
-  "desc": "Oczy (ściana): patrzą w linii przez cały pokój i straszą każdego na tej linii. Samotny albo zgubiony boi się 2 razy bardziej. Kapłan je odczyni."
+  "desc": "Patrzą przez cały pokój i straszą każdego na swojej linii.",
+  "more": "Ściana. Samotny albo zgubiony boi się 2 razy bardziej. Kapłan je odczynia.",
+  "en": {
+   "name": "Eyes",
+   "tag": "loners ×2",
+   "desc": "They stare across the room and scare everyone in their line.",
+   "more": "Wall. A lone or lost hero is twice as scared. A priest can cleanse them."
+  }
  },
  "bones": {
   "name": "Kości",
@@ -161,7 +287,14 @@
   "slot": "floor",
   "tag": "nowicjusze",
   "cd": 4,
-  "desc": "Kości (podłoga): grzechoczą i straszą w kwadracie 3×3. Nowicjusze boją się 1,5 raza bardziej. Kapłan je odczyni."
+  "desc": "Grzechoczą i straszą wszystkich wokół.",
+  "more": "Podłoga. Kwadrat 3×3. Nowicjusze boją się 1,5 raza bardziej. Kapłan je odczynia.",
+  "en": {
+   "name": "Bones",
+   "tag": "rookies",
+   "desc": "They rattle and scare everyone around.",
+   "more": "Floor. 3×3 area. Rookies are 1.5× as scared. A priest can cleanse them."
+  }
  },
  "mirror": {
   "name": "Lustro",
@@ -169,7 +302,14 @@
   "slot": "wall",
   "tag": "dobija",
   "cd": 6,
-  "desc": "Lustro (ściana): straszy w zasięgu 3 pól, tym mocniej, im bardziej bohater już się boi (do 2,5 raza). Kapłan je odczyni."
+  "desc": "Straszy tym mocniej, im bardziej bohater już się boi.",
+  "more": "Ściana. Zasięg 3 pola, do 2,5 raza mocniej. Kapłan je odczynia.",
+  "en": {
+   "name": "Mirror",
+   "tag": "finisher",
+   "desc": "Scares harder the more frightened a hero already is.",
+   "more": "Wall. Range 3 tiles, up to 2.5× stronger. A priest can cleanse it."
+  }
  },
  "creak": {
   "name": "Zawiasy",
@@ -177,7 +317,14 @@
   "slot": "door",
   "tag": "próg",
   "cd": 4,
-  "desc": "Skrzypiące zawiasy (drzwi): mocno straszą tego, kto jest w drzwiach albo tuż przy nich, słabiej każdego do 2 pól. Złodziej je rozbroi."
+  "desc": "Skrzypią i straszą każdego w drzwiach.",
+  "more": "Drzwi. Mocno straszą bohatera w drzwiach albo tuż przy nich, słabiej każdego do 2 pól. Złodziej je rozbraja.",
+  "en": {
+   "name": "Creaky Hinges",
+   "tag": "doorway",
+   "desc": "They creak and scare anyone in the doorway.",
+   "more": "Door. A big scare for a hero in or right by the door, a smaller one for anyone within 2 tiles. A thief can disarm them."
+  }
  },
  "coffin": {
   "name": "Trumna",
@@ -185,7 +332,14 @@
   "slot": "floor",
   "tag": "mocny strach",
   "cd": 7,
-  "desc": "Trumna (podłoga): wieko się uchyla. Najbliższy bohater bardzo się boi, inni do 2 pól trochę. W Krypcie +50%. Złodziej zabije ją gwoździami."
+  "desc": "Wieko się uchyla, a najbliższy bohater bardzo się boi.",
+  "more": "Podłoga. Inni do 2 pól boją się trochę. W Krypcie +50%. Złodziej zabija ją gwoździami.",
+  "en": {
+   "name": "Coffin",
+   "tag": "big scare",
+   "desc": "The lid creaks open and the nearest hero gets a big scare.",
+   "more": "Floor. Others within 2 tiles get a small scare. +50% in a Crypt. A thief can nail it shut."
+  }
  },
  "musicbox": {
   "name": "Pozytywka",
@@ -193,7 +347,14 @@
   "slot": "object",
   "tag": "cały pokój",
   "cd": 8,
-  "desc": "Pozytywka (mebel): gra kołysankę w całym pokoju i przez 4 s każdy, kto tam jest, boi się coraz bardziej. Złodziej ją rozbroi."
+  "desc": "Gra kołysankę, przy której cały pokój boi się coraz bardziej.",
+  "more": "Na meblu. Działa 4 s na każdego w pokoju. Złodziej ją rozbraja.",
+  "en": {
+   "name": "Music Box",
+   "tag": "whole room",
+   "desc": "Plays a lullaby that makes the whole room more and more scared.",
+   "more": "On furniture. Lasts 4 s and reaches everyone in the room. A thief can disarm it."
+  }
  },
  "shade": {
   "name": "Cień",
@@ -203,7 +364,14 @@
   "hp": 50,
   "melee": 0,
   "tag": "samotni",
-  "desc": "Cień (potwór): sunie za samotnym albo ostatnim w szyku i szepcze mu do ucha. Samotny boi się 2 razy bardziej. Rani go tylko kapłan. Skill check: Szept."
+  "desc": "Sunie za samotnym albo ostatnim w szyku i szepcze mu do ucha.",
+  "more": "Potwór. Samotny boi się 2 razy bardziej. Ranić go może tylko kapłan. Skill check: Szept.",
+  "en": {
+   "name": "Shade",
+   "tag": "loners",
+   "desc": "Glides after a lone hero or the last in line and whispers in their ear.",
+   "more": "Monster. A lone hero is twice as scared. Only a priest can hurt it. Skill check: Whisper."
+  }
  },
  "bats": {
   "name": "Nietoperze",
@@ -213,15 +381,29 @@
   "hp": 40,
   "melee": 0,
   "tag": "płoszą",
-  "desc": "Nietoperze (potwór, kłute): szybki rój krąży między bohaterami, gryzie i straszy. Ranią go tylko mag i kapłan. Skill check: rój płoszy bohaterów (uciekają na oślep)."
+  "desc": "Szybki rój krąży między bohaterami, gryzie i straszy.",
+  "more": "Potwór, kłute. Ranić go mogą tylko mag i kapłan. Skill check: rój płoszy bohaterów, a ci uciekają na oślep.",
+  "en": {
+   "name": "Bats",
+   "tag": "scatter",
+   "desc": "A fast swarm darts between heroes, biting and scaring.",
+   "more": "Monster, pierce. Only a mage or a priest can hurt it. Skill check: the swarm scatters heroes and they run blindly."
+  }
  },
  "pendulum": {
   "name": "Wahadło",
   "cost": 4,
   "slot": "wall",
-  "tag": "linia, ×1,5 trzymanym",
+  "tag": "tnie pas",
   "cd": 4,
-  "desc": "Wahadło (ściana, kłute): ostrze tnie pas 3 pól szerokości i 4 w głąb pokoju: każdy w pasie dostaje cios. Unieruchomieni i spowolnieni ×1,5. Złodziej je rozbroi."
+  "desc": "Ostrze tnie szeroki pas pokoju i trafia każdego, kto w nim stoi.",
+  "more": "Ściana, kłute. Pas 3 pola szerokości i 4 w głąb. Unieruchomieni i spowolnieni dostają ×1,5. Złodziej je rozbraja.",
+  "en": {
+   "name": "Pendulum",
+   "tag": "sweeps",
+   "desc": "A blade sweeps a wide strip of the room and hits everyone in it.",
+   "more": "Wall, pierce. Strip 3 tiles wide and 4 deep. Rooted and slowed heroes take ×1.5. A thief can disarm it."
+  }
  },
  "snare": {
   "name": "Wnyki",
@@ -229,7 +411,14 @@
   "slot": "floor",
   "tag": "unieruchamia",
   "cd": 8,
-  "desc": "Wnyki (podłoga, kłute): rani i Unieruchamia na 5 s (draśnięcie 3,5 s; najwyżej 5 s, potem 3 s odporności). Rozbrajanie trwa 1,5 raza dłużej, złodziej nie zrobi uniku."
+  "desc": "Łapie bohatera za nogę, rani go i trzyma w miejscu.",
+  "more": "Podłoga, kłute. Trzyma 5 s (draśnięcie: 3,5 s), potem bohater ma 3 s odporności. Rozbrajanie trwa 1,5 raza dłużej, złodziej nie zrobi uniku.",
+  "en": {
+   "name": "Snare",
+   "tag": "roots",
+   "desc": "Grabs a hero by the leg, hurts them and holds them in place.",
+   "more": "Floor, pierce. Holds for 5 s (graze: 3.5 s), then the hero is immune for 3 s. Disarming takes 1.5× longer; a thief cannot dodge it."
+  }
  },
  "miasma": {
   "name": "Wyziewy",
@@ -237,7 +426,14 @@
   "slot": "floor",
   "tag": "trucizna",
   "cd": 7,
-  "desc": "Wyziewy (podłoga, trucizna): chmura 3×3 na 5 s. Kto w nią wejdzie, dostaje stos trucizny, potem kolejny co 1,5 s, i 10 strachu przy pierwszym kontakcie. Zatruty + ogień = Detonacja."
+  "desc": "Wypuszcza chmurę, która truje i straszy.",
+  "more": "Podłoga, trucizna. Chmura 3×3 na 5 s. Kto w nią wejdzie, dostaje stos trucizny i 10 strachu, potem kolejny stos co 1,5 s. Zatruty + ogień = Detonacja.",
+  "en": {
+   "name": "Miasma",
+   "tag": "poison",
+   "desc": "Releases a cloud that poisons and scares.",
+   "more": "Floor, poison. 3×3 cloud for 5 s. Entering it gives a poison stack and 10 fear, then another stack every 1.5 s. Poisoned + fire = Detonation."
+  }
  },
  "oilslick": {
   "name": "Plama oleju",
@@ -245,7 +441,14 @@
   "slot": "floor",
   "tag": "Oblany",
   "cd": 6,
-  "desc": "Plama oleju (podłoga): kwadrat 3×3, każdy w nim jest Oblany na 8 s i Spowolniony na 1,5 s, czasem się poślizgnie. Oblany + ogień = Pożar."
+  "desc": "Oblewa bohaterów olejem, który ogień zamienia w Pożar.",
+  "more": "Podłoga. Kwadrat 3×3. Oblany 8 s, Spowolniony 1,5 s, czasem ktoś się poślizgnie. Oblany + ogień = Pożar.",
+  "en": {
+   "name": "Oil Slick",
+   "tag": "Oiled",
+   "desc": "Coats heroes in oil, and fire turns it into a Blaze.",
+   "more": "Floor. 3×3 area. Oiled 8 s, Slowed 1.5 s, and sometimes someone slips. Oiled + fire = Blaze."
+  }
  },
  "bolt": {
   "name": "Runa piorunów",
@@ -253,15 +456,29 @@
   "slot": "wall",
   "tag": "porażenie",
   "cd": 4,
-  "desc": "Runa piorunów (ściana, porażenie): piorun w najbliższego bohatera do 3 pól, przeskakuje na wszystkich Mokrych w pokoju. Mokry + porażenie = Porażenie."
+  "desc": "Razi piorunem najbliższego bohatera, a piorun skacze po Mokrych.",
+  "more": "Ściana, porażenie. Zasięg 3 pola. Przeskakuje na wszystkich Mokrych w pokoju. Mokry + porażenie = reakcja Porażenie.",
+  "en": {
+   "name": "Lightning Rune",
+   "tag": "shock",
+   "desc": "Strikes the nearest hero, and the lightning jumps between Wet heroes.",
+   "more": "Wall, shock. Range 3 tiles. Jumps to every Wet hero in the room. Wet + shock damage = Shock reaction."
+  }
  },
  "flood": {
   "name": "Zalewnia",
   "cost": 4,
   "slot": "floor",
-  "tag": "Mokry, cały pokój",
+  "tag": "Mokry",
   "cd": 10,
-  "desc": "Zalewnia (podłoga): woda zalewa cały pokój: Mokry na 8 s, Spowolniony na 2 s, 6 strachu. Gasi podpalonych (Para: chmura straszy i oślepia)."
+  "desc": "Zalewa cały pokój, więc wszyscy są Mokrzy i wolniejsi.",
+  "more": "Podłoga. Mokry 8 s, Spowolniony 2 s, 6 strachu. Gasi podpalonych (Para: chmura straszy i oślepia).",
+  "en": {
+   "name": "Floodgate",
+   "tag": "Wet",
+   "desc": "Floods the whole room, leaving everyone Wet and slower.",
+   "more": "Floor. Wet 8 s, Slowed 2 s, 6 fear. Puts out burning heroes (Steam: the cloud scares and blinds)."
+  }
  },
  "bell": {
   "name": "Dzwon żałobny",
@@ -269,7 +486,14 @@
   "slot": "object",
   "tag": "śmierć straszy",
   "cd": 8,
-  "desc": "Dzwon żałobny (mebel): każda śmierć bohatera w lochu to 24 strachu dla wszystkich żywych (liczą się najwyżej 2 dzwony; fobia hałasu). Skill check: 10 strachu w pokoju. Kapłan go odczyni."
+  "desc": "Każda śmierć bohatera mocno straszy wszystkich żywych.",
+  "more": "Na meblu. 24 strachu dla każdego żywego w lochu, liczą się najwyżej 2 dzwony. Budzi fobię hałasu. Skill check: 10 strachu w pokoju. Kapłan go odczynia.",
+  "en": {
+   "name": "Funeral Bell",
+   "tag": "deaths scare",
+   "desc": "Every hero death gives all the living a big scare.",
+   "more": "On furniture. 24 fear to every living hero in the dungeon, at most 2 bells count. Triggers the fear of noise. Skill check: 10 fear in the room. A priest can cleanse it."
+  }
  },
  "falsedoor": {
   "name": "Fałszywe przejście",
@@ -277,7 +501,14 @@
   "slot": "door",
   "tag": "gubi",
   "cd": 10,
-  "desc": "Fałszywe przejście (drzwi): pierwszy, kto przejdzie, skręca w złą stronę: zgubiony na 12 s (Groza zgubienia) i 10 strachu. Raz na bohatera w fali; mag od poziomu 8 widzi iluzję."
+  "desc": "Pierwszy, kto przez nie przejdzie, skręca w złą stronę i się gubi.",
+  "more": "Drzwi. Zgubiony na 12 s (Groza zgubienia) i 10 strachu. Raz na bohatera w fali. Mag od poziomu 8 widzi iluzję.",
+  "en": {
+   "name": "False Passage",
+   "tag": "misleads",
+   "desc": "The first hero through takes a wrong turn and gets lost.",
+   "more": "Door. Lost for 12 s (Dread from being lost) and 10 fear. Once per hero per wave. A mage of level 8+ sees through it."
+  }
  },
  "tar": {
   "name": "Kocioł smoły",
@@ -285,7 +516,14 @@
   "slot": "door",
   "tag": "ogień + Oblany",
   "cd": 10,
-  "desc": "Kocioł smoły (drzwi, ogień): wylewa smołę na pierwszego w drzwiach: rani ogniem (bez podpalenia), Oblany i Spowolniony na 3 s."
+  "desc": "Wylewa wrzącą smołę na pierwszego w drzwiach.",
+  "more": "Drzwi, ogień. Rani ogniem (bez podpalenia), Oblany i Spowolniony na 3 s.",
+  "en": {
+   "name": "Tar Cauldron",
+   "tag": "fire + Oiled",
+   "desc": "Pours boiling tar on the first hero in the doorway.",
+   "more": "Door, fire. Fire damage (no burning), Oiled and Slowed for 3 s."
+  }
  },
  "bait": {
   "name": "Przynęta",
@@ -294,7 +532,14 @@
   "tag": "łup, który łapie",
   "cd": 6,
   "rarity": 1,
-  "desc": "Przynęta (łup): wygląda jak sakwa monet i kusi jak łup. Kto ją podniesie, jest Unieruchomiony na 3 s i ranny, pobliscy dostają 8 strachu, a przynęta zostaje na miejscu."
+  "desc": "Wygląda jak sakwa monet, ale łapie tego, kto ją podniesie.",
+  "more": "Łup. Podnoszący jest ranny i Unieruchomiony na 3 s, pobliscy dostają 8 strachu. Przynęta zostaje na miejscu.",
+  "en": {
+   "name": "Bait",
+   "tag": "loot that bites",
+   "desc": "Looks like a bag of coins, but grabs whoever picks it up.",
+   "more": "Loot. The one who picks it up is hurt and Rooted for 3 s, those nearby get 8 fear. The bait stays in place."
+  }
  },
  "skeleton": {
   "name": "Szkielet",
@@ -304,7 +549,14 @@
   "hp": 70,
   "melee": 12,
   "tag": "składa się",
-  "desc": "Szkielet (potwór, kłute): blokuje i bije. Powalony pierwszy raz w fali składa się po 5 s z połową życia (nie po ciosie paladyna, kapłana ani barbarzyńcy w szale). Skill check: Kościany cios."
+  "desc": "Zastawia przejście i bije, a powalony raz w fali składa się z powrotem.",
+  "more": "Potwór, kłute. Wstaje po 5 s z połową życia, ale nie po ciosie paladyna, kapłana ani barbarzyńcy w szale. Skill check: Kościany cios.",
+  "en": {
+   "name": "Skeleton",
+   "tag": "reassembles",
+   "desc": "Blocks the way and hits, and gets back up once per wave.",
+   "more": "Monster, pierce. Gets up after 5 s with half its health, but not after a blow from a paladin, a priest or a raging barbarian. Skill check: Bone Strike."
+  }
  },
  "zombie": {
   "name": "Zombie",
@@ -314,7 +566,14 @@
   "hp": 170,
   "melee": 8,
   "tag": "zaraza",
-  "desc": "Zombie (potwór, trucizna): powolny tank. Walczący z nim co 1,5 s łapie stos Zarazy; Zarażony, który zginie, wstaje jako Twój zombie (Powstanie). Skill check: Ugryzienie (+2 stosy trucizny)."
+  "desc": "Powolny i wytrzymały, zaraża tych, którzy z nim walczą.",
+  "more": "Potwór, trucizna. Walczący z nim co 1,5 s dostaje stos Zarazy. Zarażony, który zginie, wstaje jako Twój zombie (Powstanie). Skill check: Ugryzienie, +2 stosy trucizny.",
+  "en": {
+   "name": "Zombie",
+   "tag": "plague",
+   "desc": "Slow and tough, it infects those who fight it.",
+   "more": "Monster, poison. Anyone fighting it gets an infection stack every 1.5 s. An Infected hero who dies rises as your zombie (Rise). Skill check: Bite, +2 poison stacks."
+  }
  },
  "lich": {
   "name": "Licz",
@@ -324,7 +583,14 @@
   "hp": 120,
   "melee": 4,
   "tag": "wskrzesza",
-  "desc": "Licz (potwór): raz na falę podnosi powalonego potwora w swoim pokoju (50% życia), straszy wszystkich do 2 pól. Skill check: Lodowy dotyk (rani i spowalnia)."
+  "desc": "Raz na falę wskrzesza powalonego potwora i straszy wszystkich wokół.",
+  "more": "Potwór. Wskrzeszony wstaje z 50% życia, w pokoju licza. Straszy do 2 pól. Skill check: Lodowy dotyk, rani i spowalnia.",
+  "en": {
+   "name": "Lich",
+   "tag": "raises",
+   "desc": "Raises a fallen monster once per wave and scares everyone around.",
+   "more": "Monster. The raised monster comes back with 50% health, in the lich's room. Scares within 2 tiles. Skill check: Icy Touch, hurts and slows."
+  }
  },
  "imp": {
   "name": "Chochlik",
@@ -334,7 +600,14 @@
   "hp": 40,
   "melee": 0,
   "tag": "kradnie",
-  "desc": "Chochlik (latający): krąży i straszy. Skill check: Zwędzenie: zabiera bohaterowi przedmiot i upuszcza go w innym pokoju jako łup (chciwość), +20 strachu. Trafiony czasem się teleportuje."
+  "desc": "Krąży, straszy i kradnie bohaterom przedmioty.",
+  "more": "Latający. Skill check: Zwędzenie, zabiera przedmiot i upuszcza go w innym pokoju jako łup (chciwość), +20 strachu. Trafiony czasem się teleportuje.",
+  "en": {
+   "name": "Imp",
+   "tag": "steals",
+   "desc": "Flits around, scares heroes and steals their items.",
+   "more": "Flying. Skill check: Pilfer, takes an item and drops it in another room as loot (Greed), +20 fear. Sometimes teleports when hit."
+  }
  },
  "hound": {
   "name": "Ogar piekielny",
@@ -344,7 +617,14 @@
   "hp": 90,
   "melee": 28,
   "tag": "poluje",
-  "desc": "Ogar piekielny (potwór, ogień): uciekający i spanikowani dostają od niego 2 razy więcej; zabicie uciekiniera daje Grozę i za śmierć, i za ucieczkę. Skill check: Pogoń za najbardziej przestraszonym. Gdy w jego pokoju nikogo nie ma, idzie za krwawiącym do sąsiedniego pokoju."
+  "desc": "Poluje na uciekających i przestraszonych.",
+  "more": "Potwór, ogień. Uciekający i spanikowani dostają od niego 2 razy więcej. Zabity uciekinier daje Grozę i za śmierć, i za ucieczkę. Gdy w jego pokoju nikogo nie ma, idzie za krwawiącym do sąsiedniego. Skill check: Pogoń za najbardziej przestraszonym.",
+  "en": {
+   "name": "Hellhound",
+   "tag": "hunts",
+   "desc": "Hunts down fleeing and frightened heroes.",
+   "more": "Monster, fire. Deals double to fleeing and panicked heroes. A runaway it kills gives Dread for both the death and the escape. When its room is empty, it follows a bleeding hero next door. Skill check: Chase after the most frightened hero."
+  }
  },
  "siren": {
   "name": "Kusicielka",
@@ -354,7 +634,14 @@
   "hp": 60,
   "melee": 0,
   "tag": "uwodzi",
-  "desc": "Kusicielka (latająca): straszy wokół. Skill check: Zew: najmniej odważny w promieniu 4 idzie do niej 4 s (Uwiedziony), odłącza się, potem 30 strachu. Kapłan, paladyn i pieśń barda przerywają zew."
+  "desc": "Wabi do siebie najmniej odważnego i odciąga go od drużyny.",
+  "more": "Latająca, straszy wokół. Skill check: Zew, najmniej odważny w promieniu 4 idzie do niej przez 4 s (Uwiedziony), potem dostaje 30 strachu. Kapłan, paladyn i pieśń barda przerywają zew.",
+  "en": {
+   "name": "Temptress",
+   "tag": "lures",
+   "desc": "Lures the least brave hero away from the party.",
+   "more": "Flying, scares those around her. Skill check: Call, the least brave hero within 4 walks to her for 4 s (Seduced), then takes 30 fear. A priest, a paladin or a bard's song breaks the call."
+  }
  },
  "demon": {
   "name": "Demon otchłani",
@@ -364,7 +651,14 @@
   "hp": 420,
   "melee": 28,
   "tag": "głód +2",
-  "desc": "Demon otchłani (potwór, ogień): ogromny, bije wszystkich walczących, straszy wokół. Dopóki stoi w lochu, głód każdej fali +2 (Apetyt demona). Skill check: Pożoga w całym pokoju."
+  "desc": "Ogromny, bije wszystkich walczących i straszy, ale przy nim serce jest głodniejsze.",
+  "more": "Potwór, ogień. Dopóki stoi w lochu, głód każdej fali +2 (Apetyt demona). Skill check: Pożoga w całym pokoju.",
+  "en": {
+   "name": "Abyss Demon",
+   "tag": "Hunger +2",
+   "desc": "Huge; hits everyone fighting it and scares them, but makes the heart hungrier.",
+   "more": "Monster, fire. While it stands in your dungeon, the Hunger of every wave is +2 (Demon's Appetite). Skill check: Inferno in the whole room."
+  }
  },
  "sapper": {
   "name": "Goblin saper",
@@ -374,7 +668,14 @@
   "hp": 80,
   "melee": 8,
   "tag": "kolczatki",
-  "desc": "Goblin saper (potwór): skill check: Kolczatki: 3 pola przy bohaterach stają się pułapką do końca fali (rani i spowalnia, najwyżej 3 zestawy). Chowa się za innymi potworami: gdy stoi przy nich, bohaterowie zadają mu 40% mniej, a mag i tropiciel biorą go na cel na końcu."
+  "desc": "Rozrzuca kolczatki i chowa się za innymi potworami.",
+  "more": "Potwór. Skill check: Kolczatki, 3 pola przy bohaterach ranią i spowalniają do końca fali (najwyżej 3 zestawy). Przy innych potworach bohaterowie zadają mu 40% mniej, a mag i tropiciel celują w niego na końcu.",
+  "en": {
+   "name": "Goblin Sapper",
+   "tag": "caltrops",
+   "desc": "Scatters caltrops and hides behind other monsters.",
+   "more": "Monster. Skill check: Caltrops, 3 tiles near the heroes hurt and slow until the wave ends (at most 3 sets). Next to other monsters it takes 40% less from heroes, and the mage and the ranger target it last."
+  }
  },
  "warlord": {
   "name": "Herszt goblinów",
@@ -384,7 +685,14 @@
   "hp": 160,
   "melee": 14,
   "tag": "zielonoskórzy ×1,5",
-  "desc": "Herszt goblinów (potwór, obuchowe): zielonoskórzy w jego pokoju biją 1,5 raza mocniej; gdy goblin padnie przy nim, reszta wpada w szał (+50% na 6 s). Skill check: Okrzyk (rani i straszy cały pokój)."
+  "desc": "Dowodzi zielonoskórymi w swoim pokoju, a ci biją mocniej.",
+  "more": "Potwór, obuchowe. Zielonoskórzy w jego pokoju ×1,5. Gdy przy nim padnie goblin, reszta wpada w szał (+50% na 6 s). Skill check: Okrzyk, rani i straszy cały pokój.",
+  "en": {
+   "name": "Goblin Warlord",
+   "tag": "greenskins ×1.5",
+   "desc": "Leads the greenskins in his room, and they hit harder.",
+   "more": "Monster, blunt. Greenskins in his room ×1.5. When a goblin falls next to him, the rest go berserk (+50% for 6 s). Skill check: War Cry, hurts and scares the whole room."
+  }
  },
  "rats": {
   "name": "Rój szczurów",
@@ -394,7 +702,14 @@
   "hp": 35,
   "melee": 6,
   "tag": "rośnie",
-  "desc": "Rój szczurów (potwór, kłute): bije wszystkich walczących. Każda fala przeżyta bez powalenia: +80% życia i siły (najwyżej 3 razy). Powalony wraca do bazowej siły. Skill check: Zalew całego pokoju."
+  "desc": "Gryzie wszystkich walczących i rośnie z każdą przeżytą falą.",
+  "more": "Potwór, kłute. Fala bez powalenia: +80% życia i siły (najwyżej 3 razy). Powalony wraca do bazowej siły. Skill check: Zalew całego pokoju.",
+  "en": {
+   "name": "Rat Swarm",
+   "tag": "grows",
+   "desc": "Bites everyone fighting it and grows with every wave it survives.",
+   "more": "Monster, pierce. Each wave without being knocked down: +80% health and power (up to 3 times). Knocked down, it goes back to base. Skill check: Swarm Surge, the whole room."
+  }
  },
  "loot": {
   "name": "Monety",
@@ -403,7 +718,14 @@
   "tag": "chciwość",
   "cd": 0,
   "rarity": 1,
-  "desc": "Monety (łup): widać je dopiero z pokoju. Tanio i mocno podbijają chciwość, kuszą chciwych i złodziei. Połowa chciwości zostaje do końca runu."
+  "desc": "Tanio podbijają chciwość i kuszą chciwych oraz złodziei.",
+  "more": "Łup. Widać je dopiero z pokoju. Połowa chciwości zostaje do końca runu.",
+  "en": {
+   "name": "Coins",
+   "tag": "greed",
+   "desc": "A cheap Greed boost that tempts greedy heroes and thieves.",
+   "more": "Loot. Only seen from inside the room. Half of the Greed stays until the run ends."
+  }
  },
  "lpotion": {
   "name": "Mikstura",
@@ -412,7 +734,14 @@
   "tag": "wabi rannych",
   "cd": 0,
   "rarity": 1,
-  "desc": "Mikstura (łup): prawie bez chciwości, ale ranny bohater pójdzie po nią nawet przez pułapki. Postaw ją w pokoju śmierci."
+  "desc": "Ranny bohater pójdzie po nią nawet przez pułapki.",
+  "more": "Łup. Prawie nie daje chciwości. Postaw ją w pokoju pełnym pułapek.",
+  "en": {
+   "name": "Potion",
+   "tag": "lures wounded",
+   "desc": "A wounded hero will go for it even through traps.",
+   "more": "Loot. Gives almost no Greed. Put it in your deadliest room."
+  }
  },
  "loot2": {
   "name": "Ekwipunek",
@@ -421,7 +750,14 @@
   "tag": "rzadki",
   "cd": 0,
   "rarity": 2,
-  "desc": "Ekwipunek (łup): widać go z sąsiedniego pokoju, mocno podbija chciwość. Zabrany daje rzadki przedmiot, gorszy zostaje na podłodze."
+  "desc": "Mocno podbija chciwość i daje bohaterowi rzadki przedmiot.",
+  "more": "Łup. Widać go z sąsiedniego pokoju. Gorszy przedmiot bohater zostawia na podłodze.",
+  "en": {
+   "name": "Gear",
+   "tag": "rare",
+   "desc": "A big Greed boost that gives the hero a rare item.",
+   "more": "Loot. Seen from the next room. The hero leaves the worse item on the floor."
+  }
  },
  "loot3": {
   "name": "Relikwia",
@@ -430,7 +766,14 @@
   "tag": "legendarny",
   "cd": 0,
   "rarity": 3,
-  "desc": "Relikwia (łup): lśni przez kilka pokoi, bardzo podbija chciwość i rozdziela drużynę. Zabrana: 4 Esencji i legendarny przedmiot."
+  "desc": "Lśni przez kilka pokoi, bardzo podbija chciwość i rozdziela drużynę.",
+  "more": "Łup. Gdy ktoś ją zabierze, dostajesz 4 Esencji, a bohater legendarny przedmiot.",
+  "en": {
+   "name": "Relic",
+   "tag": "legendary",
+   "desc": "Shines across several rooms, boosts Greed a lot and splits the party.",
+   "more": "Loot. When someone takes it, you get 4 Essence and the hero gets a legendary item."
+  }
  },
  "lcursed": {
   "name": "Przeklęty",
@@ -439,7 +782,14 @@
   "tag": "klątwa",
   "cd": 0,
   "rarity": 2,
-  "desc": "Przeklęty skarb (łup, trucizna): wygląda jak ekwipunek. Kto go weźmie: +30% obrażeń, słabsze przedmioty, rosnący strach. Kapłan zdejmie klątwę."
+  "desc": "Wygląda jak ekwipunek, ale przeklina tego, kto go weźmie.",
+  "more": "Łup, trucizna. Przeklęty dostaje +30% obrażeń, ma słabsze przedmioty i coraz bardziej się boi. Kapłan zdejmuje klątwę.",
+  "en": {
+   "name": "Cursed Treasure",
+   "tag": "curse",
+   "desc": "Looks like gear, but curses whoever takes it.",
+   "more": "Loot, poison. The cursed hero takes +30% damage, has weaker items and gets more and more scared. A priest can lift the curse."
+  }
  },
  "rune": {
   "name": "Runa",
@@ -447,7 +797,14 @@
   "slot": "floor",
   "tag": "magowie",
   "build": true,
-  "desc": "Runa (budowla, blokuje przejście jak skrzynia): magowie nie zakłócą ani nie wyczują pułapek w tym pokoju, a pułapki w nim odnawiają się 10% szybciej. Kontra na gildię z magami. Jedna na pokój."
+  "desc": "Chroni pułapki w tym pokoju przed magami.",
+  "more": "Obiekt, blokuje przejście jak skrzynia. Magowie nie zakłócą ani nie wyczują tu pułapek, a pułapki odnawiają się 10% szybciej. Jedna na pokój.",
+  "en": {
+   "name": "Rune",
+   "tag": "mages",
+   "desc": "Shields the traps in this room from mages.",
+   "more": "Object, blocks the way like a crate. Mages cannot disrupt or sense traps here, and traps reset 10% faster. One per room."
+  }
  },
  "altar": {
   "name": "Ołtarz",
@@ -455,7 +812,14 @@
   "slot": "floor",
   "tag": "kapłani",
   "build": true,
-  "desc": "Ołtarz (budowla, blokuje przejście jak skrzynia): moce kapłana i amulety działają tu o połowę słabiej, a strach w tym pokoju jest o 10% większy. Kontra na kapłanów i leczenie. Jeden na pokój."
+  "desc": "Osłabia kapłanów i leczenie w tym pokoju.",
+  "more": "Obiekt, blokuje przejście jak skrzynia. Moce kapłana i amulety działają tu o połowę słabiej, a strach jest o 10% większy. Jeden na pokój.",
+  "en": {
+   "name": "Altar",
+   "tag": "priests",
+   "desc": "Weakens priests and healing in this room.",
+   "more": "Object, blocks the way like a crate. Priest powers and amulets work at half strength here, and fear is 10% higher. One per room."
+  }
  },
  "decoy": {
   "name": "Wabik",
@@ -463,7 +827,14 @@
   "slot": "floor",
   "tag": "złodzieje",
   "build": true,
-  "desc": "Wabik (budowla, blokuje przejście jak skrzynia): wygląda jak pułapka. Złodziej rozbraja go najpierw i podnosi alarm: odpalają wszystkie gotowe pułapki w pokoju. Alarm raz na falę."
+  "desc": "Fałszywa pułapka, która przy rozbrajaniu odpala wszystkie pułapki w pokoju.",
+  "more": "Obiekt, blokuje przejście jak skrzynia. Złodziej rozbraja go najpierw i podnosi alarm, a wtedy odpalają wszystkie gotowe pułapki w pokoju. Alarm raz na falę.",
+  "en": {
+   "name": "Decoy",
+   "tag": "thieves",
+   "desc": "A fake trap that sets off every trap in the room when disarmed.",
+   "more": "Object, blocks the way like a crate. A thief goes for it first and raises the alarm, and every ready trap in the room fires. Once per wave."
+  }
  },
  "acid": {
   "name": "Kwas",
@@ -471,7 +842,14 @@
   "slot": "floor",
   "tag": "tarcze",
   "build": true,
-  "desc": "Kwas (budowla, blokuje przejście jak skrzynia): tarcza wojownika, osłona kapłana i talizmany chronią tu o połowę słabiej, a obrażenia w tym pokoju są o 10% większe. Kontra na wojowników. Jeden na pokój."
+  "desc": "Przeżera tarcze i osłony bohaterów w tym pokoju.",
+  "more": "Obiekt, blokuje przejście jak skrzynia. Tarcza wojownika, osłona kapłana i talizmany chronią tu o połowę słabiej, a obrażenia są o 10% większe. Jeden na pokój.",
+  "en": {
+   "name": "Acid",
+   "tag": "shields",
+   "desc": "Eats through the heroes' shields and wards in this room.",
+   "more": "Object, blocks the way like a crate. A warrior's shield, a priest's ward and charms protect half as well here, and damage is 10% higher. One per room."
+  }
  },
  "veil": {
   "name": "Zasłona",
@@ -479,7 +857,14 @@
   "slot": "floor",
   "tag": "plotki",
   "build": true,
-  "desc": "Zasłona (budowla, blokuje przejście jak skrzynia): uciekinierzy nie zapamiętają tego pokoju ani jego pułapek, w pokoju łatwiej się zgubić, a jego pułapek nie słychać zza ścian. Jedna na pokój."
+  "desc": "Uciekinierzy nie zapamiętają tego pokoju.",
+  "more": "Obiekt, blokuje przejście jak skrzynia. Nikt nie opowie o pokoju ani o jego pułapkach, łatwiej się tu zgubić, a pułapek nie słychać zza ścian. Jedna na pokój.",
+  "en": {
+   "name": "Veil",
+   "tag": "rumours",
+   "desc": "Runaways will not remember this room.",
+   "more": "Object, blocks the way like a crate. Nobody can tell others about the room or its traps, it is easier to get lost here, and its traps cannot be heard through the walls. One per room."
+  }
  },
  "howl": {
   "name": "Kamień wyjec",
@@ -487,7 +872,14 @@
   "slot": "floor",
   "tag": "bardowie",
   "build": true,
-  "desc": "Kamień wyjec (budowla, blokuje przejście jak skrzynia): wiatr wyje w jego otworach. Pieśń barda tu nie działa, a echo myli głosy: zgubiony nie trafi tu do drużyny po głosie. Strach w tym pokoju +10%. Kontra na bardów. Jeden na pokój."
+  "desc": "Wycie wiatru zagłusza pieśń barda w tym pokoju.",
+  "more": "Obiekt, blokuje przejście jak skrzynia. Pieśń barda tu nie działa, a echo myli głosy, więc zgubiony nie trafi tu do drużyny po głosie. Strach +10%. Jeden na pokój.",
+  "en": {
+   "name": "Howling Stone",
+   "tag": "bards",
+   "desc": "Howling wind drowns out the bard's song in this room.",
+   "more": "Object, blocks the way like a crate. Bard songs do not work here, and the echo confuses voices, so a lost hero cannot find the party by ear. Fear +10%. One per room."
+  }
  },
  "shackles": {
   "name": "Okowy",
@@ -495,7 +887,14 @@
   "slot": "floor",
   "tag": "furia",
   "build": true,
-  "desc": "Okowy (budowla, blokuje przejście jak skrzynia): w tym pokoju nikt nie wpada w furię, a skrzyń i budowli nie da się tu rozbić. Unieruchomienie i spowolnienie trwa tu o 1 s dłużej. Kontra na barbarzyńców. Jeden na pokój."
+  "desc": "Nikt tu nie wpada w furię, a skrzyń i budowli nie da się rozbić.",
+  "more": "Obiekt, blokuje przejście jak skrzynia. Unieruchomienie i spowolnienie trwają tu o 1 s dłużej. Jedne na pokój.",
+  "en": {
+   "name": "Shackles",
+   "tag": "rage",
+   "desc": "Nobody can rage here, and crates and buildings cannot be smashed.",
+   "more": "Object, blocks the way like a crate. Rooted and Slowed last 1 s longer here. One per room."
+  }
  },
  "fortify": {
   "name": "Bastion",
@@ -503,7 +902,14 @@
   "slot": "floor",
   "tag": "wyłomy",
   "build": true,
-  "desc": "Bastion (budowla, blokuje przejście jak skrzynia): przez ściany tego pokoju gildia nie przebije wyłomu. Jeden na pokój."
+  "desc": "Gildia nie przebije wyłomu przez ściany tego pokoju.",
+  "more": "Obiekt, blokuje przejście jak skrzynia. Jeden na pokój.",
+  "en": {
+   "name": "Bastion",
+   "tag": "breaches",
+   "desc": "The guild cannot breach the walls of this room.",
+   "more": "Object, blocks the way like a crate. One per room."
+  }
  },
  "upgrade": {
   "name": "Ulepsz",
@@ -511,7 +917,14 @@
   "slot": null,
   "tag": "poziom +1",
   "mode": true,
-  "desc": "Ulepsz: stuknij pułapkę albo potwora (koszt nad elementem). Poziom 2 i 3 to więcej mocy, poziom 3 dodaje cechę. Stuknij Ulepsz znowu, żeby wyjść."
+  "desc": "Stuknij pułapkę albo potwora, żeby go ulepszyć. Stuknij „Ulepsz” jeszcze raz, żeby wyjść.",
+  "more": "Koszt widać nad elementem. Poziom 2 daje więcej mocy, a na poziomie 3 wybierasz ścieżkę A albo B.",
+  "en": {
+   "name": "Upgrade",
+   "tag": "level +1",
+   "desc": "Tap a trap or monster to upgrade it. Tap \"Upgrade\" again to stop.",
+   "more": "The cost shows above the element. Level 2 adds power; at level 3 you pick path A or B."
+  }
  },
  "move": {
   "name": "Przenieś",
@@ -519,7 +932,14 @@
   "slot": null,
   "tag": "za darmo",
   "mode": true,
-  "desc": "Przenieś: stuknij element, potem nowe miejsce. Za darmo, poziom zostaje. Tak przestawisz pułapki znane z plotek."
+  "desc": "Stuknij element, a potem nowe miejsce.",
+  "more": "Za darmo, poziom zostaje. Tak przestawisz pułapki znane z plotek.",
+  "en": {
+   "name": "Move",
+   "tag": "free",
+   "desc": "Tap an element, then its new spot.",
+   "more": "Free, and it keeps its level. A good way to move traps the rumours know about."
+  }
  },
  "dig": {
   "name": "Nowy pokój",
@@ -527,7 +947,14 @@
   "slot": "dig",
   "tag": "kopanie",
   "tool": true,
-  "desc": "Nowy pokój: stuknij plus przy krawędzi lochu. Nowego pokoju nie znają plotki, więc bohaterowie muszą go odkryć."
+  "desc": "Kopiesz nowy pokój, którego bohaterowie jeszcze nie znają.",
+  "more": "Stuknij plus przy krawędzi lochu. Plotki nic o nim nie wiedzą, więc bohaterowie muszą go odkryć.",
+  "en": {
+   "name": "New Room",
+   "tag": "dig",
+   "desc": "Dig a new room the heroes do not know yet.",
+   "more": "Tap a plus at the edge of the dungeon. No rumours mention it, so heroes have to discover it."
+  }
  },
  "tunnel": {
   "name": "Przejście",
@@ -535,7 +962,14 @@
   "slot": "tunnel",
   "tag": "pętla",
   "tool": true,
-  "desc": "Przejście między dwoma sąsiednimi pokojami. Więcej dróg to więcej wyborów i więcej błędów bohaterów."
+  "desc": "Łączy dwa sąsiednie pokoje.",
+  "more": "Więcej dróg to więcej wyborów i więcej błędów bohaterów.",
+  "en": {
+   "name": "Passage",
+   "tag": "loop",
+   "desc": "Joins two neighbouring rooms.",
+   "more": "More paths mean more choices and more mistakes for the heroes."
+  }
  },
  "secret": {
   "name": "Ukryte przejście",
@@ -543,7 +977,14 @@
   "slot": "hall",
   "tag": "fałszywa ściana",
   "tool": true,
-  "desc": "Ukryte przejście (Loch): maskuje istniejące przejście między pokojami fałszywą ścianą. Bohaterowie widzą tam mur i idą dłuższą drogą, dopóki ktoś go nie odkryje (najczęściej złodziej albo tropiciel, ostrożni i ciekawscy, i ci, którzy utknęli). Odkryte jest zwykłym skrótem do końca fali, a jeśli ktoś, kto je znał, wyjdzie z lochu, następna fala zna je od startu (możesz zamaskować je od nowa). Do serca musi zostać jawna droga. Zdjęcie maski nic nie kosztuje."
+  "desc": "Ukrywa przejście za fałszywą ścianą, więc bohaterowie idą dłuższą drogą.",
+  "more": "Działa, dopóki ktoś go nie odkryje (najczęściej złodziej, tropiciel, ostrożni, ciekawscy i ci, którzy utknęli). Odkryte jest zwykłym skrótem do końca fali. Jeśli ktoś, kto je znał, wyjdzie z lochu, następna fala zna je od startu, ale możesz zamaskować je od nowa. Do serca musi zostać jawna droga. Odsłonięcie przejścia nic nie kosztuje.",
+  "en": {
+   "name": "Secret Passage",
+   "tag": "false wall",
+   "desc": "Hides a passage behind a false wall, so heroes take the long way.",
+   "more": "Works until someone finds it (most often a thief, a ranger, careful or curious heroes, or those who are stuck). Once found, it is a normal shortcut until the wave ends. If someone who knew it leaves the dungeon, the next wave knows it from the start, but you can hide it again. There must be an open way to the heart. Uncovering it yourself is free."
+  }
  },
  "expand": {
   "name": "Rozbuduj",
@@ -551,7 +992,14 @@
   "slot": "expand",
   "tag": "+1 miejsce",
   "tool": true,
-  "desc": "Rozbuduj pokój albo korytarz: +1 miejsce na element. Każda kolejna rozbudowa tego miejsca kosztuje 2 razy więcej."
+  "desc": "Daje pokojowi albo korytarzowi miejsce na jeszcze jeden element.",
+  "more": "Każda kolejna rozbudowa tego miejsca kosztuje 2 razy więcej.",
+  "en": {
+   "name": "Expand",
+   "tag": "+1 slot",
+   "desc": "Gives a room or corridor space for one more element.",
+   "more": "Each further expansion of the same spot costs twice as much."
+  }
  },
  "demolish": {
   "name": "Wyburz",
@@ -559,7 +1007,14 @@
   "slot": "demolish",
   "tag": "zwrot",
   "tool": true,
-  "desc": "Wyburz pokój albo przejście. Elementy wracają jako Esencja, pokój zwraca jeszcze 5. Serca nie odetniesz od wejścia."
+  "desc": "Usuwa pokój albo przejście i oddaje Esencję.",
+  "more": "Elementy wracają jako Esencja, pokój zwraca jeszcze 5. Serca nie odetniesz od wejścia.",
+  "en": {
+   "name": "Demolish",
+   "tag": "refund",
+   "desc": "Removes a room or passage and refunds Essence.",
+   "more": "Elements come back as Essence, and a room gives 5 more. You cannot cut the heart off from the entrance."
+  }
  },
  "r_fog": {
   "name": "Mgła",
@@ -568,7 +1023,14 @@
   "tag": "gubią się",
   "tool": true,
   "rt": "fog",
-  "desc": "Mgła (pokój): widać na 2 pola, drużyna się rozłazi i każdy łatwo się gubi, nikt nie wykrywa pułapek, strach +15%. Stuknij znacznik pokoju."
+  "desc": "W gęstej mgle drużyna się rozłazi i łatwo się gubi.",
+  "more": "Widać na 2 pola, nikt nie wykrywa pułapek, strach +15%. Stuknij znacznik pokoju.",
+  "en": {
+   "name": "Fog",
+   "tag": "get lost",
+   "desc": "In thick fog the party drifts apart and gets lost easily.",
+   "more": "Sight 2 tiles, nobody detects traps, fear +15%. Tap the room marker."
+  }
  },
  "r_swamp": {
   "name": "Bagno",
@@ -577,7 +1039,14 @@
   "tag": "spowalnia",
   "tool": true,
   "rt": "swamp",
-  "desc": "Bagno (pokój): ruch o 35% wolniej, bez odpoczynku, rozbrajanie trwa o połowę dłużej. Stuknij znacznik pokoju."
+  "desc": "Bohaterowie brną przez błoto i nie mogą odpocząć.",
+  "more": "Ruch o 35% wolniej, bez odpoczynku, rozbrajanie trwa o połowę dłużej. Stuknij znacznik pokoju.",
+  "en": {
+   "name": "Swamp",
+   "tag": "slows",
+   "desc": "Heroes wade through mud and cannot rest.",
+   "more": "Movement 35% slower, no resting, disarming takes 50% longer. Tap the room marker."
+  }
  },
  "r_grotto": {
   "name": "Grota",
@@ -586,7 +1055,14 @@
   "tag": "echo strachu",
   "tool": true,
   "rt": "grotto",
-  "desc": "Grota (pokój): 40% strachu słychać w sąsiednich pokojach, combo z groty czeka o połowę dłużej. Stuknij znacznik pokoju."
+  "desc": "Strach niesie się echem do sąsiednich pokoi.",
+  "more": "40% strachu słychać w sąsiednich pokojach, a okno combo trwa tu o połowę dłużej. Stuknij znacznik pokoju.",
+  "en": {
+   "name": "Grotto",
+   "tag": "fear echo",
+   "desc": "Fear echoes into the neighbouring rooms.",
+   "more": "40% of the fear is heard next door, and the Combo window lasts 50% longer here. Tap the room marker."
+  }
  },
  "r_crypt": {
   "name": "Krypta",
@@ -595,7 +1071,14 @@
   "tag": "śmierć ×2",
   "tool": true,
   "rt": "crypt",
-  "desc": "Krypta (pokój): śmierć straszy 2 razy mocniej i daje +50% Grozy, potwory mają +25% HP. Stuknij znacznik pokoju."
+  "desc": "Śmierć straszy tu mocniej, a potwory są wytrzymalsze.",
+  "more": "Śmierć straszy 2 razy mocniej i daje +50% Grozy, potwory mają +25% życia. Stuknij znacznik pokoju.",
+  "en": {
+   "name": "Crypt",
+   "tag": "death ×2",
+   "desc": "Deaths scare more here, and monsters are tougher.",
+   "more": "Deaths scare twice as much and give +50% Dread, monsters have +25% health. Tap the room marker."
+  }
  },
  "r_vault": {
   "name": "Sezam",
@@ -604,7 +1087,14 @@
   "tag": "łup ×2",
   "tool": true,
   "rt": "vault",
-  "desc": "Sezam (pokój): łup podbija chciwość 2 razy mocniej i kusi 1,5 raza bardziej, mnożnik pokoju +0,15. Stuknij znacznik pokoju."
+  "desc": "Łup w tym pokoju kusi mocniej i daje więcej chciwości.",
+  "more": "Chciwość z łupu ×2, łup kusi 1,5 raza bardziej, głębia +0,15. Stuknij znacznik pokoju.",
+  "en": {
+   "name": "Vault",
+   "tag": "loot ×2",
+   "desc": "Loot in this room tempts more and gives more Greed.",
+   "more": "Greed from loot ×2, loot tempts 1.5× more, depth +0.15. Tap the room marker."
+  }
  },
  "r_haven": {
   "name": "Sanktuarium",
@@ -613,16 +1103,30 @@
   "tag": "fałszywy azyl",
   "tool": true,
   "rt": "haven",
-  "desc": "Sanktuarium (pokój): wygląda na najbezpieczniejsze miejsce w lochu. Ranni chcą tu odpocząć (sami, w biegu, i cała drużyna przy odwrocie), ale rany goją się tu 2 razy wolniej, a śpiących dręczą koszmary: strach rośnie. Stuknij znacznik pokoju."
+  "desc": "Wygląda na bezpieczne miejsce, ale odpoczynek przynosi tu koszmary.",
+  "more": "Ranni chętnie tu odpoczywają, ale rany goją się 2 razy wolniej, a śpiących dręczą koszmary. Stuknij znacznik pokoju.",
+  "en": {
+   "name": "Sanctuary",
+   "tag": "false refuge",
+   "desc": "Looks like a safe place, but resting here brings nightmares.",
+   "more": "The wounded like to rest here, but wounds heal twice as slowly and sleepers have nightmares. Tap the room marker."
+  }
  },
  "r_gears": {
   "name": "Zębatki",
   "cost": 8,
   "slot": "roomtype",
-  "tag": "combo z jednej",
+  "tag": "combo solo",
   "tool": true,
   "rt": "gears",
-  "desc": "Zębatki (pokój): pułapki w tym pokoju przeładowują się o 25% szybciej, a ta sama pułapka odpalona drugi raz z rzędu też podbija combo. Stuknij znacznik pokoju."
+  "desc": "Pułapki przeładowują się szybciej i same podbijają combo.",
+  "more": "Przeładowanie o 25% szybsze, a ta sama pułapka odpalona drugi raz z rzędu też podbija combo. Stuknij znacznik pokoju.",
+  "en": {
+   "name": "Gears",
+   "tag": "solo combo",
+   "desc": "Traps reload faster and can build Combo on their own.",
+   "more": "Reload 25% faster, and the same trap firing twice in a row also raises the Combo. Tap the room marker."
+  }
  },
  "r_hush": {
   "name": "Głusza",
@@ -631,7 +1135,14 @@
   "tag": "bez słów",
   "tool": true,
   "rt": "hush",
-  "desc": "Głusza (pokój): nic tu nie słychać. Bohaterowie nie ostrzegą się nawzajem (pułapki, które tu odpalą, nie trafią do ich wiedzy), nie zawołają kapłana, nie dodadzą sobie otuchy, a zgubiony nie usłyszy odpowiedzi. Strach +20%. Stuknij znacznik pokoju."
+  "desc": "Nic tu nie słychać, więc bohaterowie nie mogą się porozumieć.",
+  "more": "Nie ostrzegą się nawzajem (pułapki odpalone tu nie trafią do ich wiedzy), nie zawołają kapłana, nie dodadzą sobie otuchy, a zgubiony nie usłyszy odpowiedzi. Strach +20%. Stuknij znacznik pokoju.",
+  "en": {
+   "name": "Hush",
+   "tag": "silence",
+   "desc": "Nothing can be heard here, so heroes cannot talk to each other.",
+   "more": "They cannot warn each other (traps fired here do not become known), call a priest or cheer each other up, and a lost hero hears no reply. Fear +20%. Tap the room marker."
+  }
  },
  "r_ice": {
   "name": "Lodownia",
@@ -640,7 +1151,14 @@
   "tag": "poślizg",
   "tool": true,
   "rt": "ice",
-  "desc": "Lodownia (pokój): ślisko. Co trzeci krok bohater jedzie jedno pole dalej, prosto w to, co tam leży (doświadczeni i złodziej rzadziej). Nikt tu nie odpoczywa. Stuknij znacznik pokoju."
+  "desc": "Na lodzie bohaterowie ślizgają się prosto w to, co leży dalej.",
+  "more": "Co trzeci krok bohater jedzie jedno pole dalej (doświadczeni i złodziej rzadziej). Nikt tu nie odpoczywa. Stuknij znacznik pokoju.",
+  "en": {
+   "name": "Icehouse",
+   "tag": "slippery",
+   "desc": "On the ice heroes slide straight into whatever lies ahead.",
+   "more": "Every third step a hero slides one tile further (veterans and thieves less often). Nobody rests here. Tap the room marker."
+  }
  },
  "k_goblin": {
   "name": "Goblinia nora",
@@ -649,7 +1167,8 @@
   "tag": "gobliny",
   "tool": true,
   "rk": "goblin",
-  "desc": "Goblinia nora (komnata): Goblin, Szaman, Goblin saper i Herszt goblinów w tym pokoju mają cechę 3. poziomu bez ulepszania: Goblin: Podcięcie (trafiony zwalnia na 1,5 s); Szaman: Tarcza ducha (potwory w jego pokoju dostają 30% mniej obrażeń); Goblin saper: Proch (jeden zestaw kolczatek to mała bomba); Herszt goblinów: Wódz (aura obejmuje sąsiednie pokoje). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Goblin, Szaman, Goblin saper i Herszt goblinów mają cechę 3. poziomu bez ulepszania.",
+  "more": "Goblin: Podcięcie (trafiony zwalnia na 1,5 s); Szaman: Tarcza ducha (potwory w jego pokoju dostają 30% mniej obrażeń); Goblin saper: Proch (jeden zestaw kolczatek to mała bomba); Herszt goblinów: Wódz (aura obejmuje sąsiednie pokoje). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_spider": {
   "name": "Leże pająków",
@@ -658,7 +1177,8 @@
   "tag": "pająki i sieci",
   "tool": true,
   "rk": "spider",
-  "desc": "Leże pająków (komnata): Pająk i Sieć w tym pokoju mają cechę 3. poziomu bez ulepszania: Pająk: Gniazdo (oplata siecią cały kwadrat 3×3); Sieć: Kwaśna sieć (bohater w tej sieci dostaje +60% obrażeń od pułapek zamiast +30%). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Pająk i Sieć mają cechę 3. poziomu bez ulepszania.",
+  "more": "Pająk: Gniazdo (oplata siecią cały kwadrat 3×3); Sieć: Kwaśna sieć (bohater w sieci dostaje +60% obrażeń od pułapek zamiast +30%). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_ogre": {
   "name": "Jaskinia ogra",
@@ -667,7 +1187,8 @@
   "tag": "ogry",
   "tool": true,
   "rk": "ogre",
-  "desc": "Jaskinia ogra (komnata): Ogr w tym pokoju ma cechę 3. poziomu bez ulepszania: Ogr: Grzmot (każde uderzenie mocno straszy). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Ogr ma cechę 3. poziomu bez ulepszania.",
+  "more": "Ogr: Grzmot (każde uderzenie mocno straszy). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_haunt": {
   "name": "Nawiedzona sala",
@@ -676,7 +1197,8 @@
   "tag": "duchy i cienie",
   "tool": true,
   "rk": "haunt",
-  "desc": "Nawiedzona sala (komnata): Duch i Cień w tym pokoju mają cechę 3. poziomu bez ulepszania: Duch: Wycie (straszy z dalszej odległości); Cień: Pożeracz światła (szept gubi samotnego bohatera). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Duch i Cień mają cechę 3. poziomu bez ulepszania.",
+  "more": "Duch: Wycie (straszy z większej odległości); Cień: Pożeracz światła (szept gubi samotnego bohatera). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_bats": {
   "name": "Gniazdo",
@@ -685,7 +1207,8 @@
   "tag": "nietoperze i szczury",
   "tool": true,
   "rk": "bats",
-  "desc": "Gniazdo (komnata): Nietoperze i Rój szczurów w tym pokoju mają cechę 3. poziomu bez ulepszania: Nietoperze: Chmara (rój sięga 3 pól i płoszy częściej); Rój szczurów: Wścieklizna (ugryzienia zarażają). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Nietoperze i Rój szczurów mają cechę 3. poziomu bez ulepszania.",
+  "more": "Nietoperze: Chmara (rój sięga 3 pól i częściej płoszy); Rój szczurów: Wścieklizna (ugryzienia zarażają). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_ossuary": {
   "name": "Kaplica czaszek",
@@ -694,7 +1217,8 @@
   "tag": "kości i łucznicy",
   "tool": true,
   "rk": "ossuary",
-  "desc": "Kaplica czaszek (komnata): Kości, Trumna i Łucznik w tym pokoju mają cechę 3. poziomu bez ulepszania: Kości: Kostnica (grzechoczą w kwadracie 5×5); Trumna: Pogrzebany żywcem (najbliższy boi się 1,5 raza bardziej i zwalnia na 3 s); Łucznik: Ogniste strzały (trafiony płonie). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Kości, Trumna i Łucznik mają cechę 3. poziomu bez ulepszania.",
+  "more": "Kości: Kostnica (grzechoczą w kwadracie 5×5); Trumna: Pogrzebany żywcem (najbliższy boi się 1,5 raza bardziej i zwalnia na 3 s); Łucznik: Ogniste strzały (trafiony płonie). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_armory": {
   "name": "Zbrojownia",
@@ -703,7 +1227,8 @@
   "tag": "kolce, strzały, wahadła",
   "tool": true,
   "rk": "armory",
-  "desc": "Zbrojownia (komnata): Kolce, Strzały i Wahadło w tym pokoju mają cechę 3. poziomu bez ulepszania: Kolce: Krwawienie (trafiony krwawi przez 3 s); Strzały: Przebijające groty (strzały przebijają tarczę wojownika i talizmany); Wahadło: Podwójne (drugi zamach (50% mocy) po 0,6 s). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Kolce, Strzały i Wahadło mają cechę 3. poziomu bez ulepszania.",
+  "more": "Kolce: Krwawienie (trafiony krwawi przez 3 s); Strzały: Przebijające groty (strzały przebijają tarczę wojownika i talizmany); Wahadło: Podwójne (drugi zamach z 50% mocy po 0,6 s). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_forge": {
   "name": "Kuźnia",
@@ -712,7 +1237,8 @@
   "tag": "ogień, proch, olej",
   "tool": true,
   "rk": "forge",
-  "desc": "Kuźnia (komnata): Ogień, Proch, Plama oleju i Kocioł smoły w tym pokoju mają cechę 3. poziomu bez ulepszania: Ogień: Napalm (podpalenie trwa 6 s zamiast 3); Proch: Ognisty proch (wybuch sięga o pole dalej i podpala); Plama oleju: Łatwopalna (Oblany zapala się od każdego trafienia pułapki (15%)); Kocioł smoły: Wrzątek (oblany płonie 4 s). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Ogień, Proch, Plama oleju i Kocioł smoły mają cechę 3. poziomu bez ulepszania.",
+  "more": "Ogień: Napalm (podpalenie trwa 6 s zamiast 3); Proch: Ognisty proch (wybuch sięga o pole dalej i podpala); Plama oleju: Łatwopalna (15% szans, że Oblany zapali się od trafienia pułapki); Kocioł smoły: Wrzątek (oblany płonie 4 s). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_prison": {
   "name": "Więzienie",
@@ -721,7 +1247,8 @@
   "tag": "klatki, kraty, wnyki",
   "tool": true,
   "rk": "prison",
-  "desc": "Więzienie (komnata): Klatka, Zapadnia, Krata i Wnyki w tym pokoju mają cechę 3. poziomu bez ulepszania: Klatka: Kolczasta klatka (uwięziony dostaje 2 razy więcej obrażeń i boi się 2 razy bardziej); Zapadnia: Bezdenny szyb (spadający wychodzi zgubiony i dużo bardziej przestraszony); Krata: Żelazna krata (+2 zamknięcia na falę); Wnyki: Zębate (złapany krwawi przez 3 s). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Klatka, Zapadnia, Krata i Wnyki mają cechę 3. poziomu bez ulepszania.",
+  "more": "Klatka: Kolczasta klatka (uwięziony dostaje 2 razy więcej obrażeń i boi się 2 razy bardziej); Zapadnia: Bezdenny szyb (spadający wychodzi zgubiony i dużo bardziej przestraszony); Krata: Żelazna krata (+2 zamknięcia na falę); Wnyki: Zębate (złapany krwawi przez 3 s). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_junk": {
   "name": "Graciarnia",
@@ -730,7 +1257,8 @@
   "tag": "mimiki",
   "tool": true,
   "rk": "junk",
-  "desc": "Graciarnia (komnata): Mimik w tym pokoju ma cechę 3. poziomu bez ulepszania: Mimik: Pożeracz (ugryziony traci jeden przedmiot). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Mimik ma cechę 3. poziomu bez ulepszania.",
+  "more": "Mimik: Pożeracz (ugryziony traci jeden przedmiot). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_gallery": {
   "name": "Galeria",
@@ -739,7 +1267,8 @@
   "tag": "obrazy i lustra",
   "tool": true,
   "rk": "gallery",
-  "desc": "Galeria (komnata): Portret, Oczy, Lustro i Fałszywe przejście w tym pokoju mają cechę 3. poziomu bez ulepszania: Portret: Całun grozy (portret straszy cały pokój); Oczy: Wszystkowidzące (samotny albo zgubiony boi się 3 razy bardziej); Lustro: Krzywe zwierciadło (lustro straszy cały pokój); Fałszywe przejście: Labirynt (zgubienie trwa 18 s). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Portret, Oczy, Lustro i Fałszywe przejście mają cechę 3. poziomu bez ulepszania.",
+  "more": "Portret: Całun grozy (portret straszy cały pokój); Oczy: Wszystkowidzące (samotny albo zgubiony boi się 3 razy bardziej); Lustro: Krzywe zwierciadło (lustro straszy cały pokój); Fałszywe przejście: Labirynt (zgubienie trwa 18 s). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_lab": {
   "name": "Laboratorium",
@@ -748,7 +1277,8 @@
   "tag": "wyziewy, woda, pioruny",
   "tool": true,
   "rk": "lab",
-  "desc": "Laboratorium (komnata): Wyziewy, Zalewnia i Runa piorunów w tym pokoju mają cechę 3. poziomu bez ulepszania: Wyziewy: Gęste (chmura trzyma się 8 s); Zalewnia: Topiel (wszyscy w pokoju są spowolnieni, dopóki w nim są); Runa piorunów: Burza (piorun przeskakuje też na 2 suchych (50%)). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Wyziewy, Zalewnia i Runa piorunów mają cechę 3. poziomu bez ulepszania.",
+  "more": "Wyziewy: Gęste (chmura utrzymuje się 8 s); Zalewnia: Topiel (wszyscy w pokoju są spowolnieni, dopóki w nim są); Runa piorunów: Burza (piorun przeskakuje też na 2 suchych, na każdego z szansą 50%). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_graveyard": {
   "name": "Cmentarz",
@@ -757,7 +1287,8 @@
   "tag": "nieumarli",
   "tool": true,
   "rk": "graveyard",
-  "desc": "Cmentarz (komnata): Szkielet, Zombie, Licz i Dzwon żałobny w tym pokoju mają cechę 3. poziomu bez ulepszania: Szkielet: Legion (składa się 2 razy w fali); Zombie: Epidemia (Zaraza przeskakuje na sąsiadów co 4 s); Licz: Filakteria (powalony licz nie dodaje głodu); Dzwon żałobny: Requiem (każdy, kto usłyszy dzwon, daje +0,5 Grozy). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Szkielet, Zombie, Licz i Dzwon żałobny mają cechę 3. poziomu bez ulepszania.",
+  "more": "Szkielet: Legion (składa się 2 razy w fali); Zombie: Epidemia (Zaraza przeskakuje na sąsiadów co 4 s); Licz: Filakteria (powalony licz nie dodaje głodu); Dzwon żałobny: Requiem (każdy, kto usłyszy dzwon, daje +0,5 Grozy). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_abyssgate": {
   "name": "Wrota otchłani",
@@ -766,7 +1297,8 @@
   "tag": "demony",
   "tool": true,
   "rk": "abyssgate",
-  "desc": "Wrota otchłani (komnata): Chochlik, Ogar piekielny, Kusicielka i Demon otchłani w tym pokoju mają cechę 3. poziomu bez ulepszania: Chochlik: Kleptoman (kradnie 2 przedmioty, okradziony jest Naznaczony); Ogar piekielny: Sfora (każdy inny ogar w lochu +25%); Kusicielka: Pocałunek (odwaga uwiedzionego -20% do końca fali); Demon otchłani: Pan otchłani (inne demony +25%). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Chochlik, Ogar piekielny, Kusicielka i Demon otchłani mają cechę 3. poziomu bez ulepszania.",
+  "more": "Chochlik: Kleptoman (kradnie 2 przedmioty, okradziony jest Naznaczony); Ogar piekielny: Sfora (+25% za każdego innego ogara w lochu); Kusicielka: Pocałunek (uwiedziony traci 20% odwagi do końca fali); Demon otchłani: Pan otchłani (inne demony +25%). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  },
  "k_nursery": {
   "name": "Pokój dziecięcy",
@@ -775,6 +1307,7 @@
   "tag": "pozytywki",
   "tool": true,
   "rk": "nursery",
-  "desc": "Pokój dziecięcy (komnata): Pozytywka i Zawiasy w tym pokoju mają cechę 3. poziomu bez ulepszania: Pozytywka: Kołysanka śmierci (kołysanka trwa 8 s); Zawiasy: Trzask (ten w drzwiach zwalnia na 2 s). Te już na 3. poziomie: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i efekt. Stuknij znacznik pokoju."
+  "desc": "W tym pokoju Pozytywka i Zawiasy mają cechę 3. poziomu bez ulepszania.",
+  "more": "Pozytywka: Kołysanka śmierci (kołysanka trwa 8 s); Zawiasy: Trzask (ten w drzwiach zwalnia na 2 s). Elementy, które już mają 3. poziom: +25% mocy. Komnata nie zajmuje miejsca, a pokój może mieć naraz komnatę i klimat. Stuknij znacznik pokoju."
  }
 }

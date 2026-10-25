@@ -54,11 +54,11 @@ CRY1 = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => {
   ok(JSON.stringify(W.crystalEvents.map(e => e.cause + e.delta)) === JSON.stringify(['card1', 'card-1', 'stolen-1', 'hunger-1']), 'the wave record: card +1, card -1, stolen, hunger: ' + JSON.stringify(W.crystalEvents));
   ok(W.crystalEvents.filter(e => e.cause === 'stolen' || e.cause === 'hunger').every(e => typeof e.t === 'number') && W.crystalEvents.filter(e => e.cause === 'card').every(e => e.t === null), 't: wave time in the wave, null in the build');
   ok(3 + W.crystalEvents.reduce((a, e) => a + e.delta, 0) === W.crystals, 'per wave: 3 + the deltas = crystals');
-  ok(G.floats.some(x => x.text === 'Głód pękł kryształ!'), 'the float over the heart when hunger eats a crystal');
+  ok(G.floats.some(x => x.text === 'Głód rozbija kryształ!'), 'the float over the heart when hunger eats a crystal');
   ok(G.modalKind === 'wave', 'the summary is up: ' + G.modalKind);
   const why = (document.querySelector('#wave-crystal-why') || {}).textContent || '';
   out.why = why;
-  ok(/Głód pękł kryształ: serce chciało \d+ Esencji/.test(why) && /Kryształ skradziony: .+ wyniósł go z lochu|Kryształ skradziony: .+ wyniosła go z lochu/.test(why), 'the summary says why both crystals went: ' + why);
+  ok(/Głód rozbił kryształ: serce chciało \d+ Esencji/.test(why) && /Kryształ skradziony: .+ wyniósł go z lochu|Kryształ skradziony: .+ wyniosła go z lochu/.test(why), 'the summary says why both crystals went: ' + why);
   // to the next build: the warning (the last wave brought less than the heart wants)
   T.clean(); G.afterSummary(); T.clean(); G.fl.essence = 0;   // 1.26: a purse that covers the hunger is no risk
   out.build = { phase: G.fl.phase, wave: R.wave, risk: G.hungerRisk(), need: G.hungerNeed(R.wave) };
@@ -67,8 +67,8 @@ CRY1 = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => {
 CRY2 = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => { if (!c) fails.push(m); };
   const R = G.run, row = document.querySelector('#h-hrow'), lab = document.querySelector('#h-hlabel').textContent;
   out.hud = { cls: row.className, lab, title: row.title };
-  ok(row.classList.contains('warn') && /^⚠ \d+ · zapas \d+$/.test(lab), 'the build warning in the heart row: ' + JSON.stringify(out.hud));
-  ok(/serce zabierze brak z sakiewki/.test(row.title) && /pęknie kryształ/.test(row.title), 'its long text');
+  ok(row.classList.contains('warn') && /^⚠ \d+ · sakiewka \d+$/.test(lab), 'the build warning in the heart row: ' + JSON.stringify(out.hud));
+  ok(/serce weźmie brak z sakiewki/.test(row.title) && /pęknie kryształ/.test(row.title), 'its long text');
   // the next wave: fed; a crystal bought, the continue ad (here as its code), a change nobody logged
   G.fl.essence = 9999; ok(G.buyCrystal(), 'a crystal bought');
   R.crystals += 1;   // unlogged on purpose

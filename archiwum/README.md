@@ -77,3 +77,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.25](1.25.html) | 24.10 | telefon, tablet i komputer: większy interfejs, panel budowy po prawej, mysz, touchpad i klawiatura |
 | [Prototype 1.25.1](1.25.1.html) | 24.10 | łagodniejsze fale 1-4 (połowa drogi do v58), podpowiedź zakupów, telemetria widoczności podglądu |
 | [Prototype 1.26](1.26.html) | 25.10 | Serce zabiera: serce bierze brak z sakiewki, Danina i poziomy serca, statusy i reakcje, 20 nowych elementów, rodziny, omeny, nowe klasy |
+| [Prototype 1.26.1](1.26.1.html) | 25.10 | Ukryte przejście, brakujące zachowania 1.26, Dar serca tylko rzadkie i legendarne karty |

@@ -25,7 +25,7 @@
   // them; one with nothing of this stage of learning yet is dimmed with a lock and says in which run it comes (subStage)
   const curSub = tb => { const on = subsOn(tb); return !on.length ? null : on.find(s => s.id === subOf[tb.id]) || on[0]; };
   const subStage = s => Math.min(...s.items.map(t => ONB_ITEM[t] || 1));
-  const subWhen = s => run && run.onbW ? 'od fali ' + ONB_WAVE[subStage(s)] : 'od ' + subStage(s) + '. runu';   // 1.24 (B): the first run opens it with a wave
+  const subWhen = s => run && run.onbW ? L('od fali ' + ONB_WAVE[subStage(s)], 'from wave ' + ONB_WAVE[subStage(s)]) : L('od ' + subStage(s) + '. runu', 'from run ' + subStage(s));   // 1.24 (B): the first run opens it with a wave
   function pickTab(id, t) {   // to a tab, and to the sub that holds t (the guide points at a tile)
     tab = id; const tb = TABS.find(x => x.id === id), s = tb && t && (tb.subs || []).find(x => x.items.includes(t));
     if (s) subOf[id] = s.id; updateTray();
@@ -40,8 +40,8 @@
         b.type = 'button'; b.className = 'tab'; b.id = 'tab-' + tb.id; b.setAttribute('role', 'tab'); b.textContent = tb.label;
         b.addEventListener('click', () => {
           if (trayTab) trayScroll[trayTab] = tray.scrollLeft; tab = tb.id; try { localStorage.setItem('yatd-tab', tab); } catch (e) {} updateTray();
-          if (tb.id === 'dungeon' && run) { const fl2 = Object.keys(FAMILIES).filter(f => run.famLv && run.famLv[f]); setHint('Loch: kopanie, przejścia, komnaty i typy pokoi. Rodziny: ' + (fl2.length ? fl2.map(f => FAMILIES[f].name + ' ' + run.famLv[f]).join(', ') : 'jeszcze żadna nie ma poziomu (Runa rodu w sklepie)') + '.'); }   // 1.26
-          if (tb.id === 'deck' && run) setHint('Talia: ' + run.deck.length + ' z ' + run.deckSize + ' kart. Stuknij kartę, żeby ją przeczytać albo sprzedać (sprzedaż tylko między falami).');
+          if (tb.id === 'dungeon' && run) { const fl2 = Object.keys(FAMILIES).filter(f => run.famLv && run.famLv[f]); setHint(L('Loch: kopanie, przejścia, komnaty i klimat pokoi. Rodziny: ', 'Dungeon: digging, passages, lairs and room moods. Families: ') + (fl2.length ? fl2.map(f => FAMILIES[f].name + ' ' + run.famLv[f]).join(', ') : L('żadna nie ma jeszcze poziomu', 'none has a level yet')) + '.'); }   // 1.26
+          if (tb.id === 'deck' && run) setHint(L('Talia: ' + run.deck.length + ' z ' + run.deckSize + ' kart. Stuknij kartę, żeby ją przeczytać albo sprzedać (sprzedajesz tylko między falami).', 'Deck: ' + run.deck.length + ' of ' + run.deckSize + ' cards. Tap a card to read or sell it (selling only between waves).'));
         });
         tabs.appendChild(b);
       });
@@ -70,21 +70,22 @@
           if (tipEat) { tipEat = false; return; }   // the end of a hold is not a tap
           if (!fl || !run || (fl.phase !== 'build' && fl.phase !== 'raid')) return;
           if (MODES[t]) {
-            if (fl.phase !== 'build') { nope(b, 'między falami'); return; }
+            if (fl.phase !== 'build') { nope(b, L('między falami', 'between waves')); return; }
             selected = selected === t ? null : t; movingKey = null; movingObj = null; updateTray();
             if (selected) setHint(ITEMS[t].desc);   // a mode: how to use it
             return;
           }
-          if (!isOpenT(t)) { nope(b, KINDS[t] && run.unlocked.has(t) ? 'brak rodziny' : 'zablokowane'); return; }
-          if ((TOOLS[t] || ITEMS[t].build) && fl.phase !== 'build') { nope(b, 'między falami'); return; }
-          if (fl.essence < costOf(t)) { nope(b, 'za mało Esencji'); return; }
+          if (!isOpenT(t)) { nope(b, KINDS[t] && run.unlocked.has(t) ? L('brak rodziny', 'no family yet') : L('zablokowane', 'locked')); return; }
+          if ((TOOLS[t] || ITEMS[t].build) && fl.phase !== 'build') { nope(b, L('między falami', 'between waves')); return; }
+          if (fl.essence < costOf(t)) { nope(b, L('za mało Esencji', 'need Essence')); return; }
           selected = selected === t ? null : t; movingKey = null; movingObj = null;   // choosing from the tray puts down what was in hand
           updateTray();
           // 1.05 (a tester paid 256 for one more slot in a room he had expanded ten times; a new room cost about 8): say the prices side by side
           if (selected === 'expand') {
             const ms = toolMarkers('expand'), lo = ms.length ? Math.min(...ms.map(m => toolCost('expand', m))) : null, dg = toolMarkers('dig').length ? toolCost('dig', null) : null;
-            setHint('Rozbuduj: każda kolejna rozbudowa tego samego miejsca kosztuje 2 razy więcej (cena nad każdym miejscem' + (lo !== null ? ', najtaniej ' + lo : '') + ').' + (dg !== null ? ' Nowy pokój (zakładka Loch): ' + dg + '.' : ''));
-          } else if (selected && (UI.holdTips || 0) < 3) { UI.holdTips = (UI.holdTips || 0) + 1; saveUI(); setHint(PC() ? 'Najedź myszką na kafelek (albo kliknij go prawym), żeby przeczytać, co robi.' : 'Przytrzymaj kafelek w pasku, żeby przeczytać, co robi.'); }
+            setHint(L('Rozbuduj: każda kolejna rozbudowa tego samego miejsca kosztuje 2 razy tyle. Cena stoi nad każdym miejscem' + (lo !== null ? ', najtaniej ' + lo : '') + '.' + (dg !== null ? ' Nowy pokój (zakładka Loch): ' + dg + '.' : ''),
+              'Expand: each further expansion of the same spot costs twice as much. The price shows above each spot' + (lo !== null ? ', cheapest ' + lo : '') + '.' + (dg !== null ? ' A new room (Dungeon tab): ' + dg + '.' : '')));
+          } else if (selected && (UI.holdTips || 0) < 3) { UI.holdTips = (UI.holdTips || 0) + 1; saveUI(); setHint(PC() ? L('Najedź myszką na kafelek (albo kliknij go prawym przyciskiem), żeby przeczytać, co robi.', 'Hover over a tile (or right-click it) to read what it does.') : L('Przytrzymaj kafelek w pasku, żeby przeczytać, co robi.', 'Hold a tile in the bar to read what it does.')); }
         });
         tray.appendChild(b);
       });
@@ -123,7 +124,7 @@
       if (off && selected === t) selected = null;
       b.classList.toggle('off', off);
       b.setAttribute('aria-pressed', String(selected === t));
-      b.setAttribute('aria-label', ITEMS[t].name + ' ' + ITEMS[t].tag + ', koszt ' + costOf(t) + ' Esencji' + (locked ? ', zablokowany' : ''));
+      b.setAttribute('aria-label', ITEMS[t].name + ' ' + ITEMS[t].tag + L(', koszt ', ', costs ') + costOf(t) + L(' Esencji', ' Essence') + (locked ? L(', zablokowane', ', locked') : ''));
       const lk = b.querySelector('.lock');
       if (locked && !lk) b.insertAdjacentHTML('beforeend', LOCK);
       if (!locked && lk) lk.remove();
@@ -138,14 +139,18 @@
   let tipTimer = 0, tipFor = null, tipEat = false, tipAt = [0, 0];
   function showTip(t, b, how) {
     const box = $('#tip'), I = ITEMS[t]; box.innerHTML = '';
-    const h = el('div', 'th'); h.appendChild(el('b', null, I.name)); if (!MODES[t]) h.appendChild(el('span', null, costOf(t) + ' Esencji')); box.appendChild(h);
+    const h = el('div', 'th'); h.appendChild(el('b', null, I.name)); if (!MODES[t]) h.appendChild(el('span', null, costOf(t) + L(' Esencji', ' Essence'))); box.appendChild(h);
     if (I.tag) box.appendChild(el('div', 'tg', I.tag));
-    { const lb = effWords(t); if (lb.length) { const r = el('div', 'tlb'); lb.forEach(w => r.appendChild(el('span', w === 'Rani' ? 'hurt' : 'scare', w))); box.appendChild(r); } }   // 1.24 (B, P1-4)
+    { const lb = effWords(t); if (lb.length) { const r = el('div', 'tlb'); lb.forEach(w => r.appendChild(el('span', w === L('Rani', 'Hurts') ? 'hurt' : 'scare', w))); box.appendChild(r); } }   // 1.24 (B, P1-4)
     box.appendChild(el('p', null, I.desc));
-    if (FAMILY_OF[t] && FAMILIES[FAMILY_OF[t]]) { const f = FAMILY_OF[t], lv = (run && run.famLv && run.famLv[f]) || 0; box.appendChild(el('div', 'tg', 'Rodzina: ' + FAMILIES[f].glyph + ' ' + FAMILIES[f].name + (lv ? ' (poziom ' + lv + ': +' + 8 * lv + '% mocy)' : ' (Runa rodu ze sklepu ją wzmocni)'))); }   // 1.26
-    if (LOOT_KIND[t]) { const n = lootCount(t); box.appendChild(el('div', 'tg', 'Każdy kolejny taki łup w lochu: +15% ceny' + (n ? ' (leży już: ' + n + ', bazowo ' + I.cost + ')' : '') + '.')); }
-    if (run && KINDS[t] && run.unlocked.has(t) && !isOpenT(t)) box.appendChild(el('div', 'tw', 'Zablokowana: najpierw odblokuj ' + KIND_INFO[KINDS[t]].items.map(x => ITEMS[x].name).join(' albo ') + ' (kartą ze sklepu).'));
-    else if (run && !MODES[t] && !run.unlocked.has(t)) box.appendChild(el('div', 'tw', 'Zablokowany: odblokujesz go kartą ze sklepu (na stałe, także w kolejnych runach).'));
+    // 1.27 (UI/UX, author: details in small print): numbers and exceptions (I.more), the family, the loot price step
+    { const fine = [];
+      if (I.more) fine.push(I.more);
+      if (FAMILY_OF[t] && FAMILIES[FAMILY_OF[t]]) { const f = FAMILY_OF[t], lv = (run && run.famLv && run.famLv[f]) || 0; fine.push(L('Rodzina: ', 'Family: ') + FAMILIES[f].glyph + ' ' + FAMILIES[f].name + (lv ? L(', poziom ' + lv + ' (+' + 8 * lv + '% mocy)', ', level ' + lv + ' (+' + 8 * lv + '% power)') : '') + '.'); }   // 1.26
+      if (LOOT_KIND[t]) { const n = lootCount(t); fine.push(L('Każdy kolejny taki łup jest o 15% droższy' + (n ? ' (w lochu już: ' + n + ')' : '') + '.', 'Each extra one costs 15% more' + (n ? ' (placed: ' + n + ')' : '') + '.')); }
+      if (fine.length) box.appendChild(el('div', 'fine', fine.join(' '))); }
+    if (run && KINDS[t] && run.unlocked.has(t) && !isOpenT(t)) box.appendChild(el('div', 'tw', L('Zablokowana. Najpierw odblokuj kartą ze sklepu: ' + KIND_INFO[KINDS[t]].items.map(x => ITEMS[x].name).join(' albo ') + '.', 'Locked. First unlock ' + KIND_INFO[KINDS[t]].items.map(x => ITEMS[x].name).join(' or ') + ' with a shop card.')));
+    else if (run && !MODES[t] && !run.unlocked.has(t)) box.appendChild(el('div', 'tw', L('Do odblokowania kartą ze sklepu, na stałe.', 'Locked. A shop card unlocks it for good.')));
     box.hidden = false; box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
     // 1.25: zoomed on a big screen, so its place is given in its own (unzoomed) pixels; in the side panel it stands left of the panel, level with the tile
     const z = UIZ, side = document.documentElement.classList.contains('wide');
@@ -156,7 +161,7 @@
     tutFlags.tipN = (tutFlags.tipN || 0) + 1;   // 1.24 (B): the guide's 'hold' step (1.25: a hover or a right click counts)
     if (how !== 'hover') buzz(12);
   }
-  const effWords = t => (HURTS(t) ? ['Rani'] : []).concat(SCARES(t) ? ['Straszy'] : []);   // 1.24 (B, P1-4)
+  const effWords = t => (HURTS(t) ? [L('Rani', 'Hurts')] : []).concat(SCARES(t) ? [L('Straszy', 'Scares')] : []);   // 1.24 (B, P1-4)
   function hideTip() {
     clearTimeout(tipTimer); tipTimer = 0;
     if (tipFor) { const b = $('#item-' + tipFor); if (b) b.classList.remove('holding'); tipFor = null; }
@@ -173,8 +178,8 @@
     if (!raidNow) { const b = document.createElement('button'), build = fl && fl.phase === 'build';   // the shop tile: back to the shop screen while building
       const hp = (run.heartPicks || []).length;
       b.type = 'button'; b.className = 'item dslot shoptile' + ((run.freePicks > 0 || hp) && build ? ' gift' : '') + (hp && build ? ' heartgift' : ''); b.id = 'tile-shop';
-      b.innerHTML = '<span class="dtag"></span><span class="dnm">Sklep</span>';
-      b.querySelector('.dtag').textContent = !build ? 'między falami' : hp ? '♥ Dar serca' + (run.freePicks > 0 ? ' + ' + run.freePicks : '') : run.freePicks > 0 ? 'gratis: ' + run.freePicks : 'wróć do sklepu';
+      b.innerHTML = '<span class="dtag"></span><span class="dnm">' + L('Sklep', 'Shop') + '</span>';
+      b.querySelector('.dtag').textContent = !build ? L('między falami', 'between waves') : hp ? L('♥ Dar serca', "♥ Heart's Gift") + (run.freePicks > 0 ? ' + ' + run.freePicks : '') : run.freePicks > 0 ? L('gratis: ', 'free: ') + run.freePicks : L('wróć do sklepu', 'back to shop');
       b.disabled = !build; b.addEventListener('click', () => { if (!modalOpen && build) openModal({ type: 'shop' }); });
       tray.appendChild(b); }
     for (let i = 0; i < run.deckSize; i++) {
@@ -183,17 +188,17 @@
       if (u) {
         b.innerHTML = '<span class="dtag"></span><span class="dnm"></span>';
         { const ca = ART.cardImg(u.id); if (ca) { b.prepend(ca); b.classList.add('hasart'); } }   // 1.26: the card's picture on its tile
-        b.querySelector('.dtag').textContent = u.grows ? 'rośnie: ' + (run.stacks[u.id] || 0) : u.tag; b.querySelector('.dnm').textContent = cardName(u.id);
-        b.setAttribute('aria-label', u.name + ', ' + RAR_NAME[u.rar] + ' karta. ' + u.text);
+        b.querySelector('.dtag').textContent = u.grows ? L('rośnie: ', 'grows: ') + (run.stacks[u.id] || 0) : u.tag; b.querySelector('.dnm').textContent = cardName(u.id);
+        b.setAttribute('aria-label', u.name + ', ' + RAR_NAME[u.rar] + L(' karta. ', ' card. ') + u.text);
         b.addEventListener('click', () => { if (!modalOpen && run) { if (fl && fl.phase === 'raid' && !paused) setPaused(true); openModal({ type: 'card', idx: i }); } });
-      } else { b.innerHTML = '<span class="dnm">wolne miejsce</span>'; b.disabled = true; }
+      } else { b.innerHTML = '<span class="dnm">' + L('wolne miejsce', 'free slot') + '</span>'; b.disabled = true; }
       tray.appendChild(b);
     }
     if (!raidNow) for (let i = 0; i < stashCap(); i++) {   // the stash: inactive cards waiting for their turn (hidden during a wave)
       const u = UPG[(run.stash || [])[i]], b = document.createElement('button');
       b.type = 'button'; b.className = 'item dslot stash ' + (u ? 'rar-' + u.rar : 'empty');
       b.innerHTML = '<span class="dtag"></span><span class="dnm"></span>';
-      b.querySelector('.dtag').textContent = 'schowek'; b.querySelector('.dnm').textContent = u ? cardName(u.id) : 'pusto';   // 1.24: ★
+      b.querySelector('.dtag').textContent = L('schowek', 'stash'); b.querySelector('.dnm').textContent = u ? cardName(u.id) : L('pusto', 'empty');   // 1.24: ★
       if (u) b.addEventListener('click', () => { if (!modalOpen && fl && fl.phase === 'build') openModal({ type: 'shop' }); }); else b.disabled = true;
       tray.appendChild(b);
     }
@@ -211,14 +216,14 @@
     updateUndoBtn();
     b.classList.remove('focus-on', 'silence-on', 'ready');
     if (!fl || !run) { b.disabled = true; return; }
-    if (build) { const left = Math.floor(fl.essence); b.disabled = false; b.classList.add('ready'); actLabel(b, 'Wypuść falę ' + run.wave, (run.next ? run.next.length : 0) + ' bohaterów' + (left >= 6 ? ' · zostało ' + left + ' Esencji' : '')); return; }
+    if (build) { const left = Math.floor(fl.essence); b.disabled = false; b.classList.add('ready'); actLabel(b, L('Wypuść falę ', 'Release wave ') + run.wave, (run.next ? run.next.length : 0) + L(' bohaterów', ' heroes') + (left >= 6 ? L(' · zostało ' + left + ' Esencji', ' · ' + left + ' Essence left') : '')); return; }
     if (fl.phase === 'raid') {   // v14: no silence: the button only says how to speed up
       b.disabled = true;
-      if (paused && trayIsOpen()) { actLabel(b, 'Pauza', 'zwiń ▼ Budowa: gramy'); return; }   // 1.08
-      actLabel(b, 'Fala trwa', PC() ? 'przytrzymaj F albo mapę: szybciej' : 'przytrzymaj mapę: szybciej');
+      if (paused && trayIsOpen()) { actLabel(b, L('Pauza', 'Paused'), L('zwiń ▼ Budowa, żeby grać', 'fold ▼ Build to play')); return; }   // 1.08
+      actLabel(b, L('Fala trwa', 'Wave running'), PC() ? L('przytrzymaj F albo mapę: szybciej', 'hold F or the map: faster') : L('przytrzymaj mapę: szybciej', 'hold the map: faster'));
       return;
     }
-    b.disabled = true; actLabel(b, 'Koniec fali');
+    b.disabled = true; actLabel(b, L('Koniec fali', 'Wave over'));
   }
   function updatePauseBtn() { }   // 1.07: the pause button is gone (kept as a name for older callers)
   function setPaused(v, quiet) {   // quiet: the tutorial's own pause says it itself
@@ -227,7 +232,7 @@
     if (paused !== v) tl('pa', v ? 1 : 0);
     paused = v; if (paused) ff = false;
     updateAction();   // 1.08: the button says when the game stands
-    if (!quiet) setHint(paused ? 'Pauza. Możesz przesuwać mapę, stawiać elementy i stuknąć bohatera, żeby zobaczyć jego kartę.' : 'Gramy dalej.');
+    if (!quiet) setHint(paused ? L('Pauza. Możesz przesuwać mapę, budować i stuknąć bohatera, żeby zobaczyć jego kartę.', 'Paused. You can move the map, build, and tap a hero to see their card.') : L('Gramy dalej.', 'Playing on.'));
   }
   const hudCache = {};
   // Prototype 1.0: the big number counts up to what you have (and down when you spend); it glows while it grows and a +N rises from it.
@@ -269,38 +274,39 @@
   }
   function setText(id, v) { if (hudCache[id] !== v) { hudCache[id] = v; $('#' + id).textContent = v; } }
   const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
-  const fmtK = n => n >= 10000 ? (n / 1000).toFixed(1).replace('.', ',') + 'k' : String(Math.round(n));
+  const fmtK = n => n >= 10000 ? dec((n / 1000).toFixed(1)) + 'k' : String(Math.round(n));
   function updateHud() {
-    setText('h-wave', run.wave <= RUN_WAVES ? 'Fala ' + run.wave + '/' + RUN_WAVES : 'Fala ' + run.wave + ' ∞');
+    setText('h-wave', run.wave <= RUN_WAVES ? L('Fala ', 'Wave ') + run.wave + '/' + RUN_WAVES : L('Fala ', 'Wave ') + run.wave + ' ∞');
     const tot = run.total + (fl.phase === 'raid' ? fl.score : 0), raidNow = fl.phase === 'raid';
     // the big number is the Esencja in your purse; in a wave, under it, what this wave has brought so far (the heart's share too)
     tickScore();
     { const af = fl.phase === 'build' && !modalOpen && Math.floor(fl.essence) >= cheapestItem().cost; if (hudCache.afford !== af) { hudCache.afford = af; $('#h-score').classList.toggle('afford', af); } }   // 1.24 (D, P1-2): Esencja that buys something pulses
-    setText('h-best', raidNow ? 'Esencja · fala +' + fmtE(fl.score) : 'Esencja');
-    { const rk = rankOf(tot); setText('h-rank', raidNow ? '' : rk.next ? rk.name + ' · ' + rk.next[1] + ' za ' + Math.ceil(Math.max(0, rk.next[0] - tot)) : 'ranga: ' + rk.name); }   // the run's harvest gives the rank (hidden in a wave: the formula needs the room)
+    setText('h-best', raidNow ? L('Esencja · fala +', 'Essence · wave +') + fmtE(fl.score) : L('Esencja', 'Essence'));
+    { const rk = rankOf(tot); setText('h-rank', raidNow ? '' : rk.next ? rk.name + ' · ' + rk.next[1] + L(' za ', ' in ') + Math.ceil(Math.max(0, rk.next[0] - tot)) : L('ranga: ', 'rank: ') + rk.name); }   // the run's harvest gives the rank (hidden in a wave: the formula needs the room)
     // Prototype 1.01: the heart takes its share of THIS wave's Esencja first. In a wave the bar fills as it eats; between waves
     // the row says how much the next wave has to bring.
     // 1.26: the heart's row: the hunger (red) until it is fed, then the Nasycenie to the next level (gold); the thin gold line under it
     // is the Nasycenie at any time; the small number is the heart's level. In the build: what it wants and what the purse covers.
     { const need = hungerNeed(run.wave), inW = fl.phase === 'raid' || fl.phase === 'summary', fed = inW ? Math.min(fl.fed || 0, need) : 0, ok = !!need && fed >= need - 0.001;
       const risk = !inW && hungerRisk(), last = run.waves[run.waves.length - 1], purse = Math.floor(fl.essence);
-      const L = run.heartLv || 0, s0 = heartLvAt(L), s1 = heartLvAt(L + 1), sf = clamp(((run.satiety || 0) - s0) / Math.max(1, s1 - s0), 0, 1);
-      const row = $('#h-hrow'), k = (need ? 1 : 0) + '|' + (ok ? 1 : 0) + '|' + Math.floor(fed) + '|' + need + '|' + (inW ? 1 : 0) + '|' + (risk ? 1 : 0) + '|' + L + '|' + Math.floor(run.satiety || 0) + '|' + (inW ? 0 : purse);
+      const HL = run.heartLv || 0, s0 = heartLvAt(HL), s1 = heartLvAt(HL + 1), sf = clamp(((run.satiety || 0) - s0) / Math.max(1, s1 - s0), 0, 1);
+      const row = $('#h-hrow'), k = (need ? 1 : 0) + '|' + (ok ? 1 : 0) + '|' + Math.floor(fed) + '|' + need + '|' + (inW ? 1 : 0) + '|' + (risk ? 1 : 0) + '|' + HL + '|' + Math.floor(run.satiety || 0) + '|' + (inW ? 0 : purse);
       if (hudCache.hunger !== k) {
         hudCache.hunger = k;
         row.classList.toggle('off', !need); row.classList.toggle('fed', ok); row.classList.toggle('hungry', !!need && !ok && inW); row.classList.toggle('warn', !!risk);
-        row.title = risk ? 'Głód: ' + need + ' Esencji. Fala da mniej: serce zabierze brak z sakiewki (masz ' + purse + '), a gdy nie wystarczy, pęknie kryształ' + (last ? ' (ostatnia fala dała ' + Math.round(last.score) + ')' : '') + '.' : 'Serce: stuknij, żeby zobaczyć głód, Nasycenie i Ofiarę';
+        row.title = risk ? L('Głód: ' + need + ' Esencji. Jeśli fala da mniej, serce weźmie brak z sakiewki (masz ' + purse + '), a gdy i tego zabraknie, pęknie kryształ' + (last ? ' (ostatnia fala dała ' + Math.round(last.score) + ')' : '') + '.',
+          'Hunger: ' + need + ' Essence. If the wave brings less, the heart takes the rest from your purse (you have ' + purse + '), and if that runs out too, a crystal breaks' + (last ? ' (last wave: ' + Math.round(last.score) + ')' : '') + '.') : L('Serce: stuknij, żeby zobaczyć Głód, Nasycenie i Ofiarę', 'Heart: tap to see Hunger, Satiety and Offering');
         $('#h-hfill').style.width = (need ? (ok ? sf : Math.min(1, fed / need)) * 100 : 0).toFixed(1) + '%';
         $('#h-sfill').style.width = (sf * 100).toFixed(1) + '%';
-        $('#h-hlv').textContent = L ? String(L) : '';
-        $('#h-hlabel').textContent = !need ? (L ? 'serce poz. ' + L : 'serce głodne od fali 2') : ok ? 'syte · Danina ' + Math.round(titheNow() * 100) + '% → poz. ' + (L + 1) : inW ? 'serce ' + Math.floor(fed) + '/' + need
-          : purse >= need ? 'serce chce ' + need + ' · zapas ' + purse : risk ? '⚠ ' + need + ' · zapas ' + purse : 'serce chce ' + need + ' · zapas ' + purse;
+        $('#h-hlv').textContent = HL ? String(HL) : '';
+        $('#h-hlabel').textContent = !need ? (HL ? L('serce poz. ' + HL, 'heart lvl ' + HL) : L('serce głodne od fali 2', 'hungry from wave 2')) : ok ? L('syte · Danina ' + Math.round(titheNow() * 100) + '% → poz. ' + (HL + 1), 'full · Tithe ' + Math.round(titheNow() * 100) + '% → lvl ' + (HL + 1)) : inW ? L('serce ', 'heart ') + Math.floor(fed) + '/' + need
+          : purse >= need ? L('serce chce ' + need + ' · sakiewka ' + purse, 'heart wants ' + need + ' · purse ' + purse) : risk ? '⚠ ' + need + L(' · sakiewka ', ' · purse ') + purse : L('serce chce ' + need + ' · sakiewka ' + purse, 'heart wants ' + need + ' · purse ' + purse);
       }
     }
     const out = fl.party && fl.party.carrierId >= 0 && fl.phase === 'raid' ? 1 : 0;
     setText('h-cry', '◆'.repeat(Math.max(0, run.crystals - out)) + (out ? '◈' : '') + '◇'.repeat(Math.max(0, run.maxCrystals - run.crystals)));
     { const c = 2 * run.crystals - out; if (SC.cry != null && c < SC.cry && fl.phase !== 'build') crystalAlarm(); SC.cry = c; }   // stolen or eaten: the crystals shake, the map flashes red
-    setText('h-time', fl.phase === 'build' ? 'budowa' : fl.phase === 'raid' ? (paused ? 'pauza' : fl.fearless ? (fl.storm ? 'szturm!' : 'odwrót') : fl.party && fl.party.council ? 'narada' : mmss(Math.max(0, S.waveTime - (fl.patT || 0)))) : 'koniec');
+    setText('h-time', fl.phase === 'build' ? L('budowa', 'build') : fl.phase === 'raid' ? (paused ? L('pauza', 'paused') : fl.fearless ? (fl.storm ? L('szturm!', 'assault!') : L('odwrót', 'retreat')) : fl.party && fl.party.council ? L('narada', 'council') : mmss(Math.max(0, S.waveTime - (fl.patT || 0)))) : L('koniec', 'over'));
     { const bw = (fl.phase === 'raid' ? Math.min(1, (fl.patT || 0) / S.waveTime) * 100 : 0).toFixed(1) + '%'; if (hudCache.bar !== bw) { hudCache.bar = bw; const bar = $('#h-bar'); bar.style.width = bw; bar.classList.toggle('ok', false); } }   // 1.24 (C): written only when it changes (a style written every frame made the browser lay the page out again)
     const pipsOn = fl.phase !== 'raid';
     if (hudCache.pipsOn !== pipsOn) { hudCache.pipsOn = pipsOn; $('#h-barwrap').hidden = pipsOn; $('#h-pips').hidden = !pipsOn; }
@@ -319,6 +325,7 @@
     const eqE = C ? '+' + fmtE(gNow * C.greed * C.cm * mods.regen * S.essK) : PY ? '+' + fmtE(PY.e) : '+0';   // 1.16.1: × S.essK, as the payout (the box showed ~10% less, then jumped)
     const txt = [eqG, eqC, eqK, eqE, C ? 1 : PY ? 2 : 0, wait ? 1 : 0, raid ? 1 : 0, mods.regen].join('|');
     const eq = $('#h-eq');
+    if (hudCache.eqOn !== raid) { hudCache.eqOn = raid; eq.hidden = !raid; $('#h-rankrow').hidden = true; }   // 1.27 (UI/UX): the equation is a wave thing; in the build it showed zeros
     if (!eq.dataset.hook) { eq.dataset.hook = '1'; const open = () => { if (!run || !fl || modalOpen) return; const un = fl.phase === 'raid' && !paused; if (un) setPaused(true); openModal({ type: 'esencja', unpause: un }); };
       eq.addEventListener('click', open); eq.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }); }
     if (hudCache.mult !== txt) {
@@ -326,13 +333,12 @@
       const now = performance.now(), pops = hudCache.pops = hudCache.pops || {};
       const set = (id, v) => { const b = $('#' + id + ' b'); if (b.textContent !== v) { b.textContent = v; if (B && now - (pops[id] || 0) > 220) { pops[id] = now; const e = $('#' + id); e.classList.remove('pop'); void e.offsetWidth; e.classList.add('pop'); } } };
       set('eq-g', eqG); set('eq-c', eqC); set('eq-k', eqK); set('eq-e', eqE);
-      $('#eq-c i').textContent = raid ? 'Chciwość' : 'Chciwość start'; $('#eq-k i').textContent = wait ? 'Combo czeka' : 'Combo';
+      $('#eq-c i').textContent = raid ? L('Chciwość', 'Greed') : L('Chciwość start', 'Greed start'); $('#eq-k i').textContent = wait ? L('Combo czeka', 'Combo waits') : 'Combo';
       const vein = mods.regen !== 1; $('#eq-r').hidden = !vein; $('#eq-rop').hidden = !vein; if (vein) $('#eq-r b').textContent = fmt2(mods.regen);
       eq.classList.toggle('idle', !B); eq.classList.toggle('chain', !!C); eq.classList.toggle('paid', !!PY);
-      $('#h-rankrow').hidden = raid;
     }
   }
-  const fmtG = v => v < 1 ? (Math.round(v * 100) / 100).toFixed(2).replace('.', ',') : fmtE(v);   // small Groza with two decimals
+  const fmtG = v => v < 1 ? dec((Math.round(v * 100) / 100).toFixed(2)) : fmtE(v);   // small Groza with two decimals
   // Prototype 1.0: no hint box under the map any more. A message pops up for a moment (a longer one stays longer) and goes away;
   // a tap closes it. Over the map in the game, just above the big button on the screens between waves.
   let hintMsg = null;
@@ -345,10 +351,10 @@
       const w = run.waves.find(x => x.wave === n), i = el('i');
       if (w) i.className = w.crystalLost || (w.hunger && w.hunger.ate) ? 'lost' : 'done'; else if (n === run.wave) i.className = 'cur';
       if (n % 5 === 0) i.classList.add('boss');
-      i.title = 'Fala ' + n + (n % 10 === 0 ? ' (finał)' : n % 5 === 0 ? ' (czempion)' : '');
+      i.title = L('Fala ', 'Wave ') + n + (n % 10 === 0 ? L(' (finał)', ' (finale)') : n % 5 === 0 ? L(' (czempion)', ' (champion)') : '');
       box.appendChild(i);
     }
-    box.setAttribute('aria-label', 'Postęp runu: fala ' + run.wave + ' z ' + RUN_WAVES);
+    box.setAttribute('aria-label', L('Postęp runu: fala ' + run.wave + ' z ' + RUN_WAVES, 'Run progress: wave ' + run.wave + ' of ' + RUN_WAVES));
   }
   // 1.12 (author: the message box at the top of the map goes, all of it): what it explained is in the onboarding cards (Nowe w
   // tym runie), in the tile tips (hold a tile) and on the screens; what a tap did wrong is said for a moment right where you
@@ -395,12 +401,12 @@
     const d = $('#drawer'), was = !d.classList.contains('closed');
     d.classList.toggle('closed', !open); $('#app').classList.toggle('trayclosed', !open);
     $('#tray-toggle').setAttribute('aria-expanded', String(open));
-    $('#tray-label').textContent = open ? '▼ Budowa' : '▲ Budowa';   // 1.06 (author): one button that looks the same both ways, only the arrow turns
+    $('#tray-label').textContent = open ? L('▼ Budowa', '▼ Build') : L('▲ Budowa', '▲ Build');   // 1.06 (author): one button that looks the same both ways, only the arrow turns
     if (byUser && fl && fl.phase === 'build') { UI.trayBuild = open; saveUI(); }
     if (byUser && !open) tutFlags.trayFolded = true;   // 1.08: the tutorial asks you to fold it and unfold it
     if (was !== open) { if (!open && selected && fl && fl.phase === 'raid') { selected = null; } hideTip(); }   // 1.08: the stage follows the tray frame by frame (trayPaint)
     if (was !== open && fl && fl.phase === 'raid') {
-      if (open) { setPaused(true, true); fl.stats.trayPauses = (fl.stats.trayPauses || 0) + 1; if ((UI.trayPauseHint || 0) < 3 && run && run.tut < 0) { UI.trayPauseHint = (UI.trayPauseHint || 0) + 1; saveUI(); setHint('Pauza: budujesz. Zwiń ▼ Budowa, żeby grać dalej.'); } }
+      if (open) { setPaused(true, true); fl.stats.trayPauses = (fl.stats.trayPauses || 0) + 1; if ((UI.trayPauseHint || 0) < 3 && run && run.tut < 0) { UI.trayPauseHint = (UI.trayPauseHint || 0) + 1; saveUI(); setHint(L('Pauza na budowanie. Zwiń ▼ Budowa, żeby grać dalej.', 'Paused while you build. Fold ▼ Build to play on.')); } }
       else if (!tutPopNow) { setPaused(false, true); ff = false; }
       updateAction();
     }
@@ -449,17 +455,17 @@
     run.layout = u.layout; run.items.clear(); u.items.forEach(([k, it]) => run.items.set(k, it));
     fl.essence = u.essence; run.freeDigs = u.freeDigs; fl.byType = u.byType; fl.stats.built = u.built; run.rumor.tiles = u.rumorTiles;
     rebuildDungeon(true); fl.threatDirty = true; movingKey = null; movingObj = null; carryCache = null;
-    updateTray(); updateUndoBtn(); setHint('Cofnięte: ' + u.label + '.'); saveRunSoon();
+    updateTray(); updateUndoBtn(); setHint(L('Cofnięte: ', 'Undone: ') + u.label + '.'); saveRunSoon();
   }
   function clearUndo() { undoStack = []; updateUndoBtn(); }
   function updateUndoBtn() {
     const b = $('#btn-undo'), n = undoStack.length, badge = $('#undo-n');
     b.disabled = !n || !fl || fl.phase !== 'build'; badge.hidden = !n; badge.textContent = String(n);
-    b.setAttribute('aria-label', n ? 'Cofnij: ' + undoStack[n - 1].label : 'Nic do cofnięcia');
+    b.setAttribute('aria-label', n ? L('Cofnij: ', 'Undo: ') + undoStack[n - 1].label : L('Nic do cofnięcia', 'Nothing to undo'));
   }
   $('#btn-undo').addEventListener('click', () => { if (!modalOpen) undo(); });
   /* ================= speed ================= */
-  function updateSpeedBtn() { return; const b = $('#btn-speed'), v = UI.speed || 1; $('#speed-l').textContent = '×' + v; b.classList.toggle('on', v > 1); b.setAttribute('aria-label', 'Prędkość ×' + v + ' (stuknij, żeby zmienić)'); }
+  function updateSpeedBtn() { return; const b = $('#btn-speed'), v = UI.speed || 1; $('#speed-l').textContent = '×' + v; b.classList.toggle('on', v > 1); b.setAttribute('aria-label', L('Prędkość ×' + v + ' (stuknij, żeby zmienić)', 'Speed ×' + v + ' (tap to change)')); }
 
 
   /* ================= modals ================= */
@@ -501,39 +507,39 @@
   const surveyState = () => { try { return localStorage.getItem('yatd-survey') || ''; } catch (e) { return ''; } };
   const setSurveyState = v => { try { localStorage.setItem('yatd-survey', v); } catch (e) {} };
   const SURVEY = [
-    { id: 'fun', q: 'Jak Ci się grało?', nums: true, o: ['1', '2', '3', '4', '5'], scale: ['nudno', 'świetnie'] },
-    { id: 'clear', q: 'Czy było jasne, co masz robić?', o: ['Tak, od początku', 'Po chwili tak', 'Długo nie', 'Do końca nie'] },
-    { id: 'best', q: 'Co było najfajniejsze?', o: ['Budowanie lochu', 'Pułapki w akcji', 'Skill checki', 'Straszenie bohaterów', 'Karty i sklep', 'Nic szczególnego'] },
-    { id: 'worst', q: 'Co najbardziej przeszkadzało?', o: ['Za dużo zasad i tekstu', 'Za długie fale albo run', 'Za trudno', 'Za łatwo', 'Sterowanie na telefonie', 'Nic'] },
-    { id: 'again', q: 'Zagrasz jeszcze raz?', o: ['Tak', 'Może', 'Nie'] }
+    { id: 'fun', q: L('Jak Ci się grało?', 'How was the game?'), nums: true, o: ['1', '2', '3', '4', '5'], scale: L(['nudno', 'świetnie'], ['boring', 'great']) },
+    { id: 'clear', q: L('Czy było jasne, co masz robić?', 'Was it clear what to do?'), o: ['Tak, od początku', 'Po chwili tak', 'Długo nie', 'Do końca nie'], oe: ['Yes, from the start', 'After a while', 'Not for a long time', 'Not even at the end'] },
+    { id: 'best', q: L('Co było najfajniejsze?', 'What was the most fun?'), o: ['Budowanie lochu', 'Pułapki w akcji', 'Skill checki', 'Straszenie bohaterów', 'Karty i sklep', 'Nic szczególnego'], oe: ['Building the dungeon', 'Traps in action', 'Skill checks', 'Scaring heroes', 'Cards and the shop', 'Nothing really'] },
+    { id: 'worst', q: L('Co najbardziej przeszkadzało?', 'What bothered you most?'), o: ['Za dużo zasad i tekstu', 'Za długie fale albo run', 'Za trudno', 'Za łatwo', 'Sterowanie na telefonie', 'Nic'], oe: ['Too many rules and text', 'Waves or run too long', 'Too hard', 'Too easy', 'Phone controls', 'Nothing'] },
+    { id: 'again', q: L('Zagrasz jeszcze raz?', 'Will you play again?'), o: ['Tak', 'Może', 'Nie'], oe: ['Yes', 'Maybe', 'No'] }
   ];
   function renderSurvey(card, m) {
     m.ans = m.ans || {};
-    card.appendChild(el('div', 'sub', 'Ankieta · 5 pytań · ok. 1 minuty'));
-    card.appendChild(el('h2', null, 'Jak było?'));
-    card.appendChild(el('p', 'note', 'Odpowiedzi trafiają do autora razem z przebiegiem gry. Wszystkie pytania są opcjonalne.'));
+    card.appendChild(el('div', 'sub', L('Ankieta · 5 pytań · około minuty', 'Survey · 5 questions · about a minute')));
+    card.appendChild(el('h2', null, L('Jak było?', 'How was it?')));
+    card.appendChild(el('p', 'note', L('Odpowiedzi trafią do autora razem z przebiegiem gry. Każde pytanie możesz pominąć.', 'Your answers go to the author with a record of your game. Every question is optional.')));
     const box = el('div', 'survey');
     SURVEY.forEach(Q => {
       const q = el('div', 'q'); q.appendChild(el('b', null, Q.q));
       const row = el('div', 'opts' + (Q.nums ? ' nums' : ''));
-      Q.o.forEach(o => { const b = el('button', m.ans[Q.id] === o ? 'on' : '', o); b.type = 'button'; b.addEventListener('click', () => { m.ans[Q.id] = m.ans[Q.id] === o ? undefined : o; row.querySelectorAll('button').forEach(x => x.classList.toggle('on', m.ans[Q.id] === x.textContent)); }); row.appendChild(b); });
+      Q.o.forEach((o, oi) => { const b = el('button', m.ans[Q.id] === o ? 'on' : '', PL || !Q.oe ? o : Q.oe[oi]); b.type = 'button'; b.dataset.v = o; b.addEventListener('click', () => { m.ans[Q.id] = m.ans[Q.id] === o ? undefined : o; row.querySelectorAll('button').forEach(x => x.classList.toggle('on', m.ans[Q.id] === x.dataset.v)); }); row.appendChild(b); });
       q.appendChild(row);
       if (Q.scale) { const s = el('div', 'scale'); s.appendChild(el('span', null, Q.scale[0])); s.appendChild(el('span', null, Q.scale[1])); q.appendChild(s); }
       box.appendChild(q);
     });
-    const tq = el('div', 'q'); tq.appendChild(el('b', null, 'Coś jeszcze? (opcjonalnie)'));
-    const ta = el('textarea'); ta.id = 'survey-text'; ta.maxLength = 1000; ta.placeholder = 'co zmienić, co dodać, co zepsute...'; ta.value = m.text || ''; ta.addEventListener('input', () => { m.text = ta.value; });
+    const tq = el('div', 'q'); tq.appendChild(el('b', null, L('Coś jeszcze? (opcjonalnie)', 'Anything else? (optional)')));
+    const ta = el('textarea'); ta.id = 'survey-text'; ta.maxLength = 1000; ta.placeholder = L('co zmienić, co dodać, co nie działa...', 'what to change, what to add, what is broken...'); ta.value = m.text || ''; ta.addEventListener('input', () => { m.text = ta.value; });
     tq.appendChild(ta); box.appendChild(tq);
     card.appendChild(box);
     const after = () => { if (m.next) openModal(Object.assign({}, m.next, { afterSurvey: true })); else { closeModal(); if (m.unpause && fl && fl.phase === 'raid') setPaused(false); } };
-    const send = btn('primary', 'Wyślij', 'dzięki!', () => {
-      const doc = { version: LOG_VERSION, device: deviceId, runId: run ? run.id : null, at: new Date().toISOString(), player: (playerName || '').slice(0, 40), playerId: playerIdNow(), answers: Object.assign({}, m.ans), text: (m.text || '').slice(0, 1000),   // 1.24 (D): playerId
+    const send = btn('primary', L('Wyślij', 'Send'), L('dzięki!', 'thanks!'), () => {
+      const doc = { version: LOG_VERSION, device: deviceId, runId: run ? run.id : null, at: new Date().toISOString(), player: (playerName || '').slice(0, 40), playerId: playerIdNow(), lang: LANG, answers: Object.assign({}, m.ans), text: (m.text || '').slice(0, 1000),   // 1.24 (D): playerId
         run: run ? { result: runStatus(), waves: run.waves.length, total: Math.round(run.total), tutorial: run.tutorial, minutes: Math.round((Date.now() - run.startedAt) / 60000) } : null };
       setSurveyState('done');
       getDb().then(db => db && db.collection('survey').doc(deviceId + '_' + (run ? run.id : 'menu')).set(doc)).catch(() => {});
       after();
     }); send.id = 'survey-send';
-    const skip = el('button', 'link', 'Pomiń ankietę'); skip.type = 'button'; skip.id = 'survey-skip'; skip.addEventListener('click', () => { if (!surveyState()) setSurveyState('skipped'); after(); });
+    const skip = el('button', 'link', L('Pomiń ankietę', 'Skip the survey')); skip.type = 'button'; skip.id = 'survey-skip'; skip.addEventListener('click', () => { if (!surveyState()) setSurveyState('skipped'); after(); });
     card.appendChild(send); card.appendChild(skip);
   }
   const standalone = () => { try { return matchMedia('(display-mode: fullscreen)').matches || matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } };
@@ -559,11 +565,11 @@
     if (!WEB) return;
     const row = el('div', 'webrow');
     if (!standalone()) {
-      if (installEvt) { const ib = btn('', 'Zainstaluj grę', 'ikona na ekranie, pełny ekran, bez paska przeglądarki', () => { const ev = installEvt; installEvt = null; ev.prompt(); (ev.userChoice || Promise.resolve()).then(restart); }); ib.id = 'start-install'; row.appendChild(ib); }
-      else if (isIOS()) row.appendChild(el('p', 'note', 'iPhone: stuknij Udostępnij, potem "Do ekranu początkowego". Gra otworzy się wtedy z ikony na pełnym ekranie.'));
-      else row.appendChild(el('p', 'note', 'Gra przejdzie na pełny ekran, gdy zaczniesz. Możesz też w menu przeglądarki wybrać "Dodaj do ekranu głównego".'));
+      if (installEvt) { const ib = btn('', L('Zainstaluj grę', 'Install the game'), L('ikona na ekranie, pełny ekran, bez paska przeglądarki', 'home screen icon, full screen, no browser bar'), () => { const ev = installEvt; installEvt = null; ev.prompt(); (ev.userChoice || Promise.resolve()).then(restart); }); ib.id = 'start-install'; row.appendChild(ib); }
+      else if (isIOS()) row.appendChild(el('p', 'note', L('iPhone: stuknij Udostępnij, a potem "Do ekranu początkowego". Gra otworzy się wtedy z ikony, na pełnym ekranie.', 'iPhone: tap Share, then "Add to Home Screen". The game then opens from its icon, full screen.')));
+      else row.appendChild(el('p', 'note', L('Gra przejdzie na pełny ekran, gdy zaczniesz. Możesz też wybrać w menu przeglądarki "Dodaj do ekranu głównego".', 'The game goes full screen when you start. You can also pick "Add to Home screen" in the browser menu.')));
     }
-    row.appendChild(el('p', 'note', 'Ta testowa wersja zapisuje autorowi przebieg Twoich gier (bez danych osobowych; imię tylko, jeśli je wpiszesz), żeby mógł poprawić grę.'));
+    row.appendChild(el('p', 'note', L('Ta testowa wersja wysyła autorowi przebieg Twoich gier, żeby mógł ją poprawić. Bez danych osobowych, imię tylko wtedy, gdy je wpiszesz.', 'This test version sends the author a record of your games to help improve it. No personal data, and your name only if you type one.')));
     card.appendChild(row);
   }
   // 1.24 (D, P0-5): the web version asks for a name (or a nickname) before the first new run while none is set; "Pomiń" skips it
@@ -575,82 +581,91 @@
     openModal({ type: 'name', go });
   }
   function renderName(card, m) {
-    card.appendChild(el('div', 'sub', 'Zanim zaczniesz'));
-    card.appendChild(el('h2', null, 'Jak masz na imię?'));
-    card.appendChild(el('p', null, 'Imię albo pseudonim. Dzięki niemu autor odróżni Twoje gry od gier innych osób, także na tym samym telefonie.'));
-    const lab = el('label', 'field'); lab.textContent = 'Imię albo pseudonim';
-    const inp = el('input'); inp.type = 'text'; inp.id = 'name-ask'; inp.maxLength = 40; inp.placeholder = 'np. Kasia'; inp.value = playerName || '';
+    card.appendChild(el('div', 'sub', L('Zanim zaczniesz', 'Before you start')));
+    card.appendChild(el('h2', null, L('Jak masz na imię?', 'What is your name?')));
+    card.appendChild(el('p', null, L('Imię albo pseudonim. Dzięki temu autor odróżni Twoje gry od gier innych osób, nawet na tym samym telefonie.', "A name or a nickname. It lets the author tell your games from other people's, even on the same phone.")));
+    const lab = el('label', 'field'); lab.textContent = L('Imię albo pseudonim', 'Name or nickname');
+    const inp = el('input'); inp.type = 'text'; inp.id = 'name-ask'; inp.maxLength = 40; inp.placeholder = L('np. Kasia', 'e.g. Sam'); inp.value = playerName || '';
     lab.appendChild(inp); card.appendChild(lab);
     const setAsked = v => { try { localStorage.setItem(NAME_ASKED, v); } catch (e) {} };
-    const ok = btn('primary', 'Graj', null, () => {
+    const ok = btn('primary', L('Graj', 'Play'), null, () => {
       const v = inp.value.trim().slice(0, 40); if (!v) { inp.focus(); return; }
       playerName = v; try { localStorage.setItem('yatd-name', v); } catch (e) {}
       setAsked('name'); playerIdNow(); m.go();
     }); ok.id = 'name-ok';
-    const skip = el('button', 'link', 'Pomiń'); skip.type = 'button'; skip.id = 'name-skip';
+    const skip = el('button', 'link', L('Pomiń', 'Skip')); skip.type = 'button'; skip.id = 'name-skip';
     skip.addEventListener('click', () => { setAsked('skipped'); playerIdNow(); m.go(); });
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ok.click(); } });
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.26.1 · 10 fal i finał'));
+    card.appendChild(el('div', 'sub', 'Prototype 1.27 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
-    card.appendChild(el('p', null, 'Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, z każdą falą silniejsi i sprytniejsi. Pułapkami i potworami ranisz i straszysz, łupem wabisz. Rany i strach to Groza, a Groza × Chciwość × Combo to Esencja: za nią budujesz i nią karmisz serce. Głodne serce zabiera z sakiewki, syte rośnie i daje karty. Przetrwaj 10 fal i bohatera z przepowiedni: to jest wygrana.'));
+    card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
-    if (rec.best || rec.runs) card.appendChild(el('p', 'note', 'Twój rekord: ' + Math.round(rec.best) + ' Esencji zebranej w runie (ranga: ' + rankOf(rec.best).name + ')' + (rec.wave ? ' · najdalej: fala ' + rec.wave : '') + (rec.runs ? ' · wygrane: ' + rec.wins + ' z ' + rec.runs : '') + '.'));
-    const lab = el('label', 'field'); lab.textContent = 'Kto testuje (opcjonalnie)';
-    const inp = el('input'); inp.type = 'text'; inp.id = 'player-name'; inp.maxLength = 40; inp.value = playerName; inp.placeholder = 'np. imię znajomego';
+    if (rec.best || rec.runs) card.appendChild(el('p', 'note', L('Twój rekord: ' + Math.round(rec.best) + ' Esencji w jednym runie (ranga: ' + rankOf(rec.best).name + ')', 'Your best: ' + Math.round(rec.best) + ' Essence in one run (rank: ' + rankOf(rec.best).name + ')') + (rec.wave ? L(' · najdalej: fala ', ' · furthest: wave ') + rec.wave : '') + (rec.runs ? L(' · wygrane: ' + rec.wins + ' z ' + rec.runs, ' · wins: ' + rec.wins + ' of ' + rec.runs) : '') + '.'));
+    const lab = el('label', 'field'); lab.textContent = L('Imię testera (opcjonalnie)', 'Tester name (optional)');
+    const inp = el('input'); inp.type = 'text'; inp.id = 'player-name'; inp.maxLength = 40; inp.value = playerName; inp.placeholder = L('np. imię znajomego', "e.g. a friend's name");
     inp.addEventListener('input', () => { playerName = inp.value; try { localStorage.setItem('yatd-name', playerName); } catch (e) {} });
-    lab.appendChild(inp); card.appendChild(lab);
+    lab.appendChild(inp);
+    { const tw = el('details', 'testers'); tw.id = 'start-testers'; tw.appendChild(el('summary', null, L('Dla testerów', 'For testers'))); tw.appendChild(lab); if (playerName) tw.open = true; card.appendChild(tw); }   // 1.27: a tester thing, folded
     const box = el('div', 'startbtns');
     const sv = loadSave();
     if (sv) {
-      const c = btn('primary big', sv.run.tutorial && sv.run.tut >= 0 ? 'Kontynuuj samouczek' : 'Kontynuuj run', 'fala ' + sv.run.wave + (sv.stage === 'summary' ? ' zakończona' : '') + ' · zebrane ' + Math.round(sv.run.total) + ' Esencji · zapisano ' + new Date(sv.at).toLocaleString('pl-PL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }), () => { closeModal(); userStarted = true; if (!resumeRun()) { setHint('Nie udało się wczytać zapisu.'); openModal({ type: 'start' }); } });
+      const c = btn('primary big', sv.run.tutorial && sv.run.tut >= 0 ? L('Kontynuuj samouczek', 'Continue tutorial') : L('Kontynuuj run', 'Continue run'), L('fala ', 'wave ') + sv.run.wave + (sv.stage === 'summary' ? L(' zakończona', ' over') : '') + L(' · zebrano ' + Math.round(sv.run.total) + ' Esencji · zapis z ', ' · ' + Math.round(sv.run.total) + ' Essence gathered · saved ') + new Date(sv.at).toLocaleString(PL ? 'pl-PL' : 'en-GB', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }), () => { closeModal(); userStarted = true; if (!resumeRun()) { setHint(L('Nie udało się wczytać zapisu.', 'Could not load the save.')); openModal({ type: 'start' }); } });
       c.id = 'start-continue'; box.appendChild(c);
     }
     // 1.12: the first four runs open the game step by step (the first one with the guide); "Pomiń samouczek" opens it all
-    const onb = onbStage(), lost = sv ? ' · zapisany run przepadnie' : '';
+    const onb = onbStage(), lost = sv ? L(' · zapisany run przepadnie', ' · your saved run will be lost') : '';
     const drop = () => { if (sv) onbDone(Object.assign({}, sv.run, { result: 'quit' })); };   // a run of the first ones left after wave 5 counts as played
     if (onb <= 1) {   // 1.24 (B): one guided run opens the game with its waves; a browser in the middle of the old four runs plays the full game
       const first = !coachDone();
-      const a = btn((sv ? '' : 'primary ') + 'big', first ? 'Samouczek' : 'Nowy run', (first ? 'Pierwszy run z przewodnikiem' : 'Pierwszy run: gra odsłania się z falami') + lost, () => withName(() => { closeModal(); userStarted = true; drop(); startGuided(); })); a.id = 'start-tut';   // 1.24 (D): withName
-      const b = btn('big', 'Pomiń samouczek', 'Cała gra od razu' + lost, () => withName(() => { closeModal(); userStarted = true; setOnb(5); newRun(false); })); b.id = 'start-play';
+      const a = btn((sv ? '' : 'primary ') + 'big', first ? L('Samouczek', 'Tutorial') : L('Nowy run', 'New run'), (first ? L('Pierwszy run z przewodnikiem', 'Your first run, with a guide') : L('Pierwszy run: gra odsłania się fala po fali', 'First run: the game opens up wave by wave')) + lost, () => withName(() => { closeModal(); userStarted = true; drop(); startGuided(); })); a.id = 'start-tut';   // 1.24 (D): withName
+      const b = btn('big', L('Pomiń samouczek', 'Skip tutorial'), L('Cała gra od razu', 'The whole game at once') + lost, () => withName(() => { closeModal(); userStarted = true; setOnb(5); newRun(false); })); b.id = 'start-play';
       box.appendChild(a); box.appendChild(b);
     } else {
-      const b = btn((sv ? '' : 'primary ') + 'big', 'Nowy run', sv ? 'zapisany run przepadnie' : 'Pełna gra', () => withName(() => { closeModal(); userStarted = true; newRun(false); })); b.id = 'start-play';   // 1.24 (D): withName
-      const a = btn('big', 'Samouczek', 'Nauka od nowa: run z przewodnikiem, gra odsłania się z falami' + lost, () => withName(() => { closeModal(); userStarted = true; setOnb(1); try { localStorage.removeItem(COACH_KEY); localStorage.removeItem(POPS_KEY); } catch (e) {} startGuided(); })); a.id = 'start-tut';
+      const b = btn((sv ? '' : 'primary ') + 'big', L('Nowy run', 'New run'), sv ? L('zapisany run przepadnie', 'your saved run will be lost') : L('Pełna gra', 'Full game'), () => withName(() => { closeModal(); userStarted = true; newRun(false); })); b.id = 'start-play';   // 1.24 (D): withName
+      const a = btn('big', L('Samouczek', 'Tutorial'), L('Od nowa: run z przewodnikiem, gra odsłania się fala po fali', 'From scratch: a guided run that opens up wave by wave') + lost, () => withName(() => { closeModal(); userStarted = true; setOnb(1); try { localStorage.removeItem(COACH_KEY); localStorage.removeItem(POPS_KEY); } catch (e) {} startGuided(); })); a.id = 'start-tut';
       box.appendChild(b); box.appendChild(a);
     }
     card.appendChild(box);
     webStartRow(card);
-    const how = el('details'); how.id = 'start-how'; how.appendChild(el('summary', null, 'Jak grać'));
-    const ul = el('ul', 'conseq');
-    ['Pierwszy run odsłania grę z falami: fale 1-2 to rany (pułapki i potwory), łup, kopanie, sklep i serce, od fali 3 straszenie, od fali 5 gildia, budowle i typy pokoi, od fali 7 ciała, fobie, powracający, łowcy i wyłom. Kolejne runy to od razu cała gra; Pomiń samouczek otwiera wszystko od razu.',
-     'Między falami budujesz z paska na dole. Zakładki: Pułapki (te, które ranią, i te, które straszą), Potwory, Łup, Obiekty (skrzynia i budowle-kontry), Loch (nowe pokoje, przejścia, rozbudowa i typy pokoi), Talia. Każdy pokój mieści kilka elementów (licznik w rogu pokoju). Z rozwiniętym paskiem widzisz loch z wysoka (wysoka izometria), zwinięty pasek (▼ Budowa) pokazuje go tak jak w fali (izometria 2:1). W fali pasek sam się chowa, a rozwinięcie go (▲ Budowa) zatrzymuje grę: budujesz w spokoju, a ▼ Budowa gra dalej. Przycisku pauzy nie ma.',
-     'Ściany od strony kamery są ścięte do podłogi, więc nic się za nimi nie chowa. Pułapka ścienna na takiej ścianie stoi przy niej jak tabliczka (przy wyborze takiej pułapki ramka ze strzałką pokazuje, w który pokój zadziała).',
-     'Stuknięcie postawionego elementu albo mebla podnosi go (stuknij nowe miejsce, żeby przenieść), dwa szybkie stuknięcia ulepszają pułapkę albo potwora, przytrzymanie zdejmuje i oddaje Esencję. Przytrzymanie kafelka w pasku pokazuje, co robi. Działa też na pułapki, z którymi loch startuje (meble lochu nic nie oddają).',
-     'W fali stukasz w mapę przy skill checku: obwódka to draśnięcie, pełne pole to krytyk (najmocniej), czaszka znaczy, że ktoś zginie. Każda pułapka ma swój kształt checku, a im silniejszy bohater, tym szybszy koralik.',
-     'Jeden check ustawia pułapkę na dobre: krytyk albo draśnięcie zostaje (pełny krążek albo obwódka w rogu pola) także w kolejnych falach i pułapka dalej bije sama z tą siłą. Zapomina go po ulepszeniu albo gdy bohaterowie ją wyłączą (rozbroją, rozbiją, zabiją potwora, zablokują); przeniesienie go nie kasuje. Pudło albo brak stuknięcia: check wraca przy następnym razie. Gdy cios miałby zabić, check z czaszką pyta zawsze, a odpuszczona czaszka usypia pułapkę (☠ w rogu), dopóki nie może trafić bez zabijania.',
-     'Przytrzymaj palec na mapie: gra przyspiesza, checków nie ma, a pułapki biją same: z zapamiętaną siłą albo jak draśnięcie. Puścisz palec i checki wracają.',
-     'Gdy drużyna rozejdzie się po dużym lochu za daleko, ekran dzieli się na dwie części, po jednej dla każdej grupy (wyłączysz to w Ustawieniach). Przeciągnięcie mapy w fali daje na chwilę jeden ekran i wolną kamerę.',
-     'Strach wypędza bohaterów; rany i śmierć towarzyszy też straszą, a strach powoli opada. Niosący kryształ rzuca go ze strachu. Uciekinier opowie innym o pułapkach, które go zraniły albo przestraszyły (najwyżej o 3, plotka żyje 2 fale), i może wrócić z blizną. Uwięzionego w klatce, którego nikt nie uwolni, klatka zabija.',
-     'Bohaterowie mają 10 klas i każdą poznasz po figurce: hełm, tarcza i miecz (wojownik), kaptur i sztylet (złodziej), aureola i szata z krzyżem (kapłan), spiczasty kapelusz i laska (mag), kapelusz z piórem i lutnia (bard), rogi i topór (barbarzyńca). Od fali 4 przychodzą też paladyn (uspokaja drużynę, bije nieumarłych i demony, nikogo nie zostawia) i tropiciel (wykrywa pułapki podłogowe i potwory obok, strzela do potworów), od fali 6 alchemik (zdejmuje statusy, rzuca flaszki). Kultysta przychodzi tylko z omenem Pielgrzymka: pije Esencję z serca. Bard krzepi pieśnią i woła zgubionych, barbarzyńca wpada w furię i rozbija skrzynie i budowle. Sakiewka przy bohaterze znaczy łowcę skarbów.',
-     'Statusy (ikonki nad bohaterem): spowolnienie, unieruchomienie, podpalenie, krwawienie, trucizna, olej, woda, zaraza, znak, zew, oszołomienie. Opis elementu mówi, co nakłada. Status i właściwe obrażenia dają reakcję: olej + ogień = Pożar, trucizna + ogień = Detonacja, woda + piorun = Porażenie, woda + ogień = Para. Reakcja daje Grozę i krok combo.',
-     'Rodziny: każdy element należy do jednej (Mechanizmy, Ogień, Alchemia, Nawiedzenie, Nieumarli, Bestie, Zielonoskórzy, Demony, Skarby). W sklepie zawsze leży Runa rodu: podnosi poziom rodziny (do 5), a każdy poziom to +8% mocy i -4% odnowienia jej elementów. Poziom rodziny widać w opisie każdego jej elementu (przytrzymaj kafelek).',
-     'Potwory nie giną na dobre: powalony leży do końca fali i wstaje w następnej budowie, ale za każdego powalonego serce zje o 1 Esencję więcej w następnej fali. Bohater zabity przez potwora karmi serce (Uczta).',
-     'Omeny: fale 3, 6 i 8 mają zasadę specjalną (np. Oblężenie, Elita, Pośpiech, Mgła wojny), widoczną przed falą. Omen, który utrudnia, daje nagrodę; ten, który ułatwia, podnosi głód.',
-     'Ulepszenie elementu na 3. poziom pyta o drogę: A albo B, dwie różne cechy (przy wyborze widać obie).',
-     'Część pułapek nie rani, tylko straszy: portret, oczy, kości, lustro, zawiasy, trumna, pozytywka (w zakładce Pułapki, za raniącymi), a w zakładce Potwory duch, cień i nietoperze. Przestraszony uciekinier, który widział łup, opowie o nim i następna fala przyjdzie bardziej chciwa.',
-     'Rany mają typ: kłute, obuchowe, ogień i trucizna. Klasa i ciało bohatera zmieniają obrażenia, a fobie podwajają strach. Stuknij bohatera (w fali albo na liście u góry), żeby zobaczyć jego kartę.',
-     'Rany i strach to Groza. Dopóki trwa combo (różne pułapki pod rząd, każda w ciągu 3 s od poprzedniej; gdy nic się nie dzieje, ten czas płynie wolniej), Groza się zbiera, a każdy krok combo wzmacnia rany i strach kolejnych pułapek o 12%. Gdy combo się skończy, Groza wypłaca się jako Esencja: Groza × Chciwość (łup, rozległy loch, karty) × Combo. Chciwość rośnie coraz wolniej: im jej więcej, tym mniej dokłada kolejny łup. Esencję wydasz jeszcze w tej samej fali.',
-     'Od fali 2 serce bierze pierwsze porcje Esencji z każdej fali, aż się naje (♥ u góry pokazuje ile). Syte serce bierze Daninę (30% dalszych wypłat) w Nasycenie: pełne Nasycenie to poziom serca i darmowa karta z rzędu Dar serca (poziomy 2, 4, 6 dają miejsce w talii, 3, 5, 7 mogą odrodzić kryształ). Fala da za mało: po fali serce zabiera brak z sakiewki, a kryształ pęka dopiero, gdy sakiewka nie wystarczy. W budowie możesz też złożyć Ofiarę (Esencja w Nasycenie 1:1, do 40 na przerwę). Trzymaj bohaterów w lochu jak najdłużej: wypędzeni od razu nie nakarmią serca.',
-     'Za każdą przetrwaną falę (nawet z utratą kryształu) dostajesz darmową kartę, po bossie legendarną w ofercie. Wybierasz ją w sklepie po fali; tam też kupisz karty za Esencję, odświeżysz ofertę, sprzedasz kartę albo odłożysz ją do schowka. Kryształu nie da się odkupić.',
-     'Gildia czyta raporty z fal i przysyła specjalistę: kontruj go budowlami (Ołtarz, Runa, Wabik, Kwas, Kamień wyjec, Okowy). Od fali 6 może przebić wyłom.',
-     'Po fali jeden ekran: Esencja, serce, kryształy, rozliczenie, kilka ciekawostek i następna drużyna (stuknij wiersz, żeby zobaczyć kartę bohatera). Resztę liczb znajdziesz pod Szczegóły.'].forEach(t => ul.appendChild(el('li', null, t)));
-    how.appendChild(ul); card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, 'Co nowego w Prototype 1.26.1'));
+    const how = el('details'); how.id = 'start-how'; how.appendChild(el('summary', null, L('Jak grać', 'How to play')));
+    // 1.27 (UI/UX, author: general things clear, details in small print): a few short sections, one idea per line
+    [[L('Cel', 'Goal'), [
+       L('Bohaterowie chcą kryształu z Twojego serca (ostatni pokój). Kto go wyniesie z lochu, zabiera Ci go na dobre. Bez kryształów run się kończy.', 'Heroes want a crystal from your heart (the last room). If one carries it out, it is gone for good. Lose them all and the run is over.'),
+       L('Przetrwaj 10 fal. Ostatnią prowadzi bohater z przepowiedni.', 'Survive 10 waves. The hero of the prophecy leads the last one.')]],
+     [L('Budowa', 'Building'), [
+       L('Między falami stawiasz elementy z paska budowy. Przytrzymaj kafelek, żeby zobaczyć, co robi.', 'Between waves you place elements from the build bar. Hold a tile to see what it does.'),
+       L('Postawiony element: stuknij, żeby przenieść, stuknij dwa razy, żeby ulepszyć, przytrzymaj, żeby sprzedać.', 'A placed element: tap to move it, double-tap to upgrade it, hold to sell it.'),
+       L('Liczba przy pokoju to głębia: im bliżej serca, tym więcej dostajesz za bohaterów. Kropki to wolne miejsca.', 'The number by a room is its depth: the closer to the heart, the more the heroes are worth. Dots are free slots.')]],
+     [L('Esencja', 'Essence'), [
+       L('Rany i strach dają Grozę. Groza × Chciwość × Combo to Esencja, za którą budujesz.', 'Wounds and fear give Dread. Dread × Greed × Combo is Essence, which you build with.'),
+       L('Combo rośnie, gdy różne pułapki trafiają jedna po drugiej. Chciwość rośnie, gdy bohaterowie widzą i zbierają łup.', 'Combo grows when different traps hit one after another. Greed grows when heroes see and grab loot.')]],
+     [L('Serce', 'The heart'), [
+       L('Od fali 2 serce je pierwsze: bierze swoją porcję Esencji z fali. Gdy fala da za mało, dopłacasz z sakiewki, a gdy i tego zabraknie, pęka kryształ.', 'From wave 2 the heart eats first: it takes its share of the Essence a wave brings. If the wave falls short, you pay from your purse, and if that runs out too, a crystal breaks.'),
+       L('Syte serce rośnie i daje darmowe karty. Stuknij serce u góry ekranu, żeby zobaczyć szczegóły.', 'A full heart grows and gives free cards. Tap the heart at the top of the screen for details.')]],
+     [L('Fala', 'The wave'), [
+       L('Gdy bohater wejdzie w pułapkę, pojawi się skill check: stuknij mapę, gdy koralik jest w obwódce. Wypełniona strefa to krytyk.', 'When a hero steps into a trap, a skill check appears: tap the map while the bead is inside the outline. The filled zone is a crit.'),
+       L('Przytrzymaj palec na mapie, żeby przyspieszyć. Pułapki biją wtedy same, bez skill checków, więc nie trafisz nowego krytyka.', "Hold a finger on the map to speed up. Traps then fire on their own, with no skill checks, so you won't land a new crit."),
+       L('Stuknij bohatera, żeby zobaczyć, kim jest i czego się boi.', 'Tap a hero to see who they are and what they fear.')]],
+     [L('Karty', 'Cards'), [
+       L('Po każdej przetrwanej fali dostajesz darmową kartę, a w sklepie kupisz kolejne. Karty z talii działają do końca runu.', 'After every wave you survive you get a free card, and you can buy more in the shop. Cards in your deck work for the rest of the run.')]],
+     [L('Z czasem', 'Later on'), [
+       L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
+    ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
+    card.appendChild(how);
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27', "What's new in Prototype 1.27")));
+    const ul0 = el('ul', 'conseq');
+    [L('Gra jest teraz po angielsku, a polski wybierzesz w Ustawieniach. Polskie teksty są przepisane: krótsze i prostsze.', 'The game is now in English; Polish is in the Settings. The Polish texts were rewritten to be shorter and plainer.'),
+     L('Pasek budowy po nowemu: pułapki dzielą się na Ranią, Trzymają, Osłabiają i Straszą, potwory na Walczą, Wspierają i Straszą.', 'A new build bar: traps are split into Hurt, Bind, Weaken and Scare, monsters into Fight, Support and Scare.'),
+     L('Opis elementu mówi jednym zdaniem, co robi, a liczby i wyjątki są drobnym drukiem pod spodem.', "An element's description says what it does in one sentence, with the numbers and exceptions in small print below."),
+     L('Czempion i bohater z przepowiedni mają swoją kartę w wieściach z karczmy i na ekranie po fali, jak omeny: kto to, co robi i co dostaniesz.', 'The champion and the hero of the prophecy get their own card in the tavern news and on the summary screen, like omens: who they are, what they do and what you get.'),
+     L('Spokojniejszy ekran: równanie Esencji widać tylko w fali, wolne miejsca w pokoju to kropki, a koszt na kafelku ma znaczek kropli Esencji.', 'A calmer screen: the Essence equation shows only during a wave, free room slots are dots, and tile costs carry an Essence drop.')
+    ].forEach(t => ul0.appendChild(el('li', null, t)));
+    nw.appendChild(ul0);
     const ul2 = el('ul', 'conseq');
-    [
+    if (PL) [
      '1.26.1: Ukryte przejście (zakładka Loch, 6 Esencji). Maskujesz przejście między pokojami fałszywą ścianą: bohaterowie widzą mur i idą dłuższą drogą, dopóki ktoś go nie odkryje (najczęściej złodziej i tropiciel). Odkryte jest zwykłym skrótem, a uciekinier opowie o nim następnej fali. Do serca musi zostać jawna droga.',
      '1.26.1: brakujące zachowania. Ogar piekielny idzie za krwawiącym do sąsiedniego pokoju (i wraca na miejsce w następnej budowie). Goblin saper chowa się za innymi potworami. Przesądny nie wchodzi pierwszy do pokoju z portretem albo lustrem, Ciekawski idzie sprawdzić usłyszaną pułapkę i dokładniej przeszukuje meble, Zapaleniec szarżuje na każdego potwora.',
      '1.26.1: Dar serca po nowemu. Karty grupy Serce są tylko w rzędzie Dar serca (nie ma ich w zwykłym sklepie, więc darmowa karta z poziomu serca nie jest już tańsza od tego, co kupisz za Esencję). W rzędzie są tylko karty rzadkie (70%) i legendarne (30%), a do grupy doszło 8 uniwersalnych kart: Wola serca, Groza serca, Złote tętno, Cierpliwość serca, Rozrost serca, Serce lochu, Drugie serce i Rezonans.',
@@ -846,31 +861,32 @@
      '15: punkty nie dają już kart: darmowa karta tylko za przetrwaną falę (po bossie legendarna w ofercie). Zebrana w runie Esencja wyznacza rangę.',
      '14.1: przestraszony bohater rzuca kryształ, uwięziony bez ratunku umiera w klatce, pasek elementów w jednym rzędzie przewijanym w bok, dłuższe opisy.',
      '14: sklep między falami ze schowkiem, typy obrażeń, słabości ciała, fobie, trauma, powracający bohaterowie, karta bohatera, 7 kształtów skill checków, ok. 100 kart.'].forEach(t => ul2.appendChild(el('li', null, t)));
-    nw.appendChild(ul2); card.appendChild(nw);
+    if (PL) { const old = el('details', 'older'); old.appendChild(el('summary', null, 'Starsze wersje')); old.appendChild(ul2); nw.appendChild(old); }
+    card.appendChild(nw);
     const links = el('div', 'row small');
-    links.appendChild(btn('', 'Ustawienia', 'dźwięk, wibracje, skill checki', () => { closeModal(); openModal({ type: 'settings', back: 'start' }); }));
+    links.appendChild(btn('', L('Ustawienia', 'Settings'), L('język, dźwięk, wibracje, skill checki', 'language, sound, vibration, skill checks'), () => { closeModal(); openModal({ type: 'settings', back: 'start' }); }));
     card.appendChild(links);
   }
   // The menu (the button bottom left): back to the game, settings, save and leave, download, end the run.
   function renderMenu(card, m) {
     const live = run && !run.over && fl && (fl.phase === 'build' || fl.phase === 'raid' || fl.phase === 'summary');
     const back = () => { closeModal(); if (m.unpause && fl && fl.phase === 'raid') setPaused(false); };
-    card.appendChild(el('div', 'sub', live ? waveName() + ' · Esencja ' + Math.floor(fl.essence) : 'Menu'));
+    card.appendChild(el('div', 'sub', live ? waveName() + L(' · Esencja ', ' · Essence ') + Math.floor(fl.essence) : 'Menu'));
     card.appendChild(el('h2', null, 'Menu'));
     const box = el('div', 'choices');
-    const g = btn('primary', 'Wróć do gry', null, back); g.id = 'menu-back'; box.appendChild(g);
-    box.appendChild(btn('', 'Ustawienia', 'dźwięk, wibracje, pasek elementów, skill checki', () => { closeModal(); openModal({ type: 'settings', back: 'menu', unpause: m.unpause }); }));
-    if (PC()) box.appendChild(btn('', 'Sterowanie', 'mysz, touchpad i klawiatura', () => { closeModal(); openModal({ type: 'keys', unpause: m.unpause }); }));   // 1.25
-    if (WEB && surveyState() !== 'done') box.appendChild(btn('', 'Ankieta', '5 krótkich pytań o grę', () => openModal({ type: 'survey', unpause: m.unpause })));
+    const g = btn('primary', L('Wróć do gry', 'Back to game'), null, back); g.id = 'menu-back'; box.appendChild(g);
+    box.appendChild(btn('', L('Ustawienia', 'Settings'), L('język, dźwięk, wibracje, skill checki', 'language, sound, vibration, skill checks'), () => { closeModal(); openModal({ type: 'settings', back: 'menu', unpause: m.unpause }); }));
+    if (PC()) box.appendChild(btn('', L('Sterowanie', 'Controls'), L('mysz, touchpad i klawiatura', 'mouse, touchpad and keyboard'), () => { closeModal(); openModal({ type: 'keys', unpause: m.unpause }); }));   // 1.25
+    if (WEB && surveyState() !== 'done') box.appendChild(btn('', L('Ankieta', 'Survey'), L('5 krótkich pytań o grę', '5 quick questions about the game'), () => openModal({ type: 'survey', unpause: m.unpause })));
     if (WEB && !standalone() && (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) {   // the web version: full screen on and off
-      const full = isFull(); box.appendChild(btn('', full ? 'Wyjdź z pełnego ekranu' : 'Pełny ekran', full ? 'wróci pasek przeglądarki' : 'bez paska przeglądarki', () => { UI.noFull = full; saveUI(); if (full) leaveFullscreen(); else goFullscreen(); back(); }));
+      const full = isFull(); box.appendChild(btn('', full ? L('Wyjdź z pełnego ekranu', 'Exit full screen') : L('Pełny ekran', 'Full screen'), full ? L('wróci pasek przeglądarki', 'the browser bar comes back') : L('bez paska przeglądarki', 'no browser bar'), () => { UI.noFull = full; saveUI(); if (full) leaveFullscreen(); else goFullscreen(); back(); }));
     }
     const note = el('p', 'note', run && run.logState ? logText(run.logState) : '');
-    if (live) box.appendChild(btn('', 'Zapisz i wyjdź', fl.phase === 'raid' ? 'wrócisz do budowy przed tą falą' : 'wrócisz w tym miejscu', () => { if (fl.phase === 'build') saveRun('build'); closeModal(); openModal({ type: 'start' }); }));
+    if (live) box.appendChild(btn('', L('Zapisz i wyjdź', 'Save and quit'), fl.phase === 'raid' ? L('wrócisz do budowy przed tą falą', 'you come back to the build before this wave') : L('wrócisz w to samo miejsce', 'you come back right here'), () => { if (fl.phase === 'build') saveRun('build'); closeModal(); openModal({ type: 'start' }); }));
     if (live && run.waves.length + (fl.phase === 'raid' ? 1 : 0) > 0) {
-      box.appendChild(btn('', 'Pobierz wyniki', 'plik .json do analizy', () => downloadRun(note)));
-      const q = btn('', 'Zakończ run', 'zapisze to, co już jest', () => {
-        if (!q.dataset.sure) { q.dataset.sure = '1'; q.querySelector('b').textContent = 'Na pewno? Stuknij jeszcze raz'; return; }
+      box.appendChild(btn('', L('Pobierz wyniki', 'Download results'), L('dla testerów: plik z przebiegiem runu', 'for testers: a file with the run log'), () => downloadRun(note)));
+      const q = btn('', L('Zakończ run', 'End run'), L('zapisze dotychczasowy przebieg', 'saves what you have so far'), () => {
+        if (!q.dataset.sure) { q.dataset.sure = '1'; q.querySelector('b').textContent = L('Na pewno? Stuknij jeszcze raz', 'Sure? Tap again'); return; }
         closeModal(); quitRun();
       });
       box.appendChild(q);
@@ -879,9 +895,9 @@
   }
   // 1.25: the controls on a computer
   function renderKeys(card, m) {
-    card.appendChild(el('div', 'sub', 'Menu')); card.appendChild(el('h2', null, 'Sterowanie'));
+    card.appendChild(el('div', 'sub', 'Menu')); card.appendChild(el('h2', null, L('Sterowanie', 'Controls')));
     const t = el('table', 'keys');
-    [['Lewy przycisk', 'jak stuknięcie: wybór, stawianie, przenoszenie, skill check; dwa szybkie kliknięcia ulepszają'],
+    L([['Lewy przycisk', 'jak stuknięcie: wybór, stawianie, przenoszenie, skill check; dwuklik ulepsza'],
      ['Przeciągnij', 'przesuwa mapę (lewym albo środkowym przyciskiem)'],
      ['Prawy przycisk', 'na kafelku: opis; na postawionym elemencie: zdejmij (kliknij drugi raz, żeby potwierdzić)'],
      ['Najechanie', 'opis kafelka, elementu na mapie albo bohatera'],
@@ -889,10 +905,19 @@
      ['W A S D, strzałki', 'przesuwają mapę'], ['+ / -', 'przybliża i oddala'],
      ['1-9, 0', 'kafelki w pasku (numer w rogu kafelka)'], ['Q / E', 'poprzednia i następna zakładka'],
      ['Enter', 'wypuść falę'], ['Spacja', 'skill check'], ['F (przytrzymaj)', 'przyspieszenie w fali'],
-     ['B, P', 'pasek budowy (w fali: pauza)'], ['Ctrl+Z', 'cofnij (między falami)'], ['Esc', 'odłóż to, co masz w ręce']].forEach(r => {
+     ['B, P', 'pasek budowy (w fali: pauza)'], ['Ctrl+Z', 'cofnij (między falami)'], ['Esc', 'odłóż to, co masz w ręce']],
+     [['Left button', 'like a tap: select, place, move, skill check; double-click to upgrade'],
+     ['Drag', 'moves the map (left or middle button)'],
+     ['Right button', 'on a tile: its description; on a placed item: remove it (click again to confirm)'],
+     ['Hover', 'describes a tile, an item on the map or a hero'],
+     ['Wheel', 'zooms in and out'], ['Touchpad', 'two fingers move the map, pinch to zoom'],
+     ['W A S D, arrows', 'move the map'], ['+ / -', 'zoom in and out'],
+     ['1-9, 0', 'tiles in the bar (number in the tile corner)'], ['Q / E', 'previous and next tab'],
+     ['Enter', 'release the wave'], ['Space', 'skill check'], ['F (hold)', 'speed up a wave'],
+     ['B, P', 'build bar (in a wave: pause)'], ['Ctrl+Z', 'undo (between waves)'], ['Esc', 'put down what you are holding']]).forEach(r => {
       const tr = el('tr'); const a = el('td'); r[0].split(', ').forEach((x, i) => { if (i) a.appendChild(document.createTextNode(', ')); a.appendChild(el('kbd', null, x)); }); tr.appendChild(a); tr.appendChild(el('td', null, r[1])); t.appendChild(tr); });
     card.appendChild(t);
-    const g = btn('primary', 'Wróć do gry', null, () => { closeModal(); if (m.unpause && fl && fl.phase === 'raid') setPaused(false); }); card.appendChild(g);
+    const g = btn('primary', L('Wróć do gry', 'Back to game'), null, () => { closeModal(); if (m.unpause && fl && fl.phase === 'raid') setPaused(false); }); card.appendChild(g);
   }
   const settingsBack = m => () => { closeModal(); if (m.back === 'start') openModal({ type: 'start' }); else if (m.back === 'menu') openModal({ type: 'menu', unpause: m.unpause }); };
   function sliderRow(sd) {
@@ -914,21 +939,28 @@
   applyLook();
   // Player settings: what a player of the finished game would see.
   function renderSettings(card, m) {
-    card.appendChild(el('h2', null, 'Ustawienia'));
+    card.appendChild(el('h2', null, L('Ustawienia', 'Settings')));
+    { // 1.27: the language, first; a change reloads the game (a run in the build is saved first)
+      const lw = el('div', 'langrow'); lw.appendChild(el('span', null, 'Język / Language'));
+      const sg = el('div', 'seg'); sg.id = 'lang-seg';
+      [['en', 'English'], ['pl', 'Polski']].forEach(([v, nm]) => { const b = el('button', LANG === v ? 'on' : '', nm); b.type = 'button'; b.dataset.lang = v;
+        b.addEventListener('click', () => { if (v === LANG) return; try { localStorage.setItem('yatd-lang', v); } catch (e) {} try { if (run && fl && fl.phase === 'build' && run.crystals > 0) saveRun('build'); } catch (e) {} location.reload(); });
+        sg.appendChild(b); });
+      lw.appendChild(sg); card.appendChild(lw); }
     GAME_SETTINGS.forEach(sd => card.appendChild(sliderRow(sd)));
-    card.appendChild(el('p', 'note', 'Zapisują się w tej przeglądarce i działają od razu.'));
+    card.appendChild(el('p', 'note', L('Ustawienia działają od razu i zapisują się w tej przeglądarce.', 'Settings apply at once and are saved in this browser.')));
     const row = el('div', 'row');
-    row.appendChild(btn('primary', 'Gotowe', null, settingsBack(m)));
+    row.appendChild(btn('primary', L('Gotowe', 'Done'), null, settingsBack(m)));
     card.appendChild(row);
   }
   // Test sliders: the balance knobs for testing, kept apart from the player's settings.
   function renderTests(card, m) {
-    card.appendChild(el('h2', null, 'Ustawienia testowe'));
-    card.appendChild(el('p', 'note', 'Suwaki balansu dla testów. Zmiany działają od razu i zapisują się w tej przeglądarce. Kryształy, Esencja na start i miejsca w talii liczą się od nowego runu.'));
+    card.appendChild(el('h2', null, L('Ustawienia testowe', 'Test settings')));
+    card.appendChild(el('p', 'note', L('Suwaki balansu do testów. Działają od razu i zapisują się w tej przeglądarce. Kryształy, Esencja na start i miejsca w talii zmieniają się od nowego runu.', 'Balance sliders for testing. They apply at once and are saved in this browser. Crystals, starting Essence and deck slots change from the next run.')));
     SLIDERS.forEach(sd => card.appendChild(sliderRow(sd)));
     const row = el('div', 'row');
-    row.appendChild(btn('', 'Przywróć domyślne', 'także ustawienia gry', () => { S = Object.assign({}, DEFAULTS); saveSettings(); closeModal(); openModal(m); }));
-    row.appendChild(btn('primary', 'Gotowe', null, settingsBack(m)));
+    row.appendChild(btn('', L('Przywróć domyślne', 'Reset to defaults'), L('także ustawienia gry', 'game settings too'), () => { S = Object.assign({}, DEFAULTS); saveSettings(); closeModal(); openModal(m); }));
+    row.appendChild(btn('primary', L('Gotowe', 'Done'), null, settingsBack(m)));
     card.appendChild(row);
   }
   // Three cards to choose from. Rarity follows the source: a wave gives mostly common cards (a rare one now and then),
@@ -996,7 +1028,7 @@
     run.essence = fl.essence; recomputeMods(); updateTray(); saveRunSoon();
     return toStash ? 'stash' : fz ? 'fused' : 'ok';
   }
-  // 1.26 Dar serca (4.5): every heart level waits in run.heartPicks for a free card from the Serce group: 3 to choose from (Dziesięcina:
+  // 1.26 Dar serca (4.5; 1.26.1: rare 70% / legendary 30%, the Serce cards only here): every heart level waits in run.heartPicks for a free card from the Serce group: 3 to choose from (Dziesięcina:
   // 4), rarity 55 / 35 / 10%; at levels 3, 5, 7 (and every second after) one of them is Odrost when a crystal is missing. A pick waits
   // (in the shop) until taken; the offer of a pick stays the same once rolled (pk.ids).
   function heartOffer() {
@@ -1061,8 +1093,8 @@
         rows.forEach((r, i) => { const need = (used ? gap : 0) + hs[i]; if (used + need <= room) used += need; else { r.style.display = 'none'; hidden++; } });
       }
       box.appendChild(more);
-      while (box.scrollHeight > box.clientHeight + 1) { const vis = rows.filter(r => r.style.display !== 'none'); if (vis.length <= 1) break; vis[vis.length - 1].style.display = 'none'; hidden++; more.textContent = '+' + hidden + ' więcej'; }
-      if (hidden) more.textContent = '+' + hidden + ' więcej'; else more.remove();
+      while (box.scrollHeight > box.clientHeight + 1) { const vis = rows.filter(r => r.style.display !== 'none'); if (vis.length <= 1) break; vis[vis.length - 1].style.display = 'none'; hidden++; more.textContent = '+' + hidden + L(' więcej', ' more'); }
+      if (hidden) more.textContent = '+' + hidden + L(' więcej', ' more'); else more.remove();
     };
     requestAnimationFrame(go);
   }
@@ -1091,12 +1123,12 @@
   function waveChart(parent, W, curWave) {
     const n = Math.max(RUN_WAVES, curWave || 0, ...W.map(w => w.wave));
     const maxS = Math.max(1, ...W.map(w => w.score), ...W.map(w => (w.hunger && w.hunger.need) || 0));
-    const ch = el('div', 'wchart'); ch.setAttribute('aria-label', 'Esencja w kolejnych falach');
+    const ch = el('div', 'wchart'); ch.setAttribute('aria-label', L('Esencja w kolejnych falach', 'Essence per wave'));
     for (let k = 1; k <= n; k++) {
       const w = W.find(q => q.wave === k), c = el('div', 'wc' + (k === curWave ? ' cur' : '') + (w ? '' : ' future')), col = el('div', 'col');
       if (w) {
         const pct = Math.max(3, Math.round(100 * w.score / maxS)), bar = el('i', w.crystalLost || (w.hunger && w.hunger.ate) ? 'lost' : '');
-        bar.style.height = pct + '%'; bar.title = 'Fala ' + k + ': ' + w.score + ' Esencji'; col.appendChild(bar);
+        bar.style.height = pct + '%'; bar.title = L('Fala ', 'Wave ') + k + ': ' + w.score + L(' Esencji', ' Essence'); col.appendChild(bar);
         if (w.hunger && w.hunger.need) { const t = el('u'); t.style.bottom = Math.round(100 * w.hunger.need / maxS) + '%'; col.appendChild(t); }
         if (k === curWave) col.appendChild(el('em', null, String(w.score)));   // 1.05: at the foot of the bar (CSS), readable on any height
       }
@@ -1105,6 +1137,7 @@
     parent.appendChild(ch); return ch;
   }
   const frow = (list, text, k) => list.appendChild(el('div', 'frow' + (k ? ' k-' + k : ''), text));
+  const ordEn = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');   // 1.27: 2nd, 3rd (English only)
 
   /* ----- the wave summary ----- */
   // 1.05 (testers: the summary was a lot): one screen with what matters now: the harvest and the heart's share (the old reckoning
@@ -1116,18 +1149,18 @@
     if (H && !H.fedWave && (H.tookPurse || 0) > 0) {
       const p0 = Math.max(1, H.purse0 || 0), p1 = Math.max(0, p0 - (H.tookPurse || 0)) - (H.ate ? (H.lostPurse || 0) : 0);
       const r = el('div', 'purse-take' + (H.ate ? ' ate' : '')), bar = el('div', 'pbar'), fill = el('i'); bar.appendChild(fill);
-      r.appendChild(el('span', null, H.ate ? '♥ Serce zjadło Twoje zapasy (' + Math.round(p0) + ') i kryształ' : '♥ Serce zabrało ' + fmtE(H.tookPurse) + ' z Twoich zapasów (' + Math.round(p0) + ' → ' + Math.round(Math.max(0, p1)) + ')'));
+      r.appendChild(el('span', null, H.ate ? L('♥ Serce zjadło całą sakiewkę (' + Math.round(p0) + ') i kryształ', '♥ The heart ate your purse (' + Math.round(p0) + ') and a crystal') : L('♥ Serce wzięło ' + fmtE(H.tookPurse) + ' z sakiewki (', '♥ The heart took ' + fmtE(H.tookPurse) + ' from your purse (') + Math.round(p0) + ' → ' + Math.round(Math.max(0, p1)) + ')'));
       r.appendChild(bar); box.appendChild(r);
       fill.style.width = '100%';
       setTimeout(() => { fill.style.width = (100 * Math.max(0, p1) / p0).toFixed(1) + '%'; }, reduceMotion ? 0 : 450);
     }
     const bits = [];
-    if ((s.satietyGain || 0) >= 1) bits.push('Nasycenie +' + Math.round(s.satietyGain) + ' (Danina ' + fmtE(s.essTithe || 0) + ')');
-    if (s.heartUp) bits.push('serce urosło do poziomu ' + (run.heartLv || 0) + ': w sklepie czeka Dar serca');
-    if (s.revived) bits.push('powalone potwory wstaną: ' + s.revived + ' (+' + s.revived + ' do głodu następnej fali)');
-    if (s.feastPts >= 1) bits.push('Uczta: +' + fmtE(s.feastPts) + ' (zabici przez potwory)');
-    if (!fl.crystalLost && (s.stealMax || 0) >= 0.3) bits.push('bohaterowie byli ' + fmt2(Math.max(0, (1 - s.stealMax) * stealNeed())).replace(/,?0+$/, '') + ' s od kradzieży');
-    if (s.reactN) bits.push('reakcje: ' + Object.entries(s.reactions || {}).map(([k, v]) => REACTIONS[k].name + ' ' + v).join(', '));
+    if ((s.satietyGain || 0) >= 1) bits.push(L('Nasycenie +', 'Satiety +') + Math.round(s.satietyGain) + L(' (Danina ', ' (Tithe ') + fmtE(s.essTithe || 0) + ')');
+    if (s.heartUp) bits.push(L('serce ma poziom ' + (run.heartLv || 0) + ': w sklepie czeka Dar serca', 'heart level ' + (run.heartLv || 0) + ": a Heart's Gift waits in the shop"));
+    if (s.revived) bits.push(L('powalone potwory wstaną: ' + s.revived + ' (Głód następnej fali +' + s.revived + ')', 'fallen monsters will rise: ' + s.revived + ' (next Hunger +' + s.revived + ')'));
+    if (s.feastPts >= 1) bits.push(L('Uczta: +', 'Feast: +') + fmtE(s.feastPts) + L(' (zabici przez potwory)', ' (monster kills)'));
+    if (!fl.crystalLost && (s.stealMax || 0) >= 0.3) { const left = Math.max(0, (1 - s.stealMax) * stealNeed()), ls = fmt2(left).replace(/[.,]?0+$/, ''); if (left < 3) bits.push(L('o włos: złodziej był ' + ls + ' s od kryształu', 'close call: a thief was ' + ls + ' s from a crystal')); }
+    if (s.reactN) bits.push(L('reakcje: ', 'reactions: ') + Object.entries(s.reactions || {}).map(([k, v]) => REACTIONS[k].name + ' ' + v).join(', '));
     if (bits.length) box.appendChild(el('p', 'note', bits.join(' · ') + '.'));
     if (box.children.length) body.appendChild(box);
   }
@@ -1144,20 +1177,20 @@
   };
   // 1.20: where a hero's item comes from (the hero card, the next party's icons)
   function srcText(it, h) {
-    if (it.gaveNm) return ' - od ' + nameGen({ nm: it.gaveNm, female: it.gaveFem });
+    if (it.gaveNm) return L(' - od ', ' - from ') + nameGen({ nm: it.gaveNm, female: it.gaveFem });
     const s = it.src || 'kit';
-    if (s === 'trophy') return ' - trofeum z fali ' + (it.wave || '?');
-    if (s === 'relic') return ' - relikwia z Twojego lochu';
-    if (s === 'loot') return ' - z Twojego lochu';
-    if ((s === 'body' || (h && it.ownerNm && it.ownerNm[0] !== h.nm[0])) && it.ownerNm) return ' - z rzeczy ' + nameGen({ nm: it.ownerNm, female: it.ownerFem });
-    return s === 'guild' ? ' - od gildii' : ' - z domu';
+    if (s === 'trophy') return L(' - trofeum z fali ', ' - trophy from wave ') + (it.wave || '?');
+    if (s === 'relic') return L(' - relikwia z Twojego lochu', ' - a relic from your dungeon');
+    if (s === 'loot') return L(' - z Twojego lochu', ' - from your dungeon');
+    if ((s === 'body' || (h && it.ownerNm && it.ownerNm[0] !== h.nm[0])) && it.ownerNm) { const on = nameGen({ nm: it.ownerNm, female: it.ownerFem }); return L(' - z rzeczy ' + on, ' - from ' + on + "'s things"); }
+    return s === 'guild' ? L(' - od gildii', ' - from the guild') : L(' - z domu', ' - from home');
   }
   const svgI = (inner, color, cls) => '<svg class="' + (cls || 'gi') + '" viewBox="0 0 24 24" aria-hidden="true"><g fill="' + color + '" fill-rule="evenodd">' + inner + '</g></svg>';
   function classIconSvg(type, color, cls) {
     const ic = CLASS_ICON[type]; if (!ic) return '';
     return '<svg class="' + (cls || 'ci') + '" viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(' + ic.rot + ' 12 12)"><path fill-rule="evenodd" fill="' + color + '" d="' + ic.d + '"/></g></svg>';
   }
-  const DMG_SHORT = { pierce: 'kłute', blunt: 'obuch.', fire: 'ogień', poison: 'trucizna', shock: 'porażenie' };
+  const DMG_SHORT = L({ pierce: 'kłute', blunt: 'obuch.', fire: 'ogień', poison: 'trucizna', shock: 'porażenie' }, { pierce: 'pierce', blunt: 'blunt', fire: 'fire', poison: 'poison', shock: 'shock' });
   // what a hero entry is weak to: class and (when known) body; the strongest first
   function weakOf(e, known) {
     const k = Object.assign({}, CLASS_RES[e.type] || {});
@@ -1168,8 +1201,8 @@
   function nextRow(e) {
     if (e.fog && !mods.revealAll) {   // 1.26 Mgła wojny: a shape in the fog
       const r = el('div', 'np fog'); const ic = el('span', 'npi', '?'); r.appendChild(ic);
-      const l1 = el('div', 'np1'); l1.appendChild(el('b', null, '???')); l1.appendChild(el('small', null, ' ktoś w mgle')); r.appendChild(l1);
-      r.appendChild(el('div', 'np2', 'Omen Mgła wojny: klasa, poziom i sprzęt nieznane do startu fali.'));
+      const l1 = el('div', 'np1'); l1.appendChild(el('b', null, '???')); l1.appendChild(el('small', null, L(' ktoś we mgle', ' someone in the fog'))); r.appendChild(l1);
+      r.appendChild(el('div', 'np2', L('Mgła wojny: klasę, poziom i sprzęt zobaczysz dopiero w fali.', 'Fog of War: class, level and gear stay hidden until the wave.')));
       return r;
     }
     const T = HEROES[e.type], fem = e.female, kn = new Set(e.known || []), all = mods.revealAll;
@@ -1178,27 +1211,27 @@
     const l1 = el('div', 'np1');
     const nm = el('b', null, nemName(e)); nm.style.color = T.color; l1.appendChild(nm);   // 1.23: with his title
     l1.appendChild(el('small', null, ' ' + T.name[fem ? 1 : 0] + ' ' + e.lvl));
-    if (e.boss) l1.appendChild(el('i', 'tg boss', e.boss === 'final' ? 'przepowiednia' : 'czempion'));
+    if (e.boss) l1.appendChild(el('i', 'tg boss', e.boss === 'final' ? L('przepowiednia', 'prophecy') : L('czempion', 'champion')));
     if (e.trait) l1.appendChild(el('i', 'tg', HERO_TRAITS[e.trait].name[fem ? 1 : 0]));
-    if (e.hunter) { const b = el('i', 'tg bag'); b.innerHTML = classIconSvg('bag', '#f2b94b', 'gi'); b.title = 'łowca skarbów'; l1.appendChild(b); }
-    if (e.returning) { const b = el('i', 'tg back', '↺'); b.title = 'wraca z blizną'; l1.appendChild(b); }
-    if (e.nemesis) { const b = el('i', 'tg boss', '☠ nemezis'); b.title = 'Nagroda za głowę: ' + bountyOf(e) + ' Esencji'; l1.appendChild(b); }   // 1.23
-    if (e.recruit) l1.appendChild(el('i', 'tg', 'rekrut'));
+    if (e.hunter) { const b = el('i', 'tg bag'); b.innerHTML = classIconSvg('bag', '#f2b94b', 'gi'); b.title = L(fem ? 'łowczyni skarbów' : 'łowca skarbów', 'treasure hunter'); l1.appendChild(b); }
+    if (e.returning) { const b = el('i', 'tg back', '↺'); b.title = L('wraca z blizną', 'back with a scar'); l1.appendChild(b); }
+    if (e.nemesis) { const b = el('i', 'tg boss', L('☠ nemezis', '☠ nemesis')); b.title = L('Nagroda za głowę: ', 'Bounty: ') + bountyOf(e) + L(' Esencji', ' Essence'); l1.appendChild(b); }   // 1.23
+    if (e.recruit) l1.appendChild(el('i', 'tg', L('rekrut', 'recruit')));
     { const bm = bondMate(e, null); if (bm) l1.appendChild(el('i', 'tg', bondLabel(e.bond, bm))); }   // 1.21: his bond
     r.appendChild(l1);
     const kit = el('div', 'kit');
-    if (!e.inv.length) kit.appendChild(el('small', null, 'bez sprzętu'));
+    if (!e.inv.length) kit.appendChild(el('small', null, L('bez sprzętu', 'no gear')));
     e.inv.forEach(it => { const s = el('span'); s.innerHTML = svgI(ITEM_GLYPH[it.type] || '', ITEM_COLOR[it.type] || '#ccc') + (it.charges > 1 ? '<small>' + it.charges + '</small>' : ''); s.title = itemLabel(it) + srcText(it, e); if (HITEMS[it.type].tool || it.src === 'trophy') { s.style.outline = '1px solid ' + (it.src === 'trophy' ? '#ff8a3c' : '#ffffff'); s.style.borderRadius = '3px'; } kit.appendChild(s); });   // 1.20: src, a tool or a trophy framed
     r.appendChild(kit);
     // second line, under the name and the gear: what the class does, its weak spots and what the tavern does not know
     const l2 = el('div', 'np2'); l2.appendChild(document.createTextNode(CLASS_SKILL[e.type] || ''));
     const wk = weakOf(e, kn.has('phys') || all);
-    if (wk.length) l2.appendChild(el('span', 'bad', ' · słaby: ' + wk.slice(0, 2).join(', ')));
+    if (wk.length) l2.appendChild(el('span', 'bad', L(' · słaby na: ', ' · weak to: ') + wk.slice(0, 2).join(', ')));
     const ph = e.phobia && (kn.has('phobia') || all) ? PHOBIAS[e.phobia].name : null;
-    if (ph) l2.appendChild(el('span', 'bad', ' · boi się: ' + ph));
-    const unk = [!(kn.has('phys') || all) ? 'ciało' : '', !(kn.has('phobia') || all) ? 'fobia' : ''].filter(Boolean);
+    if (ph) l2.appendChild(el('span', 'bad', L(' · boi się: ', ' · fears: ') + ph));
+    const unk = [!(kn.has('phys') || all) ? L('ciało', 'body') : '', !(kn.has('phobia') || all) ? L('fobia', 'phobia') : ''].filter(Boolean);
     if (unk.length) l2.appendChild(el('span', 'unk', ' · ? ' + unk.join('/')));
-    if (e.nemesis) { const s = el('span', null, ' · Nagroda za głowę: ' + bountyOf(e) + ' Esencji'); s.style.color = '#ffd27a'; l2.appendChild(s); }   // 1.23
+    if (e.nemesis) { const s = el('span', null, L(' · Nagroda za głowę: ', ' · Bounty: ') + bountyOf(e) + L(' Esencji', ' Essence')); s.style.color = '#ffd27a'; l2.appendChild(s); }   // 1.23
     r.appendChild(l2);
     r.addEventListener('click', () => openModal({ type: 'hero', entry: e, back: lastWaveModal }));   // the hero card, then back to the summary
     return r;
@@ -1209,27 +1242,27 @@
     const s = fl.stats, out = [], B = fl.byType, act = Object.keys(B).filter(k => ITEMS[k] && !TOOLS[k] && (TRAPS[k] || MONSTERS[k]));
     const best = (f, ok) => act.filter(k => ok ? ok(B[k]) : true).sort((a, b) => f(B[b]) - f(B[a]))[0];
     const fav = best(b => b.fires, b => b.fires >= 2);
-    if (fav) out.push({ k: 'fav', l: 'Ulubiona pułapka', v: ITEMS[fav].name, d: B[fav].fires + '× w akcji' });
+    if (fav) out.push({ k: 'fav', l: L('Ulubiona pułapka', 'Favourite trap'), v: ITEMS[fav].name, d: L(B[fav].fires + '× w akcji', 'fired ' + B[fav].fires + '×') });
     const pool = [];
     const killer = best(b => b.kills, b => b.kills >= 1);
-    if (killer) pool.push({ k: 'kill', l: 'Zabójca fali', v: ITEMS[killer].name, d: B[killer].kills + (B[killer].kills === 1 ? ' zabity' : ' zabitych') });
+    if (killer) pool.push({ k: 'kill', l: L('Zabójca fali', 'Top killer'), v: ITEMS[killer].name, d: B[killer].kills + (B[killer].kills === 1 ? L(' zabity', ' kill') : L(' zabitych', ' kills')) });
     const quiet = best(b => b.passivePts + (b.memFires || 0), b => b.passivePts >= 1 || (b.memFires || 0) >= 3);
-    if (quiet) { const b = B[quiet]; pool.push({ k: 'quiet', l: b.kills ? 'Cichy zabójca' : 'Cichy pomocnik', v: ITEMS[quiet].name, d: (b.memFires || 0) >= 3 ? b.memFires + ' ciosów bez stuknięcia' : fmtE(b.passivePts) + ' Esencji bez checku' }); }
+    if (quiet) { const b = B[quiet]; pool.push({ k: 'quiet', l: b.kills ? L('Cichy zabójca', 'Silent killer') : L('Cichy pomocnik', 'Silent helper'), v: ITEMS[quiet].name, d: (b.memFires || 0) >= 3 ? L(b.memFires + ' ' + plural(b.memFires, 'cios', 'ciosy', 'ciosów') + ' bez stuknięcia', b.memFires + ' hits without a tap') : L(fmtE(b.passivePts) + ' Esencji bez skill checku', fmtE(b.passivePts) + ' Essence, no skill check') }); }
     const hs = fl.heroes.filter(h => h.entry);
     const taken = h => Object.values(h.dmgBy || {}).reduce((a, v) => a + v, 0);
     const mvp = hs.filter(h => !h.dead).sort((a, b) => taken(b) - taken(a))[0];
-    if (mvp && taken(mvp) >= 20) pool.push({ k: 'mvp', l: 'MVP bohaterów', v: mvp.nm[0] + ' (' + className(mvp).toLowerCase() + ')', d: 'przyjął' + (mvp.female ? 'a' : '') + ' ' + Math.round(taken(mvp)) + ' ran i ' + fate(mvp) });
+    if (mvp && taken(mvp) >= 20) { const tk = Math.round(taken(mvp)); pool.push({ k: 'mvp', l: L('MVP bohaterów', 'Hero MVP'), v: mvp.nm[0] + ' (' + className(mvp).toLowerCase() + ')', d: L('przyjął' + (mvp.female ? 'a' : '') + ' ' + tk + ' ' + plural(tk, 'obrażenie', 'obrażenia', 'obrażeń') + ' i ' + fate(mvp), 'took ' + tk + ' damage and ' + fate(mvp)) }); }
     const scared = hs.filter(h => h.fleeing && !h.dead && !h.carriedOut).sort((a, b) => (b.fear / b.courage) - (a.fear / a.courage))[0];
-    if (scared) { const top = Object.entries(scared.fearBy || {}).sort((a, b) => b[1] - a[1])[0]; pool.push({ k: 'scared', l: 'Najbardziej przerażony', v: scared.nm[0] + ' (' + className(scared).toLowerCase() + ')', d: top ? 'najbardziej bał' + (scared.female ? 'a' : '') + ' się: ' + fearSrcName(top[0]) : 'uciekł' + (scared.female ? 'a' : '') }); }
-    if (s.maxCombo >= 3) pool.push({ k: 'combo', l: 'Najwyższe combo', v: '×' + fmt2(1 + 0.25 * (s.maxCombo - 1)), d: s.maxCombo + (s.maxCombo >= 5 ? ' różnych pułapek' : ' różne pułapki') + ' pod rząd' });
+    if (scared) { const top = Object.entries(scared.fearBy || {}).sort((a, b) => b[1] - a[1])[0]; pool.push({ k: 'scared', l: L(scared.female ? 'Najbardziej przerażona' : 'Najbardziej przerażony', 'Most scared'), v: scared.nm[0] + ' (' + className(scared).toLowerCase() + ')', d: top ? L('najbardziej bał' + (scared.female ? 'a' : '') + ' się: ', 'feared most: ') + fearSrcName(top[0]) : L('uciekł' + (scared.female ? 'a' : ''), 'fled') }); }
+    if (s.maxCombo >= 3) pool.push({ k: 'combo', l: L('Najwyższe combo', 'Top combo'), v: '×' + fmt2(1 + 0.25 * (s.maxCombo - 1)), d: L(s.maxCombo + (s.maxCombo >= 5 ? ' różnych pułapek' : ' różne pułapki') + ' pod rząd', s.maxCombo + ' different traps in a row') });
     const ck = s.checkCrit + s.checkOk + s.checkMiss;
-    if (ck >= 3) pool.push({ k: 'crit', l: 'Krytyki', v: s.checkCrit + ' z ' + ck, d: 'checków w tej fali' });
-    if (s.gotLost >= 1) pool.push({ k: 'lost', l: 'Zgubieni', v: String(s.gotLost), d: Math.round(s.loneTime || 0) + ' s samotności' });
-    if (s.splits >= 1 && (s.splitTime || 0) >= 4) pool.push({ k: 'split', l: 'Rozdzieleni', v: s.splits + (s.splits === 1 ? ' raz' : ' razy'), d: Math.round(s.splitTime) + ' s na zwiadzie' + (s.splitLost ? ', zabłądzili: ' + s.splitLost : '') });   // 1.16
-    if ((s.looks || 0) >= 2) pool.push({ k: 'look', l: 'Zwiedzali', v: s.looks + ' razy', d: (s.goldFound ? 'znaleźli ' + s.goldFound + ' ' + (s.goldFound === 1 ? 'monetę' : s.goldFound < 5 ? 'monety' : 'monet') : 'nic nie znaleźli') + (s.lookTraps ? ', obudzili pułapkę: ' + s.lookTraps : '') });
-    if (s.councils) pool.push({ k: 'council', l: 'Narada', v: s.councilStorm ? 'szturm' : s.councilMore ? 'jeszcze chwila' : 'do domu', d: s.goHome ? 'przegłosowani wrócili sami: ' + s.goHome : 'zdecydowali razem' });
-    if (s.disarmed >= 2) pool.push({ k: 'dis', l: 'Rozbrojone', v: s.disarmed + (s.disarmed >= 5 ? ' pułapek' : ' pułapki'), d: 'wyłączyli bohaterowie' });
-    if (s.lootSeen >= 2) pool.push({ k: 'loot', l: 'Łup', v: s.loot + ' z ' + s.lootSeen, d: 'skarbów, które zobaczyli, zabrali' });
+    if (ck >= 3) pool.push({ k: 'crit', l: L('Krytyki', 'Crits'), v: s.checkCrit + L(' z ', ' of ') + ck, d: L('skill checków w tej fali', 'skill checks this wave') });
+    if (s.gotLost >= 1) pool.push({ k: 'lost', l: L('Zgubieni', 'Got lost'), v: String(s.gotLost), d: L(Math.round(s.loneTime || 0) + ' s w samotności', Math.round(s.loneTime || 0) + ' s alone') });
+    if (s.splits >= 1 && (s.splitTime || 0) >= 4) pool.push({ k: 'split', l: L('Rozdzieleni', 'Split up'), v: L(s.splits + (s.splits === 1 ? ' raz' : ' razy'), s.splits + (s.splits === 1 ? ' time' : ' times')), d: L(Math.round(s.splitTime) + ' s na zwiadzie' + (s.splitLost ? ', zabłądzili: ' + s.splitLost : ''), Math.round(s.splitTime) + ' s scouting' + (s.splitLost ? ', got lost: ' + s.splitLost : '')) });   // 1.16
+    if ((s.looks || 0) >= 2) pool.push({ k: 'look', l: L('Zwiedzali', 'Looked around'), v: L(s.looks + ' razy', s.looks + ' times'), d: L((s.goldFound ? 'znaleźli ' + s.goldFound + ' ' + (s.goldFound === 1 ? 'monetę' : s.goldFound < 5 ? 'monety' : 'monet') : 'nic nie znaleźli') + (s.lookTraps ? ', obudzili pułapkę: ' + s.lookTraps : ''), (s.goldFound ? 'found ' + s.goldFound + (s.goldFound === 1 ? ' coin' : ' coins') : 'found nothing') + (s.lookTraps ? ', woke a trap: ' + s.lookTraps : '')) });
+    if (s.councils) pool.push({ k: 'council', l: L('Narada', 'Council'), v: s.councilStorm ? L('szturm', 'attack') : s.councilMore ? L('jeszcze chwila', 'a bit longer') : L('do domu', 'go home'), d: s.goHome ? L('przegłosowani wrócili sami: ', 'the outvoted went home: ') + s.goHome : L('zdecydowali razem', 'decided together') });
+    if (s.disarmed >= 2) pool.push({ k: 'dis', l: L('Rozbrojone', 'Disarmed'), v: L(s.disarmed + (s.disarmed >= 5 ? ' pułapek' : ' pułapki'), s.disarmed + ' traps'), d: L('wyłączyli bohaterowie', 'by the heroes') });
+    if (s.lootSeen >= 2) pool.push({ k: 'loot', l: L('Łup', 'Loot'), v: s.loot + L(' z ', ' of ') + s.lootSeen, d: L('zobaczonych skarbów zabrali', 'treasures seen were taken') });
     shuffle(pool); while (out.length < 3 && pool.length) out.push(pool.shift());
     return out;
   }
@@ -1238,35 +1271,35 @@
     lastWaveModal = m;
     if (won) card.classList.add('vic');
     const heart = H ? Math.min(H.need, fl.fed || 0) : 0, ate = !!(H && !H.fed), mine = ate ? 0 : Math.max(0, fl.score - heart - ((H && H.tithe) || 0));   // 1.26: the purse's part and the Danina are not yours
-    scrHead(card, waveName() + ' · ' + mmss(fl.time), won ? 'Zwycięstwo!' : fl.crystalLost ? 'Kryształ skradziony' : ate ? 'Głód pękł kryształ' : H && H.tookPurse > 0 ? 'Serce zabrało z zapasów' : 'Fala odparta', '+' + fmtE(fl.score), 'Esencji z fali', [fl.score, v => '+' + fmtE(v)]);
+    scrHead(card, waveName() + ' · ' + mmss(fl.time), won ? L('Zwycięstwo!', 'Victory!') : fl.crystalLost ? L('Skradli kryształ', 'Crystal stolen') : ate ? L('Głód rozbił kryształ', 'Hunger broke a crystal') : H && H.tookPurse > 0 ? L('Serce sięgnęło do sakiewki', 'The heart took from your purse') : L('Fala odparta', 'Wave held'), '+' + fmtE(fl.score), L('Esencji z fali', 'Essence this wave'), [fl.score, v => '+' + fmtE(v)]);
     const body = el('div', 'scr-body'); card.appendChild(body);
     if (m.details) waveDetails(body, card, m);
     else {
       const tiles = el('div', 'statrow');
-      statTile(tiles, String(Math.floor(run.essence)), 'masz Esencji', 'ess');
-      if (H) statTile(tiles, '♥ ' + H.need, H.fedWave ? 'serce syte' : H.ate ? 'pękł kryształ' : H.credit ? 'kredyt krwi' : 'zabrało ' + Math.round(H.tookPurse || 0), H.fedWave ? 'good' : H.ate ? 'bad' : 'warn');
-      else statTile(tiles, '-', run.wave < 2 ? 'głód od fali 2' : 'serce');
-      statTile(tiles, run.crystals + '/' + run.maxCrystals, 'kryształy', fl.crystalLost || ate ? 'bad' : 'good');
-      statTile(tiles, s.kills + ' · ' + s.scared, 'zabici · przestr.');
+      statTile(tiles, String(Math.floor(run.essence)), L('masz Esencji', 'your Essence'), 'ess');
+      if (H) statTile(tiles, '♥ ' + H.need, H.fedWave ? L('serce syte', 'heart full') : H.ate ? L('pękł kryształ', 'crystal broke') : H.credit ? L('kredyt krwi', 'blood credit') : L('wzięło ', 'took ') + Math.round(H.tookPurse || 0), H.fedWave ? 'good' : H.ate ? 'bad' : 'warn');
+      else statTile(tiles, '-', run.wave < 2 ? L('Głód od fali 2', 'Hunger from wave 2') : L('serce', 'heart'));
+      statTile(tiles, run.crystals + '/' + run.maxCrystals, L('kryształy', 'crystals'), fl.crystalLost || ate ? 'bad' : 'good');
+      statTile(tiles, s.kills + ' · ' + s.scared, L('zabici · wystr.', 'killed · scared'));
       body.appendChild(tiles);
       { const fp = el('p', 'note fearline'); fp.id = 'wave-fear-line';   // 1.24 (B, P1-4): scaring is a way too, so it is said even at 0
-        fp.innerHTML = 'Zabici: <b>' + s.kills + '</b> (' + fmtE((s.killPts || 0) + (s.dmgPts || 0)) + ' pkt z ran) · <span class="sc">Wystraszeni: <b>' + s.scared + '</b> (' + fmtE((s.scarePts || 0) + (s.fearPts || 0)) + ' pkt ze strachu)</span>';
+        fp.innerHTML = L('Zabici: ', 'Killed: ') + '<b>' + s.kills + '</b> (' + fmtE((s.killPts || 0) + (s.dmgPts || 0)) + L(' pkt z ran)', ' from wounds)') + ' · <span class="sc">' + L('Wystraszeni: ', 'Scared off: ') + '<b>' + s.scared + '</b> (' + fmtE((s.scarePts || 0) + (s.fearPts || 0)) + L(' pkt ze strachu)', ' from fear)') + '</span>';
         body.appendChild(fp); }
       crystalWhy(body, H, heart);   // 1.24 (D, P0-2)
       heartLines(body, H);   // 1.26: what the heart took, the Danina, a new level, the monsters that will stand up
       // the reckoning (1.01-1.04 had a screen of its own): Groza x the multipliers = Esencja, the heart's share, what is yours
       const rk = el('div', 'reck' + (ate ? ' ate' : ''));
       const part = (cls, html) => { const sp = el('span', cls); sp.innerHTML = html; rk.appendChild(sp); };
-      part('g', 'Groza <b>' + fmtG(fl.base) + '</b> × ' + fmt2(fl.base > 0 ? fl.score / fl.base : 1) + ' = <b class="e">' + fmtE(fl.score) + '</b>');
-      if (H) part('h', H.fedWave ? '♥ <b>−' + fmtE(H.need) + '</b>' : H.ate ? '♥ za mało: <b>−' + fmtE(heart) + ' −' + fmtE(H.tookPurse || 0) + ' z zapasów · kryształ</b>' : '♥ <b>−' + fmtE(heart) + '</b> i <b>−' + fmtE(H.tookPurse || 0) + '</b> z zapasów');
-      if (H && (H.tithe || 0) >= 1) part('t', 'Danina <b>' + fmtE(H.tithe) + '</b>');
-      part('m', 'dla Ciebie <b>+' + fmtE(mine) + '</b>' + (run.lastIncome ? ' <small>(+' + run.lastIncome + ' po fali)</small>' : ''));
+      part('g', L('Groza ', 'Dread ') + '<b>' + fmtG(fl.base) + '</b> × ' + L('Chciwość ', 'Greed ') + fmt2(fl.base > 0 ? fl.score / fl.base : 1) + ' = <b class="e">' + fmtE(fl.score) + '</b>');
+      if (H) part('h', H.fedWave ? '♥ <b>−' + fmtE(H.need) + '</b>' : H.ate ? '♥ ' + L('za mało: ', 'short: ') + '<b>−' + fmtE(heart) + ' −' + fmtE(H.tookPurse || 0) + L(' z sakiewki · kryształ', ' from purse · a crystal') + '</b>' : '♥ <b>−' + fmtE(heart) + '</b> ' + L('i', 'and') + ' <b>−' + fmtE(H.tookPurse || 0) + '</b>' + L(' z sakiewki', ' from purse'));
+      if (H && (H.tithe || 0) >= 1) part('t', L('Danina ', 'Tithe ') + '<b>' + fmtE(H.tithe) + '</b>');
+      part('m', L('dla Ciebie ', 'yours ') + '<b>+' + fmtE(mine) + '</b>' + (run.lastIncome ? ' <small>' + L('+' + run.lastIncome + ' dochodu po fali', '+' + run.lastIncome + ' income after the wave') + '</small>' : ''));
       body.appendChild(rk);
       fl.heroes.filter(h => h.nemesis).forEach(h => {   // 1.23: the bounty on a Nemezis of this wave: paid, or he got away (and comes back)
-        const p = el('p', 'note', 'Nagroda za głowę: ' + bountyOf(h.entry) + ' Esencji · ' + heroName(h) + ': ' + (h.dead ? 'wypłacona.' : h.fled ? (h.female ? 'uciekła' : 'uciekł') + ', wróci z wyższą nagrodą.' : 'wciąż w lochu.')); p.style.color = '#ffd27a'; body.appendChild(p);
+        const p = el('p', 'note', L('Nagroda za głowę: ', 'Bounty: ') + bountyOf(h.entry) + L(' Esencji · ', ' Essence · ') + heroName(h) + ': ' + (h.dead ? L('wypłacona.', 'paid.') : h.fled ? L((h.female ? 'uciekła' : 'uciekł') + ', wróci z wyższą nagrodą.', 'got away, will be back with a higher bounty.') : L('wciąż w lochu.', 'still in the dungeon.'))); p.style.color = '#ffd27a'; body.appendChild(p);
       });
       if (ate && !m.alarmed) { m.alarmed = true; setTimeout(() => { if (modalKind === 'wave') crystalAlarm(); }, reduceMotion ? 0 : 900); }
-      waveChart(panel(body, 'Esencja z fal', 'kreska: porcja serca'), run.waves, run.wave);
+      waveChart(panel(body, L('Esencja z fal', 'Essence per wave'), L('kreska: porcja serca', "tick: the heart's share")), run.waves, run.wave);
       m.fun = m.fun || waveFun();
       if (m.fun.length) {
         const fr = el('div', 'fun');
@@ -1277,10 +1310,11 @@
       if (nx && nx.length) {
         const lv = nx.map(e => e.lvl), lo = Math.min(...lv), hi = Math.max(...lv), g = run.guild;
         const fogN = nx.some(e => e.fog) && !mods.revealAll, om = OMENS[run.omens && run.omens[run.wave + 1]];
-        const pn = panel(body, 'Fala ' + (run.wave + 1) + ': ' + nx.length + ' bohaterów' + (fogN ? ' w mgle' : ', poz. ' + (lo === hi ? lo : lo + '-' + hi)), g ? 'gildia: ' + HEROES[GUILD_WANT[g.kind]].name[0].toLowerCase() : hungerNeed(run.wave + 1) ? 'serce chce ' + hungerNeed(run.wave + 1) : '', 'nextp');
+        const pn = panel(body, L('Fala ', 'Wave ') + (run.wave + 1) + ': ' + nx.length + L(nx.length === 1 ? ' bohater' : ' bohaterów', nx.length === 1 ? ' hero' : ' heroes') + (fogN ? L(' we mgle', ' in the fog') : L(', poz. ', ', lvl ') + (lo === hi ? lo : lo + '-' + hi)), g ? L('gildia: ', 'guild: ') + HEROES[GUILD_WANT[g.kind]].name[0].toLowerCase() : hungerNeed(run.wave + 1) ? L('serce chce ', 'heart wants ') + hungerNeed(run.wave + 1) : '', 'nextp');
         if (om) pn.appendChild(omenBox(run.omens[run.wave + 1]));   // 1.26 (15): the omen of the next wave
+        { const be = nx.find(e => e.boss); if (be) pn.appendChild(bossBox(be)); }   // 1.27
         const list = el('div', 'nplist'); nx.forEach(e => list.appendChild(nextRow(e))); pn.appendChild(list);
-        nx.filter(e => e.nemesis).forEach(e => { const p = el('p', 'note', '☠ ' + nemName(e) + ' wraca ' + (e.times || 1) + '. raz. Nagroda za głowę: ' + bountyOf(e) + ' Esencji.'); p.style.color = '#ffd27a'; pn.appendChild(p); });   // 1.23
+        nx.filter(e => e.nemesis).forEach(e => { const p = el('p', 'note', '☠ ' + nemName(e) + L(' wraca po raz ' + (e.times || 1) + '. Nagroda za głowę: ' + bountyOf(e) + ' Esencji.', ' is back for the ' + ordEn(e.times || 1) + ' time. Bounty: ' + bountyOf(e) + ' Essence.')); p.style.color = '#ffd27a'; pn.appendChild(p); });   // 1.23
         fitList(list);
       }
     }
@@ -1288,69 +1322,68 @@
     const foot = el('div', 'scr-foot'); card.appendChild(foot);
     if (won) {
       const row = el('div', 'row');
-      const go = btn('primary', 'Graj dalej', 'fale bez końca', () => { run.victoryDone = true; closeModal(); afterSummary(); }); go.id = 'vic-continue';
-      const end = btn('', 'Zakończ: zwycięstwo', 'zapisze wygrany run', () => { run.victoryDone = true; closeModal(); endRun('Loch przetrwał wszystkie ' + RUN_WAVES + ' fal.', 'win'); }); end.id = 'vic-end';
+      const go = btn('primary', L('Graj dalej', 'Keep going'), L('fale bez końca', 'endless waves'), () => { run.victoryDone = true; closeModal(); afterSummary(); }); go.id = 'vic-continue';
+      const end = btn('', L('Zakończ run', 'End run'), L('jako zwycięstwo', 'as a win'), () => { run.victoryDone = true; closeModal(); endRun(L('Loch przetrwał wszystkie ' + RUN_WAVES + ' fal.', 'Your dungeon held all ' + RUN_WAVES + ' waves.'), 'win'); }); end.id = 'vic-end';
       row.appendChild(go); row.appendChild(end); foot.appendChild(row);
     } else {
       const pu = run.pendingUpgrades, fp = pu.length + (run.freePicks || 0), alive = run.crystals > 0 && !(run.wave === RUN_WAVES && !run.won);
-      const nb = btn('primary', run.crystals > 0 ? 'Dalej: sklep przed falą ' + (run.wave + 1) : 'Dalej', alive && fp ? 'darmowe karty: ' + fp + (pu.some(p => p.src === 'boss') ? ' (legendarna w ofercie)' : '') : null, () => { closeModal(); afterSummary(); });
+      const nb = btn('primary', run.crystals > 0 ? L('Dalej: sklep', 'Next: shop') : L('Dalej', 'Next'), alive && fp ? L('darmowe karty: ', 'free cards: ') + fp + (pu.some(p => p.src === 'boss') ? L(', w tym legendarna', ', one legendary') : '') : null, () => { closeModal(); afterSummary(); });
       nb.id = 'wave-next'; foot.appendChild(nb);
     }
     const mr = el('div', 'minirow'), dn = el('p', 'note', '');
-    const det = el('button', 'mini' + (m.details ? '' : ' strong'), m.details ? '‹ Wróć' : 'Szczegóły'); det.type = 'button'; det.id = 'wave-details';
+    const det = el('button', 'mini' + (m.details ? '' : ' strong'), m.details ? L('‹ Wróć', '‹ Back') : L('Szczegóły', 'Details')); det.type = 'button'; det.id = 'wave-details';
     det.addEventListener('click', () => { m.details = !m.details; card.classList.remove('enter'); card.innerHTML = ''; renderWave(card, m); });
     mr.appendChild(det);
-    const dl = el('button', 'mini', 'Pobierz wyniki'); dl.type = 'button'; dl.addEventListener('click', () => downloadRun(dn)); mr.appendChild(dl);
-    if (run.crystals > 0 && !won) { const sq = el('button', 'mini', 'Zapisz i wyjdź'); sq.type = 'button'; sq.addEventListener('click', () => { saveRun('summary'); closeModal(); openModal({ type: 'start' }); }); mr.appendChild(sq); }
+    if (run.crystals > 0 && !won) { const sq = el('button', 'mini', L('Wyjdź', 'Save & exit')); sq.type = 'button'; sq.title = L('Zapisz run i wróć do menu', 'Save the run and go to the menu'); sq.addEventListener('click', () => { saveRun('summary'); closeModal(); openModal({ type: 'start' }); }); mr.appendChild(sq); }
     if (run.crystals > 0 && !won) {
-      const q = el('button', 'mini', 'Zakończ run'); q.type = 'button';
-      q.addEventListener('click', () => { if (!q.dataset.sure) { q.dataset.sure = '1'; q.textContent = 'Na pewno?'; return; } closeModal(); endRun('Run zakończony przez gracza po fali ' + run.wave + '.', 'quit'); });
+      const q = el('button', 'mini', L('Zakończ run', 'End run')); q.type = 'button';
+      q.addEventListener('click', () => { if (!q.dataset.sure) { q.dataset.sure = '1'; q.textContent = L('Na pewno?', 'Sure?'); return; } closeModal(); endRun(L('Run zakończony po fali ' + run.wave + '.', 'You ended the run after wave ' + run.wave + '.'), 'quit'); });
       mr.appendChild(q);
     }
     foot.appendChild(mr);
-    dn.textContent = m.logNote || 'Zapisuję falę...'; foot.appendChild(dn);
-    if (!m.logNote) Promise.resolve(run.lastLog).then(() => { m.logNote = (logText(run.logState) || '') + ' Run zapisany w tej przeglądarce.'; if (dn.isConnected) dn.textContent = m.logNote; });
+    dn.textContent = m.logNote || L('Zapisuję falę...', 'Saving the wave...'); if (m.details) foot.appendChild(dn);   // 1.27: the save note is for testers: only under Szczegóły
+    if (!m.logNote) Promise.resolve(run.lastLog).then(() => { m.logNote = (logText(run.logState) || '') + L(' Run zapisany w tej przeglądarce.', ' Run saved in this browser.'); if (dn.isConnected) dn.textContent = m.logNote; });
     if (won && !m.pushed) { m.pushed = true; pushLog(null); }
   }
   // Szczegóły: where the Esencja came from, then four views in one box (what comes next, the heroes, the elements, the numbers)
   function waveDetails(body, card, m) {
     const s = fl.stats, H = fl.hunger;
-    const src = [['Rany', s.dmgPts, '#ff8a7a'], ['Strach', s.fearPts, '#c3b2ff'], ['Ucieczki', s.scarePts, '#8a6fe0'], ['Zabici', s.killPts, '#d8434f'], ['Łup', s.lootPts, '#f2b94b'],
-      ['Combo', s.comboPts || 0, '#a9d4da'], ['Reakcje', s.reactPts || 0, '#ff9a3c'], ['Uczta', s.feastPts || 0, '#ff9aa4'], ['Inne', (s.crystalPts || 0) + (s.lostPts || 0) + (s.lonePts || 0) + (s.splitPts || 0) + (s.healPts || 0), '#7d7590']].filter(r => r[1] > 0.05);
+    const src = [[L('Rany', 'Wounds'), s.dmgPts, '#ff8a7a'], [L('Strach', 'Fear'), s.fearPts, '#c3b2ff'], [L('Ucieczki', 'Fled'), s.scarePts, '#8a6fe0'], [L('Zabici', 'Kills'), s.killPts, '#d8434f'], [L('Łup', 'Loot'), s.lootPts, '#f2b94b'],
+      ['Combo', s.comboPts || 0, '#a9d4da'], [L('Reakcje', 'Reactions'), s.reactPts || 0, '#ff9a3c'], [L('Uczta', 'Feast'), s.feastPts || 0, '#ff9aa4'], [L('Inne', 'Other'), (s.crystalPts || 0) + (s.lostPts || 0) + (s.lonePts || 0) + (s.splitPts || 0) + (s.healPts || 0), '#7d7590']].filter(r => r[1] > 0.05);
     const tot = src.reduce((a, r) => a + r[1], 0) || 1;
-    const ps = panel(body, 'Skąd Esencja', 'Groza ' + fmtE(fl.base) + ' × średnio ' + fmt2(fl.base > 0 ? fl.score / fl.base : 1));
+    const ps = panel(body, L('Skąd Esencja', 'Where Essence came from'), L('Groza ', 'Dread ') + fmtE(fl.base) + L(' × średnio ', ' × avg ') + fmt2(fl.base > 0 ? fl.score / fl.base : 1));
     const sb = el('div', 'srcbar'); src.forEach(r => { const i = el('i'); i.style.width = (100 * r[1] / tot).toFixed(1) + '%'; i.style.background = r[2]; i.title = r[0]; sb.appendChild(i); }); ps.appendChild(sb);
     const lg = el('div', 'srclg');
     src.slice().sort((a, b) => b[1] - a[1]).slice(0, 4).forEach(r => { const d = el('span'), dot = el('i'); dot.style.background = r[2]; d.appendChild(dot); d.appendChild(document.createTextNode(r[0] + ' ' + fmtE(r[1]))); lg.appendChild(d); });
-    if (!src.length) lg.appendChild(el('span', null, 'Ta fala nic nie dała.'));
+    if (!src.length) lg.appendChild(el('span', null, L('Ta fala nic nie dała.', 'This wave earned nothing.')));
     ps.appendChild(lg);
-    const TABS_W = [['next', 'Co dalej'], ['heroes', 'Bohaterowie'], ['items', 'Elementy'], ['nums', 'Liczby']], cur = m.tab || 'next';
+    const TABS_W = [['next', L('Co dalej', 'Next')], ['heroes', L('Bohaterowie', 'Heroes')], ['items', L('Elementy', 'Elements')], ['nums', L('Liczby', 'Numbers')]], cur = m.tab || 'next';
     const seg = el('div', 'seg');
     TABS_W.forEach(([id, label]) => { const b = el('button', id === cur ? 'on' : '', label); b.type = 'button'; b.id = 'wtab-' + id; b.addEventListener('click', () => { if (m.tab === id) return; m.tab = id; card.classList.remove('enter'); card.innerHTML = ''; renderWave(card, m); }); seg.appendChild(b); });
     body.appendChild(seg);
     const box = el('div', 'panel segpanel'), list = el('div', 'flist' + (cur === 'nums' ? ' grid2' : '')); box.appendChild(list); body.appendChild(box);
     if (cur === 'next') {
-      const nb = bossOf(run.wave + 1), items = [s.swaps ? 'wymiany: ' + s.swaps : '', s.potionsGiven ? 'mikstury podane: ' + s.potionsGiven : '', s.charms ? 'talizmany: ' + s.charms : '', s.amulets ? 'amulety: ' + s.amulets : '', s.boots ? 'buty: ' + s.boots : '',
-        s.gearGiven ? 'przekazane: ' + s.gearGiven : '', s.bodyLoot ? 'z ciał: ' + s.bodyLoot : '', s.gearKnocked ? 'wybite: ' + s.gearKnocked : '', s.lanternOut ? 'zgaszone latarnie: ' + s.lanternOut : '', s.bombCook ? 'bomby w ogniu: ' + s.bombCook : ''].filter(Boolean);   // 1.20
-      if (H && H.ate) frow(list, 'Serce chciało ' + H.need + ' Esencji, fala dała ' + fmtE(fl.score) + ', z sakiewki wzięło ' + fmtE(H.tookPurse || 0) + ': za mało, pękł kryształ.', 'heart');
-      else if (H && !H.fedWave) frow(list, 'Serce chciało ' + H.need + ' Esencji, fala dała ' + fmtE(fl.score) + ': brak (' + fmtE(H.tookPurse || 0) + ') zabrało z Twoich zapasów' + (H.credit ? ' (Kredyt krwi: +' + H.credit + ' głodu w następnej fali)' : '') + '.', 'heart');
-      else if (H) frow(list, 'Serce wzięło pierwsze ' + H.need + ' Esencji' + (H.fedAt != null ? ' (najadło się w ' + mmss(H.fedAt) + ')' : '') + ', potem Daninę ' + fmtE(H.tithe || 0) + ' w Nasycenie; reszta trafiła do Ciebie.', 'heart');
-      if (run.wave < RUN_WAVES || run.won) frow(list, 'Fala ' + (run.wave + 1) + ': poziom ok. ' + Math.round(waveBase(run.wave + 1)) + (nb ? ', prowadzi ' + (nb === 'final' ? 'bohater z przepowiedni' : 'czempion') : '') + '.', 'wave');
-      if (run.guild && run.crystals > 0) frow(list, 'Gildia ' + run.guild.text, 'wave');
-      if (hungerNeed(run.wave + 1)) frow(list, 'Następna fala: serce chce ' + hungerNeed(run.wave + 1) + ' Esencji (masz ' + Math.floor(run.essence) + ' w zapasie). Trzymaj bohaterów w lochu, żeby było z czego.', 'heart');
-      frow(list, 'Esencja: +' + run.lastIncome + ' po fali' + (run.lastInterest ? ' (odsetki ' + run.lastInterest + ')' : '') + ', masz ' + Math.floor(run.essence) + '.', 'ess');
-      frow(list, m.out ? 'Plotki: uciekinierzy opowiedzą o ' + m.rr + ' pokojach i ' + m.rt + ' pułapkach (tylko o tych, które ich zraniły albo przestraszyły). Przestaw je albo postaw Zasłonę.' : 'Nikt nie wyszedł żywy: Twoje sekrety są bezpieczne.');
-      if (s.treasureTale) frow(list, 'Opowieści o skarbach: chciwość na start następnej fali +' + fmt2(s.treasureTale) + '.', 'ess');
-      if (s.greedKept) frow(list, 'Zabrany łup: chciwość +' + fmt2(s.greedKept) + ' do końca runu (razem +' + fmt2(run.greedKeep) + ').', 'ess');
-      frow(list, 'Gildia słyszy o chciwości ×' + fmt2(run.greedRep || 1) + ': przywódca +' + f1(huntersLv()) + ' poziomu' + (huntersN(run.greedRep || 1) ? ', przyjdą łowcy skarbów (' + huntersN(run.greedRep || 1) + ')' : '') + '.');
-      if (s.breach || s.breachOpen) frow(list, s.breach ? 'Ta fala weszła przez wyłom. Załatasz go stuknięciem w budowie.' : 'Wyłom wciąż otwarty (stuknij go w budowie, żeby załatać).', 'wave');
-      if (s.preps) frow(list, 'Drużyna szykowała się ' + s.preps + '× przed groźnym pokojem. Kontry: Runa, Ołtarz, Wabik.');
-      if (s.runeBlocks || s.altarBlocks || s.alarms) frow(list, 'Budowle zadziałały: ' + [s.runeBlocks ? 'runa ' + s.runeBlocks + '×' : '', s.altarBlocks ? 'ołtarz ' + s.altarBlocks + '×' : '', s.alarms ? 'wabik ' + s.alarms + '×' : ''].filter(Boolean).join(', ') + '.');
-      if (s.detours || s.gotLost) frow(list, 'Błądzenie: złe skręty ' + s.detours + ', zgubieni ' + s.gotLost + '.');
-      if (items.length) frow(list, 'Przedmioty bohaterów: ' + items.join(', ') + '.');
-      if (s.faithOut) frow(list, 'Kapłanowi zabrakło wiary ' + s.faithOut + '×.');
-      if (s.sapped) frow(list, 'Saperzy rozmontowali na dobre: ' + s.sapped + '.');
-      { const rk = rankOf(run.total); frow(list, 'Ranga runu: ' + rk.name + ' (' + Math.round(run.total) + ' Esencji' + (rk.next ? ', ' + rk.next[1] + ' od ' + rk.next[0] : '') + ').'); }
+      const nb = bossOf(run.wave + 1), items = [s.swaps ? L('wymiany: ', 'swaps: ') + s.swaps : '', s.potionsGiven ? L('podane mikstury: ', 'potions given: ') + s.potionsGiven : '', s.charms ? L('talizmany: ', 'charms: ') + s.charms : '', s.amulets ? L('amulety: ', 'amulets: ') + s.amulets : '', s.boots ? L('buty: ', 'boots: ') + s.boots : '',
+        s.gearGiven ? L('przekazane: ', 'handed over: ') + s.gearGiven : '', s.bodyLoot ? L('z ciał: ', 'from bodies: ') + s.bodyLoot : '', s.gearKnocked ? L('wybite: ', 'knocked away: ') + s.gearKnocked : '', s.lanternOut ? L('zgaszone latarnie: ', 'lanterns out: ') + s.lanternOut : '', s.bombCook ? L('bomby w ogniu: ', 'bombs in fire: ') + s.bombCook : ''].filter(Boolean);   // 1.20
+      if (H && H.ate) frow(list, L('Serce chciało ' + H.need + ' Esencji. Fala dała ' + fmtE(fl.score) + ', z sakiewki wzięło ' + fmtE(H.tookPurse || 0) + '. Za mało: pękł kryształ.', 'The heart wanted ' + H.need + ' Essence. The wave gave ' + fmtE(fl.score) + ', your purse ' + fmtE(H.tookPurse || 0) + '. Not enough: a crystal broke.'), 'heart');
+      else if (H && !H.fedWave) frow(list, L('Serce chciało ' + H.need + ' Esencji, fala dała ' + fmtE(fl.score) + '. Brakujące ' + fmtE(H.tookPurse || 0) + ' wzięło z Twojej sakiewki' + (H.credit ? ' (Kredyt krwi: Głód następnej fali +' + H.credit + ')' : '') + '.', 'The heart wanted ' + H.need + ' Essence, the wave gave ' + fmtE(fl.score) + '. It took the missing ' + fmtE(H.tookPurse || 0) + ' from your purse' + (H.credit ? ' (Blood Credit: next Hunger +' + H.credit + ')' : '') + '.'), 'heart');
+      else if (H) frow(list, L('Serce wzięło pierwsze ' + H.need + ' Esencji' + (H.fedAt != null ? ' (syte w ' + mmss(H.fedAt) + ')' : '') + ', potem Daninę ' + fmtE(H.tithe || 0) + ' do Nasycenia. Reszta trafiła do Ciebie.', 'The heart took the first ' + H.need + ' Essence' + (H.fedAt != null ? ' (full at ' + mmss(H.fedAt) + ')' : '') + ', then a Tithe of ' + fmtE(H.tithe || 0) + ' for Satiety. The rest went to you.'), 'heart');
+      if (run.wave < RUN_WAVES || run.won) frow(list, L('Fala ' + (run.wave + 1) + ': poziom ok. ' + Math.round(waveBase(run.wave + 1)) + (nb ? ', prowadzi ' + (nb === 'final' ? 'bohater z przepowiedni' : 'czempion') : '') + '.', 'Wave ' + (run.wave + 1) + ': about level ' + Math.round(waveBase(run.wave + 1)) + (nb ? ', led by ' + (nb === 'final' ? 'the hero of the prophecy' : 'a champion') : '') + '.'), 'wave');
+      if (run.guild && run.crystals > 0) frow(list, L('Gildia ', 'The guild ') + run.guild.text, 'wave');
+      if (hungerNeed(run.wave + 1)) frow(list, L('Następna fala: serce chce ' + hungerNeed(run.wave + 1) + ' Esencji (w sakiewce masz ' + Math.floor(run.essence) + '). Trzymaj bohaterów w lochu jak najdłużej.', 'Next wave: the heart wants ' + hungerNeed(run.wave + 1) + ' Essence (your purse: ' + Math.floor(run.essence) + '). Keep heroes in the dungeon as long as you can.'), 'heart');
+      frow(list, L('Esencja: +' + run.lastIncome + ' po fali' + (run.lastInterest ? ' (odsetki ' + run.lastInterest + ')' : '') + ', masz ' + Math.floor(run.essence) + '.', 'Essence: +' + run.lastIncome + ' after the wave' + (run.lastInterest ? ' (interest ' + run.lastInterest + ')' : '') + ', you have ' + Math.floor(run.essence) + '.'), 'ess');
+      frow(list, m.out ? L('Plotki: uciekinierzy opowiedzą o ' + nWord(m.rr, 'pokoju', 'pokojach', 'pokojach') + ' i ' + nWord(m.rt, 'pułapce', 'pułapkach', 'pułapkach') + ', które ich zraniły albo przestraszyły. Przestaw je albo postaw Zasłonę.', 'Rumours: runaways will tell of ' + nWord(m.rr, '', '', '', 'room', 'rooms') + ' and ' + nWord(m.rt, '', '', '', 'trap', 'traps') + ' that hurt or scared them. Move them or place a Veil.') : L('Nikt nie wyszedł żywy: Twoje sekrety są bezpieczne.', 'Nobody got out alive: your secrets are safe.'));
+      if (s.treasureTale) frow(list, L('Opowieści o skarbach: następna fala zaczyna z Chciwością +', 'Treasure tales: the next wave starts with Greed +') + fmt2(s.treasureTale) + '.', 'ess');
+      if (s.greedKept) frow(list, L('Zabrany łup: chciwość +' + fmt2(s.greedKept) + ' do końca runu (razem +' + fmt2(run.greedKeep) + ').', 'Loot taken: greed +' + fmt2(s.greedKept) + ' for the rest of the run (total +' + fmt2(run.greedKeep) + ').'), 'ess');
+      frow(list, L('Gildia słyszy o chciwości ×' + fmt2(run.greedRep || 1) + ': przywódca +' + f1(huntersLv()) + ' poziomu' + (huntersN(run.greedRep || 1) ? ', przyjdą łowcy skarbów (' + huntersN(run.greedRep || 1) + ')' : '') + '.', 'The guild hears of greed ×' + fmt2(run.greedRep || 1) + ': leader +' + f1(huntersLv()) + ' levels' + (huntersN(run.greedRep || 1) ? ', treasure hunters coming (' + huntersN(run.greedRep || 1) + ')' : '') + '.'));
+      if (s.breach || s.breachOpen) frow(list, s.breach ? L('Ta fala weszła przez wyłom. W budowie stuknij go, żeby załatać.', 'This wave came in through a breach. Tap it while building to patch it.') : L('Wyłom wciąż jest otwarty. W budowie stuknij go, żeby załatać.', 'The breach is still open. Tap it while building to patch it.'), 'wave');
+      if (s.preps) frow(list, L('Drużyna szykowała się ' + s.preps + '× przed groźnym pokojem. Przeciw temu: Runa, Ołtarz, Wabik.', 'The party got ready ' + s.preps + '× before a dangerous room. Counters: Rune, Altar, Decoy.'));
+      if (s.runeBlocks || s.altarBlocks || s.alarms) frow(list, L('Budowle zadziałały: ', 'Buildings worked: ') + [s.runeBlocks ? L('runa ', 'rune ') + s.runeBlocks + '×' : '', s.altarBlocks ? L('ołtarz ', 'altar ') + s.altarBlocks + '×' : '', s.alarms ? L('wabik ', 'decoy ') + s.alarms + '×' : ''].filter(Boolean).join(', ') + '.');
+      if (s.detours || s.gotLost) frow(list, L('Błądzenie: złe skręty ' + s.detours + ', zgubieni ' + s.gotLost + '.', 'Wandering: wrong turns ' + s.detours + ', got lost ' + s.gotLost + '.'));
+      if (items.length) frow(list, L('Przedmioty bohaterów: ', 'Hero items: ') + items.join(', ') + '.');
+      if (s.faithOut) frow(list, L('Kapłanowi zabrakło wiary ' + s.faithOut + '×.', 'The priest ran out of faith ' + s.faithOut + '×.'));
+      if (s.sapped) frow(list, L('Saperzy rozmontowali na dobre: ', 'Sappers took apart for good: ') + s.sapped + '.');
+      { const rk = rankOf(run.total); frow(list, L('Ranga runu: ', 'Run rank: ') + rk.name + ' (' + Math.round(run.total) + L(' Esencji', ' Essence') + (rk.next ? L(', następna: ' + rk.next[1] + ' od ' + rk.next[0], ', next: ' + rk.next[1] + ' at ' + rk.next[0]) : '') + ').'); }
     } else if (cur === 'heroes') {
       fl.heroes.forEach(h => {
         const r = el('div', 'hrow'), l = el('span');
@@ -1359,38 +1392,38 @@
         r.appendChild(l); r.appendChild(el('span', 'f-' + (h.dead ? 'dead' : h.carriedOut ? 'crystal' : h.fleeing ? 'scared' : 'left'), fate(h)));
         list.appendChild(r);
       });
-      if (!fl.heroes.length) frow(list, 'Brak bohaterów.');
+      if (!fl.heroes.length) frow(list, L('Brak bohaterów.', 'No heroes.'));
     } else if (cur === 'items') {
       const rows = Object.keys(fl.byType).filter(k => !TOOLS[k] && ITEMS[k]).map(k => ({ k, b: fl.byType[k], pts: fl.byType[k].pts + fl.byType[k].passivePts + fl.byType[k].fearPts })).filter(r => r.pts > 0.05 || r.b.placed > 0).sort((a, b) => b.pts - a.pts);
       const mx = Math.max(0.01, ...rows.map(r => r.pts));
-      rows.forEach(r => { const d = el('div', 'irow'), bar = el('i'); bar.style.width = Math.max(2, Math.round(100 * r.pts / mx)) + '%'; const bw = el('span', 'bw'); bw.appendChild(bar); d.appendChild(el('span', null, ITEMS[r.k].name)); d.appendChild(bw); d.appendChild(el('b', null, fmtE(r.pts) + ' · ' + r.b.hits + ' traf.')); list.appendChild(d); });
-      if (!rows.length) frow(list, 'Żaden element nic nie dał w tej fali.');
+      rows.forEach(r => { const d = el('div', 'irow'), bar = el('i'); bar.style.width = Math.max(2, Math.round(100 * r.pts / mx)) + '%'; const bw = el('span', 'bw'); bw.appendChild(bar); d.appendChild(el('span', null, ITEMS[r.k].name)); d.appendChild(bw); d.appendChild(el('b', null, fmtE(r.pts) + ' · ' + r.b.hits + L(' traf.', ' hits'))); list.appendChild(d); });
+      if (!rows.length) frow(list, L('Żaden element nic nie dał w tej fali.', 'No element earned anything this wave.'));
     } else {
       const cell = (label, v) => { const c = el('div', 'cell'); c.appendChild(el('span', null, label)); c.appendChild(el('b', null, String(v))); list.appendChild(c); };
-      cell('Krytyk / draśn. / pudło', s.checkCrit + ' / ' + s.checkOk + ' / ' + s.checkMiss);
-      cell('Ciosy z pamięci', String(s.memFires || 0));
-      cell('Najwyższe combo', '×' + fmt2(1 + 0.25 * (s.maxCombo - 1)));
-      cell('Łup: zobaczony / zabrany', s.lootSeen + ' / ' + s.loot);
-      cell('Rozbrojone / odczynione', s.disarmed + ' / ' + s.blessed);
-      cell('Plotki: pokoje / pułapki', s.rumorRooms + ' / ' + s.rumorTraps);
-      cell('Zapadnie / klatki', s.falls + ' / ' + s.cages);
-      cell('Serce / dla Ciebie', Math.round(s.essHeart || 0) + ' / ' + Math.round(Math.max(0, fl.score - (s.essHeart || 0))));
-      cell('Czas / przyspieszenie', mmss(fl.time) + ' / ' + Math.round(s.ffTime) + ' s');
-      cell('Osobno: zwiad / sam / zgubiony (s)', Math.round(s.splitTime || 0) + ' / ' + Math.round(s.loneTime || 0) + ' / ' + Math.round(s.lostTime || 0));   // 1.17: these rows were only in the unused statsTable
-      cell('Rozglądania / monety / pułapki z szukania', (s.looks || 0) + ' / ' + (s.goldFound || 0) + ' / ' + (s.lookTraps || 0));
-      cell('Narada: dom / szturm / chwila · sami do domu', (s.councilHome || 0) + ' / ' + (s.councilStorm || 0) + ' / ' + (s.councilMore || 0) + ' · ' + (s.goHome || 0));
-      cell('Słyszane zza ściany / wieści o śmierci', (s.heard || 0) + ' / ' + (s.newsDeaths || 0));
-      cell('Rozłam: grupy / bunty (udane) / obrażeni / powroty', (s.rifts || 0) + ' / ' + (s.mutinies || 0) + ' (' + (s.mutinyWins || 0) + ') / ' + (s.sulks || 0) + ' / ' + (s.merges || 0));   // 1.19
-      cell('Ekwipunek: z ciał / podane (amulety) / przydział / oferty / za ciężkie / latarnia ratuje / łom', (s.bodyLoot || 0) + ' / ' + (s.gearGiven || 0) + ' (' + (s.amuletGiven || 0) + ') / ' + (s.lootAssign || 0) + ' / ' + (s.lootOffer || 0) + ' / ' + (s.tooHeavy || 0) + ' / ' + (s.lanternSaves || 0) + ' / ' + ((s.crowbarGate || 0) + (s.crowbarCage || 0)));   // 1.20
-      cell('Więzi: pary / żałoba (zemsta) / nie zostawię (uratowani) / mistrz: uwagi, pochwały / kpiny / kłótnie (przerwane) / sprzeciw nad ciałem / zakłady: wygrane-przegrane',
+      cell(L('Krytyk / draśn. / pudło', 'Crit / graze / miss'), s.checkCrit + ' / ' + s.checkOk + ' / ' + s.checkMiss);
+      cell(L('Ciosy z pamięci', 'Hits from memory'), String(s.memFires || 0));
+      cell(L('Najwyższe combo', 'Top combo'), '×' + fmt2(1 + 0.25 * (s.maxCombo - 1)));
+      cell(L('Łup: zobaczony / zabrany', 'Loot: seen / taken'), s.lootSeen + ' / ' + s.loot);
+      cell(L('Rozbrojone / odczynione', 'Disarmed / dispelled'), s.disarmed + ' / ' + s.blessed);
+      cell(L('Plotki: pokoje / pułapki', 'Rumours: rooms / traps'), s.rumorRooms + ' / ' + s.rumorTraps);
+      cell(L('Zapadnie / klatki', 'Trapdoors / cages'), s.falls + ' / ' + s.cages);
+      cell(L('Serce / dla Ciebie', 'Heart / yours'), Math.round(s.essHeart || 0) + ' / ' + Math.round(Math.max(0, fl.score - (s.essHeart || 0))));
+      cell(L('Czas / przyspieszenie', 'Time / fast-forward'), mmss(fl.time) + ' / ' + Math.round(s.ffTime) + ' s');
+      cell(L('Osobno: zwiad / sam / zgubiony (s)', 'Apart: scouting / alone / lost (s)'), Math.round(s.splitTime || 0) + ' / ' + Math.round(s.loneTime || 0) + ' / ' + Math.round(s.lostTime || 0));   // 1.17: these rows were only in the unused statsTable
+      cell(L('Rozglądania / monety / pułapki z szukania', 'Look-arounds / coins / traps found searching'), (s.looks || 0) + ' / ' + (s.goldFound || 0) + ' / ' + (s.lookTraps || 0));
+      cell(L('Narada: dom / szturm / chwila · sami do domu', 'Council: home / attack / wait · went home alone'), (s.councilHome || 0) + ' / ' + (s.councilStorm || 0) + ' / ' + (s.councilMore || 0) + ' · ' + (s.goHome || 0));
+      cell(L('Słyszane zza ściany / wieści o śmierci', 'Heard through walls / news of deaths'), (s.heard || 0) + ' / ' + (s.newsDeaths || 0));
+      cell(L('Rozłam: grupy / bunty (udane) / obrażeni / powroty', 'Rifts: groups / mutinies (won) / sulking / rejoined'), (s.rifts || 0) + ' / ' + (s.mutinies || 0) + ' (' + (s.mutinyWins || 0) + ') / ' + (s.sulks || 0) + ' / ' + (s.merges || 0));   // 1.19
+      cell(L('Ekwipunek: z ciał / podane (amulety) / przydział / oferty / za ciężkie / latarnia ratuje / łom', 'Gear: from bodies / given (amulets) / assigned / offers / too heavy / lantern saves / crowbar'), (s.bodyLoot || 0) + ' / ' + (s.gearGiven || 0) + ' (' + (s.amuletGiven || 0) + ') / ' + (s.lootAssign || 0) + ' / ' + (s.lootOffer || 0) + ' / ' + (s.tooHeavy || 0) + ' / ' + (s.lanternSaves || 0) + ' / ' + ((s.crowbarGate || 0) + (s.crowbarCage || 0)));   // 1.20
+      cell(L('Więzi: pary / żałoba (zemsta) / nie zostawię (uratowani) / mistrz: uwagi, pochwały / kpiny / kłótnie (przerwane) / sprzeciw nad ciałem / zakłady: wygrane-przegrane', 'Bonds: pairs / grief (revenge) / leave no one (saved) / mentor: notes, praise / mockery / quarrels (stopped) / protest over a body / bets: won-lost'),
         (s.bonds || 0) + ' / ' + (s.griefs || 0) + ' (' + (s.revengeVows || 0) + ') / ' + (s.noLeave || 0) + ' (' + (s.noLeaveSaved || 0) + ') / ' + (s.mentorWatch || 0) + ', ' + (s.mentorProud || 0) + ' / ' + (s.rivalMock || 0) + ' / ' +
         (s.quarrels || 0) + ' (' + (s.quarrelStops || 0) + ') / ' + (s.lootDeadObject || 0) + ' / ' + (s.betsWon || 0) + '-' + (s.betsLost || 0));   // 1.21
-      cell('Finał: eskorta / przekazania / ostatni bastion / poświęcenia / ty pierwszy / opukane / nie tędy / szyk',
+      cell(L('Finał: eskorta / przekazania / ostatni bastion / poświęcenia / ty pierwszy / opukane / nie tędy / szyk', 'Finale: escort / hand-overs / last stand / sacrifices / you first / walls tapped / not this way / formation'),
         (s.escortForms || 0) + ' (' + (s.guardSoaks || 0) + ') / ' + (s.handOvers || 0) + ' / ' + (s.lastStands || 0) + ' / ' + (s.sacrifices || 0) + ' (' + (s.sacrificeFired || 0) + ') / ' + (s.youFirst || 0) + ' / ' +
         (s.taps || 0) + ' (' + (s.tapFound || 0) + ') / ' + (s.notThisWay || 0) + ' / ' + (s.frontLines || 0) + ', ' + (s.woundedBack || 0));   // 1.22
-      cell('Nemezis: w fali / nagrody (Esencja) / urazy (załatwione) / ostrzeżenia / pamięć poległych',
+      cell(L('Nemezis: w fali / nagrody (Esencja) / urazy (załatwione) / ostrzeżenia / pamięć poległych', 'Nemesis: in wave / bounties (Essence) / grudges (settled) / warnings / memory of the fallen'),
         (s.nemeses || 0) + ' / ' + (s.bounties || 0) + ' (' + Math.round(s.essBounty || 0) + ') / ' + (s.grudgeHits || 0) + ' (' + (s.grudgeDone || 0) + ') / ' + (s.nemesisWarn || 0) + ' / ' + (s.fallenMemory || 0));   // 1.23
-      cell('Kwestie o tym, co widzieli / zamienione / pominięte', (s.sawTalk || 0) + ' / ' + (s.lineSwap || 0) + ' / ' + (s.lineDrop || 0));   // 1.17.1
+      cell(L('Kwestie o tym, co widzieli / zamienione / pominięte', 'Lines about what they saw / swapped / dropped'), (s.sawTalk || 0) + ' / ' + (s.lineSwap || 0) + ' / ' + (s.lineDrop || 0));   // 1.17.1
     }
     fitList(list);
   }
@@ -1412,28 +1445,28 @@
   function cardFit(u) {
     const need = CARD_NEEDS[u.id]; if (!need || u.kind !== 'card' || !fl) return null;
     const miss = need.filter(t => !needHas(t)), have = CARD_ALL[u.id] ? !miss.length : miss.length < need.length;
-    if (have) return { ok: true, text: ' Pasuje do Twojego lochu.' };
-    return { ok: false, text: need === MON_T ? ' Brak potworów w lochu.' : need === LOOT_T ? ' Brak łupu w lochu.' : ' Brak w lochu: ' + (CARD_ALL[u.id] ? miss : need).map(t => ITEMS[t] ? ITEMS[t].name : t).join(', ') + '.' };
+    if (have) return { ok: true, text: L(' Pasuje do Twojego lochu.', ' Fits your dungeon.') };
+    return { ok: false, text: need === MON_T ? L(' Brak potworów w lochu.', ' No monsters in your dungeon.') : need === LOOT_T ? L(' Brak łupu w lochu.', ' No loot in your dungeon.') : L(' Brak w lochu: ', ' Not in your dungeon: ') + (CARD_ALL[u.id] ? miss : need).map(t => ITEMS[t] ? ITEMS[t].name : t).join(', ') + '.' };
   }
   function kindShort(u) {
-    if (u.kind === 'unlock') return 'odblokowanie' + effWords(u.unlock).map(w => ' · ' + w.toLowerCase()).join('');   // 1.24 (B, P1-4)
-    if (u.kind === 'instant') return RAR_NAME[u.rar] + ' · od razu';
+    if (u.kind === 'unlock') return L('odblokowanie', 'unlock') + effWords(u.unlock).map(w => ' · ' + w.toLowerCase()).join('');   // 1.24 (B, P1-4)
+    if (u.kind === 'instant') return RAR_NAME[u.rar] + L(' · od razu', ' · instant');
     const n = run.deck.filter(x => x === u.id).length;
-    return RAR_NAME[u.rar] + (u.unique ? ' · jedna' : '') + (fuses(u) ? ' · połączy się w ★' : n ? ' · w talii ' + n : '');   // 1.24
+    return RAR_NAME[u.rar] + (u.unique ? L(' · unikat', ' · unique') : '') + (fuses(u) ? L(' · połączy się w ★', ' · fuses into ★') : n ? L(' · w talii: ', ' · in deck: ') + n : '');   // 1.24
   }
   function renderShop(card, m) {
     const build = fl && fl.phase === 'build';
     run.stash = run.stash || [];
     const free = run.freePicks > 0, rerender = () => { card.classList.remove('enter'); card.innerHTML = ''; renderShop(card, m); };
-    scrHead(card, 'Przed falą ' + run.wave, 'Sklep', String(Math.floor(fl.essence)), free ? 'Esencji · darmowe: ' + run.freePicks : 'Esencji');
-    if (!build) { card.appendChild(el('p', 'note', 'Sklep działa między falami.')); card.appendChild(btn('primary', 'Zamknij', null, closeModal)); return; }
+    scrHead(card, L('Przed falą ', 'Before wave ') + run.wave, L('Sklep', 'Shop'), String(Math.floor(fl.essence)), free ? L(run.freePicks === 1 ? 'Esencji · 1 darmowa karta' : 'Esencji · darmowe karty: ' + run.freePicks, 'Essence · ' + run.freePicks + (run.freePicks === 1 ? ' free card' : ' free cards')) : L('Esencji', 'Essence'));
+    if (!build) { card.appendChild(el('p', 'note', L('Sklep działa między falami.', 'The shop opens between waves.'))); card.appendChild(btn('primary', L('Zamknij', 'Close'), null, closeModal)); return; }
     // 1.15.1 (author: the tutorial's tip in the shop was gone at once, before it could be read): a card over the top of the shop
     // that stays until Rozumiem or until a card is taken (it was a message over the big button, fading after 2 s)
     if (run.tutorial && !run.shopTipDone) {
       const tip = el('div', 'shoptip'); tip.id = 'shop-tip';
-      tip.appendChild(el('div', null, 'Po każdej fali jedną kartę bierzesz tu za darmo (Weź za darmo), a kolejne kupisz za Esencję. Wzięta karta trafia do talii na dole i działa do końca runu. Odblokowanie (fioletowy pasek) daje nową pułapkę albo potwora na stałe.'));
-      const row = el('div', 'crow'); row.appendChild(el('span', 'step', 'Samouczek'));
-      const ok = el('button', 'next', 'Rozumiem'); ok.type = 'button'; ok.id = 'shop-tip-ok'; ok.addEventListener('click', () => { run.shopTipDone = true; rerender(); }); row.appendChild(ok);
+      tip.appendChild(el('div', null, L('Po każdej fali jedna karta jest za darmo. Kolejne kupujesz za Esencję. Karta trafia do talii na dole i działa do końca runu. Odblokowanie (fioletowy pasek) daje na stałe nową pułapkę albo potwora.', 'After every wave one card is free. More cost Essence. A card goes to your deck below and works for the rest of the run. An unlock (purple bar) gives you a new trap or monster for good.')));
+      const row = el('div', 'crow'); row.appendChild(el('span', 'step', L('Samouczek', 'Tutorial')));
+      const ok = el('button', 'next', L('Rozumiem', 'Got it')); ok.type = 'button'; ok.id = 'shop-tip-ok'; ok.addEventListener('click', () => { run.shopTipDone = true; rerender(); }); row.appendChild(ok);
       tip.appendChild(row); card.appendChild(tip);
     }
     const body = el('div', 'scr-body'); card.appendChild(body);
@@ -1446,41 +1479,41 @@
     if (heartView) {
       og.classList.add('heartrow');
       const hd = el('div', 'hearthead'); hd.id = 'heart-head';
-      hd.appendChild(el('b', null, '♥ Dar serca · poziom ' + hk.lv));
-      hd.appendChild(el('span', null, 'Serce urosło (Danina albo Ofiara): weź jedną kartę za darmo.' + (run.heartPicks.length > 1 ? ' Czeka jeszcze ' + (run.heartPicks.length - 1) + '.' : '') + (hk.ids.includes('regrow') ? ' Odrost odda utracony kryształ.' : '')));
+      hd.appendChild(el('b', null, L('♥ Dar serca · poziom ', "♥ Heart's Gift · level ") + hk.lv));
+      hd.appendChild(el('span', null, L('Serce urosło. Weź jedną kartę za darmo.', 'Your heart grew. Take one card for free.') + (run.heartPicks.length > 1 ? L(' Czeka jeszcze ' + (run.heartPicks.length - 1) + '.', ' ' + (run.heartPicks.length - 1) + ' more waiting.') : '') + (hk.ids.includes('regrow') ? L(' Odrost oddaje utracony kryształ.', ' Regrowth gives back a lost crystal.') : '')));
       og.appendChild(hd);
       hk.ids.forEach((id, i) => {
         const u = UPG[id], b = el('div', 'offer heart rar-' + u.rar); b.id = 'heart-offer-' + i;
         { const ca = ART.cardImg(u.id); if (ca) b.appendChild(ca); }   // 1.26: the card's picture
-        b.appendChild(el('span', 'ok', id === 'regrow' ? 'kryształ · od razu' : kindShort(u))); b.appendChild(el('b', null, u.name));
+        b.appendChild(el('span', 'ok', id === 'regrow' ? L('kryształ · od razu', 'crystal · instant') : kindShort(u))); b.appendChild(el('b', null, u.name));
         const tx = el('span', 'tx', u.text), fit = cardFit(u);
-        if (fuses(u)) tx.appendChild(el('i', 'fit good fz', ' Połączy się w ★: ' + fuseText(u).replace(/^★ Połączona: /, '')));
+        if (fuses(u)) tx.appendChild(el('i', 'fit good fz', L(' Połączy się w ★: ', ' Fuses into ★: ') + fuseText(u).replace(/^★ [^:]+: /, '')));
         if (fit) tx.appendChild(el('i', 'fit ' + (fit.ok ? 'good' : 'bad'), fit.text));
         b.appendChild(tx);
-        const by = el('button', 'buy', 'Weź za darmo'); by.type = 'button'; by.id = 'heart-take-' + i;
-        by.addEventListener('click', () => { const r = heartTake(i); m.msg = r === 'full' ? 'Talia i schowek są pełne: sprzedaj albo odłóż kartę.' : r === 'stash' ? u.name + ': do schowka (talia pełna).' : r === 'fused' ? u.name + ': połączona w ★.' : r === 'no' ? '' : id === 'regrow' ? 'Odrost: kryształ wraca do serca.' : 'Dar serca: ' + u.name + ' w talii.'; rerender(); });
+        const by = el('button', 'buy', L('Weź za darmo', 'Take for free')); by.type = 'button'; by.id = 'heart-take-' + i;
+        by.addEventListener('click', () => { const r = heartTake(i); m.msg = r === 'full' ? L('Talia i schowek są pełne: najpierw sprzedaj kartę.', 'Deck and stash are full: sell a card first.') : r === 'stash' ? u.name + L(': do schowka (talia pełna).', ': to stash (deck full).') : r === 'fused' ? u.name + L(': połączona w ★.', ': fused into ★.') : r === 'no' ? '' : id === 'regrow' ? L('Odrost: kryształ wraca do serca.', 'Regrowth: a crystal returns to your heart.') : L('Dar serca: ' + u.name + ' w talii.', "Heart's Gift: " + u.name + ' added to deck.'); rerender(); });
         b.appendChild(by); og.appendChild(b);
       });
-      const later = el('button', 'mini heartlater', 'Później (sklep)'); later.type = 'button'; later.id = 'heart-later'; later.addEventListener('click', () => { m.heartLater = true; rerender(); }); og.appendChild(later);
+      const later = el('button', 'mini heartlater', L('Później', 'Later')); later.type = 'button'; later.id = 'heart-later'; later.addEventListener('click', () => { m.heartLater = true; rerender(); }); og.appendChild(later);
     }
     (heartView ? [] : run.shop.ids).forEach((id, i) => {
       const u = UPG[id], b = el('div', 'offer'); b.id = 'offer-' + i;
-      if (!u) { b.classList.add('bought'); b.appendChild(el('b', null, 'Kupione')); og.appendChild(b); return; }
+      if (!u) { b.classList.add('bought'); b.appendChild(el('b', null, L('Kupione', 'Bought'))); og.appendChild(b); return; }
       const price = priceOf(u), poor = !free && fl.essence < price;
       b.classList.add('rar-' + u.rar); if (u.kind === 'unlock') b.classList.add('unlock'); if (poor) b.classList.add('poor');
       { const ca = ART.cardImg(u.id); if (ca) b.appendChild(ca); }   // 1.26: the card's picture over its name
       b.appendChild(el('span', 'ok', kindShort(u))); b.appendChild(el('b', null, u.name));
       const tx = el('span', 'tx', u.text), fit = cardFit(u);
-      if (fuses(u)) { b.classList.add('fuse'); tx.appendChild(el('i', 'fit good fz', ' Połączy się w ★: ' + fuseText(u).replace(/^★ Połączona: /, ''))); }   // 1.24
+      if (fuses(u)) { b.classList.add('fuse'); tx.appendChild(el('i', 'fit good fz', L(' Połączy się w ★: ', ' Fuses into ★: ') + fuseText(u).replace(/^★ [^:]+: /, ''))); }   // 1.24
       if (fit) tx.appendChild(el('i', 'fit ' + (fit.ok ? 'good' : 'bad'), fit.text));
       b.appendChild(tx);
-      const by = el('button', 'buy', free ? 'Weź za darmo' : poor ? 'Za mało (' + price + ')' : 'Kup za ' + price + ' Esencji'); by.type = 'button'; by.id = 'offer-buy-' + i; by.disabled = poor;
-      by.setAttribute('aria-label', (free ? 'Weź za darmo: ' : 'Kup za ' + price + ' Esencji: ') + u.name);
+      const by = el('button', 'buy', free ? L('Weź za darmo', 'Take for free') : poor ? L('Za mało (', 'Not enough (') + price + ')' : L('Kup za ' + price + ' Esencji', 'Buy for ' + price + ' Essence')); by.type = 'button'; by.id = 'offer-buy-' + i; by.disabled = poor;
+      by.setAttribute('aria-label', (free ? L('Weź za darmo: ', 'Take for free: ') : L('Kup za ' + price + ' Esencji: ', 'Buy for ' + price + ' Essence: ')) + u.name);
       by.addEventListener('click', () => {
         const r = shopBuy(i);
-        if (r === 'ess') m.msg = 'Za mało Esencji (' + price + ').';
-        else if (r === 'full') m.msg = 'Talia i schowek są pełne: sprzedaj albo odłóż kartę.';
-        else { m.sel = null; run.shopTipDone = true; m.msg = r === 'fused' ? u.name + ': połączona w ★ (jedno miejsce).' : r === 'stash' ? u.name + ': do schowka (talia pełna).' : u.kind === 'unlock' ? u.name + ': odblokowane na stałe.' : u.kind === 'instant' ? u.name + '.' : 'W talii: ' + u.name + '.'; }
+        if (r === 'ess') m.msg = L('Za mało Esencji (', 'Not enough Essence (') + price + ').';
+        else if (r === 'full') m.msg = L('Talia i schowek są pełne: najpierw sprzedaj kartę.', 'Deck and stash are full: sell a card first.');
+        else { m.sel = null; run.shopTipDone = true; m.msg = r === 'fused' ? u.name + L(': połączona w ★ (jedno miejsce).', ': fused into ★ (one slot).') : r === 'stash' ? u.name + L(': do schowka (talia pełna).', ': to stash (deck full).') : u.kind === 'unlock' ? u.name + L(': odblokowane na stałe.', ': unlocked for good.') : u.kind === 'instant' ? u.name + '.' : L('W talii: ', 'Added to deck: ') + u.name + '.'; }
         rerender();
       });
       b.appendChild(by); og.appendChild(b);
@@ -1490,18 +1523,18 @@
       const arr = sel.k === 'd' ? run.deck : run.stash, u = UPG[arr[sel.i]];
       if (u) {
         const fz = isFused(u.id), sh = el('div', 'sheet rar-' + u.rar + (fz ? ' fused' : '')); sh.id = 'shop-sheet';   // 1.24: a fused ★ card
-        sh.appendChild(el('div', 'dk', (sel.k === 'd' ? 'w talii · ' : 'w schowku (nie działa) · ') + RAR_NAME[u.rar]));
+        sh.appendChild(el('div', 'dk', (sel.k === 'd' ? L('w talii · ', 'in deck · ') : L('w schowku, nie działa · ', 'in stash, inactive · ')) + RAR_NAME[u.rar]));
         sh.appendChild(el('b', null, cardName(u.id))); sh.appendChild(el('div', 'tx', u.text + (fz ? ' ' + fuseText(u) : '')));
         const da = el('div', 'da');
         const mini = (id, txt, fn, cls, off) => { const b = el('button', 'mini' + (cls ? ' ' + cls : ''), txt); b.type = 'button'; if (id) b.id = id; b.disabled = !!off; b.addEventListener('click', fn); da.appendChild(b); return b; };
-        if (sel.k === 'd') mini('deck-stash', 'Do schowka', () => { if (toStash(sel.i)) { m.sel = null; m.msg = u.name + ': do schowka.'; } rerender(); }, '', run.stash.length >= stashCap());
-        else mini('stash-deck', 'Do talii', () => { if (fromStash(sel.i)) { m.sel = null; m.msg = u.name + ': z powrotem w talii.'; } rerender(); }, '', run.deck.length >= run.deckSize);
-        const sb = mini('card-sell', 'Sprzedaj +' + sellFor(u.id), () => {   // 1.24: sellFor
-          if (!sb.dataset.sure) { sb.dataset.sure = '1'; sb.textContent = 'Na pewno? +' + sellFor(u.id); sb.classList.add('warn'); return; }
-          const g = sel.k === 'd' ? sellCard(sel.i) : sellStash(sel.i); m.sel = null; m.msg = 'Sprzedane: ' + u.name + ' (+' + g + ' Esencji).'; rerender();
+        if (sel.k === 'd') mini('deck-stash', L('Do schowka', 'To stash'), () => { if (toStash(sel.i)) { m.sel = null; m.msg = u.name + L(': w schowku.', ': moved to stash.'); } rerender(); }, '', run.stash.length >= stashCap());
+        else mini('stash-deck', L('Do talii', 'To deck'), () => { if (fromStash(sel.i)) { m.sel = null; m.msg = u.name + L(': z powrotem w talii.', ': back in deck.'); } rerender(); }, '', run.deck.length >= run.deckSize);
+        const sb = mini('card-sell', L('Sprzedaj +', 'Sell +') + sellFor(u.id), () => {   // 1.24: sellFor
+          if (!sb.dataset.sure) { sb.dataset.sure = '1'; sb.textContent = L('Na pewno? +', 'Sure? +') + sellFor(u.id); sb.classList.add('warn'); return; }
+          const g = sel.k === 'd' ? sellCard(sel.i) : sellStash(sel.i); m.sel = null; m.msg = L('Sprzedane: ', 'Sold: ') + u.name + ' (+' + g + L(' Esencji).', ' Essence).'); rerender();
         });
         sh.appendChild(da);
-        const x = el('button', 'x', '×'); x.type = 'button'; x.id = 'sheet-close'; x.setAttribute('aria-label', 'Zamknij kartę'); x.addEventListener('click', () => { m.sel = null; rerender(); }); sh.appendChild(x);
+        const x = el('button', 'x', '×'); x.type = 'button'; x.id = 'sheet-close'; x.setAttribute('aria-label', L('Zamknij kartę', 'Close card')); x.addEventListener('click', () => { m.sel = null; rerender(); }); sh.appendChild(x);
         og.appendChild(sh);
       }
     }
@@ -1510,35 +1543,35 @@
     if (!heartView && run.shop.rune) {
       const f = run.shop.rune, F = FAMILIES[f], lv = run.famLv[f] || 0, c = runePrice(lv), rb = el('div', 'runerow'); rb.id = 'shop-rune';
       const nm = el('span', 'rn'); { const ru = ART.rune && ART.rune(f); if (ru) { const im = el('img', 'runeimg'); im.src = ru; im.alt = ''; nm.appendChild(im); } }
-      nm.insertAdjacentHTML('beforeend', '<b style="color:' + F.color + '">' + F.glyph + ' Runa rodu: ' + F.name + '</b> <small>poz. ' + lv + ' → ' + (lv + 1) + ' (max ' + RUNE_MAX + ')</small>');
+      nm.insertAdjacentHTML('beforeend', '<b style="color:' + F.color + '">' + F.glyph + L(' Runa rodu: ', ' Family Rune: ') + F.name + '</b> <small>' + L('poz. ', 'lvl ') + lv + ' → ' + (lv + 1) + ' (max ' + RUNE_MAX + ')</small>');
       rb.appendChild(nm);
-      rb.appendChild(el('span', 'rt', (f === 'treasure' ? 'łup podbija chciwość o 8% mocniej' : 'jej elementy +8% mocy i -4% odnowienia') + ' (' + F.items.filter(t => ITEMS[t]).map(t => ITEMS[t].name).slice(0, 4).join(', ') + (F.items.length > 4 ? '...' : '') + '). Działa od razu, nie zajmuje talii.'));
-      const b = el('button', 'buy', fl.essence < c ? 'Za mało (' + c + ')' : 'Kup za ' + c); b.type = 'button'; b.id = 'rune-buy'; b.disabled = fl.essence < c;
-      b.addEventListener('click', () => { const r = runeBuy(); m.msg = r === 'ok' ? 'Runa rodu: ' + F.name + ' na poziomie ' + (lv + 1) + '.' : 'Za mało Esencji.'; rerender(); });
+      rb.appendChild(el('span', 'rt', (f === 'treasure' ? L('łup podbija chciwość o 8% mocniej', 'loot raises greed 8% more') : L('elementy rodziny: +8% mocy, -4% odnowienia', 'family elements: +8% power, -4% cooldown')) + ' (' + F.items.filter(t => ITEMS[t]).map(t => ITEMS[t].name).slice(0, 4).join(', ') + (F.items.length > 4 ? '...' : '') + L('). Działa od razu, bez miejsca w talii.', '). Works at once, takes no deck slot.')));
+      const b = el('button', 'buy', fl.essence < c ? L('Za mało (', 'Not enough (') + c + ')' : L('Kup za ', 'Buy for ') + c); b.type = 'button'; b.id = 'rune-buy'; b.disabled = fl.essence < c;
+      b.addEventListener('click', () => { const r = runeBuy(); m.msg = r === 'ok' ? L('Runa rodu: ' + F.name + ', poziom ' + (lv + 1) + '.', 'Family Rune: ' + F.name + ', level ' + (lv + 1) + '.') : L('Za mało Esencji.', 'Not enough Essence.'); rerender(); });
       rb.appendChild(b); body.appendChild(rb);
     }
     // refresh, refresh for an ad: two buttons that are always there (1.05, author: crystals are no longer bought back for Esencja)
     const acts = el('div', 'acts');
-    const act = (id, title, sub, off, fn) => { const b = el('button'); b.type = 'button'; b.id = id; b.appendChild(el('b', null, title)); b.appendChild(el('span', / Esencji$/.test(sub) ? 'ess' : null, sub)); b.disabled = !!off; b.addEventListener('click', fn); acts.appendChild(b); return b; };
+    const act = (id, title, sub, off, fn) => { const b = el('button'); b.type = 'button'; b.id = id; b.appendChild(el('b', null, title)); b.appendChild(el('span', / (Esencji|Essence)$/.test(sub) ? 'ess' : null, sub)); b.disabled = !!off; b.addEventListener('click', fn); acts.appendChild(b); return b; };
     const rc = rerollCost();
-    act('shop-reroll', 'Odśwież', rc ? rc + ' Esencji' : 'gratis', fl.essence < rc, () => { if (shopReroll(false)) { m.sel = null; m.msg = 'Nowa oferta.'; } else m.msg = 'Za mało Esencji na odświeżenie.'; rerender(); });
-    act('shop-ad', 'Za reklamę', run.shop.ad ? 'już użyte' : 'odśwież raz', run.shop.ad, () => { shopReroll(true); m.sel = null; m.msg = 'Nowa oferta (reklama, symulacja).'; rerender(); });
+    act('shop-reroll', L('Odśwież', 'Refresh'), rc ? rc + L(' Esencji', ' Essence') : L('gratis', 'free'), fl.essence < rc, () => { if (shopReroll(false)) { m.sel = null; m.msg = L('Nowa oferta.', 'New offer.'); } else m.msg = L('Za mało Esencji na odświeżenie.', 'Not enough Essence to refresh.'); rerender(); });
+    act('shop-ad', L('Za reklamę', 'Watch ad'), run.shop.ad ? L('już użyte', 'used') : L('odśwież raz', 'one refresh'), run.shop.ad, () => { shopReroll(true); m.sel = null; m.msg = L('Nowa oferta (reklama, symulacja).', 'New offer (ad, simulated).'); rerender(); });
     body.appendChild(acts);
     // the deck and the stash: every slot has its place, empty ones too
-    const dk = panel(body, 'Talia ' + run.deck.length + '/' + run.deckSize, 'schowek ' + run.stash.length + '/' + stashCap() + ' (nie działa)', 'deckp');
+    const dk = panel(body, L('Talia ', 'Deck ') + run.deck.length + '/' + run.deckSize, L('schowek ', 'stash ') + run.stash.length + '/' + stashCap() + L(' · karty tu nie działają', ' · cards here are inactive'), 'deckp');
     const g = el('div', 'slots');
     const slot = (u, k, i, empty) => {
       const b = el('button', 'slot' + (k === 's' ? ' st' : '') + (u ? ' rar-' + u.rar : ' empty') + (u && isFused(u.id) ? ' fused' : '') + (sel && sel.k === k && sel.i === i ? ' sel' : ''), u ? cardName(u.id) : empty); b.type = 'button';   // 1.24: ★
       if (u) b.addEventListener('click', () => { m.sel = sel && sel.k === k && sel.i === i ? null : { k, i }; rerender(); }); else b.disabled = true;
       g.appendChild(b);
     };
-    for (let i = 0; i < run.deckSize; i++) slot(UPG[run.deck[i]], 'd', i, 'wolne');
-    for (let i = 0; i < stashCap(); i++) slot(UPG[run.stash[i]], 's', i, 'schowek');
+    for (let i = 0; i < run.deckSize; i++) slot(UPG[run.deck[i]], 'd', i, L('wolne', 'empty'));
+    for (let i = 0; i < stashCap(); i++) slot(UPG[run.stash[i]], 's', i, L('schowek', 'stash'));
     dk.appendChild(g);
     const foot = el('div', 'scr-foot'); card.appendChild(foot);
     const hp = (run.heartPicks || []).length;
-    const done = btn('primary', 'Do budowy fali ' + run.wave, free || hp ? [free ? 'darmowe karty: ' + run.freePicks : '', hp ? 'Dar serca: ' + hp : ''].filter(Boolean).join(' · ') + ' poczekają' : 'sklep: pierwszy kafelek w Talii', closeModal); done.id = 'shop-close';
-    if (!heartView && hk) { const hb = el('button', 'mini heartback', '♥ Dar serca czeka (' + hp + ')'); hb.type = 'button'; hb.id = 'heart-back'; hb.addEventListener('click', () => { m.heartLater = false; m.sel = null; rerender(); }); foot.appendChild(hb); }
+    const done = btn('primary', L('Do budowy fali ', 'Build wave ') + run.wave, free || hp ? [free ? L('darmowe karty: ', 'free cards: ') + run.freePicks : '', hp ? L('Dar serca: ', "Heart's Gift: ") + hp : ''].filter(Boolean).join(' · ') + L(' poczekają', ' will wait') : L('sklep otworzysz w zakładce Talia', 'reopen the shop from the Deck tab'), closeModal); done.id = 'shop-close';
+    if (!heartView && hk) { const hb = el('button', 'mini heartback', L('♥ Dar serca czeka (', "♥ Heart's Gift (") + hp + ')'); hb.type = 'button'; hb.id = 'heart-back'; hb.addEventListener('click', () => { m.heartLater = false; m.sel = null; rerender(); }); foot.appendChild(hb); }
     foot.appendChild(done);
     if (m.msg) { foot.appendChild(el('div', 'shopmsg', m.msg)); m.msg = ''; }   // what just happened: a message over the big button (1.12.1: in the shop itself, the top hint is gone)
     requestAnimationFrame(() => { card.querySelectorAll('.offer:not(.bought), .sheet').forEach(fitText); card.querySelectorAll('.slot:not(.empty)').forEach(fitSlot); });
@@ -1573,34 +1606,34 @@
     m.wasBest = wasBest;
     const isBest = run.total > wasBest && run.total > 0;
     if (run.result === 'win') card.classList.add('vic');
-    scrHead(card, 'Koniec runu · ' + mmss(dur), run.result === 'win' ? 'Zwycięstwo' : run.result === 'quit' ? 'Run przerwany' : 'Loch upadł', String(Math.round(run.total)), 'Esencji w runie', [run.total, v => String(Math.round(v))]);
+    scrHead(card, L('Koniec runu · ', 'Run over · ') + mmss(dur), run.result === 'win' ? L('Zwycięstwo', 'Victory') : run.result === 'quit' ? L('Run przerwany', 'Run ended') : L('Loch upadł', 'Your dungeon fell'), String(Math.round(run.total)), L('Esencji w runie', 'Essence this run'), [run.total, v => String(Math.round(v))]);
     const body = el('div', 'scr-body'); card.appendChild(body);
-    body.appendChild(el('p', 'note', run.reason + (run.endless > 0 ? ' Po wygranej fale bez końca: ' + run.endless + '.' : '')));
-    const rk = rankOf(run.total), rr = el('div', 'rankrow'), pill = el('div', 'rank', 'Ranga: ' + rk.name);
-    if (rk.next) pill.appendChild(el('small', null, 'następna: ' + rk.next[1] + ' od ' + rk.next[0]));
-    rr.appendChild(pill); if (isBest) rr.appendChild(el('span', 'newrec', 'Nowy rekord!')); body.appendChild(rr);
+    body.appendChild(el('p', 'note', run.reason + (run.endless > 0 ? L(' Fale bez końca po zwycięstwie: ', ' Endless waves after the win: ') + run.endless + '.' : '')));
+    const rk = rankOf(run.total), rr = el('div', 'rankrow'), pill = el('div', 'rank', L('Ranga: ', 'Rank: ') + rk.name);
+    if (rk.next) pill.appendChild(el('small', null, L('następna: ' + rk.next[1] + ' od ' + rk.next[0], 'next: ' + rk.next[1] + ' at ' + rk.next[0])));
+    rr.appendChild(pill); if (isBest) rr.appendChild(el('span', 'newrec', L('Nowy rekord!', 'New record!'))); body.appendChild(rr);
     const sum = k => W.reduce((a, w) => a + (w.stats[k] || 0), 0);
     const tiles = el('div', 'statrow');
-    statTile(tiles, String(held), plural(held, 'fala', 'fale', 'fal'), run.result === 'win' ? 'good' : ''); statTile(tiles, String(sum('kills')), 'zabici'); statTile(tiles, String(sum('scared')), 'przestraszeni'); statTile(tiles, String(W.filter(w => w.hunger && w.hunger.ate).length), 'zjedzone kryształy');
+    statTile(tiles, String(held), L(plural(held, 'fala', 'fale', 'fal'), held === 1 ? 'wave' : 'waves'), run.result === 'win' ? 'good' : ''); statTile(tiles, String(sum('kills')), L('zabici', 'killed')); statTile(tiles, String(sum('scared')), L('wystraszeni', 'scared off')); statTile(tiles, String(W.filter(w => w.hunger && w.hunger.ate).length), L('zjedzone kryształy', 'crystals eaten'));
     body.appendChild(tiles);
-    waveChart(panel(body, 'Esencja z fal', 'szare: stracony kryształ'), W, 0);
+    waveChart(panel(body, L('Esencja z fal', 'Essence per wave'), L('szare: stracony kryształ', 'grey: crystal lost')), W, 0);
     const tot = {};
     W.forEach(w => Object.keys(w.items || {}).forEach(k => { const b = w.items[k]; if (!ITEMS[k] || TOOLS[k]) return; tot[k] = (tot[k] || 0) + (b.pts || 0) + (b.passivePts || 0) + (b.fearPts || 0); }));
     const best = Object.entries(tot).filter(e => e[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 5), mx = best.length ? best[0][1] : 1;
-    const pb = panel(body, 'Najlepsze elementy runu', null, 'segpanel'), list = el('div', 'flist'); pb.appendChild(list);
-    best.forEach(([k, v]) => { const d = el('div', 'irow'), bar = el('i'), bw = el('span', 'bw'); bar.style.width = Math.max(2, Math.round(100 * v / mx)) + '%'; bw.appendChild(bar); d.appendChild(el('span', null, ITEMS[k].name)); d.appendChild(bw); d.appendChild(el('b', null, Math.round(v) + ' Esencji')); list.appendChild(d); });
-    if (!best.length) frow(list, 'Brak danych o elementach.');
-    if (run.deck.length) frow(list, 'Talia: ' + run.deck.map(id => UPG[id] ? UPG[id].name : id).join(', ') + '.');
-    frow(list, 'Rekordy tutaj: ' + Math.round(rec.best) + ' Esencji w runie · najdalej fala ' + rec.wave + ' · wygrane ' + rec.wins + ' z ' + rec.runs + '.');
+    const pb = panel(body, L('Najlepsze elementy runu', 'Best elements of the run'), null, 'segpanel'), list = el('div', 'flist'); pb.appendChild(list);
+    best.forEach(([k, v]) => { const d = el('div', 'irow'), bar = el('i'), bw = el('span', 'bw'); bar.style.width = Math.max(2, Math.round(100 * v / mx)) + '%'; bw.appendChild(bar); d.appendChild(el('span', null, ITEMS[k].name)); d.appendChild(bw); d.appendChild(el('b', null, Math.round(v) + L(' Esencji', ' Essence'))); list.appendChild(d); });
+    if (!best.length) frow(list, L('Brak danych o elementach.', 'No element data.'));
+    if (run.deck.length) frow(list, L('Talia: ', 'Deck: ') + run.deck.map(id => UPG[id] ? UPG[id].name : id).join(', ') + '.');
+    frow(list, L('Rekordy na tym urządzeniu: ' + Math.round(rec.best) + ' Esencji w runie · najdalej fala ' + rec.wave + ' · wygrane ' + rec.wins + ' z ' + rec.runs + '.', 'Records on this device: ' + Math.round(rec.best) + ' Essence in a run · furthest wave ' + rec.wave + ' · wins ' + rec.wins + ' of ' + rec.runs + '.'));
     fitList(list);
     const foot = el('div', 'scr-foot'); card.appendChild(foot);
     const row = el('div', 'row');
-    const again = btn('primary', 'Jeszcze raz', null, () => { closeModal(); if (onbStage() <= 4) startGuided(); else newRun(false); }); again.id = 'end-again';   // 1.12.1: the first runs go on in order
+    const again = btn('primary', L('Jeszcze raz', 'Play again'), null, () => { closeModal(); if (onbStage() <= 4) startGuided(); else newRun(false); }); again.id = 'end-again';   // 1.12.1: the first runs go on in order
     row.appendChild(again); row.appendChild(btn('', 'Menu', null, () => { closeModal(); openModal({ type: 'start' }); })); foot.appendChild(row);
-    const mr = el('div', 'minirow'), dn = el('p', 'note', m.logNote || 'Zapisuję wynik do analizy...');
-    const db = el('button', 'mini', 'Pobierz wyniki tego runu (.json)'); db.type = 'button'; db.addEventListener('click', () => downloadRun(dn)); mr.appendChild(db);
+    const mr = el('div', 'minirow'), dn = el('p', 'note', m.logNote || L('Zapisuję wynik do analizy...', 'Saving the result for analysis...'));
+    const db = el('button', 'mini', L('Pobierz wyniki (.json)', 'Download results (.json)')); db.type = 'button'; db.addEventListener('click', () => downloadRun(dn)); mr.appendChild(db);
     foot.appendChild(mr); foot.appendChild(dn);
-    if (!m.pushed) { m.pushed = true; pushLog(null).then(res => { m.logNote = res === 'ok' ? 'Wynik zapisany. Claude może go przeanalizować przy balansie.' : logText(res); if (dn.isConnected) dn.textContent = m.logNote; }); }
+    if (!m.pushed) { m.pushed = true; pushLog(null).then(res => { m.logNote = res === 'ok' ? L('Wynik zapisany. Claude może go przeanalizować przy balansie.', 'Result saved. Claude can analyse it for balancing.') : logText(res); if (dn.isConnected) dn.textContent = m.logNote; }); }
   }
   // 1.05: buying a crystal back for Esencja is gone (only a card, Żarłoczne serce, or the continue after a lost run give one back);
   // kept for old tests only, nothing in the game calls it
@@ -1654,9 +1687,9 @@
       const kind = TRAPS[t] ? 'trap' : MONSTERS[t] ? 'monster' : isLoot(t) ? 'loot' : BUILDINGS[t] ? 'building' : 'other';
       let sc = { trap: 3, monster: 2.6, loot: 1.6, building: 1, other: 0.5 }[kind] + Math.min(1.5, 1.5 * c / Math.max(3, e));
       const lp = lastPts(t), why = [];
-      if (lp > 0) { sc += 1 + Math.min(1, lp / 200); why.push('mocne w ostatniej fali (' + Math.round(lp) + ' pkt)'); }
-      if (kind === 'loot' && hr) { sc += 2; why.push('chciwość pomoże nakarmić serce'); }
-      if (way) { sc += 0.6; if (kind !== 'loot') why.push('pasuje na trasę bohaterów'); }
+      if (lp > 0) { sc += 1 + Math.min(1, lp / 200); why.push(L('mocne w ostatniej fali (' + Math.round(lp) + ' pkt)', 'strong last wave (' + Math.round(lp) + ' pts)')); }
+      if (kind === 'loot' && hr) { sc += 2; why.push(L('chciwość pomoże nakarmić serce', 'greed helps feed the heart')); }
+      if (way) { sc += 0.6; if (kind !== 'loot') why.push(L('stoi na trasie bohaterów', "on the heroes' path")); }
       if (!why.length) why.push(I.tag || '');
       C.push({ t, c, kind, sc, why: why[0] });
     });
@@ -1672,12 +1705,12 @@
     clearTimeout(flashSuggest.t); flashSuggest.t = setTimeout(() => document.querySelectorAll('#tray .item.suggest').forEach(b => b.classList.remove('suggest')), 6000);
   }
   function renderUnspent(card, m) {
-    card.appendChild(el('div', 'sub', 'Przed falą ' + run.wave));
-    card.appendChild(el('h2', null, 'Masz ' + m.e + ' Esencji'));
+    card.appendChild(el('div', 'sub', L('Przed falą ', 'Before wave ') + run.wave));
+    card.appendChild(el('h2', null, L('Masz ' + m.e + ' Esencji', 'You have ' + m.e + ' Essence')));
     const hr = hungerRisk(), sg = suggestBuys(m.e);
     fl.stats.unspentPicks = sg.map(q => q.t);
-    card.appendChild(el('p', null, (sg.length ? 'Niewydana Esencja nie broni lochu. Warto jeszcze postawić:' : 'Rozpocząć falę mimo to? Niewydana Esencja nie broni lochu. Najtańszy element: ' + ITEMS[m.ch.t].name + ' (' + m.ch.cost + ').') + (hr ? ' Uwaga na głód: serce chce ' + hr + ' Esencji z tej fali.' : '')));
-    const lab = el('label', 'askno'), cb = el('input'); cb.type = 'checkbox'; cb.id = 'unspent-noask'; lab.appendChild(cb); lab.appendChild(document.createTextNode(' Nie pytaj więcej'));
+    card.appendChild(el('p', null, (sg.length ? L('Niewydana Esencja nie broni lochu. Warto jeszcze postawić:', 'Unspent Essence does not defend. Worth placing:') : L('Wypuścić falę mimo to? Niewydana Esencja nie broni lochu. Najtańszy element: ', 'Start the wave anyway? Unspent Essence does not defend. Cheapest element: ') + ITEMS[m.ch.t].name + ' (' + m.ch.cost + ').') + (hr ? L(' Uwaga na głód: serce chce ' + hr + ' Esencji z tej fali.', ' Mind the hunger: the heart wants ' + hr + ' Essence from this wave.') : '')));
+    const lab = el('label', 'askno'), cb = el('input'); cb.type = 'checkbox'; cb.id = 'unspent-noask'; lab.appendChild(cb); lab.appendChild(document.createTextNode(L(' Nie pytaj więcej', " Don't ask again")));
     const keep = () => { if (cb.checked) try { localStorage.setItem(NOASK_KEY, '1'); } catch (e) {} };
     // a suggestion: to its tab, the tile picked (its free spots light up on the map), the tile pulses
     const take = t => {
@@ -1687,12 +1720,12 @@
     };
     if (sg.length) {
       const box = el('div', 'choices sugg');
-      sg.forEach(q => { const b = btn('gold', ITEMS[q.t].name + ' · ' + q.c + ' Esencji', q.why, () => take(q.t)); b.id = 'unspent-sug-' + q.t; b.dataset.t = q.t; box.appendChild(b); });
+      sg.forEach(q => { const b = btn('gold', ITEMS[q.t].name + ' · ' + q.c + L(' Esencji', ' Essence'), q.why, () => take(q.t)); b.id = 'unspent-sug-' + q.t; b.dataset.t = q.t; box.appendChild(b); });
       card.appendChild(box);
     }
     const row = el('div', 'row');
-    const back = btn(sg.length ? '' : 'primary', 'Buduj dalej', null, () => { keep(); closeModal(); if (sg.length) { const tb = TABS.find(x => x.items.includes(sg[0].t)); if (!trayIsOpen()) setTrayOpen(true, true); if (tb) pickTab(tb.id, sg[0].t); flashSuggest(sg.map(q => q.t)); } }); back.id = 'unspent-back';
-    const go = btn('', 'Wypuść falę', 'mimo to', () => { keep(); fl.stats.unspentGo = (fl.stats.unspentGo || 0) + 1; closeModal(); startWave(); }); go.id = 'unspent-go';
+    const back = btn(sg.length ? '' : 'primary', L('Buduj dalej', 'Keep building'), null, () => { keep(); closeModal(); if (sg.length) { const tb = TABS.find(x => x.items.includes(sg[0].t)); if (!trayIsOpen()) setTrayOpen(true, true); if (tb) pickTab(tb.id, sg[0].t); flashSuggest(sg.map(q => q.t)); } }); back.id = 'unspent-back';
+    const go = btn('', L('Wypuść falę', 'Release wave'), L('mimo to', 'anyway'), () => { keep(); fl.stats.unspentGo = (fl.stats.unspentGo || 0) + 1; closeModal(); startWave(); }); go.id = 'unspent-go';
     row.appendChild(back); row.appendChild(go); card.appendChild(row); card.appendChild(lab);
   }
   function buyCrystal() {
@@ -1715,20 +1748,20 @@
     addEss(g); recomputeMods();
     return g;
   }
-  const plural = (n, one, few, many) => n === 1 ? one : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? few : many;
+  // plural(): p1_config.js (1.27)
   const slotsTxt = n => n + ' ' + plural(n, 'miejsce', 'miejsca', 'miejsc');
   const capFirst = t => t.charAt(0).toUpperCase() + t.slice(1);
   function kindLabel(u) {
-    if (u.kind === 'unlock') return 'Odblokowanie na stałe · bez miejsca w talii' + effWords(u.unlock).map(w => ' · ' + w).join('');   // 1.24 (B, P1-4)
-    if (u.kind === 'instant') return capFirst(RAR_NAME[u.rar]) + ' · jednorazowa, bez miejsca w talii';
+    if (u.kind === 'unlock') return L('Odblokowanie na stałe · bez miejsca w talii', 'Permanent unlock · no deck slot') + effWords(u.unlock).map(w => ' · ' + w).join('');   // 1.24 (B, P1-4)
+    if (u.kind === 'instant') return capFirst(RAR_NAME[u.rar]) + L(' · jednorazowa, bez miejsca w talii', ' · one-off, no deck slot');
     const n = run.deck.filter(x => x === u.id).length;
-    return capFirst(RAR_NAME[u.rar]) + ' karta' + (u.unique ? ' · tylko jedna' : '') + (fuses(u) ? ' · połączy się w ★' : n ? ' · w talii: ' + n : '');   // 1.24
+    return capFirst(RAR_NAME[u.rar]) + L(' karta', ' card') + (u.unique ? L(' · tylko jedna', ' · unique') : '') + (fuses(u) ? L(' · połączy się w ★', ' · fuses into ★') : n ? L(' · w talii: ', ' · in deck: ') + n : '');   // 1.24
   }
   function cardBtn(u, onClick, extra) {
     const b = el('button', 'btn cardpick rar-' + u.rar + (u.kind === 'unlock' ? ' unlock' : '')); b.type = 'button';
     b.appendChild(el('span', 'ck', kindLabel(u)));
     b.appendChild(el('b', null, u.name)); b.appendChild(el('span', null, u.text));
-    if (fuses(u)) { b.classList.add('fuse'); b.appendChild(el('span', 'cx', 'Połączy się w ★: ' + fuseText(u).replace(/^★ Połączona: /, ''))); }   // 1.24
+    if (fuses(u)) { b.classList.add('fuse'); b.appendChild(el('span', 'cx', L('Połączy się w ★: ', 'Fuses into ★: ') + fuseText(u).replace(/^★ [^:]+: /, ''))); }   // 1.24
     if (extra) b.appendChild(el('span', 'cx', extra));
     b.addEventListener('click', onClick); return b;
   }
@@ -1743,47 +1776,47 @@
     m.picks.forEach(u => ch.appendChild(cardBtn(u, () => takeCard(card, m, u))));
     box.appendChild(ch);
     if (!fl.rerolled && !(src && src.rerolled)) {
-      const rb = el('button', 'link', 'Losuj ponownie (symulacja reklamy, raz na falę)'); rb.type = 'button';
+      const rb = el('button', 'link', L('Losuj ponownie (reklama, raz na falę)', 'Reroll (ad, once per wave)')); rb.type = 'button';
       rb.addEventListener('click', () => { fl.rerolled = true; if (src) { src.rerolled = true; src.picks = null; } m.picks = null; box.innerHTML = ''; renderPickSection(box, card, m); });
       box.appendChild(rb);
     }
   }
-  const pickSub = src => src.src === 'thr' ? 'Próg ' + src.thr + ' pkt: rzadkie karty' : src.src === 'boss' ? (src.wave === RUN_WAVES ? 'Finał przetrwany' : 'Fala z bossem przetrwana') + ': legendarna karta' : 'Fala ' + (src.wave || run.wave) + ' odparta';
+  const pickSub = src => src.src === 'thr' ? L('Próg ' + src.thr + ' pkt: rzadkie karty', src.thr + ' pts reached: rare cards') : src.src === 'boss' ? (src.wave === RUN_WAVES ? L('Finał przetrwany', 'Finale survived') : L('Fala z bossem przetrwana', 'Boss wave survived')) + L(': legendarna karta', ': legendary card') : L('Fala ' + (src.wave || run.wave) + ' odparta', 'Wave ' + (src.wave || run.wave) + ' held');
   function renderUpgrade(card, m) {
     const src = (m && m.src) || {};
     card.appendChild(el('div', 'sub', pickSub(src)));
-    card.appendChild(el('h2', null, 'Wybierz kartę'));
-    if (run.tutorial && !run.upgrades.length) card.appendChild(el('p', 'tipnote', 'Pierwsza karta! Karta trafia do talii (' + slotsTxt(run.deckSize) + ') i działa w każdej fali, dopóki jej nie sprzedasz. Odblokowanie (fioletowa ramka) daje nową pułapkę albo potwora i nie zajmuje miejsca. Talię zobaczysz w zakładce Talia.'));
-    card.appendChild(el('p', 'note', 'Talia: ' + run.deck.length + ' z ' + run.deckSize + '. Karty działają, dopóki są w talii. Druga kopia karty łączy się z pierwszą w ★ (jedno miejsce, moc ×2,5 i cecha).'));   // 1.24
+    card.appendChild(el('h2', null, L('Wybierz kartę', 'Pick a card')));
+    if (run.tutorial && !run.upgrades.length) card.appendChild(el('p', 'tipnote', L('Twoja pierwsza karta! Trafia do talii (' + slotsTxt(run.deckSize) + ') i działa w każdej fali, dopóki jej nie sprzedasz. Odblokowanie (fioletowa ramka) daje nową pułapkę albo potwora i nie zajmuje miejsca. Talia jest w zakładce Talia.', 'Your first card! It goes to your deck (' + run.deckSize + ' slots) and works every wave until you sell it. An unlock (purple frame) gives a new trap or monster and takes no slot. Your deck is in the Deck tab.')));
+    card.appendChild(el('p', 'note', L('Talia: ' + run.deck.length + ' z ' + run.deckSize + '. Druga kopia karty łączy się z pierwszą w ★ (jedno miejsce, moc ×2,5 i cecha).', 'Deck: ' + run.deck.length + ' of ' + run.deckSize + '. A second copy fuses with the first into ★ (one slot, ×2.5 power and a trait).')));   // 1.24
     const box = el('div'); renderPickSection(box, card, m); card.appendChild(box);
-    card.appendChild(el('p', 'note', 'Kartę dostajesz za każdą przetrwaną falę. Im dalsza fala, tym częściej trafiają się rzadkie i legendarne.'));
+    card.appendChild(el('p', 'note', L('Kartę dostajesz za każdą przetrwaną falę. Im dalej, tym częściej trafiają się rzadkie i legendarne.', 'You get a card for every wave you hold. The further you go, the more often rare and legendary ones show up.')));
   }
   function finishPick(m) { closeModal(); if (m && m.onDone) m.onDone(); }
   function takeCard(card, m, u) {
     if (u.kind === 'card' && !fuses(u) && run.deck.length >= run.deckSize) { card.innerHTML = ''; card.scrollTop = 0; renderReplace(card, m, u); return; }   // 1.24: a second copy needs no slot
     applyUpgrade(u); finishPick(m);
-    setHint(u.kind === 'unlock' ? u.name + ': odblokowane na stałe.' : u.kind === 'instant' ? u.name + '.' : 'Nowa karta w talii: ' + u.name + ' (' + run.deck.length + '/' + run.deckSize + ').');
+    setHint(u.kind === 'unlock' ? u.name + L(': odblokowane na stałe.', ': unlocked for good.') : u.kind === 'instant' ? u.name + '.' : L('Nowa karta w talii: ', 'New card in deck: ') + u.name + ' (' + run.deck.length + '/' + run.deckSize + ').');
   }
   // Deck full: sell one card to make room, or pass on the new one (it is sold for you).
   function renderReplace(card, m, u) {
-    card.appendChild(el('div', 'sub', 'Talia pełna · ' + run.deck.length + ' z ' + run.deckSize));
-    card.appendChild(el('h2', null, 'Co sprzedajesz?'));
-    card.appendChild(el('p', null, 'Nowa karta: ' + u.name + ' (' + u.tag + '). Sprzedana karta przestaje działać i oddaje Esencję.'));
+    card.appendChild(el('div', 'sub', L('Talia pełna · ', 'Deck full · ') + run.deck.length + L(' z ', ' of ') + run.deckSize));
+    card.appendChild(el('h2', null, L('Co sprzedajesz?', 'Which card do you sell?')));
+    card.appendChild(el('p', null, L('Nowa karta: ', 'New card: ') + u.name + ' (' + u.tag + L('). Sprzedana karta przestaje działać i oddaje Esencję.', '). A sold card stops working and gives back Essence.')));
     const box = el('div', 'choices');
     run.deck.forEach((id, i) => {
       const c = UPG[id]; if (!c) return;   // 1.18: a card gone from the game (u-portrait) in an old save
       box.appendChild(cardBtn(c, () => {
         const got = sellCard(i);
         run.deck.splice(i, 0, u.id); run.upgrades.push(u.id); recomputeMods();
-        finishPick(m); setHint('Sprzedane: ' + c.name + ' (+' + got + ' Esencji). Nowa karta: ' + u.name + '.');
-      }, 'Sprzedaj za ' + sellFor(id) + ' Esencji'));   // 1.24: sellFor
+        finishPick(m); setHint(L('Sprzedane: ', 'Sold: ') + c.name + ' (+' + got + L(' Esencji). Nowa karta: ', ' Essence). New card: ') + u.name + '.');
+      }, L('Sprzedaj za ' + sellFor(id) + ' Esencji', 'Sell for ' + sellFor(id) + ' Essence')));   // 1.24: sellFor
     });
     const no = el('button', 'btn pass'); no.type = 'button';
-    no.appendChild(el('b', null, 'Nie biorę: ' + u.name)); no.appendChild(el('span', null, 'Talia bez zmian, za odrzuconą kartę +' + RAR_SELL[u.rar] + ' Esencji.'));
-    no.addEventListener('click', () => { addEss(RAR_SELL[u.rar]); (run.sold = run.sold || []).push(u.id); finishPick(m); setHint('Odrzucona karta: ' + u.name + ' (+' + RAR_SELL[u.rar] + ' Esencji).'); });
+    no.appendChild(el('b', null, L('Nie biorę: ', 'Skip: ') + u.name)); no.appendChild(el('span', null, L('Talia bez zmian, za odrzuconą kartę +' + RAR_SELL[u.rar] + ' Esencji.', 'Your deck stays as is, +' + RAR_SELL[u.rar] + ' Essence for the skipped card.')));
+    no.addEventListener('click', () => { addEss(RAR_SELL[u.rar]); (run.sold = run.sold || []).push(u.id); finishPick(m); setHint(L('Odrzucona karta: ', 'Skipped card: ') + u.name + ' (+' + RAR_SELL[u.rar] + L(' Esencji).', ' Essence).')); });
     box.appendChild(no);
     card.appendChild(box);
-    const back = el('button', 'link', 'Wróć do wyboru'); back.type = 'button';
+    const back = el('button', 'link', L('Wróć do wyboru', 'Back to the cards')); back.type = 'button';
     back.addEventListener('click', () => { card.innerHTML = ''; card.scrollTop = 0; if (m.back) m.back(card); else renderUpgrade(card, m); });
     card.appendChild(back);
   }
@@ -1796,14 +1829,14 @@
   }
   function upgradeItem(it, branch) {
     const c = upgCost(it); if (fl.phase !== 'build' || !ACTIVE[it.type] || (it.lvl || 1) >= 3 || fl.essence < c) return false;
-    pushUndo('ulepszenie: ' + ITEMS[it.type].name);
+    pushUndo(L('ulepszenie: ', 'upgrade: ') + ITEMS[it.type].name);
     const was = it.lvl || 1;
     fl.essence -= c; it.spent = (it.spent || ITEMS[it.type].cost) + c; it.lvl = was + 1;
     if (it.lvl === 3) it.branch = branch === 'B' && TRAITS_B[it.type] ? 'B' : 'A';
     if (mods.heartMem && it.memRes && it.memLvl === was) it.memLvl = it.lvl;   // 1.26 Pamięć serca
     if (MONSTERS[it.type]) { const k = LVL_MON[it.lvl] / LVL_MON[was]; it.max = Math.round(it.max * k); it.hp = it.max; it.power *= k; if (it.baseMax) it.baseMax = Math.round(it.baseMax * k); }
     bt(it.type).spent += c; bt(it.type).upgraded = (bt(it.type).upgraded || 0) + 1; fl.stats.upgrades = (fl.stats.upgrades || 0) + 1; tutFlags.upgraded = true;
-    floatTile(it.x, it.y, 'Poziom ' + it.lvl + (it.lvl === 3 && branchTrait(it) ? ': ' + branchTrait(it)[0] : ''), '#ffb35c', 15, -0.8);
+    floatTile(it.x, it.y, L('Poziom ', 'Level ') + it.lvl + (it.lvl === 3 && branchTrait(it) ? ': ' + branchTrait(it)[0] : ''), '#ffb35c', 15, -0.8);
     it.popR = realNow; burst(it.x + 0.5, it.y + 0.5, '#ffb35c', 12); particles.push({ ring: true, x: it.x + 0.5, y: it.y + 0.5, r: 0.2, maxR: 1.1, life: 0.4, color: '#ffb35c' });   // 1.09: an upgrade glows and pops
     updateTray(); saveRunSoon();
     return true;
@@ -1811,7 +1844,7 @@
   // 1.09: a puff of dust and a ring on a tile (placing, moving, taking down)
   function dustAt(x, y) { if (reduceMotion) return; burst(x + 0.5, y + 0.5, '#9a9286', 7); particles.push({ ring: true, x: x + 0.5, y: y + 0.5, r: 0.15, maxR: 0.85, life: 0.32, color: '#b9b2a6' }); }
   function removeItem(it) {
-    pushUndo('zdjęcie: ' + ITEMS[it.type].name);
+    pushUndo(L('zdjęcie: ', 'remove: ') + ITEMS[it.type].name);
     const back = it.spent != null ? it.spent : ITEMS[it.type].cost;   // loot left by heroes (spent 0) gives nothing back
     fl.items.delete(key(it.x, it.y)); fl.essence += back; if (!it.dropped) { bt(it.type).placed--; bt(it.type).spent -= back; } fl.threatDirty = true;
     if (it.memRes) { run.memSpots = run.memSpots || {}; run.memSpots[key(it.x, it.y)] = [it.type, it.memRes, it.memLvl || 1]; }   // 1.09: put back here, it remembers
@@ -1834,11 +1867,11 @@
   }
   function moveItem(it, x, y) {
     if (!fl || fl.phase !== 'build') return false;
-    pushUndo('przeniesienie: ' + ITEMS[it.type].name);
+    pushUndo(L('przeniesienie: ', 'move: ') + ITEMS[it.type].name);
     fl.items.delete(key(it.x, it.y)); dustAt(it.x, it.y);
     it.x = x; it.y = y; it.gx = x + 0.5; it.gy = y + 0.5; it.preview = 1.4; it.popR = realNow; dustAt(x, y);   // 1.09: lifted with a puff, put down with a pop
     fl.items.set(key(x, y), it); fl.threatDirty = true;
-    floatTile(x, y, 'Przeniesione', '#d8d2c4', 13, -0.6); tutFlags.moved = true;
+    floatTile(x, y, L('Przeniesione', 'Moved'), '#d8d2c4', 13, -0.6); tutFlags.moved = true;
     updateTray(); saveRunSoon();
     return true;
   }
@@ -1856,10 +1889,10 @@
   const branchTrait = it => (it.lvl || 1) >= 3 ? (it.branch === 'B' ? TRAITS_B[it.type] : TRAITS[it.type]) : null;   // 1.26
   function tapUpgrade(it) {
     const T = ITEMS[it.type], lvl = it.lvl || 1;
-    if (!ACTIVE[it.type]) { note('Nie ulepsza się', it.x, it.y); return; }
-    if (lvl >= 3) { note('Poziom 3 to maks', it.x, it.y); return; }
+    if (!ACTIVE[it.type]) { note(L('Tego nie ulepszysz', "Can't be upgraded"), it.x, it.y); return; }
+    if (lvl >= 3) { note(L('Poziom 3 to maks', 'Level 3 is max'), it.x, it.y); return; }
     const c = upgCost(it);
-    if (fl.essence < c) { note('Za mało Esencji (' + c + ')', it.x, it.y); return; }
+    if (fl.essence < c) { note(L('Za mało Esencji (', 'Not enough Essence (') + c + ')', it.x, it.y); return; }
     if (lvl === 2 && TRAITS_B[it.type]) { openModal({ type: 'branch', k: key(it.x, it.y) }); return; }   // 1.26: level 3 asks A or B
     upgradeItem(it);   // it says "Poziom N" over the tile itself (1.12.1: the second, same note is gone)
   }
@@ -1867,245 +1900,251 @@
     const cur = movingKey && fl.items.get(movingKey);
     if (!cur) {
       const it = itemAt(wx, wy);
-      if (!it) { movingKey = null; setHint('Stuknij element, który chcesz przenieść.'); return; }
-      movingKey = key(it.x, it.y); setHint('Przenosisz: ' + ITEMS[it.type].name + '. Stuknij nowe miejsce (podświetlone). Stuknij element jeszcze raz, żeby odłożyć.');
+      if (!it) { movingKey = null; setHint(L('Stuknij element, który chcesz przenieść.', 'Tap an element to move it.')); return; }
+      movingKey = key(it.x, it.y); setHint(L('Przenosisz: ' + ITEMS[it.type].name + '. Stuknij nowe miejsce (podświetlone) albo ten sam element, żeby go odłożyć.', 'Moving: ' + ITEMS[it.type].name + '. Tap a new spot (highlighted), or the element again to put it back.'));
       return;
     }
-    if (Math.floor(wx) === cur.x && Math.floor(wy) === cur.y) { movingKey = null; setHint('Odłożone. Stuknij inny element, żeby go przenieść.'); return; }
+    if (Math.floor(wx) === cur.x && Math.floor(wy) === cur.y) { movingKey = null; setHint(L('Odłożone. Stuknij inny element, żeby go przenieść.', 'Put back. Tap another element to move it.')); return; }
     const t = moveTarget(cur, wx, wy);
-    if (!t) { note('Tu nie pasuje'); return; }
+    if (!t) { note(L('Tu nie pasuje', "Doesn't fit here")); return; }
     moveItem(cur, t[0], t[1]); movingKey = null;
-    setHint(ITEMS[cur.type].name + ' przeniesione (za darmo). Plotki o starym miejscu są już nieaktualne.');
+    setHint(ITEMS[cur.type].name + L(' przeniesione za darmo. Plotki o starym miejscu są już nieaktualne.', ' moved for free. Rumours about its old spot are now out of date.'));
   }
   function renderItem(card, m) {
     const it = fl.items.get(m.k);
-    if (!it || fl.phase !== 'build') { card.appendChild(el('p', null, 'Tego elementu już tu nie ma.')); card.appendChild(btn('primary', 'Zamknij', null, closeModal)); return; }
+    if (!it || fl.phase !== 'build') { card.appendChild(el('p', null, L('Tego elementu już tu nie ma.', 'This element is gone.'))); card.appendChild(btn('primary', L('Zamknij', 'Close'), null, closeModal)); return; }
     const T = ITEMS[it.type], lvl = it.lvl || 1, up = !!ACTIVE[it.type], tr = TRAITS[it.type], loot = isLoot(it.type);
-    card.appendChild(el('div', 'sub', (BUILDINGS[it.type] ? 'Budowla' : MONSTERS[it.type] ? 'Potwór' : TRAPS[it.type] ? 'Pułapka' : loot ? (it.dropped ? 'Łup po bohaterze' : 'Łup') : 'Element') + (up ? ' · poziom ' + lvl + ' z 3' : '')));
+    card.appendChild(el('div', 'sub', (BUILDINGS[it.type] ? L('Obiekt', 'Object') : MONSTERS[it.type] ? L('Potwór', 'Monster') : TRAPS[it.type] ? L('Pułapka', 'Trap') : loot ? (it.dropped ? L('Łup po bohaterze', 'Dropped by a hero') : L('Łup', 'Loot')) : 'Element') + (up ? L(' · poziom ' + lvl + ' z 3', ' · level ' + lvl + ' of 3') : '')));
     card.appendChild(el('h2', null, T.name + (lvl > 1 ? ' ' + 'I'.repeat(lvl) : '')));
     if (up) {   // what it did last wave: the quickest way to see what deserves an upgrade
-      const s = (it.lf === undefined ? 'Nowy: jeszcze nie walczył.' : it.lf === 0 ? 'Ostatnia fala: nie odpalił ani razu.' :
-        'Ostatnia fala: ' + it.lf + '× odpalony, ' + it.lh + ' trafień, ' + it.lp + ' Esencji' + (it.lk ? ', zabici: ' + it.lk : '') + '.') + healLine(it);   // 1.24 (C, addendum 2)
+      const s = (it.lf === undefined ? L('Nowy: jeszcze nie walczył.', 'New: has not fought yet.') : it.lf === 0 ? L('Ostatnia fala: ani razu nie zadziałał.', 'Last wave: never fired.') :
+        L('Ostatnia fala: zadziałał ' + it.lf + '×, trafienia: ' + it.lh + ', Esencja: ' + it.lp + (it.lk ? ', zabici: ' + it.lk : '') + '.', 'Last wave: fired ' + it.lf + '×, ' + it.lh + ' hits, ' + it.lp + ' Essence' + (it.lk ? ', kills: ' + it.lk : '') + '.')) + healLine(it);   // 1.24 (C, addendum 2)
       card.appendChild(el('p', 'lead', s));
     }
     if (loot && it.dropped) {   // 1.20: whose things they are
       const who = it.fromNm ? { nm: it.fromNm, female: it.fromFem } : null;
-      card.appendChild(el('p', 'lead', it.body != null && who ? 'Rzeczy poległego: ' + it.fromNm[0] + ' (fala ' + it.fromWave + '): ' + (it.gold ? it.gold + (it.gold === 1 ? ' moneta' : ' monet') : itemLabel(it.item)) + '. Następni mogą to zabrać.' :
-        it.knocked != null && who ? 'Wybite bohaterowi ' + nameGen(who) + ' krytykiem: ' + itemLabel(it.item) + '.' :
-        it.gold ? 'Sakwa poległego bohatera: ' + it.gold + (it.gold === 1 ? ' moneta.' : ' monet.') : it.item ? 'Zostawił to bohater: ' + itemLabel(it.item) + '. Następni mogą to podnieść.' : 'Zostawił to bohater.'));
+      card.appendChild(el('p', 'lead', it.body != null && who ? L('Rzeczy poległego: ' + it.fromNm[0] + ' (fala ' + it.fromWave + '): ' + (it.gold ? it.gold + (it.gold === 1 ? ' moneta' : ' monet') : itemLabel(it.item)) + '. Następni mogą to zabrać.', 'A fallen hero\'s things: ' + it.fromNm[0] + ' (wave ' + it.fromWave + '): ' + (it.gold ? it.gold + (it.gold === 1 ? ' coin' : ' coins') : itemLabel(it.item)) + '. Others may take them.') :
+        it.knocked != null && who ? L('Wybite bohaterowi ' + nameGen(who) + ' krytykiem: ' + itemLabel(it.item) + '.', 'Knocked from ' + nameGen(who) + ' by a crit: ' + itemLabel(it.item) + '.') :
+        it.gold ? L('Sakwa poległego bohatera: ' + it.gold + (it.gold === 1 ? ' moneta.' : ' monet.'), 'A fallen hero\'s pouch: ' + it.gold + (it.gold === 1 ? ' coin.' : ' coins.')) : it.item ? L('Zostawił to bohater: ' + itemLabel(it.item) + '. Następni mogą to podnieść.', 'A hero left this: ' + itemLabel(it.item) + '. Others may pick it up.') : L('Zostawił to bohater.', 'A hero left this.')));
     }
-    if (loot && it.item && it.item.cursed) card.appendChild(el('p', 'note', 'Przeklęty: klątwa przejdzie na tego, kto go weźmie.'));
-    if (it.type === 'mimic' && it.belly && it.belly.length) card.appendChild(el('p', 'note', 'W brzuchu: ' + it.belly.length + (it.belly.length === 1 ? ' przedmiot' : it.belly.length < 5 ? ' przedmioty' : ' przedmiotów') + ' (gryzie o ' + 10 * Math.min(6, it.belly.length) + '% mocniej). Wypluje je, gdy wysadzi go bomba albo rozbije topór.'));
+    if (loot && it.item && it.item.cursed) card.appendChild(el('p', 'note', L('Przeklęty: klątwa przejdzie na tego, kto go weźmie.', 'Cursed: the curse passes to whoever takes it.')));
+    if (it.type === 'mimic' && it.belly && it.belly.length) card.appendChild(el('p', 'note', L('W brzuchu: ' + it.belly.length + (it.belly.length === 1 ? ' przedmiot' : it.belly.length < 5 ? ' przedmioty' : ' przedmiotów') + ' (gryzie o ' + 10 * Math.min(6, it.belly.length) + '% mocniej). Wypluje je, gdy wysadzi go bomba albo rozbije topór.', 'In its belly: ' + it.belly.length + (it.belly.length === 1 ? ' item' : ' items') + ' (bites ' + 10 * Math.min(6, it.belly.length) + '% harder). It spits them out if a bomb blows it up or an axe smashes it.')));
     const r = roomOf(it.x, it.y), rt = rtOf(r);
-    const d = el('details'); d.appendChild(el('summary', null, 'Opis'));
+    const d = el('details'); d.appendChild(el('summary', null, L('Opis', 'Description')));
     d.appendChild(el('p', null, T.desc));
-    if (up) d.appendChild(el('p', 'note', 'Moc teraz: ' + (TRAPS[it.type] ? '×' + fmt2(LVL_POW[lvl]) : 'HP i siła ×' + fmt2(LVL_MON[lvl])) + '. ' + (lvl >= 3 && branchTrait(it) ? 'Cecha ' + (it.branch || 'A') + ': ' + branchTrait(it)[0] + ' (' + branchTrait(it)[1] + ').' : tr ? 'Poziom 3 dodaje cechę do wyboru: A ' + tr[0] + ' (' + tr[1] + ')' + (TRAITS_B[it.type] ? ' albo B ' + TRAITS_B[it.type][0] + ' (' + TRAITS_B[it.type][1] + ')' : '') + '.' : '') + ' Ulepszenie nie zajmuje miejsca w pokoju, a poziom pułapki poszerza strefy skill checku.'));
-    if (rt) d.appendChild(el('p', 'note', 'Pokój: ' + RT_INFO[rt].name + '. ' + ITEMS[RT_INFO[rt].item].desc.split(': ').slice(1).join(': ').replace(/ Stuknij znacznik pokoju\.$/, '')));
-    if (KIND_OF[it.type] && inKind(it)) d.appendChild(el('p', 'note', 'Komnata: ' + KIND_INFO[KIND_OF[it.type]].name + '. ' + (lvl >= 3 ? 'Ma już 3. poziom, więc komnata daje mu +' + Math.round((KIND_POW - 1) * 100) + '% mocy.' : 'Cecha 3. poziomu działa bez ulepszania' + (tr ? ': ' + tr[0] + ' (' + tr[1] + ')' : '') + '.')));
-    else if (KIND_OF[it.type]) d.appendChild(el('p', 'note', 'Pasuje do komnaty: ' + KIND_INFO[KIND_OF[it.type]].name + ' (zakładka Loch, Komnaty). Tam ma cechę 3. poziomu bez ulepszania.'));
-    if (it.dropped) d.appendChild(el('p', 'note', 'Łup po bohaterach nic Cię nie kosztował, więc zdjęcie nic nie zwraca. Możesz go przenieść.'));
+    if (T.more) d.appendChild(el('p', 'note', T.more));   // 1.27: the details under the one-line description
+    if (up) d.appendChild(el('p', 'note', L('Moc teraz: ', 'Power now: ') + (TRAPS[it.type] ? '×' + fmt2(LVL_POW[lvl]) : L('HP i siła ×', 'HP and strength ×') + fmt2(LVL_MON[lvl])) + '. ' + (lvl >= 3 && branchTrait(it) ? L('Cecha ', 'Trait ') + (it.branch || 'A') + ': ' + branchTrait(it)[0] + ' (' + branchTrait(it)[1] + ').' : tr ? L('Poziom 3 daje cechę do wyboru: A ', 'Level 3 adds a trait of your choice: A ') + tr[0] + ' (' + tr[1] + ')' + (TRAITS_B[it.type] ? L(' albo B ', ' or B ') + TRAITS_B[it.type][0] + ' (' + TRAITS_B[it.type][1] + ')' : '') + '.' : '') + L(' Ulepszenie nie zajmuje miejsca w pokoju. Wyższy poziom pułapki poszerza strefy skill checku.', ' Upgrades take no room space. A higher trap level widens the skill check zones.')));
+    if (rt) d.appendChild(el('p', 'note', L('Pokój: ', 'Room: ') + RT_INFO[rt].name + '. ' + ITEMS[RT_INFO[rt].item].desc.replace(/^[^\s:]+ \([^)]*\): /, '').replace(/ (Stuknij znacznik pokoju|Tap the room marker)\.$/, '')));
+    if (KIND_OF[it.type] && inKind(it)) d.appendChild(el('p', 'note', L('Komnata: ', 'Lair: ') + KIND_INFO[KIND_OF[it.type]].name + '. ' + (lvl >= 3 ? L('Ma już 3. poziom, więc komnata daje mu +', 'Already level 3, so the lair gives it +') + Math.round((KIND_POW - 1) * 100) + L('% mocy.', '% power.') : L('Cecha 3. poziomu działa bez ulepszania', 'Its level 3 trait works without upgrading') + (tr ? ': ' + tr[0] + ' (' + tr[1] + ')' : '') + '.')));
+    else if (KIND_OF[it.type]) d.appendChild(el('p', 'note', L('Pasuje do komnaty: ' + KIND_INFO[KIND_OF[it.type]].name + ' (zakładka Loch, Komnaty). Tam ma cechę 3. poziomu bez ulepszania.', 'Fits a lair: ' + KIND_INFO[KIND_OF[it.type]].name + ' (Dungeon tab, Lairs). There it gets its level 3 trait without upgrading.')));
+    if (it.dropped) d.appendChild(el('p', 'note', L('Łup po bohaterach nic Cię nie kosztował, więc zdjęcie nic nie zwraca. Możesz go przenieść.', 'Dropped loot cost you nothing, so removing it refunds nothing. You can move it.')));
     if (it.lf === undefined || !up) d.open = true;
     card.appendChild(d);
     const row = el('div', 'row');
     if (up && lvl < 3) {
       const c = upgCost(it), next = lvl + 1;
-      const ub = btn('primary', 'Ulepsz do poziomu ' + next, c + ' Esencji · ' + (next === 3 && tr ? (TRAITS_B[it.type] ? 'cecha A albo B' : 'cecha: ' + tr[0]) : 'moc ×' + fmt2(TRAPS[it.type] ? LVL_POW[next] : LVL_MON[next])), () => {
+      const ub = btn('primary', L('Ulepsz → ', 'Upgrade → ') + next, c + L(' Esencji · ', ' Essence · ') + (next === 3 && tr ? (TRAITS_B[it.type] ? L('cecha A albo B', 'trait A or B') : L('cecha: ', 'trait: ') + tr[0]) : L('moc ×', 'power ×') + fmt2(TRAPS[it.type] ? LVL_POW[next] : LVL_MON[next])), () => {
         if (lvl === 2 && TRAITS_B[it.type]) { closeModal(); openModal({ type: 'branch', k: m.k, back: m }); return; }   // 1.26
-        if (upgradeItem(it)) { card.innerHTML = ''; renderItem(card, m); setHint(T.name + ': poziom ' + it.lvl + '.'); }
+        if (upgradeItem(it)) { card.innerHTML = ''; renderItem(card, m); setHint(T.name + L(': poziom ', ': level ') + it.lvl + '.'); }
       });
       ub.id = 'sheet-upgrade';
-      if (fl.essence < c) { ub.disabled = true; ub.querySelector('span').textContent = c + ' Esencji (masz ' + Math.floor(fl.essence) + ')'; }
+      if (fl.essence < c) { ub.disabled = true; ub.querySelector('span').textContent = c + L(' Esencji (masz ' + Math.floor(fl.essence) + ')', ' Essence (you have ' + Math.floor(fl.essence) + ')'); }
       row.appendChild(ub);
     }
-    const mb = btn('', 'Przenieś', 'za darmo, poziom zostaje', () => { closeModal(); pickUp(it); });
+    const mb = btn('', L('Przenieś', 'Move'), L('za darmo, poziom zostaje', 'free, keeps level'), () => { closeModal(); pickUp(it); });
     mb.id = 'sheet-move'; row.appendChild(mb);
     const back = it.spent != null ? it.spent : T.cost;
-    const rb = btn('', 'Zdejmij', back ? '+' + back + ' Esencji' : 'bez zwrotu', () => { const got = removeItem(it); closeModal(); setHint(T.name + ' zdjęte' + (got ? ' (+' + got + ' Esencji).' : '.')); });
+    const rb = btn('', L('Zdejmij', 'Remove'), back ? '+' + back + L(' Esencji', ' Essence') : L('bez zwrotu', 'no refund'), () => { const got = removeItem(it); closeModal(); setHint(T.name + L(' zdjęte', ' removed') + (got ? ' (+' + got + L(' Esencji).', ' Essence).') : '.')); });
     rb.id = 'sheet-remove'; row.appendChild(rb);
     card.appendChild(row);
-    card.appendChild(btn('', 'Zamknij', null, closeModal));
+    card.appendChild(btn('', L('Zamknij', 'Close'), null, closeModal));
   }
   // 1.26: the level 3 choice: two traits side by side (A is the one a komnata gives free)
   function renderBranch(card, m) {
-    const it = fl.items.get(m.k); if (!it || fl.phase !== 'build' || (it.lvl || 1) !== 2) { card.appendChild(el('p', null, 'Tego już nie ulepszysz.')); card.appendChild(btn('primary', 'Zamknij', null, closeModal)); return; }
+    const it = fl.items.get(m.k); if (!it || fl.phase !== 'build' || (it.lvl || 1) !== 2) { card.appendChild(el('p', null, L('Tego już nie ulepszysz.', "You can't upgrade this any more."))); card.appendChild(btn('primary', L('Zamknij', 'Close'), null, closeModal)); return; }
     const T = ITEMS[it.type], A = TRAITS[it.type], B = TRAITS_B[it.type], c = upgCost(it), poor = fl.essence < c, kind = KIND_OF[it.type] && inKind(it);
-    card.appendChild(el('div', 'sub', T.name + ' · poziom 3 · ' + c + ' Esencji'));
-    card.appendChild(el('h2', null, 'Wybierz cechę'));
-    card.appendChild(el('p', 'note', 'Moc rośnie tak samo, różni się cecha. Wyboru nie da się cofnąć (chyba że zdejmiesz element).' + (kind ? ' Ten element stoi w komnacie, która i tak daje mu cechę A: wybierz B, a będzie miał obie.' : '')));
+    card.appendChild(el('div', 'sub', T.name + L(' · poziom 3 · ', ' · level 3 · ') + c + L(' Esencji', ' Essence')));
+    card.appendChild(el('h2', null, L('Wybierz cechę', 'Pick a trait')));
+    card.appendChild(el('p', 'note', L('Moc rośnie tak samo, różni się tylko cecha. Wyboru nie cofniesz (chyba że zdejmiesz element).', "Power grows the same way, only the trait differs. You can't undo the choice (unless you remove the element).") + (kind ? L(' Komnata i tak daje mu cechę A: wybierz B, a będzie miał obie.', ' Its lair already gives it trait A: pick B and it gets both.') : '')));
     const box = el('div', 'choices branch');
-    [['A', A], ['B', B]].forEach(([k, t]) => { if (!t) return; const b = btn(k === 'B' ? 'gold' : '', k + ': ' + t[0], t[1], () => { if (upgradeItem(it, k)) { closeModal(); setHint(T.name + ': poziom 3, ' + t[0] + '.'); if (m.back) openModal(m.back); } }); b.id = 'branch-' + k; b.disabled = poor; box.appendChild(b); });
+    [['A', A], ['B', B]].forEach(([k, t]) => { if (!t) return; const b = btn(k === 'B' ? 'gold' : '', k + ': ' + t[0], t[1], () => { if (upgradeItem(it, k)) { closeModal(); setHint(T.name + L(': poziom 3, ', ': level 3, ') + t[0] + '.'); if (m.back) openModal(m.back); } }); b.id = 'branch-' + k; b.disabled = poor; box.appendChild(b); });
     card.appendChild(box);
-    card.appendChild(btn('primary', poor ? 'Za mało Esencji (' + c + ')' : 'Anuluj', null, () => { closeModal(); if (m.back) openModal(m.back); }));
+    card.appendChild(btn('primary', poor ? L('Za mało Esencji (', 'Not enough Essence (') + c + ')' : L('Anuluj', 'Cancel'), null, () => { closeModal(); if (m.back) openModal(m.back); }));
   }
   // v14: the full card of a hero: tap him in a wave (the game pauses), or tap a row of the party list / the next-wave list
-  const TRAIT_TEXT = { greedy: 'idzie po łup mimo ryzyka', coward: 'panikuje wcześniej, śmierć towarzysza straszy go mocniej', brave: 'śmierć towarzysza zamienia w furię', careful: 'sprawdza podłogę, rzadziej wpada w pułapki',
-    superstitious: 'rekwizyty strachu i Nawiedzenie straszą go 1,4 raza mocniej, nie tknie przeklętego łupu, nie wejdzie pierwszy do pokoju z portretem albo lustrem', curious: 'widzi łup z daleka (+4 pola), idzie sprawdzić usłyszaną pułapkę, 2 razy dokładniej przeszukuje meble, jako przywódca chętniej się rozgląda', loyal: 'zawsze ratuje uwięzionych, biegnie na wołanie o pomoc nawet przez pułapki, za przyjaciela ślubuje zemstę', hothead: 'szarżuje na każdego potwora w pokoju (także ogra), częściej idzie przez znane pułapki, raz na falę zamiast paniki wpada w furię, wytrzyma 10% więcej strachu' };   // 1.26
-  const STATE_TEXT = { drink: 'pije Esencję z serca', walk: 'idzie', rest: 'odpoczywa', talk: 'naradza się', wait: 'czeka', boss: 'wyważa kryształ', disarm: 'rozbraja', free: 'uwalnia kogoś', fight: 'walczy', smash: 'rozbija' };
+  const TRAIT_TEXT = L({ greedy: 'idzie po łup mimo ryzyka', coward: 'panikuje wcześniej, śmierć towarzysza straszy go mocniej', brave: 'śmierć towarzysza zamienia w furię', careful: 'sprawdza podłogę, rzadziej wpada w pułapki',
+    superstitious: 'rekwizyty strachu i Nawiedzenie straszą go 1,4 raza mocniej, nie tknie przeklętego łupu, nie wejdzie pierwszy do pokoju z portretem albo lustrem', curious: 'widzi łup z daleka (+4 pola), idzie sprawdzić usłyszaną pułapkę, dwa razy dokładniej przeszukuje meble, jako przywódca chętniej się rozgląda', loyal: 'zawsze ratuje uwięzionych, biegnie na wołanie o pomoc nawet przez pułapki, za przyjaciela ślubuje zemstę', hothead: 'szarżuje na każdego potwora w pokoju (także na ogra), częściej idzie przez znane pułapki, raz na falę zamiast paniki wpada w furię, wytrzymuje 10% więcej strachu' },
+    { greedy: 'goes for loot despite the risk', coward: "panics sooner, a friend's death scares them more", brave: "turns a friend's death into fury", careful: 'checks the floor, falls into traps less often',
+    superstitious: "scare props and Haunting scare them 1.4× more, won't touch cursed loot, won't enter a room with a portrait or mirror first", curious: 'sees loot from afar (+4 tiles), checks out traps they hear, searches furniture twice as well, looks around more as leader', loyal: 'always frees the trapped, runs to calls for help even through traps, vows revenge for a friend', hothead: 'charges every monster in the room (even an ogre), walks through known traps more often, once a wave flies into a rage instead of panicking, takes 10% more fear' });   // 1.26
+  const STATE_TEXT = L({ drink: 'pije Esencję z serca', walk: 'idzie', rest: 'odpoczywa', talk: 'naradza się', wait: 'czeka', boss: 'wyważa kryształ', disarm: 'rozbraja', free: 'uwalnia kogoś', fight: 'walczy', smash: 'rozbija' },
+    { drink: 'drinks Essence from the heart', walk: 'walking', rest: 'resting', talk: 'conferring', wait: 'waiting', boss: 'prying a crystal loose', disarm: 'disarming', free: 'freeing someone', fight: 'fighting', smash: 'smashing' });
   // v15.1: a tap on the equation row: what each part means, and where this wave's Esencja came from
   function renderEsencja(card, m) {
     const raid = fl.phase === 'raid', s = fl.stats, cm = 1 + 0.25 * (comboNow() - 1);
-    card.appendChild(el('div', 'sub', raid ? waveName() + ' · fala trwa' : waveName() + ' · budowa'));
-    card.appendChild(el('h2', null, 'Skąd Esencja'));
-    card.appendChild(el('p', null, 'Esencja = Groza × Chciwość × Combo. Dopóki trwa combo, Groza się zbiera (linia u góry), a gdy combo się skończy, cała seria wypłaca się po końcowym combo. Od fali 2 serce bierze pierwsze porcje Esencji z fali, reszta trafia do Ciebie.'));
-    card.appendChild(el('h2', 'h2small', 'Groza: co przeżywają bohaterowie'));
-    card.appendChild(el('p', 'note', 'To nie mnożnik, tylko suma zdarzeń. Każde liczy się względem bohatera i razy mnożnik pokoju (liczba w rogu pokoju: ×1 przy wejściu, do ×' + fmtE(S.depthMax) + ' przy sercu).'));
+    card.appendChild(el('div', 'sub', raid ? waveName() + L(' · fala trwa', ' · wave on') : waveName() + L(' · budowa', ' · building')));
+    card.appendChild(el('h2', null, L('Skąd Esencja', 'Where Essence comes from')));
+    card.appendChild(el('p', null, L('Esencja = Groza × Chciwość × Combo. Póki trwa combo, Groza się zbiera (linia u góry). Gdy combo się skończy, cała seria wypłaca się z końcowym mnożnikiem combo. Od fali 2 serce bierze pierwsze porcje Esencji z każdej fali, reszta jest Twoja.', "Essence = Dread × Greed × Combo. While a combo lasts, Dread builds up (the line at the top). When it ends, the whole streak pays out at the final combo. From wave 2 the heart takes the first share of each wave's Essence, the rest is yours.")));
+    card.appendChild(el('h2', 'h2small', L('Groza: co przeżywają bohaterowie', 'Dread: what the heroes go through')));
+    card.appendChild(el('p', 'note', L('To nie mnożnik, tylko suma zdarzeń. Każde liczy się względem bohatera, razy mnożnik pokoju (liczba w rogu pokoju: ×1 przy wejściu, do ×', "Not a multiplier: a sum of events. Each is scaled to the hero and multiplied by the room's depth (the number in its corner: ×1 at the entrance, up to ×") + fmtE(S.depthMax) + L(' przy sercu).', ' by the heart).')));
     const gt = el('table', 'stats');
-    [['Rany (pułapki, łup)', 'całe HP bohatera = ' + fmtE(GZ.dmg)], ['Rany od potworów walczących same', 'całe HP = ' + fmt2(GZ.dmg * MON_FACTOR)], ['Strach', 'pełny pasek = ' + fmtE(GZ.fear)], ['Ucieczka ze strachu', fmtE(GZ.scare) + ' (boss 2 razy tyle)'],
-     ['Śmierć bohatera', fmtE(GZ.kill) + ' (boss 2 razy tyle)'], ['Zgubiony / samotny / na zwiadzie', fmt2(GZ.lost) + ' / ' + fmt2(GZ.alone) + ' / ' + fmt2(GZ.split) + ' na sekundę'], ['Zabrany łup', fmt2(GZ.loot) + ' × rzadkość'], ['Leczenie kapłana', fmt2(GZ.heal) + ' za całe HP'],
-     ['Sieć / klatka', fmt2(GZ.web) + ' / ' + fmt2(GZ.cage)], ['Odzyskany kryształ', fmtE(GZ.crystal)]]
+    [[L('Rany (pułapki, łup)', 'Wounds (traps, loot)'), L('całe HP bohatera = ', "a hero's full HP = ") + fmtE(GZ.dmg)], [L('Rany od potworów walczących same', 'Wounds from monsters fighting alone'), L('całe HP = ', 'full HP = ') + fmt2(GZ.dmg * MON_FACTOR)], [L('Strach', 'Fear'), L('pełny pasek = ', 'full bar = ') + fmtE(GZ.fear)], [L('Ucieczka ze strachu', 'Fleeing in fear'), fmtE(GZ.scare) + L(' (boss 2 razy tyle)', ' (boss ×2)')],
+     [L('Śmierć bohatera', 'Hero death'), fmtE(GZ.kill) + L(' (boss 2 razy tyle)', ' (boss ×2)')], [L('Zgubiony / samotny / na zwiadzie', 'Lost / alone / scouting'), fmt2(GZ.lost) + ' / ' + fmt2(GZ.alone) + ' / ' + fmt2(GZ.split) + L(' na sekundę', ' per second')], [L('Zabrany łup', 'Loot taken'), fmt2(GZ.loot) + L(' × rzadkość', ' × rarity')], [L('Leczenie kapłana', 'Priest healing'), fmt2(GZ.heal) + L(' za całe HP', ' per full HP')],
+     [L('Sieć / klatka', 'Web / cage'), fmt2(GZ.web) + ' / ' + fmt2(GZ.cage)], [L('Odzyskany kryształ', 'Crystal recovered'), fmtE(GZ.crystal)]]
       .forEach(r => { const tr = el('tr'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, r[1])); gt.appendChild(tr); });
     card.appendChild(gt);
-    card.appendChild(el('h2', 'h2small', 'Chciwość ×' + fmt2(raid ? fl.greed : greedStartNow()) + (raid ? '' : ' na start')));
+    card.appendChild(el('h2', 'h2small', L('Chciwość ×', 'Greed ×') + fmt2(raid ? fl.greed : greedStartNow()) + (raid ? '' : L(' na start', ' at start'))));
     const gb = greedBonusParts();
-    card.appendChild(el('p', 'note', 'Rośnie, gdy bohaterowie zobaczą łup (droższy łup więcej). Stałe dodatki: ' + (gb.length ? gb.map(p => p[0] + ' +' + fmt2(p[1])).join(', ') : 'na razie żadnych') + (run.greedKeep > 0.001 ? ', zabrany łup +' + fmt2(run.greedKeep) : '') + '. Im większa chciwość, tym wolniej rośnie: każdy przyrost dzieli się przez to, ile jej już jest (dodatki wyżej to wartości przed tym przeliczeniem).'));
+    card.appendChild(el('p', 'note', L('Rośnie, gdy bohaterowie zobaczą łup (droższy łup daje więcej). Stałe dodatki: ', 'Grows when heroes see loot (pricier loot gives more). Permanent bonuses: ') + (gb.length ? gb.map(p => p[0] + ' +' + fmt2(p[1])).join(', ') : L('na razie brak', 'none yet')) + (run.greedKeep > 0.001 ? L(', zabrany łup +', ', loot taken +') + fmt2(run.greedKeep) : '') + L('. Im większa chciwość, tym wolniej rośnie (dodatki są podane przed tym spowolnieniem).', '. The higher your greed, the slower it grows (bonuses are shown before that slowdown).')));
     card.appendChild(el('h2', 'h2small', 'Combo ×' + fmt2(raid ? cm : 1)));
-    card.appendChild(el('p', 'note', 'Różne pułapki pod rząd (w Zębatkach także ta sama) w ciągu ' + fmt2(S.comboWin).replace(',00', '').replace(/0$/, '') + ' s (w Grocie 1,5 raza dłużej): +0,25 za każdy stopień, najwyżej ×2,5. Końcowe combo mnoży całą zebraną Grozę serii. Każdy stopień combo wzmacnia też rany i strach od pułapek o ' + Math.round(COMBO_POW * 100) + '% (przy ×2,5 o ' + Math.round(COMBO_POW * 600) + '%), więc opłaca się grupować różne pułapki blisko siebie.' + (mods.regen !== 1 ? ' Żyła esencji mnoży jeszcze ×' + fmt2(mods.regen) + '.' : '')));
+    { const cw = fmt2(S.comboWin).replace(/[.,]00$/, '').replace(/0$/, ''), p1 = Math.round(COMBO_POW * 100), p6 = Math.round(COMBO_POW * 600);
+    card.appendChild(el('p', 'note', L('Różne pułapki pod rząd w ciągu ' + cw + ' s (w Zębatkach liczy się też ta sama, w Grocie okno jest 1,5 raza dłuższe): +0,25 za stopień, najwyżej ×2,5. Końcowe combo mnoży całą Grozę serii. Każdy stopień wzmacnia też rany i strach od pułapek o ' + p1 + '% (przy ×2,5 o ' + p6 + '%). Opłaca się więc stawiać różne pułapki blisko siebie.', "Different traps in a row within " + cw + ' s (in Gears the same one counts too, in a Grotto the window is 1.5× longer): +0.25 per step, up to ×2.5. The final combo multiplies the whole streak\'s Dread. Each step also boosts trap wounds and fear by ' + p1 + '% (at ×2.5 by ' + p6 + '%), so it pays to group different traps close together.') + (mods.regen !== 1 ? L(' Żyła esencji mnoży jeszcze ×', ' Essence Vein multiplies by another ×') + fmt2(mods.regen) + '.' : ''))); }
     if (raid || fl.phase === 'summary') {
-      card.appendChild(el('h2', 'h2small', 'W tej fali'));
+      card.appendChild(el('h2', 'h2small', L('W tej fali', 'This wave')));
       const pt = el('table', 'stats');
-      [['Rany', s.dmgPts], ['Strach', s.fearPts], ['Ucieczki ze strachu (' + s.scared + ')', s.scarePts], ['Zabici (' + s.kills + ')', s.killPts], ['Łup', s.lootPts], ['Kryształ odzyskany', s.crystalPts], ['Zgubieni i samotni', (s.lostPts || 0) + (s.lonePts || 0)], ['Zwiad (celowo osobno)', s.splitPts || 0], ['Leczenie kapłana', s.healPts], ['Combo wstecz', s.comboPts || 0]]
-        .filter(r => r[1] > 0).forEach(r => { const tr = el('tr'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, fmtE(r[1]) + ' Esencji')); pt.appendChild(tr); });
-      [['Groza razem', fmtE(fl.base)], ['Średnio na punkt Grozy', '×' + fmt2(fl.base > 0 ? fl.score / fl.base : 1)], ['= Esencja z fali', fmtE(fl.score)]].forEach(r => { const tr = el('tr', 'sum'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, r[1])); pt.appendChild(tr); });
+      [[L('Rany', 'Wounds'), s.dmgPts], [L('Strach', 'Fear'), s.fearPts], [L('Ucieczki ze strachu (', 'Fled in fear (') + s.scared + ')', s.scarePts], [L('Zabici (', 'Kills (') + s.kills + ')', s.killPts], [L('Łup', 'Loot'), s.lootPts], [L('Kryształ odzyskany', 'Crystal recovered'), s.crystalPts], [L('Zgubieni i samotni', 'Lost and alone'), (s.lostPts || 0) + (s.lonePts || 0)], [L('Zwiad (celowo osobno)', 'Scouting (split on purpose)'), s.splitPts || 0], [L('Leczenie kapłana', 'Priest healing'), s.healPts], [L('Combo wstecz', 'Combo (retroactive)'), s.comboPts || 0]]
+        .filter(r => r[1] > 0).forEach(r => { const tr = el('tr'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, fmtE(r[1]) + L(' Esencji', ' Essence'))); pt.appendChild(tr); });
+      [[L('Groza razem', 'Total Dread'), fmtE(fl.base)], [L('Średnio na punkt Grozy', 'Average per Dread point'), '×' + fmt2(fl.base > 0 ? fl.score / fl.base : 1)], [L('= Esencja z fali', '= Essence this wave'), fmtE(fl.score)]].forEach(r => { const tr = el('tr', 'sum'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, r[1])); pt.appendChild(tr); });
       card.appendChild(pt);
     }
-    card.appendChild(btn('primary', 'Zamknij', null, () => { closeModal(); if (m.unpause) setPaused(false); }));
+    card.appendChild(btn('primary', L('Zamknij', 'Close'), null, () => { closeModal(); if (m.unpause) setPaused(false); }));
   }
   function renderHero(card, m) {
     tutFlags.heroCard = true;
     const live = m.id != null ? fl.heroes[m.id] : null, e = live ? live.entry : m.entry;
-    if (!e) { card.appendChild(el('p', null, 'Tego bohatera już nie ma.')); card.appendChild(btn('primary', 'Zamknij', null, () => { closeModal(); if (m.unpause) setPaused(false); })); return; }
+    if (!e) { card.appendChild(el('p', null, L('Tego bohatera już nie ma.', 'This hero is gone.'))); card.appendChild(btn('primary', L('Zamknij', 'Close'), null, () => { closeModal(); if (m.unpause) setPaused(false); })); return; }
     const h = live || e, T = HEROES[e.type], R = levelStats(e.lvl), fem = e.female, known = live ? live.known : new Set(e.known || []);
     const all = mods.revealAll;
-    card.appendChild(el('div', 'sub', T.name[fem ? 1 : 0] + ' · poz. ' + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][fem ? 1 : 0] : R.name[fem ? 1 : 0]).toLowerCase() + [e.returning ? (e.nemesis ? ' · nemezis' : ' · powracający') : '', e.hunter ? ' · łowca skarbów' : '', e.recruit ? ' · rekrut' : ''].join('')));
+    card.appendChild(el('div', 'sub', T.name[fem ? 1 : 0] + L(' · poz. ', ' · lvl ') + e.lvl + ' ' + (e.boss ? BOSS_NAME[e.boss][fem ? 1 : 0] : R.name[fem ? 1 : 0]).toLowerCase() + [e.returning ? (e.nemesis ? L(' · nemezis', ' · nemesis') : L(fem ? ' · powracająca' : ' · powracający', ' · returning')) : '', e.hunter ? L(fem ? ' · łowczyni skarbów' : ' · łowca skarbów', ' · treasure hunter') : '', e.recruit ? L(' · rekrut', ' · recruit') : ''].join('')));
     const hh = el('h2', null, nemName(e)); hh.style.color = T.color; card.appendChild(hh);   // 1.23: with his title
     const tiles = el('div', 'statrow');
     statTile(tiles, Math.round(live ? live.hp : e.hp) + '/' + e.max, 'HP', live && live.hp < 0.35 * e.max ? 'bad' : '');
     const cou = live ? live.courage : e.courage;
-    statTile(tiles, live ? Math.round(100 * live.fear / cou) + '%' : '0%', 'strach z ' + Math.round(cou) + ' odwagi', live && live.fear > 0.6 * cou ? 'bad' : '');
-    if (e.type === 'priest' && live) statTile(tiles, live.faith + '/' + live.faithMax, 'wiara');
-    else statTile(tiles, String((live ? live.inv : e.inv).length), 'przedmioty');
+    statTile(tiles, live ? Math.round(100 * live.fear / cou) + '%' : '0%', L('strach · odwaga ', 'fear · courage ') + Math.round(cou), live && live.fear > 0.6 * cou ? 'bad' : '');
+    if (e.type === 'priest' && live) statTile(tiles, live.faith + '/' + live.faithMax, L('wiara', 'faith'));
+    else statTile(tiles, String((live ? live.inv : e.inv).length), L('przedmioty', 'items'));
     card.appendChild(tiles);
     const ul = el('ul', 'conseq');
     const add = t => { if (t) ul.appendChild(el('li', null, t)); };
     if (live) {
-      const st = live.dead ? (fem ? 'Zginęła.' : 'Zginął.') : live.fled ? (live.carriedOut ? 'Wyniósł kryształ.' : live.fleeing ? 'Uciekł ze strachu.' : 'Wyszedł z lochu.') :
-        [live.fleeing ? 'UCIEKA' : '', live.crystal ? 'NIESIE KRYSZTAŁ' : '', caged(live) ? 'w klatce' : '', live.lost ? 'zgubiony' : live.goHome ? (live.female ? 'wraca sama do domu' : 'wraca sam do domu') : inG2(live) ? (fl.party.g2.leaderId === live.id ? 'prowadzi drugą grupę' : 'w drugiej grupie') : live.split ? 'na zwiadzie' : live.look && !live.look.done ? 'rozgląda się' : live.alone ? 'sam' : '', fl.time < live.burnUntil ? (live.burnBy === 'spikes' ? 'krwawi' : 'płonie') : '', live.cursed ? 'przeklęty' : '', fl.time < live.shakenUntil ? 'wstrząśnięty śmiercią' : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
-      add('Teraz: ' + st + '.');
-      if (!live.dead && !live.fled) { const sl = statusList(live); if (sl.length) add('Statusy: ' + sl.map(k => STATUS[k].name + ' (' + STATUS[k].desc + ')').join('; ') + '.'); }   // 1.26 (7)
-      if (live.type === 'cultist' && live.drank > 0) add('Wypił' + (fem ? 'a' : '') + ' z serca ' + fmtE(live.drank) + ' Esencji (zabity odda połowę).');
+      const st = live.dead ? L(fem ? 'Zginęła.' : 'Zginął.', 'Dead.') : live.fled ? (live.carriedOut ? L((fem ? 'Wyniosła' : 'Wyniósł') + ' kryształ.', 'Carried out a crystal.') : live.fleeing ? L((fem ? 'Uciekła' : 'Uciekł') + ' ze strachu.', 'Fled in fear.') : L((fem ? 'Wyszła' : 'Wyszedł') + ' z lochu.', 'Left the dungeon.')) :
+        [live.fleeing ? L('UCIEKA', 'FLEEING') : '', live.crystal ? L('NIESIE KRYSZTAŁ', 'CARRYING A CRYSTAL') : '', caged(live) ? L('w klatce', 'caged') : '', live.lost ? L(fem ? 'zgubiona' : 'zgubiony', 'lost') : live.goHome ? L(live.female ? 'wraca sama do domu' : 'wraca sam do domu', 'going home alone') : inG2(live) ? (fl.party.g2.leaderId === live.id ? L('prowadzi drugą grupę', 'leads the second group') : L('w drugiej grupie', 'in the second group')) : live.split ? L('na zwiadzie', 'scouting') : live.look && !live.look.done ? L('rozgląda się', 'looking around') : live.alone ? L(fem ? 'sama' : 'sam', 'alone') : '', fl.time < live.burnUntil ? (live.burnBy === 'spikes' ? L('krwawi', 'bleeding') : L('płonie', 'burning')) : '', live.cursed ? L(fem ? 'przeklęta' : 'przeklęty', 'cursed') : '', fl.time < live.shakenUntil ? L(fem ? 'wstrząśnięta śmiercią' : 'wstrząśnięty śmiercią', 'shaken by a death') : '', STATE_TEXT[live.state] || ''].filter(Boolean).join(', ');
+      add(L('Teraz: ', 'Now: ') + st + '.');
+      if (!live.dead && !live.fled) { const sl = statusList(live); if (sl.length) add(L('Statusy: ', 'Statuses: ') + sl.map(k => STATUS[k].name + ' (' + STATUS[k].desc + ')').join('; ') + '.'); }   // 1.26 (7)
+      if (live.type === 'cultist' && live.drank > 0) add(L('Wypił' + (fem ? 'a' : '') + ' z serca ' + fmtE(live.drank) + ' Esencji (' + (fem ? 'zabita' : 'zabity') + ' odda połowę).', 'Drank ' + fmtE(live.drank) + ' Essence from the heart (gives back half if killed).'));
     }
-    add('Charakter: ' + (e.trait ? HERO_TRAITS[e.trait].name[fem ? 1 : 0] + ' (' + TRAIT_TEXT[e.trait] + ')' : 'zwyczajny') + '.');
-    { const bm = bondMate(e, live); if (bm) add(bondLabel(e.bond, bm) + (bm.dead ? (bm.female ? ' (zginęła)' : ' (zginął)') : '') + '.'); }   // 1.21: his bond
-    add('Umie: ' + CLASS_SKILL[e.type] + '.');
-    add('Klasa: ' + CLASS_RES_TEXT[e.type] + '.');
-    if (e.hunter) add('Łowca skarbów: idzie po łup, nawet gdy to groźne (znak sakiewki).');
-    add('Ciało: ' + (e.phys && (known.has('phys') || all) ? PHYS[e.phys].name[fem ? 1 : 0] + ' (' + PHYS[e.phys].text + ')' : 'nie wiadomo') + '.');
-    add('Fobia: ' + (e.phobia && (known.has('phobia') || all) ? PHOBIAS[e.phobia].name + ' (straszy 2 razy mocniej)' : 'nie wiadomo') + '.');
-    if (e.scar) add('Blizna: ' + e.scar + (e.times > 1 && !e.nemesis ? ' (wraca już ' + e.times + '. raz)' : '') + '.');
+    add(L('Charakter: ', 'Character: ') + (e.trait ? HERO_TRAITS[e.trait].name[fem ? 1 : 0] + ' (' + TRAIT_TEXT[e.trait] + ')' : L(fem ? 'zwyczajna' : 'zwyczajny', 'ordinary')) + '.');
+    { const bm = bondMate(e, live); if (bm) add(bondLabel(e.bond, bm) + (bm.dead ? L(bm.female ? ' (zginęła)' : ' (zginął)', ' (dead)') : '') + '.'); }   // 1.21: his bond
+    add(L('Umie: ', 'Skills: ') + CLASS_SKILL[e.type] + '.');
+    add(L('Klasa: ', 'Class: ') + CLASS_RES_TEXT[e.type] + '.');
+    if (e.hunter) add(L((fem ? 'Łowczyni' : 'Łowca') + ' skarbów: idzie po łup, nawet gdy to groźne (znak sakiewki).', 'Treasure hunter: goes for loot even when it is dangerous (bag icon).'));
+    add(L('Ciało: ', 'Body: ') + (e.phys && (known.has('phys') || all) ? PHYS[e.phys].name[fem ? 1 : 0] + ' (' + PHYS[e.phys].text + ')' : L('nie wiadomo', 'unknown')) + '.');
+    add(L('Fobia: ', 'Phobia: ') + (e.phobia && (known.has('phobia') || all) ? PHOBIAS[e.phobia].name + L(' (straszy 2 razy mocniej)', ' (scares 2× more)') : L('nie wiadomo', 'unknown')) + '.');
+    if (e.scar) add(L('Blizna: ', 'Scar: ') + e.scar + (e.times > 1 && !e.nemesis ? L(' (wraca już po raz ' + e.times + '.)', ' (back for the ' + ordEn(e.times) + ' time)') : '') + '.');
     if (e.nemesis) {   // 1.23: what makes him a Nemezis
       const g = e.nemesis.grudge;
-      add('Nemezis: wraca ' + (e.times || 1) + '. raz (od fali ' + e.nemesis.since + '), zna pokoje, w których był' + (fem ? 'a' : '') + ', nie ucieka ze strachu powyżej 15% życia.');
-      if (g && ITEMS[g.type]) add('Uraza: ' + ITEMS[g.type].name + (g.x != null ? '' : ' (gdziekolwiek)') + '.');
-      add('Nagroda za głowę: ' + bountyOf(e) + ' Esencji' + (e.bountyPaid ? ' (wypłacona)' : '') + '.');
+      add(L('Nemezis: wraca ' + (e.times || 1) + '. raz (od fali ' + e.nemesis.since + '). Zna pokoje, w których był' + (fem ? 'a' : '') + ', i nie ucieka ze strachu, póki ma ponad 15% życia.', 'Nemesis: back for the ' + ordEn(e.times || 1) + ' time (since wave ' + e.nemesis.since + '). Knows the rooms they have seen and won\'t flee in fear above 15% HP.'));
+      if (g && ITEMS[g.type]) add(L('Uraza: ', 'Grudge: ') + ITEMS[g.type].name + (g.x != null ? '' : L(' (gdziekolwiek)', ' (anywhere)')) + '.');
+      add(L('Nagroda za głowę: ', 'Bounty: ') + bountyOf(e) + L(' Esencji', ' Essence') + (e.bountyPaid ? L(' (wypłacona)', ' (paid)') : '') + '.');
     }
-    { const n = live ? (live.tdFalls || 0) : 0, cap = tdCap(h); if (n || [...fl.items.values()].some(it => it.type === 'trapdoor')) add('Zapadnie: ' + n + '/' + cap + (n >= cap ? (fem ? ' (już jej nie grożą)' : ' (już mu nie grożą)') : cap === 1 ? ' (elita albo poz. 12+: spada raz)' : '') + '.'); }   // 1.24
-    if (live && live.trauma && Object.keys(live.trauma).length) add('Trauma w tej fali: ' + Object.keys(live.trauma).map(k => DMG_TYPES[k]).join(', ') + ' (straszy 1,5 raza mocniej).');
+    { const n = live ? (live.tdFalls || 0) : 0, cap = tdCap(h); if (n || [...fl.items.values()].some(it => it.type === 'trapdoor')) add(L('Zapadnie: ', 'Trapdoors: ') + n + '/' + cap + (n >= cap ? L(fem ? ' (już jej nie grożą)' : ' (już mu nie grożą)', ' (no longer a threat)') : cap === 1 ? L(' (elita albo poz. 12+: spada raz)', ' (elite or lvl 12+: falls only once)') : '') + '.'); }   // 1.24
+    if (live && live.trauma && Object.keys(live.trauma).length) add(L('Trauma w tej fali: ', 'Trauma this wave: ') + Object.keys(live.trauma).map(k => DMG_TYPES[k]).join(', ') + L(' (straszy 1,5 raza mocniej).', ' (scares 1.5× more).'));
     card.appendChild(ul);
-    card.appendChild(el('h2', 'h2small', 'Ekwipunek'));
+    card.appendChild(el('h2', 'h2small', L('Ekwipunek', 'Gear')));
     const inv = live ? live.inv : e.inv, il = el('ul', 'conseq');
-    if (!inv.length) il.appendChild(el('li', null, 'Nic przy sobie.'));
-    inv.forEach(it => { const H = HITEMS[it.type]; const cd = live && fl.time < (it.cdUntil || 0) ? ', odnowienie ' + Math.ceil(it.cdUntil - fl.time) + ' s' : '';
-      const nm = H.tool ? capFirst(H.name) + (live && it.type === 'lantern' && fl.time < (it.outUntil || 0) ? ' (zgaszona)' : '') : capFirst(adj(H.g, it.r) + ' ' + H.name) + ' (moc ' + it.r + (it.charges != null ? ', użycia: ' + it.charges : '') + cd + ')';
-      il.appendChild(el('li', null, nm + srcText(it, h) + (it.cursed ? ', przeklęty' : ''))); });   // 1.20: where it comes from
-    if (live && live.gold) il.appendChild(el('li', null, 'Sakwa: ' + live.gold + ' monet (spowalnia).'));
-    { const ld = loadOf(h), cy = carryOf(h), f1 = v => v.toFixed(1).replace('.', ','); il.appendChild(el('li', null, 'Ciężar: ' + f1(ld) + ' / ' + f1(cy) + ' kg' + (burden(h) < 1 ? ' (zwalnia)' : '') + '.')); }   // 1.20 Udźwig
-    if (live && live.fled && !live.dead && (live.loot || live.gold)) il.appendChild(el('li', null, (fem ? 'Zabrała' : 'Zabrał') + ' z lochu: ' + (live.loot || 0) + ' łupu, ' + (live.gold || 0) + ' monet.'));
+    if (!inv.length) il.appendChild(el('li', null, L('Nic przy sobie.', 'Carries nothing.')));
+    inv.forEach(it => { const H = HITEMS[it.type]; const cd = live && fl.time < (it.cdUntil || 0) ? L(', odnowienie ', ', cooldown ') + Math.ceil(it.cdUntil - fl.time) + ' s' : '';
+      const nm = H.tool ? capFirst(H.name) + (live && it.type === 'lantern' && fl.time < (it.outUntil || 0) ? L(' (zgaszona)', ' (out)') : '') : capFirst(adj(H.g, it.r) + ' ' + H.name) + L(' (moc ', ' (power ') + it.r + (it.charges != null ? L(', użycia: ', ', uses: ') + it.charges : '') + cd + ')';
+      il.appendChild(el('li', null, nm + srcText(it, h) + (it.cursed ? L(', przeklęty', ', cursed') : ''))); });   // 1.20: where it comes from
+    if (live && live.gold) il.appendChild(el('li', null, L('Sakwa: ' + live.gold + ' ' + plural(live.gold, 'moneta', 'monety', 'monet') + ' (spowalnia).', 'Pouch: ' + live.gold + (live.gold === 1 ? ' coin' : ' coins') + ' (slows them down).')));
+    { const ld = loadOf(h), cy = carryOf(h), f1 = v => dec(v.toFixed(1)); il.appendChild(el('li', null, L('Ciężar: ', 'Load: ') + f1(ld) + ' / ' + f1(cy) + ' kg' + (burden(h) < 1 ? L(' (zwalnia)', ' (slowed)') : '') + '.')); }   // 1.20 Udźwig
+    if (live && live.fled && !live.dead && (live.loot || live.gold)) il.appendChild(el('li', null, L((fem ? 'Zabrała' : 'Zabrał') + ' z lochu: ' + (live.loot || 0) + ' łupu, ' + (live.gold || 0) + ' monet.', 'Took from the dungeon: ' + (live.loot || 0) + ' loot, ' + (live.gold || 0) + ' coins.')));
     card.appendChild(il);
     if (live && !live.queued) {
       const db = Object.entries(live.dmgBy || {}).filter(x => x[1] >= 1).map(x => DMG_TYPES[x[0]] + ' ' + Math.round(x[1])).join(', ');
       const fb = Object.entries(live.fearBy || {}).filter(x => x[1] >= 1).sort((a, b) => b[1] - a[1]).slice(0, 4).map(x => fearSrcName(x[0]) + ' ' + Math.round(x[1])).join(', ');
       const sw = sawNames(live);   // 1.17.1: what he has seen (what he can talk about)
-      if (db || fb || sw) { const dl = el('ul', 'conseq'); if (db) dl.appendChild(el('li', null, 'Rany w tej fali: ' + db + '.')); if (fb) dl.appendChild(el('li', null, 'Strach w tej fali: ' + fb + '.')); if (sw) dl.appendChild(el('li', null, (fem ? 'Widziała' : 'Widział') + ' w tej fali: ' + sw + '.')); card.appendChild(el('h2', 'h2small', 'Ta fala')); card.appendChild(dl); }
+      if (db || fb || sw) { const dl = el('ul', 'conseq'); if (db) dl.appendChild(el('li', null, L('Rany w tej fali: ', 'Wounds this wave: ') + db + '.')); if (fb) dl.appendChild(el('li', null, L('Strach w tej fali: ', 'Fear this wave: ') + fb + '.')); if (sw) dl.appendChild(el('li', null, L((fem ? 'Widziała' : 'Widział') + ' w tej fali: ', 'Saw this wave: ') + sw + '.')); card.appendChild(el('h2', 'h2small', L('Ta fala', 'This wave'))); card.appendChild(dl); }
     }
-    card.appendChild(el('p', 'note', 'Ciało i fobię poznajesz, gdy się zdradzą (dymek), z plotek z karczmy albo gdy bohater wraca z blizną.'));
-    card.appendChild(btn('primary', m.back ? 'Wróć' : 'Zamknij', null, () => { closeModal(); if (m.back) { openModal(m.back); $('#card').classList.remove('enter'); } else if (m.unpause) setPaused(false); }));
+    card.appendChild(el('p', 'note', L('Ciało i fobię poznajesz, gdy się zdradzą (dymek), z plotek z karczmy albo gdy bohater wraca z blizną.', 'You learn body and phobia when they show (speech bubble), from tavern rumours, or when a hero comes back with a scar.')));
+    card.appendChild(btn('primary', m.back ? L('Wróć', 'Back') : L('Zamknij', 'Close'), null, () => { closeModal(); if (m.back) { openModal(m.back); $('#card').classList.remove('enter'); } else if (m.unpause) setPaused(false); }));
   }
   // v14: the first hungry wave explains itself once
   function renderHungerTip(card) {
-    card.appendChild(el('div', 'sub', 'Fala 2'));
-    card.appendChild(el('h2', null, 'Serce jest głodne'));
-    card.appendChild(el('p', 'lead', 'Od tej fali serce bierze pierwsze porcje Esencji z każdej fali, aż się naje: teraz ' + hungerNeed(run.wave) + ', potem coraz więcej. Dopiero reszta trafia do Ciebie.'));
+    card.appendChild(el('div', 'sub', L('Fala 2', 'Wave 2')));
+    card.appendChild(el('h2', null, L('Serce jest głodne', 'The heart is hungry')));
+    card.appendChild(el('p', 'lead', L('Od tej fali serce zjada pierwsze porcje Esencji z każdej fali, aż się naje: teraz ' + hungerNeed(run.wave) + ', potem coraz więcej. Reszta jest Twoja.', "From now on the heart eats the first share of every wave's Essence until it is full: " + hungerNeed(run.wave) + ' now, more later. The rest is yours.')));
     const ul = el('ul', 'conseq');
-    ['Pasek ♥ u góry napełnia się w trakcie fali. Gdy się zapełni, serce jest syte.',
-     'Syte serce bierze Daninę: 30% każdej dalszej wypłaty idzie w Nasycenie (złoty pasek), reszta do Twojej sakiewki. Pełne Nasycenie to poziom serca, a każdy poziom to darmowa karta (rząd Dar serca w sklepie).',
-     'Fala da za mało: po fali serce zabiera brak z Twojej sakiewki (zobaczysz to w podsumowaniu). Kryształ pęka dopiero wtedy, gdy sakiewka nie wystarczy, a sakiewka zostaje wtedy pusta.',
-     'Dlatego warto zostawiać zapas Esencji na następną falę (w budowie wiersz serca pisze "serce chce N · zapas X"). Stuknij serce u góry, żeby zobaczyć, z czego składa się głód.',
-     'Esencję daje Groza (rany, strach, śmierć, ucieczki) × Chciwość (łup, rozległy loch, karty) × Combo. Wypędzeni od razu bohaterowie nie nakarmią serca: trzymaj ich w lochu jak najdłużej.'].forEach(t => ul.appendChild(el('li', null, t)));
+    L(['Pasek ♥ u góry napełnia się w trakcie fali. Pełny pasek: serce jest syte.',
+     'Fala dała za mało? Serce weźmie brak z Twojej sakiewki. Kryształ pęka dopiero wtedy, gdy sakiewka nie wystarczy.',
+     'Zostawiaj więc trochę Esencji na następną falę. Stuknij serce u góry, żeby zobaczyć, ile chce.'],
+     ['The ♥ bar at the top fills during the wave. When the bar is full, so is the heart.',
+     "Did the wave bring too little? The heart takes the rest from your purse. A crystal breaks only if your purse can't cover it.",
+     'So keep some Essence for the next wave. Tap the heart at the top to see how much it wants.']).forEach(t => ul.appendChild(el('li', null, t)));
     card.appendChild(ul);
-    card.appendChild(btn('primary', 'Rozumiem', null, closeModal));
+    card.appendChild(btn('primary', L('Rozumiem', 'Got it'), null, closeModal));
   }
   // The breach, tapped between waves: what it means and the patch.
   function renderBreach(card, m) {
     const B = run.layout.breach;
-    if (!B || !fl.breach || fl.phase !== 'build') { card.appendChild(el('p', null, 'Wyłomu już nie ma.')); card.appendChild(btn('primary', 'Zamknij', null, closeModal)); return; }
+    if (!B || !fl.breach || fl.phase !== 'build') { card.appendChild(el('p', null, L('Wyłomu już nie ma.', 'The breach is gone.'))); card.appendChild(btn('primary', L('Zamknij', 'Close'), null, closeModal)); return; }
     // 1.01: the camera goes to the breach and leaves it in view under this sheet (about two thirds down the map), with a pulse
     centerOn(fl.breach.x + 0.5, fl.breach.y + 0.5); cam.oy -= ch * 0.18; clampCam(); fl.breachPing = realNow;
-    card.appendChild(el('div', 'sub', 'Wyłom' + (B.born ? ' · od fali ' + B.born : '') + ' · na mapie poniżej'));
-    card.appendChild(el('h2', null, m && m.fresh ? 'Nowy wyłom!' : 'Wyłom w ścianie'));
-    card.appendChild(el('p', 'lead', B.fresh ? 'Gildia przebiła tunel do tego pokoju (czerwone kółko) i tę falę wpuści właśnie tędy.' : 'Tunel gildii wciąż jest otwarty. Każda fala wybiera: wyłom albo drzwi, zwykle tę drogę, przy której słyszała o mniejszej liczbie pułapek.'));
-    card.appendChild(el('p', 'note', 'Przez wyłom bohaterowie omijają część lochu. Załatany znika na dobre (Bastion chroni pokój przed nowym).'));
+    card.appendChild(el('div', 'sub', L('Wyłom', 'Breach') + (B.born ? L(' · od fali ', ' · since wave ') + B.born : '') + L(' · na mapie poniżej', ' · on the map below')));
+    card.appendChild(el('h2', null, m && m.fresh ? L('Nowy wyłom!', 'New breach!') : L('Wyłom w ścianie', 'A breach in the wall')));
+    card.appendChild(el('p', 'lead', B.fresh ? L('Gildia przebiła tunel do tego pokoju (czerwone kółko). Ta fala wejdzie właśnie tędy.', 'The guild dug a tunnel into this room (red circle). This wave comes in right here.') : L('Tunel gildii wciąż jest otwarty. Każda fala wybiera wyłom albo drzwi, zwykle tę drogę, na której według plotek jest mniej pułapek.', 'The guild tunnel is still open. Each wave picks the breach or the door, usually the way rumoured to have fewer traps.')));
+    card.appendChild(el('p', 'note', L('Przez wyłom bohaterowie omijają część lochu. Załatany znika na dobre (Bastion chroni pokój przed nowym).', 'Through the breach heroes skip part of your dungeon. Once patched, it is gone for good (Bastion protects a room from new ones).')));
     const row = el('div', 'row');
-    const pb = btn('primary', 'Załataj wyłom', BREACH_PATCH + ' Esencji', () => { if (patchBreach()) { closeModal(); setHint('Wyłom załatany. Gildia może przebić nowy w kolejnych falach (Bastion chroni pokój).'); } });
+    const pb = btn('primary', L('Załataj', 'Patch it'), BREACH_PATCH + L(' Esencji', ' Essence'), () => { if (patchBreach()) { closeModal(); setHint(L('Wyłom załatany. Gildia może przebić nowy w kolejnych falach (Bastion chroni pokój).', 'Breach patched. The guild may dig a new one later (Bastion protects a room).')); } });
     pb.id = 'sheet-patch';
-    if (fl.essence < BREACH_PATCH) { pb.disabled = true; pb.querySelector('span').textContent = BREACH_PATCH + ' Esencji (masz ' + Math.floor(fl.essence) + ')'; }
-    row.appendChild(pb); row.appendChild(btn('', 'Zostaw', 'niech wybierają', closeModal));
+    if (fl.essence < BREACH_PATCH) { pb.disabled = true; pb.querySelector('span').textContent = BREACH_PATCH + L(' Esencji (masz ' + Math.floor(fl.essence) + ')', ' Essence (you have ' + Math.floor(fl.essence) + ')'); }
+    row.appendChild(pb); row.appendChild(btn('', L('Zostaw', 'Leave it'), L('niech wybierają', 'let them choose'), closeModal));
     card.appendChild(row);
   }
   // A card from the deck tab: read it, or sell it between waves.
   function renderCard(card, m) {
     const id = run.deck[m.idx], u = UPG[id];
-    if (!u) { card.appendChild(el('p', null, 'Tej karty już nie ma.')); card.appendChild(btn('primary', 'Zamknij', null, closeModal)); return; }
+    if (!u) { card.appendChild(el('p', null, L('Tej karty już nie ma.', 'This card is gone.'))); card.appendChild(btn('primary', L('Zamknij', 'Close'), null, closeModal)); return; }
     const n = run.deck.filter(x => x === id).length, fz = isFused(id);
-    card.appendChild(el('div', 'sub', capFirst(RAR_NAME[u.rar]) + ' karta' + (fz ? ' · połączona' : '') + ' · talia ' + run.deck.length + ' z ' + run.deckSize));
+    card.appendChild(el('div', 'sub', capFirst(RAR_NAME[u.rar]) + L(' karta', ' card') + (fz ? L(' · połączona', ' · fused') : '') + L(' · talia ', ' · deck ') + run.deck.length + L(' z ', '/') + run.deckSize));
     { const ca = ART.cardImg(id, true); if (ca) card.appendChild(ca); }   // 1.26: the card's picture, twice as big
     const h = el('h2', null, cardName(id)); h.style.color = fz ? '#f2c94c' : RAR_COLOR[u.rar]; card.appendChild(h);   // 1.24: a fused ★ card is golden
     card.appendChild(el('p', null, u.text));
     if (fz) card.appendChild(el('p', 'fuseline', fuseText(u)));   // 1.24
-    if (n > 1) card.appendChild(el('p', 'note', 'Masz ' + n + ' kopie tej karty, działają razem.'));
-    if (u.grows) card.appendChild(el('p', 'note', 'Zebrane w tym runie: ' + (run.stacks[u.id] || 0) + '. Sprzedaż ostatniej kopii zeruje licznik.'));
-    if (id === 'copyist' || id === 'soulmirror') { const t = copyTarget(id); card.appendChild(el('p', 'note', t ? 'Teraz kopiuje: ' + cardName(t) + '.' : 'Teraz nic nie kopiuje (' + (id === 'copyist' ? 'po prawej' : 'na pierwszym miejscu') + ' nie ma zwykłej karty).')); }
+    if (n > 1) card.appendChild(el('p', 'note', L('Masz ' + n + ' kopie tej karty. Działają razem.', 'You have ' + n + ' copies of this card. They work together.')));
+    if (u.grows) card.appendChild(el('p', 'note', L('Zebrane w tym runie: ' + (run.stacks[u.id] || 0) + '. Sprzedaż ostatniej kopii zeruje licznik.', 'Collected this run: ' + (run.stacks[u.id] || 0) + '. Selling the last copy resets it.')));
+    if (id === 'copyist' || id === 'soulmirror') { const t = copyTarget(id); card.appendChild(el('p', 'note', t ? L('Teraz kopiuje: ', 'Now copying: ') + cardName(t) + '.' : L('Teraz nic nie kopiuje: ' + (id === 'copyist' ? 'po prawej' : 'na pierwszym miejscu') + ' nie ma karty, którą może skopiować.', 'Copying nothing now: ' + (id === 'copyist' ? 'the card to its right' : 'the first card') + ' cannot be copied.'))); }
     // 1.26: the order of the deck matters for Kopista and Lustro duszy: move a card left or right (between waves)
     if (fl && fl.phase === 'build' && run.deck.some(x => x === 'copyist' || x === 'soulmirror') && run.deck.length > 1) {
       const mv = el('div', 'row'), go = d => { const j = m.idx + d; if (j < 0 || j >= run.deck.length) return; const a = run.deck[m.idx]; run.deck[m.idx] = run.deck[j]; run.deck[j] = a; recomputeMods(); saveRunSoon(); openModal({ type: 'card', idx: j }); };
-      const lb = btn('', '◀ W lewo', 'miejsce ' + m.idx + ' z ' + run.deck.length, () => go(-1)); lb.id = 'card-left'; if (m.idx === 0) lb.disabled = true;
-      const rb = btn('', 'W prawo ▶', 'miejsce ' + (m.idx + 2) + ' z ' + run.deck.length, () => go(1)); rb.id = 'card-right'; if (m.idx >= run.deck.length - 1) rb.disabled = true;
-      mv.appendChild(lb); mv.appendChild(rb); card.appendChild(el('p', 'note', 'Kolejność ma znaczenie dla Kopisty i Lustra duszy.')); card.appendChild(mv);
+      const lb = btn('', L('◀ W lewo', '◀ Left'), L('miejsce ', 'slot ') + m.idx + L(' z ', ' of ') + run.deck.length, () => go(-1)); lb.id = 'card-left'; if (m.idx === 0) lb.disabled = true;
+      const rb = btn('', L('W prawo ▶', 'Right ▶'), L('miejsce ', 'slot ') + (m.idx + 2) + L(' z ', ' of ') + run.deck.length, () => go(1)); rb.id = 'card-right'; if (m.idx >= run.deck.length - 1) rb.disabled = true;
+      mv.appendChild(lb); mv.appendChild(rb); card.appendChild(el('p', 'note', L('Kolejność ma znaczenie dla Kopisty i Lustra duszy.', 'The order matters for Copyist and Soul Mirror.'))); card.appendChild(mv);
     }
     const row = el('div', 'row');
     if (fl && fl.phase === 'build') {
-      const tb = btn('', 'Do schowka', run.stash && run.stash.length >= stashCap() ? 'schowek pełny' : 'nie działa, czeka', () => { if (toStash(m.idx)) { closeModal(); setHint(u.name + ': w schowku.'); } });
+      const tb = btn('', L('Do schowka', 'To stash'), run.stash && run.stash.length >= stashCap() ? L('schowek pełny', 'stash full') : L('czeka, nie działa', 'waits, does nothing'), () => { if (toStash(m.idx)) { closeModal(); setHint(u.name + L(': w schowku.', ': in the stash.')); } });
       if ((run.stash || []).length >= stashCap()) tb.disabled = true; row.appendChild(tb);
-      const sb = btn('', 'Sprzedaj', '+' + sellFor(id) + ' Esencji, karta przestaje działać', () => {   // 1.24: sellFor
-        if (!sb.dataset.sure) { sb.dataset.sure = '1'; sb.querySelector('b').textContent = 'Na pewno? Stuknij jeszcze raz'; return; }
-        const got = sellCard(m.idx); closeModal(); setHint('Sprzedane: ' + u.name + ' (+' + got + ' Esencji).');
+      const sb = btn('', L('Sprzedaj', 'Sell'), '+' + sellFor(id) + L(' Esencji, karta przestanie działać', ' Essence, the card stops working'), () => {   // 1.24: sellFor
+        if (!sb.dataset.sure) { sb.dataset.sure = '1'; sb.querySelector('b').textContent = L('Na pewno? Stuknij jeszcze raz', 'Sure? Tap again'); return; }
+        const got = sellCard(m.idx); closeModal(); setHint(L('Sprzedane: ', 'Sold: ') + u.name + ' (+' + got + L(' Esencji).', ' Essence).'));
       });
       sb.id = 'card-sell'; row.appendChild(sb);
-    } else card.appendChild(el('p', 'note', 'Karty sprzedajesz tylko między falami.'));
-    row.appendChild(btn('primary', 'Zamknij', null, closeModal));
+    } else card.appendChild(el('p', 'note', L('Karty sprzedajesz tylko między falami.', 'You can sell cards only between waves.')));
+    row.appendChild(btn('primary', L('Zamknij', 'Close'), null, closeModal));
     card.appendChild(row);
   }
-  const fate = h => h.dead ? (h.female ? 'zginęła' : 'zginął') : h.carriedOut ? (h.female ? 'wyniosła kryształ' : 'wyniósł kryształ') : h.fled ? (h.fleeing ? (h.female ? 'uciekła ze strachu' : 'uciekł ze strachu') : (h.female ? 'wyszła' : 'wyszedł')) : '?';
+  const fate = h => h.dead ? L(h.female ? 'zginęła' : 'zginął', 'died') : h.carriedOut ? L(h.female ? 'wyniosła kryształ' : 'wyniósł kryształ', 'took a crystal') : h.fled ? (h.fleeing ? L(h.female ? 'uciekła ze strachu' : 'uciekł ze strachu', 'fled in fear') : L(h.female ? 'wyszła' : 'wyszedł', 'left')) : '?';
   // where the fear came from, in plain words
-  const FEAR_SRC = { dmg: 'rany', death: 'śmierć towarzyszy', lost: 'zgubienie', alone: 'samotność', split: 'rozdzielenie (zwiad)', echo: 'echo groty', curse: 'klątwa', panic: 'panika', lowhp: 'ciężkie rany', ambush: 'zasadzki',
-    carrier: 'klątwa kryształu', roar: 'ryk potworów', haunt: 'nawiedzone klatki', cageAlone: 'porzucenie w klatce', lull: 'kołysanka', other: 'inne',
-    heart: 'żar serca', screams: 'krzyki uciekających', phobia: 'fobia', nightmare: 'koszmary', heartcry: 'krzyk serca', burn: 'płomienie', siren: 'zew kusicielki', steam: 'para', bell: 'dzwon żałobny' };   // 1.26   // 1.12.1: these showed as raw keys
+  const FEAR_SRC = { dmg: L('rany', 'wounds'), death: L('śmierć towarzyszy', 'fallen friends'), lost: L('zgubienie', 'getting lost'), alone: L('samotność', 'being alone'), split: L('rozdzielenie (zwiad)', 'split up (scouting)'), echo: L('echo groty', 'grotto echo'), curse: L('klątwa', 'curse'), panic: L('panika', 'panic'), lowhp: L('ciężkie rany', 'bad wounds'), ambush: L('zasadzki', 'ambushes'),
+    carrier: L('klątwa kryształu', 'crystal curse'), roar: L('ryk potworów', 'monster roars'), haunt: L('nawiedzone klatki', 'haunted cages'), cageAlone: L('porzucenie w klatce', 'left in a cage'), lull: L('kołysanka', 'lullaby'), other: L('inne', 'other'),
+    heart: L('żar serca', "heart's glow"), screams: L('krzyki uciekających', 'screams of the fleeing'), phobia: L('fobia', 'phobia'), nightmare: L('koszmary', 'nightmares'), heartcry: L('krzyk serca', "heart's cry"), burn: L('płomienie', 'flames'), siren: L('zew kusicielki', "Temptress's call"), steam: L('para', 'steam'), bell: L('dzwon żałobny', 'Funeral Bell') };   // 1.26   // 1.12.1: these showed as raw keys
   const fearSrcName = k => FEAR_SRC[k] || (ITEMS[k] ? ITEMS[k].name.toLowerCase() : k);
   function statTile(box, v, label, cls) { const d = el('div', 'stat' + (cls ? ' ' + cls : '')); d.appendChild(el('b', null, v)); d.appendChild(el('span', null, label)); box.appendChild(d); }
   function itemsTable(byType) {
     const rows = Object.keys(byType).filter(k => !TOOLS[k]).map(k => ({ k, b: byType[k], pts: byType[k].pts + byType[k].passivePts + byType[k].fearPts })).filter(r => r.b.placed > 0 || r.pts > 0).sort((a, b) => b.pts - a.pts);
     const wrap = el('div');
     if (!rows.length) return wrap;
-    wrap.appendChild(el('p', 'note', 'Co zadziałało (trafienia · Esencja):'));
+    wrap.appendChild(el('p', 'note', L('Co zadziałało (trafienia · Esencja):', 'What worked (hits · Essence):')));
     const t = el('table', 'stats');
     rows.forEach(r => { const tr = el('tr'); tr.appendChild(el('td', null, ITEMS[r.k].name + (ITEMS[r.k].rarity ? ' ' + ITEMS[r.k].tag : ''))); tr.appendChild(el('td', null, r.b.hits + ' · ' + Math.round(r.pts))); t.appendChild(tr); });
     wrap.appendChild(t);
@@ -2113,65 +2152,65 @@
   }
   function statsTable(s) {
     const t = el('table', 'stats');
-    [['Skill checki: krytyk / draśnięcie / pudło / odpuszczone', s.checkCrit + ' / ' + s.checkOk + ' / ' + s.checkMiss + ' / ' + s.checkSkip],
-     ['Łup: zobaczony / zabrany / odpuszczony (ryzyko)', s.lootSeen + ' / ' + s.loot + ' / ' + s.lootSkipped],
-     ['Narady · zwiady · samotne wypady · zbiórki · odwroty', s.talks + ' · ' + s.scouts + ' · ' + s.wanders + ' · ' + s.regroups + ' · ' + s.retreats],
-     ['Zwiedzanie: rozglądania / odmowy / znalezione monety / pułapki odpalone przy szukaniu', (s.looks || 0) + ' / ' + (s.lookNo || 0) + ' / ' + (s.goldFound || 0) + ' / ' + (s.lookTraps || 0)],
-     ['Narada po 2 min: do domu / szturm / jeszcze chwila · wrócili sami', (s.councilHome || 0) + ' / ' + (s.councilStorm || 0) + ' / ' + (s.councilMore || 0) + ' · ' + (s.goHome || 0)],
-     ['Wieści: pułapki usłyszane zza ściany / śmierć przekazana później / łup zostawiony na rozkaz', (s.heard || 0) + ' / ' + (s.newsDeaths || 0) + ' / ' + (s.lootObey || 0)],
-     ['Osobno: na zwiadzie / sam / zgubiony (s)', Math.round(s.splitTime || 0) + ' / ' + Math.round(s.loneTime || 0) + ' / ' + Math.round(s.lostTime || 0) + (s.splitLost ? ' · zabłądzili ze zwiadu: ' + s.splitLost : '')],
-     ['Paniki · ucieczki · ucieczki całej drużyny', s.panics + ' · ' + s.flees + ' · ' + s.partyFlees],
-     ['Pułapki zapamiętane / niezapamiętane / wykryte', s.learned + ' / ' + s.notLearned + ' / ' + s.detected],
-     ['Rozbrojone (z tego rozmontowane) / nieudane / odczynione przez kapłana', s.disarmed + ' (' + (s.sapped || 0) + ') / ' + s.disarmFails + ' / ' + s.blessed],
-     ['Pułapki wyczute przez maga', s.sensed || 0],
-     ['Przygotowania: razy / osłony / zakłócenia / rozbrojenia z progu', s.preps + ' / ' + s.wards + ' / ' + s.jams + ' / ' + s.prepDisarms],
-     ['Plotki: pokoje / pułapki / fałszywe', s.rumorRooms + ' / ' + s.rumorTraps + ' / ' + s.rumorFalse],
-     ['Zapadnie · klatki · uratowani · porzuceni', s.falls + ' · ' + s.cages + ' · ' + s.rescues + ' · ' + s.abandons],
-     ['Samoobrona: uniki, tarcze, talizmany, bariery', s.dodges + ', ' + s.shields + ', ' + s.charms + ', ' + s.barriers],
-     ['Przebiegnięcia przy przeładowaniu', s.timing],
-     ['Najwyższe combo', '×' + fmt2(1 + 0.25 * (s.maxCombo - 1))],
-     ['Potwory, które zginęły', s.monstersLost],
-     ['Esencja: dla serca / dla Ciebie / z combo wstecz / relikwie', Math.round(s.essHeart || 0) + ' / ' + Math.round(s.essWave || 0) + ' / ' + Math.round(s.comboPts || 0) + ' / ' + Math.round(s.essDrop || 0)],
-     ['Czas · pauza · przyspieszenie', mmss(fl.time) + ' · ' + Math.round(s.pauseTime) + ' s · ' + Math.round(s.ffTime) + ' s']
+    [[L('Skill checki: krytyk / draśnięcie / pudło / odpuszczone', 'Skill checks: crit / graze / miss / skipped'), s.checkCrit + ' / ' + s.checkOk + ' / ' + s.checkMiss + ' / ' + s.checkSkip],
+     [L('Łup: zobaczony / zabrany / odpuszczony (ryzyko)', 'Loot: seen / taken / left (risk)'), s.lootSeen + ' / ' + s.loot + ' / ' + s.lootSkipped],
+     [L('Narady · zwiady · samotne wypady · zbiórki · odwroty', 'Talks · scouting · solo trips · regroups · retreats'), s.talks + ' · ' + s.scouts + ' · ' + s.wanders + ' · ' + s.regroups + ' · ' + s.retreats],
+     [L('Zwiedzanie: rozglądania / odmowy / znalezione monety / pułapki odpalone przy szukaniu', 'Exploring: looks / refusals / coins found / traps set off while searching'), (s.looks || 0) + ' / ' + (s.lookNo || 0) + ' / ' + (s.goldFound || 0) + ' / ' + (s.lookTraps || 0)],
+     [L('Narada po 2 min: do domu / szturm / jeszcze chwila · wrócili sami', 'Council after 2 min: go home / storm / a bit longer · left on their own'), (s.councilHome || 0) + ' / ' + (s.councilStorm || 0) + ' / ' + (s.councilMore || 0) + ' · ' + (s.goHome || 0)],
+     [L('Wieści: pułapki usłyszane zza ściany / śmierć przekazana później / łup zostawiony na rozkaz', 'News: traps heard through walls / deaths told later / loot left on orders'), (s.heard || 0) + ' / ' + (s.newsDeaths || 0) + ' / ' + (s.lootObey || 0)],
+     [L('Osobno: na zwiadzie / sam / zgubiony (s)', 'Apart: scouting / alone / lost (s)'), Math.round(s.splitTime || 0) + ' / ' + Math.round(s.loneTime || 0) + ' / ' + Math.round(s.lostTime || 0) + (s.splitLost ? L(' · zabłądzili ze zwiadu: ', ' · lost while scouting: ') + s.splitLost : '')],
+     [L('Paniki · ucieczki · ucieczki całej drużyny', 'Panics · flights · whole party fled'), s.panics + ' · ' + s.flees + ' · ' + s.partyFlees],
+     [L('Pułapki zapamiętane / niezapamiętane / wykryte', 'Traps remembered / not remembered / spotted'), s.learned + ' / ' + s.notLearned + ' / ' + s.detected],
+     [L('Rozbrojone (z tego rozmontowane) / nieudane / odczynione przez kapłana', 'Disarmed (of them dismantled) / failed / undone by a priest'), s.disarmed + ' (' + (s.sapped || 0) + ') / ' + s.disarmFails + ' / ' + s.blessed],
+     [L('Pułapki wyczute przez maga', 'Traps sensed by a mage'), s.sensed || 0],
+     [L('Przygotowania: razy / osłony / zakłócenia / rozbrojenia z progu', 'Preparations: times / wards / jams / disarmed from the door'), s.preps + ' / ' + s.wards + ' / ' + s.jams + ' / ' + s.prepDisarms],
+     [L('Plotki: pokoje / pułapki / fałszywe', 'Rumours: rooms / traps / false'), s.rumorRooms + ' / ' + s.rumorTraps + ' / ' + s.rumorFalse],
+     [L('Zapadnie · klatki · uratowani · porzuceni', 'Trapdoors · cages · rescued · abandoned'), s.falls + ' · ' + s.cages + ' · ' + s.rescues + ' · ' + s.abandons],
+     [L('Samoobrona: uniki, tarcze, talizmany, bariery', 'Self-defence: dodges, shields, charms, barriers'), s.dodges + ', ' + s.shields + ', ' + s.charms + ', ' + s.barriers],
+     [L('Przebiegnięcia przy przeładowaniu', 'Dashes past a reloading trap'), s.timing],
+     [L('Najwyższe combo', 'Best combo'), '×' + fmt2(1 + 0.25 * (s.maxCombo - 1))],
+     [L('Potwory, które zginęły', 'Monsters lost'), s.monstersLost],
+     [L('Esencja: dla serca / dla Ciebie / z combo wstecz / relikwie', 'Essence: heart / you / combo back-pay / relics'), Math.round(s.essHeart || 0) + ' / ' + Math.round(s.essWave || 0) + ' / ' + Math.round(s.comboPts || 0) + ' / ' + Math.round(s.essDrop || 0)],
+     [L('Czas · pauza · przyspieszenie', 'Time · pause · fast-forward'), mmss(fl.time) + ' · ' + Math.round(s.pauseTime) + ' s · ' + Math.round(s.ffTime) + ' s']
     ].forEach(r => { const tr = el('tr'); tr.appendChild(el('td', null, r[0])); tr.appendChild(el('td', null, String(r[1]))); t.appendChild(tr); });
     return t;
   }
   function renderOver(card) {
-    card.appendChild(el('div', 'sub', 'Serce lochu gaśnie'));
+    card.appendChild(el('div', 'sub', L('Serce lochu gaśnie', 'Your heart is fading')));
     const ate = fl.hunger && fl.hunger.ate;
-    card.appendChild(el('h2', null, ate ? 'Serce zjadło ostatni kryształ' : 'Ostatni kryształ wyniesiony'));
-    card.appendChild(el('p', null, (ate ? 'Loch nie dostał dość grozy i chciwości, więc pożarł sam siebie.' : 'Bohaterowie wynieśli wszystkie kryształy.') + ' W grze tu jest reklama nagradzana: jeden kryształ wraca i grasz dalej (raz na run).'));
+    card.appendChild(el('h2', null, ate ? L('Serce zjadło ostatni kryształ', 'The heart ate its last crystal') : L('Ostatni kryształ skradziony', 'The last crystal is stolen')));
+    card.appendChild(el('p', null, (ate ? L('Fale nie dały sercu dość Esencji, więc zjadło samo siebie.', 'The waves did not feed the heart enough Essence, so it ate itself.') : L('Bohaterowie wynieśli wszystkie kryształy.', 'The heroes carried out every crystal.')) + L(' W pełnej grze tu będzie reklama: po obejrzeniu kryształ wraca i grasz dalej (raz na run).', ' In the full game an ad goes here: watch it, get a crystal back and play on (once a run).')));
     const row = el('div', 'row');
     if (!run.continueUsed) {
       let gu = null;
-      const rv = btn('primary', 'Kontynuuj z 1 kryształem', 'symulacja reklamy', () => {
+      const rv = btn('primary', L('Kontynuuj z 1 kryształem', 'Continue with 1 crystal'), L('symulacja reklamy', 'simulated ad'), () => {
         rv.disabled = true; if (gu) gu.disabled = true;
-        let n = 3; rv.querySelector('b').textContent = 'Reklama... ' + n;
+        let n = 3; rv.querySelector('b').textContent = L('Reklama... ', 'Ad... ') + n;
         const timer = setInterval(() => {
           n--;
-          if (n > 0) { rv.querySelector('b').textContent = 'Reklama... ' + n; return; }
+          if (n > 0) { rv.querySelector('b').textContent = L('Reklama... ', 'Ad... ') + n; return; }
           clearInterval(timer);
           { const c0 = run.crystals; run.continueUsed = true; run.crystals = 1; run.maxCrystals = Math.max(run.maxCrystals, 1); crystalEv(run.crystals - c0, 'other', 'continue'); }   // 1.24 (D, P0-2): the rewarded ad
-          closeModal(); proceedToBuild(); setHint('Serce znowu bije. Nie zmarnuj tego.');
+          closeModal(); proceedToBuild(); setHint(L('Serce znowu bije. Nie zmarnuj tego.', 'Your heart beats again. Make it count.'));
         }, 700);
       });
       row.appendChild(rv);
-      gu = btn('', 'Zakończ run', null, () => { closeModal(); endRun(ate ? 'Serce zjadło ostatni kryształ.' : 'Bohaterowie wynieśli wszystkie kryształy.', 'end'); });
+      gu = btn('', L('Zakończ run', 'End run'), null, () => { closeModal(); endRun(ate ? L('Serce zjadło ostatni kryształ.', 'The heart ate its last crystal.') : L('Bohaterowie wynieśli wszystkie kryształy.', 'The heroes carried out every crystal.'), 'end'); });
       row.appendChild(gu);
-    } else row.appendChild(btn('primary', 'Zakończ run', null, () => { closeModal(); endRun(ate ? 'Serce zjadło ostatni kryształ.' : 'Bohaterowie wynieśli wszystkie kryształy.', 'end'); }));
+    } else row.appendChild(btn('primary', L('Zakończ run', 'End run'), null, () => { closeModal(); endRun(ate ? L('Serce zjadło ostatni kryształ.', 'The heart ate its last crystal.') : L('Bohaterowie wynieśli wszystkie kryształy.', 'The heroes carried out every crystal.'), 'end'); }));
     card.appendChild(row);
   }
   // After a reload at the final summary: the same choice as on the summary (win now or play on).
   function renderVictory(card) {
     card.classList.add('vic');
-    card.appendChild(el('div', 'sub', waveName() + ' odparta'));
-    card.appendChild(el('h2', null, 'Zwycięstwo!'));
-    card.appendChild(el('p', null, 'Bohater z przepowiedni nie wyniósł Twojego serca. Run wygrany: zebrane ' + Math.round(run.total) + ' Esencji, ranga: ' + rankOf(run.total).name + ', kryształy ' + run.crystals + ' z ' + run.maxCrystals + '.'));
-    card.appendChild(el('p', 'note', 'Możesz grać dalej: fale bez końca, co 5 fal boss, bohaterowie coraz silniejsi. Wygrana zostaje, nawet jeśli później padniesz.'));
+    card.appendChild(el('div', 'sub', waveName() + L(' odparta', ' held')));
+    card.appendChild(el('h2', null, L('Zwycięstwo!', 'Victory!')));
+    card.appendChild(el('p', null, L('Bohater z przepowiedni nie zabrał Twojego serca. Run wygrany! Esencja: ' + Math.round(run.total) + ' · ranga: ' + rankOf(run.total).name + ' · kryształy: ' + run.crystals + ' z ' + run.maxCrystals + '.', 'The hero of the prophecy did not take your heart. You won the run! Essence: ' + Math.round(run.total) + ' · rank: ' + rankOf(run.total).name + ' · crystals: ' + run.crystals + '/' + run.maxCrystals + '.')));
+    card.appendChild(el('p', 'note', L('Możesz grać dalej: fale bez końca, co 5 fal boss. Wygrana zostaje, nawet jeśli potem przegrasz.', 'You can play on: endless waves, a boss every 5. The win stays even if you fall later.')));
     pushLog(null);
     const row = el('div', 'row');
-    const go = btn('primary', 'Graj dalej', 'fale bez końca', () => { run.victoryDone = true; closeModal(); proceedToBuild(); }); go.id = 'vic-continue';
-    const end = btn('', 'Zakończ: zwycięstwo', null, () => { run.victoryDone = true; closeModal(); endRun('Loch przetrwał wszystkie ' + RUN_WAVES + ' fal.', 'win'); }); end.id = 'vic-end';
+    const go = btn('primary', L('Graj dalej', 'Play on'), L('fale bez końca', 'endless waves'), () => { run.victoryDone = true; closeModal(); proceedToBuild(); }); go.id = 'vic-continue';
+    const end = btn('', L('Zakończ: zwycięstwo', 'End with victory'), null, () => { run.victoryDone = true; closeModal(); endRun(L('Loch przetrwał wszystkie ' + RUN_WAVES + ' fal.', 'The dungeon survived all ' + RUN_WAVES + ' waves.'), 'win'); }); end.id = 'vic-end';
     row.appendChild(go); row.appendChild(end);
     card.appendChild(row);
   }
@@ -2340,8 +2379,8 @@
   // 1.24 (D, P0-2): the summary says in one red line why a crystal went (the testers lost crystals to hunger without noticing)
   function crystalWhy(body, H, heart) {
     const lines = [];
-    if (H && H.ate) lines.push('Głód pękł kryształ: serce chciało ' + H.need + ' Esencji, fala dała ' + fmtE(heart) + ', a sakiewka tylko ' + fmtE(H.tookPurse || 0) + '. Resztę sakiewki serce zjadło.');
-    fl.heroes.filter(h => h.carriedOut).forEach(h => lines.push('Kryształ skradziony: ' + heroName(h) + ' (' + className(h).toLowerCase() + ' ' + h.lvl + ') ' + (h.female ? 'wyniosła' : 'wyniósł') + ' go z lochu.'));
+    if (H && H.ate) lines.push(L('Głód rozbił kryształ: serce chciało ' + H.need + ' Esencji, fala dała ' + fmtE(heart) + ', a sakiewka tylko ' + fmtE(H.tookPurse || 0) + '. Serce zjadło też resztę sakiewki.', 'Hunger cost you a crystal: the heart wanted ' + H.need + ' Essence, the wave gave ' + fmtE(heart) + ' and your purse only ' + fmtE(H.tookPurse || 0) + '. The heart ate the rest of your purse too.'));
+    fl.heroes.filter(h => h.carriedOut).forEach(h => lines.push(L('Kryształ skradziony: ' + heroName(h) + ' (' + className(h).toLowerCase() + ' ' + h.lvl + ') ' + (h.female ? 'wyniosła' : 'wyniósł') + ' go z lochu.', 'Crystal stolen: ' + heroName(h) + ' (' + className(h).toLowerCase() + ', level ' + h.lvl + ') carried it out.')));
     if (!lines.length) return;
     const p = el('p', 'note crywhy', lines.join(' ')); p.id = 'wave-crystal-why'; body.appendChild(p);
   }
@@ -2355,34 +2394,34 @@
   // 1.26: the heart's card (a tap on the heart's row): this wave's hunger and where it comes from, the purse, the Danina and the
   // Nasycenie to the next level, what the levels give, and the Ofiara (in the build)
   function renderHeart(card, m) {
-    const L = run.heartLv || 0, s0 = heartLvAt(L), s1 = heartLvAt(L + 1), sat = Math.floor(run.satiety || 0), build = fl.phase === 'build';
+    const hl = run.heartLv || 0, s0 = heartLvAt(hl), s1 = heartLvAt(hl + 1), sat = Math.floor(run.satiety || 0), build = fl.phase === 'build';
     const n = build ? run.wave : fl.phase === 'summary' ? run.wave + 1 : run.wave, P = hungerParts(n), need = hungerNeed(n), purse = Math.floor(fl.essence);
-    card.appendChild(el('div', 'sub', 'Serce · poziom ' + L + (L ? '' : ' (rośnie od pierwszego nasycenia)')));
-    card.appendChild(el('h2', null, need ? 'Głód fali ' + n + ': ' + need : 'Serce'));
+    card.appendChild(el('div', 'sub', L('Serce · poziom ', 'Heart · level ') + hl));
+    card.appendChild(el('h2', null, need ? L('Głód fali ' + n + ': ' + need, 'Wave ' + n + ' Hunger: ' + need) : L('Serce', 'Heart')));
     const ul = el('ul', 'conseq');
-    ul.appendChild(el('li', null, 'Serce je pierwsze: z każdej wypłaty w fali bierze swoje, aż się naje (czerwony pasek). Reszta jest Twoja.'));
-    ul.appendChild(el('li', null, 'Fala da za mało: po fali serce zabierze brak z sakiewki' + (mods.stoneHeart ? ' (Kamienne serce: 75% braku)' : '') + '. Dopiero gdy sakiewka nie wystarczy, pęka kryształ, a serce zjada resztę sakiewki.'));
-    ul.appendChild(el('li', null, 'Syte serce bierze Daninę: ' + Math.round(titheNow() * 100) + '% każdej dalszej wypłaty idzie w Nasycenie (złoty pasek), które podnosi poziom serca.'));
-    ul.appendChild(el('li', null, 'Każdy poziom: darmowa karta z rzędu Dar serca w sklepie (rzadka albo legendarna, karty Serca są tylko tam). Poziomy 2, 4, 6: +1 miejsce w talii. Poziomy 3, 5, 7: w rzędzie może być Odrost (utracony kryształ wraca).'));
+    ul.appendChild(el('li', null, L('Serce je pierwsze: z wypłat w fali bierze swoje, aż się naje (czerwony pasek). Reszta jest Twoja.', 'The heart eats first: it takes its share of each payout until it is full (red bar). The rest is yours.')));
+    ul.appendChild(el('li', null, L('Fala dała za mało? Po fali serce bierze brak z sakiewki' + (mods.stoneHeart ? ' (Kamienne serce: 75% braku)' : '') + '. Gdy sakiewka nie wystarczy, pęka kryształ, a serce zjada całą sakiewkę.', 'Wave fell short? Afterwards the heart takes the rest from your purse' + (mods.stoneHeart ? ' (Stone Heart: 75% of it)' : '') + '. If the purse is short too, a crystal breaks and the heart eats the whole purse.')));
+    ul.appendChild(el('li', null, L('Syte serce bierze Daninę: ' + Math.round(titheNow() * 100) + '% dalszych wypłat idzie w Nasycenie (złoty pasek). Pełne Nasycenie to nowy poziom serca.', 'A full heart takes a Tithe: ' + Math.round(titheNow() * 100) + '% of later payouts goes to Satiety (gold bar). Fill it to level up the heart.')));
+    ul.appendChild(el('li', null, L('Każdy poziom daje darmową kartę z rzędu Dar serca w sklepie. Poziomy 2, 4, 6: +1 miejsce w talii. Poziomy 3, 5, 7: może trafić się Odrost (kryształ wraca).', "Each level gives a free card from the Heart's Gift row in the shop. Levels 2, 4, 6: +1 deck slot. Levels 3, 5, 7: Regrowth may show up (a crystal back).")));
     card.appendChild(ul);
     if (P) {
-      const parts = ['tabela ' + Math.round(P.table) + (P.base !== Math.round(P.table) ? ' → ' + P.base + ' (karty, omen)' : '')];
-      if (P.revive) parts.push('+' + P.revive + ' odrodzenie potworów'); if (P.demon) parts.push('+' + P.demon + ' demony'); if (P.credit) parts.push('+' + P.credit + ' kredyt krwi');
-      if (P.granary) parts.push('−' + P.granary + ' spichlerz'); if (P.blood) parts.push('−' + P.blood + ' głód krwi');
-      card.appendChild(el('p', 'note', 'Głód ' + need + ': ' + parts.join(', ') + '.' + (build ? (() => { const k = mods.stoneHeart ? 0.75 : 1; return ' Masz w sakiewce ' + purse + (purse >= need * k ? ': pokryje cały głód' + (k < 1 ? ' (Kamienne serce: wystarczy 75% braku).' : '.') : ': fala musi dać co najmniej ' + Math.ceil(need - purse / k) + ', inaczej pęknie kryształ.'); })() : '')));
+      const parts = [L('podstawa ', 'base ') + P.base];
+      if (P.revive) parts.push('+' + P.revive + L(' powalone potwory', ' downed monsters')); if (P.demon) parts.push('+' + P.demon + L(' demony', ' demons')); if (P.credit) parts.push('+' + P.credit + L(' Kredyt krwi', ' Blood Credit'));
+      if (P.granary) parts.push('−' + P.granary + L(' Spichlerz dusz', ' Soul Granary')); if (P.blood) parts.push('−' + P.blood + L(' Głód krwi', ' Bloodlust'));
+      card.appendChild(el('p', 'note', (parts.length > 1 ? L('Głód ', 'Hunger ') + need + ': ' + parts.join(', ') + '.' : '') + (build ? (() => { const k = mods.stoneHeart ? 0.75 : 1; return L(' W sakiewce masz ', ' Your purse: ') + purse + (purse >= need * k ? L(': wystarczy na cały głód', ', enough for all of it') + (k < 1 ? L(' (Kamienne serce: 75% braku).', ' (Stone Heart: 75% of it).') : '.') : L(': fala musi dać co najmniej ' + Math.ceil(need - purse / k) + ', inaczej pęknie kryształ.', '. The wave must bring at least ' + Math.ceil(need - purse / k) + ' or a crystal breaks.')); })() : '')));
     }
-    const sb = el('div', 'satbar'); const si = el('i'); si.style.width = (100 * clamp((sat - s0) / Math.max(1, s1 - s0), 0, 1)).toFixed(1) + '%'; sb.appendChild(si); sb.appendChild(el('span', null, 'Nasycenie ' + sat + ' / ' + s1 + ' do poziomu ' + (L + 1)));
+    const sb = el('div', 'satbar'); const si = el('i'); si.style.width = (100 * clamp((sat - s0) / Math.max(1, s1 - s0), 0, 1)).toFixed(1) + '%'; sb.appendChild(si); sb.appendChild(el('span', null, L('Nasycenie ', 'Satiety ') + sat + ' / ' + s1 + L(' do poziomu ', ' to level ') + (hl + 1)));
     card.appendChild(sb);
-    const nx = L + 1, gift = ['karta Dar serca'].concat(heartSlotLv(nx) ? ['+1 miejsce w talii'] : [], heartRegrowLv(nx) ? ['może być Odrost'] : []);
-    card.appendChild(el('p', 'note', 'Poziom ' + nx + ': ' + gift.join(', ') + '.' + ((run.heartPicks || []).length ? ' Dar serca czeka w sklepie: ' + run.heartPicks.length + '.' : '')));
+    const nx = hl + 1, gift = [L('karta Dar serca', "a Heart's Gift card")].concat(heartSlotLv(nx) ? [L('+1 miejsce w talii', '+1 deck slot')] : [], heartRegrowLv(nx) ? [L('może trafić się Odrost', 'maybe Regrowth')] : []);
+    card.appendChild(el('p', 'note', L('Poziom ', 'Level ') + nx + ': ' + gift.join(', ') + '.' + ((run.heartPicks || []).length ? L(' Dar serca czeka w sklepie: ', " Heart's Gift waiting in the shop: ") + run.heartPicks.length + '.' : '')));
     const row = el('div', 'row');
     if (build) {
       const left = ofiaraLeft(), done = run.ofiaraW === run.wave ? run.ofiaraN : 0;
-      const ob = btn('gold', 'Ofiaruj sercu ' + Math.min(left, 10), left ? 'Esencja z sakiewki w Nasycenie 1:1 (do ' + OFIARA_MAX + ' na przerwę, użyte ' + done + ')' : done >= OFIARA_MAX ? 'limit tej przerwy wykorzystany' : 'brak Esencji', () => { ofiara(10); closeModal(); if (modalKind !== 'shop') openModal({ type: 'heart' }); });
+      const ob = btn('gold', L('Ofiaruj sercu ', 'Offer ') + Math.min(left, 10), left ? L('Esencja z sakiewki w Nasycenie 1:1 (do ' + OFIARA_MAX + ' między falami, użyte ' + done + ')', 'purse Essence to Satiety 1:1 (up to ' + OFIARA_MAX + ' per build, used ' + done + ')') : done >= OFIARA_MAX ? L('limit na tę przerwę wykorzystany', 'limit for this build used') : L('brak Esencji', 'no Essence'), () => { ofiara(10); closeModal(); if (modalKind !== 'shop') openModal({ type: 'heart' }); });
       ob.id = 'heart-ofiara'; ob.disabled = !left; row.appendChild(ob);
-      if (left > 10) { const oa = btn('', 'Ofiaruj ' + left, 'cały limit', () => { ofiara(left); closeModal(); if (modalKind !== 'shop') openModal({ type: 'heart' }); }); oa.id = 'heart-ofiara-all'; row.appendChild(oa); }
+      if (left > 10) { const oa = btn('', L('Ofiaruj ', 'Offer ') + left, L('cały limit', 'the whole limit'), () => { ofiara(left); closeModal(); if (modalKind !== 'shop') openModal({ type: 'heart' }); }); oa.id = 'heart-ofiara-all'; row.appendChild(oa); }
     }
-    row.appendChild(btn('primary', 'Zamknij', null, () => { closeModal(); if (m.unpause) setPaused(false); }));
+    row.appendChild(btn('primary', L('Zamknij', 'Close'), null, () => { closeModal(); if (m.unpause) setPaused(false); }));
     card.appendChild(row);
   }
   function logWave(partial) {
@@ -2410,31 +2449,31 @@
       return wr.then(() => db.collection('runs').doc(run.id).set(runSummary())).then(() => { run.logState = 'ok'; return 'ok'; }, fail);
     }).catch(() => { run.logState = 'fail'; return 'fail'; });
   }
-  const logText = st => st === 'ok' ? 'Zapisane do analizy.' : st === 'off' ? 'Zapis wyników jest niedostępny w tym widoku (możesz pobrać plik).'
-    : st === 'denied' ? 'Ten widok nie ma prawa zapisu wyników (możesz pobrać plik).' : st === 'fail' ? 'Nie udało się zapisać (możesz pobrać plik).' : '';
+  const logText = st => st === 'ok' ? L('Zapisane do analizy.', 'Saved for analysis.') : st === 'off' ? ''
+    : st === 'denied' ? L('Ten widok nie może zapisać wyników (możesz pobrać plik).', 'This view cannot save results (you can download the file).') : st === 'fail' ? L('Nie udało się zapisać (możesz pobrać plik).', 'Could not save (you can download the file).') : '';
   let dlPromise = null;
   function getDownloads() {
     if (!dlPromise) dlPromise = (window.claude && typeof window.claude.use === 'function') ? Promise.resolve(window.claude.use('downloads')).catch(() => null) : Promise.resolve(null);
     return dlPromise;
   }
   function downloadRun(note) {
-    if (!run || !run.waveDocs.length) { note.textContent = 'Ten run nie ma jeszcze żadnej zapisanej fali.'; return; }
+    if (!run || !run.waveDocs.length) { note.textContent = L('Ten run nie ma jeszcze zapisanej fali.', 'No wave saved in this run yet.'); return; }
     const data = JSON.stringify({ format: 'yatd-run', run: runSummary(), waves: run.waveDocs }), name = 'yatd-run-' + run.id + '.json';
-    note.textContent = 'Przygotowuję plik...';
+    note.textContent = L('Przygotowuję plik...', 'Preparing the file...');
     getDownloads().then(dl => {
-      if (!dl && WEB) { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); note.textContent = 'Plik ' + name + ' pobrany.'; return; } catch (e) {} }
+      if (!dl && WEB) { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); note.textContent = L('Pobrano plik ', 'Downloaded ') + name + '.'; return; } catch (e) {} }
       if (!dl) { copyFallback(data, note); return; }
       dl.save({ filename: name, data: new Blob([data], { type: 'application/json' }) })
-        .then(() => { note.textContent = 'Plik ' + name + ' zapisany. Możesz go wysłać i wrzucić do rozmowy z Claude.'; },
-          err => { if (err && err.code === 'declined') note.textContent = 'Pobieranie anulowane.'; else copyFallback(data, note); });
+        .then(() => { note.textContent = L('Zapisano plik ' + name + '. Możesz go wysłać albo wrzucić do rozmowy z Claude.', 'Saved ' + name + '. You can send it or drop it into a chat with Claude.'); },
+          err => { if (err && err.code === 'declined') note.textContent = L('Pobieranie anulowane.', 'Download cancelled.'); else copyFallback(data, note); });
     });
   }
   function copyFallback(data, note) {
     const show = () => {
-      note.textContent = 'Pobieranie nie działa w tym widoku. Zaznacz i skopiuj ten tekst, potem wklej go Claude albo do pliku .json:';
+      note.textContent = L('Pobieranie tu nie działa. Zaznacz i skopiuj ten tekst, potem wklej go Claude albo do pliku .json:', 'Downloads do not work here. Select and copy this text, then paste it to Claude or into a .json file:');
       const ta = el('textarea', 'dump'); ta.value = data; ta.readOnly = true; ta.rows = 4; note.after(ta); ta.focus(); ta.select();
     };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(data).then(() => { note.textContent = 'Pobieranie nie działa w tym widoku, więc wyniki są w schowku: wklej je Claude albo do pliku .json.'; }, show);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(data).then(() => { note.textContent = L('Pobieranie tu nie działa, więc wyniki są skopiowane: wklej je Claude albo do pliku .json.', 'Downloads do not work here, so the results are copied: paste them to Claude or into a .json file.'); }, show);
     else show();
   }
 
@@ -2470,18 +2509,18 @@
   const objOn = (x, y) => (fl && fl.objects.get(key(x, y))) || null;
   function cellOf(x, y) { const r = roomOf(x, y), R = r >= 0 ? fl.rooms[r] : null; return R && R.kind === 'room' ? run.layout.cells.get(R.key) || null : null; }
   const itemBack = it => it.spent != null ? it.spent : ITEMS[it.type].cost;
-  const healLine = it => it.type === 'shaman' && it.lhl > 0 ? ' Wyleczył potworom ' + it.lhl + ' HP.' : '';   // 1.24 (C, addendum 2): the shaman's heals of the last wave
+  const healLine = it => it.type === 'shaman' && it.lhl > 0 ? L(' Wyleczył potworom ' + it.lhl + ' HP.', ' Healed monsters for ' + it.lhl + ' HP.') : '';   // 1.24 (C, addendum 2): the shaman's heals of the last wave
   function itemInfo(it) {
     const T = ITEMS[it.type], lvl = it.lvl || 1, back = itemBack(it);
-    const last = (!ACTIVE[it.type] ? '' : it.lf === undefined ? '' : it.lf === 0 ? ' Ostatnia fala: ani razu.' : ' Ostatnia fala: ' + it.lf + '× odpalony, ' + it.lh + ' trafień, ' + it.lp + ' Esencji.') + healLine(it);   // 1.24 (C, addendum 2)
+    const last = (!ACTIVE[it.type] ? '' : it.lf === undefined ? '' : it.lf === 0 ? L(' Ostatnia fala: ani razu.', ' Last wave: never fired.') : L(' Ostatnia fala: ' + it.lf + '× w akcji, trafienia: ' + it.lh + ', Esencja: ' + it.lp + '.', ' Last wave: ' + it.lf + '× fired, ' + it.lh + ' hits, ' + it.lp + ' Essence.')) + healLine(it);   // 1.24 (C, addendum 2)
     const up = ACTIVE[it.type] && lvl < 3 ? upgCost(it) : 0, full = (UI.carryTips || 0) < 3;
     if (full) { UI.carryTips = (UI.carryTips || 0) + 1; saveUI(); }
-    if (!full) return T.name + (ACTIVE[it.type] ? ' (poziom ' + lvl + ')' : '') + ': stuknij nowe miejsce.' + (up ? ' Dwa stuknięcia: ulepsz za ' + up + '.' : '') + last;
-    return T.name + (ACTIVE[it.type] ? ' (poziom ' + lvl + ')' : '') + ' w ręce: stuknij nowe miejsce albo ten sam element, żeby odłożyć.' + (up ? ' Dwa szybkie stuknięcia: ulepsz za ' + up + ' Esencji.' : '') + ' Przytrzymaj, żeby zdjąć (' + (back ? '+' + back + ' Esencji' : 'bez zwrotu') + ').' + last;
+    if (!full) return T.name + (ACTIVE[it.type] ? L(' (poziom ', ' (level ') + lvl + ')' : '') + L(': stuknij nowe miejsce.', ': tap a new spot.') + (up ? L(' Dwa stuknięcia: ulepsz za ' + up + '.', ' Double tap: upgrade for ' + up + '.') : '') + last;
+    return T.name + (ACTIVE[it.type] ? L(' (poziom ', ' (level ') + lvl + ')' : '') + L(' w ręce: stuknij nowe miejsce albo ten sam element, żeby odłożyć.', ' in hand: tap a new spot, or tap it again to put it back.') + (up ? L(' Dwa szybkie stuknięcia: ulepsz za ' + up + ' Esencji.', ' Double tap: upgrade for ' + up + ' Essence.') : '') + L(' Przytrzymaj, żeby zdjąć (', ' Hold to remove (') + (back ? '+' + back + L(' Esencji', ' Essence') : L('bez zwrotu', 'no refund')) + ').' + last;
   }
-  const objName = o => o.built ? 'Skrzynia' : 'Mebel';
+  const objName = o => o.built ? L('Skrzynia', 'Crate') : L('Mebel', 'Furniture');
   const objBack = o => o.built ? ITEMS.crate.cost : 0;
-  function objInfo(o) { return objName(o) + ' w ręce: stuknij wolne miejsce w pokoju (nie przy drzwiach) albo ten sam mebel, żeby odłożyć. Przytrzymaj, żeby ' + (o.built ? 'zdjąć (+' + ITEMS.crate.cost + ' Esencji).' : 'go usunąć (bez zwrotu, to mebel lochu).') + (fl.items.get(key(o.x, o.y)) ? ' To, co na nim stoi, idzie razem z nim.' : ''); }
+  function objInfo(o) { return objName(o) + L(' w ręce: stuknij wolne pole w pokoju (nie przy drzwiach). Stuknij ' + (o.built ? 'ją' : 'go') + ' jeszcze raz, żeby odłożyć.', ' in hand: tap a free spot in a room (not by a door), or tap it again to put it back.') + L(' Przytrzymaj, żeby ' + (o.built ? 'zdjąć (+' + ITEMS.crate.cost + ' Esencji).' : 'usunąć (bez zwrotu, to mebel lochu).'), ' Hold to remove it' + (o.built ? ' (+' + ITEMS.crate.cost + ' Essence).' : ' (no refund, it came with the dungeon).')) + (fl.items.get(key(o.x, o.y)) ? L(' To, co na ' + (o.built ? 'niej' : 'nim') + ' stoi, przeniesiesz razem z ' + (o.built ? 'nią' : 'nim') + '.', ' What stands on it moves with it.') : ''); }
   function pickUp(it) { movingObj = null; movingKey = key(it.x, it.y); carryCache = null; setHint(itemInfo(it)); }
   function pickUpObj(o) { movingKey = null; movingObj = key(o.x, o.y); carryCache = null; setHint(objInfo(o)); }
   function dropCarry(msg) { movingKey = null; movingObj = null; carryCache = null; if (msg) setHint(msg); }
@@ -2507,16 +2546,16 @@
   function moveObj(o, x, y) {
     const c0 = cellOf(o.x, o.y), c1 = cellOf(x, y); if (!c0 || !c1) return false;
     const idx = c0.objs.findIndex(q => q[0] === o.x && q[1] === o.y); if (idx < 0) return false;
-    pushUndo('przeniesienie: ' + objName(o).toLowerCase());
+    pushUndo(L('przeniesienie: ', 'move: ') + objName(o).toLowerCase());
     const e = c0.objs.splice(idx, 1)[0]; e[0] = x; e[1] = y; c1.objs.push(e);
     const on = fl.items.get(key(o.x, o.y));   // powder, a mimic or a music box rides along
     if (on) { fl.items.delete(key(o.x, o.y)); on.x = x; on.y = y; on.gx = x + 0.5; on.gy = y + 0.5; fl.items.set(key(x, y), on); }
     rebuildDungeon(true); fl.threatDirty = true;
-    floatTile(x, y, 'Przeniesione', '#d8d2c4', 13, -0.6); updateTray(); saveRunSoon();
+    floatTile(x, y, L('Przeniesione', 'Moved'), '#d8d2c4', 13, -0.6); updateTray(); saveRunSoon();
     return true;
   }
   function removeObj(o) {
-    pushUndo('usunięcie: ' + objName(o).toLowerCase());
+    pushUndo(L('usunięcie: ', 'remove: ') + objName(o).toLowerCase());
     let back = 0;
     const on = fl.items.get(key(o.x, o.y));
     if (on) { const b = itemBack(on); fl.items.delete(key(o.x, o.y)); back += b; if (!on.dropped) { bt(on.type).placed--; bt(on.type).spent -= b; } }
@@ -2538,14 +2577,14 @@
       if (fl.items.get(key(t.it.x, t.it.y)) !== t.it) return;
       if (movingKey === key(t.it.x, t.it.y)) dropCarry();
       const T = ITEMS[t.it.type], got = removeItem(t.it);
-      floatTile(t.x, t.y, got ? '+' + got + ' Esencji' : 'Zdjęte', got ? '#ff7a86' : '#d8d2c4', 14, -0.6);
-      setHint(T.name + ' zdjęte' + (got ? ' (+' + got + ' Esencji).' : ' (bez zwrotu).') + ' Cofnij przywróci.');
+      floatTile(t.x, t.y, got ? '+' + got + L(' Esencji', ' Essence') : L('Zdjęte', 'Removed'), got ? '#ff7a86' : '#d8d2c4', 14, -0.6);
+      setHint(T.name + L(': zdjęte', ': removed') + (got ? ' (+' + got + L(' Esencji).', ' Essence).') : L(' (bez zwrotu).', ' (no refund).')) + L(' Cofnij przywróci.', ' Undo brings it back.'));
     } else if (t.o) {
       if (fl.objects.get(key(t.o.x, t.o.y)) !== t.o) return;
       if (movingObj === key(t.o.x, t.o.y)) dropCarry();
       const nm = objName(t.o), got = removeObj(t.o);
-      floatTile(t.x, t.y, got ? '+' + got + ' Esencji' : 'Usunięte', got ? '#ff7a86' : '#d8d2c4', 14, -0.6);
-      setHint(nm + ' usunięty' + (got ? ' (+' + got + ' Esencji).' : '.') + ' Cofnij przywróci.');
+      floatTile(t.x, t.y, got ? '+' + got + L(' Esencji', ' Essence') : L('Usunięte', 'Removed'), got ? '#ff7a86' : '#d8d2c4', 14, -0.6);
+      setHint(nm + L(': usunięte', ': removed') + (got ? ' (+' + got + L(' Esencji).', ' Essence).') : '.') + L(' Cofnij przywróci.', ' Undo brings it back.'));
     }
     buzz(30); updateUndoBtn();
   }
@@ -2556,19 +2595,19 @@
     if (!cur) movingKey = null; if (!curO) movingObj = null;
     const direct = fl.items.get(key(x, y)), dirO = objOn(x, y);
     if (cur || curO) {
-      if ((cur && x === cur.x && y === cur.y) || (curO && x === curO.x && y === curO.y && !(direct && direct !== cur))) { dropCarry('Odłożone. Stuknij coś innego, żeby to przenieść.'); return true; }
+      if ((cur && x === cur.x && y === cur.y) || (curO && x === curO.x && y === curO.y && !(direct && direct !== cur))) { dropCarry(L('Odłożone. Stuknij inny element, żeby go przenieść.', 'Put back. Tap another one to move it.')); return true; }
       if (direct && direct !== cur) { pickUp(direct); return true; }
       if (cur) {
         const t = moveTarget(cur, wx, wy);
-        if (t) { moveItem(cur, t[0], t[1]); dropCarry(ITEMS[cur.type].name + ' przeniesione (za darmo). Plotki o starym miejscu są już nieaktualne.'); return true; }
+        if (t) { moveItem(cur, t[0], t[1]); dropCarry(ITEMS[cur.type].name + L(': przeniesione za darmo. Plotki o starym miejscu są już nieaktualne.', ': moved for free. Rumours about the old spot are now out of date.')); return true; }
         if (dirO) { pickUpObj(dirO); return true; }
-        note('Tu nie pasuje'); if (0) setHint(ITEMS[cur.type].name + ' tu nie pasuje: potrzebne miejsce typu ' + SLOT_LABEL[ITEMS[cur.type].slot] + ' w pokoju z wolnym miejscem. Stuknij ' + ITEMS[cur.type].name.toLowerCase() + ' jeszcze raz, żeby odłożyć.');
+        note(L('Tu nie pasuje', 'Does not fit here')); if (0) setHint(ITEMS[cur.type].name + L(' tu nie pasuje: potrzebne miejsce typu ' + SLOT_LABEL[ITEMS[cur.type].slot] + ' w pokoju z wolnym miejscem. Stuknij ' + ITEMS[cur.type].name.toLowerCase() + ' jeszcze raz, żeby odłożyć.', ' does not fit here. Tap it again to put it back.'));
         return true;
       }
       if (dirO && dirO !== curO) { pickUpObj(dirO); return true; }
       const t = objTarget(curO, wx, wy);
-      if (t) { const nm = objName(curO); moveObj(curO, t[0], t[1]); dropCarry(nm + ' przeniesiony.'); return true; }
-      note('Tu nie pasuje');
+      if (t) { const nm = objName(curO); moveObj(curO, t[0], t[1]); dropCarry(nm + L(': przeniesione.', ': moved.')); return true; }
+      note(L('Tu nie pasuje', 'Does not fit here'));
       return true;
     }
     if (selected && TOOLS[selected] && toolMarkers(selected).some(m => Math.hypot(wx - m.x, wy - m.y) < 0.7)) return false;   // a tool's marker wins
@@ -2635,12 +2674,12 @@
       if (it2 && lastTap && lastTap.it === it2 && now - lastTap.t < DOUBLE_TAP_MS) { lastTap = null; if (movingKey === key(it2.x, it2.y)) dropCarry(); tapUpgrade(it2); return; }
       lastTap = it2 ? { it: it2, t: now } : null;
     }
-    if (fl.phase === 'build' && selected === 'upgrade') { const it = itemAt(wx, wy); if (it) tapUpgrade(it); else setHint('Stuknij postawioną pułapkę albo potwora. Koszt ulepszenia widać nad elementem.'); return; }
+    if (fl.phase === 'build' && selected === 'upgrade') { const it = itemAt(wx, wy); if (it) tapUpgrade(it); else setHint(L('Stuknij postawioną pułapkę albo potwora. Koszt ulepszenia widać nad nim.', 'Tap a placed trap or monster. The upgrade cost shows above it.')); return; }
     if (fl.phase === 'build' && buildTap(wx, wy)) return;
     if (fl.phase === 'build' && selected && TOOLS[selected]) {
       let best = null, bd = 1.8;
       toolMarkers(selected).forEach(m => { const d = Math.hypot(wx - m.x, wy - m.y); if (d < bd) { bd = d; best = m; } });
-      if (best) applyTool(best); else setHint('Stuknij jeden ze znaczników na mapie.');
+      if (best) applyTool(best); else setHint(L('Stuknij jeden ze znaczników na mapie.', 'Tap one of the markers on the map.'));
       return;
     }
     const outside = x < 0 || y < 0 || x >= WW || y >= WH;   // 1.24 (B): a tap above a hero at the map's top edge lands outside it, but his figure and bars are on the screen
@@ -2651,7 +2690,7 @@
       if (fl.breach && !selected && Math.hypot(wx - (fl.breach.x + 0.5), wy - (fl.breach.y + 0.5)) <= 1.1) { openModal({ type: 'breach' }); return; }   // patch it?
       if (selected) { const t = snapTile(selected, wx, wy) || [x, y]; tryPlace(selected, t[0], t[1]); return; }
       const s = slotOf(x, y);
-      setHint(s ? 'To miejsce: ' + SLOT_LABEL[s] + '. Wybierz na dole element, który tu pasuje. Stuknięcie postawionego elementu go przenosi, przytrzymanie zdejmuje.' : 'Wybierz element na dole, pasujące miejsca się podświetlą. Stuknięcie postawionego elementu go przenosi, przytrzymanie zdejmuje.');
+      setHint((s ? L('To miejsce: ' + SLOT_LABEL[s] + '. Wybierz na pasku budowy coś, co tu pasuje.', 'This spot: ' + SLOT_LABEL[s] + '. Pick something from the build bar that fits here.') : L('Wybierz element na pasku budowy, a pasujące miejsca się podświetlą.', 'Pick an element from the build bar and the spots that fit will light up.')) + L(' Postawiony element: stuknij, żeby przenieść, przytrzymaj, żeby zdjąć.', ' Placed ones: tap to move, hold to remove.'));
       return;
     }
     if (fl.phase !== 'raid') return;
@@ -2664,27 +2703,27 @@
   function tryPlace(type, x, y) {
     const T = ITEMS[type], cost = costOf(type);
     if (T.tool) return false;
-    if (!run.unlocked.has(type)) { note('Zablokowane', x, y); return false; }
-    if (fl.essence < cost) { note('Za mało Esencji', x, y); return false; }
+    if (!run.unlocked.has(type)) { note(L('Zablokowane', 'Locked'), x, y); return false; }
+    if (fl.essence < cost) { note(L('Za mało Esencji', 'Not enough Essence'), x, y); return false; }
     if (BUILDINGS[type] && !canPlace(type, x, y)) {
       const r = roomOf(x, y);
-      if (fl.phase !== 'build') { note('Tylko między falami', x, y); return false; }
-      if (r >= 0 && fl.rooms[r].kind !== 'room') { note('Tylko w pokoju', x, y); return false; }
-      if (r >= 0 && [...fl.items.values()].some(o => o.type === type && roomOf(o.x, o.y) === r)) { note('Już stoi w tym pokoju', x, y); return false; }
-      if (!fl.items.has(key(x, y)) && !blockerOk(x, y)) { note('Zablokuje przejście', x, y); return false; }
+      if (fl.phase !== 'build') { note(L('Tylko między falami', 'Only between waves'), x, y); return false; }
+      if (r >= 0 && fl.rooms[r].kind !== 'room') { note(L('Tylko w pokoju', 'Only in a room'), x, y); return false; }
+      if (r >= 0 && [...fl.items.values()].some(o => o.type === type && roomOf(o.x, o.y) === r)) { note(L('Już stoi w tym pokoju', 'Already in this room'), x, y); return false; }
+      if (!fl.items.has(key(x, y)) && !blockerOk(x, y)) { note(L('Zablokuje przejście', 'Would block the way'), x, y); return false; }
     }
     if (!canPlace(type, x, y)) {
-      if (slotOf(x, y) === T.slot && !fl.items.has(key(x, y)) && roomFull(type, x, y)) { const R = fl.rooms[slotRoom(type, x, y)]; note((R.kind === 'hall' ? 'Korytarz' : 'Pokój') + ' pełny (' + roomCap(R) + ')', x, y); if (0) setHint((R.kind === 'hall' ? 'Ten korytarz' : 'Ten pokój') + ' jest pełny (' + roomCap(R) + '). Rozbuduj go albo wykop nowy pokój (zakładka Loch), albo zdejmij coś stąd.'); return false; }
-      if (type === 'crate') { note(fl.phase !== 'build' ? 'Tylko między falami' : 'Tu nie pasuje', x, y); return false; }
-      note('Tu nie pasuje', x, y); return false;
+      if (slotOf(x, y) === T.slot && !fl.items.has(key(x, y)) && roomFull(type, x, y)) { const R = fl.rooms[slotRoom(type, x, y)]; note(L((R.kind === 'hall' ? 'Korytarz' : 'Pokój') + ' pełny (', (R.kind === 'hall' ? 'Corridor' : 'Room') + ' full (') + roomCap(R) + ')', x, y); if (0) setHint(L((R.kind === 'hall' ? 'Ten korytarz' : 'Ten pokój') + ' jest pełny (' + roomCap(R) + '). Rozbuduj go albo wykop nowy pokój (zakładka Loch), albo zdejmij coś stąd.', 'Full (' + roomCap(R) + '). Expand it, dig a new room (Dungeon tab) or remove something.')); return false; }
+      if (type === 'crate') { note(fl.phase !== 'build' ? L('Tylko między falami', 'Only between waves') : L('Tu nie pasuje', 'Does not fit here'), x, y); return false; }
+      note(L('Tu nie pasuje', 'Does not fit here'), x, y); return false;
     }
-    if (fl.phase === 'build') pushUndo('postawienie: ' + T.name);
+    if (fl.phase === 'build') pushUndo(L('postawienie: ', 'place: ') + T.name);
     if (type === 'crate') {
       const c = run.layout.cells.get(fl.rooms[roomOf(x, y)].key);
       c.objs.push([x, y, 'crate', 1]);
       fl.essence -= T.cost; bt(type).placed++; bt(type).spent += T.cost; fl.stats.built++;
       rebuildDungeon(); updateTray();
-      setHint('Skrzynia stoi. Możesz postawić na niej proch albo mimika (zakładka Pułapki).');
+      setHint(L('Skrzynia stoi. Możesz postawić na niej Proch albo Mimika (zakładka Pułapki).', 'Crate placed. You can put Gunpowder or a Mimic on it (Traps tab).'));
       return true;
     }
     const hp = MONSTERS[type] ? ITEMS[type].hp * mods.monster : 0;
@@ -2703,8 +2742,8 @@
     }
     updateTray();
     if (fl.phase === 'raid' && isLoot(type)) replanAll();
-    if (ACTIVE[type]) setHint(T.name + ': podświetlony obszar to zasięg. Stuknięcie postawionego elementu go przenosi, dwa szybkie ulepszają, przytrzymanie zdejmuje.');   // 1.05: it still said one tap upgrades
-    else if (BUILDINGS[type]) { const d = T.desc.split(': ').slice(1).join(': '); setHint(T.name + ' stoi. ' + d.charAt(0).toUpperCase() + d.slice(1)); }
+    if (ACTIVE[type]) setHint(T.name + L(': podświetlony obszar to zasięg. Stuknij, żeby przenieść, stuknij dwa razy, żeby ulepszyć, przytrzymaj, żeby zdjąć.', ': the lit area is its range. Tap to move, double tap to upgrade, hold to remove.'));   // 1.05: it still said one tap upgrades
+    else if (BUILDINGS[type]) { const d = T.desc; setHint(T.name + L(' stoi. ', ' placed. ') + d.charAt(0).toUpperCase() + d.slice(1)); }
     return true;
   }
   /* ================= 1.25: a mouse, a touchpad and the keys ================= */
@@ -2718,7 +2757,7 @@
     if (rcMark && rcMark.x === t.x && rcMark.y === t.y && realNow - rcMark.t < 3) { rcMark = null; holdRemove(t); return; }
     rcMark = { x: t.x, y: t.y, t: realNow };
     const back = t.it ? itemBack(t.it) : 0;
-    floatTile(t.x, t.y, 'Zdjąć' + (back ? ' za +' + back : '') + '? Prawy jeszcze raz', '#d8d2c4', 13, -0.6);   // (the hint line is gone since 1.17: the question floats over the element)
+    floatTile(t.x, t.y, L('Zdjąć' + (back ? ' za +' + back : '') + '? Prawy jeszcze raz', 'Remove' + (back ? ' for +' + back : '') + '? Right-click again'), '#d8d2c4', 13, -0.6);   // (the hint line is gone since 1.17: the question floats over the element)
   }
   // the tip over what rests under the mouse on the map: a hero (in a wave), an element, a piece of furniture
   let hovT = 0, hovKey = '';
@@ -2750,19 +2789,19 @@
     const box = $('#hov'); box.innerHTML = '';
     if (w.h) {
       const h = w.h; box.appendChild(el('b', null, h.nm[0] + (h.nemesis ? ' ' + h.nemesis.title : '')));
-      box.appendChild(el('div', 'hs', h.T.name[h.female ? 1 : 0] + ' · poz. ' + h.lvl + (h.boss ? ' · ' + BOSS_NAME[h.boss][h.female ? 1 : 0] : '')));
-      box.appendChild(el('div', null, 'Życie ' + Math.max(0, Math.ceil(h.hp)) + '/' + Math.round(h.max) + ' · strach ' + Math.round(100 * clamp(h.fear / h.courage, 0, 1)) + '%' + (h.crystal ? ' · niesie kryształ!' : '')));
-      box.appendChild(el('div', 'hk', 'Kliknij: karta bohatera'));
+      box.appendChild(el('div', 'hs', h.T.name[h.female ? 1 : 0] + L(' · poz. ', ' · lvl ') + h.lvl + (h.boss ? ' · ' + BOSS_NAME[h.boss][h.female ? 1 : 0] : '')));
+      box.appendChild(el('div', null, L('Życie ', 'HP ') + Math.max(0, Math.ceil(h.hp)) + '/' + Math.round(h.max) + L(' · strach ', ' · fear ') + Math.round(100 * clamp(h.fear / h.courage, 0, 1)) + '%' + (h.crystal ? L(' · niesie kryształ!', ' · has a crystal!') : '')));
+      box.appendChild(el('div', 'hk', L('Kliknij: karta bohatera', 'Click: hero card')));
     } else if (w.it) {
       const it = w.it, I = ITEMS[it.type], lb = effWords(it.type);
-      box.appendChild(el('b', null, I.name + ((it.lvl || 1) > 1 ? ' · poz. ' + it.lvl : '')));
+      box.appendChild(el('b', null, I.name + ((it.lvl || 1) > 1 ? L(' · poz. ', ' · lvl ') + it.lvl : '')));
       if (I.tag) box.appendChild(el('div', 'hs', I.tag));
-      if (lb.length) { const r = el('div', 'tlb'); lb.forEach(x => r.appendChild(el('span', x === 'Rani' ? 'hurt' : 'scare', x))); box.appendChild(r); }
-      const d = I.desc.split(': ').slice(1).join(': ') || I.desc; box.appendChild(el('div', null, d.charAt(0).toUpperCase() + d.slice(1)));
-      if (fl.phase === 'build') box.appendChild(el('div', 'hk', 'Kliknij: przenieś · dwa razy: ulepsz · prawy: zdejmij'));
+      if (lb.length) { const r = el('div', 'tlb'); lb.forEach(x => r.appendChild(el('span', x === L('Rani', 'Hurts') ? 'hurt' : 'scare', x))); box.appendChild(r); }
+      const d = I.desc; box.appendChild(el('div', null, d.charAt(0).toUpperCase() + d.slice(1)));
+      if (fl.phase === 'build') box.appendChild(el('div', 'hk', L('Kliknij: przenieś · dwa razy: ulepsz · prawy: zdejmij', 'Click: move · double: upgrade · right: remove')));
     } else if (w.o) {
       box.appendChild(el('b', null, objName(w.o)));
-      box.appendChild(el('div', 'hk', 'Kliknij: przenieś · prawy: ' + (w.o.built ? 'zdejmij' : 'usuń')));
+      box.appendChild(el('div', 'hk', L('Kliknij: przenieś · prawy: ' + (w.o.built ? 'zdejmij' : 'usuń'), 'Click: move · right: remove')));
     }
     box.hidden = false; placeHov(box, cx, cy);
   }
@@ -2888,7 +2927,7 @@
     if (e.code === 'Space' && fl.phase === 'raid') { e.preventDefault(); if (fl.check && !fl.check.result) resolveCheck(); }
     if (e.code === 'KeyP' && fl.phase === 'raid' && !tutPopNow) setTrayOpen(!trayIsOpen(), true);
     if (e.code === 'KeyF' && fl.phase === 'raid' && (!paused || tutHoldOk()) && !ff) { if (paused) { tutPausedIt = false; setPaused(false, true); } if (!paused) { ff = true; tutFlags.ffUsed = true; tl('ff', 1); } }
-    if (e.code === 'Escape' && (selected || movingKey || movingObj)) { selected = null; movingKey = null; movingObj = null; updateTray(); setHint('Wybierz element i stuknij pasujące miejsce.'); }
+    if (e.code === 'Escape' && (selected || movingKey || movingObj)) { selected = null; movingKey = null; movingObj = null; updateTray(); setHint(L('Wybierz element i stuknij pasujące miejsce.', 'Pick an element and tap a spot where it fits.')); }
     if (e.code === 'KeyZ' && (e.ctrlKey || e.metaKey) && fl.phase === 'build') { e.preventDefault(); undo(); }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     // 1.25: the keys (the list: Menu > Sterowanie)
@@ -2934,7 +2973,7 @@
     if (!st || st.id !== 'place' || type !== 'spikes' || !t || !fl || fl.phase !== 'build') return false;
     const P = shortestPath(), n = P.length, k0 = Math.floor(n * 0.25);
     for (let k = k0; k < n; k++) if (P[k][0] === t[0] && P[k][1] === t[1]) return false;
-    note('Na trasie: pole z kółkiem', t[0], t[1]); tutFlags.offWay = (tutFlags.offWay || 0) + 1;
+    note(L('Na ich trasie: pole z kółkiem', 'On their path: the ringed tile'), t[0], t[1]); tutFlags.offWay = (tutFlags.offWay || 0) + 1;
     return true;
   }
   function tutPathTile(frac, type) {
@@ -2962,44 +3001,44 @@
   // (spikes on the heroes' way); a held finger on a tile opens what it does; moving is optional; loot and digging are said, not
   // demanded. What the rest of the run brings comes as a card at the wave it opens (ONB_WAVE).
   const TUT = [
-    { id: 'intro', text: 'To Twój loch. Bohaterowie przyjdą falami po kryształy z serca (ostatni pokój). Loch postawił za Ciebie dwie pułapki blisko serca, ale same nie wystarczą: dostawisz więcej.', next: true },
-    { id: 'spikes', text: 'Wybierz Kolce z paska na dole (zakładka Pułapki).', hl: ['#tab-traps', '#item-spikes'], prep: () => { movingKey = null; movingObj = null; pickTab('traps', 'spikes'); updateTray(); setTrayOpen(true); }, done: () => selected === 'spikes' || countType('spikes') > (tutFlags.sp0 || 0) },
-    { id: 'place', text: 'Postaw je na trasie bohaterów: stuknij pole z pulsującym kółkiem (albo inne pole na ich drodze).', tile: () => tutPathTile(0.25, 'spikes'), done: () => countType('spikes') > (tutFlags.sp0 || 0) },
-    { id: 'hold', text: () => PC() ? 'Najedź myszką na kafelek Strzały (albo kliknij go prawym przyciskiem): rozwinie się opis, co robi i gdzie stoi. Tak sprawdzisz każdy element.' : 'Przytrzymaj palec na kafelku Strzały na dole: rozwinie się opis, co robi i gdzie stoi. Tak sprawdzisz każdy element.', hl: ['#item-arrows'], prep: () => { selected = null; tutFlags.tip0 = tutFlags.tipN || 0; pickTab('traps', 'arrows'); setTrayOpen(true); }, done: () => (tutFlags.tipN || 0) > (tutFlags.tip0 || 0), skip: true },
-    { id: 'move', text: () => movingKey ? 'Masz ją w ręce: stuknij pole z przerywaną ramką, żeby ją tam postawić.' : 'Postawioną pułapkę przeniesiesz za darmo: stuknij tę w kółku (podniesiesz ją), potem pole z przerywaną ramką.' + (PC() ? ' Prawy przycisk na postawionej (dwa razy) zdejmuje ją i oddaje Esencję.' : ' Przytrzymanie palca na postawionej zdejmuje ją i oddaje Esencję.'), tile: () => { const it = [...fl.items.values()].find(o => o.sys); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); }, done: () => !!tutFlags.moved, skip: true },
-    { id: 'spend', text: () => 'Masz jeszcze ' + Math.floor(fl.essence) + ' Esencji. W pierwszej fali nie oszczędzaj: dostaw pułapki przy trasie, kolce na podłogę, strzały na ścianę (też na niską od frontu, strzałka pokazuje, w który pokój strzelą). Pokój mieści kilka (licznik w rogu).', hl: ['#tab-traps'], prep: () => { selected = null; tab = 'traps'; updateTray(); }, done: () => fl.phase !== 'build' || fl.essence < 3 || !tutAnySpot(), skip: true },
-    { id: 'go', text: 'Gotowe. Wypuść falę przyciskiem w prawym dolnym rogu. Pasek budowy schowa się na czas fali, a w fali ▲ Budowa zatrzymuje grę, żebyś mógł spokojnie dostawić pułapki.', hl: ['#btn-action'], done: () => fl.phase === 'raid' },
+    { id: 'intro', text: L('To Twój loch. Bohaterowie przyjdą falami, żeby ukraść kryształy z serca (ostatni pokój). Dwie pułapki już stoją, ale to za mało.', 'This is your dungeon. Heroes come in waves to steal crystals from your heart (the last room). Two traps are already there, but that is not enough.'), next: true },
+    { id: 'spikes', text: L('Wybierz Kolce na pasku budowy.', 'Pick Spikes from the build bar.'), hl: ['#tab-traps', '#item-spikes'], prep: () => { movingKey = null; movingObj = null; pickTab('traps', 'spikes'); updateTray(); setTrayOpen(true); }, done: () => selected === 'spikes' || countType('spikes') > (tutFlags.sp0 || 0) },
+    { id: 'place', text: L('Stuknij pole z pulsującym kółkiem. Kolce staną na trasie bohaterów.', "Tap the tile with the pulsing ring. The spikes go on the heroes' path."), tile: () => tutPathTile(0.25, 'spikes'), done: () => countType('spikes') > (tutFlags.sp0 || 0) },
+    { id: 'hold', text: () => PC() ? L('Najedź myszką na kafelek Strzały (albo kliknij go prawym przyciskiem). Zobaczysz, co robią. Tak sprawdzisz każdy element.', 'Hover over the Arrows tile (or right-click it) to see what it does. This works for every element.') : L('Przytrzymaj palec na kafelku Strzały. Zobaczysz, co robią. Tak sprawdzisz każdy element.', 'Hold your finger on the Arrows tile to see what it does. This works for every element.'), hl: ['#item-arrows'], prep: () => { selected = null; tutFlags.tip0 = tutFlags.tipN || 0; pickTab('traps', 'arrows'); setTrayOpen(true); }, done: () => (tutFlags.tipN || 0) > (tutFlags.tip0 || 0), skip: true },
+    { id: 'move', text: () => movingKey ? L('Masz ją w ręce. Stuknij pole z przerywaną ramką.', 'It is in your hand. Tap the tile with the dashed frame.') : L('Pułapki przenosisz za darmo. Stuknij tę w kółku, żeby ją podnieść.', 'Moving traps is free. Tap the ringed one to pick it up.'), tile: () => { const it = [...fl.items.values()].find(o => o.sys); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); }, done: () => !!tutFlags.moved, skip: true },
+    { id: 'spend', text: () => L('Masz jeszcze ' + Math.floor(fl.essence) + ' Esencji. Wydaj ją teraz: postaw więcej pułapek przy trasie. Kolce idą na podłogę, Strzały na ścianę.', 'You still have ' + Math.floor(fl.essence) + ' Essence. Spend it now: place more traps along the path. Spikes go on the floor, Arrows on a wall.'), hl: ['#tab-traps'], prep: () => { selected = null; tab = 'traps'; updateTray(); }, done: () => fl.phase !== 'build' || fl.essence < 3 || !tutAnySpot(), skip: true },
+    { id: 'go', text: L('Gotowe. Stuknij „Wypuść falę”.', 'Ready. Tap "Release wave".'), hl: ['#btn-action'], done: () => fl.phase === 'raid' },
     // the wave: one line at the top; the first check jumps to 'check' (after its card)
-    { id: 'novice', text: 'Nadchodzą nowicjusze. Każda rana to Groza, a linia u góry zamienia ją w Esencję: Groza × Chciwość × Combo.', hl: ['#h-eq'], raid: true, ack: true },   // 1.15.1: the game stands until Rozumiem (was: gone after 9 s, the game going on)
-    { id: 'check', text: 'Stuknij w mapę, gdy koralik będzie w obwódce (draśnięcie) albo w pełnym polu (krytyk). Trafiony wynik pułapka pamięta (znaczek w rogu pola), także w kolejnych falach.', raid: true, done: () => tutFlags.resolved || (!fl.check && tutT > 2) },
-    { id: 'herocard', text: 'Stuknij bohatera (albo listę w rogu): zobaczysz jego kartę i klasę. Gra stoi, dopóki jej nie przeczytasz.', raid: true, skip: true, done: () => tutFlags.heroCard },
-    { id: 'ff', text: () => (PC() ? 'Teraz przytrzymaj F (albo lewy przycisk myszy na mapie): ' : 'Teraz przytrzymaj palec na mapie: ') + 'gra ruszy przyspieszona, a pułapki biją same (z zapamiętaną siłą albo jak draśnięcie). Gdy nic się nie dzieje, gra przyspiesza sama (▶▶ spokój).', raid: true, skip: true, hold: true, done: () => tutFlags.ffUsed },
+    { id: 'novice', text: L('Nadchodzą nowicjusze. Każda rana daje Grozę, a linia u góry zamienia Grozę w Esencję.', 'Rookies are coming. Every wound gives Dread, and the line at the top turns Dread into Essence.'), hl: ['#h-eq'], raid: true, ack: true },   // 1.15.1: the game stands until Rozumiem (was: gone after 9 s, the game going on)
+    { id: 'check', text: L('Stuknij w mapę, gdy koralik będzie w obwódce. Wypełniona strefa to krytyk.', 'Tap the map when the bead is inside the outline. The filled zone is a crit.'), raid: true, done: () => tutFlags.resolved || (!fl.check && tutT > 2) },
+    { id: 'herocard', text: L('Stuknij bohatera albo listę w rogu, żeby zobaczyć jego kartę.', 'Tap a hero, or the list in the corner, to see their card.'), raid: true, skip: true, done: () => tutFlags.heroCard },
+    { id: 'ff', text: () => L((PC() ? 'Przytrzymaj F (albo lewy przycisk myszy na mapie)' : 'Przytrzymaj palec na mapie') + ', żeby przyspieszyć grę. Pułapki biją wtedy same, bez skill checków, więc nie trafisz nowego krytyka.', (PC() ? 'Hold F (or the left mouse button on the map)' : 'Hold your finger on the map') + " to speed up. Traps then fire on their own, with no skill checks, so you won't land a new crit."), raid: true, skip: true, hold: true, done: () => tutFlags.ffUsed },
     // wave 2 (after the first card from the shop and the card about the heart)
-    { id: 'loot', wave: 2, text: 'Serce chce Esencji, a Esencję mnoży chciwość. Łup (zakładka Łup) wabi bohaterów i podbija chciwość: złote orby w równaniu. Stawiaj go w pokojach, przez które przejdą.', build: true, hl: ['#tab-loot'], prep: () => { pickTab('loot'); setTrayOpen(true); }, next: true },
-    { id: 'upgrade', wave: 2, text: () => { const it = tutUpTarget(); return 'Dwa szybkie stuknięcia w element to ulepszenie: mocniej bije i ma szersze strefy checku. Stuknij dwa razy ' + (it ? ITEMS[it.type].name.toLowerCase() : 'pułapkę') + ' w kółku (koszt: ' + (it ? upgCost(it) : 6) + ' Esencji).'; }, build: true, tile: () => { const it = tutUpTarget(); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); const it = tutUpTarget(); if (it && fl.essence < upgCost(it)) fl.essence = upgCost(it); }, done: () => !!tutFlags.upgraded, skip: true },
-    { id: 'deck', wave: 2, text: () => 'Karta ze sklepu leży w talii: ' + slotsTxt(run.deckSize) + '. Działa do końca runu albo do sprzedaży; druga kopia łączy się z pierwszą w złotą kartę ★. Po każdej fali dostajesz darmową kartę; inne kupisz za Esencję. Pierwszy kafelek otwiera sklep.', build: true, hl: ['#tab-deck'], prep: () => { tab = 'deck'; updateTray(); setTrayOpen(true); }, next: true },
+    { id: 'loot', wave: 2, text: L('Łup wabi bohaterów i podbija Chciwość, a Chciwość mnoży Esencję. Stawiaj go na ich trasie.', 'Loot lures heroes and raises Greed, and Greed multiplies your Essence. Put it on their path.'), build: true, hl: ['#tab-loot'], prep: () => { pickTab('loot'); setTrayOpen(true); }, next: true },
+    { id: 'upgrade', wave: 2, text: () => { const it = tutUpTarget(); return L('Ulepszenie: stuknij dwa razy ' + (it ? ITEMS[it.type].name.toLowerCase() : 'pułapkę') + ' w kółku (' + (it ? upgCost(it) : 6) + ' Esencji). Ulepszona pułapka bije mocniej.', 'To upgrade, double tap the ringed ' + (it ? ITEMS[it.type].name : 'trap') + ' (' + (it ? upgCost(it) : 6) + ' Essence). Upgraded traps hit harder.'); }, build: true, tile: () => { const it = tutUpTarget(); return it ? [it.x, it.y] : null; }, prep: () => { selected = null; updateTray(); const it = tutUpTarget(); if (it && fl.essence < upgCost(it)) fl.essence = upgCost(it); }, done: () => !!tutFlags.upgraded, skip: true },
+    { id: 'deck', wave: 2, text: () => L('Twoja karta leży w talii i działa do końca runu. Po każdej fali dostajesz darmową kartę. Pierwszy kafelek otwiera sklep.', 'Your card is in your deck and works for the rest of the run. After each wave you get a free card. The first tile opens the shop.'), build: true, hl: ['#tab-deck'], prep: () => { tab = 'deck'; updateTray(); setTrayOpen(true); }, next: true },
     // wave 3
-    { id: 'dig', wave: 3, text: 'Pokój mieści tylko kilka elementów (licznik w rogu), więc między falami kop nowe pokoje: zakładka Loch (Nowy pokój, Przejście, Rozbuduj, Wyburz).', build: true, hl: ['#tab-dungeon', '#item-dig'], prep: () => { pickTab('dungeon', 'dig'); setTrayOpen(true); }, next: true },
-    { id: 'end', wave: 3, text: 'To wszystko z przewodnikiem. Ten run odsłoni resztę gry z falami: teraz straszenie, od fali 5 gildię z budowlami i typy pokoi, od fali 7 ciała i fobie bohaterów, powracających i wyłom. Kolejne runy to od razu cała gra. Powodzenia!', build: true, next: true }
+    { id: 'dig', wave: 3, text: L('Pokój mieści tylko kilka elementów. Gdy zabraknie miejsca, wykop nowy pokój w zakładce Loch.', 'A room holds only a few elements. When you run out of space, dig a new room in the Dungeon tab.'), build: true, hl: ['#tab-dungeon', '#item-dig'], prep: () => { pickTab('dungeon', 'dig'); setTrayOpen(true); }, next: true },
+    { id: 'end', wave: 3, text: L('To koniec samouczka. Resztę gry poznasz w tym runie, fala po fali. Powodzenia!', 'That is the end of the tutorial. You will meet the rest of the game in this run, wave by wave. Good luck!'), build: true, next: true }
   ];
   // 1.04: the moments that matter stop the game once, with a card at the top of the map (the check waits under it)
   const TUT_POP = {
-    check: 'Skill check! Gdy koralik wjedzie w obwódkę, stuknij w mapę: to draśnięcie. Pełne pole to krytyk, najmocniejszy cios. ☠ znaczy, że ten cios zabije. Trafiony wynik pułapka pamięta, także w kolejnych falach.',
-    pay: 'Koniec combo: Groza × Chciwość × Combo zamienia się w Esencję (czerwone kuleczki). Możesz ją wydać od razu, nawet w trakcie fali.',
-    theft: 'Kryształ skradziony! Zabij albo wystrasz niosącego, zanim dojdzie do wyjścia: kryształ wróci do serca. Jeśli wyjdzie z nim z lochu, kryształ przepada.',
-    flee: 'Bohater ucieka ze strachu (pełny fioletowy pasek). Kiedy wybiegnie z lochu, dostaniesz Esencję, ale opowie innym o Twoich pułapkach.',
+    check: L('Skill check! Stuknij w mapę, gdy koralik wjedzie w obwódkę. Wypełniona strefa to krytyk. Po trafieniu ta pułapka bije dalej sama z tym wynikiem, bez pytania.', "Skill check! Tap the map when the bead enters the outline. The filled zone is a crit. After a hit, this trap keeps firing with that result on its own."),
+    pay: L('Koniec combo! Groza zamienia się w Esencję (czerwone kulki). Możesz ją wydać od razu, nawet w trakcie fali.', "Combo over! Your Dread turns into Essence (the red orbs). You can spend it right away, even mid-wave."),
+    theft: L('Kryształ skradziony! Zabij albo wystrasz tego, kto go niesie, zanim dotrze do wyjścia. Wtedy kryształ wróci.', "A crystal is stolen! Kill or scare whoever carries it before they reach the exit, and it comes back."),
+    flee: L('Bohater ucieka ze strachu (pełny fioletowy pasek). Dostaniesz za to Esencję, ale opowie innym o Twoich pułapkach.', "A hero flees in fear (full purple bar). You get Essence for it, but they will tell others about your traps."),
     // 1.12: the full game (run 4 of the first ones): the first time each of these shows up
-    body: 'Słabość albo odporność ciała! Ten bohater obrywa od jednego typu obrażeń mocniej (słabość) albo słabiej (odporność). Stuknij go, żeby zobaczyć kartę.',
-    phobia: 'Fobia! Ten bohater boi się jednej rzeczy 2 razy bardziej i właśnie ją zobaczył. Stuknij go, żeby zobaczyć, czego się boi.',
-    returner: 'W drużynie jest powracający: uciekł Ci kiedyś, a teraz wraca silniejszy, z blizną i z pamięcią Twojego lochu (stuknij go na liście).',
+    body: L('Słabość albo odporność! Ten bohater obrywa mocniej albo słabiej od jednego typu obrażeń. Stuknij go, żeby sprawdzić.', "Weakness or resistance! This hero takes more or less damage from one damage type. Tap them to check."),
+    phobia: L('Fobia! Ten bohater właśnie zobaczył to, czego boi się najbardziej. Stuknij go, żeby sprawdzić, co to.', "Phobia! This hero just saw the thing they fear most. Tap them to see what it is."),
+    returner: L('Powracający! Ten bohater kiedyś Ci uciekł. Wraca silniejszy i pamięta Twój loch.', "A returner! This hero escaped you once. Now they are back, stronger, and they remember your dungeon."),
     // 1.26: the new rules explain themselves the first time they happen, in every run (once in this browser)
-    heartLv: 'Serce rośnie! Syte serce bierze Daninę: 30% każdej dalszej wypłaty idzie w Nasycenie (złoty pasek). Każdy poziom serca to darmowa karta z rzędu Dar serca w sklepie, poziomy 2, 4 i 6 dają miejsce w talii, a 3, 5 i 7 mogą odrodzić kryształ.',
-    heartCry: 'Serce krzyczy! Od fali 2 każdy, kto wyrywa kryształ, traci odwagę z każdą sekundą (6% na sekundę). Kradzież trwa 5 s: zrań go albo wystrasz, zanim skończy.',
-    status: 'Status! Element nałożył stan (ikonka nad bohaterem): spowolnienie, unieruchomienie, podpalenie, krwawienie, trucizna, olej, woda... Przytrzymaj kafelek pułapki, żeby zobaczyć, co nakłada. Statusy łączą się w reakcje.',
-    reaction: 'Reakcja! Status i właściwe obrażenia: olej + ogień = Pożar, trucizna + ogień = Detonacja, woda + porażenie = Porażenie, ogień + woda = Para. Reakcja daje Grozę i dodatkowy krok combo, a status znika.',
-    revive: 'Potwór powalony! Nie ginie na dobre: wstanie w następnej budowie, ale za każdego powalonego serce zje o 1 Esencję więcej w następnej fali.',
-    omen: 'Omen fali! Ta fala ma zasadę specjalną (podgląd fali przed jej startem). Omen, który ją utrudnia, daje nagrodę; ten, który ją ułatwia, podnosi głód.',
-    cultist: 'Kultysta! Nie kradnie kryształu: idzie do serca i wypija z niego zjedzoną Esencję. Zabij go albo dokarm serce, inaczej po fali serce zabierze brak z sakiewki.'
+    heartLv: L('Serce rośnie! Każdy poziom daje darmową kartę w sklepie (Dar serca). Złoty pasek to Nasycenie: napełnia go Danina, czyli część wypłat po tym, jak serce się naje.', "Your heart grows! Each level gives a free card in the shop (Heart's Gift). The gold bar is Satiety: the Tithe fills it with part of your payouts once the heart is full."),
+    heartCry: L('Serce krzyczy! Kto wyrywa kryształ, z każdą sekundą traci odwagę. Kradzież trwa 5 s: zrań go albo wystrasz, zanim skończy.', "The heart screams! Whoever pulls out a crystal loses courage every second. Stealing takes 5 s: hurt or scare them before they finish."),
+    status: L('Status! Ikonka nad bohaterem to stan, np. Spowolniony albo Podpalony. Co nakłada pułapka, zobaczysz w jej opisie.', "Status! The icon over the hero is a status, like Slowed or Burning. A trap's description tells you what it applies."),
+    reaction: L('Reakcja! Status i pasujące obrażenia dały coś mocniejszego, np. olej i ogień to Pożar. Reakcja daje Grozę i krok combo.', "Reaction! A status met the right damage and made something stronger, like oil and fire making a Blaze. Reactions give Dread and a combo step."),
+    revive: L('Potwór powalony! Wstanie przed następną falą, ale serce będzie wtedy głodniejsze o 1 Esencję.', "Monster down! It gets back up before the next wave, but the heart will want 1 more Essence then."),
+    omen: L('Omen! Ta fala ma specjalną zasadę. Trudniejszy omen daje nagrodę, łatwiejszy podnosi głód serca.', "Omen! This wave has a special rule. A harder omen gives a reward; an easier one makes the heart hungrier."),
+    cultist: L('Kultysta! Nie kradnie kryształów, tylko wypija Esencję, którą zjadło serce. Zabij go szybko: zabity oddaje połowę.', "Cultist! They don't steal crystals: they drink the Essence your heart has eaten. Kill them fast: a slain cultist gives half back.")
   };
   const TUT_NEW = { heartLv: 1, heartCry: 1, status: 1, reaction: 1, revive: 1, omen: 1, cultist: 1 };   // 1.26: shown in any run, not only in the first ones
   let tutPopNow = null; const tutPopQ = [];
@@ -3020,8 +3059,8 @@
     tutPopNow = id; tutClearHl(); hideToast();
     box.innerHTML = ''; box.classList.add('top', 'pop');
     box.appendChild(el('div', null, TUT_POP[id]));
-    const row = el('div', 'crow'); row.appendChild(el('span', 'step', 'Gra stoi'));
-    const ok = el('button', 'next', 'Rozumiem'); ok.type = 'button'; ok.addEventListener('click', tutPopClose); row.appendChild(ok);
+    const row = el('div', 'crow'); row.appendChild(el('span', 'step', L('Gra stoi', 'Paused')));
+    const ok = el('button', 'next', L('Rozumiem', 'Got it')); ok.type = 'button'; ok.addEventListener('click', tutPopClose); row.appendChild(ok);
     box.appendChild(row); box.hidden = false; coachSync();
     setPaused(true, true);
   }
@@ -3051,31 +3090,45 @@
     saveRun('build');
   }
   // 1.26 (15): an omen as a small box: its picture, name, rule, and the reward or the price
+  // 1.27 (author: the champion and the hero of the prophecy get a card like an omen on the screens between waves)
+  function bossBox(e) {
+    const d = el('div', 'omenbox bossbox'); if (!e || !e.boss) return d;
+    const T = HEROES[e.type], fem = !!e.female, fin = e.boss === 'final';
+    const ic = el('div', 'bossimg' + (fin ? ' fin' : '')); ic.innerHTML = classIconSvg(e.type, fin ? '#ffd27a' : '#ffb07a', 'bossic'); d.appendChild(ic);
+    const t = el('div', 'omentx');
+    t.appendChild(el('b', null, BOSS_NAME[e.boss][fem ? 1 : 0] + (e.nm && e.nm[0] ? ': ' + e.nm[0] : '')));
+    t.appendChild(el('span', null, T.name[fem ? 1 : 0] + ', ' + L('poziom ', 'level ') + e.lvl + '. ' + (fin
+      ? L('Zna drogę do serca i prowadzi drużynę prosto do niego. Gdy straci połowę zdrowia, wpada w szał, a kto idzie obok ' + (fem ? 'niej' : 'niego') + ', boi się mniej.', 'Knows the way to the heart and leads the party straight to it. At half health ' + (fem ? 'she' : 'he') + ' flies into a rage, and those beside ' + (fem ? 'her' : 'him') + ' fear less.')
+      : L('Prowadzi drużynę i nie ucieka z resztą. Gdy ktoś wpada w panikę, ' + (fem ? 'jej' : 'jego') + ' okrzyk dodaje innym odwagi.', 'Leads the party and does not run with the others. When someone panics, ' + (fem ? 'her' : 'his') + ' battle cry steadies the rest.'))));
+    t.appendChild(el('span', 'good', fin ? L('Przetrwaj tę falę, a run jest wygrany.', 'Survive this wave and the run is won.') : L('Nagroda: po fali legendarna karta w ofercie.', 'Reward: a legendary card on offer after the wave.')));
+    d.appendChild(t); return d;
+  }
   function omenBox(id) {
     const O = OMENS[id], d = el('div', 'omenbox'); if (!O) return d;
     { const u = ART.omen && ART.omen(id); if (u) { const im = el('img', 'omenimg'); im.src = u; im.alt = ''; d.appendChild(im); } }
     const t = el('div', 'omentx'); t.appendChild(el('b', null, 'Omen: ' + O.name)); t.appendChild(el('span', null, O.text));
-    if (O.reward) t.appendChild(el('span', 'good', 'Nagroda: ' + O.reward + '.')); if (O.cost) t.appendChild(el('span', 'bad', 'Za to ' + O.cost + '.'));
-    if (!O.reward && !O.cost) t.appendChild(el('span', 'unk', 'Bez nagrody: zmienia, co działa.'));
+    if (O.reward) t.appendChild(el('span', 'good', L('Nagroda: ', 'Reward: ') + O.reward + '.')); if (O.cost) t.appendChild(el('span', 'bad', L('Za to ', 'Price: ') + O.cost + '.'));
+    if (!O.reward && !O.cost) t.appendChild(el('span', 'unk', L('Bez nagrody: zmienia tylko zasady.', 'No reward: it only changes the rules.')));
     d.appendChild(t); return d;
   }
   function renderNews(card) {   // 1.12.1: what the tavern says about the next wave (a tap on "Fala X/10" in the build)
-    card.appendChild(el('div', 'sub', 'Wieści z karczmy'));
+    card.appendChild(el('div', 'sub', L('Wieści z karczmy', 'Tavern news')));
     card.appendChild(el('h2', null, waveName()));
     if (run.omens && OMENS[run.omens[run.wave]]) {   // 1.26: the omen first; the first time in this browser, what an omen is
       card.appendChild(omenBox(run.omens[run.wave]));
-      const seen = popsSeen(); if (!seen.omenNews) { seen.omenNews = 1; try { localStorage.setItem(POPS_KEY, JSON.stringify(seen)); } catch (e) {} card.appendChild(el('p', 'note', 'Omen to zasada specjalna tej jednej fali (fale 3, 6 i 8). Omen, który utrudnia falę, daje nagrodę; ten, który ją ułatwia, podnosi głód serca. Buduj pod niego.')); }
+      const seen = popsSeen(); if (!seen.omenNews) { seen.omenNews = 1; try { localStorage.setItem(POPS_KEY, JSON.stringify(seen)); } catch (e) {} card.appendChild(el('p', 'note', L('Omen to specjalna zasada tylko tej fali. Trudniejszy omen daje nagrodę, łatwiejszy podnosi głód serca. Buduj pod niego.', 'An omen is a special rule for this wave only. A harder omen gives a reward; an easier one makes the heart hungrier. Build for it.'))); }
     }
+    { const be = (run.nextFor === run.wave ? run.next : []).find(e => e.boss); if (be) card.appendChild(bossBox(be)); }   // 1.27: the champion or the hero of the prophecy
     waveHint().split(/(?<=[.!?])\s+(?=[A-ZŁŚŻŹĆŃÓĘĄ])/).forEach(t => card.appendChild(el('p', null, t)));
-    const b = btn('primary', 'Zamknij', null, closeModal); b.id = 'news-close'; card.appendChild(b);
+    const b = btn('primary', L('Zamknij', 'Close'), null, closeModal); b.id = 'news-close'; card.appendChild(b);
   }
   function renderOnb(card) {   // 1.24 (B): the stages this wave of the first run opens (m.stages), or the run's stage (a run saved before)
     const m = curModal || {}, list = (m.stages && m.stages.length ? m.stages : [run.stage || ONB_FULL]).filter(k => ONB_STAGES[k]), s = list[list.length - 1], perWave = !!(m.stages && m.stages.length);
-    card.appendChild(el('div', 'sub', (perWave ? 'Fala ' + run.wave : 'Run ' + s + ' z 4') + ' · nauka'));
-    card.appendChild(el('h2', null, 'Nowe: ' + list.map(k => ONB_STAGES[k].name.toLowerCase()).join(', ')));
+    card.appendChild(el('div', 'sub', (perWave ? L('Fala ', 'Wave ') + run.wave : 'Run ' + s + L(' z 4', ' of 4')) + L(' · nauka', ' · learning')));
+    card.appendChild(el('h2', null, L('Nowe: ', 'New: ') + list.map(k => ONB_STAGES[k].name.toLowerCase()).join(', ')));
     const ul = el('ul', 'conseq'); list.forEach(k => ONB_STAGES[k].news.forEach(t => ul.appendChild(el('li', null, t)))); card.appendChild(ul);
-    card.appendChild(el('p', 'note', s < ONB_FULL ? (perWave ? 'Od fali ' + ONB_WAVE[s + 1] + ': ' : 'Następny run doda: ') + ONB_STAGES[s + 1].name.toLowerCase() + '.' : 'To już cała gra. Kolejne runy zaczną się od niej. Wszystkie zasady znajdziesz w Jak grać na ekranie startowym.'));
-    const b = btn('primary', 'Gramy', null, closeModal); b.id = 'onb-go'; card.appendChild(b);
+    card.appendChild(el('p', 'note', s < ONB_FULL ? (perWave ? L('Od fali ', 'From wave ') + ONB_WAVE[s + 1] + ': ' : L('Następny run doda: ', 'Next run adds: ')) + ONB_STAGES[s + 1].name.toLowerCase() + '.' : L('To już cała gra. Kolejne runy zaczną się od niej. Wszystkie zasady znajdziesz w Jak grać na ekranie startowym.', 'That is the whole game. Your next runs start with all of it. All the rules are in How to play on the start screen.')));
+    const b = btn('primary', L('Gramy', "Let's go"), null, closeModal); b.id = 'onb-go'; card.appendChild(b);
   }
   function tutStart() { tutFlags = { sp0: countType('spikes'), ar0: countType('arrows'), po0: countType('portrait') }; run.tut = 0; run.tutLog = { max: 0, skipped: [], ended: null }; tutShow(); }
   // 1.05: how far the tutorial got (logged with the run): the furthest step, the steps skipped, how it ended
@@ -3098,14 +3151,14 @@
     box.appendChild(el('div', null, typeof st.text === 'function' ? st.text() : st.text));
     const row = el('div', 'crow');
     const holds = raid && st.raid;   // 1.15.1 (author: every tip stops the game until you confirm it or do what it says)
-    row.appendChild(el('span', 'step', holds ? (st.id === 'check' ? 'Gra czeka na Twój ruch' : 'Gra stoi') : 'Samouczek ' + (run.tut + 1) + '/' + TUT.length));
+    row.appendChild(el('span', 'step', holds ? (st.id === 'check' ? L('Gra czeka na Twój ruch', 'Your move') : L('Gra stoi', 'Paused')) : L('Samouczek ', 'Tutorial ') + (run.tut + 1) + '/' + TUT.length));
     const right = el('span'); right.style.display = 'flex'; right.style.alignItems = 'center'; right.style.whiteSpace = 'nowrap';
-    const end = el('button', 'skip', 'Zakończ'); end.type = 'button';
+    const end = el('button', 'skip', L('Zakończ', 'End')); end.type = 'button';
     end.addEventListener('click', () => { tutLogOf().ended = 'quit@' + (st.id || run.tut); tutEnd(); });
     if (run.tut < TUT.length - 1) right.appendChild(end);
-    if (st.skip) { const sk = el('button', 'skip', 'Pomiń krok'); sk.type = 'button'; sk.style.marginLeft = '12px'; sk.addEventListener('click', () => { tutLogOf().skipped.push(st.id || run.tut); tutAdvance(); }); right.appendChild(sk); }
-    if (st.ack) { const ok = el('button', 'next', 'Rozumiem'); ok.type = 'button'; ok.style.marginLeft = '12px'; ok.addEventListener('click', () => { st.acked = true; tutClearHl(); letGo(); box.hidden = true; coachSync(); }); right.appendChild(ok); }
-    if (st.next) { const nx = el('button', 'next', run.tut === TUT.length - 1 ? 'Gramy!' : 'Dalej'); nx.type = 'button'; nx.style.marginLeft = '12px'; nx.addEventListener('click', () => { if (st.pause) setPaused(false, true); if (run.tut === TUT.length - 1) tutLogOf().ended = 'done'; tutAdvance(); }); right.appendChild(nx); }
+    if (st.skip) { const sk = el('button', 'skip', L('Pomiń krok', 'Skip step')); sk.type = 'button'; sk.style.marginLeft = '12px'; sk.addEventListener('click', () => { tutLogOf().skipped.push(st.id || run.tut); tutAdvance(); }); right.appendChild(sk); }
+    if (st.ack) { const ok = el('button', 'next', L('Rozumiem', 'Got it')); ok.type = 'button'; ok.style.marginLeft = '12px'; ok.addEventListener('click', () => { st.acked = true; tutClearHl(); letGo(); box.hidden = true; coachSync(); }); right.appendChild(ok); }
+    if (st.next) { const nx = el('button', 'next', run.tut === TUT.length - 1 ? L('Gramy!', "Let's play!") : L('Dalej', 'Next')); nx.type = 'button'; nx.style.marginLeft = '12px'; nx.addEventListener('click', () => { if (st.pause) setPaused(false, true); if (run.tut === TUT.length - 1) tutLogOf().ended = 'done'; tutAdvance(); }); right.appendChild(nx); }
     row.appendChild(right); box.appendChild(row);
     box.hidden = false; coachSync();
     (st.hl || []).forEach(sel => { const e = $(sel); if (e) { e.classList.add('tut-hl'); if (e.classList.contains('item') && e.parentElement) { const t = e.parentElement; t.scrollLeft = Math.max(0, e.offsetLeft - 8); } } });   // a highlighted tile scrolls into view

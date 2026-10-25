@@ -10,7 +10,11 @@
   ],
   "tag": "gobliny",
   "glyph": "♣",
-  "color": "#a7d060"
+  "color": "#a7d060",
+  "en": {
+   "name": "Goblin Den",
+   "tag": "goblins"
+  }
  },
  "spider": {
   "name": "Leże pająków",
@@ -21,7 +25,11 @@
   ],
   "tag": "pająki i sieci",
   "glyph": "✳",
-  "color": "#d4cbe8"
+  "color": "#d4cbe8",
+  "en": {
+   "name": "Spider Lair",
+   "tag": "spiders and webs"
+  }
  },
  "ogre": {
   "name": "Jaskinia ogra",
@@ -31,7 +39,11 @@
   ],
   "tag": "ogry",
   "glyph": "♠",
-  "color": "#d99a6c"
+  "color": "#d99a6c",
+  "en": {
+   "name": "Ogre Cave",
+   "tag": "ogres"
+  }
  },
  "haunt": {
   "name": "Nawiedzona sala",
@@ -42,7 +54,11 @@
   ],
   "tag": "duchy i cienie",
   "glyph": "✧",
-  "color": "#a6e8ff"
+  "color": "#a6e8ff",
+  "en": {
+   "name": "Haunted Hall",
+   "tag": "ghosts and shades"
+  }
  },
  "bats": {
   "name": "Gniazdo",
@@ -53,7 +69,11 @@
   ],
   "tag": "nietoperze i szczury",
   "glyph": "☾",
-  "color": "#bba2e6"
+  "color": "#bba2e6",
+  "en": {
+   "name": "Nest",
+   "tag": "bats and rats"
+  }
  },
  "ossuary": {
   "name": "Kaplica czaszek",
@@ -65,7 +85,11 @@
   ],
   "tag": "kości i łucznicy",
   "glyph": "☠",
-  "color": "#efe6cc"
+  "color": "#efe6cc",
+  "en": {
+   "name": "Skull Chapel",
+   "tag": "bones and archers"
+  }
  },
  "armory": {
   "name": "Zbrojownia",
@@ -77,7 +101,11 @@
   ],
   "tag": "kolce, strzały, wahadła",
   "glyph": "⚔",
-  "color": "#c9d5e2"
+  "color": "#c9d5e2",
+  "en": {
+   "name": "Armory",
+   "tag": "spikes, arrows, pendulums"
+  }
  },
  "forge": {
   "name": "Kuźnia",
@@ -90,7 +118,11 @@
   ],
   "tag": "ogień, proch, olej",
   "glyph": "⚒",
-  "color": "#ffa65c"
+  "color": "#ffa65c",
+  "en": {
+   "name": "Forge",
+   "tag": "fire, powder, oil"
+  }
  },
  "prison": {
   "name": "Więzienie",
@@ -103,7 +135,11 @@
   ],
   "tag": "klatki, kraty, wnyki",
   "glyph": "⛓",
-  "color": "#bdb19b"
+  "color": "#bdb19b",
+  "en": {
+   "name": "Prison",
+   "tag": "cages, gates, snares"
+  }
  },
  "junk": {
   "name": "Graciarnia",
@@ -113,7 +149,11 @@
   ],
   "tag": "mimiki",
   "glyph": "⌂",
-  "color": "#dcae6c"
+  "color": "#dcae6c",
+  "en": {
+   "name": "Junk Room",
+   "tag": "mimics"
+  }
  },
  "gallery": {
   "name": "Galeria",
@@ -126,7 +166,11 @@
   ],
   "tag": "obrazy i lustra",
   "glyph": "▣",
-  "color": "#ecc65e"
+  "color": "#ecc65e",
+  "en": {
+   "name": "Gallery",
+   "tag": "paintings and mirrors"
+  }
  },
  "lab": {
   "name": "Laboratorium",
@@ -138,7 +182,11 @@
   ],
   "tag": "wyziewy, woda, pioruny",
   "glyph": "⚗",
-  "color": "#9fe0c8"
+  "color": "#9fe0c8",
+  "en": {
+   "name": "Laboratory",
+   "tag": "miasma, water, lightning"
+  }
  },
  "graveyard": {
   "name": "Cmentarz",
@@ -151,7 +199,11 @@
   ],
   "tag": "nieumarli",
   "glyph": "✟",
-  "color": "#c9d4b0"
+  "color": "#c9d4b0",
+  "en": {
+   "name": "Graveyard",
+   "tag": "undead"
+  }
  },
  "abyssgate": {
   "name": "Wrota otchłani",
@@ -164,7 +216,11 @@
   ],
   "tag": "demony",
   "glyph": "⛧",
-  "color": "#ff7a5a"
+  "color": "#ff7a5a",
+  "en": {
+   "name": "Abyss Gate",
+   "tag": "demons"
+  }
  },
  "nursery": {
   "name": "Pokój dziecięcy",
@@ -175,6 +231,10 @@
   ],
   "tag": "pozytywki",
   "glyph": "♪",
-  "color": "#f2bcd4"
+  "color": "#f2bcd4",
+  "en": {
+   "name": "Nursery",
+   "tag": "music boxes"
+  }
  }
 }

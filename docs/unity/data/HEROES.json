@@ -9,7 +9,13 @@
   "dps": 18,
   "color": "#6f9cff",
   "letter": "W",
-  "greed": 0.6
+  "greed": 0.6,
+  "en": {
+   "name": [
+    "Warrior",
+    "Warrior"
+   ]
+  }
  },
  "thief": {
   "name": [
@@ -21,7 +27,13 @@
   "dps": 10,
   "color": "#6fd64f",
   "letter": "Z",
-  "greed": 1.5
+  "greed": 1.5,
+  "en": {
+   "name": [
+    "Thief",
+    "Thief"
+   ]
+  }
  },
  "priest": {
   "name": [
@@ -33,7 +45,13 @@
   "dps": 6,
   "color": "#ffd23f",
   "letter": "K",
-  "greed": 0.9
+  "greed": 0.9,
+  "en": {
+   "name": [
+    "Priest",
+    "Priestess"
+   ]
+  }
  },
  "mage": {
   "name": [
@@ -45,7 +63,13 @@
   "dps": 8,
   "color": "#b76dff",
   "letter": "M",
-  "greed": 1
+  "greed": 1,
+  "en": {
+   "name": [
+    "Mage",
+    "Mage"
+   ]
+  }
  },
  "bard": {
   "name": [
@@ -57,7 +81,13 @@
   "dps": 7,
   "color": "#2fd3c4",
   "letter": "B",
-  "greed": 1.2
+  "greed": 1.2,
+  "en": {
+   "name": [
+    "Bard",
+    "Bard"
+   ]
+  }
  },
  "barbarian": {
   "name": [
@@ -69,7 +99,13 @@
   "dps": 20,
   "color": "#ff7a33",
   "letter": "R",
-  "greed": 0.7
+  "greed": 0.7,
+  "en": {
+   "name": [
+    "Barbarian",
+    "Barbarian"
+   ]
+  }
  },
  "paladin": {
   "name": [
@@ -81,7 +117,13 @@
   "dps": 14,
   "color": "#f0e2a8",
   "letter": "P",
-  "greed": 0.7
+  "greed": 0.7,
+  "en": {
+   "name": [
+    "Paladin",
+    "Paladin"
+   ]
+  }
  },
  "ranger": {
   "name": [
@@ -93,7 +135,13 @@
   "dps": 12,
   "color": "#c8904e",
   "letter": "T",
-  "greed": 1.1
+  "greed": 1.1,
+  "en": {
+   "name": [
+    "Ranger",
+    "Ranger"
+   ]
+  }
  },
  "alchemist": {
   "name": [
@@ -105,7 +153,13 @@
   "dps": 7,
   "color": "#e070b0",
   "letter": "A",
-  "greed": 1
+  "greed": 1,
+  "en": {
+   "name": [
+    "Alchemist",
+    "Alchemist"
+   ]
+  }
  },
  "cultist": {
   "name": [
@@ -117,6 +171,12 @@
   "dps": 6,
   "color": "#b8323e",
   "letter": "C",
-  "greed": 0
+  "greed": 0,
+  "en": {
+   "name": [
+    "Cultist",
+    "Cultist"
+   ]
+  }
  }
 }

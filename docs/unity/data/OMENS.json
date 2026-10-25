@@ -3,14 +3,24 @@
   "name": "Oblężenie",
   "text": "+2 bohaterów, ale wszyscy o 2 poziomy słabsi.",
   "cost": "serce chce o 15% więcej",
+  "en": {
+   "name": "Siege",
+   "text": "+2 heroes, but all of them 2 levels lower.",
+   "cost": "the heart wants 15% more"
+  },
   "extra": 2,
   "lvAdd": -2,
   "hunger": 1.15
  },
  "elite": {
   "name": "Elita",
-  "text": "1 bohater mniej, za to wszyscy o 3 poziomy silniejsi i z dodatkowym przedmiotem.",
+  "text": "1 bohater mniej, ale wszyscy o 3 poziomy silniejsi i z dodatkowym przedmiotem.",
   "reward": "+1 darmowa karta w sklepie",
+  "en": {
+   "name": "Elite",
+   "text": "1 hero fewer, but all of them 3 levels higher and with an extra item.",
+   "reward": "+1 free card in the shop"
+  },
   "extra": -1,
   "lvAdd": 3,
   "gear": 1,
@@ -19,7 +29,11 @@
  },
  "inquisition": {
   "name": "Inkwizycja",
-  "text": "Na pewno przyjdą kapłan i paladyn. Wszyscy +1 poziom i boją się o 30% mniej.",
+  "text": "Na pewno przyjdą kapłan i paladyn. Wszyscy mają +1 poziom i boją się o 30% mniej.",
+  "en": {
+   "name": "Inquisition",
+   "text": "A priest and a paladin are sure to come. Everyone is +1 level and 30% less scared."
+  },
   "force": [
    "priest",
    "paladin"
@@ -29,8 +43,13 @@
  },
  "sappers": {
   "name": "Saperzy",
-  "text": "Przychodzi 2 złodziei (od fali 6: złodziej i tropiciel): pułapki będą wykrywane i rozbrajane.",
+  "text": "Przyjdzie dwóch złodziei (od fali 6: złodziej i tropiciel). Będą wykrywać i rozbrajać pułapki.",
   "reward": "+1 darmowa karta w sklepie",
+  "en": {
+   "name": "Sappers",
+   "text": "2 thieves come (from wave 6: a thief and a ranger). They will find and disarm traps.",
+   "reward": "+1 free card in the shop"
+  },
   "force": [
    "thief",
    "ranger"
@@ -40,8 +59,13 @@
  },
  "haste": {
   "name": "Pośpiech",
-  "text": "Cierpliwość tylko 60 s, idą o 20% szybciej i nie odpoczywają.",
-  "cost": "serce chce o 15% mniej",
+  "text": "Cierpliwość tylko 60 s. Idą o 20% szybciej i nie odpoczywają.",
+  "reward": "serce chce o 15% mniej",
+  "en": {
+   "name": "Haste",
+   "text": "Only 60 s of patience. They move 20% faster and never rest.",
+   "reward": "the heart wants 15% less"
+  },
   "patience": 60,
   "speed": 1.2,
   "noRest": 1,
@@ -49,15 +73,24 @@
  },
  "bloodmoon": {
   "name": "Krwawy księżyc",
-  "text": "Bohaterowie mają 20% więcej HP, Twoje potwory biją o 30% mocniej, a zabójstwo daje 1,5 raza więcej Grozy.",
+  "text": "Bohaterowie mają 20% więcej życia, Twoje potwory biją o 30% mocniej, a zabójstwo daje 1,5 raza więcej Grozy.",
+  "en": {
+   "name": "Blood Moon",
+   "text": "Heroes have 20% more health, your monsters hit 30% harder, and kills give 1.5× the Dread."
+  },
   "hpK": 1.2,
   "monDmg": 1.3,
   "killK": 1.5
  },
  "goldrush": {
   "name": "Złoty szał",
-  "text": "Wszyscy są chciwi, chciwość na start +0,5 i przychodzi 1 łowca skarbów więcej.",
+  "text": "Wszyscy są chciwi, chciwość startuje o 0,5 wyżej i przychodzi jeden łowca skarbów więcej.",
   "cost": "serce chce o 15% więcej",
+  "en": {
+   "name": "Gold Rush",
+   "text": "Everyone is greedy, Greed starts 0.5 higher, and 1 more treasure hunter comes.",
+   "cost": "the heart wants 15% more"
+  },
   "greedAll": 1,
   "greedStart": 0.5,
   "hunters": 1,
@@ -67,14 +100,24 @@
   "name": "Mgła wojny",
   "text": "Przed falą nie widać klas ani poziomów bohaterów, a w lochu łatwiej się gubią.",
   "reward": "+10 Nasycenia serca po fali",
+  "en": {
+   "name": "Fog of War",
+   "text": "Before the wave you cannot see the heroes' classes or levels, and they get lost more easily.",
+   "reward": "+10 Satiety after the wave"
+  },
   "fog": 1,
   "lostAdd": 0.2,
   "satiety": 10
  },
  "pilgrimage": {
   "name": "Pielgrzymka",
-  "text": "2 kultystów zamiast 2 zwykłych bohaterów. Idą prosto do serca i piją z niego zjedzoną Esencję. Zabity kultysta oddaje połowę.",
+  "text": "Dwóch kultystów zamiast dwóch zwykłych bohaterów. Idą prosto do serca i wypijają Esencję, którą zjadło serce. Zabity kultysta oddaje połowę.",
   "reward": "+1 darmowa karta w sklepie",
+  "en": {
+   "name": "Pilgrimage",
+   "text": "2 cultists replace 2 regular heroes. They head straight for the heart and drink the Essence it has eaten. A slain cultist gives half back.",
+   "reward": "+1 free card in the shop"
+  },
   "cultists": 2,
   "free": 1,
   "minW": 6
@@ -82,6 +125,10 @@
  "fearnight": {
   "name": "Noc strachu",
   "text": "Odwaga bohaterów ×0,8, ale strach opada 1,5 raza szybciej: skacze i szybko mija.",
+  "en": {
+   "name": "Night of Fear",
+   "text": "Heroes' courage ×0.8, but fear fades 1.5× faster: it spikes and passes quickly."
+  },
   "courage": 0.8,
   "calm": 1.5
  }

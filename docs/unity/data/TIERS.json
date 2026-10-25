@@ -5,7 +5,13 @@
    "Nowicjusz",
    "Nowicjuszka"
   ],
-  "color": "#9be37a"
+  "color": "#9be37a",
+  "en": {
+   "name": [
+    "Rookie",
+    "Rookie"
+   ]
+  }
  },
  {
   "min": 3,
@@ -13,7 +19,13 @@
    "Weteran",
    "Weteranka"
   ],
-  "color": "#6fb7ff"
+  "color": "#6fb7ff",
+  "en": {
+   "name": [
+    "Veteran",
+    "Veteran"
+   ]
+  }
  },
  {
   "min": 6,
@@ -21,7 +33,13 @@
    "Elita",
    "Elita"
   ],
-  "color": "#c39bff"
+  "color": "#c39bff",
+  "en": {
+   "name": [
+    "Elite",
+    "Elite"
+   ]
+  }
  },
  {
   "min": 10,
@@ -29,7 +47,13 @@
    "Mistrz",
    "Mistrzyni"
   ],
-  "color": "#ff8a3c"
+  "color": "#ff8a3c",
+  "en": {
+   "name": [
+    "Master",
+    "Master"
+   ]
+  }
  },
  {
   "min": 15,
@@ -37,7 +61,13 @@
    "Legenda",
    "Legenda"
   ],
-  "color": "#ff5a6a"
+  "color": "#ff5a6a",
+  "en": {
+   "name": [
+    "Legend",
+    "Legend"
+   ]
+  }
  },
  {
   "min": 20,
@@ -45,6 +75,12 @@
    "Mit",
    "Mit"
   ],
-  "color": "#ffe066"
+  "color": "#ffe066",
+  "en": {
+   "name": [
+    "Myth",
+    "Myth"
+   ]
+  }
  }
 ]

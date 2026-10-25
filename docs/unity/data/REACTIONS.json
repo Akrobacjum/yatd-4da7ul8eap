@@ -2,26 +2,46 @@
  "blaze": {
   "name": "Pożar",
   "color": "#ff7a2a",
-  "desc": "ogień trafia Oblanego: ×1,6, podpalenie 2 razy dłużej, ogień przeskakuje na Oblanych obok"
+  "desc": "ogień trafia Oblanego: ×1,6, podpalenie 2 razy dłużej, ogień przeskakuje na Oblanych obok",
+  "en": {
+   "name": "Blaze",
+   "desc": "fire hits an Oiled hero: ×1.6, burning lasts twice as long, the fire jumps to Oiled heroes nearby"
+  }
  },
  "detonate": {
   "name": "Detonacja",
   "color": "#b6e05a",
-  "desc": "ogień trafia Zatrutego (2+ stosy): wybuch 3×3 za każdy stos"
+  "desc": "ogień trafia Zatrutego (2+ stosy): wybuch 3×3 za każdy stos",
+  "en": {
+   "name": "Detonation",
+   "desc": "fire hits a Poisoned hero (2+ stacks): a 3×3 blast per stack"
+  }
  },
  "shock": {
   "name": "Porażenie",
   "color": "#9fd6ff",
-  "desc": "porażenie trafia Mokrego: ×1,6, przeskakuje na wszystkich Mokrych w pokoju, ogłusza"
+  "desc": "porażenie trafia Mokrego: ×1,6, przeskakuje na wszystkich Mokrych w pokoju, ogłusza",
+  "en": {
+   "name": "Shock",
+   "desc": "shock hits a Wet hero: ×1.6, jumps to every Wet hero in the room, stuns"
+  }
  },
  "steam": {
   "name": "Para",
   "color": "#dfe8f0",
-  "desc": "woda trafia Podpalonego: gasi go, chmura 3×3 straszy i oślepia"
+  "desc": "woda trafia Podpalonego: gasi go, chmura 3×3 straszy i oślepia",
+  "en": {
+   "name": "Steam",
+   "desc": "water hits a Burning hero: puts them out, a 3×3 cloud scares and blinds"
+  }
  },
  "rise": {
   "name": "Powstanie",
   "color": "#a8c86a",
-  "desc": "Zarażony umiera i wstaje jako Twój zombie do końca fali (najwyżej 2 na falę)"
+  "desc": "Zarażony umiera i wstaje jako Twój zombie do końca fali (najwyżej 2 na falę)",
+  "en": {
+   "name": "Rise",
+   "desc": "an Infected hero dies and rises as your zombie until the wave ends (at most 2 per wave)"
+  }
  }
 }

@@ -7,7 +7,14 @@
   "res": {
    "pierce": 0.7
   },
-  "text": "kłute -30%"
+  "text": "kłute -30%",
+  "en": {
+   "name": [
+    "thick-skinned",
+    "thick-skinned"
+   ],
+   "text": "pierce -30%"
+  }
  },
  "pierced": {
   "name": [
@@ -17,7 +24,14 @@
   "res": {
    "pierce": 1.35
   },
-  "text": "kłute +35%"
+  "text": "kłute +35%",
+  "en": {
+   "name": [
+    "old stab wounds",
+    "old stab wounds"
+   ],
+   "text": "pierce +35%"
+  }
  },
  "sturdy": {
   "name": [
@@ -27,7 +41,14 @@
   "res": {
    "blunt": 0.75
   },
-  "text": "obuchowe -25%"
+  "text": "obuchowe -25%",
+  "en": {
+   "name": [
+    "sturdy",
+    "sturdy"
+   ],
+   "text": "blunt -25%"
+  }
  },
  "brittle": {
   "name": [
@@ -37,7 +58,14 @@
   "res": {
    "blunt": 1.4
   },
-  "text": "obuchowe +40%"
+  "text": "obuchowe +40%",
+  "en": {
+   "name": [
+    "brittle bones",
+    "brittle bones"
+   ],
+   "text": "blunt +40%"
+  }
  },
  "fireproof": {
   "name": [
@@ -47,7 +75,14 @@
   "res": {
    "fire": 0.6
   },
-  "text": "ogień -40%"
+  "text": "ogień -40%",
+  "en": {
+   "name": [
+    "fire-hardened",
+    "fire-hardened"
+   ],
+   "text": "fire -40%"
+  }
  },
  "burned": {
   "name": [
@@ -57,7 +92,14 @@
   "res": {
    "fire": 1.4
   },
-  "text": "ogień +40%"
+  "text": "ogień +40%",
+  "en": {
+   "name": [
+    "old burns",
+    "old burns"
+   ],
+   "text": "fire +40%"
+  }
  },
  "venomproof": {
   "name": [
@@ -67,7 +109,14 @@
   "res": {
    "poison": 0.6
   },
-  "text": "trucizna -40%"
+  "text": "trucizna -40%",
+  "en": {
+   "name": [
+    "venom-resistant",
+    "venom-resistant"
+   ],
+   "text": "poison -40%"
+  }
  },
  "allergic": {
   "name": [
@@ -77,7 +126,14 @@
   "res": {
    "poison": 1.4
   },
-  "text": "trucizna +40%"
+  "text": "trucizna +40%",
+  "en": {
+   "name": [
+    "venom-sensitive",
+    "venom-sensitive"
+   ],
+   "text": "poison +40%"
+  }
  },
  "conductive": {
   "name": [
@@ -87,7 +143,14 @@
   "res": {
    "shock": 1.4
   },
-  "text": "porażenie +40%"
+  "text": "porażenie +40%",
+  "en": {
+   "name": [
+    "conductive",
+    "conductive"
+   ],
+   "text": "shock +40%"
+  }
  },
  "grounded": {
   "name": [
@@ -97,6 +160,13 @@
   "res": {
    "shock": 0.7
   },
-  "text": "porażenie -30%"
+  "text": "porażenie -30%",
+  "en": {
+   "name": [
+    "grounded",
+    "grounded"
+   ],
+   "text": "shock -30%"
+  }
  }
 }

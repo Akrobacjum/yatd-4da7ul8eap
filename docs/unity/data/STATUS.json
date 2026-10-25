@@ -3,66 +3,121 @@
   "name": "Spowolniony",
   "short": "spowolnienie",
   "color": "#a9c6ff",
-  "desc": "idzie 3 razy wolniej, pułapki ranią go o 30% mocniej"
+  "desc": "idzie 3 razy wolniej, pułapki ranią go o 30% mocniej",
+  "en": {
+   "name": "Slowed",
+   "short": "slow",
+   "desc": "moves 3× slower, traps hurt them 30% more"
+  }
  },
  "root": {
   "name": "Unieruchomiony",
   "short": "unieruchomienie",
   "color": "#e2c98f",
-  "desc": "stoi w miejscu (najwyżej 5 s, potem 3 s odporności): kolce i wahadło ×1,5, inne pułapki ×1,15; nie kradnie i nie rozbraja"
+  "desc": "stoi w miejscu (najwyżej 5 s, potem 3 s odporności): kolce i wahadło ×1,5, inne pułapki ×1,15; nie kradnie i nie rozbraja",
+  "en": {
+   "name": "Rooted",
+   "short": "rooted",
+   "desc": "stuck in place (at most 5 s, then 3 s immune): Spikes and Pendulum ×1.5, other traps ×1.15; cannot steal or disarm"
+  }
  },
  "burn": {
   "name": "Podpalony",
   "short": "podpalenie",
   "color": "#ff9a3c",
-  "desc": "płonie (rany od ognia co sekundę) i boi się (+2 strachu/s); Oblany zapala się mocniej (Pożar)"
+  "desc": "płonie (rany od ognia co sekundę) i boi się (+2 strachu/s); Oblany pali się mocniej (Pożar)",
+  "en": {
+   "name": "Burning",
+   "short": "burn",
+   "desc": "takes fire damage every second and is scared (+2 fear/s); an Oiled hero burns harder (Blaze)"
+  }
  },
  "bleed": {
   "name": "Krwawiący",
   "short": "krwawienie",
   "color": "#ff5a6a",
-  "desc": "traci krew (kłute co sekundę), zostawia ślad, za którym idzie Ogar; budzi fobię krwi"
+  "desc": "traci krew (kłute co sekundę) i zostawia ślad, za którym idzie Ogar; budzi fobię krwi i kości",
+  "en": {
+   "name": "Bleeding",
+   "short": "bleed",
+   "desc": "loses blood (pierce damage every second) and leaves a trail the Hellhound follows; triggers the blood-and-bones phobia"
+  }
  },
  "poison": {
   "name": "Zatruty",
   "short": "trucizna",
   "color": "#8fd060",
-  "desc": "stosy trucizny (2 rany/s na stos, najwyżej 6); ogień przy 2+ stosach = Detonacja"
+  "desc": "stosy trucizny (2 rany/s na stos, najwyżej 6); ogień przy 2+ stosach = Detonacja",
+  "en": {
+   "name": "Poisoned",
+   "short": "poison",
+   "desc": "poison stacks (2 damage/s each, at most 6); fire at 2+ stacks = Detonation"
+  }
  },
  "oiled": {
   "name": "Oblany",
   "short": "olej",
   "color": "#d6b25a",
-  "desc": "oblany olejem 8 s: następny ogień to Pożar; czasem się poślizgnie"
+  "desc": "oblany olejem na 8 s: następny ogień to Pożar; czasem się poślizgnie",
+  "en": {
+   "name": "Oiled",
+   "short": "oil",
+   "desc": "covered in oil for 8 s: the next fire is a Blaze; may slip"
+  }
  },
  "wet": {
   "name": "Mokry",
   "short": "woda",
   "color": "#6fb7ff",
-  "desc": "mokry 8 s: wolniejszy, ogień rani o połowę i gaśnie, porażenie = Porażenie (reakcja)"
+  "desc": "mokry przez 8 s: wolniejszy, ogień rani o połowę słabiej i gaśnie; Mokry + porażenie = reakcja Porażenie",
+  "en": {
+   "name": "Wet",
+   "short": "water",
+   "desc": "wet for 8 s: slower, fire does half damage and goes out; Wet + shock damage = Shock reaction"
+  }
  },
  "infected": {
   "name": "Zarażony",
   "short": "zaraza",
   "color": "#a8c86a",
-  "desc": "zaraza jak trucizna; zarażony, który zginie, wstaje jako Twój zombie (Powstanie)"
+  "desc": "zaraza działa jak trucizna; zarażony, który zginie, wstaje jako Twój zombie (Powstanie)",
+  "en": {
+   "name": "Infected",
+   "short": "infection",
+   "desc": "works like poison; an Infected hero who dies rises as your zombie (Rise)"
+  }
  },
  "marked": {
   "name": "Naznaczony",
   "short": "znak",
   "color": "#c39bff",
-  "desc": "każdy strach ×1,3, latające potwory biorą go na cel"
+  "desc": "każdy strach ×1,3, latające potwory biorą go na cel",
+  "en": {
+   "name": "Marked",
+   "short": "mark",
+   "desc": "all fear ×1.3, flying monsters target them"
+  }
  },
  "seduced": {
   "name": "Uwiedziony",
   "short": "zew",
   "color": "#ff8ac8",
-  "desc": "idzie do kusicielki i odłącza się od drużyny"
+  "desc": "idzie do kusicielki i odłącza się od drużyny",
+  "en": {
+   "name": "Seduced",
+   "short": "call",
+   "desc": "walks to the Temptress and leaves the party"
+  }
  },
  "dazed": {
   "name": "Oszołomiony",
   "short": "oszołomienie",
   "color": "#efe3a8",
-  "desc": "po upadku: spowolniony"
+  "desc": "po upadku: spowolniony",
+  "en": {
+   "name": "Dazed",
+   "short": "daze",
+   "desc": "after a fall: slowed"
+  }
  }
 }

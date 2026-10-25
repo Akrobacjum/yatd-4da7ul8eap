@@ -384,14 +384,14 @@
   "Za mną! Albo i beze mnie!"
  ],
  "superWait": [
-  "Nie wejdę tam pierwszy. Ten obraz patrzy.",
+  "Nie wejdę tam pierwsz{y|a}. Ten obraz patrzy.",
   "Lustro... Niech ktoś inny wejdzie przodem.",
   "Złe miejsce. Idźcie pierwsi.",
   "Nie lubię tych oczu na ścianie."
  ],
  "secretFound": [
   "Ta ściana jest pusta w środku!",
-  "Ukryte przejście! Wiedziałem!",
+  "Ukryte przejście! Wiedział{em|am}!",
   "Hej, tu jest przejście!",
   "Fałszywy mur! Tędy!",
   "Słyszycie? Tu dudni pusto."
@@ -411,7 +411,7 @@
  "snare": [
   "Noga! Coś mnie trzyma!",
   "Sidła! Nie mogę się ruszyć!",
-  "Pomóżcie, utknąłem!",
+  "Pomóżcie, utknął{em|am}!",
   "Przeklęte wnyki!"
  ],
  "seduced": [
@@ -435,7 +435,7 @@
  "oath": [
   "Nikogo nie zostawiamy!",
   "Za mną, nie ma strachu!",
-  "Przysięgałem was chronić.",
+  "Przysięgał{em|am} was chronić.",
   "Światło idzie z nami!"
  ],
  "dispel": [
@@ -1004,7 +1004,7 @@
  "prepStart": [
   "Stop. Za tymi drzwiami jest pokój śmierci.",
   "Ten pokój to śmiertelna pułapka. Przygotujmy się.",
-  "Tam jest śmiertelnie groźnie. Potrzebujemy planu.",
+  "Tam jest śmiertelnie niebezpiecznie. Potrzebujemy planu.",
   "Ten pokój przed nami to rzeźnia.",
   "Nikt nie wchodzi tam bez planu.",
   "Chwila. Tam czeka coś paskudnego.",
@@ -1688,7 +1688,7 @@
   "Drewno! Mój ulubiony wróg!",
   "Na opał z tym!",
   "Ciach i po meblu!",
-  "Kto tu nastawiał tych gratów?!",
+  "Kto tu naznosił tych gratów?!",
   "Jeden zamach. Może dwa.",
   "Lubię dźwięk pękającego drewna.",
   "Za długo stało. Teraz poleży.",
@@ -1732,7 +1732,7 @@
   "Stać! Trzymamy szyk!",
   "Tchórze nie dostaną złota!",
   "Ani kroku w tył!",
-  "Kto ucieka, ginie w plecy!",
+  "Kto ucieka, dostaje w plecy!",
   "Patrzcie na mnie, nie na wyjście!",
   "Póki stoję, stoimy wszyscy!",
   "Wstyd! Do szeregu!",
@@ -1996,7 +1996,7 @@
   "Nie lubię, jak nie widzę podłogi."
  ],
  "rtSwamp": [
-  "Grzęzniemy w tym błocie!",
+  "Grzęźniemy w tym błocie!",
   "Fuj, bagno...",
   "Nogi mi się zapadają!",
   "Błoto po kolana!",
@@ -2448,9 +2448,9 @@
  ],
  "chat_superstitious": [
   "Nie patrz w to lustro. Nigdy nie patrz.",
-  "Splunąłem przez ramię. Trzy razy.",
+  "Splun{ąłem|ęłam} przez ramię. Trzy razy.",
   "To złowróżbne miejsce, mówię wam.",
-  "Dotknij żelaza, bo przyniesie pecha."
+  "Dotknij żelaza, bo będzie pech."
  ],
  "chat_curious": [
   "Ciekawe, co jest za tymi drzwiami...",

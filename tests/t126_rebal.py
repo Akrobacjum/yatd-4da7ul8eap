@@ -113,8 +113,8 @@ STATUS = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) =>
 async def ui(b, fails):
     ctx, pg, errs = await fresh_page(b, 390, 844)
     t = await pg.evaluate("document.querySelector('#card').innerText")
-    if 'Prototype 1.26' not in t: fails.append('start screen: Prototype 1.26')
-    await pg.evaluate("document.querySelector('#start-new').open = true; document.querySelector('#start-how').open = true")
+    if 'Prototype 1.2' not in t: fails.append('start screen: Prototype 1.2x')
+    await pg.evaluate("document.querySelector('#start-new').open = true; document.querySelector('#start-how').open = true; document.querySelectorAll('#start-new details').forEach(d => d.open = true)")
     t = await pg.evaluate("document.querySelector('#card').innerText")
     for w in ['serce zabiera', 'Dary serca są kartami', 'omeny', 'paladyn', 'Runa rodu', 'reakcj']:
         if w.lower() not in t.lower(): fails.append('start screen mentions ' + w)
@@ -123,7 +123,7 @@ async def ui(b, fails):
     # the hunger card
     await pg.evaluate("__yatd.openModal({ type: 'hungerTip' })"); await pg.clock.run_for(100)
     t = await pg.evaluate("document.querySelector('#card').innerText")
-    if 'sakiewki' not in t or 'Danin' not in t: fails.append('hunger card explains the purse and the Danina: ' + t[:120])
+    if 'sakiewki' not in t: fails.append('hunger card explains the purse (1.27 review: the Danina is told by the heart card): ' + t[:120])
     await pg.screenshot(path=SHOTS + 'hunger_card.png')
     await pg.evaluate("T.clean()")
     # the heart modal

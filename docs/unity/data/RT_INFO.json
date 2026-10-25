@@ -3,54 +3,81 @@
   "name": "Mgła",
   "item": "r_fog",
   "glyph": "≋",
-  "color": "#b9c4d8"
+  "color": "#b9c4d8",
+  "en": {
+   "name": "Fog"
+  }
  },
  "swamp": {
   "name": "Bagno",
   "item": "r_swamp",
   "glyph": "~",
-  "color": "#8fbf6a"
+  "color": "#8fbf6a",
+  "en": {
+   "name": "Swamp"
+  }
  },
  "grotto": {
   "name": "Grota",
   "item": "r_grotto",
   "glyph": ")",
-  "color": "#9fb6ff"
+  "color": "#9fb6ff",
+  "en": {
+   "name": "Grotto"
+  }
  },
  "crypt": {
   "name": "Krypta",
   "item": "r_crypt",
   "glyph": "✝",
-  "color": "#c9b6e8"
+  "color": "#c9b6e8",
+  "en": {
+   "name": "Crypt"
+  }
  },
  "vault": {
   "name": "Sezam",
   "item": "r_vault",
   "glyph": "◆",
-  "color": "#ffd27a"
+  "color": "#ffd27a",
+  "en": {
+   "name": "Vault"
+  }
  },
  "haven": {
   "name": "Sanktuarium",
   "item": "r_haven",
   "glyph": "✚",
-  "color": "#f3e2b0"
+  "color": "#f3e2b0",
+  "en": {
+   "name": "Sanctuary"
+  }
  },
  "gears": {
   "name": "Zębatki",
   "item": "r_gears",
   "glyph": "⚙",
-  "color": "#d6a86a"
+  "color": "#d6a86a",
+  "en": {
+   "name": "Gears"
+  }
  },
  "hush": {
   "name": "Głusza",
   "item": "r_hush",
   "glyph": "◌",
-  "color": "#9aa6bb"
+  "color": "#9aa6bb",
+  "en": {
+   "name": "Hush"
+  }
  },
  "ice": {
   "name": "Lodownia",
   "item": "r_ice",
   "glyph": "❄",
-  "color": "#bfe6ff"
+  "color": "#bfe6ff",
+  "en": {
+   "name": "Icehouse"
+  }
  }
 }

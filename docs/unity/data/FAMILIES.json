@@ -12,7 +12,10 @@
    "mimic"
   ],
   "color": "#c9d5e2",
-  "glyph": "⚙"
+  "glyph": "⚙",
+  "en": {
+   "name": "Mechanisms"
+  }
  },
  "fire": {
   "name": "Ogień",
@@ -23,7 +26,10 @@
    "tar"
   ],
   "color": "#ffa65c",
-  "glyph": "♨"
+  "glyph": "♨",
+  "en": {
+   "name": "Fire"
+  }
  },
  "alch": {
   "name": "Alchemia",
@@ -33,7 +39,10 @@
    "bolt"
   ],
   "color": "#9fe0c8",
-  "glyph": "⚗"
+  "glyph": "⚗",
+  "en": {
+   "name": "Alchemy"
+  }
  },
  "haunt": {
   "name": "Nawiedzenie",
@@ -48,7 +57,10 @@
    "shade"
   ],
   "color": "#a6e8ff",
-  "glyph": "✧"
+  "glyph": "✧",
+  "en": {
+   "name": "Haunting"
+  }
  },
  "undead": {
   "name": "Nieumarli",
@@ -61,7 +73,10 @@
    "lich"
   ],
   "color": "#c9d4b0",
-  "glyph": "☠"
+  "glyph": "☠",
+  "en": {
+   "name": "Undead"
+  }
  },
  "beast": {
   "name": "Bestie",
@@ -72,7 +87,10 @@
    "rats"
   ],
   "color": "#d4cbe8",
-  "glyph": "✳"
+  "glyph": "✳",
+  "en": {
+   "name": "Beasts"
+  }
  },
  "green": {
   "name": "Zielonoskórzy",
@@ -85,7 +103,10 @@
    "warlord"
   ],
   "color": "#a7d060",
-  "glyph": "♣"
+  "glyph": "♣",
+  "en": {
+   "name": "Greenskins"
+  }
  },
  "demons": {
   "name": "Demony",
@@ -96,7 +117,10 @@
    "demon"
   ],
   "color": "#ff7a5a",
-  "glyph": "⛧"
+  "glyph": "⛧",
+  "en": {
+   "name": "Demons"
+  }
  },
  "treasure": {
   "name": "Skarby",
@@ -109,6 +133,9 @@
    "bait"
   ],
   "color": "#f2b94b",
-  "glyph": "◆"
+  "glyph": "◆",
+  "en": {
+   "name": "Treasure"
+  }
  }
 }

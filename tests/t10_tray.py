@@ -11,6 +11,7 @@ async def main():
         while await page.evaluate("__yatd.modalKind"): await page.evaluate("__yatd.closeModal()")
         await page.evaluate("__yatd.run.unlocked.add('cage'); __yatd.run.unlocked.add('fire')")
         await page.click('#tab-traps'); await page.clock.run_for(200)
+        await page.evaluate("__yatd.pickTab('traps', 'cage')"); await page.clock.run_for(100)
         await page.click('#item-cage'); await page.clock.run_for(200)
         print('cls', await page.evaluate("document.querySelector('#tray').className"))
         await page.screenshot(path=OUT+'tray_traps.png')
@@ -32,6 +33,7 @@ async def main():
         # Prototype 1.0: holding a tile shows what it does (and does not pick it); a tap still picks
         fails = []
         await page.click('#tab-traps'); await page.clock.run_for(200)
+        await page.evaluate("__yatd.pickTab('traps', 'spikes')"); await page.clock.run_for(100)
         await page.evaluate("document.querySelector('#tray').scrollLeft = 0"); await page.clock.run_for(200)
         box = await page.evaluate("(() => { const r = document.querySelector('#item-spikes').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()")
         sel0 = await page.evaluate("__yatd.selected")

@@ -3,6 +3,10 @@
   "name": "mikstura",
   "acc": "miksturę",
   "g": "f",
+  "en": {
+   "name": "potion",
+   "acc": "potion"
+  },
   "w": 30,
   "use": "once",
   "kg": 1
@@ -11,6 +15,10 @@
   "name": "talizman",
   "acc": "talizman",
   "g": "m",
+  "en": {
+   "name": "charm",
+   "acc": "charm"
+  },
   "w": 22,
   "use": "power",
   "cd": 20,
@@ -20,6 +28,10 @@
   "name": "amulet",
   "acc": "amulet",
   "g": "m",
+  "en": {
+   "name": "amulet",
+   "acc": "amulet"
+  },
   "w": 16,
   "use": "power",
   "cd": 30,
@@ -29,6 +41,10 @@
   "name": "buty",
   "acc": "buty",
   "g": "pl",
+  "en": {
+   "name": "boots",
+   "acc": "boots"
+  },
   "w": 14,
   "use": "power",
   "cd": 15,
@@ -38,6 +54,10 @@
   "name": "bomba",
   "acc": "bombę",
   "g": "f",
+  "en": {
+   "name": "bomb",
+   "acc": "bomb"
+  },
   "w": 18,
   "use": "once",
   "kg": 2
@@ -46,6 +66,10 @@
   "name": "broń",
   "acc": "broń",
   "g": "f",
+  "en": {
+   "name": "weapon",
+   "acc": "weapon"
+  },
   "w": 14,
   "use": "gear",
   "loot": true,
@@ -55,6 +79,10 @@
   "name": "zbroja",
   "acc": "zbroję",
   "g": "f",
+  "en": {
+   "name": "armour",
+   "acc": "armour"
+  },
   "w": 14,
   "use": "gear",
   "loot": true,
@@ -64,6 +92,10 @@
   "name": "latarnia",
   "acc": "latarnię",
   "g": "f",
+  "en": {
+   "name": "lantern",
+   "acc": "lantern"
+  },
   "w": 0,
   "use": "tool",
   "kg": 1.5,
@@ -73,6 +105,10 @@
   "name": "łom",
   "acc": "łom",
   "g": "m",
+  "en": {
+   "name": "crowbar",
+   "acc": "crowbar"
+  },
   "w": 0,
   "use": "tool",
   "kg": 3,

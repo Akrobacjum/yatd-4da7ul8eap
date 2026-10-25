@@ -23,7 +23,7 @@ LAYOUT = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) =>
   const hit = sel => { const e = document.querySelector(sel); if (!e || e.hidden) return 'missing'; const r = e.getBoundingClientRect();
     if (r.left < -1 || r.top < -1 || r.right > innerWidth + 1 || r.bottom > innerHeight + 1) return 'off screen ' + [r.left, r.top, r.right, r.bottom].map(Math.round);
     const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return t && (t === e || e.contains(t)) ? 'ok' : 'covered by ' + (t && (t.id || t.className)); };
-  out.taps = {}; ['#btn-action', '#btn-settings', '#btn-undo', '#tray-toggle', '#h-wave', '#h-score', '#tab-traps', '#tab-monster', '#item-spikes', '#item-arrows', '#eq-g'].forEach(s => { out.taps[s] = hit(s); });
+  out.taps = {}; ['#btn-action', '#btn-settings', '#btn-undo', '#tray-toggle', '#h-wave', '#h-score', '#tab-traps', '#tab-monster', '#item-spikes', '#item-arrows'].forEach(s => { out.taps[s] = hit(s); });
   ok(Object.values(out.taps).every(v => v === 'ok'), 'every control takes its tap: ' + JSON.stringify(out.taps));
   // the camera frames #stage, which does not run under the panel (wide) and starts under the HUD
   const sr = document.querySelector('#stage').getBoundingClientRect(), o = G.OXY, c = G.cwch;

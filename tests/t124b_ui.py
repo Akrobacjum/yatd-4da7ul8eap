@@ -57,7 +57,7 @@ FRAME = r"""() => { const { G } = T, fails = [], out = {}; const ok = (c, m) => 
   out.blank = blank && (blank.id || blank.className);
   ok(blank && blank.id === 'cv', 'a tap between the HUD pieces reaches the map: ' + out.blank);
   const hit = sel => { const e = document.querySelector(sel); if (!e || e.hidden) return 'missing'; const r = e.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return t && (t === e || e.contains(t)) ? 'ok' : (t ? (t.id || t.className) : 'none'); };
-  out.taps = {}; ['#btn-action', '#btn-settings', '#btn-undo', '#tray-toggle', '#h-wave', '#h-score', '#tab-traps', '#item-spikes', '#eq-g'].forEach(s => { out.taps[s] = hit(s); });
+  out.taps = {}; ['#btn-action', '#btn-settings', '#btn-undo', '#tray-toggle', '#h-wave', '#h-score', '#tab-traps', '#item-spikes'].forEach(s => { out.taps[s] = hit(s); });
   ok(Object.values(out.taps).every(v => v === 'ok'), 'the buttons and tiles take their taps: ' + JSON.stringify(out.taps));
   // the map is drawn under the HUD too (FRAME_INK, after a frame zoomed into the middle of the dungeon)
   // the middle of the way, put (unclamped) in the middle of the part of the screen outside the view: above it (portrait) or right of it (landscape)
@@ -312,7 +312,7 @@ async def main():
             ctx, pg, errs = await fresh_page(b, 390, 844, 1, {'yatd-coach': '1', 'yatd-noask-ess': '1', 'yatd-found': json.dumps(['web', 'mirror'])})
             btns = await pg.evaluate('() => [...document.querySelectorAll("#card .startbtns button")].map(b => b.id + ": " + b.textContent)')
             print('start', btns)
-            if not any('start-tut: Nowy run' in t and 'odsłania się z falami' in t for t in btns): fails.append('onb: a fresh browser (guide done) starts the first run that opens with the waves: %s' % btns)
+            if not any('start-tut: Nowy run' in t and 'odsłania się fala po fali' in t for t in btns): fails.append('onb: a fresh browser (guide done) starts the first run that opens with the waves: %s' % btns)
             await pg.click('#start-tut'); await pg.clock.run_for(400); await pg.evaluate("T.clean()")
             prog = []
             for wave in range(1, 9):

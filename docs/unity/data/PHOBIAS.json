@@ -1,6 +1,9 @@
 {
  "fire": {
   "name": "ogień",
+  "en": {
+   "name": "fire"
+  },
   "attrs": [
    "fire",
    "powder"
@@ -15,6 +18,9 @@
  },
  "spiders": {
   "name": "pająki",
+  "en": {
+   "name": "spiders"
+  },
   "attrs": [
    "spider",
    "web"
@@ -26,6 +32,9 @@
  },
  "closed": {
   "name": "ciasnota",
+  "en": {
+   "name": "tight spaces"
+  },
   "attrs": [
    "cage",
    "trapdoor",
@@ -42,6 +51,9 @@
  },
  "ghosts": {
   "name": "duchy",
+  "en": {
+   "name": "ghosts"
+  },
   "attrs": [
    "ghost",
    "portrait",
@@ -57,6 +69,9 @@
  },
  "blood": {
   "name": "krew i kości",
+  "en": {
+   "name": "blood and bones"
+  },
   "srcs": [
    "death"
   ],
@@ -69,6 +84,9 @@
  },
  "dark": {
   "name": "ciemność",
+  "en": {
+   "name": "darkness"
+  },
   "dark": true,
   "attrs": [
    "shade",
@@ -81,6 +99,9 @@
  },
  "dead": {
   "name": "umarli",
+  "en": {
+   "name": "the dead"
+  },
   "attrs": [
    "skeleton",
    "zombie",
@@ -104,6 +125,9 @@
  },
  "abyss": {
   "name": "otchłań",
+  "en": {
+   "name": "the abyss"
+  },
   "attrs": [
    "trapdoor",
    "falsedoor",
@@ -117,6 +141,9 @@
  },
  "noise": {
   "name": "hałas",
+  "en": {
+   "name": "noise"
+  },
   "attrs": [
    "creak",
    "musicbox",
@@ -137,6 +164,9 @@
  },
  "swarm": {
   "name": "roje",
+  "en": {
+   "name": "swarms"
+  },
   "attrs": [
    "bats",
    "rats",

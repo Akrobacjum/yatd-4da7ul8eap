@@ -51,7 +51,7 @@ async def main():
         await page.clock.run_for(800)
         print('wave buttons', await page.evaluate("[...document.querySelectorAll('#card .btn')].map(b => b.innerText.replace(/\\n/g,' / ')).slice(0, 12)"))
         # save and quit from the summary
-        await page.evaluate("[...document.querySelectorAll('#card button')].find(b => b.innerText.startsWith('Zapisz i wyjdź')).click()"); await page.clock.run_for(300)
+        await page.evaluate("[...document.querySelectorAll('#card button')].find(b => /^(Zapisz i wyjdź|Wyjdź)/.test(b.innerText)).click()"); await page.clock.run_for(300)
         print('after save&quit modal', await page.evaluate("__yatd.modalKind"), 'continue', await page.evaluate("!!document.querySelector('#start-continue')"))
         await page.screenshot(path=OUT+'25_start_continue.png')
         # reload the page: the save must survive

@@ -152,8 +152,8 @@ EV = r"""([docs, reps]) => { const { G } = T, fails = [], out = { n: 0, agg: {} 
     }
   } });
   ['bets', 'quarrels', 'mutinies', 'rifts', 'griefs', 'lastStands', 'rivalMock', 'handOvers'].forEach(k => ok((out.agg[k] || 0) > 0, 'happens in organic waves: ' + k));
-  const F = [...T.floatTexts]; out.floats = ['Zakład!', 'Kłótnia!', 'Bunt!', 'Rozłam', 'Obrażony', 'Obrażona', 'Ostatni bastion!', 'Przekazuje kryształ', 'Żałoba', 'Drwina', 'Zemsta!'].filter(t => F.includes(t));
-  ['Zakład!', 'Kłótnia!', 'Bunt!', 'Ostatni bastion!', 'Przekazuje kryształ', 'Żałoba', 'Drwina'].forEach(t => ok(F.includes(t), 'the float shows: ' + t));
+  const F = [...T.floatTexts]; out.floats = ['Zakład!', 'Kłótnia!', 'Bunt!', 'Rozłam', 'Obrażony', 'Obrażona', 'Ostatni bastion!', 'Oddaje kryształ', 'Żałoba', 'Drwina', 'Zemsta!'].filter(t => F.includes(t));
+  ['Zakład!', 'Kłótnia!', 'Bunt!', 'Ostatni bastion!', 'Oddaje kryształ', 'Żałoba', 'Drwina'].forEach(t => ok(F.includes(t), 'the float shows: ' + t));
   ok(F.includes('Rozłam') || F.includes('Obrażony') || F.includes('Obrażona'), 'the rift float shows');
   ok(!(out.agg.forcedOut > 0), 'nobody forced out in organic waves: ' + (out.agg.forcedOut || 0));
   return { fails, out }; }"""

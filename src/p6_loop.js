@@ -299,7 +299,8 @@
       if (fire(it, mods.okPw)) { fl.stats.calmAuto = (fl.stats.calmAuto || 0) + 1; bt(it.type).ok++; shapeStat(CHECK_SHAPE[it.type] || 'bar', 'auto'); }
     }
   }
-  const SHAPE_NAME = { bar: 'pasek', ring: 'tarcza', fuse: 'lont', double: 'podwójna tarcza', spiral: 'spirala', pulse: 'krąg', swing: 'wahadło' };
+  const SHAPE_NAME = L({ bar: 'pasek', ring: 'tarcza', fuse: 'lont', double: 'podwójna tarcza', spiral: 'spirala', pulse: 'krąg', swing: 'wahadło' },
+    { bar: 'bar', ring: 'dial', fuse: 'fuse', double: 'double dial', spiral: 'spiral', pulse: 'ring', swing: 'pendulum' });
   const SHAPE_DUR = { bar: 1, ring: 1.15, pulse: 0.95, swing: 1.55, fuse: 1.25, double: 1.2, spiral: 1.25 }, LVL_ZONE = [1, 1, 1.15, 1.3];
   // Swing: there and back (two passes). It speeds up towards the middle and slows near the ends (±35%), a pendulum.
   // v12 had three passes of a full pendulum (20% crits in the real run), v12.1 two slow ones (86%, "too slow").
@@ -369,20 +370,20 @@
         lethalOk: all.some(o => lethalFor(o, mods.okPw)), lethalCrit: all.some(o => lethalFor(o, mods.critPw)), result: null, resT: 0 };
       fl.stats.checks++; all.forEach(o => { bt(o.type).checks++; });
       if (extra.length) { fl.stats.volleys = (fl.stats.volleys || 0) + 1; fl.stats.volleyTraps = (fl.stats.volleyTraps || 0) + extra.length; }
-      fl.check.note = [inA.some(h => h.state === 'disarm' && h.item === it) ? 'rozbraja ją!' : '',
-        inA.some(h => h.crystal) ? 'niesie kryształ!' : '',
-        it.type === 'spikes' && inA.some(held) ? 'stoi: ×1,5' : '',
-        inA.some(caged) ? 'w klatce +50%' : '',
-        inA.some(webbed) && it.type !== 'web' ? 'w sieci +30%' : '',
-        it.type === 'spikes' && mods.stickySpikes && inA.some(webbed) ? 'lepkie kolce ×' + (1 + mods.stickySpikes) : '',
-        calmReady(it) ? 'cisza ×' + (1 + mods.calmStorm) : '',
-        TRAPS[it.type] && mods.bloodRite && fl.stats.kills ? 'krew ×' + fmt2(1 + mods.bloodRite * fl.stats.kills) : '',
-        inA.some(h => h.type === 'warrior' && fl.time < h.shieldUpUntil) ? 'tarcza -' + Math.round((1 - Math.min(...inA.filter(h => h.type === 'warrior' && fl.time < h.shieldUpUntil).map(h => h.R.shield))) * 100) + '%' : '',
-        inA.some(h => h.fear >= 0.6 * h.courage) ? 'blisko ucieczki' : '',
-        inA.some(h => fl.time < h.wardUntil) ? 'talizman' : '',
-        maxL >= 12 ? 'poz. ' + maxL + ': szybciej' : ''].filter(Boolean).join(' · ');
+      fl.check.note = [inA.some(h => h.state === 'disarm' && h.item === it) ? L('rozbraja ją!', 'disarming it!') : '',
+        inA.some(h => h.crystal) ? L('niesie kryształ!', 'has the crystal!') : '',
+        it.type === 'spikes' && inA.some(held) ? L('stoi: ×', 'standing: ×') + dec(1.5) : '',
+        inA.some(caged) ? L('w klatce +50%', 'caged +50%') : '',
+        inA.some(webbed) && it.type !== 'web' ? L('w sieci +30%', 'webbed +30%') : '',
+        it.type === 'spikes' && mods.stickySpikes && inA.some(webbed) ? L('lepkie kolce ×', 'sticky spikes ×') + dec(1 + mods.stickySpikes) : '',
+        calmReady(it) ? L('cisza ×', 'calm ×') + dec(1 + mods.calmStorm) : '',
+        TRAPS[it.type] && mods.bloodRite && fl.stats.kills ? L('krew ×', 'blood ×') + fmt2(1 + mods.bloodRite * fl.stats.kills) : '',
+        inA.some(h => h.type === 'warrior' && fl.time < h.shieldUpUntil) ? L('tarcza -', 'shield -') + Math.round((1 - Math.min(...inA.filter(h => h.type === 'warrior' && fl.time < h.shieldUpUntil).map(h => h.R.shield))) * 100) + '%' : '',
+        inA.some(h => h.fear >= 0.6 * h.courage) ? L('blisko ucieczki', 'about to flee') : '',
+        inA.some(h => fl.time < h.wardUntil) ? L('talizman', 'charm') : '',
+        maxL >= 12 ? L('poz. ' + maxL + ': szybciej', 'lvl ' + maxL + ': faster') : ''].filter(Boolean).join(' · ');
       sfx('warn');
-      if (run.checkHints > 0 && run.tut < 0) { run.checkHints--; setHint('Skill check: po "Uwaga!" stuknij w MAPĘ. Obwódka = draśnięcie, pełne pole = krytyk, czaszka = ktoś zginie. Trafiony wynik pułapka pamięta także w kolejnych falach (znaczek na polu) i dalej bije sama.'); }
+      if (run.checkHints > 0 && run.tut < 0) { run.checkHints--; setHint(L('Skill check: po "Uwaga!" stuknij mapę. Obwódka to draśnięcie, wypełniona strefa to krytyk, czaszka znaczy, że ktoś zginie. Pułapka pamięta trafiony wynik, też w kolejnych falach, i dalej bije sama.', 'Skill check: after "Watch out!", tap the map. The outline is a graze, the filled zone a crit, a skull means someone dies. The trap remembers a hit, in later waves too, and keeps striking on its own.')); }
       if (run.tut >= 0) tutEvent('check');
       return;
     }
@@ -405,10 +406,10 @@
     if (run.tut >= 0) tutEvent('resolved');
     // 1.04: a tester grazed 37 times in a row and never aimed at the crit: after 6 checks without one, say it once a run
     if (res === 'crit') run.noCrit = 0; else run.noCrit = (run.noCrit || 0) + 1;
-    if (run.noCrit >= 6 && !run.critHinted) { run.critHinted = true; setHint('Celuj w pełne pole: krytyk bije ok. 2,5 raza mocniej niż draśnięcie (obwódka).'); }
+    if (run.noCrit >= 6 && !run.critHinted) { run.critHinted = true; setHint(L('Celuj w wypełnioną strefę: krytyk bije ok. 2,5 raza mocniej niż draśnięcie (obwódka).', 'Aim for the filled zone: a crit hits about 2.5 times harder than a graze (the outline).')); }
     if (res === 'miss') {
       all.forEach(o => { o.cd = cdOf(o.type) * 0.5 || 1; });
-      floatTile(c.it.x, c.it.y, 'Pudło', '#a69bbb', 15, -0.8); fl.stats.checkMiss++;
+      floatTile(c.it.x, c.it.y, L('Pudło', 'Miss'), '#a69bbb', 15, -0.8); fl.stats.checkMiss++;
       tutSpikeSure(c);   // 1.24 (B, P1-5)
       return;
     }
@@ -418,12 +419,12 @@
     fire(c.it, pw, { lock: lk(c.it) });
     (c.extra || []).forEach(o => { if (fl.items.get(key(o.x, o.y)) === o && !o.disabled && !(o.jamUntil > fl.time) && !(MONSTERS[o.type] && o.hp <= 0)) fire(o, pw, { lock: lk(o) }); });
     if (res === 'crit') {
-      fl.stats.checkCrit++; shake = Math.max(shake, 0.22); floatTile(c.it.x, c.it.y, all.length > 1 ? 'SERIA: KRYTYK!' : 'KRYTYK!', '#ff6b6b', 19, -1.2);
+      fl.stats.checkCrit++; shake = Math.max(shake, 0.22); floatTile(c.it.x, c.it.y, all.length > 1 ? L('SERIA: KRYTYK!', 'VOLLEY CRIT!') : L('KRYTYK!', 'CRIT!'), '#ff6b6b', 19, -1.2);
       victims.forEach(h => {   // a critical knocks a piece of gear out of the hero's pack (v13: no Esencja for it, so loot is a risk again)
         if (h.dead || !h.inv.length) return;
         const lost = h.inv.splice(rand(0, h.inv.length - 1), 1)[0];
         const q = heroPos(h); burst(q.x, q.y, rarColor(lost.r), 10);
-        floatHero(h, G3(HITEMS[lost.type].g, 'Wypadł', 'Wypadła', 'Wypadły') + ' ' + HITEMS[lost.type].name + '!', '#c3b2ff', 14, -1.0);
+        floatHero(h, L(G3(HITEMS[lost.type].g, 'Wypadł', 'Wypadła', 'Wypadły') + ' ' + HITEMS[lost.type].name + '!', 'Dropped ' + HITEMS[lost.type].name + '!'), '#c3b2ff', 14, -1.0);
         // 1.20: it lands next to him (it used to vanish), no greed for it, and he wants it back (lootDecision); no room: gone as before
         if (dropItem(h, lost, 0, true, { knocked: true })) {
           fl.stats.gearKnocked = (fl.stats.gearKnocked || 0) + 1; tl('kn', h.id, lost.type);
@@ -431,7 +432,7 @@
         }
       });
     }
-    else { fl.stats.checkOk++; floatTile(c.it.x, c.it.y, 'Draśnięcie', '#8be38f', 14, -1.2); }
+    else { fl.stats.checkOk++; floatTile(c.it.x, c.it.y, L('Draśnięcie', 'Graze'), '#8be38f', 14, -1.2); }
   }
   function skipCheck() {
     const c = fl.check; if (!c || c.result) return;
@@ -450,7 +451,7 @@
     if (fl.items.get(key(it.x, it.y)) !== it || it.disabled) return false;
     it.tutSure = true; it.cd = 0; it.skipUntil = 0; it.jamUntil = 0;
     const ok = fire(it, mods.okPw, { lock: c.lock && c.lock.get(it) });
-    if (ok) { floatTile(it.x, it.y, 'Kolce i tak kłują', '#ffd27a', 13, -1.3); fl.stats.tutSpike = (fl.stats.tutSpike || 0) + 1; }
+    if (ok) { floatTile(it.x, it.y, L('Kolce i tak kłują', 'Spikes strike anyway'), '#ffd27a', 13, -1.3); fl.stats.tutSpike = (fl.stats.tutSpike || 0) + 1; }
     return ok;
   }
   function clearCheck() { fl.check = null; fl.checkGap = fl.time + 0.25; if (calmChecks()) fl.calmUntil = fl.time + S.calmGap; }   // 1.24 (D, P1-3): the calm gap
@@ -469,13 +470,13 @@
     if (!carrier) return;
     carrier.crystal = true; carrier.fleeing = false; P.carrierId = carrier.id; P.plan = 'escape'; P.steal = 0;
     fl.stats.crystalTaken++; tl('ct', carrier.id); buzz(70);
-    floatTile(fl.heart.x, fl.heart.y, 'Kryształ skradziony!', '#ff6b6b', 18, -1.2); shake = Math.max(shake, 0.2);
+    floatTile(fl.heart.x, fl.heart.y, L('Kryształ skradziony!', 'Crystal stolen!'), '#ff6b6b', 18, -1.2); shake = Math.max(shake, 0.2);
     say(carrier, pick(SAY.steal), 4, 2.2);
     alive().forEach(h => {   // 1.17: those who see it or hear it head out (h.plan); the rest learn when they rejoin
       if (h !== carrier && !perceives(h, carrier, true)) return;
       h.plan = 'escape'; if (h.state === 'boss' || h.state === 'rest' || h.state === 'talk') h.state = 'walk'; h.needPlan = true; if (h !== carrier && Math.random() < 0.4) say(h, pick(SAY.escape), 2);
     });
-    if (!tutPop('theft')) setHint('Kryształ skradziony! Zabij niosącego, zanim dojdzie do wyjścia, a kryształ wróci do serca.');
+    if (!tutPop('theft')) setHint(L('Kryształ skradziony! Zabij niosącego, zanim dojdzie do wyjścia, a kryształ wróci do serca.', 'Crystal stolen! Kill the carrier before they reach the exit and the crystal returns to the heart.'));
   }
   const stealNeed = () => (5 + 1.5 * (mods.heavyCrystal || 0)) / Math.pow(2, mods.glass);   // Szklane serce: the crystal comes loose 2 times faster per copy; 1.26: 5 s (was 4), Ciężki kryształ +1,5 s
   function step(dt) {
@@ -544,14 +545,14 @@
     if (atHeart.length && P.plan === 'assault' && fl.ending === null) {
       // 1.26 (5.4) Ostatni zryw: one of them below 30% HP: the whole group pries x1,5 (desperation)
       const zryw = atHeart.some(h => h.hp < 0.3 * h.max);
-      if (zryw && !fl.zrywSaid) { fl.zrywSaid = true; const d = atHeart.find(h => h.hp < 0.3 * h.max); floatHero(d, 'Ostatni zryw!', '#ff9a3c', 15, -1); say(d, pick(SAY.lastPush), 4, 2); fl.stats.lastPush = (fl.stats.lastPush || 0) + 1; }
+      if (zryw && !fl.zrywSaid) { fl.zrywSaid = true; const d = atHeart.find(h => h.hp < 0.3 * h.max); floatHero(d, L('Ostatni zryw!', 'Last push!'), '#ff9a3c', 15, -1); say(d, pick(SAY.lastPush), 4, 2); fl.stats.lastPush = (fl.stats.lastPush || 0) + 1; }
       P.steal += dt * (1 + 0.5 * (atHeart.length - 1)) * (zryw ? 1.5 : 1);
       fl.stats.stealMax = Math.max(fl.stats.stealMax || 0, P.steal / stealNeed());
       fl.heartHit = 0.12;
       damage(atHeart[0], 5 * dt, HEART);
       // 1.26 (5.4) Serce krzyczy: from wave 2 every thief at the heart (not a boss, not a cultist) loses 6% of his courage a second to fear
       if (run.wave >= 2) atHeart.forEach(h => { if (!h.boss && h.type !== 'cultist') addFear(h, (0.06 + (mods.heartCry || 0)) * h.courage * dt * (omenK(run.wave, 'heartCry') || 1), null, 'heartcry'); });
-      if (run.wave >= 2 && !fl.cryShown) { fl.cryShown = true; floatTile(fl.heart.x, fl.heart.y, 'Serce krzyczy!', '#ff9ab0', 15, -1.6); tutPop('heartCry'); }
+      if (run.wave >= 2 && !fl.cryShown) { fl.cryShown = true; floatTile(fl.heart.x, fl.heart.y, L('Serce krzyczy!', 'Heart screams!'), '#ff9ab0', 15, -1.6); tutPop('heartCry'); }
       // 1.05 (author: wave 1 should not be able to take a crystal even from an empty dungeon): the heart will not let the first
       // party have it. It burns their courage and the crystal does not come loose; sooner or later they run
       // (a replay of an empty dungeon: without giving up they circled the heart for 100 s, panicking and coming back)
@@ -559,7 +560,7 @@
         atHeart.forEach(h => addFear(h, 0.3 * h.courage * dt, null, 'heart'));
         if (P.steal >= 0.85 * stealNeed()) {
           P.steal = 0.85 * stealNeed(); fl.stats.repelled = 1;
-          say(atHeart[0], pick(SAY.heartRepel), 4, 2.2); floatTile(fl.heart.x, fl.heart.y, 'Serce ich odpycha!', '#ff9ab0', 15, -1);
+          say(atHeart[0], pick(SAY.heartRepel), 4, 2.2); floatTile(fl.heart.x, fl.heart.y, LL('Serce ich odpycha!', 'Heart repels them!'), '#ff9ab0', 15, -1);
           atHeart.forEach(h => { addFear(h, 0.4 * h.courage, null, 'heart'); if (!h.fleeing && !h.dead) startFlee(h); });
           P.plan = 'leave'; alive().forEach(h => { h.needPlan = true; if (h.state === 'rest' || h.state === 'talk' || h.state === 'boss') h.state = 'walk'; });
           const L = atHeart.find(h => !h.fleeing && !h.dead) || alive().find(h => !h.fleeing && atHeart.some(a => canHear(h, a))); if (L) say(L, pick(SAY.leave), 3);   // 1.17: one who was there
@@ -569,7 +570,7 @@
       if (P.steal >= stealNeed()) { const by = alive().filter(h => h.state === 'boss'); if (by.length) takeCrystal(by); }
     }
     // 1.26 Kultysta: Spijanie: he takes back what the heart already ate (fl.fed), 6 x (1 + 0,05 L) a second; it has to be fed again
-    { const dr = alive().filter(h => h.state === 'drink'); if (dr.length && fl.ending === null) dr.forEach(h => { const x = Math.min(fl.fed, 6 * (1 + 0.05 * h.lvl) * dt); if (x > 0) { fl.fed -= x; h.drank = (h.drank || 0) + x; fl.stats.essDrained = (fl.stats.essDrained || 0) + x; fl.heartHit = 0.12; if (fl.time - (h.drinkFT || -9) > 1.5) { if (!h.drinkSaid || Math.random() < 0.15) { h.drinkSaid = true; say(h, pick(SAY.cultDrink), 2); } h.drinkFT = fl.time; floatTile(fl.heart.x, fl.heart.y, 'Spija −' + fmtE(x / dt * 1.5), '#c86a7a', 13, -1.1); } } }); }
+    { const dr = alive().filter(h => h.state === 'drink'); if (dr.length && fl.ending === null) dr.forEach(h => { const x = Math.min(fl.fed, 6 * (1 + 0.05 * h.lvl) * dt); if (x > 0) { fl.fed -= x; h.drank = (h.drank || 0) + x; fl.stats.essDrained = (fl.stats.essDrained || 0) + x; fl.heartHit = 0.12; if (fl.time - (h.drinkFT || -9) > 1.5) { if (!h.drinkSaid || Math.random() < 0.15) { h.drinkSaid = true; say(h, pick(SAY.cultDrink), 2); } h.drinkFT = fl.time; floatTile(fl.heart.x, fl.heart.y, L('Spija −', 'Drinks −') + fmtE(x / dt * 1.5), '#c86a7a', 13, -1.1); } } }); }
     if (fl.heartHit > 0) fl.heartHit -= dt;
     // 1.12.1: patience runs at half speed while the party talks it over or rests (longer scenes do not cut their search short)
     fl.patT = (fl.patT || 0) + dt * (fl.time < fl.party.talkUntil || (fl.party.plan === 'retreat' && fl.party.restSince > 0) ? 0.5 : 1);
@@ -983,7 +984,7 @@
   }
   function updateZoomBtn() {
     const b = $('#btn-zoom'); if (!b) return; const zoomedOut = cam.s < buildScale() * 0.92;
-    b.setAttribute('aria-label', zoomedOut ? 'Przybliż' : 'Pokaż cały loch');
+    b.setAttribute('aria-label', zoomedOut ? L('Przybliż', 'Zoom in') : L('Pokaż cały loch', 'Show the whole dungeon'));
     b.innerHTML = zoomedOut
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';

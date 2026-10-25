@@ -1,6 +1,9 @@
 [
  {
   "id": "traps",
+  "en": {
+   "label": "Traps"
+  },
   "label": "Pułapki",
   "items": [
    "spikes",
@@ -32,35 +35,53 @@
   "subs": [
    {
     "id": "dmg",
-    "label": "Rany",
+    "en": {
+     "label": "Hurt"
+    },
+    "label": "Ranią",
     "items": [
      "spikes",
      "arrows",
-     "web",
      "trapdoor",
-     "cage",
      "fire",
-     "gate",
      "powder",
      "mimic",
      "pendulum",
-     "snare"
-    ]
-   },
-   {
-    "id": "stat",
-    "label": "Statusy",
-    "items": [
-     "oilslick",
-     "tar",
-     "miasma",
-     "flood",
      "bolt"
     ]
    },
    {
+    "id": "hold",
+    "en": {
+     "label": "Bind"
+    },
+    "label": "Trzymają",
+    "items": [
+     "web",
+     "cage",
+     "gate",
+     "snare"
+    ]
+   },
+   {
+    "id": "weak",
+    "en": {
+     "label": "Weaken"
+    },
+    "label": "Osłabiają",
+    "items": [
+     "oilslick",
+     "tar",
+     "miasma",
+     "flood"
+    ]
+   },
+   {
     "id": "fear",
-    "label": "Strach",
+    "en": {
+     "label": "Scare"
+    },
+    "label": "Straszą",
     "items": [
      "portrait",
      "eyes",
@@ -77,21 +98,24 @@
  },
  {
   "id": "monster",
+  "en": {
+   "label": "Monsters"
+  },
   "label": "Potwory",
   "items": [
    "goblin",
-   "archer",
-   "spider",
    "ogre",
-   "shaman",
-   "sapper",
-   "warlord",
+   "spider",
    "rats",
    "skeleton",
    "zombie",
-   "lich",
    "hound",
    "demon",
+   "archer",
+   "shaman",
+   "sapper",
+   "warlord",
+   "lich",
    "ghost",
    "shade",
    "bats",
@@ -101,32 +125,41 @@
   "subs": [
    {
     "id": "dmg",
-    "label": "Rany",
+    "en": {
+     "label": "Fight"
+    },
+    "label": "Walczą",
     "items": [
      "goblin",
-     "archer",
-     "spider",
      "ogre",
-     "shaman",
-     "sapper",
-     "warlord",
-     "rats"
-    ]
-   },
-   {
-    "id": "dark",
-    "label": "Mrok",
-    "items": [
+     "spider",
+     "rats",
      "skeleton",
      "zombie",
-     "lich",
      "hound",
      "demon"
     ]
    },
    {
+    "id": "sup",
+    "en": {
+     "label": "Support"
+    },
+    "label": "Wspierają",
+    "items": [
+     "archer",
+     "shaman",
+     "sapper",
+     "warlord",
+     "lich"
+    ]
+   },
+   {
     "id": "fear",
-    "label": "Strach",
+    "en": {
+     "label": "Scare"
+    },
+    "label": "Straszą",
     "items": [
      "ghost",
      "shade",
@@ -139,6 +172,9 @@
  },
  {
   "id": "loot",
+  "en": {
+   "label": "Loot"
+  },
   "label": "Łup",
   "items": [
    "loot",
@@ -151,6 +187,9 @@
  },
  {
   "id": "object",
+  "en": {
+   "label": "Objects"
+  },
   "label": "Obiekty",
   "items": [
    "crate",
@@ -166,6 +205,9 @@
  },
  {
   "id": "dungeon",
+  "en": {
+   "label": "Dungeon"
+  },
   "label": "Loch",
   "items": [
    "dig",
@@ -201,6 +243,9 @@
   "subs": [
    {
     "id": "dig",
+    "en": {
+     "label": "Dig"
+    },
     "label": "Kopanie",
     "items": [
      "dig",
@@ -212,6 +257,9 @@
    },
    {
     "id": "kind",
+    "en": {
+     "label": "Lairs"
+    },
     "label": "Komnaty",
     "items": [
      "k_goblin",
@@ -233,7 +281,10 @@
    },
    {
     "id": "effect",
-    "label": "Efekty",
+    "en": {
+     "label": "Mood"
+    },
+    "label": "Klimat",
     "items": [
      "r_fog",
      "r_swamp",
@@ -250,6 +301,9 @@
  },
  {
   "id": "deck",
+  "en": {
+   "label": "Deck"
+  },
   "label": "Talia",
   "items": []
  }
