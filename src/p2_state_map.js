@@ -37,13 +37,19 @@
   let modalOpen = false, modalQueue = [], modalKind = null, curModal = null;
   let floats = [], particles = [], shake = 0, realNow = 0;
   const cam = { s: 24, ox: 0, oy: 0, manualUntil: 0 };
+  // 1.28.0: graphics quality. GFX.mode 'auto' | 'full' | 'eco' (Settings), GFX.lvl the level in use: 0 full, 1 fewer small details,
+  // 2 the fewest (and a lower canvas resolution, GFX.scale). detT(T) is the tile size the detail thresholds compare with: the real one
+  // at level 0, smaller at levels 1 and 2, so the existing `T >= n` checks drop their details sooner.
+  const GFX = { mode: 'auto', lvl: 0, scale: 1 };
+  const detT = T => GFX.lvl ? T * (GFX.lvl === 1 ? 0.7 : 0.45) : T;
   let cw = 0, ch = 0, DPR = 1, coachInset = 0;   // 1.04: coachInset = how much of the map's top the tutorial coach covers
   let UIZ = 1;   // 1.25: how much bigger the interface is on a big screen (1 on a phone, up to 1,3 on a tablet or a computer; applyLayout)
   const PC = () => document.documentElement.classList.contains('mouse');   // 1.25: played with a mouse (the texts say click and hover)
   let OX = 0, OY = 0, FW = 0, FH = 0;   // 1.24 (B): the canvas covers the whole screen (FW x FH); the camera's view (cw x ch, #stage) starts at OX, OY in it
 
   const $ = s => document.querySelector(s);
-  const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+  const cv = $('#cv'), stage = $('#stage');
+  let ctx = cv.getContext('2d');   // 1.28.0: let, so the wall cache can paint a block into its own canvas (wcBuild)
 
   const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

@@ -8,6 +8,7 @@
   }
   function draw() {
     fearRN = 0;   // 1.24 (B, P1-4): the fear bars of this frame
+    DRAWN.wh = 0; DRAWN.wb = 0; DRAWN.wl = 0;   // 1.28.0: wall cache telemetry (stamps pasted, made, blocks drawn live)
     ctx.setTransform(DPR, 0, 0, DPR, DPR * OX, DPR * OY);   // 1.24 (B): the view's corner is at OX, OY of the canvas
     ctx.fillStyle = '#060709'; ctx.fillRect(-OX, -OY, FW, FH);
     if (!fl) return;
@@ -230,6 +231,7 @@
   // among what stands (a high wall can hide it)
   function drawWalls(x0, y0, x1, y1, T, wallItems) {
     wallTick();
+    wcFrame(T);   // 1.28.0
     const H = WA.cur, ups = [], lips = [];
     const quad = (a, b, c, d) => { ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath(); };
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
@@ -264,19 +266,140 @@
       run.forEach(i => { const e = wallPaths(i, H[i], sOpen(i), eOpen(i)); if (e.S) PS.addPath(e.S); if (e.E) PE.addPath(e.E); PM.addPath(e.M); PT.addPath(e.T); if (e.G) PG.addPath(e.G); });
       ctx.save(); viewT();
       ctx.fillStyle = WALL_S; ctx.fill(PS); ctx.fillStyle = WALL_E; ctx.fill(PE);
-      if (T >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1 / cam.s; ctx.stroke(PM); }
+      if (detT(T) >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1 / cam.s; ctx.stroke(PM); }   // 1.28.0: detT (GFX.lvl)
       ctx.fillStyle = WALL_TOP; ctx.fill(PT);
       ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1 / cam.s; ctx.stroke(PG);
       ctx.restore(); ctx.fillStyle = WALL_TOP; ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1;   // (the state the old code left)
-      run.forEach(i => wallDressing(i, T));
+      run.forEach(i => wcBlock(i, T, false));   // 1.28.0: the dressing from the wall cache (the faces stay one batch: no seams between plain blocks)
       run = [];
     };
-    for (let k = a; k < b; k++) {
-      const i = list[k].i;
-      if (WA.moving.has(i) && WA.pp[i] > 0) { flush(); drawBlockPop(i, T); wallDressing(i, T); }
-      else if (wallUp(H[i])) { if (KWs.top[i] || KWs.s[i] || KWs.e[i]) { flush(); drawKindBlock(i, T); wallDressing(i, T); } else run.push(i); }   // 1.15: a komnata's block by itself
+    const ox = cam.ox, oy = cam.oy; if (WC.snap) { cam.ox = WC.cox; cam.oy = WC.coy; }   // 1.28.0: the walls on whole device pixels (wcFrame)
+    try {
+      for (let k = a; k < b; k++) {
+        const i = list[k].i;
+        if (WA.moving.has(i) && WA.pp[i] > 0) { flush(); drawBlockPop(i, T); wallDressing(i, T); DRAWN.wl++; }
+        else if (wallUp(H[i])) { if (KWs.top[i] || KWs.s[i] || KWs.e[i]) { flush(); wcBlock(i, T, true); } else run.push(i); }   // 1.15: a komnata's block by itself (1.28.0: from the wall cache)
+      }
+      flush();
+    } finally { cam.ox = ox; cam.oy = oy; }
+  }
+  /* ================= 1.28.0: the wall cache ================= */
+  // (analysis 26.10: the walls were 30-40% of a frame, every block drawn every frame.) What does not move on a standing block (its
+  // faces and top in a komnata's stuff, the crown, the decor and the raised pieces, the room effect's wash, a torch's sconce) is
+  // painted once into a small canvas of its own (a stamp) and pasted in the same place of the depth order. What moves (flames, a
+  // swaying curtain, a turning cog, glints, the wall traps) is drawn live over it in its old order: a block's drawing is a list of
+  // parts, each still (wS) or live (wL); the still parts after a live one go into the block's next stamp, pasted after it.
+  // wcBlock runs a block in one of three passes: 0 everything live (as before), 1 painting its stamps (wcBuild), 2 pasting them and
+  // drawing its live parts. A stamp is made for the block's state (open faces, a trap on it), the zoom, the tilt, the resolution,
+  // GFX.lvl, the komnaty and room effects; the walls are laid on whole device pixels so a stamp is pasted 1:1 (no blur, no seams).
+  // While the zoom moves the nearest stamp is scaled (a new one is made after 6% of zoom); while the tilt turns, a block sinks or
+  // rises, or a stamp cannot be made this frame (a time budget), the block is drawn live, the same picture.
+  const WC = { on: true, snap: true, ok: false, pass: 0, brk: false, cur: null, dT: 0, map: new Map(), pool: [], px: 0, MAXPX: 8e6, tick: 0, gsig: '', lastT: 0, still: 0, bud: 0, full: false, cox: 0, coy: 0, ox0: 0, oy0: 0,
+    hit: 0, made: 0, live: 0 };
+  // the detail threshold's tile size inside the wall parts (in pass 2 the stamp's own, so a stamp and its live parts agree)
+  const wdT = T => detT(WC.pass === 2 && WC.dT ? WC.dT : T);
+  // a still part: true when it is to be painted now (pass 1 paints it into the stamp; pass 2 pastes the next stamp at its place)
+  function wS() {
+    if (WC.pass === 0) return true;
+    if (WC.pass === 1) { if (WC.brk) { WC.brk = false; wcSeg(); } return true; }
+    if (WC.brk) { WC.brk = false; wcPaste(WC.cur, WC.cur.k++); }
+    return false;
+  }
+  // a live part: drawn now (pass 0, 2), skipped in a stamp (pass 1); what is still after it goes into the next stamp
+  function wL(fn) {
+    if (WC.pass === 1) { WC.brk = true; WC.cur.live = true; return; }
+    if (WC.pass === 2) WC.brk = true;
+    fn();
+  }
+  const wE = (live, fn) => { if (live) wL(fn); else if (wS()) fn(); };
+  // a part with still and moving pieces (fn paints the still ones under wSt(), the moving ones under wLv(); the moving ones come
+  // last or touch nothing still after them): pass 1 paints the still pieces into the stamp, pass 2 the moving ones over it
+  function wM(fn) {
+    if (WC.pass === 0) return fn();
+    if (WC.brk) { WC.brk = false; if (WC.pass === 1) wcSeg(); else wcPaste(WC.cur, WC.cur.k++); }
+    WC.inMix = true; try { fn(); } finally { WC.inMix = false; }
+    WC.brk = true; if (WC.pass === 1) WC.cur.live = true;
+  }
+  const wSt = () => !(WC.pass === 2 && WC.inMix), wLv = () => !(WC.pass === 1 && WC.inMix);
+  const wP = (live, mix, fn) => { if (live && mix) wM(fn); else wE(live, fn); };   // still, mixed or live
+  function wcFree(e) { WC.px -= e.px; e.segs.forEach(c => { if (WC.pool.length < 48) WC.pool.push(c); }); e.segs = []; }
+  function wcClear() { WC.map.forEach(r => r.st.forEach(wcFree)); WC.map.clear(); WC.px = 0; }
+  // once a view a frame: may the cache be used, the camera snapped to device pixels, the time budget for new stamps
+  function wcFrame(T) {
+    WC.tick++;
+    const K = kindWalls(), rts = fl.rooms.map(R => R.rt || '').join(',');
+    const g = [WW, WH, VIEW.p, DPR, GFX.lvl, reduceMotion ? 1 : 0, K.sig, rts].join('|');
+    if (g !== WC.gsig || WC.tiles !== fl.tiles) { wcClear(); WC.gsig = g; WC.tiles = fl.tiles; }
+    WC.ok = WC.on && VIEW.p === VIEW.to;   // (while the tilt turns: live)
+    const zs = WC.lastT ? Math.abs(Math.log(T / WC.lastT)) : 0; WC.zv = Math.max(zs, (WC.zv || 0) * 0.9);   // the zoom's speed (a pinch is fast, the wave's camera drifts)
+    if (zs > 1e-9 || !WC.lastT) { WC.still = 0; WC.lastT = T; } else WC.still++;
+    WC.full = false; WC.bud = WC.budX || (fl.phase === 'raid' ? 3 : 6); WC.spent = 0;   // ms of stamp making a frame may spend
+    // the world's origin on the canvas, rounded to a device pixel: a stamp made at this zoom lands on whole pixels
+    const ox = Math.round((OX - cam.ox) * DPR), oy = Math.round((OY - cam.oy) * DPR);
+    WC.ox0 = ox; WC.oy0 = oy; WC.cox = OX - ox / DPR; WC.coy = OY - oy / DPR;
+    WC.snap = (WC.on || WC.forceSnap) && VIEW.p === VIEW.to;   // (forceSnap: the parity test draws the walls snapped without the cache)
+  }
+  function wcSeg() {   // pass 1: a new stamp canvas for the block, the main canvas' transform in it
+    const e = WC.cur, c = WC.pool.pop() || document.createElement('canvas');
+    c.width = e.w; c.height = e.h; e.segs.push(c); e.px += e.w * e.h; WC.px += e.w * e.h;
+    const g = c.getContext('2d'); g.setTransform(DPR, 0, 0, DPR, DPR * OX, DPR * OY);
+    ctx = g; rc = g;
+  }
+  function wcPaste(e, k) {   // pass 2: stamp k of e where it belongs at this zoom
+    const c = e.segs[k]; if (!c) return;
+    const r = cam.s / e.T, m = ctx;
+    m.save(); m.setTransform(1, 0, 0, 1, 0, 0); m.globalAlpha = 1;
+    if (Math.abs(r - 1) < 1e-9) m.drawImage(c, WC.ox0 + e.px0, WC.oy0 + e.py0);
+    else m.drawImage(c, WC.ox0 + e.px0 * r, WC.oy0 + e.py0 * r, e.w * r, e.h * r);
+    m.restore();
+  }
+  // what a still block's stamps depend on besides the frame's (wcFrame): its open faces and whether a trap or furniture stands on it
+  function wcSig(i) {
+    const x = i % WW, y = (i - x) / WW, h = WA.cur[i];
+    return (wallH(x, y + 1) < h - 0.001 ? 1 : 0) | (wallH(x + 1, y) < h - 0.001 ? 2 : 0) | (fl.items.has(key(x, y)) ? 4 : 0) | (h === WALL_H ? 0 : 8);
+  }
+  function wcBody(i, T, kb) { if (kb) drawKindBlock(i, T); wallDressing(i, T); }
+  // a standing still block: its stamps (made if need be) and its live parts
+  function wcBlock(i, T, kb) {
+    if (!WC.ok || WC.pass) { wcBody(i, T, kb); DRAWN.wl++; return; }
+    const sg = wcSig(i); let r = WC.map.get(i);
+    if (!r || r.sig !== sg || r.kb !== kb) { if (r) r.st.forEach(wcFree); r = { sig: sg, kb, st: [] }; WC.map.set(i, r); }
+    let e = null, best = null, bd = 9;
+    r.st.forEach(q => { const d = Math.abs(Math.log(q.T / T)); if (d < bd) { bd = d; best = q; } });
+    if (best && bd < 1e-9) e = best;   // made at this very zoom
+    else {
+      // a still zoom gets its own stamp; a drifting one the nearest within 6%, scaled; a fast one (a pinch) any within 30%, new
+      // ones made on steps of 1.25x (shared by the blocks, found again on the way back)
+      const canMake = !WC.full && WC.spent < WC.bud, fast = WC.zv > 0.004 && WC.still <= 8;
+      if (best && bd < (WC.still > 8 ? 1e-9 : fast ? 0.3 : 0.06)) e = best;
+      else if (canMake) e = wcBuild(i, fast ? Math.pow(1.25, Math.round(Math.log(T) / Math.log(1.25))) : T, kb, r);
+      if (!e && best && bd < 0.3) e = best;
     }
-    flush();
+    if (!e) { wcBody(i, T, kb); DRAWN.wl++; return; }
+    e.t = WC.tick; DRAWN.wh++;
+    if (!e.live) { wcPaste(e, 0); return; }
+    WC.pass = 2; WC.cur = e; WC.brk = true; WC.dT = e.T; e.k = 0;
+    try { wcBody(i, T, kb); } finally { WC.pass = 0; WC.cur = null; WC.dT = 0; }
+  }
+  // pass 1: the block's still parts painted at this zoom into its stamps (the camera and the canvas' corner moved onto the stamp)
+  function wcBuild(i, T, kb, r) {
+    const x = i % WW, y = (i - x) / WW, s = T * DPR;
+    const u0 = vX(x, y + 1) * s, u1 = vX(x + 1, y) * s, v0 = vY(x, y, WALL_H) * s, v1 = vY(x + 1, y + 1, 0) * s;
+    const px0 = Math.floor(u0 - s * WC_PAD[0]), py0 = Math.floor(v0 - s * WC_PAD[1]), e = { T, px0, py0, w: Math.ceil(u1 + s * WC_PAD[0]) - px0, h: Math.ceil(v1 + s * WC_PAD[2]) - py0, segs: [], px: 0, live: false, t: WC.tick, k: 0 };
+    const keep = [ctx, cam.s, cam.ox, cam.oy, OX, OY], t0 = performance.now();
+    cam.s = T; cam.ox = 0; cam.oy = 0; OX = -px0 / DPR; OY = -py0 / DPR;
+    WC.pass = 1; WC.cur = e; WC.brk = true;
+    try { wcBody(i, T, kb); } finally { WC.pass = 0; WC.cur = null; [ctx, cam.s, cam.ox, cam.oy, OX, OY] = keep; rc = ctx; }
+    if (r.st.length >= 4) { let o = r.st[0]; r.st.forEach(q => { if (q.t < o.t) o = q; }); wcFree(o); r.st.splice(r.st.indexOf(o), 1); }
+    r.st.push(e); WC.made++; DRAWN.wb++; WC.spent += performance.now() - t0;
+    if (WC.px > WC.MAXPX) wcTrim();
+    return e;
+  }
+  const WC_PAD = [0.95, 1.15, 0.55];   // tiles round the block a stamp keeps: sideways, over its top (crowns), under its foot (what stands out of a face)
+  function wcTrim() {   // the least recently pasted stamps go first; when even this frame's do not fit, no more are made this frame
+    const all = []; WC.map.forEach((r, i) => r.st.forEach(e => all.push([e, r])));
+    all.sort((a, b) => a[0].t - b[0].t);
+    for (const [e, r] of all) { if (WC.px <= WC.MAXPX * 0.75) break; if (e.t >= WC.tick - 1) { WC.full = true; break; } wcFree(e); r.st.splice(r.st.indexOf(e), 1); }
   }
   // mortar: courses of stone on the open faces (k: the block's size, 1 when still)
   function mortar(i, h, sO, eO, k, g, PJ) {   // 1.24 (C): g, PJ = a Path2D and the view projection (the block cache); else the canvas, W2S
@@ -329,7 +452,7 @@
     const P = (u, v, z) => W2S(x + u, y + v, z), K = kindWalls(), ss = kwStyle(K.s[i]), es = kwStyle(K.e[i]), ts = kwStyle(K.top[i]);   // 1.15: in its komnata's colours
     poly([P(m0, m1, 0), P(m1, m1, 0), P(m1, m1, h), P(m0, m1, h)], ss ? ss.s : WALL_S);
     poly([P(m1, m0, 0), P(m1, m1, 0), P(m1, m1, h), P(m1, m0, h)], es ? es.e : WALL_E);
-    if (T >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); mortar(i, h, true, true, k); ctx.stroke(); }
+    if (detT(T) >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); mortar(i, h, true, true, k); ctx.stroke(); }   // 1.28.0: detT
     poly([P(m0, m0, h), P(m1, m0, h), P(m1, m1, h), P(m0, m1, h)], ts ? ts.top : WALL_TOP);
     ctx.strokeStyle = 'rgba(205,210,225,0.22)'; ctx.lineWidth = 1; ctx.beginPath();
     const a = P(m0, m1, h), b = P(m1, m1, h), c = P(m1, m0, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
@@ -342,6 +465,8 @@
   const KIDS = Object.keys(KIND_INFO);
   const KW = { tiles: null, sig: null, ww: 0, s: null, e: null, top: null };
   function kindWalls() {
+    if (KW.tick === WC.tick && KW.tiles === fl.tiles && WC.tick) return KW;   // 1.28.0: checked once a frame (was: for every block)
+    KW.tick = WC.tick;
     const sig = fl.rooms.map(r => r.rk ? r.id + r.rk : '').join('');
     if (KW.tiles === fl.tiles && KW.sig === sig && KW.ww === WW) return KW;
     const n = WW * WH, s = new Int8Array(n), e = new Int8Array(n), top = new Int8Array(n);
@@ -568,6 +693,7 @@
         const r = tileHash(x * 7 + (face === 'S' ? 1 : 2), y * 3 + 5); let u = 0.1 + (r % 5) * 0.12, v = z - 0.05; ctx.moveTo(u, v);
         for (let k = 0; k < 5; k++) { u += ((r >> k) & 1 ? 1 : -1) * 0.06; v -= 0.07; ctx.lineTo(u, v); } ctx.stroke();
       },
+      crownLive: true,   // 1.28.0: its smoke and glow move (the wall cache draws the crown live)
       crown(x, y, h, T, t) {   // a chimney on some blocks, glowing inside and breathing smoke
         const r = tileHash(x * 9 + 7, y * 7 + 3); if (r % 4) return;
         isoBox(x + 0.5, y + 0.5, 0.46, 0.46, 0.55, '#2a2220', '#5e2c1e', '#43221a', h);
@@ -687,26 +813,37 @@
     const full = TEX_H * h / WALL_H, sh = Math.min(TEX_H, full);
     ctx.drawImage(tex, 0, 0, TEX_W, sh, 0, 0, 1, sh / full);
     if (face === 'E') { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(0, 0, 1, 1); }
-    if (st.live && T >= 10 && !reduceMotion) { ctx.scale(1, 1 / h); st.live(face, h, T, realNow, x, y); }
+    ctx.restore();
+  }
+  // 1.28.0: a face's own life (the forge's glowing cracks), a live part of its block drawn after the faces and the top (it was
+  // drawn with its face; nothing of the block it overlaps comes between)
+  function kindFaceLive(face, x, y, h, k, T) {
+    const st = WALL_STYLE[KIDS[k - 1]];
+    ctx.save();
+    if (face === 'S') faceMap(x, y + 1, x + 1, y + 1, 0, h); else faceMap(x + 1, y, x + 1, y + 1, 0, h);
+    ctx.scale(1, 1 / h); st.live(face, h, T, realNow, x, y);
     ctx.restore();
   }
   // a standing block that belongs to a komnata (by any face or its top): faces, top, edges, crown
-  function drawKindBlock(i, T) {
-    const K = kindWalls(), H = WA.cur, x = i % WW, y = (i - x) / WW, h = H[i];
+  function drawKindBlock(i, T) {   // 1.28.0: its parts still (wS) or live (wL) for the wall cache; detail thresholds by wdT (GFX.lvl)
+    const K = kindWalls(), H = WA.cur, x = i % WW, y = (i - x) / WW, h = H[i], dt = wdT(T);
     const sO = wallH(x, y + 1) < h - 0.001, eO = wallH(x + 1, y) < h - 0.001, ss = kwStyle(K.s[i]), es = kwStyle(K.e[i]), ts = kwStyle(K.top[i]);
     const P = (u, v, z) => W2S(x + u, y + v, z);
-    if (sO) { poly([P(0, 1, 0), P(1, 1, 0), P(1, 1, h), P(0, 1, h)], ss ? ss.s : WALL_S); if (ss) kindFace('S', x, y, h, K.s[i], T); }
-    if (eO) { poly([P(1, 0, 0), P(1, 1, 0), P(1, 1, h), P(1, 0, h)], es ? es.e : WALL_E); if (es) kindFace('E', x, y, h, K.e[i], T); }
-    if (T >= 12 && ((sO && !ss) || (eO && !es))) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); mortar(i, h, sO && !ss, eO && !es, 1); ctx.stroke(); }
-    poly([P(0, 0, h), P(1, 0, h), P(1, 1, h), P(0, 1, h)], ts ? ts.top : WALL_TOP);
-    if (ts && ts.topTex && T >= 10) { ctx.save(); tileMap(x, y, h, null); ctx.drawImage(kindTopTex(KIDS[K.top[i] - 1]), 0, 0, 1, 1); ctx.restore(); }
-    if (ts && ts.topSolid && T >= 10) ts.topSolid(x, y, h, T);   // 1.27.5 (round 3)
-    ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
-    if (sO) { const p = P(0, 1, h), q = P(1, 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
-    if (eO) { const p = P(1, 0, h), q = P(1, 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
-    ctx.stroke();
-    if (ts && ts.crown && T >= 10 && h > WALL_H * 0.6) ts.crown(x, y, h, T, reduceMotion ? 0 : realNow, i);
-    if (T >= 12 && h > 0.3 && !fl.items.has(key(x, y))) { if (sO && ss && ss.solid) kindSolid(ss, 'S', x, y, h, T); if (eO && es && es.solid) kindSolid(es, 'E', x, y, h, T); }   // 1.27.5
+    if (wS()) {
+      if (sO) { poly([P(0, 1, 0), P(1, 1, 0), P(1, 1, h), P(0, 1, h)], ss ? ss.s : WALL_S); if (ss) kindFace('S', x, y, h, K.s[i], T); }
+      if (eO) { poly([P(1, 0, 0), P(1, 1, 0), P(1, 1, h), P(1, 0, h)], es ? es.e : WALL_E); if (es) kindFace('E', x, y, h, K.e[i], T); }
+      if (dt >= 12 && ((sO && !ss) || (eO && !es))) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); mortar(i, h, sO && !ss, eO && !es, 1); ctx.stroke(); }
+      poly([P(0, 0, h), P(1, 0, h), P(1, 1, h), P(0, 1, h)], ts ? ts.top : WALL_TOP);
+      if (ts && ts.topTex && dt >= 10) { ctx.save(); tileMap(x, y, h, null); ctx.drawImage(kindTopTex(KIDS[K.top[i] - 1]), 0, 0, 1, 1); ctx.restore(); }
+      if (ts && ts.topSolid && dt >= 10) ts.topSolid(x, y, h, T);   // 1.27.5 (round 3)
+      ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
+      if (sO) { const p = P(0, 1, h), q = P(1, 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+      if (eO) { const p = P(1, 0, h), q = P(1, 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+      ctx.stroke();
+    }
+    if (dt >= 10 && !reduceMotion && ((sO && ss && ss.live) || (eO && es && es.live))) wL(() => { if (sO && ss && ss.live) kindFaceLive('S', x, y, h, K.s[i], T); if (eO && es && es.live) kindFaceLive('E', x, y, h, K.e[i], T); });
+    if (ts && ts.crown && dt >= 10 && h > WALL_H * 0.6) wE(ts.crownLive && !reduceMotion, () => ts.crown(x, y, h, T, reduceMotion ? 0 : realNow, i));   // (crownLive: the forge's smoking chimney)
+    if (dt >= 12 && h > 0.3 && !fl.items.has(key(x, y)) && ((sO && ss && ss.solid) || (eO && es && es.solid)) && wS()) { if (sO && ss && ss.solid) kindSolid(ss, 'S', x, y, h, T); if (eO && es && es.solid) kindSolid(es, 'E', x, y, h, T); }   // 1.27.5
   }
   // 1.27.5: what a face's texture used to paint as a picture of a thing (a post, a cocoon, a ring, a shelf...) stands out of it as
   // a body, at the same spot of the same variant (K: kwKit with v in the texture's units, down from the top of the block)
@@ -721,8 +858,8 @@
       const k = K.top[i]; if (!k) return;
       const st = kwStyle(k), x = i % WW, y = (i - x) / WW;
       poly([W2S(x, y, L), W2S(x + 1, y, L), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)], st.lip);
-      if (st.topTex && T >= 10) { ctx.save(); tileMap(x, y, L, null); ctx.globalAlpha = 0.22; ctx.drawImage(kindTopTex(KIDS[k - 1]), 0, 0, 1, 1); ctx.restore(); }
-      if (st.topSolid && T >= 10) st.topSolid(x, y, L, T);   // 1.27.5 (round 3)
+      if (st.topTex && detT(T) >= 10) { ctx.save(); tileMap(x, y, L, null); ctx.globalAlpha = 0.22; ctx.drawImage(kindTopTex(KIDS[k - 1]), 0, 0, 1, 1); ctx.restore(); }
+      if (st.topSolid && detT(T) >= 10) st.topSolid(x, y, L, T);   // 1.27.5 (round 3) (1.28.0: detT, GFX.lvl)
     });
   }
   // 1.15 (author: a room's kind and its effect stack, in the picture too): the effect of a room shows on the faces of the walls
@@ -737,7 +874,8 @@
   }
   const RT_WALL = {
     fog(h, t, s) {   // mist banked against the foot of the wall, a slow puff drifting along
-      ctx.fillStyle = rtGrad('fog', h, h, h - 1.0, [[0, 'rgba(206,214,230,0.42)'], [1, 'rgba(206,214,230,0)']]); ctx.fillRect(0, h - 1.0, 1, 1.0);
+      if (wSt()) { ctx.fillStyle = rtGrad('fog', h, h, h - 1.0, [[0, 'rgba(206,214,230,0.42)'], [1, 'rgba(206,214,230,0)']]); ctx.fillRect(0, h - 1.0, 1, 1.0); }   // 1.28.0: wSt / wLv (the wall cache)
+      if (!wLv()) return;
       const u = ((t * 0.05 + s * 0.37) % 1.6) - 0.3, r = ctx.createRadialGradient(u, h - 0.35, 0, u, h - 0.35, 0.45); r.addColorStop(0, 'rgba(220,228,240,0.3)'); r.addColorStop(1, 'rgba(220,228,240,0)'); ctx.fillStyle = r; ctx.fillRect(0, h - 0.8, 1, 0.8);
     },
     swamp(h, t, s) {   // wet to the waterline, moss and slime at it
@@ -747,19 +885,23 @@
       ctx.fillStyle = 'rgba(96,130,50,0.55)'; for (let k = 0; k < 3; k++) { const u = (s * 0.29 + k * 0.33) % 1; ctx.beginPath(); ctx.ellipse(u, h - w - 0.02, 0.06, 0.025, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(u - 0.006, h - w, 0.012, 0.08 + 0.05 * k); }
     },
     grotto(h, t, s) {   // light thrown up from water: rippling bands; 1.27.5: the stone wet and dark, water running down it in streaks
-      ctx.fillStyle = rtGrad('grotto', h, 0, h, [[0, 'rgba(20,30,60,0.1)'], [1, 'rgba(20,34,70,0.38)']]); ctx.fillRect(0, 0, 1, h);
-      for (let k = 0; k < 3; k++) { const u = 0.15 + 0.7 * (((s * 0.37 + k * 0.29) % 1)), L = h * (0.4 + 0.4 * ((s + k) % 3) / 2); ctx.fillStyle = 'rgba(10,16,34,0.35)'; ctx.fillRect(u, 0, 0.035, L); ctx.fillStyle = 'rgba(170,200,255,0.3)'; ctx.fillRect(u, 0, 0.01, L * 0.9); }
+      if (wSt()) { ctx.fillStyle = rtGrad('grotto', h, 0, h, [[0, 'rgba(20,30,60,0.1)'], [1, 'rgba(20,34,70,0.38)']]); ctx.fillRect(0, 0, 1, h);
+      for (let k = 0; k < 3; k++) { const u = 0.15 + 0.7 * (((s * 0.37 + k * 0.29) % 1)), L = h * (0.4 + 0.4 * ((s + k) % 3) / 2); ctx.fillStyle = 'rgba(10,16,34,0.35)'; ctx.fillRect(u, 0, 0.035, L); ctx.fillStyle = 'rgba(170,200,255,0.3)'; ctx.fillRect(u, 0, 0.01, L * 0.9); } }
+      if (!wLv()) return;
       ctx.strokeStyle = 'rgba(160,190,255,0.2)'; ctx.lineWidth = 0.02;
       for (let k = 0; k < 3; k++) { const v0 = h - 0.25 - k * 0.3; ctx.beginPath(); for (let u = 0; u <= 1.001; u += 0.05) { const v = v0 + 0.035 * Math.sin(u * 12 + t * 1.6 + k * 2 + s); u ? ctx.lineTo(u, v) : ctx.moveTo(u, v); } ctx.stroke(); }
     },
     crypt(h, t, s) {   // a grave chill: the wall goes violet and dark, a cross scratched in now and then
-      ctx.fillStyle = 'rgba(44,20,64,0.32)'; ctx.fillRect(0, 0, 1, h);
-      if (s % 3 === 0) { ctx.strokeStyle = 'rgba(200,180,230,0.35)'; ctx.lineWidth = 0.02; ctx.beginPath(); ctx.moveTo(0.5, h * 0.35); ctx.lineTo(0.5, h * 0.62); ctx.moveTo(0.42, h * 0.43); ctx.lineTo(0.58, h * 0.43); ctx.stroke(); }
-      else if (s % 3 === 1) { const a = 0.18 + 0.14 * Math.sin(t * 1.4 + s); ctx.strokeStyle = 'rgba(190,150,255,' + a.toFixed(2) + ')'; ctx.lineWidth = 0.018; ctx.beginPath(); ctx.arc(0.5, h * 0.5, 0.14, 0, Math.PI * 2); ctx.moveTo(0.5, h * 0.5 - 0.1); ctx.lineTo(0.5, h * 0.5 + 0.1); ctx.moveTo(0.43, h * 0.5 - 0.03); ctx.lineTo(0.57, h * 0.5 - 0.03); ctx.stroke(); }   // 1.27.5: a rune, breathing violet like the ones in the floor
-      ctx.fillStyle = rtGrad('crypt', h, h, h - 0.5, [[0, 'rgba(120,80,180,0.25)'], [1, 'rgba(120,80,180,0)']]); ctx.fillRect(0, h - 0.5, 1, 0.5);   // 1.27.5: the cold violet mist at its foot
+      if (wSt()) {   // 1.28.0: the rune breathes (live); the rest is still
+        ctx.fillStyle = 'rgba(44,20,64,0.32)'; ctx.fillRect(0, 0, 1, h);
+        if (s % 3 === 0) { ctx.strokeStyle = 'rgba(200,180,230,0.35)'; ctx.lineWidth = 0.02; ctx.beginPath(); ctx.moveTo(0.5, h * 0.35); ctx.lineTo(0.5, h * 0.62); ctx.moveTo(0.42, h * 0.43); ctx.lineTo(0.58, h * 0.43); ctx.stroke(); }
+      }
+      if (s % 3 === 1 && wLv()) { const a = 0.18 + 0.14 * Math.sin(t * 1.4 + s); ctx.strokeStyle = 'rgba(190,150,255,' + a.toFixed(2) + ')'; ctx.lineWidth = 0.018; ctx.beginPath(); ctx.arc(0.5, h * 0.5, 0.14, 0, Math.PI * 2); ctx.moveTo(0.5, h * 0.5 - 0.1); ctx.lineTo(0.5, h * 0.5 + 0.1); ctx.moveTo(0.43, h * 0.5 - 0.03); ctx.lineTo(0.57, h * 0.5 - 0.03); ctx.stroke(); }   // 1.27.5: a rune, breathing violet like the ones in the floor
+      if (wSt()) { ctx.fillStyle = rtGrad('crypt', h, h, h - 0.5, [[0, 'rgba(120,80,180,0.25)'], [1, 'rgba(120,80,180,0)']]); ctx.fillRect(0, h - 0.5, 1, 0.5); }   // 1.27.5: the cold violet mist at its foot
     },
     vault(h, t, s) {   // a warm gold sheen and glints that come and go
-      ctx.fillStyle = 'rgba(210,170,60,0.09)'; ctx.fillRect(0, 0, 1, h);
+      if (wSt()) { ctx.fillStyle = 'rgba(210,170,60,0.09)'; ctx.fillRect(0, 0, 1, h); }
+      if (!wLv()) return;
       for (let k = 0; k < 2; k++) { const p = 0.5 + 0.5 * Math.sin(t * 2.2 + k * 2.4 + s); if (p < 0.75) continue; const u = 0.2 + 0.6 * ((s * 0.37 + k * 0.45) % 1), v = h * (0.3 + 0.4 * ((s * 0.61 + k * 0.3) % 1)), r = 0.07 * (p - 0.75) / 0.25;
         ctx.strokeStyle = 'rgba(255,236,160,0.9)'; ctx.lineWidth = 0.012; ctx.beginPath(); ctx.moveTo(u - r, v); ctx.lineTo(u + r, v); ctx.moveTo(u, v - r); ctx.lineTo(u, v + r); ctx.stroke(); }
     },
@@ -775,27 +917,35 @@
       ctx.fillStyle = rtGrad('hush', h, 0, h, [[0, 'rgba(8,10,16,0.15)'], [1, 'rgba(8,10,16,0.42)']]); ctx.fillRect(0, 0, 1, h);
     },
     ice(h, t, s, T) {   // frost over the wall, thicker at the top, and icicles hanging from its edge (1.27.5: close up the long ones are solid: RFX_WALL3D)
+      if (wSt()) {
       ctx.fillStyle = 'rgba(190,226,248,0.13)'; ctx.fillRect(0, 0, 1, h);
       ctx.fillStyle = 'rgba(232,247,255,0.6)'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(1, 0);
-      for (let k = 8; k >= 0; k--) { const u = k / 8, L = (k + s) % 3 === 0 && T < 20 ? 0.22 + 0.1 * (((k * 7 + s) % 5) / 4) : 0.06; ctx.lineTo(u + 0.03, 0.04); ctx.lineTo(u, 0.04 + L); ctx.lineTo(u - 0.03, 0.04); }
+      for (let k = 8; k >= 0; k--) { const u = k / 8, L = (k + s) % 3 === 0 && wdT(T) < 20 ? 0.22 + 0.1 * (((k * 7 + s) % 5) / 4) : 0.06; ctx.lineTo(u + 0.03, 0.04); ctx.lineTo(u, 0.04 + L); ctx.lineTo(u - 0.03, 0.04); }
       ctx.fill();
+      }
+      if (!wLv()) return;
       const d = ((t * 0.5 + s * 0.13) % 1); if (d < 0.5) { ctx.fillStyle = 'rgba(220,240,255,0.7)'; ctx.beginPath(); ctx.arc(0.5 - 0.5 / 8 + ((s % 3) / 8), 0.3 + d * h * 1.4, 0.015, 0, Math.PI * 2); ctx.fill(); }   // a drop now and then
     }
   };
+  // 1.28.0: which washes move (the wall cache draws those live; with reduceMotion none: their clock stands at 0)
+  const RTW_MIX = { fog: 1, grotto: 1, crypt: 1, vault: 1, ice: 1 };   // (their still and moving pieces apart: wSt, wLv)
+  const RTW_LIVE = { fog: () => true, swamp: () => true, grotto: () => true, crypt: s => s % 3 === 1, vault: () => true, haven: () => true, ice: () => true };
   function rtWallWash(i, T) {
-    if (T < 8) return;
+    const dt = wdT(T); if (dt < 8) return;   // 1.28.0: wdT (GFX.lvl)
     const x = i % WW, y = (i - x) / WW, h = WA.cur[i]; if (h < 0.3) return;
     const t = reduceMotion ? 0 : realNow;
     [[0, 1, 'S'], [1, 0, 'E']].forEach(([dx, dy, face]) => {
       if (wallH(x + dx, y + dy) >= h - 0.001) return;
       let r = tileAt(x + dx, y + dy) === FLOOR ? roomOf(x + dx, y + dy) : tileAt(x + 2 * dx, y + 2 * dy) === FLOOR && tileAt(x + dx, y + dy) === WALL ? roomOf(x + 2 * dx, y + 2 * dy) : -1;
       const rt = rtOf(r), fn = rt && RT_WALL[rt]; if (!fn) return;
-      ctx.save();
-      if (face === 'S') faceMap(x, y + 1, x + 1, y + 1, 0, h); else faceMap(x + 1, y, x + 1, y + 1, 0, h);
-      ctx.beginPath(); ctx.rect(0, 0, 1, 1); ctx.clip(); ctx.scale(1, 1 / h);
-      const s = tileHash(x * 13 + (face === 'S' ? 3 : 8), y * 11 + 1) % 97;
-      try { fn(h, t, s, T); } finally { ctx.restore(); }
-      if (T >= 12 && h > WALL_H * 0.6 && tileAt(x + dx, y + dy) === FLOOR && !fl.items.has(key(x, y)) && !WA.torchAt.has(i)) rfxWall3D(x, y, face, h, T, t, s, fl.rooms[r]);   // 1.27.5: what stands out of it (p7c_art.js)
+      const s = tileHash(x * 13 + (face === 'S' ? 3 : 8), y * 11 + 1) % 97, lv = RTW_LIVE[rt];
+      wP(!reduceMotion && !!lv && lv(s), RTW_MIX[rt], () => {
+        ctx.save();
+        if (face === 'S') faceMap(x, y + 1, x + 1, y + 1, 0, h); else faceMap(x + 1, y, x + 1, y + 1, 0, h);
+        ctx.beginPath(); ctx.rect(0, 0, 1, 1); ctx.clip(); ctx.scale(1, 1 / h);
+        try { fn(h, t, s, T); } finally { ctx.restore(); }
+      });
+      if (dt >= 12 && h > WALL_H * 0.6 && tileAt(x + dx, y + dy) === FLOOR && !fl.items.has(key(x, y)) && !WA.torchAt.has(i)) rfxWall3D(x, y, face, h, T, t, s, fl.rooms[r]);   // 1.27.5: what stands out of it (p7c_art.js)
     });
   }
   // 1.15 (author: as much as possible in 3D, even the flat things stand out a little; only the figures stay 2D): what is drawn
@@ -843,15 +993,14 @@
       pRod(a, b, Math.max(1.6, T * 0.038), '#4a4440'); pSkull3q(b[0] - dir * R * 0.15, b[1] + R * 1.25, R, '#e2d8bc', '#1c1612', dir);
     },
     haunt(F, h, T, t, s) {   // a sconce with a candle burning blue
-      const z = Math.min(1.0, h - 0.4); pRod(F.P(0.5, 0, z - 0.06), F.P(0.5, 0.15, z), Math.max(1.6, T * 0.035), '#4a4e5a');
-      F.box(0.5, 0.15, 0.1, 0.1, 0.03, z, '#4a4e5a', '#3a3e48', '#2c2f36');
-      const [wx, wy] = F.W(0.5, 0.15); pCyl(wx, wy, 0.03, 0.14, '#cfd8e0', '#fffaf0', z + 0.03); const q = W2S(wx, wy, z + 0.17);
-      pFlame(q[0], q[1], T * 0.13, t, s, 'rgba(200,240,255,0.95)', 'rgba(100,190,255,0.85)', ['kcandB', [[0, 'rgba(140,210,255,0.35)'], [1, 'rgba(140,210,255,0)']]]);
+      const z = Math.min(1.0, h - 0.4), [wx, wy] = F.W(0.5, 0.15), q = W2S(wx, wy, z + 0.17);
+      if (wSt()) { pRod(F.P(0.5, 0, z - 0.06), F.P(0.5, 0.15, z), Math.max(1.6, T * 0.035), '#4a4e5a'); F.box(0.5, 0.15, 0.1, 0.1, 0.03, z, '#4a4e5a', '#3a3e48', '#2c2f36'); pCyl(wx, wy, 0.03, 0.14, '#cfd8e0', '#fffaf0', z + 0.03); }   // 1.28.0: wSt / wLv
+      if (wLv()) pFlame(q[0], q[1], T * 0.13, t, s, 'rgba(200,240,255,0.95)', 'rgba(100,190,255,0.85)', ['kcandB', [[0, 'rgba(140,210,255,0.35)'], [1, 'rgba(140,210,255,0)']]]);
     },
     bats(F, h, T, t, s) {   // stone teeth hanging off the top edge; a bat hanging among them
       const K = kwKit(F, h - 1, h);   // 1.27.5 (round 3): stalactites with volume: their shadow on the face, a lit left flank, a dark right one
-      [0.2, 0.48, 0.8].forEach((u, k) => { const [wx, wy] = F.W(u, 0.05); kStal(K, wx, wy, u, 0.05, h, 0.05 + 0.012 * (k % 2), 0.24 + 0.1 * ((k + s) % 3)); });
-      if (s % 3 === 0) { const q = F.P(0.65, 0.1, h - 0.12), open = Math.max(0, Math.sin(t * 0.8 + s) - 0.85) * 6, ww = T * (0.08 + 0.06 * open);   // 1.27.5: a round body, the wings folded round it (the far one in shade)
+      if (wSt()) [0.2, 0.48, 0.8].forEach((u, k) => { const [wx, wy] = F.W(u, 0.05); kStal(K, wx, wy, u, 0.05, h, 0.05 + 0.012 * (k % 2), 0.24 + 0.1 * ((k + s) % 3)); });
+      if (s % 3 === 0 && wLv()) { const q = F.P(0.65, 0.1, h - 0.12), open = Math.max(0, Math.sin(t * 0.8 + s) - 0.85) * 6, ww = T * (0.08 + 0.06 * open);   // 1.27.5: a round body, the wings folded round it (the far one in shade)
         ctx.fillStyle = '#0e0914'; ctx.beginPath(); ctx.moveTo(q[0], q[1] - T * 0.04); ctx.quadraticCurveTo(q[0] + ww, q[1] + T * 0.06, q[0] + T * 0.02, q[1] + T * 0.16); ctx.lineTo(q[0], q[1] + T * 0.1); ctx.fill();
         ctx.fillStyle = '#2c2238'; ctx.beginPath(); ctx.moveTo(q[0], q[1] - T * 0.04); ctx.quadraticCurveTo(q[0] - ww, q[1] + T * 0.06, q[0] - T * 0.02, q[1] + T * 0.16); ctx.lineTo(q[0], q[1] + T * 0.1); ctx.fill();
         pOval(q[0], q[1] + T * 0.065, T * 0.03, T * 0.065, '#3a2c48'); ctx.fillStyle = '#ff5a6a'; ctx.fillRect(q[0] - T * 0.025, q[1] + T * 0.11, Math.max(1, T * 0.015), Math.max(1, T * 0.015)); ctx.fillRect(q[0] + T * 0.01, q[1] + T * 0.11, Math.max(1, T * 0.015), Math.max(1, T * 0.015)); }
@@ -872,7 +1021,8 @@
     },
     forge(F, h, T, t, s) {
       if (s % 3 === 0) {   // a hood over a hearth: a brick box standing out of the wall, glowing underneath, sparks going up into it
-        const f = 0.75 + 0.25 * Math.sin(t * 6 + s); F.box(0.5, 0.2, 0.74, 0.4, 0.42, 0.95, '#2a2220', '#5e2c1e', '#43221a');
+        const f = 0.75 + 0.25 * Math.sin(t * 6 + s); if (wSt()) F.box(0.5, 0.2, 0.74, 0.4, 0.42, 0.95, '#2a2220', '#5e2c1e', '#43221a');
+        if (!wLv()) return;
         const q = F.P(0.5, 0.2, 0.8); ctx.drawImage(glowSprite('khood', [[0, 'rgba(255,140,50,0.55)'], [0.5, 'rgba(255,90,30,0.15)'], [1, 'rgba(255,60,20,0)']]), q[0] - T * 0.6 * f, q[1] - T * 0.35 * f, T * 1.2 * f, T * 0.7 * f);
         if (!reduceMotion) for (let k = 0; k < 3; k++) { const u = (t * 0.8 + k / 3 + s * 0.1) % 1, p = F.P(0.35 + 0.15 * k, 0.2 + Math.sin(u * 8 + k) * 0.05, 0.3 + u * 0.6); ctx.fillStyle = 'rgba(255,200,90,' + (0.9 * (1 - u)).toFixed(2) + ')'; ctx.fillRect(p[0], p[1], Math.max(1, T * 0.025), Math.max(1, T * 0.025)); }
         return;
@@ -881,8 +1031,8 @@
     },
     prison(F, h, T, t, s) {   // two iron rings, chains hanging from them, shackles at the end; water dripping off them
       [0.28, 0.72].forEach((u, k) => {   // 1.27.5: round iron links, a plate under each ring
-        F.box(u, 0.01, 0.08, 0.02, 0.08, 1.22, '#5e626c', '#464a52', '#34373e');
-        const top = F.P(u, 0.03, 1.25); pRing(top[0], top[1], T * 0.04, T * 0.05, Math.max(1.4, T * 0.022), '#9a9da5');
+        if (wSt()) { F.box(u, 0.01, 0.08, 0.02, 0.08, 1.22, '#5e626c', '#464a52', '#34373e'); const top = F.P(u, 0.03, 1.25); pRing(top[0], top[1], T * 0.04, T * 0.05, Math.max(1.4, T * 0.022), '#9a9da5'); }   // 1.28.0: the plates still, the chains live
+        if (!wLv()) return;
         const sway = Math.sin(t * 0.9 + s + k) * 0.02;
         for (let j = 1; j <= 6; j++) { const f = j / 6, q = F.P(u + sway * f, 0.03 + 0.06 * f, 1.25 - 0.55 * f); pRing(q[0], q[1], T * (j % 2 ? 0.018 : 0.03), T * (j % 2 ? 0.03 : 0.018), Math.max(1, T * 0.018), '#9a9da5'); }
         const e = F.P(u + sway, 0.1, 0.62); pRing(e[0], e[1], T * 0.06, T * 0.06, Math.max(1.6, T * 0.036), '#a4a7ae');
@@ -896,15 +1046,15 @@
     },
     gallery(F, h, T, t, s) {   // a gilded frame standing off the wall (1.27.5: a solid frame, the canvas sunk in it), sometimes a sconce beside it
       const K = kwKit(F, 0.32, 1.42), glint = Math.sin(t * 0.8 + s) > 0.85;
-      K.shadow(() => { ctx.rect(0.18, 0.06, 0.62, 0.72); ctx.fill(); }, 0.32, 1.3);
+      if (wSt()) { K.shadow(() => { ctx.rect(0.18, 0.06, 0.62, 0.72); ctx.fill(); }, 0.32, 1.3);
       K.box(0.18, 0.8, 0.06, 0.78, 0, 0.08, ['#e0bc66', '#c9a24e', '#8a6a2a']);
-      K.plane(0.08); ctx.fillStyle = 'rgba(255,240,200,0.28)'; ctx.fillRect(0.18, 0.06, 0.62, 0.025); ctx.fillRect(0.18, 0.06, 0.025, 0.72); ctx.strokeStyle = 'rgba(122,90,34,0.9)'; ctx.lineWidth = 0.02; ctx.strokeRect(0.215, 0.095, 0.55, 0.65);
+      K.plane(0.08); ctx.fillStyle = 'rgba(255,240,200,0.28)'; ctx.fillRect(0.18, 0.06, 0.62, 0.025); ctx.fillRect(0.18, 0.06, 0.025, 0.72); ctx.strokeStyle = 'rgba(122,90,34,0.9)'; ctx.lineWidth = 0.02; ctx.strokeRect(0.215, 0.095, 0.55, 0.65); }
       K.recess(0.08, 0.05, () => ctx.rect(0.25, 0.13, 0.48, 0.58), '#100c0c', () => {
-        ctx.fillStyle = '#1a1416'; ctx.fillRect(0.25, 0.13, 0.48, 0.58); ctx.fillStyle = 'rgba(70,56,52,0.85)'; ctx.beginPath(); ctx.ellipse(0.49, 0.36, 0.1, 0.13, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(0.35, 0.48, 0.28, 0.23);
-        ctx.fillStyle = glint ? '#ffe9a8' : 'rgba(30,24,22,0.9)'; ctx.fillRect(0.445, 0.33, 0.025, 0.018); ctx.fillRect(0.51, 0.33, 0.025, 0.018);
+        if (wSt()) { ctx.fillStyle = '#1a1416'; ctx.fillRect(0.25, 0.13, 0.48, 0.58); ctx.fillStyle = 'rgba(70,56,52,0.85)'; ctx.beginPath(); ctx.ellipse(0.49, 0.36, 0.1, 0.13, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(0.35, 0.48, 0.28, 0.23); }
+        if (wLv()) { ctx.fillStyle = glint ? '#ffe9a8' : 'rgba(30,24,22,0.9)'; ctx.fillRect(0.445, 0.33, 0.025, 0.018); ctx.fillRect(0.51, 0.33, 0.025, 0.018); }
       });
       screenT();
-      if (s % 2 === 0) { const z = 0.95; pRod(F.P(0.92, 0, z), F.P(0.92, 0.12, z + 0.04), Math.max(1.6, T * 0.03), '#c9a24e'); const [wx, wy] = F.W(0.92, 0.12); pCyl(wx, wy, 0.025, 0.12, '#efe6cc', '#fffaf0', z + 0.04); const q = W2S(wx, wy, z + 0.16); pFlame(q[0], q[1], T * 0.12, t, s, 'rgba(255,236,170,0.95)', 'rgba(255,150,50,0.85)', ['kcandW', [[0, 'rgba(255,200,120,0.35)'], [1, 'rgba(255,200,120,0)']]]); }
+      if (s % 2 === 0) { const z = 0.95, [wx, wy] = F.W(0.92, 0.12), q = W2S(wx, wy, z + 0.16); if (wSt()) { pRod(F.P(0.92, 0, z), F.P(0.92, 0.12, z + 0.04), Math.max(1.6, T * 0.03), '#c9a24e'); pCyl(wx, wy, 0.025, 0.12, '#efe6cc', '#fffaf0', z + 0.04); } if (wLv()) pFlame(q[0], q[1], T * 0.12, t, s, 'rgba(255,236,170,0.95)', 'rgba(255,150,50,0.85)', ['kcandW', [[0, 'rgba(255,200,120,0.35)'], [1, 'rgba(255,200,120,0)']]]); }
     },
     nursery(F, h, T, t, s) {   // a little shelf with toys on it
       F.box(0.5, 0.1, 0.7, 0.2, 0.035, 0.85, '#d8d0c4', '#bab2a6', '#9a9286');
@@ -913,8 +1063,12 @@
       pBall(b0, b1, 0.885, 0.06, '#8ea6e8'); if (s % 2) { pBall(c0, c1, 0.885, 0.07, '#9a6a44'); pBall(c0, c1, 0.98, 0.05, '#9a6a44'); } else isoBox(c0, c1, 0.1, 0.1, 0.1, '#e58aa8', '#c86a8a', '#a8506e', 0.885);
     }
   };
+  // 1.28.0: which raised pieces move, by the komnata (s: the face's hash); the rest are still (the wall cache paints them once)
+  const KW3_LIVE = { spider: () => true, haunt: () => true, bats: () => true, forge: s => s % 3 === 0, prison: () => true, gallery: () => true, lab: s => !(s % 2), graveyard: s => s % 3 === 0, abyssgate: s => !(s % 2) };
+  const KW3_MIX = { haunt: 1, bats: 1, forge: 1, prison: 1, gallery: 1 };   // (their still and moving pieces apart: wSt, wLv)
+  const KW3_STILL = { goblin: 1, ogre: 1, ossuary: 1, armory: 1, junk: 1, nursery: 1 };
   function kindWall3D(i, T) {
-    if (T < 12 || !WA.anyRk) return;   // 1.24 (C): WA.anyRk, WA.torchAt (were: every room, every torch, for every block)
+    if (wdT(T) < 12 || !WA.anyRk) return;   // 1.24 (C): WA.anyRk, WA.torchAt (were: every room, every torch, for every block) (1.28.0: wdT, GFX.lvl)
     const x = i % WW, y = (i - x) / WW, h = WA.cur[i];
     if (h < WALL_H * 0.6 || fl.items.has(key(x, y)) || WA.torchAt.has(i)) return;
     const t = reduceMotion ? 0 : realNow, sel = tileHash(x * 5 + 1, y * 3 + 2) % 3;
@@ -922,8 +1076,8 @@
       if (tileAt(x + dx, y + dy) !== FLOOR || wallH(x + dx, y + dy) >= h - 0.001) return;
       const r = roomOf(x + dx, y + dy), R = r >= 0 ? fl.rooms[r] : null, fn = R && R.rk && KIND_WALL3D[R.rk];
       if (!fn || !(sel === 0 || (sel === 1 && REPLACE_FLAT[R.rk]))) return;
-      ctx.save();
-      try { fn(wallFrame(x, y, face), h, T, t, tileHash(x * 13 + (face === 'S' ? 3 : 8), y * 11 + 1) % 97); } finally { ctx.restore(); }
+      const s = tileHash(x * 13 + (face === 'S' ? 3 : 8), y * 11 + 1) % 97, lv = KW3_LIVE[R.rk];
+      wP(!reduceMotion && !KW3_STILL[R.rk] && (!lv || lv(s)), KW3_MIX[R.rk], () => { ctx.save(); try { fn(wallFrame(x, y, face), h, T, t, s); } finally { ctx.restore(); } });   // (a komnata not in the lists: live)
     });
   }
   // what is on a standing block: its torch, the wall traps on its face
@@ -932,28 +1086,34 @@
     kindWallDeco(i, T);
     kindWall3D(i, T);   // 1.15: what stands out of a komnata's wall
     rtWallWash(i, T);   // 1.15: the room's effect over the wall's stuff
-    if (T >= 10 && h > WALL_H * 0.6 && WA.torchAt.has(i)) WA.torchAt.get(i).forEach(t => { if (!fl.items.has(key(x, y))) drawTorch(t, T); });   // 1.24 (C): by the block's index
-    if (WA.itemAt && WA.itemAt.has(i)) WA.itemAt.get(i).forEach(it => drawWallItem(it, T, true));
+    if (wdT(T) >= 10 && h > WALL_H * 0.6 && WA.torchAt.has(i)) WA.torchAt.get(i).forEach(t => { if (!fl.items.has(key(x, y))) drawTorch(t, T); });   // 1.24 (C): by the block's index
+    if (WA.itemAt && WA.itemAt.has(i)) WA.itemAt.get(i).forEach(it => wL(() => drawWallItem(it, T, true)));   // 1.28.0: live (they fire, cool down, show their state)
   }
   function torchFlicker(x, y) { return 0.86 + 0.14 * Math.sin(realNow * 8.3 + x * 1.7) * Math.sin(realNow * 5.1 + y * 2.3); }
   function drawTorch(t, T) {   // a sconce on the wall's face, a flame (a flame faces you), a warm light on the face around it
-    const f = torchFlicker(t.fx, t.fy);
-    ctx.save();
+    const f = torchFlicker(t.fx, t.fy);   // 1.28.0: the glow and the flame live, the sconce still (the wall cache)
     const z1 = Math.min(wallH(t.x, t.y), 1.25), z0 = Math.max(0, z1 - 1);   // 1.09: a sconce at a hand's height on the high wall
-    if (t.face === 'S') faceMap(t.x, t.y + 1, t.x + 1, t.y + 1, z0, z1); else faceMap(t.x + 1, t.y, t.x + 1, t.y + 1, z0, z1);
-    ctx.globalAlpha = 0.9; ctx.drawImage(glowSprite('torchw', [[0, 'rgba(255,170,90,0.3)'], [0.6, 'rgba(255,120,50,0.06)'], [1, 'rgba(255,120,40,0)']]), 0.5 - 0.95 * f, 0.38 - 0.95 * f, 1.9 * f, 1.9 * f);
-    ctx.restore();
+    wL(() => {
+      ctx.save();
+      if (t.face === 'S') faceMap(t.x, t.y + 1, t.x + 1, t.y + 1, z0, z1); else faceMap(t.x + 1, t.y, t.x + 1, t.y + 1, z0, z1);
+      ctx.globalAlpha = 0.9; ctx.drawImage(glowSprite('torchw', [[0, 'rgba(255,170,90,0.3)'], [0.6, 'rgba(255,120,50,0.06)'], [1, 'rgba(255,120,40,0)']]), 0.5 - 0.95 * f, 0.38 - 0.95 * f, 1.9 * f, 1.9 * f);
+      ctx.restore();
+    });
     // 1.27.5: a solid iron sconce: a plate on the face, an arm out of it, a cup of pitch the flame burns in
     const F = wallFrame(t.x, t.y, t.face), ir = ['#5e626c', '#3a3d45', '#26282e'];
-    if (T >= 20) { F.box(0.5, 0.012, 0.1, 0.024, 0.24, z0 + 0.3, ir[0], ir[1], ir[2]); F.box(0.5, 0.075, 0.035, 0.11, 0.035, z0 + 0.47, ir[0], ir[1], ir[2]); }   // (far out, the cup alone)
-    const cu = F.W(0.5, 0.14); pCyl(cu[0], cu[1], 0.05, 0.09, '#33363d', '#1a1210', z0 + 0.46);
-    const p = F.P(0.5, 0.14, z0 + 0.6);
-    ctx.fillStyle = 'rgba(255,110,30,0.92)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.08, T * 0.07, T * 0.12 * f, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,225,140,0.95)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.05, T * 0.035, T * 0.065 * f, 0, 0, Math.PI * 2); ctx.fill();
+    if (wS()) {
+      if (wdT(T) >= 20) { F.box(0.5, 0.012, 0.1, 0.024, 0.24, z0 + 0.3, ir[0], ir[1], ir[2]); F.box(0.5, 0.075, 0.035, 0.11, 0.035, z0 + 0.47, ir[0], ir[1], ir[2]); }   // (far out, the cup alone)
+      const cu = F.W(0.5, 0.14); pCyl(cu[0], cu[1], 0.05, 0.09, '#33363d', '#1a1210', z0 + 0.46);
+    }
+    wL(() => {
+      const p = F.P(0.5, 0.14, z0 + 0.6);
+      ctx.fillStyle = 'rgba(255,110,30,0.92)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.08, T * 0.07, T * 0.12 * f, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,225,140,0.95)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.05, T * 0.035, T * 0.065 * f, 0, 0, Math.PI * 2); ctx.fill();
+    });
   }
   // the light of the torches on the floor in front of them (flat, under the walls)
   function drawTorchLight(x0, y0, x1, y1, T) {   // the light of the torches on the floor in front of them (screen space: an upright ellipse is fast)
-    if (T < 10) return;
+    if (detT(T) < 10) return;   // 1.28.0: detT (as the torches themselves)
     wallSetup();
     const spr = glowSprite('torch', [[0, 'rgba(255,150,70,0.2)'], [0.5, 'rgba(255,120,50,0.06)'], [1, 'rgba(255,120,40,0)']]);
     ctx.save(); screenT();
@@ -1028,6 +1188,7 @@
     const drawSO = e => { if (e[1] === 0) drawObjectIso(e[2], T); else if (e[1] === 1) drawItemUp(e[2], T); else if (e[1] === 2) drawHeartIso(T); else if (e[1] === 4) drawCorpse(e[2], T); else if (e[1] === 5) drawProp(e[2], T); else if (e[1] === 6) drawSecret(e[2], T); else if (e[1] === 7) cageFront(e[2], T); else drawHero(e[2], T); };
     // what a standing wall in front of it covers goes between the walls, in depth order; the rest after all of them
     let wi = 0; const later = [];
+    DRAWN.w = WL.length; DRAWN.so = SO.length; DRAWN.T = T;   // 1.28.0: frame telemetry (how much a frame draws)
     const wallsTo = d => { const s0 = wi; while (wi < WL.length && WL[wi].d <= d) wi++; if (wi > s0) drawWallRun(WL, s0, wi, T); };
     SO.forEach(e => { if (WL.length && wallCovers(e[3], e[4], e[5])) { wallsTo(e[0]); drawSO(e); } else later.push(e); });
     wallsTo(Infinity);
@@ -1526,7 +1687,7 @@
       shadow: (shape, a, m) => { F.plane(0.003, z0, z1); ctx.translate(K.sx * (m || 1), 0.05 * (m || 1)); ctx.fillStyle = 'rgba(0,0,0,' + (a || 0.32) + ')'; ctx.beginPath(); shape(); ctx.fill(); screenT(); },
       // a hollow in a front at depth d1: its window (shape) filled with the inner walls' colour, then what lies in it drawn
       // deeper (at d1 - dep), clipped to the window, so the back shifts inside the rim like a real recess
-      recess: (d1, dep, shape, inner, fill) => { ctx.save(); F.plane(d1, z0, z1); ctx.beginPath(); shape(); ctx.fillStyle = inner; ctx.fill(); ctx.clip(); F.plane(d1 - dep, z0, z1); fill(); ctx.restore(); }
+      recess: (d1, dep, shape, inner, fill) => { ctx.save(); F.plane(d1, z0, z1); ctx.beginPath(); shape(); if (wSt()) { ctx.fillStyle = inner; ctx.fill(); } ctx.clip(); F.plane(d1 - dep, z0, z1); fill(); ctx.restore(); }
     };
     return K;
   }
@@ -1561,7 +1722,7 @@
     let s = TRAP_SPARKS.get(it); if (!s) { s = { p: [], t: realNow, hot: false, edge: false }; TRAP_SPARKS.set(it, s); }
     s.edge = hot && !s.hot; s.hot = hot; return s;
   }
-  function sparkAdd(s, x, y, z, vx, vy, vz, life, col, r, g) { if (reduceMotion || s.p.length >= 16) return; s.p.push({ x, y, z, vx, vy, vz, life, max: life, col, r, g }); }
+  function sparkAdd(s, x, y, z, vx, vy, vz, life, col, r, g) { if (reduceMotion || s.p.length >= (GFX.lvl ? 8 : 16) || detT(cam.s) < 12) return; s.p.push({ x, y, z, vx, vy, vz, life, max: life, col, r, g }); }   // 1.28.0: detT, fewer at a lower level
   function sparkRun(s, T) {   // (screen transform)
     const dt = Math.min(0.05, Math.max(0, realNow - s.t)); s.t = realNow;
     if (!s.p.length) return;
@@ -2245,7 +2406,7 @@
       if (!KIND_FLOOR[R.rk] || !roomSeen(R, T)) return;   // only what is on screen
       const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
       ctx.drawImage(kindFloorCache(R, T), x, y, w, h);
-      const lv = KIND_LIVE[R.rk]; if (!lv) return;
+      const lv = KIND_LIVE[R.rk]; if (!lv || detT(T) < 9) return;   // 1.28.0: detT (the moving part only; the still floor stays)
       ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
       lv(ctx, R, T, t);
       ctx.restore();
@@ -2482,16 +2643,17 @@
   }
   // the props on screen join what stands (drawWorld step 3)
   function kindPropsSO(SO, T) {
-    if (T < 9) return;
+    const dT = detT(T); if (dT < 9) return;
+    const small = dT < 14;   // 1.28.0: smaller than this a tile, only the room's big things (a campfire, a rack); no small ones, nothing lying on the floor
     kindRooms().forEach(R => {
       if (!roomSeen(R, T)) return;
       const add = p => {
         const tx = Math.floor(p.x), ty = Math.floor(p.y), k = key(tx, ty);
         if (fl.items.has(k) || fl.objects.has(k) || isHeart(tx, ty) || tileAt(tx, ty) !== FLOOR) return;
-        if (!onScreen(W2S(p.x, p.y, 0), T * 2)) return;
+        if ((small && p.h < 0.4) || !onScreen(W2S(p.x, p.y, 0), T * 2)) return;
         SO.push([p.x + p.y, 5, p, p.x, p.y, p.h]);
       };
-      kindProps(R).forEach(add); kindClutter(R).forEach(add);   // 1.27.5: and what lies on its floor
+      kindProps(R).forEach(add); if (!small) kindClutter(R).forEach(add);   // 1.27.5: and what lies on its floor
     });
   }
   const PROP_K = 1.3;
@@ -2863,7 +3025,7 @@
   Object.keys(CL_ART).forEach(k => { PROP[k] = kcDraw; });
   // under each trap or monster of a komnata's family that stands (hangs, floats) in it: a soft glow of its colour
   function drawKindAuras(T) {
-    if (T < 6 || !kindRooms().length) return;
+    if (detT(T) < 6 || !kindRooms().length) return;   // 1.28.0: detT
     const t = reduceMotion ? 0 : realNow;
     fl.items.forEach(it => {
       const k = KIND_OF[it.type]; if (!k || !inKind(it) || (MONSTERS[it.type] && it.hp <= 0) || it.disabled) return;
@@ -2886,11 +3048,11 @@
       box: (u0, u1, v0, v1, d0, d1, c) => F.box((u0 + u1) / 2, (d0 + d1) / 2, u1 - u0, d1 - d0, Z(v0) - Z(v1), Z(v1), c[0], c[1], c[2]),
       plane: d => F.plane(d, z0, z1),
       // the soft shadow a body casts on the face: shape() fills or strokes in the unit square, shifted down and away from the light
-      shadow: (shape, a, m) => { if (cam.s < 20) return; F.plane(0.003, z0, z1); ctx.translate((S ? 0.035 : -0.02) * (m || 1), 0.05 * (m || 1)); ctx.fillStyle = ctx.strokeStyle = 'rgba(0,0,0,' + (a || 0.3) + ')'; ctx.beginPath(); shape(); screenT(); },
+      shadow: (shape, a, m) => { if (wdT(cam.s) < 20) return; F.plane(0.003, z0, z1); ctx.translate((S ? 0.035 : -0.02) * (m || 1), 0.05 * (m || 1)); ctx.fillStyle = ctx.strokeStyle = 'rgba(0,0,0,' + (a || 0.3) + ')'; ctx.beginPath(); shape(); screenT(); },
       // a flat body parallel to the face from d0 to d1 (a shield, a hide, a sheet): its edge in layers, its front (left in the front's plane)
-      stack: (d0, d1, n, shape, side, front) => { if (cam.s < 20) n = 1; for (let j = 0; j < n; j++) { F.plane(d0 + (d1 - d0) * j / n, z0, z1); ctx.fillStyle = side; ctx.beginPath(); shape(); ctx.fill(); } F.plane(d1, z0, z1); ctx.fillStyle = front; ctx.beginPath(); shape(); ctx.fill(); },
+      stack: (d0, d1, n, shape, side, front) => { if (wdT(cam.s) < 20) n = 1; for (let j = 0; j < n; j++) { F.plane(d0 + (d1 - d0) * j / n, z0, z1); ctx.fillStyle = side; ctx.beginPath(); shape(); ctx.fill(); } F.plane(d1, z0, z1); ctx.fillStyle = front; ctx.beginPath(); shape(); ctx.fill(); },
       // a hollow in a front at d1: its window filled with the inner colour, what lies in it drawn dep deeper, clipped to the window
-      recess: (d1, dep, shape, inner, fill) => { ctx.save(); F.plane(d1, z0, z1); ctx.beginPath(); shape(); ctx.fillStyle = inner; ctx.fill(); ctx.clip(); F.plane(d1 - dep, z0, z1); fill(); ctx.restore(); },
+      recess: (d1, dep, shape, inner, fill) => { ctx.save(); F.plane(d1, z0, z1); ctx.beginPath(); shape(); if (wSt()) { ctx.fillStyle = inner; ctx.fill(); } ctx.clip(); F.plane(d1 - dep, z0, z1); fill(); ctx.restore(); },
       bone: (u0, v0, u1, v1, d, r, col) => { const a = F.W(u0, d), b = F.W(u1, d); pBone(a[0], a[1], Z(v0), b[0], b[1], Z(v1), r, col); }
     };
     return K;
@@ -2988,10 +3150,9 @@
     },
     haunt(K, t, u0, alt, T) {   // a torn curtain on a rod, stirring in no wind; or an iron sconce with a candle burning blue
       if (alt) {
-        const z = K.Z(0.62); K.box(0.43, 0.57, 0.56, 0.68, 0, 0.025, KW_IRON); pRod(K.P(0.5, 0.64, 0.02), K.P(0.5, 0.62, 0.13), Math.max(1.5, T * 0.03), '#4a4e5a');
-        K.F.box(0.5, 0.14, 0.11, 0.11, 0.025, z, '#4a4e5a', '#3a3e48', '#2c2f36');
-        const [wx, wy] = K.W(0.5, 0.14); pCyl(wx, wy, 0.028, 0.14, '#cfd8e0', '#fffaf0', z + 0.025); const q = W2S(wx, wy, z + 0.165);
-        pFlame(q[0], q[1], T * 0.13, t, u0 * 9, 'rgba(200,240,255,0.95)', 'rgba(100,190,255,0.85)', ['kcandB', [[0, 'rgba(140,210,255,0.35)'], [1, 'rgba(140,210,255,0)']]]);
+        const z = K.Z(0.62), [wx, wy] = K.W(0.5, 0.14), q = W2S(wx, wy, z + 0.165);
+        if (wSt()) { K.box(0.43, 0.57, 0.56, 0.68, 0, 0.025, KW_IRON); pRod(K.P(0.5, 0.64, 0.02), K.P(0.5, 0.62, 0.13), Math.max(1.5, T * 0.03), '#4a4e5a'); K.F.box(0.5, 0.14, 0.11, 0.11, 0.025, z, '#4a4e5a', '#3a3e48', '#2c2f36'); pCyl(wx, wy, 0.028, 0.14, '#cfd8e0', '#fffaf0', z + 0.025); }   // 1.28.0: wSt / wLv
+        if (wLv()) pFlame(q[0], q[1], T * 0.13, t, u0 * 9, 'rgba(200,240,255,0.95)', 'rgba(100,190,255,0.85)', ['kcandB', [[0, 'rgba(140,210,255,0.35)'], [1, 'rgba(140,210,255,0)']]]);
         return;
       }
       // 1.27.5 (round 3): the cloth hangs in deep pleats: each a strip turned to the light or away from it, in and out from the rod; a
@@ -3068,8 +3229,8 @@
         for (let k = 1; k < 4; k++) pRod(K.P(0.32 + k * 0.09, 0.08, 0.02), K.P(0.32 + k * 0.09, 0.32, 0.02), Math.max(1.5, T * 0.028), '#5a5e66');
         return;
       }
-      const q = K.P(0.5, 0.16, 0.02); K.box(0.46, 0.54, 0.12, 0.2, 0, 0.02, KW_IRON); pRing(q[0], q[1] + T * 0.02, T * 0.035, T * 0.04, Math.max(1.4, T * 0.022), '#9a9da5');
-      [-1, 1].forEach(sd => {
+      const q = K.P(0.5, 0.16, 0.02); if (wSt()) { K.box(0.46, 0.54, 0.12, 0.2, 0, 0.02, KW_IRON); pRing(q[0], q[1] + T * 0.02, T * 0.035, T * 0.04, Math.max(1.4, T * 0.022), '#9a9da5'); }   // 1.28.0: wSt / wLv
+      if (wLv()) [-1, 1].forEach(sd => {
         const sway = 0.02 * Math.sin(t * 1.1 + sd + u0 * 3);
         for (let k = 0; k < 6; k++) { const p = K.P(0.5 + sd * (0.03 + k * 0.035) + sway * k / 6, 0.2 + k * 0.07, 0.035 + k * 0.004); pRing(p[0], p[1], T * (k % 2 ? 0.014 : 0.024), T * (k % 2 ? 0.032 : 0.02), Math.max(1, T * 0.016), '#9a9da5'); }
         const e = K.P(0.5 + sd * 0.24 + sway, 0.68, 0.06); pRing(e[0], e[1], T * 0.055, T * 0.06, Math.max(1.6, T * 0.032), '#a4a7ae');
@@ -3087,16 +3248,16 @@
       });
     },
     gallery(K, t, u0, alt, T) {   // a gilded frame standing off the wall (its thickness shows), the canvas sunk in it; the face in it too dark to make out, the eyes catching the light
-      K.shadow(() => { ctx.rect(0.2, 0.08, 0.6, 0.66); ctx.fill(); }, 0.32, 1.2);
+      if (wSt()) { K.shadow(() => { ctx.rect(0.2, 0.08, 0.6, 0.66); ctx.fill(); }, 0.32, 1.2);
       K.box(0.2, 0.8, 0.08, 0.74, 0, 0.07, ['#e0bc66', '#c9a24e', '#8a6a2a']);
       K.plane(0.07); ctx.fillStyle = 'rgba(255,240,200,0.25)'; ctx.fillRect(0.2, 0.08, 0.6, 0.025); ctx.fillRect(0.2, 0.08, 0.025, 0.66);
-      ctx.fillStyle = kSh('#7a5a22', K.k); ctx.fillRect(0.245, 0.125, 0.51, 0.57);
+      ctx.fillStyle = kSh('#7a5a22', K.k); ctx.fillRect(0.245, 0.125, 0.51, 0.57); }   // 1.28.0: wSt / wLv (the eyes catch the light: live)
       const glint = Math.sin(t * 0.8 + u0 * 7) > 0.85;
       K.recess(0.07, 0.04, () => ctx.rect(0.27, 0.15, 0.46, 0.52), '#120e0e', () => {
-        ctx.fillStyle = '#1a1416'; ctx.fillRect(0.27, 0.15, 0.46, 0.52);
-        ctx.fillStyle = 'rgba(70,56,52,0.8)'; ctx.beginPath(); ctx.ellipse(0.5, 0.36, 0.1, 0.13, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(0.36, 0.48, 0.28, 0.2);
-        ctx.fillStyle = glint ? '#ffe9a8' : 'rgba(30,24,22,0.9)'; ctx.fillRect(0.455, 0.33, 0.025, 0.018); ctx.fillRect(0.52, 0.33, 0.025, 0.018);
-        if (alt) { ctx.strokeStyle = 'rgba(255,240,200,0.25)'; ctx.lineWidth = 0.02; ctx.beginPath(); ctx.moveTo(0.28, 0.66); ctx.lineTo(0.72, 0.16); ctx.stroke(); }
+        if (wSt()) { ctx.fillStyle = '#1a1416'; ctx.fillRect(0.27, 0.15, 0.46, 0.52);
+        ctx.fillStyle = 'rgba(70,56,52,0.8)'; ctx.beginPath(); ctx.ellipse(0.5, 0.36, 0.1, 0.13, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(0.36, 0.48, 0.28, 0.2); }
+        if (wLv()) { ctx.fillStyle = glint ? '#ffe9a8' : 'rgba(30,24,22,0.9)'; ctx.fillRect(0.455, 0.33, 0.025, 0.018); ctx.fillRect(0.52, 0.33, 0.025, 0.018); }
+        if (alt && wLv()) { ctx.strokeStyle = 'rgba(255,240,200,0.25)'; ctx.lineWidth = 0.02; ctx.beginPath(); ctx.moveTo(0.28, 0.66); ctx.lineTo(0.72, 0.16); ctx.stroke(); }
       });
     },
     nursery(K, t, u0, alt, T) {   // a child's drawing pinned to the wallpaper (a sheet of paper, its edge and a pin)
@@ -3108,8 +3269,12 @@
     }
   };
   // a standing wall of a komnata: dress the face (or faces) that look into it; every other wall tile, none with a torch or a trap
+  // 1.28.0: which komnaty's decor moves (alt: the face's variant); the rest is still (the wall cache paints it once)
+  const KWD_LIVE = { goblin: a => !a, spider: () => true, haunt: () => true, bats: () => true, forge: a => a, prison: a => !a, gallery: () => true, lab: a => !a, graveyard: a => a, abyssgate: a => !a };
+  const KWD_MIX = { prison: 1, haunt: 1, gallery: 1 };   // (their still and moving pieces apart: wSt, wLv)
+  const KWD_STILL = { ogre: 1, ossuary: 1, armory: 1, junk: 1, nursery: 1 };
   function kindWallDeco(i, T) {
-    if (T < 12 || !WA.anyRk) return;   // 1.24 (C): as kindWall3D
+    if (wdT(T) < 12 || !WA.anyRk) return;   // 1.24 (C): as kindWall3D (1.28.0: wdT, GFX.lvl)
     const x = i % WW, y = (i - x) / WW, h = WA.cur[i];
     if (h < WALL_H * 0.6 || fl.items.has(key(x, y)) || WA.torchAt.has(i)) return;
     const t = reduceMotion ? 0 : realNow;
@@ -3117,15 +3282,17 @@
       if (tileAt(x + dx, y + dy) !== FLOOR || wallH(x + dx, y + dy) >= h - 0.001) return;
       const r = roomOf(x + dx, y + dy), R = r >= 0 ? fl.rooms[r] : null, fn = R && R.rk && KIND_WALL[R.rk];
       const sel = tileHash(x * 5 + 1, y * 3 + 2) % 3; if (!fn || sel === 0 || (sel === 1 && REPLACE_FLAT[R.rk])) return;   // (the raised pieces take the other faces: kindWall3D)
-      const z1 = Math.min(h, 1.45), z0 = Math.max(0, z1 - 1.2);
-      ctx.save();   // 1.27.5: a body in the face's frame (was: a picture lifted off the face with a soft shadow)
-      try { fn(kwKit(wallFrame(x, y, face), z0, z1), t, kH(x, y, 1), tileHash(x + 7, y + 11) % 2 === 0, T); } finally { ctx.restore(); }
+      const z1 = Math.min(h, 1.45), z0 = Math.max(0, z1 - 1.2), alt = tileHash(x + 7, y + 11) % 2 === 0, lv = KWD_LIVE[R.rk];
+      wP(!reduceMotion && !KWD_STILL[R.rk] && (!lv || lv(alt)), KWD_MIX[R.rk] && !(R.rk === 'haunt' && !alt), () => {   // 1.28.0
+        ctx.save();   // 1.27.5: a body in the face's frame (was: a picture lifted off the face with a soft shadow)
+        try { fn(kwKit(wallFrame(x, y, face), z0, z1), t, kH(x, y, 1), alt, T); } finally { ctx.restore(); }
+      });
     });
   }
   // a little life over the floor of each komnata on screen (screen space): smoke, a spider on a thread, flies, wisps, bats,
   // candle flames, glints, embers, drips, dust, a shaft of light, notes of a lullaby
   function drawKindLife(T) {
-    if (T < 9 || reduceMotion) return;
+    if (detT(T) < 14 || reduceMotion) return;   // 1.28.0: was T < 9; specks a pixel big are not seen
     const t = realNow;
     kindRooms().forEach(R => {
       const [mx, my] = roomMid(R), c = W2S(mx, my, 0);
@@ -3677,7 +3844,7 @@
         isoBox(x, y - 0.2175, w, 0.125, h, cb[0], cb[1], cb[2], 0.3);
         isoBox(x, y - 0.12, 0.27, w, h, cb[0], cb[1], cb[2], 0.3);
         isoBox(x, y + 0.0675, w, 0.305, h, cb[0], cb[1], cb[2], 0.3);
-        if (T >= 24) { const a = W2S(x - w / 2, y - 0.28, 0.3 + h), b = W2S(x - w / 2, y + 0.22, 0.3 + h); ctx.strokeStyle = 'rgba(255,240,200,0.45)'; ctx.lineWidth = Math.max(0.8, T * 0.01); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }   // its lit edge
+        if (detT(T) >= 24) { const a = W2S(x - w / 2, y - 0.28, 0.3 + h), b = W2S(x - w / 2, y + 0.22, 0.3 + h); ctx.strokeStyle = 'rgba(255,240,200,0.45)'; ctx.lineWidth = Math.max(0.8, T * 0.01); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }   // its lit edge
     },
     rune(it, bx, by, T) {
       groundShadow(bx, by, 0.3, 0.25, 0.4);
@@ -3747,11 +3914,11 @@
       const d = fl.doors.get(key(it.x, it.y)), closed = d && doorClosed(d), ax = doorAlongX(it.x, it.y), H = DOOR_H, z0 = closed ? 0 : H * 0.72;
       const B = (u, w, hh, zb, c) => ax ? isoBox(bx - 0.5 + u, by, w, 0.06, hh, c[0], c[1], c[2], zb) : isoBox(bx, by - 0.5 + u, 0.06, w, hh, c[0], c[1], c[2], zb);
       const iron = ['#b4b8c6', '#8e92a0', '#5e626e'];
-      for (let k = 1; k < 6; k++) { B(k / 6, 0.05, H - z0, z0, iron); if (T >= 12) { const u = k / 6, p = ax ? [bx - 0.5 + u, by] : [bx, by - 0.5 + u]; pCone(p[0], p[1], 0.03, -0.07, '#c9ccd8', '#6c7080', z0); } }
+      for (let k = 1; k < 6; k++) { B(k / 6, 0.05, H - z0, z0, iron); if (detT(T) >= 12) { const u = k / 6, p = ax ? [bx - 0.5 + u, by] : [bx, by - 0.5 + u]; pCone(p[0], p[1], 0.03, -0.07, '#c9ccd8', '#6c7080', z0); } }
       [0.35, 0.7].forEach(z => { if (z * H < z0) return; B(0.5, 0.94, 0.05, z * H - 0.025, iron); });
       B(0.5, 1.04, 0.1, H, ['#3a3b42', '#2a2b31', '#1e1f24']);   // the beam in the arch
       const left = Math.max(0, mods.gateUses - (it.uses || 0));
-      if (T >= 14) for (let k = 0; k < left; k++) pCyl(bx + (ax ? -0.3 + k * 0.15 : 0.35), by + (ax ? 0.35 : -0.3 + k * 0.15), 0.045, 0.02, '#8a6a2a', '#d9a640');   // uses left: brass studs in the floor
+      if (detT(T) >= 14) for (let k = 0; k < left; k++) pCyl(bx + (ax ? -0.3 + k * 0.15 : 0.35), by + (ax ? 0.35 : -0.3 + k * 0.15), 0.045, 0.02, '#8a6a2a', '#d9a640');   // uses left: brass studs in the floor
     },
     creak(it, bx, by, T) {   // a door leaf in the doorway, swinging when it creaks (1.27.5: a thick oak leaf, its edge and top showing)
       const ax = doorAlongX(it.x, it.y), sw = it.anim > 0 ? Math.sin(realNow * 30) * 0.08 : 0, H = DOOR_H * 0.92;
@@ -3806,7 +3973,7 @@
       }
       if (kind === 'gold') {   // 1.27.5: real coins with an edge, a few stacked in the middle
         const big = (it.gold || 1) > 1;
-        LOOT_PILE[big ? 1 : 0].forEach((q, k) => { if (T >= 24 || k % 2 === 0) pCyl(bx + q[0], by + q[1], 0.085, 0.024, '#a87a2a', q[3] ? '#f0cc6c' : '#e2b852', q[2]); });   // (far out, every other coin)
+        LOOT_PILE[big ? 1 : 0].forEach((q, k) => { if (detT(T) >= 24 || k % 2 === 0) pCyl(bx + q[0], by + q[1], 0.085, 0.024, '#a87a2a', q[3] ? '#f0cc6c' : '#e2b852', q[2]); });   // (far out, every other coin)
         if (big && T >= 16) signText(String(it.gold), W2S(bx, by, 0.3)[0], W2S(bx, by, 0.3)[1], numFont(Math.max(8, T * 0.24), true), '#ffe9a8');
       } else if (kind === 'potion') {   // 1.27.5: a round glass flask with the potion in it, a neck and a cork
         const c = W2S(bx, by, 0.14), rr = T * 0.14, lv = c[1] + rr * 0.12, lx = Math.sqrt(1 - 0.0144) * rr;
@@ -3919,7 +4086,7 @@
         const b1 = L(u - tw / 2, v, 0), b2 = L(u + tw / 2, v, 0), b3 = L(u, v - tw * 0.7, 0), tp = L(u, v - tw * 0.2, -(0.07 + (k % 2) * 0.02)); poly([b1, b3, tp], '#a89a80'); poly([b1, b2, tp], '#efe4cc'); } };
       // its edge: the layers between under and top
       for (let j = 0; j <= 3; j++) { poly(ring(wt * j / 3), j === 3 && upVis ? lc[0] : lc[2]); }
-      if (upVis) { poly(top, lc[0]); if (!round && T >= 20) { ctx.strokeStyle = 'rgba(30,18,8,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); [0.33, 0.66].forEach(f => { const A = L(-hw, 2 * hd * f, wt), B = L(hw, 2 * hd * f, wt); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); }); ctx.stroke(); } }
+      if (upVis) { poly(top, lc[0]); if (!round && detT(T) >= 20) { ctx.strokeStyle = 'rgba(30,18,8,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); [0.33, 0.66].forEach(f => { const A = L(-hw, 2 * hd * f, wt), B = L(hw, 2 * hd * f, wt); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); }); ctx.stroke(); } }
       else { poly(bot, lc[3]); }
       teethDown();
       // the eyes on its front, under the lid: round, standing out, a slit pupil, a glint
@@ -4049,7 +4216,7 @@
     else if (q) { fo.kx = 1 + 0.12 * q; fo.ky = 1 - 0.1 * q; }   // 1.09: a hit squashes it for a moment
     if (h.sliding && !reduceMotion) {   // 1.10: on the ice: leaning back, arms out, a spray of ice behind
       fo.rot = -face * 0.2; ctx.fillStyle = 'rgba(225,245,255,0.7)';
-      for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(x - face * W * (0.9 + 0.35 * k), feet - H * (0.02 + 0.05 * ((k + Math.floor(realNow * 12)) % 2)), Math.max(1, H * 0.035), 0, Math.PI * 2); ctx.fill(); }
+      if (detT(T) >= 12) for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(x - face * W * (0.9 + 0.35 * k), feet - H * (0.02 + 0.05 * ((k + Math.floor(realNow * 12)) % 2)), Math.max(1, H * 0.035), 0, Math.PI * 2); ctx.fill(); }
     }
     heroStatusUnder(h, x, feet, W, T);   // 1.26: puddles under the feet (wet, oiled), the siren's thread (p7c_art.js)
     const ph = drawPixelFigure(h.type, x, feet, PH, face, fo);
@@ -4333,8 +4500,9 @@
     ctx.globalAlpha = 1;
   }
   function drawParticles(T, flat) {   // 1.07: rings lie on the floor (floor pass), sparks fly upright (second pass)
-    particles.forEach(p => {
-      if (!!p.ring !== !!flat) return;
+    const half = detT(T) < 12;   // 1.28.0: far out every other spark
+    particles.forEach((p, i) => {
+      if (!!p.ring !== !!flat || (half && !p.ring && i % 2)) return;
       ctx.globalAlpha = clamp(p.life * 2.2, 0, 1);
       if (p.ring) { ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(2, T * 0.08); ctx.beginPath(); ctx.arc(p.x * T, p.y * T, p.r * T, 0, Math.PI * 2); ctx.stroke(); }
       else { const q = W2S(p.x, p.y, 0.35); ctx.fillStyle = p.color; ctx.fillRect(q[0] - T * 0.04, q[1] - T * 0.04, T * 0.08, T * 0.08); }

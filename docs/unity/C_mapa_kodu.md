@@ -1227,6 +1227,11 @@ Obiekt `ART` i wpięcia w `p7_draw.js` (sekcja 08, 6.14a).
 | `runeBuy` | (1.26) kupno runy: `run.famLv[f] += 1` |
 | `heartOffer` | (1.26) rząd Dar serca: najstarszy czekający poziom z `run.heartPicks` (3 karty, z Dziesięciną 4; Odrost na poziomach nieparzystych, gdy brakuje kryształu); 1.26.1: rzadkość r 70% / l 30% (komentarz nad funkcją dalej podaje 55/35/10) |
 | `heartTake` | (1.26) weź kartę z rzędu Dar serca (talia, schowek, ★ albo Odrost); 1.27.5: karta Daru zawsze do talii, każdy wybór w `fl.heartPicksLog` |
+| `GFX`, `detT` | (1.28.0, p2_state_map.js) tryb i poziom grafiki; rozmiar kafla, z którym porównują się progi detali |
+| `gfxNote`, `gfxSet`, `setGfxMode` | (1.28.0, p6_loop.js) jakość automatyczna, zmiana poziomu, wybór z Ustawień |
+| `perfTest`, `perfHud` | (1.28.0) test wydajności autora (#perf): loch z fali 17 i licznik fps |
+| `wcBlock`, `wcBuild`, `wcFrame` | (1.28.0, p7_draw.js) ściany w pamięci podręcznej: części bloku, pieczątki, wyrównanie do piksela |
+| `devInfo` | (1.28.0, p6_loop.js) rdzenie, pamięć i model urządzenia do telemetrii |
 | `moveCard` | (1.27.8) przenosi kartę między miejscami talii i schowka (kolejność, do schowka i z powrotem, zamiana), tylko w budowie; karty Daru stoją |
 | `holdSellCard` | (1.27.8) sprzedaż karty po przytrzymaniu |
 | `cardGestures` | (1.27.8) gesty kafelka karty: przeciągnięcie (duch, cel upuszczenia), przytrzymanie ze sprzedażą, stuknięcie dalej otwiera kartę |

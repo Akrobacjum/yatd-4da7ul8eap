@@ -688,7 +688,7 @@
     FP.runs = runs;
     const t0 = performance.now();
     try { frameBody(now); } catch (e) { perfErr(e); try { e.seen = 1; } catch (_) { } setTimeout(() => { throw e; }); }   // thrown again outside the loop: the console (and the tests) still see it
-    perfNote(now, performance.now() - t0);
+    const js = performance.now() - t0; perfNote(now, js); gfxNote(now, js, !FP.still, runs);   // 1.28.0: gfxNote
     kick();
   }
   // 1.04: how smoothly the wave runs on the player's device goes to the wave log (a lag was reported in wave 1 only and could not
@@ -696,8 +696,11 @@
   // and running (no pause, no card open). An error in a frame no longer stops the game (the next frame is always asked for) and
   // the first few go to the log too.
   // 1.05: also how long the world stood still under a skill check (ms of frames with a check up) and the wave's real running time
-  const PERF = { gaps: [], js: [], last: 0, made0: 0, direct: 0, split: 0, errs: [], fz: 0, ms: 0 };
-  function perfReset() { PERF.gaps = []; PERF.js = []; PERF.last = 0; PERF.made0 = TC.made || 0; PERF.direct = 0; PERF.split = 0; PERF.fz = 0; PERF.ms = 0; }
+  const PERF = { gaps: [], js: [], last: 0, made0: 0, direct: 0, split: 0, errs: [], fz: 0, ms: 0, sim: [], drw: [], steps: [], T: [], walls: [], so: [], wc: [0, 0, 0] };
+  // 1.28.0 (analysis 26.10: telemetry first): per frame the simulation's and the drawing's own time, the steps, the tile size on
+  // screen, how many wall blocks and depth-sorted things were drawn
+  const DRAWN = { w: 0, so: 0, T: 0, wh: 0, wb: 0, wl: 0 }, FRAME = { sim: 0, drw: 0, steps: 0 };
+  function perfReset() { PERF.sim = []; PERF.drw = []; PERF.steps = []; PERF.T = []; PERF.walls = []; PERF.so = []; PERF.wc = [0, 0, 0]; PERF.gaps = []; PERF.js = []; PERF.last = 0; PERF.made0 = TC.made || 0; PERF.direct = 0; PERF.split = 0; PERF.fz = 0; PERF.ms = 0; PERF.gl = [0, 0, 0]; PERF.gch = 0; }
   const perfErr = e => {   // the message and where: the function and the line of the built file
     if (PERF.errs.length >= 8) return;
     const at = /at (?:(\S+) \()?.*?:(\d+):\d+\)?/.exec(String((e && e.stack) || '').split('\n')[1] || '');
@@ -706,20 +709,79 @@
   window.addEventListener('error', ev => { if (!(ev.error && ev.error.seen)) perfErr(ev.error || ev.message); });
   function perfNote(now, js) {
     const on = !!(fl && fl.phase === 'raid' && !paused && !modalOpen && document.visibilityState !== 'hidden');
-    if (on && PERF.last) { const g = Math.min(100, now - PERF.last); PERF.ms += g; if (fl.check && !fl.check.result) PERF.fz += g; }
+    if (on && PERF.last) { const g = Math.min(100, now - PERF.last); PERF.ms += g; if (fl.check && !fl.check.result) PERF.fz += g; (PERF.gl || (PERF.gl = [0, 0, 0]))[GFX.lvl] += g; }   // 1.28.0: PERF.gl, time at each graphics level
     if (on && PERF.last && PERF.gaps.length < 40000) {
       PERF.gaps.push(Math.round((now - PERF.last) * 10) / 10); PERF.js.push(Math.round(js * 10) / 10);
+      PERF.sim.push(Math.round(FRAME.sim * 10) / 10); PERF.drw.push(Math.round(FRAME.drw * 10) / 10); PERF.steps.push(FRAME.steps); PERF.T.push(Math.round(DRAWN.T)); PERF.walls.push(DRAWN.w); PERF.so.push(DRAWN.so);
+      if (!PERF.wc || PERF.gaps.length === 1) PERF.wc = [0, 0, 0];
+      PERF.wc[0] += DRAWN.wh; PERF.wc[1] += DRAWN.wb; PERF.wc[2] += DRAWN.wl;   // 1.28.0: the wall cache: blocks pasted, stamps made, blocks drawn live
       if (TC.direct) PERF.direct++;
       if (SPLIT.k > 0.5) PERF.split++;
     }
     PERF.last = on ? now : 0;
+  }
+  const med = (a, k) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(s.length * k))]; };   // 1.28.0
+  function devInfo() {   // 1.28.0: what the device is (cores, memory in GB where the browser tells, the phone model from the user agent)
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '', m = /Android[^;)]*;\s*([^;)]+?)(?:\s+Build|[;)])/.exec(ua);
+    return { cores: (navigator && navigator.hardwareConcurrency) || null, mem: (navigator && navigator.deviceMemory) || null, model: m ? m[1].trim().slice(0, 40) : /iPhone|iPad/.test(ua) ? (/iPad/.test(ua) ? 'iPad' : 'iPhone') : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : '?' };
   }
   function perfSummary() {
     const n = PERF.gaps.length; if (n < 20) return null;
     const g = PERF.gaps.slice().sort((a, b) => a - b), j = PERF.js.slice().sort((a, b) => a - b), q = (a, k) => a[Math.min(a.length - 1, Math.floor(a.length * k))];
     let sum = 0; PERF.gaps.forEach(x => { sum += x; });
     return { frames: n, fps: Math.round(n / sum * 10000) / 10, gapMed: q(g, 0.5), gapP90: q(g, 0.9), gapMax: g[n - 1], slow: Math.round(g.filter(x => x > 50).length / n * 1000) / 10,
-      jsMed: q(j, 0.5), jsP90: q(j, 0.9), jsMax: j[n - 1], realSec: Math.round(PERF.ms / 100) / 10, frozen: PERF.ms > 0 ? Math.round(PERF.fz / PERF.ms * 1000) / 10 : 0, dpr: DPR, w: Math.round(cw), h: Math.round(ch), direct: Math.round(PERF.direct / n * 100), split: Math.round(PERF.split / n * 100), chunks: (TC.made || 0) - PERF.made0 };
+      jsMed: q(j, 0.5), jsP90: q(j, 0.9), jsMax: j[n - 1], realSec: Math.round(PERF.ms / 100) / 10, frozen: PERF.ms > 0 ? Math.round(PERF.fz / PERF.ms * 1000) / 10 : 0, dpr: DPR, w: Math.round(cw), h: Math.round(ch), direct: Math.round(PERF.direct / n * 100), split: Math.round(PERF.split / n * 100), chunks: (TC.made || 0) - PERF.made0,
+      simMed: med(PERF.sim, 0.5), simP90: med(PERF.sim, 0.9), drawMed: med(PERF.drw, 0.5), drawP90: med(PERF.drw, 0.9), stepsMed: med(PERF.steps, 0.5), stepsMax: med(PERF.steps, 1), tileMed: med(PERF.T, 0.5), tileMin: med(PERF.T, 0), wallsMed: med(PERF.walls, 0.5), soMed: med(PERF.so, 0.5), soMax: med(PERF.so, 1), wcHit: PERF.wc ? Math.round(PERF.wc[0] / Math.max(1, PERF.wc[0] + PERF.wc[2]) * 1000) / 10 : null, wcMade: PERF.wc ? PERF.wc[1] : null, wcLive: PERF.wc ? PERF.wc[2] : null, wcMB: Math.round(WC.px * 4 / 1e5) / 10, dev: devInfo(),   // 1.28.0
+      gfxMode: GFX.mode, gfxLvl: GFX.lvl, gfxScale: GFX.scale, gfxSec: (PERF.gl || [0, 0, 0]).map(x => Math.round(x / 100) / 10), gfxCh: PERF.gch || 0 };   // 1.28.0: graphics: the mode, the level and resolution now, seconds at levels 0/1/2, level changes in the wave
+  }
+  // 1.28.0 (analysis 26.10, proposal 4): automatic graphics quality. Only frames the game really draws are watched: the running raid,
+  // and the build while a finger moves the map (the fast pace); idle frames and the 30-a-second build pace say nothing. Every second
+  // of such frames is one window: its median JS time and its fps. Two bad windows in a row (JS over GQ_JS_BAD ms or fewer than
+  // GQ_FPS_BAD frames a second) step GFX.lvl down (0 -> 1 -> 2; at 2 a big canvas also draws at a lower resolution, GFX.scale); a
+  // long run of good windows (well under budget: GQ.up of them with JS under GQ_JS_GOOD and GQ_FPS_GOOD fps) steps it back up. A level
+  // the device fell from after coming back up to it waits twice as long the next time (no flapping). Settings: 'auto' (this), 'full'
+  // (always 0, full resolution), 'eco' (always 2). Saved per device ('yatd-gfx').
+  const GQ_JS_BAD = 12, GQ_FPS_BAD = 45, GQ_JS_GOOD = 7, GQ_FPS_GOOD = 53, GQ_UP0 = 20, GQ_UPMAX = 160, GQ_BIG = 0.8e6, GQ_SCALE = 0.75;
+  const GQ = { js: [], t: 0, bad: 0, good: 0, skip: 0, up: GQ_UP0, rose: -1, last: 0, ch: 0, hud: null, hn: 0, hjs: [], ht: 0 };
+  try { const v = localStorage.getItem('yatd-gfx'); if (v === 'full' || v === 'eco') GFX.mode = v; } catch (e) {}
+  if (GFX.mode === 'eco') GFX.lvl = 2;
+  const gfxScaleFor = base => GFX.lvl === 2 && FW * FH * base * base > GQ_BIG ? GQ_SCALE : 1;   // only a big canvas (a phone's 2x screen, a computer's window)
+  function gfxSet(lvl) {   // a new level: the caches follow by themselves (they are keyed by the zoom step and DPR)
+    lvl = clamp(lvl, 0, 2); if (lvl === GFX.lvl) return;
+    if (GFX.mode === 'auto') { if (lvl > GFX.lvl && GQ.rose === GFX.lvl) GQ.up = Math.min(GQ_UPMAX, GQ.up * 2); GQ.rose = lvl < GFX.lvl ? lvl : -1; }   // falling again from a level it came back up to: twice as long a wait next time
+    GFX.lvl = lvl; GQ.ch++; PERF.gch = (PERF.gch || 0) + 1; GQ.bad = GQ.good = 0; GQ.skip = 1; GQ.js = []; GQ.t = 0;
+    if (fl) resize(); else FP.wake = true;
+  }
+  function setGfxMode(m) {   // from the Settings
+    if (m !== 'auto' && m !== 'full' && m !== 'eco') return;
+    GFX.mode = m; try { localStorage.setItem('yatd-gfx', m); } catch (e) {}
+    GQ.up = GQ_UP0; GQ.rose = -1; const want = m === 'eco' ? 2 : 0;
+    if (want !== GFX.lvl) gfxSet(want); else if (fl) resize();
+  }
+  function gfxNote(now, js, drew, runs) {
+    if (drew) { GQ.hn++; GQ.hjs.push(js); }
+    if (GQ.hud && now - GQ.ht >= 500) {   // the test's fps counter (#perf): frames drawn a second, the median JS ms, the level
+      const dt = (now - GQ.ht) / 1000, j = GQ.hjs.sort((a, b) => a - b)[GQ.hjs.length >> 1] || 0;
+      if (GQ.ht) GQ.hud.textContent = Math.round(GQ.hn / dt) + ' fps  ' + j.toFixed(1) + ' ms  L' + GFX.lvl + (GFX.scale < 1 ? ' x' + GFX.scale : '');
+      GQ.ht = now; GQ.hn = 0; GQ.hjs = [];
+    }
+    const on = drew && (runs || FP.iv === IV_FAST) && document.visibilityState !== 'hidden';
+    const g = now - GQ.last; GQ.last = on ? now : 0;
+    if (!on || GFX.mode !== 'auto' || g > 250 || g <= 0) return;   // (the first frame after a gap has no gap of its own)
+    GQ.js.push(js); GQ.t += g;
+    if (GQ.t < 1000) return;
+    const n = GQ.js.length, jm = GQ.js.sort((a, b) => a - b)[n >> 1], fps = n / (GQ.t / 1000);
+    GQ.js = []; GQ.t = 0; GQ.w = [Math.round(jm * 10) / 10, Math.round(fps)];   // (the last window, for the tests)
+    if (GQ.skip) { GQ.skip--; return; }   // the window right after a change: the caches were being made anew
+    if (jm > GQ_JS_BAD || fps < GQ_FPS_BAD) { GQ.good = 0; if (++GQ.bad >= 2 && GFX.lvl < 2) gfxSet(GFX.lvl + 1); }
+    else { GQ.bad = 0; if (jm < GQ_JS_GOOD && fps >= GQ_FPS_GOOD) { if (++GQ.good >= GQ.up && GFX.lvl > 0) gfxSet(GFX.lvl - 1); } else GQ.good = Math.max(0, GQ.good - 2); }   // (an in-between window sets it back a little, a bad one to 0)
+  }
+  function perfHud(on) {   // 1.28.0: the small fps counter in the top corner (the performance test only)
+    if (!on) { if (GQ.hud) GQ.hud.remove(); GQ.hud = null; return; }
+    if (GQ.hud) return;
+    const d = document.createElement('div'); d.id = 'perf-hud';
+    d.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top, 0px) + 2px);right:4px;z-index:9999;pointer-events:none;font:11px/1.2 ui-monospace,monospace;color:#cfe8c8;background:rgba(0,0,0,0.6);padding:2px 5px;border-radius:3px;white-space:pre';
+    document.body.appendChild(d); GQ.hud = d; GQ.ht = 0;
   }
   function frameBody(now) {
     const rdt = Math.min(fl && fl.phase === 'raid' && !paused && !modalOpen ? 0.05 : 1.2, (now - lastT) / 1000); lastT = now; realNow += rdt;   // 1.24 (C): out of the running raid a paced frame may come later (30 a second, or still): the real time goes on (the running raid keeps its 0,05 s cap)
@@ -728,10 +790,11 @@
       if (fl.check) { if (modalOpen || paused) { fl.check.t0 += rdt; fl.check.prepT0 += rdt; fl.check.resT += rdt; } else updateCheck(); }
       if (paused && fl.phase === 'raid') fl.stats.pauseTime += rdt;
       const ffWant = autoFFOn() ? S.autoFF : 1; ffAuto = ffWant > ffAuto ? Math.min(ffWant, ffAuto + rdt * 4) : ffWant;
-      const dt = rdt * timeScale();
+      const dt = rdt * timeScale(); FRAME.sim = 0; FRAME.steps = 0;
       if (dt > 0) {   // fast-forward runs in small steps so nothing tunnels through
-        const n = Math.ceil(dt / 0.05);
+        const n = Math.ceil(dt / 0.05), s0 = performance.now();
         for (let i = 0; i < n && fl.phase === 'raid'; i++) step(dt / n);
+        FRAME.sim = performance.now() - s0; FRAME.steps = n;   // 1.28.0
       }
       if (fl.phase === 'raid' && fl.ending !== null && !modalOpen && !paused) {
         fl.ending -= rdt;
@@ -767,7 +830,7 @@
     if (shake > 0) shake = Math.max(0, shake - rdt);
     // 1.03: building with nothing touched for 2 s: every other frame was enough. 1.24 (C): the pacing (FP) does it now: building 30
     // a second, still when idle (the clocks only, unless the picture changed)
-    if (!FP.still) { draw(); FP.drawn++; FP.sig = FP.iv === IV_FAST ? '' : frameSig(); }
+    if (!FP.still) { const d0 = performance.now(); draw(); FRAME.drw = performance.now() - d0; FP.drawn++; FP.sig = FP.iv === IV_FAST ? '' : frameSig(); }
   }
 
   /* ================= camera ================= */
@@ -971,7 +1034,7 @@
   applyLayout();
   function resize() {
     applyLayout();
-    DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));   // 1.03: at most 2x (3x is 2,25 times the pixels for little to see)
+    const base = Math.max(1, Math.min(2, window.devicePixelRatio || 1));   // 1.03: at most 2x (3x is 2,25 times the pixels for little to see)
     const rect = stage.getBoundingClientRect();
     const had = cw > 0, cx = had ? (cam.ox + cw / 2) / cam.s : 0, cy = had ? (cam.oy + ch / 2) / cam.s : 0;
     cw = Math.max(60, Math.floor(rect.width)); ch = Math.max(60, Math.floor(rect.height));
@@ -980,6 +1043,7 @@
     // frames the dungeon in the free part (#stage), which starts at OX, OY.
     const de = document.documentElement;
     FW = Math.max(cw, de.clientWidth || innerWidth); FH = Math.max(ch, de.clientHeight || innerHeight); OX = Math.round(rect.left); OY = Math.round(rect.top);
+    GFX.scale = gfxScaleFor(base); DPR = base * GFX.scale;   // 1.28.0: graphics level 2 on a big canvas: fewer pixels (the page's size and every tap stay in CSS pixels)
     const W = Math.round(FW * DPR), H = Math.round(FH * DPR); FP.wake = true; kick();   // 1.24 (C): a new size is drawn at once
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; cv.style.width = FW + 'px'; cv.style.height = FH + 'px'; }
     if (had) { cam.s = clamp(cam.s, fitScale() * 0.95, MAX_S); centerOnView(cx, cy); }

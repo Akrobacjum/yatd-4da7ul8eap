@@ -73,6 +73,7 @@ details.testers > summary, details.older > summary { font-size: 13px; color: var
 .langrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 10px; }
 .langrow .seg { flex: 0 0 auto; min-width: 170px; }
 .langrow .seg button { font-size: 14px; padding: 6px 12px 8px; }   /* 1.27: details in small print */
+#gfx-seg { min-width: 0; flex: 0 1 auto; } #gfx-seg button { flex: 0 0 auto; padding: 6px 8px 8px; } .note.gfxwhy { margin: -6px 0 12px; }   /* 1.28.0: Grafika: three choices, a line on the one chosen */
 #app {
   height: 100%; height: 100dvh; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 7px;
   padding-top: max(8px, var(--safe-top));
@@ -4675,13 +4676,19 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   let modalOpen = false, modalQueue = [], modalKind = null, curModal = null;
   let floats = [], particles = [], shake = 0, realNow = 0;
   const cam = { s: 24, ox: 0, oy: 0, manualUntil: 0 };
+  // 1.28.0: graphics quality. GFX.mode 'auto' | 'full' | 'eco' (Settings), GFX.lvl the level in use: 0 full, 1 fewer small details,
+  // 2 the fewest (and a lower canvas resolution, GFX.scale). detT(T) is the tile size the detail thresholds compare with: the real one
+  // at level 0, smaller at levels 1 and 2, so the existing `T >= n` checks drop their details sooner.
+  const GFX = { mode: 'auto', lvl: 0, scale: 1 };
+  const detT = T => GFX.lvl ? T * (GFX.lvl === 1 ? 0.7 : 0.45) : T;
   let cw = 0, ch = 0, DPR = 1, coachInset = 0;   // 1.04: coachInset = how much of the map's top the tutorial coach covers
   let UIZ = 1;   // 1.25: how much bigger the interface is on a big screen (1 on a phone, up to 1,3 on a tablet or a computer; applyLayout)
   const PC = () => document.documentElement.classList.contains('mouse');   // 1.25: played with a mouse (the texts say click and hover)
   let OX = 0, OY = 0, FW = 0, FH = 0;   // 1.24 (B): the canvas covers the whole screen (FW x FH); the camera's view (cw x ch, #stage) starts at OX, OY in it
 
   const $ = s => document.querySelector(s);
-  const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+  const cv = $('#cv'), stage = $('#stage');
+  let ctx = cv.getContext('2d');   // 1.28.0: let, so the wall cache can paint a block into its own canvas (wcBuild)
 
   const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -12760,7 +12767,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     FP.runs = runs;
     const t0 = performance.now();
     try { frameBody(now); } catch (e) { perfErr(e); try { e.seen = 1; } catch (_) { } setTimeout(() => { throw e; }); }   // thrown again outside the loop: the console (and the tests) still see it
-    perfNote(now, performance.now() - t0);
+    const js = performance.now() - t0; perfNote(now, js); gfxNote(now, js, !FP.still, runs);   // 1.28.0: gfxNote
     kick();
   }
   // 1.04: how smoothly the wave runs on the player's device goes to the wave log (a lag was reported in wave 1 only and could not
@@ -12768,8 +12775,11 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   // and running (no pause, no card open). An error in a frame no longer stops the game (the next frame is always asked for) and
   // the first few go to the log too.
   // 1.05: also how long the world stood still under a skill check (ms of frames with a check up) and the wave's real running time
-  const PERF = { gaps: [], js: [], last: 0, made0: 0, direct: 0, split: 0, errs: [], fz: 0, ms: 0 };
-  function perfReset() { PERF.gaps = []; PERF.js = []; PERF.last = 0; PERF.made0 = TC.made || 0; PERF.direct = 0; PERF.split = 0; PERF.fz = 0; PERF.ms = 0; }
+  const PERF = { gaps: [], js: [], last: 0, made0: 0, direct: 0, split: 0, errs: [], fz: 0, ms: 0, sim: [], drw: [], steps: [], T: [], walls: [], so: [], wc: [0, 0, 0] };
+  // 1.28.0 (analysis 26.10: telemetry first): per frame the simulation's and the drawing's own time, the steps, the tile size on
+  // screen, how many wall blocks and depth-sorted things were drawn
+  const DRAWN = { w: 0, so: 0, T: 0, wh: 0, wb: 0, wl: 0 }, FRAME = { sim: 0, drw: 0, steps: 0 };
+  function perfReset() { PERF.sim = []; PERF.drw = []; PERF.steps = []; PERF.T = []; PERF.walls = []; PERF.so = []; PERF.wc = [0, 0, 0]; PERF.gaps = []; PERF.js = []; PERF.last = 0; PERF.made0 = TC.made || 0; PERF.direct = 0; PERF.split = 0; PERF.fz = 0; PERF.ms = 0; PERF.gl = [0, 0, 0]; PERF.gch = 0; }
   const perfErr = e => {   // the message and where: the function and the line of the built file
     if (PERF.errs.length >= 8) return;
     const at = /at (?:(\S+) \()?.*?:(\d+):\d+\)?/.exec(String((e && e.stack) || '').split('\n')[1] || '');
@@ -12778,20 +12788,79 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   window.addEventListener('error', ev => { if (!(ev.error && ev.error.seen)) perfErr(ev.error || ev.message); });
   function perfNote(now, js) {
     const on = !!(fl && fl.phase === 'raid' && !paused && !modalOpen && document.visibilityState !== 'hidden');
-    if (on && PERF.last) { const g = Math.min(100, now - PERF.last); PERF.ms += g; if (fl.check && !fl.check.result) PERF.fz += g; }
+    if (on && PERF.last) { const g = Math.min(100, now - PERF.last); PERF.ms += g; if (fl.check && !fl.check.result) PERF.fz += g; (PERF.gl || (PERF.gl = [0, 0, 0]))[GFX.lvl] += g; }   // 1.28.0: PERF.gl, time at each graphics level
     if (on && PERF.last && PERF.gaps.length < 40000) {
       PERF.gaps.push(Math.round((now - PERF.last) * 10) / 10); PERF.js.push(Math.round(js * 10) / 10);
+      PERF.sim.push(Math.round(FRAME.sim * 10) / 10); PERF.drw.push(Math.round(FRAME.drw * 10) / 10); PERF.steps.push(FRAME.steps); PERF.T.push(Math.round(DRAWN.T)); PERF.walls.push(DRAWN.w); PERF.so.push(DRAWN.so);
+      if (!PERF.wc || PERF.gaps.length === 1) PERF.wc = [0, 0, 0];
+      PERF.wc[0] += DRAWN.wh; PERF.wc[1] += DRAWN.wb; PERF.wc[2] += DRAWN.wl;   // 1.28.0: the wall cache: blocks pasted, stamps made, blocks drawn live
       if (TC.direct) PERF.direct++;
       if (SPLIT.k > 0.5) PERF.split++;
     }
     PERF.last = on ? now : 0;
+  }
+  const med = (a, k) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(s.length * k))]; };   // 1.28.0
+  function devInfo() {   // 1.28.0: what the device is (cores, memory in GB where the browser tells, the phone model from the user agent)
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '', m = /Android[^;)]*;\s*([^;)]+?)(?:\s+Build|[;)])/.exec(ua);
+    return { cores: (navigator && navigator.hardwareConcurrency) || null, mem: (navigator && navigator.deviceMemory) || null, model: m ? m[1].trim().slice(0, 40) : /iPhone|iPad/.test(ua) ? (/iPad/.test(ua) ? 'iPad' : 'iPhone') : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : '?' };
   }
   function perfSummary() {
     const n = PERF.gaps.length; if (n < 20) return null;
     const g = PERF.gaps.slice().sort((a, b) => a - b), j = PERF.js.slice().sort((a, b) => a - b), q = (a, k) => a[Math.min(a.length - 1, Math.floor(a.length * k))];
     let sum = 0; PERF.gaps.forEach(x => { sum += x; });
     return { frames: n, fps: Math.round(n / sum * 10000) / 10, gapMed: q(g, 0.5), gapP90: q(g, 0.9), gapMax: g[n - 1], slow: Math.round(g.filter(x => x > 50).length / n * 1000) / 10,
-      jsMed: q(j, 0.5), jsP90: q(j, 0.9), jsMax: j[n - 1], realSec: Math.round(PERF.ms / 100) / 10, frozen: PERF.ms > 0 ? Math.round(PERF.fz / PERF.ms * 1000) / 10 : 0, dpr: DPR, w: Math.round(cw), h: Math.round(ch), direct: Math.round(PERF.direct / n * 100), split: Math.round(PERF.split / n * 100), chunks: (TC.made || 0) - PERF.made0 };
+      jsMed: q(j, 0.5), jsP90: q(j, 0.9), jsMax: j[n - 1], realSec: Math.round(PERF.ms / 100) / 10, frozen: PERF.ms > 0 ? Math.round(PERF.fz / PERF.ms * 1000) / 10 : 0, dpr: DPR, w: Math.round(cw), h: Math.round(ch), direct: Math.round(PERF.direct / n * 100), split: Math.round(PERF.split / n * 100), chunks: (TC.made || 0) - PERF.made0,
+      simMed: med(PERF.sim, 0.5), simP90: med(PERF.sim, 0.9), drawMed: med(PERF.drw, 0.5), drawP90: med(PERF.drw, 0.9), stepsMed: med(PERF.steps, 0.5), stepsMax: med(PERF.steps, 1), tileMed: med(PERF.T, 0.5), tileMin: med(PERF.T, 0), wallsMed: med(PERF.walls, 0.5), soMed: med(PERF.so, 0.5), soMax: med(PERF.so, 1), wcHit: PERF.wc ? Math.round(PERF.wc[0] / Math.max(1, PERF.wc[0] + PERF.wc[2]) * 1000) / 10 : null, wcMade: PERF.wc ? PERF.wc[1] : null, wcLive: PERF.wc ? PERF.wc[2] : null, wcMB: Math.round(WC.px * 4 / 1e5) / 10, dev: devInfo(),   // 1.28.0
+      gfxMode: GFX.mode, gfxLvl: GFX.lvl, gfxScale: GFX.scale, gfxSec: (PERF.gl || [0, 0, 0]).map(x => Math.round(x / 100) / 10), gfxCh: PERF.gch || 0 };   // 1.28.0: graphics: the mode, the level and resolution now, seconds at levels 0/1/2, level changes in the wave
+  }
+  // 1.28.0 (analysis 26.10, proposal 4): automatic graphics quality. Only frames the game really draws are watched: the running raid,
+  // and the build while a finger moves the map (the fast pace); idle frames and the 30-a-second build pace say nothing. Every second
+  // of such frames is one window: its median JS time and its fps. Two bad windows in a row (JS over GQ_JS_BAD ms or fewer than
+  // GQ_FPS_BAD frames a second) step GFX.lvl down (0 -> 1 -> 2; at 2 a big canvas also draws at a lower resolution, GFX.scale); a
+  // long run of good windows (well under budget: GQ.up of them with JS under GQ_JS_GOOD and GQ_FPS_GOOD fps) steps it back up. A level
+  // the device fell from after coming back up to it waits twice as long the next time (no flapping). Settings: 'auto' (this), 'full'
+  // (always 0, full resolution), 'eco' (always 2). Saved per device ('yatd-gfx').
+  const GQ_JS_BAD = 12, GQ_FPS_BAD = 45, GQ_JS_GOOD = 7, GQ_FPS_GOOD = 53, GQ_UP0 = 20, GQ_UPMAX = 160, GQ_BIG = 0.8e6, GQ_SCALE = 0.75;
+  const GQ = { js: [], t: 0, bad: 0, good: 0, skip: 0, up: GQ_UP0, rose: -1, last: 0, ch: 0, hud: null, hn: 0, hjs: [], ht: 0 };
+  try { const v = localStorage.getItem('yatd-gfx'); if (v === 'full' || v === 'eco') GFX.mode = v; } catch (e) {}
+  if (GFX.mode === 'eco') GFX.lvl = 2;
+  const gfxScaleFor = base => GFX.lvl === 2 && FW * FH * base * base > GQ_BIG ? GQ_SCALE : 1;   // only a big canvas (a phone's 2x screen, a computer's window)
+  function gfxSet(lvl) {   // a new level: the caches follow by themselves (they are keyed by the zoom step and DPR)
+    lvl = clamp(lvl, 0, 2); if (lvl === GFX.lvl) return;
+    if (GFX.mode === 'auto') { if (lvl > GFX.lvl && GQ.rose === GFX.lvl) GQ.up = Math.min(GQ_UPMAX, GQ.up * 2); GQ.rose = lvl < GFX.lvl ? lvl : -1; }   // falling again from a level it came back up to: twice as long a wait next time
+    GFX.lvl = lvl; GQ.ch++; PERF.gch = (PERF.gch || 0) + 1; GQ.bad = GQ.good = 0; GQ.skip = 1; GQ.js = []; GQ.t = 0;
+    if (fl) resize(); else FP.wake = true;
+  }
+  function setGfxMode(m) {   // from the Settings
+    if (m !== 'auto' && m !== 'full' && m !== 'eco') return;
+    GFX.mode = m; try { localStorage.setItem('yatd-gfx', m); } catch (e) {}
+    GQ.up = GQ_UP0; GQ.rose = -1; const want = m === 'eco' ? 2 : 0;
+    if (want !== GFX.lvl) gfxSet(want); else if (fl) resize();
+  }
+  function gfxNote(now, js, drew, runs) {
+    if (drew) { GQ.hn++; GQ.hjs.push(js); }
+    if (GQ.hud && now - GQ.ht >= 500) {   // the test's fps counter (#perf): frames drawn a second, the median JS ms, the level
+      const dt = (now - GQ.ht) / 1000, j = GQ.hjs.sort((a, b) => a - b)[GQ.hjs.length >> 1] || 0;
+      if (GQ.ht) GQ.hud.textContent = Math.round(GQ.hn / dt) + ' fps  ' + j.toFixed(1) + ' ms  L' + GFX.lvl + (GFX.scale < 1 ? ' x' + GFX.scale : '');
+      GQ.ht = now; GQ.hn = 0; GQ.hjs = [];
+    }
+    const on = drew && (runs || FP.iv === IV_FAST) && document.visibilityState !== 'hidden';
+    const g = now - GQ.last; GQ.last = on ? now : 0;
+    if (!on || GFX.mode !== 'auto' || g > 250 || g <= 0) return;   // (the first frame after a gap has no gap of its own)
+    GQ.js.push(js); GQ.t += g;
+    if (GQ.t < 1000) return;
+    const n = GQ.js.length, jm = GQ.js.sort((a, b) => a - b)[n >> 1], fps = n / (GQ.t / 1000);
+    GQ.js = []; GQ.t = 0; GQ.w = [Math.round(jm * 10) / 10, Math.round(fps)];   // (the last window, for the tests)
+    if (GQ.skip) { GQ.skip--; return; }   // the window right after a change: the caches were being made anew
+    if (jm > GQ_JS_BAD || fps < GQ_FPS_BAD) { GQ.good = 0; if (++GQ.bad >= 2 && GFX.lvl < 2) gfxSet(GFX.lvl + 1); }
+    else { GQ.bad = 0; if (jm < GQ_JS_GOOD && fps >= GQ_FPS_GOOD) { if (++GQ.good >= GQ.up && GFX.lvl > 0) gfxSet(GFX.lvl - 1); } else GQ.good = Math.max(0, GQ.good - 2); }   // (an in-between window sets it back a little, a bad one to 0)
+  }
+  function perfHud(on) {   // 1.28.0: the small fps counter in the top corner (the performance test only)
+    if (!on) { if (GQ.hud) GQ.hud.remove(); GQ.hud = null; return; }
+    if (GQ.hud) return;
+    const d = document.createElement('div'); d.id = 'perf-hud';
+    d.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top, 0px) + 2px);right:4px;z-index:9999;pointer-events:none;font:11px/1.2 ui-monospace,monospace;color:#cfe8c8;background:rgba(0,0,0,0.6);padding:2px 5px;border-radius:3px;white-space:pre';
+    document.body.appendChild(d); GQ.hud = d; GQ.ht = 0;
   }
   function frameBody(now) {
     const rdt = Math.min(fl && fl.phase === 'raid' && !paused && !modalOpen ? 0.05 : 1.2, (now - lastT) / 1000); lastT = now; realNow += rdt;   // 1.24 (C): out of the running raid a paced frame may come later (30 a second, or still): the real time goes on (the running raid keeps its 0,05 s cap)
@@ -12800,10 +12869,11 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       if (fl.check) { if (modalOpen || paused) { fl.check.t0 += rdt; fl.check.prepT0 += rdt; fl.check.resT += rdt; } else updateCheck(); }
       if (paused && fl.phase === 'raid') fl.stats.pauseTime += rdt;
       const ffWant = autoFFOn() ? S.autoFF : 1; ffAuto = ffWant > ffAuto ? Math.min(ffWant, ffAuto + rdt * 4) : ffWant;
-      const dt = rdt * timeScale();
+      const dt = rdt * timeScale(); FRAME.sim = 0; FRAME.steps = 0;
       if (dt > 0) {   // fast-forward runs in small steps so nothing tunnels through
-        const n = Math.ceil(dt / 0.05);
+        const n = Math.ceil(dt / 0.05), s0 = performance.now();
         for (let i = 0; i < n && fl.phase === 'raid'; i++) step(dt / n);
+        FRAME.sim = performance.now() - s0; FRAME.steps = n;   // 1.28.0
       }
       if (fl.phase === 'raid' && fl.ending !== null && !modalOpen && !paused) {
         fl.ending -= rdt;
@@ -12839,7 +12909,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (shake > 0) shake = Math.max(0, shake - rdt);
     // 1.03: building with nothing touched for 2 s: every other frame was enough. 1.24 (C): the pacing (FP) does it now: building 30
     // a second, still when idle (the clocks only, unless the picture changed)
-    if (!FP.still) { draw(); FP.drawn++; FP.sig = FP.iv === IV_FAST ? '' : frameSig(); }
+    if (!FP.still) { const d0 = performance.now(); draw(); FRAME.drw = performance.now() - d0; FP.drawn++; FP.sig = FP.iv === IV_FAST ? '' : frameSig(); }
   }
 
   /* ================= camera ================= */
@@ -13043,7 +13113,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   applyLayout();
   function resize() {
     applyLayout();
-    DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));   // 1.03: at most 2x (3x is 2,25 times the pixels for little to see)
+    const base = Math.max(1, Math.min(2, window.devicePixelRatio || 1));   // 1.03: at most 2x (3x is 2,25 times the pixels for little to see)
     const rect = stage.getBoundingClientRect();
     const had = cw > 0, cx = had ? (cam.ox + cw / 2) / cam.s : 0, cy = had ? (cam.oy + ch / 2) / cam.s : 0;
     cw = Math.max(60, Math.floor(rect.width)); ch = Math.max(60, Math.floor(rect.height));
@@ -13052,6 +13122,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     // frames the dungeon in the free part (#stage), which starts at OX, OY.
     const de = document.documentElement;
     FW = Math.max(cw, de.clientWidth || innerWidth); FH = Math.max(ch, de.clientHeight || innerHeight); OX = Math.round(rect.left); OY = Math.round(rect.top);
+    GFX.scale = gfxScaleFor(base); DPR = base * GFX.scale;   // 1.28.0: graphics level 2 on a big canvas: fewer pixels (the page's size and every tap stay in CSS pixels)
     const W = Math.round(FW * DPR), H = Math.round(FH * DPR); FP.wake = true; kick();   // 1.24 (C): a new size is drawn at once
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; cv.style.width = FW + 'px'; cv.style.height = FH + 'px'; }
     if (had) { cam.s = clamp(cam.s, fitScale() * 0.95, MAX_S); centerOnView(cx, cy); }
@@ -13073,6 +13144,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   }
   function draw() {
     fearRN = 0;   // 1.24 (B, P1-4): the fear bars of this frame
+    DRAWN.wh = 0; DRAWN.wb = 0; DRAWN.wl = 0;   // 1.28.0: wall cache telemetry (stamps pasted, made, blocks drawn live)
     ctx.setTransform(DPR, 0, 0, DPR, DPR * OX, DPR * OY);   // 1.24 (B): the view's corner is at OX, OY of the canvas
     ctx.fillStyle = '#060709'; ctx.fillRect(-OX, -OY, FW, FH);
     if (!fl) return;
@@ -13295,6 +13367,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   // among what stands (a high wall can hide it)
   function drawWalls(x0, y0, x1, y1, T, wallItems) {
     wallTick();
+    wcFrame(T);   // 1.28.0
     const H = WA.cur, ups = [], lips = [];
     const quad = (a, b, c, d) => { ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath(); };
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
@@ -13329,19 +13402,140 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       run.forEach(i => { const e = wallPaths(i, H[i], sOpen(i), eOpen(i)); if (e.S) PS.addPath(e.S); if (e.E) PE.addPath(e.E); PM.addPath(e.M); PT.addPath(e.T); if (e.G) PG.addPath(e.G); });
       ctx.save(); viewT();
       ctx.fillStyle = WALL_S; ctx.fill(PS); ctx.fillStyle = WALL_E; ctx.fill(PE);
-      if (T >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1 / cam.s; ctx.stroke(PM); }
+      if (detT(T) >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1 / cam.s; ctx.stroke(PM); }   // 1.28.0: detT (GFX.lvl)
       ctx.fillStyle = WALL_TOP; ctx.fill(PT);
       ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1 / cam.s; ctx.stroke(PG);
       ctx.restore(); ctx.fillStyle = WALL_TOP; ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1;   // (the state the old code left)
-      run.forEach(i => wallDressing(i, T));
+      run.forEach(i => wcBlock(i, T, false));   // 1.28.0: the dressing from the wall cache (the faces stay one batch: no seams between plain blocks)
       run = [];
     };
-    for (let k = a; k < b; k++) {
-      const i = list[k].i;
-      if (WA.moving.has(i) && WA.pp[i] > 0) { flush(); drawBlockPop(i, T); wallDressing(i, T); }
-      else if (wallUp(H[i])) { if (KWs.top[i] || KWs.s[i] || KWs.e[i]) { flush(); drawKindBlock(i, T); wallDressing(i, T); } else run.push(i); }   // 1.15: a komnata's block by itself
+    const ox = cam.ox, oy = cam.oy; if (WC.snap) { cam.ox = WC.cox; cam.oy = WC.coy; }   // 1.28.0: the walls on whole device pixels (wcFrame)
+    try {
+      for (let k = a; k < b; k++) {
+        const i = list[k].i;
+        if (WA.moving.has(i) && WA.pp[i] > 0) { flush(); drawBlockPop(i, T); wallDressing(i, T); DRAWN.wl++; }
+        else if (wallUp(H[i])) { if (KWs.top[i] || KWs.s[i] || KWs.e[i]) { flush(); wcBlock(i, T, true); } else run.push(i); }   // 1.15: a komnata's block by itself (1.28.0: from the wall cache)
+      }
+      flush();
+    } finally { cam.ox = ox; cam.oy = oy; }
+  }
+  /* ================= 1.28.0: the wall cache ================= */
+  // (analysis 26.10: the walls were 30-40% of a frame, every block drawn every frame.) What does not move on a standing block (its
+  // faces and top in a komnata's stuff, the crown, the decor and the raised pieces, the room effect's wash, a torch's sconce) is
+  // painted once into a small canvas of its own (a stamp) and pasted in the same place of the depth order. What moves (flames, a
+  // swaying curtain, a turning cog, glints, the wall traps) is drawn live over it in its old order: a block's drawing is a list of
+  // parts, each still (wS) or live (wL); the still parts after a live one go into the block's next stamp, pasted after it.
+  // wcBlock runs a block in one of three passes: 0 everything live (as before), 1 painting its stamps (wcBuild), 2 pasting them and
+  // drawing its live parts. A stamp is made for the block's state (open faces, a trap on it), the zoom, the tilt, the resolution,
+  // GFX.lvl, the komnaty and room effects; the walls are laid on whole device pixels so a stamp is pasted 1:1 (no blur, no seams).
+  // While the zoom moves the nearest stamp is scaled (a new one is made after 6% of zoom); while the tilt turns, a block sinks or
+  // rises, or a stamp cannot be made this frame (a time budget), the block is drawn live, the same picture.
+  const WC = { on: true, snap: true, ok: false, pass: 0, brk: false, cur: null, dT: 0, map: new Map(), pool: [], px: 0, MAXPX: 8e6, tick: 0, gsig: '', lastT: 0, still: 0, bud: 0, full: false, cox: 0, coy: 0, ox0: 0, oy0: 0,
+    hit: 0, made: 0, live: 0 };
+  // the detail threshold's tile size inside the wall parts (in pass 2 the stamp's own, so a stamp and its live parts agree)
+  const wdT = T => detT(WC.pass === 2 && WC.dT ? WC.dT : T);
+  // a still part: true when it is to be painted now (pass 1 paints it into the stamp; pass 2 pastes the next stamp at its place)
+  function wS() {
+    if (WC.pass === 0) return true;
+    if (WC.pass === 1) { if (WC.brk) { WC.brk = false; wcSeg(); } return true; }
+    if (WC.brk) { WC.brk = false; wcPaste(WC.cur, WC.cur.k++); }
+    return false;
+  }
+  // a live part: drawn now (pass 0, 2), skipped in a stamp (pass 1); what is still after it goes into the next stamp
+  function wL(fn) {
+    if (WC.pass === 1) { WC.brk = true; WC.cur.live = true; return; }
+    if (WC.pass === 2) WC.brk = true;
+    fn();
+  }
+  const wE = (live, fn) => { if (live) wL(fn); else if (wS()) fn(); };
+  // a part with still and moving pieces (fn paints the still ones under wSt(), the moving ones under wLv(); the moving ones come
+  // last or touch nothing still after them): pass 1 paints the still pieces into the stamp, pass 2 the moving ones over it
+  function wM(fn) {
+    if (WC.pass === 0) return fn();
+    if (WC.brk) { WC.brk = false; if (WC.pass === 1) wcSeg(); else wcPaste(WC.cur, WC.cur.k++); }
+    WC.inMix = true; try { fn(); } finally { WC.inMix = false; }
+    WC.brk = true; if (WC.pass === 1) WC.cur.live = true;
+  }
+  const wSt = () => !(WC.pass === 2 && WC.inMix), wLv = () => !(WC.pass === 1 && WC.inMix);
+  const wP = (live, mix, fn) => { if (live && mix) wM(fn); else wE(live, fn); };   // still, mixed or live
+  function wcFree(e) { WC.px -= e.px; e.segs.forEach(c => { if (WC.pool.length < 48) WC.pool.push(c); }); e.segs = []; }
+  function wcClear() { WC.map.forEach(r => r.st.forEach(wcFree)); WC.map.clear(); WC.px = 0; }
+  // once a view a frame: may the cache be used, the camera snapped to device pixels, the time budget for new stamps
+  function wcFrame(T) {
+    WC.tick++;
+    const K = kindWalls(), rts = fl.rooms.map(R => R.rt || '').join(',');
+    const g = [WW, WH, VIEW.p, DPR, GFX.lvl, reduceMotion ? 1 : 0, K.sig, rts].join('|');
+    if (g !== WC.gsig || WC.tiles !== fl.tiles) { wcClear(); WC.gsig = g; WC.tiles = fl.tiles; }
+    WC.ok = WC.on && VIEW.p === VIEW.to;   // (while the tilt turns: live)
+    const zs = WC.lastT ? Math.abs(Math.log(T / WC.lastT)) : 0; WC.zv = Math.max(zs, (WC.zv || 0) * 0.9);   // the zoom's speed (a pinch is fast, the wave's camera drifts)
+    if (zs > 1e-9 || !WC.lastT) { WC.still = 0; WC.lastT = T; } else WC.still++;
+    WC.full = false; WC.bud = WC.budX || (fl.phase === 'raid' ? 3 : 6); WC.spent = 0;   // ms of stamp making a frame may spend
+    // the world's origin on the canvas, rounded to a device pixel: a stamp made at this zoom lands on whole pixels
+    const ox = Math.round((OX - cam.ox) * DPR), oy = Math.round((OY - cam.oy) * DPR);
+    WC.ox0 = ox; WC.oy0 = oy; WC.cox = OX - ox / DPR; WC.coy = OY - oy / DPR;
+    WC.snap = (WC.on || WC.forceSnap) && VIEW.p === VIEW.to;   // (forceSnap: the parity test draws the walls snapped without the cache)
+  }
+  function wcSeg() {   // pass 1: a new stamp canvas for the block, the main canvas' transform in it
+    const e = WC.cur, c = WC.pool.pop() || document.createElement('canvas');
+    c.width = e.w; c.height = e.h; e.segs.push(c); e.px += e.w * e.h; WC.px += e.w * e.h;
+    const g = c.getContext('2d'); g.setTransform(DPR, 0, 0, DPR, DPR * OX, DPR * OY);
+    ctx = g; rc = g;
+  }
+  function wcPaste(e, k) {   // pass 2: stamp k of e where it belongs at this zoom
+    const c = e.segs[k]; if (!c) return;
+    const r = cam.s / e.T, m = ctx;
+    m.save(); m.setTransform(1, 0, 0, 1, 0, 0); m.globalAlpha = 1;
+    if (Math.abs(r - 1) < 1e-9) m.drawImage(c, WC.ox0 + e.px0, WC.oy0 + e.py0);
+    else m.drawImage(c, WC.ox0 + e.px0 * r, WC.oy0 + e.py0 * r, e.w * r, e.h * r);
+    m.restore();
+  }
+  // what a still block's stamps depend on besides the frame's (wcFrame): its open faces and whether a trap or furniture stands on it
+  function wcSig(i) {
+    const x = i % WW, y = (i - x) / WW, h = WA.cur[i];
+    return (wallH(x, y + 1) < h - 0.001 ? 1 : 0) | (wallH(x + 1, y) < h - 0.001 ? 2 : 0) | (fl.items.has(key(x, y)) ? 4 : 0) | (h === WALL_H ? 0 : 8);
+  }
+  function wcBody(i, T, kb) { if (kb) drawKindBlock(i, T); wallDressing(i, T); }
+  // a standing still block: its stamps (made if need be) and its live parts
+  function wcBlock(i, T, kb) {
+    if (!WC.ok || WC.pass) { wcBody(i, T, kb); DRAWN.wl++; return; }
+    const sg = wcSig(i); let r = WC.map.get(i);
+    if (!r || r.sig !== sg || r.kb !== kb) { if (r) r.st.forEach(wcFree); r = { sig: sg, kb, st: [] }; WC.map.set(i, r); }
+    let e = null, best = null, bd = 9;
+    r.st.forEach(q => { const d = Math.abs(Math.log(q.T / T)); if (d < bd) { bd = d; best = q; } });
+    if (best && bd < 1e-9) e = best;   // made at this very zoom
+    else {
+      // a still zoom gets its own stamp; a drifting one the nearest within 6%, scaled; a fast one (a pinch) any within 30%, new
+      // ones made on steps of 1.25x (shared by the blocks, found again on the way back)
+      const canMake = !WC.full && WC.spent < WC.bud, fast = WC.zv > 0.004 && WC.still <= 8;
+      if (best && bd < (WC.still > 8 ? 1e-9 : fast ? 0.3 : 0.06)) e = best;
+      else if (canMake) e = wcBuild(i, fast ? Math.pow(1.25, Math.round(Math.log(T) / Math.log(1.25))) : T, kb, r);
+      if (!e && best && bd < 0.3) e = best;
     }
-    flush();
+    if (!e) { wcBody(i, T, kb); DRAWN.wl++; return; }
+    e.t = WC.tick; DRAWN.wh++;
+    if (!e.live) { wcPaste(e, 0); return; }
+    WC.pass = 2; WC.cur = e; WC.brk = true; WC.dT = e.T; e.k = 0;
+    try { wcBody(i, T, kb); } finally { WC.pass = 0; WC.cur = null; WC.dT = 0; }
+  }
+  // pass 1: the block's still parts painted at this zoom into its stamps (the camera and the canvas' corner moved onto the stamp)
+  function wcBuild(i, T, kb, r) {
+    const x = i % WW, y = (i - x) / WW, s = T * DPR;
+    const u0 = vX(x, y + 1) * s, u1 = vX(x + 1, y) * s, v0 = vY(x, y, WALL_H) * s, v1 = vY(x + 1, y + 1, 0) * s;
+    const px0 = Math.floor(u0 - s * WC_PAD[0]), py0 = Math.floor(v0 - s * WC_PAD[1]), e = { T, px0, py0, w: Math.ceil(u1 + s * WC_PAD[0]) - px0, h: Math.ceil(v1 + s * WC_PAD[2]) - py0, segs: [], px: 0, live: false, t: WC.tick, k: 0 };
+    const keep = [ctx, cam.s, cam.ox, cam.oy, OX, OY], t0 = performance.now();
+    cam.s = T; cam.ox = 0; cam.oy = 0; OX = -px0 / DPR; OY = -py0 / DPR;
+    WC.pass = 1; WC.cur = e; WC.brk = true;
+    try { wcBody(i, T, kb); } finally { WC.pass = 0; WC.cur = null; [ctx, cam.s, cam.ox, cam.oy, OX, OY] = keep; rc = ctx; }
+    if (r.st.length >= 4) { let o = r.st[0]; r.st.forEach(q => { if (q.t < o.t) o = q; }); wcFree(o); r.st.splice(r.st.indexOf(o), 1); }
+    r.st.push(e); WC.made++; DRAWN.wb++; WC.spent += performance.now() - t0;
+    if (WC.px > WC.MAXPX) wcTrim();
+    return e;
+  }
+  const WC_PAD = [0.95, 1.15, 0.55];   // tiles round the block a stamp keeps: sideways, over its top (crowns), under its foot (what stands out of a face)
+  function wcTrim() {   // the least recently pasted stamps go first; when even this frame's do not fit, no more are made this frame
+    const all = []; WC.map.forEach((r, i) => r.st.forEach(e => all.push([e, r])));
+    all.sort((a, b) => a[0].t - b[0].t);
+    for (const [e, r] of all) { if (WC.px <= WC.MAXPX * 0.75) break; if (e.t >= WC.tick - 1) { WC.full = true; break; } wcFree(e); r.st.splice(r.st.indexOf(e), 1); }
   }
   // mortar: courses of stone on the open faces (k: the block's size, 1 when still)
   function mortar(i, h, sO, eO, k, g, PJ) {   // 1.24 (C): g, PJ = a Path2D and the view projection (the block cache); else the canvas, W2S
@@ -13394,7 +13588,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const P = (u, v, z) => W2S(x + u, y + v, z), K = kindWalls(), ss = kwStyle(K.s[i]), es = kwStyle(K.e[i]), ts = kwStyle(K.top[i]);   // 1.15: in its komnata's colours
     poly([P(m0, m1, 0), P(m1, m1, 0), P(m1, m1, h), P(m0, m1, h)], ss ? ss.s : WALL_S);
     poly([P(m1, m0, 0), P(m1, m1, 0), P(m1, m1, h), P(m1, m0, h)], es ? es.e : WALL_E);
-    if (T >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); mortar(i, h, true, true, k); ctx.stroke(); }
+    if (detT(T) >= 12) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); mortar(i, h, true, true, k); ctx.stroke(); }   // 1.28.0: detT
     poly([P(m0, m0, h), P(m1, m0, h), P(m1, m1, h), P(m0, m1, h)], ts ? ts.top : WALL_TOP);
     ctx.strokeStyle = 'rgba(205,210,225,0.22)'; ctx.lineWidth = 1; ctx.beginPath();
     const a = P(m0, m1, h), b = P(m1, m1, h), c = P(m1, m0, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
@@ -13407,6 +13601,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   const KIDS = Object.keys(KIND_INFO);
   const KW = { tiles: null, sig: null, ww: 0, s: null, e: null, top: null };
   function kindWalls() {
+    if (KW.tick === WC.tick && KW.tiles === fl.tiles && WC.tick) return KW;   // 1.28.0: checked once a frame (was: for every block)
+    KW.tick = WC.tick;
     const sig = fl.rooms.map(r => r.rk ? r.id + r.rk : '').join('');
     if (KW.tiles === fl.tiles && KW.sig === sig && KW.ww === WW) return KW;
     const n = WW * WH, s = new Int8Array(n), e = new Int8Array(n), top = new Int8Array(n);
@@ -13633,6 +13829,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         const r = tileHash(x * 7 + (face === 'S' ? 1 : 2), y * 3 + 5); let u = 0.1 + (r % 5) * 0.12, v = z - 0.05; ctx.moveTo(u, v);
         for (let k = 0; k < 5; k++) { u += ((r >> k) & 1 ? 1 : -1) * 0.06; v -= 0.07; ctx.lineTo(u, v); } ctx.stroke();
       },
+      crownLive: true,   // 1.28.0: its smoke and glow move (the wall cache draws the crown live)
       crown(x, y, h, T, t) {   // a chimney on some blocks, glowing inside and breathing smoke
         const r = tileHash(x * 9 + 7, y * 7 + 3); if (r % 4) return;
         isoBox(x + 0.5, y + 0.5, 0.46, 0.46, 0.55, '#2a2220', '#5e2c1e', '#43221a', h);
@@ -13752,26 +13949,37 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const full = TEX_H * h / WALL_H, sh = Math.min(TEX_H, full);
     ctx.drawImage(tex, 0, 0, TEX_W, sh, 0, 0, 1, sh / full);
     if (face === 'E') { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(0, 0, 1, 1); }
-    if (st.live && T >= 10 && !reduceMotion) { ctx.scale(1, 1 / h); st.live(face, h, T, realNow, x, y); }
+    ctx.restore();
+  }
+  // 1.28.0: a face's own life (the forge's glowing cracks), a live part of its block drawn after the faces and the top (it was
+  // drawn with its face; nothing of the block it overlaps comes between)
+  function kindFaceLive(face, x, y, h, k, T) {
+    const st = WALL_STYLE[KIDS[k - 1]];
+    ctx.save();
+    if (face === 'S') faceMap(x, y + 1, x + 1, y + 1, 0, h); else faceMap(x + 1, y, x + 1, y + 1, 0, h);
+    ctx.scale(1, 1 / h); st.live(face, h, T, realNow, x, y);
     ctx.restore();
   }
   // a standing block that belongs to a komnata (by any face or its top): faces, top, edges, crown
-  function drawKindBlock(i, T) {
-    const K = kindWalls(), H = WA.cur, x = i % WW, y = (i - x) / WW, h = H[i];
+  function drawKindBlock(i, T) {   // 1.28.0: its parts still (wS) or live (wL) for the wall cache; detail thresholds by wdT (GFX.lvl)
+    const K = kindWalls(), H = WA.cur, x = i % WW, y = (i - x) / WW, h = H[i], dt = wdT(T);
     const sO = wallH(x, y + 1) < h - 0.001, eO = wallH(x + 1, y) < h - 0.001, ss = kwStyle(K.s[i]), es = kwStyle(K.e[i]), ts = kwStyle(K.top[i]);
     const P = (u, v, z) => W2S(x + u, y + v, z);
-    if (sO) { poly([P(0, 1, 0), P(1, 1, 0), P(1, 1, h), P(0, 1, h)], ss ? ss.s : WALL_S); if (ss) kindFace('S', x, y, h, K.s[i], T); }
-    if (eO) { poly([P(1, 0, 0), P(1, 1, 0), P(1, 1, h), P(1, 0, h)], es ? es.e : WALL_E); if (es) kindFace('E', x, y, h, K.e[i], T); }
-    if (T >= 12 && ((sO && !ss) || (eO && !es))) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); mortar(i, h, sO && !ss, eO && !es, 1); ctx.stroke(); }
-    poly([P(0, 0, h), P(1, 0, h), P(1, 1, h), P(0, 1, h)], ts ? ts.top : WALL_TOP);
-    if (ts && ts.topTex && T >= 10) { ctx.save(); tileMap(x, y, h, null); ctx.drawImage(kindTopTex(KIDS[K.top[i] - 1]), 0, 0, 1, 1); ctx.restore(); }
-    if (ts && ts.topSolid && T >= 10) ts.topSolid(x, y, h, T);   // 1.27.5 (round 3)
-    ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
-    if (sO) { const p = P(0, 1, h), q = P(1, 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
-    if (eO) { const p = P(1, 0, h), q = P(1, 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
-    ctx.stroke();
-    if (ts && ts.crown && T >= 10 && h > WALL_H * 0.6) ts.crown(x, y, h, T, reduceMotion ? 0 : realNow, i);
-    if (T >= 12 && h > 0.3 && !fl.items.has(key(x, y))) { if (sO && ss && ss.solid) kindSolid(ss, 'S', x, y, h, T); if (eO && es && es.solid) kindSolid(es, 'E', x, y, h, T); }   // 1.27.5
+    if (wS()) {
+      if (sO) { poly([P(0, 1, 0), P(1, 1, 0), P(1, 1, h), P(0, 1, h)], ss ? ss.s : WALL_S); if (ss) kindFace('S', x, y, h, K.s[i], T); }
+      if (eO) { poly([P(1, 0, 0), P(1, 1, 0), P(1, 1, h), P(1, 0, h)], es ? es.e : WALL_E); if (es) kindFace('E', x, y, h, K.e[i], T); }
+      if (dt >= 12 && ((sO && !ss) || (eO && !es))) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); mortar(i, h, sO && !ss, eO && !es, 1); ctx.stroke(); }
+      poly([P(0, 0, h), P(1, 0, h), P(1, 1, h), P(0, 1, h)], ts ? ts.top : WALL_TOP);
+      if (ts && ts.topTex && dt >= 10) { ctx.save(); tileMap(x, y, h, null); ctx.drawImage(kindTopTex(KIDS[K.top[i] - 1]), 0, 0, 1, 1); ctx.restore(); }
+      if (ts && ts.topSolid && dt >= 10) ts.topSolid(x, y, h, T);   // 1.27.5 (round 3)
+      ctx.strokeStyle = 'rgba(205,210,225,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
+      if (sO) { const p = P(0, 1, h), q = P(1, 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+      if (eO) { const p = P(1, 0, h), q = P(1, 1, h); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+      ctx.stroke();
+    }
+    if (dt >= 10 && !reduceMotion && ((sO && ss && ss.live) || (eO && es && es.live))) wL(() => { if (sO && ss && ss.live) kindFaceLive('S', x, y, h, K.s[i], T); if (eO && es && es.live) kindFaceLive('E', x, y, h, K.e[i], T); });
+    if (ts && ts.crown && dt >= 10 && h > WALL_H * 0.6) wE(ts.crownLive && !reduceMotion, () => ts.crown(x, y, h, T, reduceMotion ? 0 : realNow, i));   // (crownLive: the forge's smoking chimney)
+    if (dt >= 12 && h > 0.3 && !fl.items.has(key(x, y)) && ((sO && ss && ss.solid) || (eO && es && es.solid)) && wS()) { if (sO && ss && ss.solid) kindSolid(ss, 'S', x, y, h, T); if (eO && es && es.solid) kindSolid(es, 'E', x, y, h, T); }   // 1.27.5
   }
   // 1.27.5: what a face's texture used to paint as a picture of a thing (a post, a cocoon, a ring, a shelf...) stands out of it as
   // a body, at the same spot of the same variant (K: kwKit with v in the texture's units, down from the top of the block)
@@ -13786,8 +13994,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       const k = K.top[i]; if (!k) return;
       const st = kwStyle(k), x = i % WW, y = (i - x) / WW;
       poly([W2S(x, y, L), W2S(x + 1, y, L), W2S(x + 1, y + 1, L), W2S(x, y + 1, L)], st.lip);
-      if (st.topTex && T >= 10) { ctx.save(); tileMap(x, y, L, null); ctx.globalAlpha = 0.22; ctx.drawImage(kindTopTex(KIDS[k - 1]), 0, 0, 1, 1); ctx.restore(); }
-      if (st.topSolid && T >= 10) st.topSolid(x, y, L, T);   // 1.27.5 (round 3)
+      if (st.topTex && detT(T) >= 10) { ctx.save(); tileMap(x, y, L, null); ctx.globalAlpha = 0.22; ctx.drawImage(kindTopTex(KIDS[k - 1]), 0, 0, 1, 1); ctx.restore(); }
+      if (st.topSolid && detT(T) >= 10) st.topSolid(x, y, L, T);   // 1.27.5 (round 3) (1.28.0: detT, GFX.lvl)
     });
   }
   // 1.15 (author: a room's kind and its effect stack, in the picture too): the effect of a room shows on the faces of the walls
@@ -13802,7 +14010,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   }
   const RT_WALL = {
     fog(h, t, s) {   // mist banked against the foot of the wall, a slow puff drifting along
-      ctx.fillStyle = rtGrad('fog', h, h, h - 1.0, [[0, 'rgba(206,214,230,0.42)'], [1, 'rgba(206,214,230,0)']]); ctx.fillRect(0, h - 1.0, 1, 1.0);
+      if (wSt()) { ctx.fillStyle = rtGrad('fog', h, h, h - 1.0, [[0, 'rgba(206,214,230,0.42)'], [1, 'rgba(206,214,230,0)']]); ctx.fillRect(0, h - 1.0, 1, 1.0); }   // 1.28.0: wSt / wLv (the wall cache)
+      if (!wLv()) return;
       const u = ((t * 0.05 + s * 0.37) % 1.6) - 0.3, r = ctx.createRadialGradient(u, h - 0.35, 0, u, h - 0.35, 0.45); r.addColorStop(0, 'rgba(220,228,240,0.3)'); r.addColorStop(1, 'rgba(220,228,240,0)'); ctx.fillStyle = r; ctx.fillRect(0, h - 0.8, 1, 0.8);
     },
     swamp(h, t, s) {   // wet to the waterline, moss and slime at it
@@ -13812,19 +14021,23 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       ctx.fillStyle = 'rgba(96,130,50,0.55)'; for (let k = 0; k < 3; k++) { const u = (s * 0.29 + k * 0.33) % 1; ctx.beginPath(); ctx.ellipse(u, h - w - 0.02, 0.06, 0.025, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(u - 0.006, h - w, 0.012, 0.08 + 0.05 * k); }
     },
     grotto(h, t, s) {   // light thrown up from water: rippling bands; 1.27.5: the stone wet and dark, water running down it in streaks
-      ctx.fillStyle = rtGrad('grotto', h, 0, h, [[0, 'rgba(20,30,60,0.1)'], [1, 'rgba(20,34,70,0.38)']]); ctx.fillRect(0, 0, 1, h);
-      for (let k = 0; k < 3; k++) { const u = 0.15 + 0.7 * (((s * 0.37 + k * 0.29) % 1)), L = h * (0.4 + 0.4 * ((s + k) % 3) / 2); ctx.fillStyle = 'rgba(10,16,34,0.35)'; ctx.fillRect(u, 0, 0.035, L); ctx.fillStyle = 'rgba(170,200,255,0.3)'; ctx.fillRect(u, 0, 0.01, L * 0.9); }
+      if (wSt()) { ctx.fillStyle = rtGrad('grotto', h, 0, h, [[0, 'rgba(20,30,60,0.1)'], [1, 'rgba(20,34,70,0.38)']]); ctx.fillRect(0, 0, 1, h);
+      for (let k = 0; k < 3; k++) { const u = 0.15 + 0.7 * (((s * 0.37 + k * 0.29) % 1)), L = h * (0.4 + 0.4 * ((s + k) % 3) / 2); ctx.fillStyle = 'rgba(10,16,34,0.35)'; ctx.fillRect(u, 0, 0.035, L); ctx.fillStyle = 'rgba(170,200,255,0.3)'; ctx.fillRect(u, 0, 0.01, L * 0.9); } }
+      if (!wLv()) return;
       ctx.strokeStyle = 'rgba(160,190,255,0.2)'; ctx.lineWidth = 0.02;
       for (let k = 0; k < 3; k++) { const v0 = h - 0.25 - k * 0.3; ctx.beginPath(); for (let u = 0; u <= 1.001; u += 0.05) { const v = v0 + 0.035 * Math.sin(u * 12 + t * 1.6 + k * 2 + s); u ? ctx.lineTo(u, v) : ctx.moveTo(u, v); } ctx.stroke(); }
     },
     crypt(h, t, s) {   // a grave chill: the wall goes violet and dark, a cross scratched in now and then
-      ctx.fillStyle = 'rgba(44,20,64,0.32)'; ctx.fillRect(0, 0, 1, h);
-      if (s % 3 === 0) { ctx.strokeStyle = 'rgba(200,180,230,0.35)'; ctx.lineWidth = 0.02; ctx.beginPath(); ctx.moveTo(0.5, h * 0.35); ctx.lineTo(0.5, h * 0.62); ctx.moveTo(0.42, h * 0.43); ctx.lineTo(0.58, h * 0.43); ctx.stroke(); }
-      else if (s % 3 === 1) { const a = 0.18 + 0.14 * Math.sin(t * 1.4 + s); ctx.strokeStyle = 'rgba(190,150,255,' + a.toFixed(2) + ')'; ctx.lineWidth = 0.018; ctx.beginPath(); ctx.arc(0.5, h * 0.5, 0.14, 0, Math.PI * 2); ctx.moveTo(0.5, h * 0.5 - 0.1); ctx.lineTo(0.5, h * 0.5 + 0.1); ctx.moveTo(0.43, h * 0.5 - 0.03); ctx.lineTo(0.57, h * 0.5 - 0.03); ctx.stroke(); }   // 1.27.5: a rune, breathing violet like the ones in the floor
-      ctx.fillStyle = rtGrad('crypt', h, h, h - 0.5, [[0, 'rgba(120,80,180,0.25)'], [1, 'rgba(120,80,180,0)']]); ctx.fillRect(0, h - 0.5, 1, 0.5);   // 1.27.5: the cold violet mist at its foot
+      if (wSt()) {   // 1.28.0: the rune breathes (live); the rest is still
+        ctx.fillStyle = 'rgba(44,20,64,0.32)'; ctx.fillRect(0, 0, 1, h);
+        if (s % 3 === 0) { ctx.strokeStyle = 'rgba(200,180,230,0.35)'; ctx.lineWidth = 0.02; ctx.beginPath(); ctx.moveTo(0.5, h * 0.35); ctx.lineTo(0.5, h * 0.62); ctx.moveTo(0.42, h * 0.43); ctx.lineTo(0.58, h * 0.43); ctx.stroke(); }
+      }
+      if (s % 3 === 1 && wLv()) { const a = 0.18 + 0.14 * Math.sin(t * 1.4 + s); ctx.strokeStyle = 'rgba(190,150,255,' + a.toFixed(2) + ')'; ctx.lineWidth = 0.018; ctx.beginPath(); ctx.arc(0.5, h * 0.5, 0.14, 0, Math.PI * 2); ctx.moveTo(0.5, h * 0.5 - 0.1); ctx.lineTo(0.5, h * 0.5 + 0.1); ctx.moveTo(0.43, h * 0.5 - 0.03); ctx.lineTo(0.57, h * 0.5 - 0.03); ctx.stroke(); }   // 1.27.5: a rune, breathing violet like the ones in the floor
+      if (wSt()) { ctx.fillStyle = rtGrad('crypt', h, h, h - 0.5, [[0, 'rgba(120,80,180,0.25)'], [1, 'rgba(120,80,180,0)']]); ctx.fillRect(0, h - 0.5, 1, 0.5); }   // 1.27.5: the cold violet mist at its foot
     },
     vault(h, t, s) {   // a warm gold sheen and glints that come and go
-      ctx.fillStyle = 'rgba(210,170,60,0.09)'; ctx.fillRect(0, 0, 1, h);
+      if (wSt()) { ctx.fillStyle = 'rgba(210,170,60,0.09)'; ctx.fillRect(0, 0, 1, h); }
+      if (!wLv()) return;
       for (let k = 0; k < 2; k++) { const p = 0.5 + 0.5 * Math.sin(t * 2.2 + k * 2.4 + s); if (p < 0.75) continue; const u = 0.2 + 0.6 * ((s * 0.37 + k * 0.45) % 1), v = h * (0.3 + 0.4 * ((s * 0.61 + k * 0.3) % 1)), r = 0.07 * (p - 0.75) / 0.25;
         ctx.strokeStyle = 'rgba(255,236,160,0.9)'; ctx.lineWidth = 0.012; ctx.beginPath(); ctx.moveTo(u - r, v); ctx.lineTo(u + r, v); ctx.moveTo(u, v - r); ctx.lineTo(u, v + r); ctx.stroke(); }
     },
@@ -13840,27 +14053,35 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       ctx.fillStyle = rtGrad('hush', h, 0, h, [[0, 'rgba(8,10,16,0.15)'], [1, 'rgba(8,10,16,0.42)']]); ctx.fillRect(0, 0, 1, h);
     },
     ice(h, t, s, T) {   // frost over the wall, thicker at the top, and icicles hanging from its edge (1.27.5: close up the long ones are solid: RFX_WALL3D)
+      if (wSt()) {
       ctx.fillStyle = 'rgba(190,226,248,0.13)'; ctx.fillRect(0, 0, 1, h);
       ctx.fillStyle = 'rgba(232,247,255,0.6)'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(1, 0);
-      for (let k = 8; k >= 0; k--) { const u = k / 8, L = (k + s) % 3 === 0 && T < 20 ? 0.22 + 0.1 * (((k * 7 + s) % 5) / 4) : 0.06; ctx.lineTo(u + 0.03, 0.04); ctx.lineTo(u, 0.04 + L); ctx.lineTo(u - 0.03, 0.04); }
+      for (let k = 8; k >= 0; k--) { const u = k / 8, L = (k + s) % 3 === 0 && wdT(T) < 20 ? 0.22 + 0.1 * (((k * 7 + s) % 5) / 4) : 0.06; ctx.lineTo(u + 0.03, 0.04); ctx.lineTo(u, 0.04 + L); ctx.lineTo(u - 0.03, 0.04); }
       ctx.fill();
+      }
+      if (!wLv()) return;
       const d = ((t * 0.5 + s * 0.13) % 1); if (d < 0.5) { ctx.fillStyle = 'rgba(220,240,255,0.7)'; ctx.beginPath(); ctx.arc(0.5 - 0.5 / 8 + ((s % 3) / 8), 0.3 + d * h * 1.4, 0.015, 0, Math.PI * 2); ctx.fill(); }   // a drop now and then
     }
   };
+  // 1.28.0: which washes move (the wall cache draws those live; with reduceMotion none: their clock stands at 0)
+  const RTW_MIX = { fog: 1, grotto: 1, crypt: 1, vault: 1, ice: 1 };   // (their still and moving pieces apart: wSt, wLv)
+  const RTW_LIVE = { fog: () => true, swamp: () => true, grotto: () => true, crypt: s => s % 3 === 1, vault: () => true, haven: () => true, ice: () => true };
   function rtWallWash(i, T) {
-    if (T < 8) return;
+    const dt = wdT(T); if (dt < 8) return;   // 1.28.0: wdT (GFX.lvl)
     const x = i % WW, y = (i - x) / WW, h = WA.cur[i]; if (h < 0.3) return;
     const t = reduceMotion ? 0 : realNow;
     [[0, 1, 'S'], [1, 0, 'E']].forEach(([dx, dy, face]) => {
       if (wallH(x + dx, y + dy) >= h - 0.001) return;
       let r = tileAt(x + dx, y + dy) === FLOOR ? roomOf(x + dx, y + dy) : tileAt(x + 2 * dx, y + 2 * dy) === FLOOR && tileAt(x + dx, y + dy) === WALL ? roomOf(x + 2 * dx, y + 2 * dy) : -1;
       const rt = rtOf(r), fn = rt && RT_WALL[rt]; if (!fn) return;
-      ctx.save();
-      if (face === 'S') faceMap(x, y + 1, x + 1, y + 1, 0, h); else faceMap(x + 1, y, x + 1, y + 1, 0, h);
-      ctx.beginPath(); ctx.rect(0, 0, 1, 1); ctx.clip(); ctx.scale(1, 1 / h);
-      const s = tileHash(x * 13 + (face === 'S' ? 3 : 8), y * 11 + 1) % 97;
-      try { fn(h, t, s, T); } finally { ctx.restore(); }
-      if (T >= 12 && h > WALL_H * 0.6 && tileAt(x + dx, y + dy) === FLOOR && !fl.items.has(key(x, y)) && !WA.torchAt.has(i)) rfxWall3D(x, y, face, h, T, t, s, fl.rooms[r]);   // 1.27.5: what stands out of it (p7c_art.js)
+      const s = tileHash(x * 13 + (face === 'S' ? 3 : 8), y * 11 + 1) % 97, lv = RTW_LIVE[rt];
+      wP(!reduceMotion && !!lv && lv(s), RTW_MIX[rt], () => {
+        ctx.save();
+        if (face === 'S') faceMap(x, y + 1, x + 1, y + 1, 0, h); else faceMap(x + 1, y, x + 1, y + 1, 0, h);
+        ctx.beginPath(); ctx.rect(0, 0, 1, 1); ctx.clip(); ctx.scale(1, 1 / h);
+        try { fn(h, t, s, T); } finally { ctx.restore(); }
+      });
+      if (dt >= 12 && h > WALL_H * 0.6 && tileAt(x + dx, y + dy) === FLOOR && !fl.items.has(key(x, y)) && !WA.torchAt.has(i)) rfxWall3D(x, y, face, h, T, t, s, fl.rooms[r]);   // 1.27.5: what stands out of it (p7c_art.js)
     });
   }
   // 1.15 (author: as much as possible in 3D, even the flat things stand out a little; only the figures stay 2D): what is drawn
@@ -13908,15 +14129,14 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       pRod(a, b, Math.max(1.6, T * 0.038), '#4a4440'); pSkull3q(b[0] - dir * R * 0.15, b[1] + R * 1.25, R, '#e2d8bc', '#1c1612', dir);
     },
     haunt(F, h, T, t, s) {   // a sconce with a candle burning blue
-      const z = Math.min(1.0, h - 0.4); pRod(F.P(0.5, 0, z - 0.06), F.P(0.5, 0.15, z), Math.max(1.6, T * 0.035), '#4a4e5a');
-      F.box(0.5, 0.15, 0.1, 0.1, 0.03, z, '#4a4e5a', '#3a3e48', '#2c2f36');
-      const [wx, wy] = F.W(0.5, 0.15); pCyl(wx, wy, 0.03, 0.14, '#cfd8e0', '#fffaf0', z + 0.03); const q = W2S(wx, wy, z + 0.17);
-      pFlame(q[0], q[1], T * 0.13, t, s, 'rgba(200,240,255,0.95)', 'rgba(100,190,255,0.85)', ['kcandB', [[0, 'rgba(140,210,255,0.35)'], [1, 'rgba(140,210,255,0)']]]);
+      const z = Math.min(1.0, h - 0.4), [wx, wy] = F.W(0.5, 0.15), q = W2S(wx, wy, z + 0.17);
+      if (wSt()) { pRod(F.P(0.5, 0, z - 0.06), F.P(0.5, 0.15, z), Math.max(1.6, T * 0.035), '#4a4e5a'); F.box(0.5, 0.15, 0.1, 0.1, 0.03, z, '#4a4e5a', '#3a3e48', '#2c2f36'); pCyl(wx, wy, 0.03, 0.14, '#cfd8e0', '#fffaf0', z + 0.03); }   // 1.28.0: wSt / wLv
+      if (wLv()) pFlame(q[0], q[1], T * 0.13, t, s, 'rgba(200,240,255,0.95)', 'rgba(100,190,255,0.85)', ['kcandB', [[0, 'rgba(140,210,255,0.35)'], [1, 'rgba(140,210,255,0)']]]);
     },
     bats(F, h, T, t, s) {   // stone teeth hanging off the top edge; a bat hanging among them
       const K = kwKit(F, h - 1, h);   // 1.27.5 (round 3): stalactites with volume: their shadow on the face, a lit left flank, a dark right one
-      [0.2, 0.48, 0.8].forEach((u, k) => { const [wx, wy] = F.W(u, 0.05); kStal(K, wx, wy, u, 0.05, h, 0.05 + 0.012 * (k % 2), 0.24 + 0.1 * ((k + s) % 3)); });
-      if (s % 3 === 0) { const q = F.P(0.65, 0.1, h - 0.12), open = Math.max(0, Math.sin(t * 0.8 + s) - 0.85) * 6, ww = T * (0.08 + 0.06 * open);   // 1.27.5: a round body, the wings folded round it (the far one in shade)
+      if (wSt()) [0.2, 0.48, 0.8].forEach((u, k) => { const [wx, wy] = F.W(u, 0.05); kStal(K, wx, wy, u, 0.05, h, 0.05 + 0.012 * (k % 2), 0.24 + 0.1 * ((k + s) % 3)); });
+      if (s % 3 === 0 && wLv()) { const q = F.P(0.65, 0.1, h - 0.12), open = Math.max(0, Math.sin(t * 0.8 + s) - 0.85) * 6, ww = T * (0.08 + 0.06 * open);   // 1.27.5: a round body, the wings folded round it (the far one in shade)
         ctx.fillStyle = '#0e0914'; ctx.beginPath(); ctx.moveTo(q[0], q[1] - T * 0.04); ctx.quadraticCurveTo(q[0] + ww, q[1] + T * 0.06, q[0] + T * 0.02, q[1] + T * 0.16); ctx.lineTo(q[0], q[1] + T * 0.1); ctx.fill();
         ctx.fillStyle = '#2c2238'; ctx.beginPath(); ctx.moveTo(q[0], q[1] - T * 0.04); ctx.quadraticCurveTo(q[0] - ww, q[1] + T * 0.06, q[0] - T * 0.02, q[1] + T * 0.16); ctx.lineTo(q[0], q[1] + T * 0.1); ctx.fill();
         pOval(q[0], q[1] + T * 0.065, T * 0.03, T * 0.065, '#3a2c48'); ctx.fillStyle = '#ff5a6a'; ctx.fillRect(q[0] - T * 0.025, q[1] + T * 0.11, Math.max(1, T * 0.015), Math.max(1, T * 0.015)); ctx.fillRect(q[0] + T * 0.01, q[1] + T * 0.11, Math.max(1, T * 0.015), Math.max(1, T * 0.015)); }
@@ -13937,7 +14157,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     },
     forge(F, h, T, t, s) {
       if (s % 3 === 0) {   // a hood over a hearth: a brick box standing out of the wall, glowing underneath, sparks going up into it
-        const f = 0.75 + 0.25 * Math.sin(t * 6 + s); F.box(0.5, 0.2, 0.74, 0.4, 0.42, 0.95, '#2a2220', '#5e2c1e', '#43221a');
+        const f = 0.75 + 0.25 * Math.sin(t * 6 + s); if (wSt()) F.box(0.5, 0.2, 0.74, 0.4, 0.42, 0.95, '#2a2220', '#5e2c1e', '#43221a');
+        if (!wLv()) return;
         const q = F.P(0.5, 0.2, 0.8); ctx.drawImage(glowSprite('khood', [[0, 'rgba(255,140,50,0.55)'], [0.5, 'rgba(255,90,30,0.15)'], [1, 'rgba(255,60,20,0)']]), q[0] - T * 0.6 * f, q[1] - T * 0.35 * f, T * 1.2 * f, T * 0.7 * f);
         if (!reduceMotion) for (let k = 0; k < 3; k++) { const u = (t * 0.8 + k / 3 + s * 0.1) % 1, p = F.P(0.35 + 0.15 * k, 0.2 + Math.sin(u * 8 + k) * 0.05, 0.3 + u * 0.6); ctx.fillStyle = 'rgba(255,200,90,' + (0.9 * (1 - u)).toFixed(2) + ')'; ctx.fillRect(p[0], p[1], Math.max(1, T * 0.025), Math.max(1, T * 0.025)); }
         return;
@@ -13946,8 +14167,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     },
     prison(F, h, T, t, s) {   // two iron rings, chains hanging from them, shackles at the end; water dripping off them
       [0.28, 0.72].forEach((u, k) => {   // 1.27.5: round iron links, a plate under each ring
-        F.box(u, 0.01, 0.08, 0.02, 0.08, 1.22, '#5e626c', '#464a52', '#34373e');
-        const top = F.P(u, 0.03, 1.25); pRing(top[0], top[1], T * 0.04, T * 0.05, Math.max(1.4, T * 0.022), '#9a9da5');
+        if (wSt()) { F.box(u, 0.01, 0.08, 0.02, 0.08, 1.22, '#5e626c', '#464a52', '#34373e'); const top = F.P(u, 0.03, 1.25); pRing(top[0], top[1], T * 0.04, T * 0.05, Math.max(1.4, T * 0.022), '#9a9da5'); }   // 1.28.0: the plates still, the chains live
+        if (!wLv()) return;
         const sway = Math.sin(t * 0.9 + s + k) * 0.02;
         for (let j = 1; j <= 6; j++) { const f = j / 6, q = F.P(u + sway * f, 0.03 + 0.06 * f, 1.25 - 0.55 * f); pRing(q[0], q[1], T * (j % 2 ? 0.018 : 0.03), T * (j % 2 ? 0.03 : 0.018), Math.max(1, T * 0.018), '#9a9da5'); }
         const e = F.P(u + sway, 0.1, 0.62); pRing(e[0], e[1], T * 0.06, T * 0.06, Math.max(1.6, T * 0.036), '#a4a7ae');
@@ -13961,15 +14182,15 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     },
     gallery(F, h, T, t, s) {   // a gilded frame standing off the wall (1.27.5: a solid frame, the canvas sunk in it), sometimes a sconce beside it
       const K = kwKit(F, 0.32, 1.42), glint = Math.sin(t * 0.8 + s) > 0.85;
-      K.shadow(() => { ctx.rect(0.18, 0.06, 0.62, 0.72); ctx.fill(); }, 0.32, 1.3);
+      if (wSt()) { K.shadow(() => { ctx.rect(0.18, 0.06, 0.62, 0.72); ctx.fill(); }, 0.32, 1.3);
       K.box(0.18, 0.8, 0.06, 0.78, 0, 0.08, ['#e0bc66', '#c9a24e', '#8a6a2a']);
-      K.plane(0.08); ctx.fillStyle = 'rgba(255,240,200,0.28)'; ctx.fillRect(0.18, 0.06, 0.62, 0.025); ctx.fillRect(0.18, 0.06, 0.025, 0.72); ctx.strokeStyle = 'rgba(122,90,34,0.9)'; ctx.lineWidth = 0.02; ctx.strokeRect(0.215, 0.095, 0.55, 0.65);
+      K.plane(0.08); ctx.fillStyle = 'rgba(255,240,200,0.28)'; ctx.fillRect(0.18, 0.06, 0.62, 0.025); ctx.fillRect(0.18, 0.06, 0.025, 0.72); ctx.strokeStyle = 'rgba(122,90,34,0.9)'; ctx.lineWidth = 0.02; ctx.strokeRect(0.215, 0.095, 0.55, 0.65); }
       K.recess(0.08, 0.05, () => ctx.rect(0.25, 0.13, 0.48, 0.58), '#100c0c', () => {
-        ctx.fillStyle = '#1a1416'; ctx.fillRect(0.25, 0.13, 0.48, 0.58); ctx.fillStyle = 'rgba(70,56,52,0.85)'; ctx.beginPath(); ctx.ellipse(0.49, 0.36, 0.1, 0.13, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(0.35, 0.48, 0.28, 0.23);
-        ctx.fillStyle = glint ? '#ffe9a8' : 'rgba(30,24,22,0.9)'; ctx.fillRect(0.445, 0.33, 0.025, 0.018); ctx.fillRect(0.51, 0.33, 0.025, 0.018);
+        if (wSt()) { ctx.fillStyle = '#1a1416'; ctx.fillRect(0.25, 0.13, 0.48, 0.58); ctx.fillStyle = 'rgba(70,56,52,0.85)'; ctx.beginPath(); ctx.ellipse(0.49, 0.36, 0.1, 0.13, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(0.35, 0.48, 0.28, 0.23); }
+        if (wLv()) { ctx.fillStyle = glint ? '#ffe9a8' : 'rgba(30,24,22,0.9)'; ctx.fillRect(0.445, 0.33, 0.025, 0.018); ctx.fillRect(0.51, 0.33, 0.025, 0.018); }
       });
       screenT();
-      if (s % 2 === 0) { const z = 0.95; pRod(F.P(0.92, 0, z), F.P(0.92, 0.12, z + 0.04), Math.max(1.6, T * 0.03), '#c9a24e'); const [wx, wy] = F.W(0.92, 0.12); pCyl(wx, wy, 0.025, 0.12, '#efe6cc', '#fffaf0', z + 0.04); const q = W2S(wx, wy, z + 0.16); pFlame(q[0], q[1], T * 0.12, t, s, 'rgba(255,236,170,0.95)', 'rgba(255,150,50,0.85)', ['kcandW', [[0, 'rgba(255,200,120,0.35)'], [1, 'rgba(255,200,120,0)']]]); }
+      if (s % 2 === 0) { const z = 0.95, [wx, wy] = F.W(0.92, 0.12), q = W2S(wx, wy, z + 0.16); if (wSt()) { pRod(F.P(0.92, 0, z), F.P(0.92, 0.12, z + 0.04), Math.max(1.6, T * 0.03), '#c9a24e'); pCyl(wx, wy, 0.025, 0.12, '#efe6cc', '#fffaf0', z + 0.04); } if (wLv()) pFlame(q[0], q[1], T * 0.12, t, s, 'rgba(255,236,170,0.95)', 'rgba(255,150,50,0.85)', ['kcandW', [[0, 'rgba(255,200,120,0.35)'], [1, 'rgba(255,200,120,0)']]]); }
     },
     nursery(F, h, T, t, s) {   // a little shelf with toys on it
       F.box(0.5, 0.1, 0.7, 0.2, 0.035, 0.85, '#d8d0c4', '#bab2a6', '#9a9286');
@@ -13978,8 +14199,12 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       pBall(b0, b1, 0.885, 0.06, '#8ea6e8'); if (s % 2) { pBall(c0, c1, 0.885, 0.07, '#9a6a44'); pBall(c0, c1, 0.98, 0.05, '#9a6a44'); } else isoBox(c0, c1, 0.1, 0.1, 0.1, '#e58aa8', '#c86a8a', '#a8506e', 0.885);
     }
   };
+  // 1.28.0: which raised pieces move, by the komnata (s: the face's hash); the rest are still (the wall cache paints them once)
+  const KW3_LIVE = { spider: () => true, haunt: () => true, bats: () => true, forge: s => s % 3 === 0, prison: () => true, gallery: () => true, lab: s => !(s % 2), graveyard: s => s % 3 === 0, abyssgate: s => !(s % 2) };
+  const KW3_MIX = { haunt: 1, bats: 1, forge: 1, prison: 1, gallery: 1 };   // (their still and moving pieces apart: wSt, wLv)
+  const KW3_STILL = { goblin: 1, ogre: 1, ossuary: 1, armory: 1, junk: 1, nursery: 1 };
   function kindWall3D(i, T) {
-    if (T < 12 || !WA.anyRk) return;   // 1.24 (C): WA.anyRk, WA.torchAt (were: every room, every torch, for every block)
+    if (wdT(T) < 12 || !WA.anyRk) return;   // 1.24 (C): WA.anyRk, WA.torchAt (were: every room, every torch, for every block) (1.28.0: wdT, GFX.lvl)
     const x = i % WW, y = (i - x) / WW, h = WA.cur[i];
     if (h < WALL_H * 0.6 || fl.items.has(key(x, y)) || WA.torchAt.has(i)) return;
     const t = reduceMotion ? 0 : realNow, sel = tileHash(x * 5 + 1, y * 3 + 2) % 3;
@@ -13987,8 +14212,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       if (tileAt(x + dx, y + dy) !== FLOOR || wallH(x + dx, y + dy) >= h - 0.001) return;
       const r = roomOf(x + dx, y + dy), R = r >= 0 ? fl.rooms[r] : null, fn = R && R.rk && KIND_WALL3D[R.rk];
       if (!fn || !(sel === 0 || (sel === 1 && REPLACE_FLAT[R.rk]))) return;
-      ctx.save();
-      try { fn(wallFrame(x, y, face), h, T, t, tileHash(x * 13 + (face === 'S' ? 3 : 8), y * 11 + 1) % 97); } finally { ctx.restore(); }
+      const s = tileHash(x * 13 + (face === 'S' ? 3 : 8), y * 11 + 1) % 97, lv = KW3_LIVE[R.rk];
+      wP(!reduceMotion && !KW3_STILL[R.rk] && (!lv || lv(s)), KW3_MIX[R.rk], () => { ctx.save(); try { fn(wallFrame(x, y, face), h, T, t, s); } finally { ctx.restore(); } });   // (a komnata not in the lists: live)
     });
   }
   // what is on a standing block: its torch, the wall traps on its face
@@ -13997,28 +14222,34 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     kindWallDeco(i, T);
     kindWall3D(i, T);   // 1.15: what stands out of a komnata's wall
     rtWallWash(i, T);   // 1.15: the room's effect over the wall's stuff
-    if (T >= 10 && h > WALL_H * 0.6 && WA.torchAt.has(i)) WA.torchAt.get(i).forEach(t => { if (!fl.items.has(key(x, y))) drawTorch(t, T); });   // 1.24 (C): by the block's index
-    if (WA.itemAt && WA.itemAt.has(i)) WA.itemAt.get(i).forEach(it => drawWallItem(it, T, true));
+    if (wdT(T) >= 10 && h > WALL_H * 0.6 && WA.torchAt.has(i)) WA.torchAt.get(i).forEach(t => { if (!fl.items.has(key(x, y))) drawTorch(t, T); });   // 1.24 (C): by the block's index
+    if (WA.itemAt && WA.itemAt.has(i)) WA.itemAt.get(i).forEach(it => wL(() => drawWallItem(it, T, true)));   // 1.28.0: live (they fire, cool down, show their state)
   }
   function torchFlicker(x, y) { return 0.86 + 0.14 * Math.sin(realNow * 8.3 + x * 1.7) * Math.sin(realNow * 5.1 + y * 2.3); }
   function drawTorch(t, T) {   // a sconce on the wall's face, a flame (a flame faces you), a warm light on the face around it
-    const f = torchFlicker(t.fx, t.fy);
-    ctx.save();
+    const f = torchFlicker(t.fx, t.fy);   // 1.28.0: the glow and the flame live, the sconce still (the wall cache)
     const z1 = Math.min(wallH(t.x, t.y), 1.25), z0 = Math.max(0, z1 - 1);   // 1.09: a sconce at a hand's height on the high wall
-    if (t.face === 'S') faceMap(t.x, t.y + 1, t.x + 1, t.y + 1, z0, z1); else faceMap(t.x + 1, t.y, t.x + 1, t.y + 1, z0, z1);
-    ctx.globalAlpha = 0.9; ctx.drawImage(glowSprite('torchw', [[0, 'rgba(255,170,90,0.3)'], [0.6, 'rgba(255,120,50,0.06)'], [1, 'rgba(255,120,40,0)']]), 0.5 - 0.95 * f, 0.38 - 0.95 * f, 1.9 * f, 1.9 * f);
-    ctx.restore();
+    wL(() => {
+      ctx.save();
+      if (t.face === 'S') faceMap(t.x, t.y + 1, t.x + 1, t.y + 1, z0, z1); else faceMap(t.x + 1, t.y, t.x + 1, t.y + 1, z0, z1);
+      ctx.globalAlpha = 0.9; ctx.drawImage(glowSprite('torchw', [[0, 'rgba(255,170,90,0.3)'], [0.6, 'rgba(255,120,50,0.06)'], [1, 'rgba(255,120,40,0)']]), 0.5 - 0.95 * f, 0.38 - 0.95 * f, 1.9 * f, 1.9 * f);
+      ctx.restore();
+    });
     // 1.27.5: a solid iron sconce: a plate on the face, an arm out of it, a cup of pitch the flame burns in
     const F = wallFrame(t.x, t.y, t.face), ir = ['#5e626c', '#3a3d45', '#26282e'];
-    if (T >= 20) { F.box(0.5, 0.012, 0.1, 0.024, 0.24, z0 + 0.3, ir[0], ir[1], ir[2]); F.box(0.5, 0.075, 0.035, 0.11, 0.035, z0 + 0.47, ir[0], ir[1], ir[2]); }   // (far out, the cup alone)
-    const cu = F.W(0.5, 0.14); pCyl(cu[0], cu[1], 0.05, 0.09, '#33363d', '#1a1210', z0 + 0.46);
-    const p = F.P(0.5, 0.14, z0 + 0.6);
-    ctx.fillStyle = 'rgba(255,110,30,0.92)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.08, T * 0.07, T * 0.12 * f, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,225,140,0.95)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.05, T * 0.035, T * 0.065 * f, 0, 0, Math.PI * 2); ctx.fill();
+    if (wS()) {
+      if (wdT(T) >= 20) { F.box(0.5, 0.012, 0.1, 0.024, 0.24, z0 + 0.3, ir[0], ir[1], ir[2]); F.box(0.5, 0.075, 0.035, 0.11, 0.035, z0 + 0.47, ir[0], ir[1], ir[2]); }   // (far out, the cup alone)
+      const cu = F.W(0.5, 0.14); pCyl(cu[0], cu[1], 0.05, 0.09, '#33363d', '#1a1210', z0 + 0.46);
+    }
+    wL(() => {
+      const p = F.P(0.5, 0.14, z0 + 0.6);
+      ctx.fillStyle = 'rgba(255,110,30,0.92)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.08, T * 0.07, T * 0.12 * f, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,225,140,0.95)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] - T * 0.05, T * 0.035, T * 0.065 * f, 0, 0, Math.PI * 2); ctx.fill();
+    });
   }
   // the light of the torches on the floor in front of them (flat, under the walls)
   function drawTorchLight(x0, y0, x1, y1, T) {   // the light of the torches on the floor in front of them (screen space: an upright ellipse is fast)
-    if (T < 10) return;
+    if (detT(T) < 10) return;   // 1.28.0: detT (as the torches themselves)
     wallSetup();
     const spr = glowSprite('torch', [[0, 'rgba(255,150,70,0.2)'], [0.5, 'rgba(255,120,50,0.06)'], [1, 'rgba(255,120,40,0)']]);
     ctx.save(); screenT();
@@ -14093,6 +14324,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     const drawSO = e => { if (e[1] === 0) drawObjectIso(e[2], T); else if (e[1] === 1) drawItemUp(e[2], T); else if (e[1] === 2) drawHeartIso(T); else if (e[1] === 4) drawCorpse(e[2], T); else if (e[1] === 5) drawProp(e[2], T); else if (e[1] === 6) drawSecret(e[2], T); else if (e[1] === 7) cageFront(e[2], T); else drawHero(e[2], T); };
     // what a standing wall in front of it covers goes between the walls, in depth order; the rest after all of them
     let wi = 0; const later = [];
+    DRAWN.w = WL.length; DRAWN.so = SO.length; DRAWN.T = T;   // 1.28.0: frame telemetry (how much a frame draws)
     const wallsTo = d => { const s0 = wi; while (wi < WL.length && WL[wi].d <= d) wi++; if (wi > s0) drawWallRun(WL, s0, wi, T); };
     SO.forEach(e => { if (WL.length && wallCovers(e[3], e[4], e[5])) { wallsTo(e[0]); drawSO(e); } else later.push(e); });
     wallsTo(Infinity);
@@ -14591,7 +14823,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       shadow: (shape, a, m) => { F.plane(0.003, z0, z1); ctx.translate(K.sx * (m || 1), 0.05 * (m || 1)); ctx.fillStyle = 'rgba(0,0,0,' + (a || 0.32) + ')'; ctx.beginPath(); shape(); ctx.fill(); screenT(); },
       // a hollow in a front at depth d1: its window (shape) filled with the inner walls' colour, then what lies in it drawn
       // deeper (at d1 - dep), clipped to the window, so the back shifts inside the rim like a real recess
-      recess: (d1, dep, shape, inner, fill) => { ctx.save(); F.plane(d1, z0, z1); ctx.beginPath(); shape(); ctx.fillStyle = inner; ctx.fill(); ctx.clip(); F.plane(d1 - dep, z0, z1); fill(); ctx.restore(); }
+      recess: (d1, dep, shape, inner, fill) => { ctx.save(); F.plane(d1, z0, z1); ctx.beginPath(); shape(); if (wSt()) { ctx.fillStyle = inner; ctx.fill(); } ctx.clip(); F.plane(d1 - dep, z0, z1); fill(); ctx.restore(); }
     };
     return K;
   }
@@ -14626,7 +14858,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     let s = TRAP_SPARKS.get(it); if (!s) { s = { p: [], t: realNow, hot: false, edge: false }; TRAP_SPARKS.set(it, s); }
     s.edge = hot && !s.hot; s.hot = hot; return s;
   }
-  function sparkAdd(s, x, y, z, vx, vy, vz, life, col, r, g) { if (reduceMotion || s.p.length >= 16) return; s.p.push({ x, y, z, vx, vy, vz, life, max: life, col, r, g }); }
+  function sparkAdd(s, x, y, z, vx, vy, vz, life, col, r, g) { if (reduceMotion || s.p.length >= (GFX.lvl ? 8 : 16) || detT(cam.s) < 12) return; s.p.push({ x, y, z, vx, vy, vz, life, max: life, col, r, g }); }   // 1.28.0: detT, fewer at a lower level
   function sparkRun(s, T) {   // (screen transform)
     const dt = Math.min(0.05, Math.max(0, realNow - s.t)); s.t = realNow;
     if (!s.p.length) return;
@@ -15310,7 +15542,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       if (!KIND_FLOOR[R.rk] || !roomSeen(R, T)) return;   // only what is on screen
       const x = R.x0 * T, y = R.y0 * T, w = (R.x1 - R.x0 + 1) * T, h = (R.y1 - R.y0 + 1) * T;
       ctx.drawImage(kindFloorCache(R, T), x, y, w, h);
-      const lv = KIND_LIVE[R.rk]; if (!lv) return;
+      const lv = KIND_LIVE[R.rk]; if (!lv || detT(T) < 9) return;   // 1.28.0: detT (the moving part only; the still floor stays)
       ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
       lv(ctx, R, T, t);
       ctx.restore();
@@ -15547,16 +15779,17 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   }
   // the props on screen join what stands (drawWorld step 3)
   function kindPropsSO(SO, T) {
-    if (T < 9) return;
+    const dT = detT(T); if (dT < 9) return;
+    const small = dT < 14;   // 1.28.0: smaller than this a tile, only the room's big things (a campfire, a rack); no small ones, nothing lying on the floor
     kindRooms().forEach(R => {
       if (!roomSeen(R, T)) return;
       const add = p => {
         const tx = Math.floor(p.x), ty = Math.floor(p.y), k = key(tx, ty);
         if (fl.items.has(k) || fl.objects.has(k) || isHeart(tx, ty) || tileAt(tx, ty) !== FLOOR) return;
-        if (!onScreen(W2S(p.x, p.y, 0), T * 2)) return;
+        if ((small && p.h < 0.4) || !onScreen(W2S(p.x, p.y, 0), T * 2)) return;
         SO.push([p.x + p.y, 5, p, p.x, p.y, p.h]);
       };
-      kindProps(R).forEach(add); kindClutter(R).forEach(add);   // 1.27.5: and what lies on its floor
+      kindProps(R).forEach(add); if (!small) kindClutter(R).forEach(add);   // 1.27.5: and what lies on its floor
     });
   }
   const PROP_K = 1.3;
@@ -15928,7 +16161,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   Object.keys(CL_ART).forEach(k => { PROP[k] = kcDraw; });
   // under each trap or monster of a komnata's family that stands (hangs, floats) in it: a soft glow of its colour
   function drawKindAuras(T) {
-    if (T < 6 || !kindRooms().length) return;
+    if (detT(T) < 6 || !kindRooms().length) return;   // 1.28.0: detT
     const t = reduceMotion ? 0 : realNow;
     fl.items.forEach(it => {
       const k = KIND_OF[it.type]; if (!k || !inKind(it) || (MONSTERS[it.type] && it.hp <= 0) || it.disabled) return;
@@ -15951,11 +16184,11 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       box: (u0, u1, v0, v1, d0, d1, c) => F.box((u0 + u1) / 2, (d0 + d1) / 2, u1 - u0, d1 - d0, Z(v0) - Z(v1), Z(v1), c[0], c[1], c[2]),
       plane: d => F.plane(d, z0, z1),
       // the soft shadow a body casts on the face: shape() fills or strokes in the unit square, shifted down and away from the light
-      shadow: (shape, a, m) => { if (cam.s < 20) return; F.plane(0.003, z0, z1); ctx.translate((S ? 0.035 : -0.02) * (m || 1), 0.05 * (m || 1)); ctx.fillStyle = ctx.strokeStyle = 'rgba(0,0,0,' + (a || 0.3) + ')'; ctx.beginPath(); shape(); screenT(); },
+      shadow: (shape, a, m) => { if (wdT(cam.s) < 20) return; F.plane(0.003, z0, z1); ctx.translate((S ? 0.035 : -0.02) * (m || 1), 0.05 * (m || 1)); ctx.fillStyle = ctx.strokeStyle = 'rgba(0,0,0,' + (a || 0.3) + ')'; ctx.beginPath(); shape(); screenT(); },
       // a flat body parallel to the face from d0 to d1 (a shield, a hide, a sheet): its edge in layers, its front (left in the front's plane)
-      stack: (d0, d1, n, shape, side, front) => { if (cam.s < 20) n = 1; for (let j = 0; j < n; j++) { F.plane(d0 + (d1 - d0) * j / n, z0, z1); ctx.fillStyle = side; ctx.beginPath(); shape(); ctx.fill(); } F.plane(d1, z0, z1); ctx.fillStyle = front; ctx.beginPath(); shape(); ctx.fill(); },
+      stack: (d0, d1, n, shape, side, front) => { if (wdT(cam.s) < 20) n = 1; for (let j = 0; j < n; j++) { F.plane(d0 + (d1 - d0) * j / n, z0, z1); ctx.fillStyle = side; ctx.beginPath(); shape(); ctx.fill(); } F.plane(d1, z0, z1); ctx.fillStyle = front; ctx.beginPath(); shape(); ctx.fill(); },
       // a hollow in a front at d1: its window filled with the inner colour, what lies in it drawn dep deeper, clipped to the window
-      recess: (d1, dep, shape, inner, fill) => { ctx.save(); F.plane(d1, z0, z1); ctx.beginPath(); shape(); ctx.fillStyle = inner; ctx.fill(); ctx.clip(); F.plane(d1 - dep, z0, z1); fill(); ctx.restore(); },
+      recess: (d1, dep, shape, inner, fill) => { ctx.save(); F.plane(d1, z0, z1); ctx.beginPath(); shape(); if (wSt()) { ctx.fillStyle = inner; ctx.fill(); } ctx.clip(); F.plane(d1 - dep, z0, z1); fill(); ctx.restore(); },
       bone: (u0, v0, u1, v1, d, r, col) => { const a = F.W(u0, d), b = F.W(u1, d); pBone(a[0], a[1], Z(v0), b[0], b[1], Z(v1), r, col); }
     };
     return K;
@@ -16053,10 +16286,9 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     },
     haunt(K, t, u0, alt, T) {   // a torn curtain on a rod, stirring in no wind; or an iron sconce with a candle burning blue
       if (alt) {
-        const z = K.Z(0.62); K.box(0.43, 0.57, 0.56, 0.68, 0, 0.025, KW_IRON); pRod(K.P(0.5, 0.64, 0.02), K.P(0.5, 0.62, 0.13), Math.max(1.5, T * 0.03), '#4a4e5a');
-        K.F.box(0.5, 0.14, 0.11, 0.11, 0.025, z, '#4a4e5a', '#3a3e48', '#2c2f36');
-        const [wx, wy] = K.W(0.5, 0.14); pCyl(wx, wy, 0.028, 0.14, '#cfd8e0', '#fffaf0', z + 0.025); const q = W2S(wx, wy, z + 0.165);
-        pFlame(q[0], q[1], T * 0.13, t, u0 * 9, 'rgba(200,240,255,0.95)', 'rgba(100,190,255,0.85)', ['kcandB', [[0, 'rgba(140,210,255,0.35)'], [1, 'rgba(140,210,255,0)']]]);
+        const z = K.Z(0.62), [wx, wy] = K.W(0.5, 0.14), q = W2S(wx, wy, z + 0.165);
+        if (wSt()) { K.box(0.43, 0.57, 0.56, 0.68, 0, 0.025, KW_IRON); pRod(K.P(0.5, 0.64, 0.02), K.P(0.5, 0.62, 0.13), Math.max(1.5, T * 0.03), '#4a4e5a'); K.F.box(0.5, 0.14, 0.11, 0.11, 0.025, z, '#4a4e5a', '#3a3e48', '#2c2f36'); pCyl(wx, wy, 0.028, 0.14, '#cfd8e0', '#fffaf0', z + 0.025); }   // 1.28.0: wSt / wLv
+        if (wLv()) pFlame(q[0], q[1], T * 0.13, t, u0 * 9, 'rgba(200,240,255,0.95)', 'rgba(100,190,255,0.85)', ['kcandB', [[0, 'rgba(140,210,255,0.35)'], [1, 'rgba(140,210,255,0)']]]);
         return;
       }
       // 1.27.5 (round 3): the cloth hangs in deep pleats: each a strip turned to the light or away from it, in and out from the rod; a
@@ -16133,8 +16365,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         for (let k = 1; k < 4; k++) pRod(K.P(0.32 + k * 0.09, 0.08, 0.02), K.P(0.32 + k * 0.09, 0.32, 0.02), Math.max(1.5, T * 0.028), '#5a5e66');
         return;
       }
-      const q = K.P(0.5, 0.16, 0.02); K.box(0.46, 0.54, 0.12, 0.2, 0, 0.02, KW_IRON); pRing(q[0], q[1] + T * 0.02, T * 0.035, T * 0.04, Math.max(1.4, T * 0.022), '#9a9da5');
-      [-1, 1].forEach(sd => {
+      const q = K.P(0.5, 0.16, 0.02); if (wSt()) { K.box(0.46, 0.54, 0.12, 0.2, 0, 0.02, KW_IRON); pRing(q[0], q[1] + T * 0.02, T * 0.035, T * 0.04, Math.max(1.4, T * 0.022), '#9a9da5'); }   // 1.28.0: wSt / wLv
+      if (wLv()) [-1, 1].forEach(sd => {
         const sway = 0.02 * Math.sin(t * 1.1 + sd + u0 * 3);
         for (let k = 0; k < 6; k++) { const p = K.P(0.5 + sd * (0.03 + k * 0.035) + sway * k / 6, 0.2 + k * 0.07, 0.035 + k * 0.004); pRing(p[0], p[1], T * (k % 2 ? 0.014 : 0.024), T * (k % 2 ? 0.032 : 0.02), Math.max(1, T * 0.016), '#9a9da5'); }
         const e = K.P(0.5 + sd * 0.24 + sway, 0.68, 0.06); pRing(e[0], e[1], T * 0.055, T * 0.06, Math.max(1.6, T * 0.032), '#a4a7ae');
@@ -16152,16 +16384,16 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       });
     },
     gallery(K, t, u0, alt, T) {   // a gilded frame standing off the wall (its thickness shows), the canvas sunk in it; the face in it too dark to make out, the eyes catching the light
-      K.shadow(() => { ctx.rect(0.2, 0.08, 0.6, 0.66); ctx.fill(); }, 0.32, 1.2);
+      if (wSt()) { K.shadow(() => { ctx.rect(0.2, 0.08, 0.6, 0.66); ctx.fill(); }, 0.32, 1.2);
       K.box(0.2, 0.8, 0.08, 0.74, 0, 0.07, ['#e0bc66', '#c9a24e', '#8a6a2a']);
       K.plane(0.07); ctx.fillStyle = 'rgba(255,240,200,0.25)'; ctx.fillRect(0.2, 0.08, 0.6, 0.025); ctx.fillRect(0.2, 0.08, 0.025, 0.66);
-      ctx.fillStyle = kSh('#7a5a22', K.k); ctx.fillRect(0.245, 0.125, 0.51, 0.57);
+      ctx.fillStyle = kSh('#7a5a22', K.k); ctx.fillRect(0.245, 0.125, 0.51, 0.57); }   // 1.28.0: wSt / wLv (the eyes catch the light: live)
       const glint = Math.sin(t * 0.8 + u0 * 7) > 0.85;
       K.recess(0.07, 0.04, () => ctx.rect(0.27, 0.15, 0.46, 0.52), '#120e0e', () => {
-        ctx.fillStyle = '#1a1416'; ctx.fillRect(0.27, 0.15, 0.46, 0.52);
-        ctx.fillStyle = 'rgba(70,56,52,0.8)'; ctx.beginPath(); ctx.ellipse(0.5, 0.36, 0.1, 0.13, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(0.36, 0.48, 0.28, 0.2);
-        ctx.fillStyle = glint ? '#ffe9a8' : 'rgba(30,24,22,0.9)'; ctx.fillRect(0.455, 0.33, 0.025, 0.018); ctx.fillRect(0.52, 0.33, 0.025, 0.018);
-        if (alt) { ctx.strokeStyle = 'rgba(255,240,200,0.25)'; ctx.lineWidth = 0.02; ctx.beginPath(); ctx.moveTo(0.28, 0.66); ctx.lineTo(0.72, 0.16); ctx.stroke(); }
+        if (wSt()) { ctx.fillStyle = '#1a1416'; ctx.fillRect(0.27, 0.15, 0.46, 0.52);
+        ctx.fillStyle = 'rgba(70,56,52,0.8)'; ctx.beginPath(); ctx.ellipse(0.5, 0.36, 0.1, 0.13, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(0.36, 0.48, 0.28, 0.2); }
+        if (wLv()) { ctx.fillStyle = glint ? '#ffe9a8' : 'rgba(30,24,22,0.9)'; ctx.fillRect(0.455, 0.33, 0.025, 0.018); ctx.fillRect(0.52, 0.33, 0.025, 0.018); }
+        if (alt && wLv()) { ctx.strokeStyle = 'rgba(255,240,200,0.25)'; ctx.lineWidth = 0.02; ctx.beginPath(); ctx.moveTo(0.28, 0.66); ctx.lineTo(0.72, 0.16); ctx.stroke(); }
       });
     },
     nursery(K, t, u0, alt, T) {   // a child's drawing pinned to the wallpaper (a sheet of paper, its edge and a pin)
@@ -16173,8 +16405,12 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     }
   };
   // a standing wall of a komnata: dress the face (or faces) that look into it; every other wall tile, none with a torch or a trap
+  // 1.28.0: which komnaty's decor moves (alt: the face's variant); the rest is still (the wall cache paints it once)
+  const KWD_LIVE = { goblin: a => !a, spider: () => true, haunt: () => true, bats: () => true, forge: a => a, prison: a => !a, gallery: () => true, lab: a => !a, graveyard: a => a, abyssgate: a => !a };
+  const KWD_MIX = { prison: 1, haunt: 1, gallery: 1 };   // (their still and moving pieces apart: wSt, wLv)
+  const KWD_STILL = { ogre: 1, ossuary: 1, armory: 1, junk: 1, nursery: 1 };
   function kindWallDeco(i, T) {
-    if (T < 12 || !WA.anyRk) return;   // 1.24 (C): as kindWall3D
+    if (wdT(T) < 12 || !WA.anyRk) return;   // 1.24 (C): as kindWall3D (1.28.0: wdT, GFX.lvl)
     const x = i % WW, y = (i - x) / WW, h = WA.cur[i];
     if (h < WALL_H * 0.6 || fl.items.has(key(x, y)) || WA.torchAt.has(i)) return;
     const t = reduceMotion ? 0 : realNow;
@@ -16182,15 +16418,17 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       if (tileAt(x + dx, y + dy) !== FLOOR || wallH(x + dx, y + dy) >= h - 0.001) return;
       const r = roomOf(x + dx, y + dy), R = r >= 0 ? fl.rooms[r] : null, fn = R && R.rk && KIND_WALL[R.rk];
       const sel = tileHash(x * 5 + 1, y * 3 + 2) % 3; if (!fn || sel === 0 || (sel === 1 && REPLACE_FLAT[R.rk])) return;   // (the raised pieces take the other faces: kindWall3D)
-      const z1 = Math.min(h, 1.45), z0 = Math.max(0, z1 - 1.2);
-      ctx.save();   // 1.27.5: a body in the face's frame (was: a picture lifted off the face with a soft shadow)
-      try { fn(kwKit(wallFrame(x, y, face), z0, z1), t, kH(x, y, 1), tileHash(x + 7, y + 11) % 2 === 0, T); } finally { ctx.restore(); }
+      const z1 = Math.min(h, 1.45), z0 = Math.max(0, z1 - 1.2), alt = tileHash(x + 7, y + 11) % 2 === 0, lv = KWD_LIVE[R.rk];
+      wP(!reduceMotion && !KWD_STILL[R.rk] && (!lv || lv(alt)), KWD_MIX[R.rk] && !(R.rk === 'haunt' && !alt), () => {   // 1.28.0
+        ctx.save();   // 1.27.5: a body in the face's frame (was: a picture lifted off the face with a soft shadow)
+        try { fn(kwKit(wallFrame(x, y, face), z0, z1), t, kH(x, y, 1), alt, T); } finally { ctx.restore(); }
+      });
     });
   }
   // a little life over the floor of each komnata on screen (screen space): smoke, a spider on a thread, flies, wisps, bats,
   // candle flames, glints, embers, drips, dust, a shaft of light, notes of a lullaby
   function drawKindLife(T) {
-    if (T < 9 || reduceMotion) return;
+    if (detT(T) < 14 || reduceMotion) return;   // 1.28.0: was T < 9; specks a pixel big are not seen
     const t = realNow;
     kindRooms().forEach(R => {
       const [mx, my] = roomMid(R), c = W2S(mx, my, 0);
@@ -16742,7 +16980,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         isoBox(x, y - 0.2175, w, 0.125, h, cb[0], cb[1], cb[2], 0.3);
         isoBox(x, y - 0.12, 0.27, w, h, cb[0], cb[1], cb[2], 0.3);
         isoBox(x, y + 0.0675, w, 0.305, h, cb[0], cb[1], cb[2], 0.3);
-        if (T >= 24) { const a = W2S(x - w / 2, y - 0.28, 0.3 + h), b = W2S(x - w / 2, y + 0.22, 0.3 + h); ctx.strokeStyle = 'rgba(255,240,200,0.45)'; ctx.lineWidth = Math.max(0.8, T * 0.01); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }   // its lit edge
+        if (detT(T) >= 24) { const a = W2S(x - w / 2, y - 0.28, 0.3 + h), b = W2S(x - w / 2, y + 0.22, 0.3 + h); ctx.strokeStyle = 'rgba(255,240,200,0.45)'; ctx.lineWidth = Math.max(0.8, T * 0.01); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }   // its lit edge
     },
     rune(it, bx, by, T) {
       groundShadow(bx, by, 0.3, 0.25, 0.4);
@@ -16812,11 +17050,11 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       const d = fl.doors.get(key(it.x, it.y)), closed = d && doorClosed(d), ax = doorAlongX(it.x, it.y), H = DOOR_H, z0 = closed ? 0 : H * 0.72;
       const B = (u, w, hh, zb, c) => ax ? isoBox(bx - 0.5 + u, by, w, 0.06, hh, c[0], c[1], c[2], zb) : isoBox(bx, by - 0.5 + u, 0.06, w, hh, c[0], c[1], c[2], zb);
       const iron = ['#b4b8c6', '#8e92a0', '#5e626e'];
-      for (let k = 1; k < 6; k++) { B(k / 6, 0.05, H - z0, z0, iron); if (T >= 12) { const u = k / 6, p = ax ? [bx - 0.5 + u, by] : [bx, by - 0.5 + u]; pCone(p[0], p[1], 0.03, -0.07, '#c9ccd8', '#6c7080', z0); } }
+      for (let k = 1; k < 6; k++) { B(k / 6, 0.05, H - z0, z0, iron); if (detT(T) >= 12) { const u = k / 6, p = ax ? [bx - 0.5 + u, by] : [bx, by - 0.5 + u]; pCone(p[0], p[1], 0.03, -0.07, '#c9ccd8', '#6c7080', z0); } }
       [0.35, 0.7].forEach(z => { if (z * H < z0) return; B(0.5, 0.94, 0.05, z * H - 0.025, iron); });
       B(0.5, 1.04, 0.1, H, ['#3a3b42', '#2a2b31', '#1e1f24']);   // the beam in the arch
       const left = Math.max(0, mods.gateUses - (it.uses || 0));
-      if (T >= 14) for (let k = 0; k < left; k++) pCyl(bx + (ax ? -0.3 + k * 0.15 : 0.35), by + (ax ? 0.35 : -0.3 + k * 0.15), 0.045, 0.02, '#8a6a2a', '#d9a640');   // uses left: brass studs in the floor
+      if (detT(T) >= 14) for (let k = 0; k < left; k++) pCyl(bx + (ax ? -0.3 + k * 0.15 : 0.35), by + (ax ? 0.35 : -0.3 + k * 0.15), 0.045, 0.02, '#8a6a2a', '#d9a640');   // uses left: brass studs in the floor
     },
     creak(it, bx, by, T) {   // a door leaf in the doorway, swinging when it creaks (1.27.5: a thick oak leaf, its edge and top showing)
       const ax = doorAlongX(it.x, it.y), sw = it.anim > 0 ? Math.sin(realNow * 30) * 0.08 : 0, H = DOOR_H * 0.92;
@@ -16871,7 +17109,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       }
       if (kind === 'gold') {   // 1.27.5: real coins with an edge, a few stacked in the middle
         const big = (it.gold || 1) > 1;
-        LOOT_PILE[big ? 1 : 0].forEach((q, k) => { if (T >= 24 || k % 2 === 0) pCyl(bx + q[0], by + q[1], 0.085, 0.024, '#a87a2a', q[3] ? '#f0cc6c' : '#e2b852', q[2]); });   // (far out, every other coin)
+        LOOT_PILE[big ? 1 : 0].forEach((q, k) => { if (detT(T) >= 24 || k % 2 === 0) pCyl(bx + q[0], by + q[1], 0.085, 0.024, '#a87a2a', q[3] ? '#f0cc6c' : '#e2b852', q[2]); });   // (far out, every other coin)
         if (big && T >= 16) signText(String(it.gold), W2S(bx, by, 0.3)[0], W2S(bx, by, 0.3)[1], numFont(Math.max(8, T * 0.24), true), '#ffe9a8');
       } else if (kind === 'potion') {   // 1.27.5: a round glass flask with the potion in it, a neck and a cork
         const c = W2S(bx, by, 0.14), rr = T * 0.14, lv = c[1] + rr * 0.12, lx = Math.sqrt(1 - 0.0144) * rr;
@@ -16984,7 +17222,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         const b1 = L(u - tw / 2, v, 0), b2 = L(u + tw / 2, v, 0), b3 = L(u, v - tw * 0.7, 0), tp = L(u, v - tw * 0.2, -(0.07 + (k % 2) * 0.02)); poly([b1, b3, tp], '#a89a80'); poly([b1, b2, tp], '#efe4cc'); } };
       // its edge: the layers between under and top
       for (let j = 0; j <= 3; j++) { poly(ring(wt * j / 3), j === 3 && upVis ? lc[0] : lc[2]); }
-      if (upVis) { poly(top, lc[0]); if (!round && T >= 20) { ctx.strokeStyle = 'rgba(30,18,8,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); [0.33, 0.66].forEach(f => { const A = L(-hw, 2 * hd * f, wt), B = L(hw, 2 * hd * f, wt); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); }); ctx.stroke(); } }
+      if (upVis) { poly(top, lc[0]); if (!round && detT(T) >= 20) { ctx.strokeStyle = 'rgba(30,18,8,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); [0.33, 0.66].forEach(f => { const A = L(-hw, 2 * hd * f, wt), B = L(hw, 2 * hd * f, wt); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); }); ctx.stroke(); } }
       else { poly(bot, lc[3]); }
       teethDown();
       // the eyes on its front, under the lid: round, standing out, a slit pupil, a glint
@@ -17114,7 +17352,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     else if (q) { fo.kx = 1 + 0.12 * q; fo.ky = 1 - 0.1 * q; }   // 1.09: a hit squashes it for a moment
     if (h.sliding && !reduceMotion) {   // 1.10: on the ice: leaning back, arms out, a spray of ice behind
       fo.rot = -face * 0.2; ctx.fillStyle = 'rgba(225,245,255,0.7)';
-      for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(x - face * W * (0.9 + 0.35 * k), feet - H * (0.02 + 0.05 * ((k + Math.floor(realNow * 12)) % 2)), Math.max(1, H * 0.035), 0, Math.PI * 2); ctx.fill(); }
+      if (detT(T) >= 12) for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(x - face * W * (0.9 + 0.35 * k), feet - H * (0.02 + 0.05 * ((k + Math.floor(realNow * 12)) % 2)), Math.max(1, H * 0.035), 0, Math.PI * 2); ctx.fill(); }
     }
     heroStatusUnder(h, x, feet, W, T);   // 1.26: puddles under the feet (wet, oiled), the siren's thread (p7c_art.js)
     const ph = drawPixelFigure(h.type, x, feet, PH, face, fo);
@@ -17398,8 +17636,9 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     ctx.globalAlpha = 1;
   }
   function drawParticles(T, flat) {   // 1.07: rings lie on the floor (floor pass), sparks fly upright (second pass)
-    particles.forEach(p => {
-      if (!!p.ring !== !!flat) return;
+    const half = detT(T) < 12;   // 1.28.0: far out every other spark
+    particles.forEach((p, i) => {
+      if (!!p.ring !== !!flat || (half && !p.ring && i % 2)) return;
       ctx.globalAlpha = clamp(p.life * 2.2, 0, 1);
       if (p.ring) { ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(2, T * 0.08); ctx.beginPath(); ctx.arc(p.x * T, p.y * T, p.r * T, 0, Math.PI * 2); ctx.stroke(); }
       else { const q = W2S(p.x, p.y, 0.35); ctx.fillStyle = p.color; ctx.fillRect(q[0] - T * 0.04, q[1] - T * 0.04, T * 0.08, T * 0.08); }
@@ -18745,7 +18984,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         pCyl(cx, cy, 0.25, 0.05, '#2e2c36', '#4a4856');
         BAIT_COINS.forEach(q => pCyl(cx + q[0], cy + q[1], 0.065, 0.022, '#c99a3a', q[3] ? '#f0cc6c' : '#e8c060', 0.05 + q[2]));
         jaw3D(cx, cy, R, phi, 1, cols, T, 5);
-        if (!shut && T >= 14 && (realNow * 0.7 + it.x) % 3 < 0.25) { const p = W2S(cx + 0.03, cy - 0.06, 0.13); ctx.fillStyle = '#fff6d0'; ctx.fillRect(p[0] - 1, p[1] - T * 0.04, 2, T * 0.08); ctx.fillRect(p[0] - T * 0.04, p[1] - 1, T * 0.08, 2); }   // a glint on the coins
+        if (!shut && detT(T) >= 14 && (realNow * 0.7 + it.x) % 3 < 0.25) { const p = W2S(cx + 0.03, cy - 0.06, 0.13); ctx.fillStyle = '#fff6d0'; ctx.fillRect(p[0] - 1, p[1] - T * 0.04, 2, T * 0.08); ctx.fillRect(p[0] - T * 0.04, p[1] - 1, T * 0.08, 2); }   // a glint on the coins
         if (sp.edge) for (let k = 0; k < 6; k++) { const a = Math.random() * Math.PI * 2, v = 0.6 + Math.random() * 0.7; sparkAdd(sp, cx + Math.cos(a) * 0.2, cy, 0.25, Math.cos(a) * v, Math.sin(a) * v * 0.5, 0.5 + Math.random(), 0.3 + Math.random() * 0.2, k % 2 ? '#ffe9a8' : '#f2b94b', 0.03, 3); }
         sparkRun(sp, T);
       });
@@ -18789,8 +19028,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
           isoBox(x0 + w / 4, y0 + w / 2, w / 2 - 0.01, w, 0.025, '#4a3828', '#3a2c20', '#2e2218');
           isoBox(x0 + w * 3 / 4, y0 + w / 2, w / 2 - 0.01, w, 0.025, '#4a3828', '#3a2c20', '#2e2218');
           ctx.strokeStyle = 'rgba(20,14,8,0.6)'; ctx.lineWidth = Math.max(1, T * 0.015); ctx.beginPath(); [0.25, 0.75].forEach(u => { const a = P(u, 0.02, 0.025), b = P(u, 0.98, 0.025); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }); ctx.stroke();   // the planks
-          if (T >= 24) [[0.04, 0.2], [0.04, 0.8], [0.96, 0.2], [0.96, 0.8]].forEach(q => isoBox(x0 + q[0] * w, y0 + q[1] * w, 0.07, 0.05, 0.015, '#9a96a6', '#77727f', '#55505e', 0.025));   // the hinges
-          if (T >= 24) [0.47, 0.53].forEach(u => isoBox(x0 + u * w, y0 + w / 2, 0.025, 0.08, 0.02, '#9a96a6', '#77727f', '#55505e', 0.025));   // the iron pulls
+          if (detT(T) >= 24) [[0.04, 0.2], [0.04, 0.8], [0.96, 0.2], [0.96, 0.8]].forEach(q => isoBox(x0 + q[0] * w, y0 + q[1] * w, 0.07, 0.05, 0.015, '#9a96a6', '#77727f', '#55505e', 0.025));   // the hinges
+          if (detT(T) >= 24) [0.47, 0.53].forEach(u => isoBox(x0 + u * w, y0 + w / 2, 0.025, 0.08, 0.02, '#9a96a6', '#77727f', '#55505e', 0.025));   // the iron pulls
         }
         const e = 0.05, h = 0.04, c = ['#5a4a3a', '#46382a', '#33281e'];   // the frame, far bars first
         isoBox(x0 + w / 2, y0 - e / 2, w + e * 2, e, h, c[0], c[1], c[2]); isoBox(x0 - e / 2, y0 + w / 2, e, w, h, c[0], c[1], c[2]);
@@ -18803,9 +19042,9 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         const e = 0.045, h = 0.035, c = ['#8e8a9a', '#6c6878', '#4e4a58'];
         const stubs = (far) => { for (let k = 0; k <= 4; k++) { const u = k / 4; (far ? [[x0 + w * u, y0], [x0, y0 + w * u]] : [[x0 + w * u, y0 + w], [x0 + w, y0 + w * u]]).forEach(q => pCyl(q[0], q[1], 0.018, 0.08, '#77727f', '#b9bccb', h)); } };
         isoBox(x0 + w / 2, y0, w + e, e, h, c[0], c[1], c[2]); isoBox(x0, y0 + w / 2, e, w + e, h, c[0], c[1], c[2]);
-        if (T >= 24) stubs(true);   // (the stubs only close up)
+        if (detT(T) >= 24) stubs(true);   // (the stubs only close up)
         isoBox(x0 + w, y0 + w / 2, e, w + e, h, c[0], c[1], c[2]); isoBox(x0 + w / 2, y0 + w, w + e, e, h, c[0], c[1], c[2]);
-        if (T >= 24) stubs(false);
+        if (detT(T) >= 24) stubs(false);
       });
     }
   };
@@ -19312,7 +19551,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   ART.sprite = sprite;
   // 1.26: small touches on the furniture (drawObjectIso): a barrel's staves and the lid's boards, a crate's planks and nails
   function artBarrelDetail(b, t, rx, ry, T) {
-    if (T < 16) return;
+    if (detT(T) < 16) return;   // 1.28.0: detT
     ctx.strokeStyle = 'rgba(40,24,10,0.45)'; ctx.lineWidth = Math.max(1, T * 0.015); ctx.beginPath();
     [-0.6, -0.2, 0.2, 0.6].forEach(u => { ctx.moveTo(b[0] + rx * u, t[1] + ry * Math.sqrt(1 - u * u)); ctx.lineTo(b[0] + rx * u, b[1] + ry * Math.sqrt(1 - u * u)); });
     ctx.stroke();
@@ -19320,7 +19559,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     ctx.strokeStyle = 'rgba(40,24,10,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(t[0] - rx * 0.9, t[1] - ry * 0.25); ctx.lineTo(t[0] + rx * 0.9, t[1] - ry * 0.25); ctx.moveTo(t[0] - rx * 0.9, t[1] + ry * 0.3); ctx.lineTo(t[0] + rx * 0.9, t[1] + ry * 0.3); ctx.stroke();
   }
   function artCrateDetail(cx, cy, T) {
-    if (T < 16) return;
+    if (detT(T) < 16) return;   // 1.28.0: detT
     ctx.strokeStyle = 'rgba(30,18,8,0.35)'; ctx.lineWidth = 1; ctx.beginPath();
     [0.2, 0.4].forEach(z => { const a = W2S(cx - 0.35, cy + 0.35, z), b = W2S(cx + 0.35, cy + 0.35, z), c = W2S(cx + 0.35, cy - 0.35, z); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); });
     ctx.stroke();
@@ -19766,11 +20005,12 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   // a prop is drawn only on a free floor tile (as the komnaty's: kindPropsSO); its particles follow the same rule
   const rfxPropOk = p => { const tx = Math.floor(p.x), ty = Math.floor(p.y), k = key(tx, ty); return !fl.items.has(k) && !fl.objects.has(k) && !isHeart(tx, ty) && tileAt(tx, ty) === FLOOR; };
   function rfxPropsSO(SO, T) {
-    if (T < 9) return;
+    const dT = detT(T); if (dT < 9) return;
+    const small = dT < 14;   // 1.28.0: as kindPropsSO: far out only the bigger things
     fl.rooms.forEach(R => {
       if (R.kind !== 'room' || !R.rt || !RFX_PLAN[R.rt] || !roomSeen(R, T)) return;
       rfxPlan(R).props.forEach(p => {
-        if (!rfxPropOk(p) || !onScreen(W2S(p.x, p.y, 0), T * 2)) return;
+        if ((small && p.h < 0.4) || !rfxPropOk(p) || !onScreen(W2S(p.x, p.y, 0), T * 2)) return;
         SO.push([p.x + p.y, 5, p, p.x, p.y, p.h]);
       });
     });
@@ -19778,14 +20018,14 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   // the floor's moving part, in floorT (tile pixels); the others keep inside their room by themselves
   const RFX_CLIP = { fog: 1, crypt: 1 };
   function rfxLive(R, T, t) {
-    const fn = RFX_LIVE[R.rt]; if (!fn || (T < 14 && R.rt !== 'fog')) return;   // far out the still floor says it (the fog's drift stays: it is the fog)
+    const fn = RFX_LIVE[R.rt]; if (!fn || (detT(T) < 14 && R.rt !== 'fog')) return;   // 1.28.0: detT. Far out the still floor says it (the fog's drift stays: it is the fog)
     ctx.save(); if (RFX_CLIP[R.rt]) { ctx.scale(T, T); ctx.clip(rfxTilePath(R)); ctx.scale(1 / T, 1 / T); }   // a clip is dear on a phone: only what drifts over the room's edge asks for one
     try { fn(ctx, R, T, t, !!R.rk, rfxPlan(R)); } finally { ctx.restore(); }
   }
   // the particles in the air over each effect room on screen (screen space, under the walls in front, like drawKindLife)
   function rfxAir(T) {
-    if (T < 14 || reduceMotion) return;
-    const t = realNow, few = T < 24;   // further out, half the particles (as with a komnata)
+    if (detT(T) < 14 || reduceMotion) return;   // 1.28.0: detT
+    const t = realNow, few = detT(T) < 24;   // further out, half the particles (as with a komnata)
     fl.rooms.forEach(R => {
       if (R.kind !== 'room' || !R.rt || !RFX_AIR[R.rt] || !roomSeen(R, T)) return;
       const [mx, my] = roomMid(R); if (fogged(Math.floor(mx), Math.floor(my))) return;
@@ -19795,10 +20035,13 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     });
   }
   // the raised pieces on a wall face that looks into an effect room (rtWallWash calls it for a standing block)
+  // 1.28.0: which pieces move (lite: a komnata in the room too); the rest are still, the wall cache paints them once
+  const RFXW_LIVE = { fog: () => true, grotto: () => true, crypt: (s, l) => !(l || s % 3), vault: (s, l) => !(l || s % 3), haven: (s, l) => (s % 2 === 0 && !l) || s % 3 === 0, gears: (s, l) => l ? s % 4 === 0 : s % 2 === 0, ice: () => true };
+  const RFXW_MIX = { grotto: 1, crypt: 1, vault: 1, haven: 1, gears: 1, ice: 1 };   // (their still and moving pieces apart: wSt, wLv)
   function rfxWall3D(x, y, face, h, T, t, s, R) {
-    const fn = R && RFX_WALL3D[R.rt]; if (!fn || T < 20) return;   // small things: close up only
-    ctx.save();
-    try { fn(wallFrame(x, y, face), h, T, t, s, !!R.rk); } finally { ctx.restore(); }
+    const fn = R && RFX_WALL3D[R.rt]; if (!fn || wdT(T) < 20) return;   // small things: close up only (1.28.0: wdT, GFX.lvl)
+    const lv = RFXW_LIVE[R.rt];
+    wP(!reduceMotion && !!lv && lv(s, !!R.rk), RFXW_MIX[R.rt], () => { ctx.save(); try { fn(wallFrame(x, y, face), h, T, t, s, !!R.rk); } finally { ctx.restore(); } });
   }
   // ---------- 1.27.5: little painters ----------
   function rxBlob(c, cx, cy, rx, ry, seed) {   // an uneven rounded patch (a smooth closed curve through 12 wobbly points)
@@ -20620,7 +20863,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   }
   // the room's solid floor things (drawRoomTypes calls it in floorT, between the still floor and its moving part)
   function rfxSolid(R, T, t) {
-    const P = rfxPlan(R), pits = R.rt === 'gears' && T >= 14 && P.spots.length;
+    const P = rfxPlan(R), pits = R.rt === 'gears' && detT(T) >= 14 && P.spots.length;   // 1.28.0: detT
     if (!P.bits.length && !pits) return;
     ctx.save(); screenT();
     try {
@@ -20742,33 +20985,35 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     grotto(F, h, T, t, s, lite) {   // faceted stalactites of wet blue stone hanging off the top edge out of a boss of rock, a drop gathering at one
       const n = lite ? 2 : 3;
       for (let k = 0; k < n; k++) { const u = 0.18 + k * (0.64 / (n - 1 || 1)) + 0.04 * ((s + k) % 2), [wx, wy] = F.W(u, 0.09), L = 0.28 + 0.14 * ((k + s) % 3), r = 0.07 + 0.015 * (k % 2);
-        rxLathe(wx, wy, h - L, [[0, 0], [r * 0.45, L * 0.45], [r * 0.85, L * 0.82], [r, L]], 7, '#7a8cae', k + s, false);
-        if (k === 1 && !reduceMotion) { const p = (t * 0.5 + s * 0.1) % 1; const q = W2S(wx, wy, h - L - 0.02 - (p > 0.6 ? (p - 0.6) * 3 : 0)); rc.fillStyle = 'rgba(200,225,255,' + (p > 0.9 ? 0 : 0.9) + ')'; rc.beginPath(); rc.arc(q[0], q[1], Math.max(1, T * 0.02 * Math.min(1, p * 2)), 0, Math.PI * 2); rc.fill(); } }
+        if (wSt()) rxLathe(wx, wy, h - L, [[0, 0], [r * 0.45, L * 0.45], [r * 0.85, L * 0.82], [r, L]], 7, '#7a8cae', k + s, false);   // 1.28.0: wSt / wLv (the wall cache)
+        if (k === 1 && !reduceMotion && wLv()) { const p = (t * 0.5 + s * 0.1) % 1; const q = W2S(wx, wy, h - L - 0.02 - (p > 0.6 ? (p - 0.6) * 3 : 0)); rc.fillStyle = 'rgba(200,225,255,' + (p > 0.9 ? 0 : 0.9) + ')'; rc.beginPath(); rc.arc(q[0], q[1], Math.max(1, T * 0.02 * Math.min(1, p * 2)), 0, Math.PI * 2); rc.fill(); } }
     },
     crypt(F, h, T, t, s, lite) {   // a stone niche standing out of the wall (pillars, an arch, a sill), a candle burning violet in it; a sheet of cobweb in the corner
       if (lite || s % 3) { const a = rxWP(F, 0, 0.01, h), b = rxWP(F, 0.32, 0.01, h), c = rxWP(F, 0, 0.01, h - 0.38), m = rxWP(F, 0.1, 0.12, h - 0.12), A = W2S(...a), B = W2S(...b), C = W2S(...c), M = W2S(...m);
         rc.fillStyle = 'rgba(225,215,245,0.2)'; rc.beginPath(); rc.moveTo(A[0], A[1]); rc.lineTo(B[0], B[1]); rc.quadraticCurveTo(M[0], M[1], C[0], C[1]); rc.closePath(); rc.fill();
         rc.strokeStyle = 'rgba(230,222,248,0.45)'; rc.lineWidth = 1; rc.beginPath(); [0.3, 0.6].forEach(f => { const q = [A[0] + (M[0] - A[0]) * f, A[1] + (M[1] - A[1]) * f]; rc.moveTo(A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f); rc.quadraticCurveTo(q[0], q[1], A[0] + (C[0] - A[0]) * f, A[1] + (C[1] - A[1]) * f); }); rc.moveTo(A[0], A[1]); rc.lineTo(M[0], M[1]); rc.stroke(); return; }
       const z = Math.min(0.75, h - 0.75), zt = z + 0.42;
+      if (wSt()) {   // 1.28.0: the niche still, the flame live
       rc.save(); F.plane(0.004, z, z + 0.6); rc.fillStyle = '#0c0812'; rc.beginPath(); rc.moveTo(0.3, 1); rc.lineTo(0.3, 0.3); rc.arc(0.5, 0.3, 0.2, Math.PI, 0); rc.lineTo(0.7, 1); rc.fill(); rc.restore();   // the dark hollow
       rxXW(F, [[0.24, z], [0.3, z], [0.3, zt], [0.24, zt]], 0, 0.09, '#5a526a');
       for (let k = 0; k < 5; k++) { const a0 = Math.PI - k * Math.PI / 5, a1 = Math.PI - (k + 1) * Math.PI / 5, c = (a, r) => [0.5 + Math.cos(a) * r, zt + Math.sin(a) * r * 0.9]; rxXW(F, [c(a0, 0.26), c(a1, 0.26), c(a1, 0.2), c(a0, 0.2)], 0, 0.09, '#5a526a'); }
       rxXW(F, [[0.7, z], [0.76, z], [0.76, zt], [0.7, zt]], 0, 0.09, '#5a526a');
       F.box(0.5, 0.06, 0.56, 0.12, 0.04, z - 0.04, '#5a526a', '#463e56', '#342e42');
-      const [wx, wy] = F.W(0.5, 0.05); rxLathe(wx, wy, z, [[0.032, 0], [0.032, 0.14], [0.026, 0.152]], 7, '#ddd6e8', 0.3); const q = W2S(wx, wy, z + 0.152);
-      pFlame(q[0], q[1], T * 0.13, t, s, 'rgba(245,235,255,0.95)', 'rgba(170,120,255,0.85)', ['rxcandV', [[0, 'rgba(180,140,255,0.4)'], [1, 'rgba(180,140,255,0)']]]);
+      }
+      const [wx, wy] = F.W(0.5, 0.05), q = W2S(wx, wy, z + 0.152); if (wSt()) rxLathe(wx, wy, z, [[0.032, 0], [0.032, 0.14], [0.026, 0.152]], 7, '#ddd6e8', 0.3);
+      if (wLv()) pFlame(q[0], q[1], T * 0.13, t, s, 'rgba(245,235,255,0.95)', 'rgba(170,120,255,0.85)', ['rxcandV', [[0, 'rgba(180,140,255,0.4)'], [1, 'rgba(180,140,255,0)']]]);
     },
     vault(F, h, T, t, s, lite) {   // a thick gold plate on the wall with a jewel set in it; round gilded studs along the top edge
-      for (let k = 0; k < 5; k++) { const [wx, wy] = F.W(0.1 + k * 0.2, 0.0); rxBall(wx, wy, h - 0.12, 0.026, '#c9a24e'); }
+      if (wSt()) for (let k = 0; k < 5; k++) { const [wx, wy] = F.W(0.1 + k * 0.2, 0.0); rxBall(wx, wy, h - 0.12, 0.026, '#c9a24e'); }
       if (lite || s % 3) return;
       const pts = [[0.5, 1.2], [0.78, 1.0], [0.7, 0.6], [0.5, 0.47], [0.3, 0.6], [0.22, 1.0]];
-      rxXW(F, pts, 0, 0.05, '#d8b04c');
-      const [jx, jy] = F.W(0.5, 0.05); rxEgg(jx, jy, 0.85, 0.045, 0.045, '#c03040');
-      rc.save(); F.plane(0.051, 0.35, 1.35); rc.strokeStyle = '#8a6420'; rc.lineWidth = 0.02; rc.beginPath(); rc.moveTo(0.5, 0.22); rc.lineTo(0.72, 0.38); rc.lineTo(0.66, 0.71); rc.lineTo(0.5, 0.81); rc.lineTo(0.34, 0.71); rc.lineTo(0.28, 0.38); rc.closePath(); rc.stroke();
-      rc.fillStyle = 'rgba(255,246,200,' + (0.25 + 0.2 * Math.sin(t * 2 + s)).toFixed(2) + ')'; rc.beginPath(); rc.moveTo(0.5, 0.15); rc.lineTo(0.78, 0.35); rc.lineTo(0.62, 0.38); rc.closePath(); rc.fill(); rc.restore();
+      if (wSt()) { rxXW(F, pts, 0, 0.05, '#d8b04c'); const [jx, jy] = F.W(0.5, 0.05); rxEgg(jx, jy, 0.85, 0.045, 0.045, '#c03040'); }   // 1.28.0: wSt / wLv (the sheen live)
+      rc.save(); F.plane(0.051, 0.35, 1.35); rc.strokeStyle = '#8a6420'; rc.lineWidth = 0.02; if (wSt()) { rc.beginPath(); rc.moveTo(0.5, 0.22); rc.lineTo(0.72, 0.38); rc.lineTo(0.66, 0.71); rc.lineTo(0.5, 0.81); rc.lineTo(0.34, 0.71); rc.lineTo(0.28, 0.38); rc.closePath(); rc.stroke(); }
+      if (wLv()) { rc.fillStyle = 'rgba(255,246,200,' + (0.25 + 0.2 * Math.sin(t * 2 + s)).toFixed(2) + ')'; rc.beginPath(); rc.moveTo(0.5, 0.15); rc.lineTo(0.78, 0.35); rc.lineTo(0.62, 0.38); rc.closePath(); rc.fill(); } rc.restore();
     },
     haven(F, h, T, t, s, lite) {   // a thick cloth hanging off a rod with the sign of the sanctuary; a warm candle on an iron bracket
       if (s % 2 === 0 && !lite) {
+        if (!wLv()) return;   // 1.28.0: the cloth sways: live
         const sw = Math.sin(t * 1.1 + s) * 0.01;
         rxXW(F, [[0.3, 1.39], [0.7, 1.39], [0.7 + sw, 0.55], [0.5 + sw, 0.42], [0.3 + sw, 0.55]], 0.025, 0.05, '#e8dcc0');
         rc.save(); F.plane(0.051, 0.25, 1.45); rc.fillStyle = '#b8862e'; rc.fillRect(0.47, 0.18, 0.06, 0.4); rc.fillRect(0.38, 0.28, 0.24, 0.06); rc.strokeStyle = '#a07a3a'; rc.lineWidth = 0.015; rc.beginPath(); rc.moveTo(0.33, 0.08); rc.lineTo(0.67, 0.08); rc.lineTo(0.67, 0.73); rc.lineTo(0.5, 0.82); rc.lineTo(0.33, 0.73); rc.closePath(); rc.stroke(); rc.restore();
@@ -20778,16 +21023,17 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       }
       if (s % 3) return;
       const z = Math.min(0.95, h - 0.4);
-      rxRod(rxWP(F, 0.5, 0, z - 0.08), rxWP(F, 0.5, 0.13, z), 0.016, 0.014, '#5a5e66', '#2a2c30');
-      const [wx, wy] = F.W(0.5, 0.13); rxLathe(wx, wy, z, [[0.05, 0], [0.055, 0.02]], 8, '#6a4a2a', 0.2);
-      rxLathe(wx, wy, z + 0.02, [[0.028, 0], [0.028, 0.12], [0.022, 0.132]], 7, '#efe2c4', 0.3); const q = W2S(wx, wy, z + 0.132);
-      pFlame(q[0], q[1], T * 0.12, t, s, 'rgba(255,240,190,0.95)', 'rgba(255,160,60,0.9)', ['rxcandH', [[0, 'rgba(255,200,120,0.45)'], [1, 'rgba(255,200,120,0)']]]);
+      const [wx, wy] = F.W(0.5, 0.13), q = W2S(wx, wy, z + 0.132);
+      if (wSt()) { rxRod(rxWP(F, 0.5, 0, z - 0.08), rxWP(F, 0.5, 0.13, z), 0.016, 0.014, '#5a5e66', '#2a2c30'); rxLathe(wx, wy, z, [[0.05, 0], [0.055, 0.02]], 8, '#6a4a2a', 0.2); rxLathe(wx, wy, z + 0.02, [[0.028, 0], [0.028, 0.12], [0.022, 0.132]], 7, '#efe2c4', 0.3); }   // 1.28.0: the bracket still, the flame live
+      if (wLv()) pFlame(q[0], q[1], T * 0.12, t, s, 'rgba(255,240,190,0.95)', 'rgba(255,160,60,0.9)', ['rxcandH', [[0, 'rgba(255,200,120,0.45)'], [1, 'rgba(255,200,120,0)']]]);
     },
     gears(F, h, T, t, s, lite) {   // a thick cog half out of the wall, turning; a copper pipe on brackets along the foot
-      F.box(0.5, 0.012, 1, 0.024, 0.34, 0, '#a07a48', '#7a5630', '#5a3e22');   // 1.27.5: the riveted bronze plate along the foot stands out of the face (it was painted), round rivets on it
+      if (wSt()) {   // 1.28.0: the plate, the rivets and the pipe still; the cog and its axle live
+        F.box(0.5, 0.012, 1, 0.024, 0.34, 0, '#a07a48', '#7a5630', '#5a3e22');   // 1.27.5: the riveted bronze plate along the foot stands out of the face (it was painted), round rivets on it
       for (let k = 0; k < 5; k++) { const [wx, wy] = F.W(0.1 + k * 0.2, 0.024); rxBall(wx, wy, 0.255, 0.017, '#c49a62'); }
-      if (s % 2 === 0) { [0.2, 0.8].forEach(u => F.box(u, 0.03, 0.05, 0.06, 0.08, 0.12, '#4a4e57', '#33363d', '#2a2d33')); rxHCyl(rxWP(F, -0.02, 0.06, 0.16), rxWP(F, 1.02, 0.06, 0.16), 0.045, 8, '#a8683a'); }
-      if (lite ? s % 4 : s % 2) return;
+        if (s % 2 === 0) { [0.2, 0.8].forEach(u => F.box(u, 0.03, 0.05, 0.06, 0.08, 0.12, '#4a4e57', '#33363d', '#2a2d33')); rxHCyl(rxWP(F, -0.02, 0.06, 0.16), rxWP(F, 1.02, 0.06, 0.16), 0.045, 8, '#a8683a'); }
+      }
+      if ((lite ? s % 4 : s % 2) || !wLv()) return;
       const dir = s % 4 ? 1 : -1, a = t * 0.7 * dir, z0 = Math.min(0.45, h - 1.0), r = lite ? 0.18 : 0.3;
       rc.save();
       [['#2e2010', 0.0], ['#3e2c16', 0.02], ['#52381c', 0.04], ['#664824', 0.055]].forEach(([c, d]) => { F.plane(d, z0, z0 + 1); rxGear(0.5, 0.5, r, 10, a, c, null, null); });
@@ -20803,13 +21049,16 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
       F.box(0.5, 0.06, 0.98, 0.12, 0.08, h - 0.1, '#7a6a4a', '#5e5038', '#4a3e2c');
     },
     ice(F, h, T, t, s, lite) {   // a cornice of ice along the top edge, icicles of all lengths hanging off it, clear, faceted
+      const n = lite ? 3 : 5;
+      if (wSt()) {   // 1.28.0: the cornice and the icicles still, the drop live
       F.box(0.5, 0.04, 1, 0.08, 0.05, h - 0.05, '#e8f6ff', '#b4dcf2', '#86bede');
-      const n = lite ? 3 : 5, A = rc.globalAlpha; rc.globalAlpha = A * 0.95; rxLift = 0.4;
+      const A = rc.globalAlpha; rc.globalAlpha = A * 0.95; rxLift = 0.4;
       for (let k = 0; k < n; k++) { const u = 0.1 + 0.8 * (k + 0.5) / n + 0.03 * ((s + k) % 3 - 1), [wx, wy] = F.W(u, 0.05), L = 0.12 + (lite ? 0.12 : 0.3) * (((k * 7 + s) % 5) / 4), r = 0.05 + 0.012 * (k % 2);
         rxLathe(wx, wy, h - 0.05 - L, [[0, 0], [r * 0.55, L * 0.5], [r, L]], 6, '#d8f0ff', k + s, false);
         rxLine(W2S(wx - r * 0.5, wy + r * 0.5, h - 0.06), W2S(wx, wy, h - 0.05 - L), 'rgba(255,255,255,0.75)', Math.max(1, T * 0.01)); }
       rc.globalAlpha = A; rxLift = 0;
-      const p = (t * 0.4 + s * 0.13) % 1; if (!reduceMotion && p < 0.5) { const [wx, wy] = F.W(0.1 + 0.8 * 1.5 / n, 0.05); const q = W2S(wx, wy, h - 0.35 - p * 1.2); rc.fillStyle = 'rgba(220,240,255,0.8)'; rc.beginPath(); rc.arc(q[0], q[1], Math.max(1, T * 0.018), 0, Math.PI * 2); rc.fill(); }
+      }
+      const p = (t * 0.4 + s * 0.13) % 1; if (!reduceMotion && p < 0.5 && wLv()) { const [wx, wy] = F.W(0.1 + 0.8 * 1.5 / n, 0.05); const q = W2S(wx, wy, h - 0.35 - p * 1.2); rc.fillStyle = 'rgba(220,240,255,0.8)'; rc.beginPath(); rc.arc(q[0], q[1], Math.max(1, T * 0.018), 0, Math.PI * 2); rc.fill(); }
     }
   };
 
@@ -21608,7 +21857,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.27.8 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.28.0 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -21666,9 +21915,11 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.27.8', "What's new in Prototype 1.27.8")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.28.0', "What's new in Prototype 1.28.0")));
     const ul0 = el('ul', 'conseq');
-    [L('1.27.8: karty w talii i schowku przeciągasz jak obiekty: na inne miejsce (kolejność, np. co kopiuje Kopista), do schowka i z powrotem, na inną kartę, żeby je zamienić. Przytrzymanie sprzedaje kartę. Kafelek Kopisty mówi, co kopiuje.', '1.27.8: you drag deck and stash cards like objects: to another place (the order, e.g. what Copyist copies), to the stash and back, onto another card to swap them. Holding a card sells it. Copyist\'s tile says what it copies.'),
+    [L('1.28.0: płynniej na dużym lochu. Ściany rysują się raz i są potem tylko wklejane, a gdy kafelki są małe, drobne detale znikają wcześniej.', '1.28.0: smoother on big dungeons. Walls are drawn once and then just pasted, and when tiles are small, tiny details drop out sooner.'),
+     L('1.28.0: w Ustawieniach Grafika: Auto (sama zmniejsza detale, gdy urządzenie nie nadąża), Pełna albo Oszczędna.', '1.28.0: Graphics in the Settings: Auto (lowers details by itself when the device cannot keep up), Full or Saver.'),
+     L('1.27.8: karty w talii i schowku przeciągasz jak obiekty: na inne miejsce (kolejność, np. co kopiuje Kopista), do schowka i z powrotem, na inną kartę, żeby je zamienić. Przytrzymanie sprzedaje kartę. Kafelek Kopisty mówi, co kopiuje.', '1.27.8: you drag deck and stash cards like objects: to another place (the order, e.g. what Copyist copies), to the stash and back, onto another card to swap them. Holding a card sells it. Copyist\'s tile says what it copies.'),
      L('1.27.7: Łucznik to teraz goblin z łukiem i kołczanem (należy do Zielonoskórych), a nie szkielet.', '1.27.7: the Archer is now a goblin with a bow and a quiver (he is a Greenskin), not a skeleton.'),
      L('1.27.7: opisy elementów mają więcej znaczników: gdzie stoi (Podłoga, Ściana, Drzwi, Na meblu, Potwór, Łup, Obiekt), jak daleko sięga (Zwarcie, Dystans, Obszar, Jedno pole) i rodzinę.', '1.27.7: element descriptions have more tags: where it goes (Floor, Wall, Door, On furniture, Monster, Loot, Object), its reach (Melee, Ranged, Area, One tile) and its family.'),
      L('1.27.6: opis karty w sklepie już nie znika. Gdy przy pięciu ofertach i pełnej talii brakuje miejsca, karty układają się w jeden rząd przewijany w bok.', '1.27.6: the card text in the shop no longer vanishes. When five offers and a full deck leave no room, the cards line up in one row you swipe sideways.'),
@@ -21979,11 +22230,42 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
         b.addEventListener('click', () => { if (v === LANG) return; try { localStorage.setItem('yatd-lang', v); } catch (e) {} try { if (run && fl && fl.phase === 'build' && run.crystals > 0) saveRun('build'); } catch (e) {} location.reload(); });
         sg.appendChild(b); });
       lw.appendChild(sg); card.appendChild(lw); }
+    { // 1.28.0: graphics: Auto / Full / Saver (saved on this device; p6_loop.js setGfxMode)
+      const GM = [['auto', L('Auto', 'Auto'), L('Gra sama upraszcza obraz, gdy telefon nie nadąża.', 'Simpler graphics when the phone cannot keep up.')],
+        ['full', L('Pełna', 'Full'), L('Zawsze wszystkie szczegóły i pełna ostrość.', 'Always every detail at full sharpness.')],
+        ['eco', L('Oszczędna', 'Saver'), L('Mniej drobiazgów i mniej pikseli: płynniej, chłodniejszy telefon.', 'Fewer small details and fewer pixels: smoother, a cooler phone.')]];
+      const gw = el('div', 'langrow'); gw.appendChild(el('span', null, L('Grafika', 'Graphics')));
+      const sg = el('div', 'seg'); sg.id = 'gfx-seg'; const why = el('p', 'note gfxwhy');
+      const show = () => { sg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.gfx === GFX.mode)); const g = GM.find(q => q[0] === GFX.mode); why.textContent = g ? g[2] : ''; };
+      GM.forEach(([v, nm]) => { const b = el('button', '', nm); b.type = 'button'; b.dataset.gfx = v; b.addEventListener('click', () => { setGfxMode(v); show(); }); sg.appendChild(b); });
+      gw.appendChild(sg); card.appendChild(gw); card.appendChild(why); show(); }
     GAME_SETTINGS.forEach(sd => card.appendChild(sliderRow(sd)));
+    if (/perf/.test(location.hash + location.search)) card.appendChild(btn('', L('Test wydajności', 'Performance test'), L('loch z fali 17 i licznik klatek; zastępuje obecny run', 'the wave-17 dungeon and a frame counter; replaces the current run'), () => { closeModal(); perfTest(); }));   // 1.28.0: the author's phone test (#perf)
     card.appendChild(el('p', 'note', L('Ustawienia działają od razu i zapisują się w tej przeglądarce.', 'Settings apply at once and are saved in this browser.')));
     const row = el('div', 'row');
     row.appendChild(btn('primary', L('Gotowe', 'Done'), null, settingsBack(m)));
     card.appendChild(row);
+  }
+  // 1.28.0: the author's phone test. With #perf in the address the Settings show "Test wydajności": it loads the wave-17 dungeon of
+  // the analysis (26.10: 18 rooms, 107 elements; the same loader as the frame-time benchmark) in the build, its wave ready to go,
+  // and shows a small counter in the top corner: frames a second, the frame's median JS ms, the graphics level (L0-L2, xscale).
+  const PERF_F17 = '{"cells":[[4,0,34,2,37,6,1,[[36,5,"crate",1],[36,2,"crate",1],[36,3,"crate",1]],"crypt","goblin"],[4,1,36,10,38,12,0,[],null,null],[3,1,26,11,29,14,6,[],"crypt","goblin"],[4,2,34,18,38,22,2,[[37,21,"shelf",0],[36,21,"crate",0],[35,21,"crate",1],[37,20,"shelf",0],[34,21,"crate",1],[37,19,"crate",1],[36,19,"crate",1],[35,19,"crate",1]],"swamp","goblin"],[3,2,26,19,29,22,7,[[28,19,"crate",1],[27,21,"crate",1]],"gears","armory"],[2,2,18,19,21,22,3,[[21,20,"crate",1],[20,20,"crate",1],[19,20,"crate",1],[19,21,"crate",1]],"vault","goblin"],[2,1,18,12,22,14,1,[[22,13,"crate",1],[21,13,"crate",1],[20,13,"crate",1],[19,13,"crate",1]],"fog","goblin"],[2,0,18,3,20,6,1,[],"fog","goblin"],[3,0,26,2,30,5,1,[[28,4,"crate",1],[29,4,"crate",1],[30,4,"crate",1],[26,4,"crate",1]],"crypt","ogre"],[1,0,10,3,14,6,0,[[14,4,"crate",0]],null,"haunt"],[1,1,11,11,14,13,0,[[11,12,"barrel",0],[14,12,"statue",0]],null,"haunt"],[3,3,26,26,30,30,0,[[26,30,"crate",0],[29,27,"barrel",0],[30,27,"shelf",0]],"fog","haunt"],[3,4,27,35,29,38,0,[],"fog","haunt"],[2,4,18,34,21,37,0,[],"grotto","prison"],[3,5,26,42,30,44,0,[[29,43,"shelf",0],[26,43,"crate",0]],"grotto","prison"],[4,4,34,36,38,38,0,[[38,36,"barrel",0],[37,38,"statue",0]],"grotto","prison"],[4,3,34,26,38,30,0,[[37,27,"statue",0]],"grotto","prison"],[2,3,18,26,21,29,0,[[19,27,"crate",0]],"grotto","prison"]],"edges":[["4,0","4,1",0,35,37,0],["4,1","4,2",0,37,36,0],["3,2","4,2",1,19,20,0],["2,2","3,2",1,19,20,0],["2,1","2,2",0,21,19,1],["2,0","2,1",0,18,20,1],["2,0","3,0",1,5,2,0],["3,0","3,1",0,27,28,0],["1,0","2,0",1,3,5,0],["1,1","2,1",1,11,13,0],["3,2","3,3",0,28,29,0],["3,3","3,4",0,27,28,0],["2,4","3,4",1,37,38,0],["3,4","3,5",0,27,27,0],["3,4","4,4",1,36,38,0],["3,3","4,3",1,26,29,0],["2,3","3,3",1,26,29,0]],"entrance":"4,0","heart":"3,1","entX":35,"items":[["lpotion",30,2,1],["lpotion",30,3,1],["trapdoor",32,19,1],["trapdoor",19,17,1],["trapdoor",36,8,1],["trapdoor",20,8,1],["trapdoor",24,5,1],["goblin",28,12,3],["goblin",27,11,3],["goblin",29,11,3],["archer",28,14,3],["goblin",34,18,3],["goblin",35,20,3],["goblin",37,5,3],["shackles",36,6,1],["acid",26,14,1],["goblin",37,3,3],["ogre",28,11,3],["ogre",27,4,3],["shade",12,12,3],["shade",13,12,3],["shade",12,5,3],["shade",12,4,3],["trapdoor",28,8,1],["archer",21,12,3],["goblin",19,12,3],["goblin",19,19,3],["pendulum",29,18,3],["pendulum",29,23,3],["loot",35,22,1],["lpotion",34,22,1],["altar",37,11,1],["lcursed",38,11,1],["lcursed",37,10,1],["lcursed",36,11,1],["lcursed",37,12,1],["lcursed",36,12,1],["lcursed",36,10,1],["lcursed",38,10,1],["lcursed",38,12,1],["loot",26,19,1],["loot",21,22,1],["loot",20,22,1],["loot",11,11,1],["loot",11,13,1],["loot",10,3,1],["loot",10,6,1],["loot",18,3,1],["loot",19,3,1],["loot",20,3,1],["shackles",28,20,1],["pendulum",27,18,3],["pendulum",27,23,3],["pendulum",30,21,3],["falsedoor",21,15,1],["falsedoor",18,7,1],["loot2",37,6,1],["lpotion",37,2,1],["ogre",37,4,3],["ogre",26,20,3],["rune",28,21,1],["warlord",27,13,3],["shaman",29,13,3],["shaman",19,4,3],["goblin",18,21,3],["archer",18,22,3],["loot3",20,21,1],["sapper",18,20,3],["shaman",19,22,3],["loot",22,12,1],["shaman",27,19,3],["goblin",38,22,3],["archer",37,22,3],["shaman",36,22,3],["goblin",28,2,3],["goblin",28,3,3],["shaman",29,3,3],["cage",34,38,1],["cage",27,42,1],["cage",21,37,1],["cage",21,26,1],["cage",34,29,1],["gate",27,41,1],["gate",22,37,1],["gate",22,26,1],["gate",31,26,1],["gate",33,38,1],["shade",36,37,1],["shade",28,43,1],["shade",19,36,1],["shade",19,28,1],["ghost",28,28,1],["ghost",28,36,1],["ghost",29,29,1],["ghost",27,29,1],["ghost",29,37,1],["goblin",20,5,3],["goblin",18,6,3]],"deck":["monsterroar","cursed","resonance","pack","monster","essence","copyist","secondheart","warden","heartpatience","heartdread","kingsfeast","heartguide","heavycrystal"],"upgrades":["monsterroar","u-web","cursed","u-falsedoor","secondheart","warden","resonance","u-snare","u-shade","pack","monster","u-hound","heartpatience","u-pendulum","cursed","monster","u-siren","warden","infusion","infusion","u-lich","u-tar","u-spider","monsterroar","essence","usurer","u-skeleton","u-bell","u-miasma","heartpatience","copyist","u-demon","u-coffin","u-oilslick","heartdread","kingsfeast","u-ogre","u-mirror","u-bats","essence","pack","u-shaman","crystal","u-zombie","infusion","heartguide","u-musicbox","u-sapper","u-bait","u-ghost","u-cage","heartdread","kingsfeast","u-creak","u-imp","u-mimic","u-fire","u-flood","cooldown","u-rats","u-bolt","u-warlord","heavycrystal","infusion"]}';
+  function perfTest() {
+    const doc = JSON.parse(PERF_F17);
+    while (modalKind) closeModal();
+    newRun(false); while (modalKind) closeModal();
+    const Lt = { cells: new Map(), edges: new Map(), entrance: doc.entrance, heartKey: doc.heart, entX: doc.entX };
+    doc.cells.forEach(c => { const o = { cx: c[0], cy: c[1], x0: c[2], y0: c[3], x1: c[4], y1: c[5], lvl: c[6], born: 0, objs: c[7].map(q => q[3] ? [q[0], q[1], q[2], 1] : [q[0], q[1], q[2]]) }; if (c[8]) o.rt = c[8]; if (c[9]) o.rk = c[9]; Lt.cells.set(c[0] + ',' + c[1], o); });
+    doc.edges.forEach(e => { const k = e[0] < e[1] ? e[0] + '|' + e[1] : e[1] + '|' + e[0]; Lt.edges.set(k, { key: k, a: e[0], b: e[1], horiz: !!e[2], pa: e[3], pb: e[4], lvl: e[5], born: 0 }); });
+    run.layout = Lt; run.wave = 17; run.total = 763; run.crystals = 3;
+    run.deck = (doc.deck || []).slice(); recomputeMods();
+    (doc.upgrades || []).forEach(id => { const u = UPG[id]; if (u && u.kind === 'unlock') run.unlocked.add(u.unlock); });
+    run.items.clear();
+    const LM = [1, 1, 1.5, 2.2];
+    doc.items.forEach(([type, x, y, lvl]) => { const T = ITEMS[type]; if (!T) return; lvl = lvl || 1; const hp = T.hp ? T.hp * mods.monster * LM[lvl] : 0; run.items.set(x + ',' + y, { type, x, y, cd: 0, anim: 0, disabled: false, hp, max: hp, power: mods.monster * (T.hp ? LM[lvl] : 1), shot: 0.5, flash: 0, preview: 0, gx: x + 0.5, gy: y + 0.5, lvl, spent: T.cost, dropped: false }); run.unlocked.add(type); });
+    startBuild(true);
+    run.next = makeWave(run.wave);
+    perfHud(true);
   }
   // Test sliders: the balance knobs for testing, kept apart from the player's settings.
   function renderTests(card, m) {
@@ -23400,7 +23682,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   // Version 31. runs/<runId> holds the summary (status active / win / end / quit), updated after every wave and at the end.
   // waves/<runId>_<nn> holds one wave: its summary, the heroes, the dungeon as it stood when the wave started, and a timeline
   // (events plus a sample of every hero once a second). Closing the tab loses at most the wave in progress.
-  const LOG_VERSION = 63;   // 1.27.5 (brief "Serce hamuje" E): waves.summary heartPicks (every Heart's Gift pick of the build: lv, took, offer, phase), heartUpBlocked, satietyOver, deckUsed, giftCards, reserveAtGo, reserveWarn; stats heartUpBlocked, heartRerolls, upgradeAll, repeatPlace, homeRun, hushFound
+  const LOG_VERSION = 64;   // 1.28.0: waves.summary.perf gets simMed/P90, drawMed/P90, stepsMed/Max, tileMed/Min, wallsMed, soMed/Max, dev {cores, mem, model} and the graphics level fields; 63: 1.27.5 (brief "Serce hamuje" E): waves.summary heartPicks (every Heart's Gift pick of the build: lv, took, offer, phase), heartUpBlocked, satietyOver, deckUsed, giftCards, reserveAtGo, reserveWarn; stats heartUpBlocked, heartRerolls, upgradeAll, repeatPlace, homeRun, hushFound
   //   // 1.26: waves.summary satiety, satietyGain, heartLv, heartPick, regrow, feastPts, tithePts, ofiara, revived, stealMax, omen; stats essTithe, essDrained, reactN, antidotes, flasks, tracked, calls, freed, lootRetreat, crownPays...
   // 61:   // 1.25.1: waves.summary.previewVis {buildSec, sec, openSec, coveredSec, firstAt} (how long the next wave's preview was on screen in the build), stats.unspentPick / unspentPicks (the buy hint in the unspent-Esencja question). 1.25 (60): runs.screen (w, h, ui, wide, mouse, touch: which layout and pointer the run was played with). Before: 1.24 Part B (the same 59): runs: tut.stepTimes (seconds on each step, by TUT order) and tut.stepIds; stage now follows the wave in the first run (runs.stage = the stage reached); waves: fearUi.bar (taps on a fear bar), stats.tutSpike (the guide's spikes sprung once). 1.24 Part D (59):runs: status one of win/end/quit/active (won => win), playerId, crystals0 + crystalEvents [{t, delta, cause, wave, why}] (cause stolen/hunger/saved/card/other), activeSec, sessions [{start, end}], endBonus (total = sum of waveMini.sc + endBonus); waves summary: crystalEvents, essenceAtStart, essenceAtWaveStart, itemsCount, roomsCount, previewOpened, fearUi {card, bar}, stats.checkByShape {shape: {ok, crit, miss, skip, auto}}, stats.calmAuto, unspentAsk, unspentGo; settings calmWaves, calmGap, okPulse, okSwing. 58, 1.24 Part A adds runs/waves fused (the fused ★ card ids), stats: exhausted, forcedOut, tdSeen; timeline xh (worn out: how many inside) fo (forced out: id, x, y, state). 1.23 adds heroes[].nem and stats: nemeses, nemesisNew, nemesisDropped, nemRooms, nemTraps, nemesisReply, nemesisWarn, nemesisBoast, nemesisRage, nemesisDown, nemesisOut, nemesisCrystal, grudgeHits, grudgeDone, bounties, essBounty, bountyTalk, fallenMemory; timeline nn nm ng nd nx nr nb no nw2 bn fm. 1.22 adds stats: escortForms, escortGuards, guardSoaks, guardSoakDmg, handOvers, lastStands, lastStandT, sacrifices, sacrificeFired, youFirst, taps, tapFound, notThisWay, notThisWayMoved, frontLines, woundedBack, nearExit; timeline ef gs ho lx le sf sd yf tp tf nw fm wb ne. 1.21 adds heroes[].bond (type[:role]:id) and stats: bonds, bondsBy, bondLines, griefs, revengeVows, revengeFights, grownUp, noLeave, noLeaveSaved, mentorWatch, mentorProud, rivalMock, quarrels, quarrelStops, quarrelWins, quarrelSulks, bets, betsWon, betsLost, betsOff; timeline bo bk gf vw gu rm mw mp qq nl ns ob bt be. 1.20 adds heroes[].endSrc/took/load and stats: lootFallen, predecessorSeen, bodyLoot, bodyLootBy, gearGiven, gearTrades, amuletGiven, tooHeavy, loadSlowT, lootAssign, lootRival, lootOffer, lootOfferTaken, lanternSaves, lanternOut, lanterns, lanternGrope, crowbarGate, crowbarCage, gearKnocked, gearBack, mimicAte, mimicSpill, bombCook, bombFriendly, bombHeld, returnGear, cursePassed, greedBody, lootDeadObject; timeline gv bl pr qa qo qr la lm kn mx bx bf2 rq st (st: gear knocked off in a Zbrojownia, it was sp). 58: Prototype 1.13 (1.13.1 the same fields: solo lines when alone; 1.13.2 adds stats.swapWay: idle heroes who swapped places to let one pass; 1.13.3 the same fields: a shorter scene before a deadly room; 1.14 adds found (runs file): what the run started with from earlier discoveries; 1.15 adds layout cell [9]: the room's komnata (KIND_INFO id or null); 1.13.4 adds stats.disarmQuit: a thief who gave up a trap after it went off in his face twice, and stats.restBy: a retreating hero who sat down next to a friend resting in his way): conversations (stats.convos = exchanges started, stats.convoNo = why one did not start: breath, talk, queue, luck, hush, alone, fit), talks only for the ones standing together (h.talkUntil), alone a hero talks to himself (SOLO) or keeps quiet, nobody stands still in a trap (stats.toSafety); the check at the top of the map; talks, rests, the stop before a room, a hero down a trapdoor and everyone caged are quiet
   // 57: Prototype 1.12.1: one hero a tile (stats.sidesteps, squeezes, makeWay), longer talks and rests, patience at half speed in scenes (fl.patT), combo clock x S.comboQuiet in the quiet, window 3 s, wound Groza and fear against HP without comboHp
@@ -24391,7 +24673,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
   kick();   // 1.24 (C): the paced loop (p6 FP)
 
   // Hook for automated checks; no effect on normal play.
-  const yatd = { longDoc: () => longDoc(), logLong: () => logLong(), get LONG_DOCS() { return LONG_DOCS; }, homeRunTick: dt => homeRunTick(dt), tapUpgrade: it => tapUpgrade(it), upgradeAll: (it, b) => upgradeAll(it, b), sameInRoom: it => sameInRoom(it), handleTap: (x, y) => handleTap(x, y), get lastPlaced() { return lastPlaced; },   /* 1.27.4 */ deckUsed: () => deckUsed(), deckFull: () => deckFull(), deckAdd: id => deckAdd(id), isGift: id => isGift(id), heartLevelCheck: s => heartLevelCheck(s), heartUpBlocked: () => heartUpBlocked(), reserveLow: () => reserveLow(), updateAction: () => updateAction(), copyOk: v => copyOk(v),   /* 1.27.5 */ tagChips: t => tagChips(t), get TRAPS() { return TRAPS; }, get MONSTERS() { return MONSTERS; },   /* 1.27.7 */ get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
+  const yatd = { longDoc: () => longDoc(), logLong: () => logLong(), get LONG_DOCS() { return LONG_DOCS; }, homeRunTick: dt => homeRunTick(dt), tapUpgrade: it => tapUpgrade(it), upgradeAll: (it, b) => upgradeAll(it, b), sameInRoom: it => sameInRoom(it), handleTap: (x, y) => handleTap(x, y), get lastPlaced() { return lastPlaced; },   /* 1.27.4 */ deckUsed: () => deckUsed(), deckFull: () => deckFull(), deckAdd: id => deckAdd(id), isGift: id => isGift(id), heartLevelCheck: s => heartLevelCheck(s), heartUpBlocked: () => heartUpBlocked(), reserveLow: () => reserveLow(), updateAction: () => updateAction(), copyOk: v => copyOk(v),   /* 1.27.5 */ tagChips: t => tagChips(t), get DRAWN() { return DRAWN; }, get WC() { return WC; }, drawNow: () => draw(),   /* 1.28.0 */ devInfo: () => devInfo(), get TRAPS() { return TRAPS; }, get MONSTERS() { return MONSTERS; },   /* 1.27.7 */ get MUS() { return MUS; }, get WA() { return WA; }, wallCovers, memOf, needsCheck, timeScale, get CHECK_SLOW() { return CHECK_SLOW; }, musicWant, camCentre, TRAY, get cwch() { return [cw, ch, cv.width, cv.height]; }, w2s: (x, y, z) => { const p = W2S(x, y, z || 0); return [p[0] + OX, p[1] + OY]; }, get OXY() { return [OX, OY, FW, FH]; }, get UIZ() { return UIZ; }, get uiRects() { return uiRects; }, fitScale: () => fitScale(), buildScale: () => buildScale(), applyLayout,   /* 1.25 */ suggestBuys, previewState, pvTake, flashSuggest, isOpenT,   /* 1.25.1 */ satietyAdd, ofiara, ofiaraLeft, hungerParts, hungerTab, heartOffer, heartTake, heartLvAt, titheNow, feastIn, setStatus, statusOn, statusList, clearStatus, rooted, reaction, reactHit, gateSplit, bestHealer, t3B, t3b, STATUS, REACTIONS, OMENS, omenK, omenOf, secretFind, secretOk, heroAI126, partyPool, essMultNow, copyTarget, hurtMonster, statusList, newClassTick, hazardsTick, houndTrack, superRoom, sapperCovered, demonCount, OFIARA_MAX, roomLoads, roomCap, ACTIVE, /* 1.26 */   /* 1.24 (B): w2s on the canvas (the tests add the canvas' corner) */ centerOn, trayIsOpen, get VIEW() { return VIEW; }, wallH, tapWorld, tutPop, get tutPopNow() { return tutPopNow; }, get paused() { return paused; }, get TC() { return TC; }, get PERF() { return PERF; }, perfSummary, frame, quietWhy, autoFFOn: () => autoFFOn(), standOk: (h, x, y) => standOk(h, x, y), talkGroup: h => talkGroup(h), startPrep: r => startPrep(r), pickTab: (id, t) => pickTab(id, t), makeHero: (t, l, n) => makeHero(t, l, n, new Set()), QUIET, get SPLIT() { return SPLIT; }, splitViews, heroScreen, toWorld, lootCount, walkable, passable, blockerOk, rebuildDungeon, BUILDINGS, get realNow() { return realNow; }, crystalCost, buyCrystal, payChain, chainTick, essIn, comboLive, becomeImpatient: () => becomeImpatient(), partyThink: dt => partyThink(dt), hungerNeed, feedHeart, typeMult, phobiaMult, collectReturners, damage, addFear, shopBuy, shopReroll, toStash, fromStash, sellStash, shopRefresh, stashCap, priceOf, rerollCost, greedBonusParts,
     get S() { return S; }, get fl() { return fl; }, get run() { return run; }, get mods() { return mods; }, get modalKind() { return modalKind; }, get cam() { return cam; },
     get ff() { return ff; }, setFF: v => { ff = v; }, setArm: v => { ARM_TIME = v; },
     step, fire, tryPlace, canPlace, startWave, newRun, closeModal, setPaused, finishWave: () => finishWave(), afterSummary, proceedToBuild,
@@ -24409,6 +24691,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     rollItem, curse, comboNow, get orbs() { return orbs; }, boxOrbs, tileScreen, bfs, say: (h, t, p, d, how) => say(h, t, p, d, how), sayTick, floorBusy, readT, talkAs: (d, l) => talkAs(d, l), greedCurve, greedRaw, addGreed, waveSize, partySize, safestRoom: h => safestRoom(h), planHero: h => planHero(h), lootSeen: it => lootSeen(it), kill: (h, k, a) => kill(h, k, a), damage, loadRecords, BREACH_PATCH, HITEMS, LOOT_KIND, noticeLoot, lootDecision, leader, alive, heroExit, driftTarget, SCARE, CURSED, DRIFT, TABS, objTargetOk, roomOf, dropCarry, holdRemove, buildTap, onbStage, setOnb, onbDone, startGuided, endRun: (r, x) => endRun(r, x), revealPhobia, revealPhys, ONB_STAGES, ONB_CARD, ONB_ITEM, comboHp, onbOk, coachDone,
     get movingObj() { return movingObj; },
     get FP() { return FP; }, frameIv, frameSig, IV_FAST, IV_CALM, IV_STILL,   // 1.24 C
+    GFX, GQ, setGfxMode, gfxSet, perfTest, perfHud, detT,   // 1.28.0
   };
   // 1.24 (C): a test reaching into the game through its hooks wakes the paced loop (as a tap does), so what it changed is drawn
   window.__yatd = new Proxy(yatd, { get(t, k) { if (k !== 'FP') { FP.input = FP.touch = performance.now(); kick(); } return t[k]; } });   // (reading FP itself wakes nothing: the tests watch the pacing through it)

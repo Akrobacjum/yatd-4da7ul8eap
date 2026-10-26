@@ -847,7 +847,7 @@
         pCyl(cx, cy, 0.25, 0.05, '#2e2c36', '#4a4856');
         BAIT_COINS.forEach(q => pCyl(cx + q[0], cy + q[1], 0.065, 0.022, '#c99a3a', q[3] ? '#f0cc6c' : '#e8c060', 0.05 + q[2]));
         jaw3D(cx, cy, R, phi, 1, cols, T, 5);
-        if (!shut && T >= 14 && (realNow * 0.7 + it.x) % 3 < 0.25) { const p = W2S(cx + 0.03, cy - 0.06, 0.13); ctx.fillStyle = '#fff6d0'; ctx.fillRect(p[0] - 1, p[1] - T * 0.04, 2, T * 0.08); ctx.fillRect(p[0] - T * 0.04, p[1] - 1, T * 0.08, 2); }   // a glint on the coins
+        if (!shut && detT(T) >= 14 && (realNow * 0.7 + it.x) % 3 < 0.25) { const p = W2S(cx + 0.03, cy - 0.06, 0.13); ctx.fillStyle = '#fff6d0'; ctx.fillRect(p[0] - 1, p[1] - T * 0.04, 2, T * 0.08); ctx.fillRect(p[0] - T * 0.04, p[1] - 1, T * 0.08, 2); }   // a glint on the coins
         if (sp.edge) for (let k = 0; k < 6; k++) { const a = Math.random() * Math.PI * 2, v = 0.6 + Math.random() * 0.7; sparkAdd(sp, cx + Math.cos(a) * 0.2, cy, 0.25, Math.cos(a) * v, Math.sin(a) * v * 0.5, 0.5 + Math.random(), 0.3 + Math.random() * 0.2, k % 2 ? '#ffe9a8' : '#f2b94b', 0.03, 3); }
         sparkRun(sp, T);
       });
@@ -891,8 +891,8 @@
           isoBox(x0 + w / 4, y0 + w / 2, w / 2 - 0.01, w, 0.025, '#4a3828', '#3a2c20', '#2e2218');
           isoBox(x0 + w * 3 / 4, y0 + w / 2, w / 2 - 0.01, w, 0.025, '#4a3828', '#3a2c20', '#2e2218');
           ctx.strokeStyle = 'rgba(20,14,8,0.6)'; ctx.lineWidth = Math.max(1, T * 0.015); ctx.beginPath(); [0.25, 0.75].forEach(u => { const a = P(u, 0.02, 0.025), b = P(u, 0.98, 0.025); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }); ctx.stroke();   // the planks
-          if (T >= 24) [[0.04, 0.2], [0.04, 0.8], [0.96, 0.2], [0.96, 0.8]].forEach(q => isoBox(x0 + q[0] * w, y0 + q[1] * w, 0.07, 0.05, 0.015, '#9a96a6', '#77727f', '#55505e', 0.025));   // the hinges
-          if (T >= 24) [0.47, 0.53].forEach(u => isoBox(x0 + u * w, y0 + w / 2, 0.025, 0.08, 0.02, '#9a96a6', '#77727f', '#55505e', 0.025));   // the iron pulls
+          if (detT(T) >= 24) [[0.04, 0.2], [0.04, 0.8], [0.96, 0.2], [0.96, 0.8]].forEach(q => isoBox(x0 + q[0] * w, y0 + q[1] * w, 0.07, 0.05, 0.015, '#9a96a6', '#77727f', '#55505e', 0.025));   // the hinges
+          if (detT(T) >= 24) [0.47, 0.53].forEach(u => isoBox(x0 + u * w, y0 + w / 2, 0.025, 0.08, 0.02, '#9a96a6', '#77727f', '#55505e', 0.025));   // the iron pulls
         }
         const e = 0.05, h = 0.04, c = ['#5a4a3a', '#46382a', '#33281e'];   // the frame, far bars first
         isoBox(x0 + w / 2, y0 - e / 2, w + e * 2, e, h, c[0], c[1], c[2]); isoBox(x0 - e / 2, y0 + w / 2, e, w, h, c[0], c[1], c[2]);
@@ -905,9 +905,9 @@
         const e = 0.045, h = 0.035, c = ['#8e8a9a', '#6c6878', '#4e4a58'];
         const stubs = (far) => { for (let k = 0; k <= 4; k++) { const u = k / 4; (far ? [[x0 + w * u, y0], [x0, y0 + w * u]] : [[x0 + w * u, y0 + w], [x0 + w, y0 + w * u]]).forEach(q => pCyl(q[0], q[1], 0.018, 0.08, '#77727f', '#b9bccb', h)); } };
         isoBox(x0 + w / 2, y0, w + e, e, h, c[0], c[1], c[2]); isoBox(x0, y0 + w / 2, e, w + e, h, c[0], c[1], c[2]);
-        if (T >= 24) stubs(true);   // (the stubs only close up)
+        if (detT(T) >= 24) stubs(true);   // (the stubs only close up)
         isoBox(x0 + w, y0 + w / 2, e, w + e, h, c[0], c[1], c[2]); isoBox(x0 + w / 2, y0 + w, w + e, e, h, c[0], c[1], c[2]);
-        if (T >= 24) stubs(false);
+        if (detT(T) >= 24) stubs(false);
       });
     }
   };
@@ -1414,7 +1414,7 @@
   ART.sprite = sprite;
   // 1.26: small touches on the furniture (drawObjectIso): a barrel's staves and the lid's boards, a crate's planks and nails
   function artBarrelDetail(b, t, rx, ry, T) {
-    if (T < 16) return;
+    if (detT(T) < 16) return;   // 1.28.0: detT
     ctx.strokeStyle = 'rgba(40,24,10,0.45)'; ctx.lineWidth = Math.max(1, T * 0.015); ctx.beginPath();
     [-0.6, -0.2, 0.2, 0.6].forEach(u => { ctx.moveTo(b[0] + rx * u, t[1] + ry * Math.sqrt(1 - u * u)); ctx.lineTo(b[0] + rx * u, b[1] + ry * Math.sqrt(1 - u * u)); });
     ctx.stroke();
@@ -1422,7 +1422,7 @@
     ctx.strokeStyle = 'rgba(40,24,10,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(t[0] - rx * 0.9, t[1] - ry * 0.25); ctx.lineTo(t[0] + rx * 0.9, t[1] - ry * 0.25); ctx.moveTo(t[0] - rx * 0.9, t[1] + ry * 0.3); ctx.lineTo(t[0] + rx * 0.9, t[1] + ry * 0.3); ctx.stroke();
   }
   function artCrateDetail(cx, cy, T) {
-    if (T < 16) return;
+    if (detT(T) < 16) return;   // 1.28.0: detT
     ctx.strokeStyle = 'rgba(30,18,8,0.35)'; ctx.lineWidth = 1; ctx.beginPath();
     [0.2, 0.4].forEach(z => { const a = W2S(cx - 0.35, cy + 0.35, z), b = W2S(cx + 0.35, cy + 0.35, z), c = W2S(cx + 0.35, cy - 0.35, z); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); });
     ctx.stroke();
@@ -1868,11 +1868,12 @@
   // a prop is drawn only on a free floor tile (as the komnaty's: kindPropsSO); its particles follow the same rule
   const rfxPropOk = p => { const tx = Math.floor(p.x), ty = Math.floor(p.y), k = key(tx, ty); return !fl.items.has(k) && !fl.objects.has(k) && !isHeart(tx, ty) && tileAt(tx, ty) === FLOOR; };
   function rfxPropsSO(SO, T) {
-    if (T < 9) return;
+    const dT = detT(T); if (dT < 9) return;
+    const small = dT < 14;   // 1.28.0: as kindPropsSO: far out only the bigger things
     fl.rooms.forEach(R => {
       if (R.kind !== 'room' || !R.rt || !RFX_PLAN[R.rt] || !roomSeen(R, T)) return;
       rfxPlan(R).props.forEach(p => {
-        if (!rfxPropOk(p) || !onScreen(W2S(p.x, p.y, 0), T * 2)) return;
+        if ((small && p.h < 0.4) || !rfxPropOk(p) || !onScreen(W2S(p.x, p.y, 0), T * 2)) return;
         SO.push([p.x + p.y, 5, p, p.x, p.y, p.h]);
       });
     });
@@ -1880,14 +1881,14 @@
   // the floor's moving part, in floorT (tile pixels); the others keep inside their room by themselves
   const RFX_CLIP = { fog: 1, crypt: 1 };
   function rfxLive(R, T, t) {
-    const fn = RFX_LIVE[R.rt]; if (!fn || (T < 14 && R.rt !== 'fog')) return;   // far out the still floor says it (the fog's drift stays: it is the fog)
+    const fn = RFX_LIVE[R.rt]; if (!fn || (detT(T) < 14 && R.rt !== 'fog')) return;   // 1.28.0: detT. Far out the still floor says it (the fog's drift stays: it is the fog)
     ctx.save(); if (RFX_CLIP[R.rt]) { ctx.scale(T, T); ctx.clip(rfxTilePath(R)); ctx.scale(1 / T, 1 / T); }   // a clip is dear on a phone: only what drifts over the room's edge asks for one
     try { fn(ctx, R, T, t, !!R.rk, rfxPlan(R)); } finally { ctx.restore(); }
   }
   // the particles in the air over each effect room on screen (screen space, under the walls in front, like drawKindLife)
   function rfxAir(T) {
-    if (T < 14 || reduceMotion) return;
-    const t = realNow, few = T < 24;   // further out, half the particles (as with a komnata)
+    if (detT(T) < 14 || reduceMotion) return;   // 1.28.0: detT
+    const t = realNow, few = detT(T) < 24;   // further out, half the particles (as with a komnata)
     fl.rooms.forEach(R => {
       if (R.kind !== 'room' || !R.rt || !RFX_AIR[R.rt] || !roomSeen(R, T)) return;
       const [mx, my] = roomMid(R); if (fogged(Math.floor(mx), Math.floor(my))) return;
@@ -1897,10 +1898,13 @@
     });
   }
   // the raised pieces on a wall face that looks into an effect room (rtWallWash calls it for a standing block)
+  // 1.28.0: which pieces move (lite: a komnata in the room too); the rest are still, the wall cache paints them once
+  const RFXW_LIVE = { fog: () => true, grotto: () => true, crypt: (s, l) => !(l || s % 3), vault: (s, l) => !(l || s % 3), haven: (s, l) => (s % 2 === 0 && !l) || s % 3 === 0, gears: (s, l) => l ? s % 4 === 0 : s % 2 === 0, ice: () => true };
+  const RFXW_MIX = { grotto: 1, crypt: 1, vault: 1, haven: 1, gears: 1, ice: 1 };   // (their still and moving pieces apart: wSt, wLv)
   function rfxWall3D(x, y, face, h, T, t, s, R) {
-    const fn = R && RFX_WALL3D[R.rt]; if (!fn || T < 20) return;   // small things: close up only
-    ctx.save();
-    try { fn(wallFrame(x, y, face), h, T, t, s, !!R.rk); } finally { ctx.restore(); }
+    const fn = R && RFX_WALL3D[R.rt]; if (!fn || wdT(T) < 20) return;   // small things: close up only (1.28.0: wdT, GFX.lvl)
+    const lv = RFXW_LIVE[R.rt];
+    wP(!reduceMotion && !!lv && lv(s, !!R.rk), RFXW_MIX[R.rt], () => { ctx.save(); try { fn(wallFrame(x, y, face), h, T, t, s, !!R.rk); } finally { ctx.restore(); } });
   }
   // ---------- 1.27.5: little painters ----------
   function rxBlob(c, cx, cy, rx, ry, seed) {   // an uneven rounded patch (a smooth closed curve through 12 wobbly points)
@@ -2722,7 +2726,7 @@
   }
   // the room's solid floor things (drawRoomTypes calls it in floorT, between the still floor and its moving part)
   function rfxSolid(R, T, t) {
-    const P = rfxPlan(R), pits = R.rt === 'gears' && T >= 14 && P.spots.length;
+    const P = rfxPlan(R), pits = R.rt === 'gears' && detT(T) >= 14 && P.spots.length;   // 1.28.0: detT
     if (!P.bits.length && !pits) return;
     ctx.save(); screenT();
     try {
@@ -2844,33 +2848,35 @@
     grotto(F, h, T, t, s, lite) {   // faceted stalactites of wet blue stone hanging off the top edge out of a boss of rock, a drop gathering at one
       const n = lite ? 2 : 3;
       for (let k = 0; k < n; k++) { const u = 0.18 + k * (0.64 / (n - 1 || 1)) + 0.04 * ((s + k) % 2), [wx, wy] = F.W(u, 0.09), L = 0.28 + 0.14 * ((k + s) % 3), r = 0.07 + 0.015 * (k % 2);
-        rxLathe(wx, wy, h - L, [[0, 0], [r * 0.45, L * 0.45], [r * 0.85, L * 0.82], [r, L]], 7, '#7a8cae', k + s, false);
-        if (k === 1 && !reduceMotion) { const p = (t * 0.5 + s * 0.1) % 1; const q = W2S(wx, wy, h - L - 0.02 - (p > 0.6 ? (p - 0.6) * 3 : 0)); rc.fillStyle = 'rgba(200,225,255,' + (p > 0.9 ? 0 : 0.9) + ')'; rc.beginPath(); rc.arc(q[0], q[1], Math.max(1, T * 0.02 * Math.min(1, p * 2)), 0, Math.PI * 2); rc.fill(); } }
+        if (wSt()) rxLathe(wx, wy, h - L, [[0, 0], [r * 0.45, L * 0.45], [r * 0.85, L * 0.82], [r, L]], 7, '#7a8cae', k + s, false);   // 1.28.0: wSt / wLv (the wall cache)
+        if (k === 1 && !reduceMotion && wLv()) { const p = (t * 0.5 + s * 0.1) % 1; const q = W2S(wx, wy, h - L - 0.02 - (p > 0.6 ? (p - 0.6) * 3 : 0)); rc.fillStyle = 'rgba(200,225,255,' + (p > 0.9 ? 0 : 0.9) + ')'; rc.beginPath(); rc.arc(q[0], q[1], Math.max(1, T * 0.02 * Math.min(1, p * 2)), 0, Math.PI * 2); rc.fill(); } }
     },
     crypt(F, h, T, t, s, lite) {   // a stone niche standing out of the wall (pillars, an arch, a sill), a candle burning violet in it; a sheet of cobweb in the corner
       if (lite || s % 3) { const a = rxWP(F, 0, 0.01, h), b = rxWP(F, 0.32, 0.01, h), c = rxWP(F, 0, 0.01, h - 0.38), m = rxWP(F, 0.1, 0.12, h - 0.12), A = W2S(...a), B = W2S(...b), C = W2S(...c), M = W2S(...m);
         rc.fillStyle = 'rgba(225,215,245,0.2)'; rc.beginPath(); rc.moveTo(A[0], A[1]); rc.lineTo(B[0], B[1]); rc.quadraticCurveTo(M[0], M[1], C[0], C[1]); rc.closePath(); rc.fill();
         rc.strokeStyle = 'rgba(230,222,248,0.45)'; rc.lineWidth = 1; rc.beginPath(); [0.3, 0.6].forEach(f => { const q = [A[0] + (M[0] - A[0]) * f, A[1] + (M[1] - A[1]) * f]; rc.moveTo(A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f); rc.quadraticCurveTo(q[0], q[1], A[0] + (C[0] - A[0]) * f, A[1] + (C[1] - A[1]) * f); }); rc.moveTo(A[0], A[1]); rc.lineTo(M[0], M[1]); rc.stroke(); return; }
       const z = Math.min(0.75, h - 0.75), zt = z + 0.42;
+      if (wSt()) {   // 1.28.0: the niche still, the flame live
       rc.save(); F.plane(0.004, z, z + 0.6); rc.fillStyle = '#0c0812'; rc.beginPath(); rc.moveTo(0.3, 1); rc.lineTo(0.3, 0.3); rc.arc(0.5, 0.3, 0.2, Math.PI, 0); rc.lineTo(0.7, 1); rc.fill(); rc.restore();   // the dark hollow
       rxXW(F, [[0.24, z], [0.3, z], [0.3, zt], [0.24, zt]], 0, 0.09, '#5a526a');
       for (let k = 0; k < 5; k++) { const a0 = Math.PI - k * Math.PI / 5, a1 = Math.PI - (k + 1) * Math.PI / 5, c = (a, r) => [0.5 + Math.cos(a) * r, zt + Math.sin(a) * r * 0.9]; rxXW(F, [c(a0, 0.26), c(a1, 0.26), c(a1, 0.2), c(a0, 0.2)], 0, 0.09, '#5a526a'); }
       rxXW(F, [[0.7, z], [0.76, z], [0.76, zt], [0.7, zt]], 0, 0.09, '#5a526a');
       F.box(0.5, 0.06, 0.56, 0.12, 0.04, z - 0.04, '#5a526a', '#463e56', '#342e42');
-      const [wx, wy] = F.W(0.5, 0.05); rxLathe(wx, wy, z, [[0.032, 0], [0.032, 0.14], [0.026, 0.152]], 7, '#ddd6e8', 0.3); const q = W2S(wx, wy, z + 0.152);
-      pFlame(q[0], q[1], T * 0.13, t, s, 'rgba(245,235,255,0.95)', 'rgba(170,120,255,0.85)', ['rxcandV', [[0, 'rgba(180,140,255,0.4)'], [1, 'rgba(180,140,255,0)']]]);
+      }
+      const [wx, wy] = F.W(0.5, 0.05), q = W2S(wx, wy, z + 0.152); if (wSt()) rxLathe(wx, wy, z, [[0.032, 0], [0.032, 0.14], [0.026, 0.152]], 7, '#ddd6e8', 0.3);
+      if (wLv()) pFlame(q[0], q[1], T * 0.13, t, s, 'rgba(245,235,255,0.95)', 'rgba(170,120,255,0.85)', ['rxcandV', [[0, 'rgba(180,140,255,0.4)'], [1, 'rgba(180,140,255,0)']]]);
     },
     vault(F, h, T, t, s, lite) {   // a thick gold plate on the wall with a jewel set in it; round gilded studs along the top edge
-      for (let k = 0; k < 5; k++) { const [wx, wy] = F.W(0.1 + k * 0.2, 0.0); rxBall(wx, wy, h - 0.12, 0.026, '#c9a24e'); }
+      if (wSt()) for (let k = 0; k < 5; k++) { const [wx, wy] = F.W(0.1 + k * 0.2, 0.0); rxBall(wx, wy, h - 0.12, 0.026, '#c9a24e'); }
       if (lite || s % 3) return;
       const pts = [[0.5, 1.2], [0.78, 1.0], [0.7, 0.6], [0.5, 0.47], [0.3, 0.6], [0.22, 1.0]];
-      rxXW(F, pts, 0, 0.05, '#d8b04c');
-      const [jx, jy] = F.W(0.5, 0.05); rxEgg(jx, jy, 0.85, 0.045, 0.045, '#c03040');
-      rc.save(); F.plane(0.051, 0.35, 1.35); rc.strokeStyle = '#8a6420'; rc.lineWidth = 0.02; rc.beginPath(); rc.moveTo(0.5, 0.22); rc.lineTo(0.72, 0.38); rc.lineTo(0.66, 0.71); rc.lineTo(0.5, 0.81); rc.lineTo(0.34, 0.71); rc.lineTo(0.28, 0.38); rc.closePath(); rc.stroke();
-      rc.fillStyle = 'rgba(255,246,200,' + (0.25 + 0.2 * Math.sin(t * 2 + s)).toFixed(2) + ')'; rc.beginPath(); rc.moveTo(0.5, 0.15); rc.lineTo(0.78, 0.35); rc.lineTo(0.62, 0.38); rc.closePath(); rc.fill(); rc.restore();
+      if (wSt()) { rxXW(F, pts, 0, 0.05, '#d8b04c'); const [jx, jy] = F.W(0.5, 0.05); rxEgg(jx, jy, 0.85, 0.045, 0.045, '#c03040'); }   // 1.28.0: wSt / wLv (the sheen live)
+      rc.save(); F.plane(0.051, 0.35, 1.35); rc.strokeStyle = '#8a6420'; rc.lineWidth = 0.02; if (wSt()) { rc.beginPath(); rc.moveTo(0.5, 0.22); rc.lineTo(0.72, 0.38); rc.lineTo(0.66, 0.71); rc.lineTo(0.5, 0.81); rc.lineTo(0.34, 0.71); rc.lineTo(0.28, 0.38); rc.closePath(); rc.stroke(); }
+      if (wLv()) { rc.fillStyle = 'rgba(255,246,200,' + (0.25 + 0.2 * Math.sin(t * 2 + s)).toFixed(2) + ')'; rc.beginPath(); rc.moveTo(0.5, 0.15); rc.lineTo(0.78, 0.35); rc.lineTo(0.62, 0.38); rc.closePath(); rc.fill(); } rc.restore();
     },
     haven(F, h, T, t, s, lite) {   // a thick cloth hanging off a rod with the sign of the sanctuary; a warm candle on an iron bracket
       if (s % 2 === 0 && !lite) {
+        if (!wLv()) return;   // 1.28.0: the cloth sways: live
         const sw = Math.sin(t * 1.1 + s) * 0.01;
         rxXW(F, [[0.3, 1.39], [0.7, 1.39], [0.7 + sw, 0.55], [0.5 + sw, 0.42], [0.3 + sw, 0.55]], 0.025, 0.05, '#e8dcc0');
         rc.save(); F.plane(0.051, 0.25, 1.45); rc.fillStyle = '#b8862e'; rc.fillRect(0.47, 0.18, 0.06, 0.4); rc.fillRect(0.38, 0.28, 0.24, 0.06); rc.strokeStyle = '#a07a3a'; rc.lineWidth = 0.015; rc.beginPath(); rc.moveTo(0.33, 0.08); rc.lineTo(0.67, 0.08); rc.lineTo(0.67, 0.73); rc.lineTo(0.5, 0.82); rc.lineTo(0.33, 0.73); rc.closePath(); rc.stroke(); rc.restore();
@@ -2880,16 +2886,17 @@
       }
       if (s % 3) return;
       const z = Math.min(0.95, h - 0.4);
-      rxRod(rxWP(F, 0.5, 0, z - 0.08), rxWP(F, 0.5, 0.13, z), 0.016, 0.014, '#5a5e66', '#2a2c30');
-      const [wx, wy] = F.W(0.5, 0.13); rxLathe(wx, wy, z, [[0.05, 0], [0.055, 0.02]], 8, '#6a4a2a', 0.2);
-      rxLathe(wx, wy, z + 0.02, [[0.028, 0], [0.028, 0.12], [0.022, 0.132]], 7, '#efe2c4', 0.3); const q = W2S(wx, wy, z + 0.132);
-      pFlame(q[0], q[1], T * 0.12, t, s, 'rgba(255,240,190,0.95)', 'rgba(255,160,60,0.9)', ['rxcandH', [[0, 'rgba(255,200,120,0.45)'], [1, 'rgba(255,200,120,0)']]]);
+      const [wx, wy] = F.W(0.5, 0.13), q = W2S(wx, wy, z + 0.132);
+      if (wSt()) { rxRod(rxWP(F, 0.5, 0, z - 0.08), rxWP(F, 0.5, 0.13, z), 0.016, 0.014, '#5a5e66', '#2a2c30'); rxLathe(wx, wy, z, [[0.05, 0], [0.055, 0.02]], 8, '#6a4a2a', 0.2); rxLathe(wx, wy, z + 0.02, [[0.028, 0], [0.028, 0.12], [0.022, 0.132]], 7, '#efe2c4', 0.3); }   // 1.28.0: the bracket still, the flame live
+      if (wLv()) pFlame(q[0], q[1], T * 0.12, t, s, 'rgba(255,240,190,0.95)', 'rgba(255,160,60,0.9)', ['rxcandH', [[0, 'rgba(255,200,120,0.45)'], [1, 'rgba(255,200,120,0)']]]);
     },
     gears(F, h, T, t, s, lite) {   // a thick cog half out of the wall, turning; a copper pipe on brackets along the foot
-      F.box(0.5, 0.012, 1, 0.024, 0.34, 0, '#a07a48', '#7a5630', '#5a3e22');   // 1.27.5: the riveted bronze plate along the foot stands out of the face (it was painted), round rivets on it
+      if (wSt()) {   // 1.28.0: the plate, the rivets and the pipe still; the cog and its axle live
+        F.box(0.5, 0.012, 1, 0.024, 0.34, 0, '#a07a48', '#7a5630', '#5a3e22');   // 1.27.5: the riveted bronze plate along the foot stands out of the face (it was painted), round rivets on it
       for (let k = 0; k < 5; k++) { const [wx, wy] = F.W(0.1 + k * 0.2, 0.024); rxBall(wx, wy, 0.255, 0.017, '#c49a62'); }
-      if (s % 2 === 0) { [0.2, 0.8].forEach(u => F.box(u, 0.03, 0.05, 0.06, 0.08, 0.12, '#4a4e57', '#33363d', '#2a2d33')); rxHCyl(rxWP(F, -0.02, 0.06, 0.16), rxWP(F, 1.02, 0.06, 0.16), 0.045, 8, '#a8683a'); }
-      if (lite ? s % 4 : s % 2) return;
+        if (s % 2 === 0) { [0.2, 0.8].forEach(u => F.box(u, 0.03, 0.05, 0.06, 0.08, 0.12, '#4a4e57', '#33363d', '#2a2d33')); rxHCyl(rxWP(F, -0.02, 0.06, 0.16), rxWP(F, 1.02, 0.06, 0.16), 0.045, 8, '#a8683a'); }
+      }
+      if ((lite ? s % 4 : s % 2) || !wLv()) return;
       const dir = s % 4 ? 1 : -1, a = t * 0.7 * dir, z0 = Math.min(0.45, h - 1.0), r = lite ? 0.18 : 0.3;
       rc.save();
       [['#2e2010', 0.0], ['#3e2c16', 0.02], ['#52381c', 0.04], ['#664824', 0.055]].forEach(([c, d]) => { F.plane(d, z0, z0 + 1); rxGear(0.5, 0.5, r, 10, a, c, null, null); });
@@ -2905,12 +2912,15 @@
       F.box(0.5, 0.06, 0.98, 0.12, 0.08, h - 0.1, '#7a6a4a', '#5e5038', '#4a3e2c');
     },
     ice(F, h, T, t, s, lite) {   // a cornice of ice along the top edge, icicles of all lengths hanging off it, clear, faceted
+      const n = lite ? 3 : 5;
+      if (wSt()) {   // 1.28.0: the cornice and the icicles still, the drop live
       F.box(0.5, 0.04, 1, 0.08, 0.05, h - 0.05, '#e8f6ff', '#b4dcf2', '#86bede');
-      const n = lite ? 3 : 5, A = rc.globalAlpha; rc.globalAlpha = A * 0.95; rxLift = 0.4;
+      const A = rc.globalAlpha; rc.globalAlpha = A * 0.95; rxLift = 0.4;
       for (let k = 0; k < n; k++) { const u = 0.1 + 0.8 * (k + 0.5) / n + 0.03 * ((s + k) % 3 - 1), [wx, wy] = F.W(u, 0.05), L = 0.12 + (lite ? 0.12 : 0.3) * (((k * 7 + s) % 5) / 4), r = 0.05 + 0.012 * (k % 2);
         rxLathe(wx, wy, h - 0.05 - L, [[0, 0], [r * 0.55, L * 0.5], [r, L]], 6, '#d8f0ff', k + s, false);
         rxLine(W2S(wx - r * 0.5, wy + r * 0.5, h - 0.06), W2S(wx, wy, h - 0.05 - L), 'rgba(255,255,255,0.75)', Math.max(1, T * 0.01)); }
       rc.globalAlpha = A; rxLift = 0;
-      const p = (t * 0.4 + s * 0.13) % 1; if (!reduceMotion && p < 0.5) { const [wx, wy] = F.W(0.1 + 0.8 * 1.5 / n, 0.05); const q = W2S(wx, wy, h - 0.35 - p * 1.2); rc.fillStyle = 'rgba(220,240,255,0.8)'; rc.beginPath(); rc.arc(q[0], q[1], Math.max(1, T * 0.018), 0, Math.PI * 2); rc.fill(); }
+      }
+      const p = (t * 0.4 + s * 0.13) % 1; if (!reduceMotion && p < 0.5 && wLv()) { const [wx, wy] = F.W(0.1 + 0.8 * 1.5 / n, 0.05); const q = W2S(wx, wy, h - 0.35 - p * 1.2); rc.fillStyle = 'rgba(220,240,255,0.8)'; rc.beginPath(); rc.arc(q[0], q[1], Math.max(1, T * 0.018), 0, Math.PI * 2); rc.fill(); }
     }
   };
