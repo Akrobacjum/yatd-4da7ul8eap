@@ -12072,8 +12072,8 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     if (load < 1) { fl.stats.loadSlowT = (fl.stats.loadSlowT || 0) + dt; if (!h.heavySaid) { h.heavySaid = true; say(h, pick(SAY.heavyLoad), 2); } }
     if (h.sliding) { h.prog += 3.2 * dt; if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = true; h.sliding = false; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); } return; }   // 1.10: a slide on the ice: fast, nothing stops it
     const spd = h.T.speed * h.R.speed * (S.heroSpeed / 100) * slow * (fl.fearless ? 1.3 : 1) * dash * careful * sprint * bog * purse * load *
-      (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1) * (h.crystal ? 0.9 * mods.carrierSlow : 1) * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1) * (fl.time < h.rageUntil ? 1.25 : 1) *
-      (h.tap && !exiting(h) && roomOf(h.nx, h.ny) === h.tap.room ? 0.7 : 1) * escortPace(h);   // 1.22: tapping the floor; a guard keeps the carrier's pace
+      (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1) * (h.crystal ? 0.72 * mods.carrierSlow : 1) * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1) * (fl.time < h.rageUntil ? 1.25 : 1) *
+      (h.tap && !exiting(h) && roomOf(h.nx, h.ny) === h.tap.room ? 0.7 : 1) * escortPace(h);   // 1.28.1 (author): a crystal carrier x0,72 (was x0,9: 0,8 of it); 1.22: tapping the floor; a guard keeps the carrier's pace
     h.prog += spd * dt;
     if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = !!h.sliding; h.sliding = false; h.passing = null; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); }
   }
@@ -21857,7 +21857,7 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.28.0 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.28.1 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -21915,9 +21915,10 @@ html.mouse .tray > .item.art[data-k]::after { left: 2px; top: 2px; padding: 1px 
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.28.0', "What's new in Prototype 1.28.0")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.28.1', "What's new in Prototype 1.28.1")));
     const ul0 = el('ul', 'conseq');
-    [L('1.28.0: płynniej na dużym lochu. Ściany rysują się raz i są potem tylko wklejane, a gdy kafelki są małe, drobne detale znikają wcześniej.', '1.28.0: smoother on big dungeons. Walls are drawn once and then just pasted, and when tiles are small, tiny details drop out sooner.'),
+    [L('1.28.1: bohater niosący kryształ idzie wolniej (o 20% wolniej niż dotąd), więc łatwiej go dopaść przed wyjściem.', '1.28.1: a hero carrying a crystal walks slower (20% slower than before), so he is easier to catch before the exit.'),
+     L('1.28.0: płynniej na dużym lochu. Ściany rysują się raz i są potem tylko wklejane, a gdy kafelki są małe, drobne detale znikają wcześniej.', '1.28.0: smoother on big dungeons. Walls are drawn once and then just pasted, and when tiles are small, tiny details drop out sooner.'),
      L('1.28.0: w Ustawieniach Grafika: Auto (sama zmniejsza detale, gdy urządzenie nie nadąża), Pełna albo Oszczędna.', '1.28.0: Graphics in the Settings: Auto (lowers details by itself when the device cannot keep up), Full or Saver.'),
      L('1.27.8: karty w talii i schowku przeciągasz jak obiekty: na inne miejsce (kolejność, np. co kopiuje Kopista), do schowka i z powrotem, na inną kartę, żeby je zamienić. Przytrzymanie sprzedaje kartę. Kafelek Kopisty mówi, co kopiuje.', '1.27.8: you drag deck and stash cards like objects: to another place (the order, e.g. what Copyist copies), to the stash and back, onto another card to swap them. Holding a card sells it. Copyist\'s tile says what it copies.'),
      L('1.27.7: Łucznik to teraz goblin z łukiem i kołczanem (należy do Zielonoskórych), a nie szkielet.', '1.27.7: the Archer is now a goblin with a bow and a quiver (he is a Greenskin), not a skeleton.'),

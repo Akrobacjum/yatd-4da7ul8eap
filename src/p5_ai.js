@@ -3578,8 +3578,8 @@
     if (load < 1) { fl.stats.loadSlowT = (fl.stats.loadSlowT || 0) + dt; if (!h.heavySaid) { h.heavySaid = true; say(h, pick(SAY.heavyLoad), 2); } }
     if (h.sliding) { h.prog += 3.2 * dt; if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = true; h.sliding = false; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); } return; }   // 1.10: a slide on the ice: fast, nothing stops it
     const spd = h.T.speed * h.R.speed * (S.heroSpeed / 100) * slow * (fl.fearless ? 1.3 : 1) * dash * careful * sprint * bog * purse * load *
-      (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1) * (h.crystal ? 0.9 * mods.carrierSlow : 1) * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1) * (fl.time < h.rageUntil ? 1.25 : 1) *
-      (h.tap && !exiting(h) && roomOf(h.nx, h.ny) === h.tap.room ? 0.7 : 1) * escortPace(h);   // 1.22: tapping the floor; a guard keeps the carrier's pace
+      (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1) * (h.crystal ? 0.72 * mods.carrierSlow : 1) * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1) * (fl.time < h.rageUntil ? 1.25 : 1) *
+      (h.tap && !exiting(h) && roomOf(h.nx, h.ny) === h.tap.room ? 0.7 : 1) * escortPace(h);   // 1.28.1 (author): a crystal carrier x0,72 (was x0,9: 0,8 of it); 1.22: tapping the floor; a guard keeps the carrier's pace
     h.prog += spd * dt;
     if (h.prog >= 1) { h.ldx = h.nx - h.x; h.ldy = h.ny - h.y; h.slid = !!h.sliding; h.sliding = false; h.passing = null; h.x = h.nx; h.y = h.ny; h.nx = null; h.ny = null; h.prog = 0; onEnter(h); }
   }

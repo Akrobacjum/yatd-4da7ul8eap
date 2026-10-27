@@ -87,3 +87,4 @@ Pliki działają z GitHub Pages, np. `https://akrobacjum.github.io/yatd-4da7ul8e
 | [Prototype 1.27.6](1.27.6.html) | 25.10 | opis karty w sklepie nie znika |
 | [Prototype 1.27.7](1.27.7.html) | 25.10 | Łucznik jako goblin, więcej znaczników w opisach |
 | [Prototype 1.27.8](1.27.8.html) | 26.10 | karty przeciągane i sprzedawane przytrzymaniem |
+| [Prototype 1.28.0](1.28.0.html) | 26.10 | wydajność rysowania, ściany w pamięci, Grafika Auto / Pełna / Oszczędna |

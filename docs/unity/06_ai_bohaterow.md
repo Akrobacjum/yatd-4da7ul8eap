@@ -380,7 +380,7 @@ bog     = isRt(roomOf(nx,ny),'swamp') || isRt(roomOf(x,y),'swamp') ? 0.65 : 1   
 purse   = h.gold > 0 ? max(0.8, 1 - 0.04*h.gold) : 1                               // ciężka sakiewka
 spd = h.T.speed * h.R.speed * (S.heroSpeed/100) * slow * fearAll * dash * careful * sprint * bog * purse
       * (panicking(h) ? 1.2 : 1) * (h.fleeing ? 1.15 : 1)
-      * (h.crystal ? 0.9 * mods.carrierSlow : 1)
+      * (h.crystal ? 0.72 * mods.carrierSlow : 1)   // 1.28.1 (autor): nosiciel kryształu ×0,72 (do 1.28.0 ×0,9; 0,8 tamtej wartości)
       * (fl.time < P.rushUntil && !exiting(h) ? 1.25 : 1)     // bieg po przygotowaniu (6.3.8)
       * (fl.time < h.rageUntil ? 1.25 : 1)                     // furia
 h.prog += spd * dt                                             // pól na sekundę
