@@ -24,7 +24,7 @@ async def main():
           out.paid = { r3, price: G.priceOf(u2), paid: e0 - G.fl.essence };
           ok(r3 === 'ok' || r3 === 'stash', 'paid buy'); ok(e0 - G.fl.essence === G.priceOf(u2), 'paid the price');
           const c1 = G.rerollCost(); G.shopReroll(false); const c2 = G.rerollCost();
-          out.reroll = { c1, c2 }; ok(c2 === c1 + 1, 'reroll gets dearer');
+          out.reroll = { c1, c2 }; ok(c2 === c1 + 2, 'reroll gets dearer (1.28.2: +2)');
           // stash
           run.deck = ['sharp', 'heavy', 'oil', 'venom', 'dread', 'broker', 'pack']; G.recomputeMods();
           out.stashMove = G.toStash(0); out.deckN = run.deck.length; out.stash = run.stash.slice();

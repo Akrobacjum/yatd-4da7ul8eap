@@ -979,7 +979,7 @@ Ceny: unlock 7 (od 1.26), instant według rzadkości. Instant i unlock nigdy nie
 
 ```
 rerollCost() = run.shop && run.shop.rerolls < (mods.freeReroll || 0) ? 0
-             : 2 + (run.shop ? run.shop.rerolls - (mods.freeReroll || 0) : 0)     // 1.26: od 2 (było od 3)
+             : 4 + ceil(run.wave / 2) + 2 × (run.shop.rerolls - (mods.freeReroll || 0))   // 1.28.2 (autor: drożej, jak 5 w Balatro): fala 1-2: 5, 7, 9...; fala 9-10: 9, 11, 13... (1.26-1.28.1: 2, 3, 4...; do 1.25: od 3)
 shopReroll(ad):
     tylko w budowie
     if ad: if run.shop.ad: false; run.shop.ad = true                    // raz na falę, bez kosztu, nie zwiększa rerolls

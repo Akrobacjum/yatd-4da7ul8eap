@@ -709,7 +709,7 @@
     card.appendChild(ok); card.appendChild(skip);
   }
   function renderStart(card) {
-    card.appendChild(el('div', 'sub', 'Prototype 1.28.1 · ' + L('10 fal', '10 waves')));
+    card.appendChild(el('div', 'sub', 'Prototype 1.28.2 · ' + L('10 fal', '10 waves')));
     card.appendChild(el('h1', null, 'You are the dungeon'));
     card.appendChild(el('p', null, L('Jesteś lochem. Bohaterowie przychodzą falami po kryształy z Twojego serca, a Ty bronisz go pułapkami, potworami i łupem. Przetrwaj 10 fal.', 'You are the dungeon. Heroes come in waves to steal the crystals from your heart, and you defend it with traps, monsters and loot. Survive 10 waves.')));
     const rec = loadRecords();
@@ -767,9 +767,10 @@
        L('Z kolejnymi falami dochodzą straszenie, omeny, gildia ze specjalistami, obiekty i komnaty. Gra powie o nich, gdy się pojawią.', 'As the waves go on you unlock fear, omens, the guild and its specialists, objects and lairs. The game tells you about each one when it appears.')]]
     ].forEach(([hd, items]) => { how.appendChild(el('h3', 'howh', hd)); const ul = el('ul', 'conseq'); items.forEach(t => ul.appendChild(el('li', null, t))); how.appendChild(ul); });
     card.appendChild(how);
-    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.28.1', "What's new in Prototype 1.28.1")));
+    const nw = el('details'); nw.id = 'start-new'; nw.appendChild(el('summary', null, L('Co nowego w Prototype 1.28.2', "What's new in Prototype 1.28.2")));
     const ul0 = el('ul', 'conseq');
-    [L('1.28.1: bohater niosący kryształ idzie wolniej (o 20% wolniej niż dotąd), więc łatwiej go dopaść przed wyjściem.', '1.28.1: a hero carrying a crystal walks slower (20% slower than before), so he is easier to catch before the exit.'),
+    [L('1.28.2: Odśwież w sklepie jest droższe: pierwsze kosztuje mniej więcej tyle co zwykła karta (5 Esencji na początku, 9 w fali 10), każde kolejne o 2 więcej.', '1.28.2: Refresh in the shop costs more: the first one about as much as a common card (5 Essence at the start, 9 in wave 10), each next one 2 more.'),
+     L('1.28.1: bohater niosący kryształ idzie wolniej (o 20% wolniej niż dotąd), więc łatwiej go dopaść przed wyjściem.', '1.28.1: a hero carrying a crystal walks slower (20% slower than before), so he is easier to catch before the exit.'),
      L('1.28.0: płynniej na dużym lochu. Ściany rysują się raz i są potem tylko wklejane, a gdy kafelki są małe, drobne detale znikają wcześniej.', '1.28.0: smoother on big dungeons. Walls are drawn once and then just pasted, and when tiles are small, tiny details drop out sooner.'),
      L('1.28.0: w Ustawieniach Grafika: Auto (sama zmniejsza detale, gdy urządzenie nie nadąża), Pełna albo Oszczędna.', '1.28.0: Graphics in the Settings: Auto (lowers details by itself when the device cannot keep up), Full or Saver.'),
      L('1.27.8: karty w talii i schowku przeciągasz jak obiekty: na inne miejsce (kolejność, np. co kopiuje Kopista), do schowka i z powrotem, na inną kartę, żeby je zamienić. Przytrzymanie sprzedaje kartę. Kafelek Kopisty mówi, co kopiuje.', '1.27.8: you drag deck and stash cards like objects: to another place (the order, e.g. what Copyist copies), to the stash and back, onto another card to swap them. Holding a card sells it. Copyist\'s tile says what it copies.'),
@@ -1156,7 +1157,7 @@
   const fuses = u => !!u && u.kind === 'card' && !u.unique && ownsCard(u.id) && !isFused(u.id);   // 1.24: taking it fuses it with the one you have
   const unfuse = id => { if (run.fused) run.fused = run.fused.filter(x => x !== id); };   // 1.24: sold: the ★ goes with it
   const cardName = id => (isFused(id) ? '★ ' : '') + (UPG[id] ? UPG[id].name : id);   // 1.24
-  const rerollCost = () => run.shop && run.shop.rerolls < (mods.freeReroll || 0) ? 0 : 2 + (run.shop ? run.shop.rerolls - (mods.freeReroll || 0) : 0);   // 1.26: 2, 3, 4...
+  const rerollCost = () => run.shop && run.shop.rerolls < (mods.freeReroll || 0) ? 0 : 4 + Math.ceil((run.wave || 1) / 2) + 2 * (run.shop ? run.shop.rerolls - (mods.freeReroll || 0) : 0);   // 1.26: 2, 3, 4... 1.28.2 (author: dearer, like Balatro's 5 a reroll): the first one about a common card (5 in waves 1-2, 6 in 3-4... 9 in 9-10), then +2 each
   function shopRoll() {
     const owed = run.shopOwed || 1, ids = upgradePicks(owed).map(u => u.id);
     const n = 4 + (mods.shopPlus || 0);   // 1.26 Wiedza mroku: one more
